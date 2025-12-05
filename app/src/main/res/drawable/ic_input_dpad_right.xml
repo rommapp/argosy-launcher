@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- D-pad with RIGHT highlighted -->
+    <!-- Up arrow (outline) -->
+    <path
+        android:strokeColor="#AAAAAA"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M15,7.5V2H9V7.5L12,10.5L15,7.5Z"/>
+    <!-- Down arrow (outline) -->
+    <path
+        android:strokeColor="#AAAAAA"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M9,16.5V22H15V16.5L12,13.5L9,16.5Z"/>
+    <!-- Left arrow (outline) -->
+    <path
+        android:strokeColor="#AAAAAA"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M7.5,9H2V15H7.5L10.5,12L7.5,9Z"/>
+    <!-- Right arrow (filled) -->
+    <path
+        android:fillColor="#AAAAAA"
+        android:pathData="M16.5,9H22V15H16.5L13.5,12L16.5,9Z"/>
+</vector>

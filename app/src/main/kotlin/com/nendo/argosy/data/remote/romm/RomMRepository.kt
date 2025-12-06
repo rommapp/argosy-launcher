@@ -591,7 +591,7 @@ class RomMRepository @Inject constructor(
         }
 
         return try {
-            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(rating = rating))
+            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(data = RomMUserPropsUpdateData(rating = rating)))
             if (!response.isSuccessful) {
                 pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))
             }
@@ -616,7 +616,7 @@ class RomMRepository @Inject constructor(
         }
 
         return try {
-            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(difficulty = difficulty))
+            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(data = RomMUserPropsUpdateData(difficulty = difficulty)))
             if (!response.isSuccessful) {
                 pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))
             }
@@ -652,8 +652,8 @@ class RomMRepository @Inject constructor(
         for (item in pending) {
             try {
                 val props = when (item.syncType) {
-                    "RATING" -> RomMUserPropsUpdate(rating = item.value)
-                    "DIFFICULTY" -> RomMUserPropsUpdate(difficulty = item.value)
+                    "RATING" -> RomMUserPropsUpdate(data = RomMUserPropsUpdateData(rating = item.value))
+                    "DIFFICULTY" -> RomMUserPropsUpdate(data = RomMUserPropsUpdateData(difficulty = item.value))
                     else -> continue
                 }
                 val response = currentApi.updateRomUserProps(item.rommId, props)

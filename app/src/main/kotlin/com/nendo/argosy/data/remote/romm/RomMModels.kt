@@ -138,7 +138,12 @@ data class RomMRomUser(
 )
 
 @JsonClass(generateAdapter = true)
-data class RomMUserPropsUpdate(
+data class RomMUserPropsUpdateData(
     @Json(name = "rating") val rating: Int? = null,
     @Json(name = "difficulty") val difficulty: Int? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMUserPropsUpdate(
+    @Json(name = "data") val data: RomMUserPropsUpdateData
 )

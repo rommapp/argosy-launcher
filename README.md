@@ -2,8 +2,11 @@
 
 An emulation-focused launcher for Android retro handhelds with native RomM integration.
 
+[![Build](https://github.com/nendotools/argosy-launcher/actions/workflows/build.yml/badge.svg)](https://github.com/nendotools/argosy-launcher/actions/workflows/build.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Android](https://img.shields.io/badge/Android-8.0+-green.svg)](https://developer.android.com/about/versions/oreo)
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9-purple.svg)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5-4285F4.svg)](https://developer.android.com/jetpack/compose)
 
 ## What is Argosy?
 

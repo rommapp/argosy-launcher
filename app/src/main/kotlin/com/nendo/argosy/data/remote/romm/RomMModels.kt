@@ -42,7 +42,8 @@ data class RomMRom(
     @Json(name = "languages") val languages: List<String>?,
     @Json(name = "revision") val revision: String?,
 
-    @Json(name = "merged_screenshots") val screenshotPaths: List<String>? = null
+    @Json(name = "merged_screenshots") val screenshotPaths: List<String>? = null,
+    @Json(name = "rom_user") val romUser: RomMRomUser? = null
 ) {
     val genres: List<String>? get() = metadatum?.genres
     val companies: List<String>? get() = metadatum?.companies
@@ -123,4 +124,21 @@ data class RomMRomPage(
     @Json(name = "page") val page: Int? = null,
     @Json(name = "size") val size: Int? = null,
     @Json(name = "pages") val pages: Int? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMRomUser(
+    @Json(name = "rating") val rating: Int = 0,
+    @Json(name = "difficulty") val difficulty: Int = 0,
+    @Json(name = "completion") val completion: Int = 0,
+    @Json(name = "status") val status: String? = null,
+    @Json(name = "backlogged") val backlogged: Boolean = false,
+    @Json(name = "now_playing") val nowPlaying: Boolean = false,
+    @Json(name = "last_played") val lastPlayed: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMUserPropsUpdate(
+    @Json(name = "rating") val rating: Int? = null,
+    @Json(name = "difficulty") val difficulty: Int? = null
 )

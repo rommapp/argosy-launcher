@@ -11,6 +11,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadResult
+import com.nendo.argosy.domain.usecase.game.DeleteGameUseCase
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryResult
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
@@ -18,6 +19,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.ui.notification.showSuccess
 import android.content.Intent
 import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -72,6 +74,7 @@ data class HomeUiState(
     val favoriteGames: List<HomeGameUi> = emptyList(),
     val currentRow: HomeRow = HomeRow.Continue,
     val isLoading: Boolean = true,
+    val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
     val gameMenuFocusIndex: Int = 0
 ) {
@@ -117,7 +120,8 @@ class HomeViewModel @Inject constructor(
     private val gameNavigationContext: GameNavigationContext,
     private val syncLibraryUseCase: SyncLibraryUseCase,
     private val downloadGameUseCase: DownloadGameUseCase,
-    private val launchGameUseCase: LaunchGameUseCase
+    private val launchGameUseCase: LaunchGameUseCase,
+    private val deleteGameUseCase: DeleteGameUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -138,7 +142,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             romMRepository.initialize()
 
-            if (romMRepository.isConnected()) {
+            val isConfigured = romMRepository.isConnected()
+            _uiState.update { it.copy(isRommConfigured = isConfigured) }
+
+            if (isConfigured) {
                 val prefs = preferencesRepository.preferences.first()
                 val lastSync = prefs.lastRommSync
                 val oneWeekAgo = Instant.now().minus(7, ChronoUnit.DAYS)
@@ -152,6 +159,11 @@ class HomeViewModel @Inject constructor(
 
     private fun loadData() {
         viewModelScope.launch {
+            val totalGames = gameDao.countAll()
+            Log.d(TAG, "loadData: totalGames in DB = $totalGames")
+            if (totalGames == 0) {
+                _uiState.update { it.copy(isLoading = false) }
+            }
             launch { loadRecentGames() }
             launch { loadFavorites() }
             launch { loadPlatforms() }
@@ -192,19 +204,28 @@ class HomeViewModel @Inject constructor(
     private suspend fun loadPlatforms() {
         platformDao.observePlatformsWithGames().collect { platforms ->
             val platformUis = platforms.map { it.toUi() }
+            Log.d(TAG, "loadPlatforms: got ${platforms.size} platforms")
             _uiState.update { state ->
+                val shouldSwitchRow = platforms.isNotEmpty() &&
+                    state.currentRow == HomeRow.Continue &&
+                    state.recentGames.isEmpty()
                 state.copy(
                     platforms = platformUis,
-                    isLoading = false
+                    currentRow = if (shouldSwitchRow) HomeRow.Platform(0) else state.currentRow
                 )
             }
             if (platforms.isNotEmpty() && _uiState.value.platformGames.isEmpty()) {
-                loadGamesForPlatform(platforms.first().id, platformIndex = 0)
+                loadGamesForPlatform(platforms.first().id, platformIndex = 0, setLoadingFalse = true)
             }
         }
     }
 
-    private fun loadGamesForPlatform(platformId: String, platformIndex: Int, useSavedIndex: Boolean = false) {
+    private fun loadGamesForPlatform(
+        platformId: String,
+        platformIndex: Int,
+        useSavedIndex: Boolean = false,
+        setLoadingFalse: Boolean = false
+    ) {
         platformGamesJob?.cancel()
         platformGamesJob = viewModelScope.launch {
             var isFirstEmission = true
@@ -212,17 +233,22 @@ class HomeViewModel @Inject constructor(
                 val gameUis = games.map { it.toUi() }
 
                 _uiState.update { state ->
+                    val shouldClearLoading = setLoadingFalse && isFirstEmission
                     if (useSavedIndex && isFirstEmission) {
                         val row = HomeRow.Platform(platformIndex)
                         val savedIndex = rowGameIndexes[row] ?: 0
                         isFirstEmission = false
                         state.copy(
                             platformGames = gameUis,
-                            focusedGameIndex = savedIndex.coerceIn(0, (gameUis.size - 1).coerceAtLeast(0))
+                            focusedGameIndex = savedIndex.coerceIn(0, (gameUis.size - 1).coerceAtLeast(0)),
+                            isLoading = if (shouldClearLoading) false else state.isLoading
                         )
                     } else {
                         isFirstEmission = false
-                        state.copy(platformGames = gameUis)
+                        state.copy(
+                            platformGames = gameUis,
+                            isLoading = if (shouldClearLoading) false else state.isLoading
+                        )
                     }
                 }
             }
@@ -297,7 +323,8 @@ class HomeViewModel @Inject constructor(
 
     fun moveGameMenuFocus(delta: Int) {
         _uiState.update {
-            val newIndex = (it.gameMenuFocusIndex + delta).coerceIn(0, 3)
+            val maxIndex = if (it.focusedGame?.isDownloaded == true) 4 else 3
+            val newIndex = (it.gameMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(gameMenuFocusIndex = newIndex)
         }
     }
@@ -321,6 +348,15 @@ class HomeViewModel @Inject constructor(
                 onGameSelect(game.id)
             }
             3 -> {
+                if (game.isDownloaded) {
+                    toggleGameMenu()
+                    deleteLocalFile(game.id)
+                } else {
+                    toggleGameMenu()
+                    hideGame(game.id)
+                }
+            }
+            4 -> {
                 toggleGameMenu()
                 hideGame(game.id)
             }
@@ -337,6 +373,13 @@ class HomeViewModel @Inject constructor(
     private fun hideGame(gameId: Long) {
         viewModelScope.launch {
             gameDao.updateHidden(gameId, true)
+        }
+    }
+
+    private fun deleteLocalFile(gameId: Long) {
+        viewModelScope.launch {
+            deleteGameUseCase(gameId)
+            notificationManager.showSuccess("Download deleted")
         }
     }
 
@@ -461,7 +504,10 @@ class HomeViewModel @Inject constructor(
         }
 
         override fun onMenu(): Boolean {
-            if (_uiState.value.showGameMenu) return true
+            if (_uiState.value.showGameMenu) {
+                toggleGameMenu()
+                return false
+            }
             onDrawerToggle()
             return true
         }

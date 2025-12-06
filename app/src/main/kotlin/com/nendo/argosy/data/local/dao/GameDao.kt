@@ -166,4 +166,10 @@ interface GameDao {
 
     @Query("SELECT COUNT(*) FROM games WHERE cachedScreenshotPaths IS NOT NULL AND rommId IS NOT NULL")
     suspend fun countGamesWithCachedScreenshots(): Int
+
+    @Query("UPDATE games SET userRating = :rating WHERE id = :gameId")
+    suspend fun updateUserRating(gameId: Long, rating: Int)
+
+    @Query("UPDATE games SET userDifficulty = :difficulty WHERE id = :gameId")
+    suspend fun updateUserDifficulty(gameId: Long, difficulty: Int)
 }

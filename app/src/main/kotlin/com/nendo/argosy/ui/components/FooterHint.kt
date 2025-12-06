@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.LocalNintendoLayout
+import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.theme.Dimens
 
 enum class InputButton {
@@ -41,6 +42,7 @@ private fun InputButton.category(): HintCategory = when (this) {
 @Composable
 private fun InputButton.toPainter(): Painter {
     val nintendoLayout = LocalNintendoLayout.current
+    val swapStartSelect = LocalSwapStartSelect.current
     return when (this) {
         InputButton.A -> if (nintendoLayout) InputIcons.FaceRight else InputIcons.FaceBottom
         InputButton.B -> if (nintendoLayout) InputIcons.FaceBottom else InputIcons.FaceRight
@@ -57,8 +59,8 @@ private fun InputButton.toPainter(): Painter {
         InputButton.RB -> InputIcons.BumperRight
         InputButton.LT -> InputIcons.TriggerLeft
         InputButton.RT -> InputIcons.TriggerRight
-        InputButton.START -> InputIcons.Menu
-        InputButton.SELECT -> InputIcons.Options
+        InputButton.START -> if (swapStartSelect) InputIcons.Options else InputIcons.Menu
+        InputButton.SELECT -> if (swapStartSelect) InputIcons.Menu else InputIcons.Options
     }
 }
 

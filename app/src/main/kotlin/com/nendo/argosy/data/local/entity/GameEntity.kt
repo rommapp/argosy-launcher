@@ -59,6 +59,9 @@ data class GameEntity(
     val gameModes: String? = null,
     val franchises: String? = null,
 
+    val userRating: Int = 0,
+    val userDifficulty: Int = 0,
+
     val isFavorite: Boolean = false,
     val isHidden: Boolean = false,
     val playCount: Int = 0,

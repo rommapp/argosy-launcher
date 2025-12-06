@@ -88,6 +88,7 @@ data class AppearanceState(
     val primaryColor: Int? = null,
     val hapticEnabled: Boolean = true,
     val nintendoButtonLayout: Boolean = false,
+    val swapStartSelect: Boolean = false,
     val animationSpeed: AnimationSpeed = AnimationSpeed.NORMAL
 )
 
@@ -221,6 +222,7 @@ class SettingsViewModel @Inject constructor(
                         primaryColor = prefs.primaryColor,
                         hapticEnabled = prefs.hapticEnabled,
                         nintendoButtonLayout = prefs.nintendoButtonLayout,
+                        swapStartSelect = prefs.swapStartSelect,
                         animationSpeed = prefs.animationSpeed
                     ),
                     emulators = state.emulators.copy(
@@ -467,7 +469,7 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { state ->
             val maxIndex = when (state.currentSection) {
                 SettingsSection.MAIN -> 3
-                SettingsSection.APPEARANCE -> 4
+                SettingsSection.APPEARANCE -> 5
                 SettingsSection.EMULATORS -> {
                     val platformCount = state.emulators.platforms.size
                     val autoAssignOffset = if (state.emulators.canAutoAssign) 1 else 0
@@ -532,6 +534,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setNintendoButtonLayout(enabled)
             _uiState.update { it.copy(appearance = it.appearance.copy(nintendoButtonLayout = enabled)) }
+        }
+    }
+
+    fun setSwapStartSelect(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setSwapStartSelect(enabled)
+            _uiState.update { it.copy(appearance = it.appearance.copy(swapStartSelect = enabled)) }
         }
     }
 
@@ -858,7 +867,8 @@ class SettingsViewModel @Inject constructor(
                     }
                     2 -> setHapticEnabled(!state.appearance.hapticEnabled)
                     3 -> setNintendoButtonLayout(!state.appearance.nintendoButtonLayout)
-                    4 -> {
+                    4 -> setSwapStartSelect(!state.appearance.swapStartSelect)
+                    5 -> {
                         val next = when (state.appearance.animationSpeed) {
                             AnimationSpeed.SLOW -> AnimationSpeed.NORMAL
                             AnimationSpeed.NORMAL -> AnimationSpeed.FAST

@@ -273,6 +273,7 @@ private fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsVie
 
 @Composable
 private fun AppearanceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+    val listState = rememberLazyListState()
     val presetColors = listOf(
         null to "Default",
         0xFF9575CD.toInt() to "Violet",
@@ -283,7 +284,17 @@ private fun AppearanceSection(uiState: SettingsUiState, viewModel: SettingsViewM
         0xFF64B5F6.toInt() to "Blue"
     )
 
+    LaunchedEffect(uiState.focusedIndex) {
+        if (uiState.focusedIndex in 0..5) {
+            val viewportHeight = listState.layoutInfo.viewportSize.height
+            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
+            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset)
+        }
+    }
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.padding(Dimens.spacingMd),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
@@ -337,10 +348,19 @@ private fun AppearanceSection(uiState: SettingsUiState, viewModel: SettingsViewM
             )
         }
         item {
+            SwitchPreference(
+                title = "Swap Start/Select",
+                subtitle = "Flip the Start and Select button functions",
+                isEnabled = uiState.appearance.swapStartSelect,
+                isFocused = uiState.focusedIndex == 4,
+                onToggle = { viewModel.setSwapStartSelect(it) }
+            )
+        }
+        item {
             CyclePreference(
                 title = "Animation Speed",
                 value = uiState.appearance.animationSpeed.name.lowercase().replaceFirstChar { it.uppercase() },
-                isFocused = uiState.focusedIndex == 4,
+                isFocused = uiState.focusedIndex == 5,
                 onClick = {
                     val next = when (uiState.appearance.animationSpeed) {
                         AnimationSpeed.SLOW -> AnimationSpeed.NORMAL

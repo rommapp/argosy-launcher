@@ -13,7 +13,10 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.domain.usecase.game.DeleteGameUseCase
 import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -174,7 +177,9 @@ private const val TAG = "LibraryVM"
 class LibraryViewModel @Inject constructor(
     private val platformDao: PlatformDao,
     private val gameDao: GameDao,
-    private val gameNavigationContext: GameNavigationContext
+    private val gameNavigationContext: GameNavigationContext,
+    private val deleteGameUseCase: DeleteGameUseCase,
+    private val notificationManager: NotificationManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -445,7 +450,8 @@ class LibraryViewModel @Inject constructor(
 
     fun moveQuickMenuFocus(delta: Int) {
         _uiState.update {
-            val newIndex = (it.quickMenuFocusIndex + delta).coerceIn(0, 3)
+            val maxIndex = if (it.focusedGame?.isDownloaded == true) 4 else 3
+            val newIndex = (it.quickMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(quickMenuFocusIndex = newIndex)
         }
     }
@@ -453,10 +459,17 @@ class LibraryViewModel @Inject constructor(
     fun confirmQuickMenuSelection(onGameSelect: (Long) -> Unit) {
         val game = _uiState.value.focusedGame ?: return
         when (_uiState.value.quickMenuFocusIndex) {
-            0 -> onGameSelect(game.id) // Play/Download -> go to details for now
+            0 -> onGameSelect(game.id)
             1 -> toggleFavorite(game.id)
-            2 -> onGameSelect(game.id) // Details
-            3 -> hideGame(game.id)
+            2 -> onGameSelect(game.id)
+            3 -> {
+                if (game.isDownloaded) {
+                    deleteLocalFile(game.id)
+                } else {
+                    hideGame(game.id)
+                }
+            }
+            4 -> hideGame(game.id)
         }
         toggleQuickMenu()
     }
@@ -464,6 +477,13 @@ class LibraryViewModel @Inject constructor(
     fun hideGame(gameId: Long) {
         viewModelScope.launch {
             gameDao.updateHidden(gameId, true)
+        }
+    }
+
+    private fun deleteLocalFile(gameId: Long) {
+        viewModelScope.launch {
+            deleteGameUseCase(gameId)
+            notificationManager.showSuccess("Download deleted")
         }
     }
 
@@ -572,7 +592,14 @@ class LibraryViewModel @Inject constructor(
         }
 
         override fun onMenu(): Boolean {
-            if (_uiState.value.showQuickMenu) return true
+            if (_uiState.value.showQuickMenu) {
+                toggleQuickMenu()
+                return false
+            }
+            if (_uiState.value.showFilterMenu) {
+                toggleFilterMenu()
+                return false
+            }
             onDrawerToggle()
             return true
         }

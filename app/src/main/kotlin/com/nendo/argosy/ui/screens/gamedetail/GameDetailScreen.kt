@@ -26,9 +26,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.outlined.Whatshot
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ButtonDefaults
@@ -257,8 +263,21 @@ private fun GameDetailContent(
                         game.players?.let { players ->
                             MetadataChip(label = "Players", value = players)
                         }
-                        game.rating?.let { rating ->
-                            MetadataChip(label = "Rating", value = String.format("%.1f", rating))
+                        if (game.userRating > 0) {
+                            RatingChip(
+                                label = "My Rating",
+                                value = game.userRating,
+                                icon = Icons.Default.Star,
+                                iconColor = Color(0xFFFFD700)
+                            )
+                        }
+                        if (game.userDifficulty > 0) {
+                            RatingChip(
+                                label = "Difficulty",
+                                value = game.userDifficulty,
+                                icon = Icons.Default.Whatshot,
+                                iconColor = Color(0xFFE53935)
+                            )
                         }
                     }
 
@@ -406,22 +425,6 @@ private fun GameDetailContent(
             }
         }
 
-        FooterBar(
-            hints = listOf(
-                InputButton.DPAD_VERTICAL to "Scroll",
-                InputButton.DPAD_HORIZONTAL to "Change Game",
-                InputButton.A to when (uiState.downloadStatus) {
-                    GameDownloadStatus.DOWNLOADED -> "Play"
-                    GameDownloadStatus.NOT_DOWNLOADED -> "Download"
-                    GameDownloadStatus.QUEUED -> "Queued"
-                    GameDownloadStatus.DOWNLOADING -> "Downloading"
-                },
-                InputButton.B to "Back",
-                InputButton.Y to "Favorite"
-            ),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-
         AnimatedVisibility(
             visible = uiState.showMoreOptions,
             enter = fadeIn(),
@@ -429,7 +432,8 @@ private fun GameDetailContent(
         ) {
             MoreOptionsOverlay(
                 game = game,
-                focusIndex = uiState.moreOptionsFocusIndex
+                focusIndex = uiState.moreOptionsFocusIndex,
+                isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED
             )
         }
 
@@ -442,6 +446,39 @@ private fun GameDetailContent(
                 availableEmulators = uiState.availableEmulators,
                 currentEmulatorName = game.emulatorName,
                 focusIndex = uiState.emulatorPickerFocusIndex
+            )
+        }
+
+        AnimatedVisibility(
+            visible = uiState.showRatingPicker,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            RatingPickerOverlay(
+                type = uiState.ratingPickerType,
+                value = uiState.ratingPickerValue
+            )
+        }
+
+        AnimatedVisibility(
+            visible = !uiState.showMoreOptions && !uiState.showEmulatorPicker && !uiState.showRatingPicker,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            FooterBar(
+                hints = listOf(
+                    InputButton.DPAD_VERTICAL to "Scroll",
+                    InputButton.DPAD_HORIZONTAL to "Change Game",
+                    InputButton.A to when (uiState.downloadStatus) {
+                        GameDownloadStatus.DOWNLOADED -> "Play"
+                        GameDownloadStatus.NOT_DOWNLOADED -> "Download"
+                        GameDownloadStatus.QUEUED -> "Queued"
+                        GameDownloadStatus.DOWNLOADING -> "Downloading"
+                    },
+                    InputButton.B to "Back",
+                    InputButton.Y to "Favorite"
+                )
             )
         }
     }
@@ -472,10 +509,124 @@ private fun MetadataChip(label: String, value: String) {
 }
 
 @Composable
+private fun RatingChip(
+    label: String,
+    value: Int,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconColor: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .background(
+                Color.White.copy(alpha = 0.1f),
+                RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = "$value/10",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+private fun RatingPickerOverlay(
+    type: RatingType,
+    value: Int
+) {
+    val isRating = type == RatingType.OPINION
+    val title = if (isRating) "RATE GAME" else "SET DIFFICULTY"
+    val filledIcon = if (isRating) Icons.Default.Star else Icons.Default.Whatshot
+    val outlineIcon = if (isRating) Icons.Default.StarOutline else Icons.Outlined.Whatshot
+    val filledColor = if (isRating) Color(0xFFFFD700) else Color(0xFFE53935)
+    val outlineColor = Color.White.copy(alpha = 0.4f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .width(420.dp)
+                .background(
+                    MaterialTheme.colorScheme.surface,
+                    RoundedCornerShape(12.dp)
+                )
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (i in 1..10) {
+                    val isFilled = i <= value
+                    Icon(
+                        imageVector = if (isFilled) filledIcon else outlineIcon,
+                        contentDescription = null,
+                        tint = if (isFilled) filledColor else outlineColor,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = if (value == 0) "Not set" else "$value/10",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FooterBar(
+                hints = listOf(
+                    InputButton.DPAD_HORIZONTAL to "Adjust",
+                    InputButton.A to "Confirm",
+                    InputButton.B to "Cancel"
+                )
+            )
+        }
+    }
+}
+
+@Composable
 private fun MoreOptionsOverlay(
     game: GameDetailUi,
-    focusIndex: Int
+    focusIndex: Int,
+    isDownloaded: Boolean
 ) {
+    val isRommGame = game.isRommGame
+    var currentIndex = 0
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -501,11 +652,33 @@ private fun MoreOptionsOverlay(
             OptionItem(
                 label = "Change Emulator",
                 value = game.emulatorName ?: "Default",
-                isFocused = focusIndex == 0
+                isFocused = focusIndex == currentIndex++
             )
+            if (isRommGame) {
+                OptionItem(
+                    icon = Icons.Default.Star,
+                    label = "Rate Game",
+                    value = if (game.userRating > 0) "${game.userRating}/10" else "Not rated",
+                    isFocused = focusIndex == currentIndex++
+                )
+                OptionItem(
+                    icon = Icons.Default.Whatshot,
+                    label = "Set Difficulty",
+                    value = if (game.userDifficulty > 0) "${game.userDifficulty}/10" else "Not set",
+                    isFocused = focusIndex == currentIndex++
+                )
+            }
+            if (isDownloaded) {
+                OptionItem(
+                    icon = Icons.Default.DeleteOutline,
+                    label = "Delete Download",
+                    isFocused = focusIndex == currentIndex++,
+                    isDangerous = true
+                )
+            }
             OptionItem(
                 label = "Hide",
-                isFocused = focusIndex == 1,
+                isFocused = focusIndex == currentIndex,
                 isDangerous = true
             )
         }
@@ -561,6 +734,7 @@ private fun EmulatorPickerOverlay(
 @Composable
 private fun OptionItem(
     label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     value: String? = null,
     isFocused: Boolean = false,
     isDangerous: Boolean = false,
@@ -583,8 +757,17 @@ private fun OptionItem(
             .fillMaxWidth()
             .background(backgroundColor, RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.width(20.dp)
+            )
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,

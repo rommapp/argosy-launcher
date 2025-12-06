@@ -99,3 +99,5 @@ val LocalInputDispatcher = staticCompositionLocalOf<InputDispatcher> {
 }
 
 val LocalNintendoLayout = staticCompositionLocalOf { false }
+
+val LocalSwapStartSelect = staticCompositionLocalOf { false }

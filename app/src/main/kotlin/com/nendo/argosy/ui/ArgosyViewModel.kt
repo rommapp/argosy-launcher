@@ -27,7 +27,8 @@ import javax.inject.Inject
 data class ArgosyUiState(
     val isFirstRun: Boolean = true,
     val isLoading: Boolean = true,
-    val nintendoButtonLayout: Boolean = false
+    val nintendoButtonLayout: Boolean = false,
+    val swapStartSelect: Boolean = false
 )
 
 data class DrawerState(
@@ -49,7 +50,7 @@ class ArgosyViewModel @Inject constructor(
     val notificationManager: NotificationManager,
     downloadNotificationObserver: DownloadNotificationObserver,
     private val gameRepository: GameRepository,
-    romMRepository: RomMRepository,
+    private val romMRepository: RomMRepository,
     downloadManager: DownloadManager
 ) : ViewModel() {
 
@@ -72,7 +73,8 @@ class ArgosyViewModel @Inject constructor(
             ArgosyUiState(
                 isFirstRun = !prefs.firstRunComplete,
                 isLoading = false,
-                nintendoButtonLayout = prefs.nintendoButtonLayout
+                nintendoButtonLayout = prefs.nintendoButtonLayout,
+                swapStartSelect = prefs.swapStartSelect
             )
         }
         .stateIn(
@@ -152,6 +154,15 @@ class ArgosyViewModel @Inject constructor(
         override fun onMenu(): Boolean {
             onDismiss()
             return true
+        }
+    }
+
+    fun onDrawerOpened() {
+        viewModelScope.launch {
+            romMRepository.checkConnection()
+            if (romMRepository.connectionState.value is RomMRepository.ConnectionState.Connected) {
+                romMRepository.processPendingSync()
+            }
         }
     }
 }

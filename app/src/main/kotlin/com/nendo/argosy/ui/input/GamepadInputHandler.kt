@@ -36,11 +36,13 @@ class GamepadInputHandler @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var nintendoLayout = false
+    private var swapStartSelect = false
 
     init {
         scope.launch {
             preferencesRepository.preferences.collect { prefs ->
                 nintendoLayout = prefs.nintendoButtonLayout
+                swapStartSelect = prefs.swapStartSelect
             }
         }
     }
@@ -89,8 +91,8 @@ class GamepadInputHandler @Inject constructor(
         KeyEvent.KEYCODE_BUTTON_L1 -> GamepadEvent.PrevSection
         KeyEvent.KEYCODE_BUTTON_R1 -> GamepadEvent.NextSection
 
-        KeyEvent.KEYCODE_BUTTON_START -> GamepadEvent.Menu
-        KeyEvent.KEYCODE_BUTTON_SELECT -> GamepadEvent.Select
+        KeyEvent.KEYCODE_BUTTON_START -> if (swapStartSelect) GamepadEvent.Select else GamepadEvent.Menu
+        KeyEvent.KEYCODE_BUTTON_SELECT -> if (swapStartSelect) GamepadEvent.Menu else GamepadEvent.Select
 
         else -> null
     }

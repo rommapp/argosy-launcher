@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -559,9 +560,17 @@ private fun QuickMenuOverlay(
                 label = "Details",
                 isFocused = focusIndex == 2
             )
+            if (game.isDownloaded) {
+                QuickMenuItem(
+                    icon = Icons.Default.DeleteOutline,
+                    label = "Delete Download",
+                    isFocused = focusIndex == 3,
+                    isDangerous = true
+                )
+            }
             QuickMenuItem(
                 label = "Hide",
-                isFocused = focusIndex == 3,
+                isFocused = focusIndex == if (game.isDownloaded) 4 else 3,
                 isDangerous = true
             )
         }

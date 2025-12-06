@@ -2,8 +2,10 @@ package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.PlatformDefinitions
@@ -13,6 +15,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,6 +63,7 @@ class RomMRepository @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
+    private val pendingSyncDao: PendingSyncDao,
     private val imageCacheManager: ImageCacheManager
 ) {
     private var api: RomMApi? = null
@@ -130,7 +134,7 @@ class RomMRepository @Inject constructor(
 
         return try {
             Log.d(TAG, "login: attempting login for user=$username")
-            val scope = "me.read platforms.read roms.read assets.read roms.user.read"
+            val scope = "me.read platforms.read roms.read assets.read roms.user.read roms.user.write"
             val response = currentApi.login(username, password, scope)
             Log.d(TAG, "login: response code=${response.code()}, successful=${response.isSuccessful}")
             if (response.isSuccessful) {
@@ -383,6 +387,8 @@ class RomMRepository @Inject constructor(
             languages = rom.languages?.joinToString(","),
             gameModes = rom.metadatum?.gameModes?.joinToString(","),
             franchises = rom.metadatum?.franchises?.joinToString(","),
+            userRating = rom.romUser?.rating ?: existing?.userRating ?: 0,
+            userDifficulty = rom.romUser?.difficulty ?: existing?.userDifficulty ?: 0,
             isFavorite = existing?.isFavorite ?: false,
             isHidden = existing?.isHidden ?: false,
             playCount = existing?.playCount ?: 0,
@@ -569,5 +575,99 @@ class RomMRepository @Inject constructor(
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(RomMApi::class.java)
+    }
+
+    suspend fun updateUserRating(gameId: Long, rating: Int): RomMResult<Unit> {
+        val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
+        val rommId = game.rommId ?: return RomMResult.Error("Not a RomM game")
+
+        gameDao.updateUserRating(gameId, rating)
+        pendingSyncDao.deleteByGameAndType(gameId, "RATING")
+
+        val currentApi = api
+        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
+            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))
+            return RomMResult.Success(Unit)
+        }
+
+        return try {
+            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(rating = rating))
+            if (!response.isSuccessful) {
+                pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))
+            }
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))
+            RomMResult.Success(Unit)
+        }
+    }
+
+    suspend fun updateUserDifficulty(gameId: Long, difficulty: Int): RomMResult<Unit> {
+        val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
+        val rommId = game.rommId ?: return RomMResult.Error("Not a RomM game")
+
+        gameDao.updateUserDifficulty(gameId, difficulty)
+        pendingSyncDao.deleteByGameAndType(gameId, "DIFFICULTY")
+
+        val currentApi = api
+        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
+            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))
+            return RomMResult.Success(Unit)
+        }
+
+        return try {
+            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(difficulty = difficulty))
+            if (!response.isSuccessful) {
+                pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))
+            }
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))
+            RomMResult.Success(Unit)
+        }
+    }
+
+    suspend fun checkConnection() {
+        val currentApi = api ?: return
+        try {
+            val response = currentApi.heartbeat()
+            if (response.isSuccessful) {
+                val version = response.body()?.version ?: "unknown"
+                _connectionState.value = ConnectionState.Connected(version)
+            } else {
+                _connectionState.value = ConnectionState.Disconnected
+            }
+        } catch (e: Exception) {
+            _connectionState.value = ConnectionState.Disconnected
+        }
+    }
+
+    suspend fun processPendingSync(): Int {
+        val currentApi = api ?: return 0
+        if (_connectionState.value !is ConnectionState.Connected) return 0
+
+        val pending = pendingSyncDao.getAll()
+        var synced = 0
+
+        for (item in pending) {
+            try {
+                val props = when (item.syncType) {
+                    "RATING" -> RomMUserPropsUpdate(rating = item.value)
+                    "DIFFICULTY" -> RomMUserPropsUpdate(difficulty = item.value)
+                    else -> continue
+                }
+                val response = currentApi.updateRomUserProps(item.rommId, props)
+                if (response.isSuccessful) {
+                    pendingSyncDao.delete(item.id)
+                    synced++
+                    if (synced < pending.size) {
+                        delay(500)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d(TAG, "processPendingSync: failed to sync item ${item.id}: ${e.message}")
+            }
+        }
+        return synced
     }
 }

@@ -8,18 +8,21 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.nendo.argosy.data.local.converter.Converters
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 
 @Database(
     entities = [
         PlatformEntity::class,
         GameEntity::class,
-        EmulatorConfigEntity::class
+        EmulatorConfigEntity::class,
+        PendingSyncEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -27,6 +30,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun platformDao(): PlatformDao
     abstract fun gameDao(): GameDao
     abstract fun emulatorConfigDao(): EmulatorConfigDao
+    abstract fun pendingSyncDao(): PendingSyncDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -80,6 +84,21 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN cachedScreenshotPaths TEXT")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS pending_sync (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        rommId INTEGER NOT NULL,
+                        syncType TEXT NOT NULL,
+                        value INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
             }
         }
     }

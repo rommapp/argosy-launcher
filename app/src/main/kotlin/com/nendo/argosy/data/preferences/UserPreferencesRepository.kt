@@ -33,6 +33,7 @@ class UserPreferencesRepository @Inject constructor(
 
         val HAPTIC_ENABLED = booleanPreferencesKey("haptic_enabled")
         val NINTENDO_BUTTON_LAYOUT = booleanPreferencesKey("nintendo_button_layout")
+        val SWAP_START_SELECT = booleanPreferencesKey("swap_start_select")
         val ANIMATION_SPEED = stringPreferencesKey("animation_speed")
         val LAST_ROMM_SYNC = stringPreferencesKey("last_romm_sync")
 
@@ -66,6 +67,7 @@ class UserPreferencesRepository @Inject constructor(
             tertiaryColor = prefs[Keys.TERTIARY_COLOR],
             hapticEnabled = prefs[Keys.HAPTIC_ENABLED] ?: true,
             nintendoButtonLayout = prefs[Keys.NINTENDO_BUTTON_LAYOUT] ?: false,
+            swapStartSelect = prefs[Keys.SWAP_START_SELECT] ?: false,
             animationSpeed = AnimationSpeed.fromString(prefs[Keys.ANIMATION_SPEED]),
             lastRommSync = prefs[Keys.LAST_ROMM_SYNC]?.let { Instant.parse(it) },
             syncFilters = SyncFilterPreferences(
@@ -167,6 +169,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setSwapStartSelect(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SWAP_START_SELECT] = enabled
+        }
+    }
+
     suspend fun setAnimationSpeed(speed: AnimationSpeed) {
         dataStore.edit { prefs ->
             prefs[Keys.ANIMATION_SPEED] = speed.name
@@ -264,6 +272,7 @@ data class UserPreferences(
     val tertiaryColor: Int? = null,
     val hapticEnabled: Boolean = true,
     val nintendoButtonLayout: Boolean = false,
+    val swapStartSelect: Boolean = false,
     val animationSpeed: AnimationSpeed = AnimationSpeed.NORMAL,
     val lastRommSync: Instant? = null,
     val syncFilters: SyncFilterPreferences = SyncFilterPreferences(),

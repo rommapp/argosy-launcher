@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -187,6 +188,7 @@ fun HomeScreen(
                     }
                     uiState.currentGames.isEmpty() -> {
                         EmptyState(
+                            isRommConfigured = uiState.isRommConfigured,
                             onSync = { viewModel.syncFromRomm() }
                         )
                     }
@@ -389,6 +391,7 @@ private fun LoadingState() {
 
 @Composable
 private fun EmptyState(
+    isRommConfigured: Boolean,
     onSync: () -> Unit
 ) {
     Column(
@@ -404,12 +407,19 @@ private fun EmptyState(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Sync your library from Rom Manager to get started",
+            text = if (isRommConfigured) {
+                "Sync your library to get started"
+            } else {
+                "Connect to a Rom Manager server in Settings to get started"
+            },
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f)
+            color = Color.White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        FooterHint(button = InputButton.A, action = "Sync Library")
+        if (isRommConfigured) {
+            Spacer(modifier = Modifier.height(16.dp))
+            FooterHint(button = InputButton.A, action = "Sync Library")
+        }
     }
 }
 
@@ -453,9 +463,17 @@ private fun GameSelectOverlay(
                 label = "Details",
                 isFocused = focusIndex == 2
             )
+            if (game.isDownloaded) {
+                MenuOption(
+                    icon = Icons.Default.DeleteOutline,
+                    label = "Delete Download",
+                    isFocused = focusIndex == 3,
+                    isDangerous = true
+                )
+            }
             MenuOption(
                 label = "Hide",
-                isFocused = focusIndex == 3,
+                isFocused = focusIndex == if (game.isDownloaded) 4 else 3,
                 isDangerous = true
             )
         }

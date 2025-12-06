@@ -12,15 +12,18 @@ import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
+import com.nendo.argosy.domain.usecase.game.DeleteGameUseCase
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.ui.notification.showSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +54,9 @@ data class GameDetailUi(
     val description: String?,
     val players: String?,
     val rating: Float?,
+    val userRating: Int,
+    val userDifficulty: Int,
+    val isRommGame: Boolean,
     val isFavorite: Boolean,
     val playCount: Int,
     val playTimeMinutes: Int,
@@ -70,6 +76,8 @@ enum class GameDownloadStatus {
     DOWNLOADED
 }
 
+enum class RatingType { OPINION, DIFFICULTY }
+
 data class GameDetailUiState(
     val game: GameDetailUi? = null,
     val showMoreOptions: Boolean = false,
@@ -81,7 +89,10 @@ data class GameDetailUiState(
     val availableEmulators: List<InstalledEmulator> = emptyList(),
     val emulatorPickerFocusIndex: Int = 0,
     val siblingGameIds: List<Long> = emptyList(),
-    val currentGameIndex: Int = -1
+    val currentGameIndex: Int = -1,
+    val showRatingPicker: Boolean = false,
+    val ratingPickerType: RatingType = RatingType.OPINION,
+    val ratingPickerValue: Int = 0
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1
@@ -99,7 +110,9 @@ class GameDetailViewModel @Inject constructor(
     private val gameNavigationContext: GameNavigationContext,
     private val downloadGameUseCase: DownloadGameUseCase,
     private val launchGameUseCase: LaunchGameUseCase,
-    private val configureEmulatorUseCase: ConfigureEmulatorUseCase
+    private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
+    private val deleteGameUseCase: DeleteGameUseCase,
+    private val romMRepository: RomMRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -260,24 +273,36 @@ class GameDetailViewModel @Inject constructor(
 
     fun moveOptionsFocus(delta: Int) {
         _uiState.update {
-            val newIndex = (it.moreOptionsFocusIndex + delta).coerceIn(0, 1)
+            val isDownloaded = it.downloadStatus == GameDownloadStatus.DOWNLOADED
+            val isRommGame = it.game?.isRommGame == true
+            val maxIndex = when {
+                isDownloaded && isRommGame -> 4
+                isDownloaded || isRommGame -> 3
+                else -> 1
+            }
+            val newIndex = (it.moreOptionsFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(moreOptionsFocusIndex = newIndex)
         }
     }
 
     fun confirmOptionSelection(onBack: () -> Unit) {
-        when (_uiState.value.moreOptionsFocusIndex) {
-            0 -> {
-                showEmulatorPicker()
-                return
-            }
-            1 -> {
-                hideGame()
-                onBack()
-                return
-            }
+        val state = _uiState.value
+        val isDownloaded = state.downloadStatus == GameDownloadStatus.DOWNLOADED
+        val isRommGame = state.game?.isRommGame == true
+        val index = state.moreOptionsFocusIndex
+
+        when {
+            index == 0 -> showEmulatorPicker()
+            index == 1 && isRommGame -> showRatingPicker(RatingType.OPINION)
+            index == 2 && isRommGame -> showRatingPicker(RatingType.DIFFICULTY)
+            index == 1 && !isRommGame && isDownloaded -> { toggleMoreOptions(); deleteLocalFile() }
+            index == 1 && !isRommGame && !isDownloaded -> { hideGame(); onBack() }
+            index == 3 && isRommGame && isDownloaded -> { toggleMoreOptions(); deleteLocalFile() }
+            index == 3 && isRommGame && !isDownloaded -> { hideGame(); onBack() }
+            index == 4 && isRommGame && isDownloaded -> { hideGame(); onBack() }
+            index == 2 && !isRommGame && isDownloaded -> { hideGame(); onBack() }
+            else -> toggleMoreOptions()
         }
-        toggleMoreOptions()
     }
 
     fun showEmulatorPicker() {
@@ -328,9 +353,67 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    fun showRatingPicker(type: RatingType) {
+        val game = _uiState.value.game ?: return
+        val currentValue = when (type) {
+            RatingType.OPINION -> game.userRating
+            RatingType.DIFFICULTY -> game.userDifficulty
+        }
+        _uiState.update {
+            it.copy(
+                showMoreOptions = false,
+                showRatingPicker = true,
+                ratingPickerType = type,
+                ratingPickerValue = currentValue
+            )
+        }
+    }
+
+    fun dismissRatingPicker() {
+        _uiState.update { it.copy(showRatingPicker = false) }
+    }
+
+    fun changeRatingValue(delta: Int) {
+        _uiState.update { state ->
+            val newValue = (state.ratingPickerValue + delta).coerceIn(0, 10)
+            state.copy(ratingPickerValue = newValue)
+        }
+    }
+
+    fun confirmRating() {
+        val state = _uiState.value
+        val value = state.ratingPickerValue
+        val type = state.ratingPickerType
+
+        viewModelScope.launch {
+            val result = when (type) {
+                RatingType.OPINION -> romMRepository.updateUserRating(currentGameId, value)
+                RatingType.DIFFICULTY -> romMRepository.updateUserDifficulty(currentGameId, value)
+            }
+
+            when (result) {
+                is com.nendo.argosy.data.remote.romm.RomMResult.Success -> {
+                    loadGame(currentGameId)
+                }
+                is com.nendo.argosy.data.remote.romm.RomMResult.Error -> {
+                    notificationManager.showError(result.message)
+                }
+            }
+            _uiState.update { it.copy(showRatingPicker = false) }
+        }
+    }
+
     fun hideGame() {
         viewModelScope.launch {
             gameDao.updateHidden(currentGameId, true)
+        }
+    }
+
+    private fun deleteLocalFile() {
+        viewModelScope.launch {
+            deleteGameUseCase(currentGameId)
+            notificationManager.showSuccess("Download deleted")
+            loadGame(currentGameId)
         }
     }
 
@@ -361,6 +444,9 @@ class GameDetailViewModel @Inject constructor(
             description = description,
             players = players,
             rating = rating,
+            userRating = userRating,
+            userDifficulty = userDifficulty,
+            isRommGame = rommId != null,
             isFavorite = isFavorite,
             playCount = playCount,
             playTimeMinutes = playTimeMinutes,
@@ -382,6 +468,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onUp(): Boolean {
             val state = _uiState.value
             when {
+                state.showRatingPicker -> return false
                 state.showEmulatorPicker -> moveEmulatorPickerFocus(-1)
                 state.showMoreOptions -> moveOptionsFocus(-1)
                 else -> onScrollUp()
@@ -392,6 +479,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onDown(): Boolean {
             val state = _uiState.value
             when {
+                state.showRatingPicker -> return false
                 state.showEmulatorPicker -> moveEmulatorPickerFocus(1)
                 state.showMoreOptions -> moveOptionsFocus(1)
                 else -> onScrollDown()
@@ -401,25 +489,42 @@ class GameDetailViewModel @Inject constructor(
 
         override fun onLeft(): Boolean {
             val state = _uiState.value
-            if (state.showMoreOptions || state.showEmulatorPicker) return false
-            gameNavigationContext.getPreviousGameId(currentGameId)?.let { prevId ->
-                loadGame(prevId)
+            when {
+                state.showRatingPicker -> {
+                    changeRatingValue(-1)
+                    return true
+                }
+                state.showMoreOptions || state.showEmulatorPicker -> return false
+                else -> {
+                    gameNavigationContext.getPreviousGameId(currentGameId)?.let { prevId ->
+                        loadGame(prevId)
+                    }
+                    return true
+                }
             }
-            return true
         }
 
         override fun onRight(): Boolean {
             val state = _uiState.value
-            if (state.showMoreOptions || state.showEmulatorPicker) return false
-            gameNavigationContext.getNextGameId(currentGameId)?.let { nextId ->
-                loadGame(nextId)
+            when {
+                state.showRatingPicker -> {
+                    changeRatingValue(1)
+                    return true
+                }
+                state.showMoreOptions || state.showEmulatorPicker -> return false
+                else -> {
+                    gameNavigationContext.getNextGameId(currentGameId)?.let { nextId ->
+                        loadGame(nextId)
+                    }
+                    return true
+                }
             }
-            return true
         }
 
         override fun onConfirm(): Boolean {
             val state = _uiState.value
             when {
+                state.showRatingPicker -> confirmRating()
                 state.showEmulatorPicker -> confirmEmulatorSelection()
                 state.showMoreOptions -> confirmOptionSelection(onBack)
                 else -> primaryAction()
@@ -430,6 +535,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onBack(): Boolean {
             val state = _uiState.value
             when {
+                state.showRatingPicker -> dismissRatingPicker()
                 state.showEmulatorPicker -> dismissEmulatorPicker()
                 state.showMoreOptions -> toggleMoreOptions()
                 else -> onBack()
@@ -437,7 +543,22 @@ class GameDetailViewModel @Inject constructor(
             return true
         }
 
-        override fun onMenu(): Boolean = false
+        override fun onMenu(): Boolean {
+            val state = _uiState.value
+            if (state.showRatingPicker) {
+                dismissRatingPicker()
+                return false
+            }
+            if (state.showMoreOptions) {
+                toggleMoreOptions()
+                return false
+            }
+            if (state.showEmulatorPicker) {
+                dismissEmulatorPicker()
+                return false
+            }
+            return false
+        }
 
         override fun onContextMenu(): Boolean {
             toggleFavorite()

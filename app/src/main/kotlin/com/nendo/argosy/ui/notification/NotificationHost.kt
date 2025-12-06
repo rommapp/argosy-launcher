@@ -225,19 +225,19 @@ private data class NotificationColors(
 private fun notificationColors(type: NotificationType): NotificationColors {
     return when (type) {
         NotificationType.SUCCESS -> NotificationColors(
-            container = Color(0xFF1B5E20),
+            container = Color(0xFF2D4A3E),
             content = Color.White
         )
         NotificationType.INFO -> NotificationColors(
-            container = Color(0xFF1565C0),
+            container = Color(0xFF3A4A5C),
             content = Color.White
         )
         NotificationType.WARNING -> NotificationColors(
-            container = Color(0xFFF57F17),
-            content = Color.Black
+            container = Color(0xFF5C4A2D),
+            content = Color.White
         )
         NotificationType.ERROR -> NotificationColors(
-            container = Color(0xFFB71C1C),
+            container = Color(0xFF5C3A3A),
             content = Color.White
         )
     }

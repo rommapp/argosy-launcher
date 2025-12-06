@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import dagger.Module
 import dagger.Provides
@@ -30,7 +31,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_2_3,
                 ALauncherDatabase.MIGRATION_3_4,
                 ALauncherDatabase.MIGRATION_4_5,
-                ALauncherDatabase.MIGRATION_5_6
+                ALauncherDatabase.MIGRATION_5_6,
+                ALauncherDatabase.MIGRATION_6_7
             )
             .build()
     }
@@ -44,4 +46,8 @@ object DatabaseModule {
     @Provides
     fun provideEmulatorConfigDao(database: ALauncherDatabase): EmulatorConfigDao =
         database.emulatorConfigDao()
+
+    @Provides
+    fun providePendingSyncDao(database: ALauncherDatabase): PendingSyncDao =
+        database.pendingSyncDao()
 }

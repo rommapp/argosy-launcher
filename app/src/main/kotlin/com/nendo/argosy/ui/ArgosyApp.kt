@@ -23,6 +23,7 @@ import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.LocalNintendoLayout
+import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.navigation.NavGraph
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.notification.NotificationHost
@@ -57,6 +58,7 @@ fun ArgosyApp(
         if (drawerState.isOpen) {
             val parentRoute = navController.previousBackStackEntry?.destination?.route
             viewModel.initDrawerFocus(currentRoute, parentRoute)
+            viewModel.onDrawerOpened()
         }
     }
 
@@ -92,7 +94,8 @@ fun ArgosyApp(
 
     CompositionLocalProvider(
         LocalInputDispatcher provides inputDispatcher,
-        LocalNintendoLayout provides uiState.nintendoButtonLayout
+        LocalNintendoLayout provides uiState.nintendoButtonLayout,
+        LocalSwapStartSelect provides uiState.swapStartSelect
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             ModalNavigationDrawer(

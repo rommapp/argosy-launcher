@@ -391,6 +391,10 @@ class AppsViewModel @Inject constructor(
         }
 
         override fun onMenu(): Boolean {
+            if (_uiState.value.showContextMenu) {
+                dismissContextMenu()
+                return false
+            }
             onDrawerToggle()
             return true
         }

@@ -20,6 +20,12 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.github.UpdateState
+import com.nendo.argosy.data.update.AppInstaller
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
@@ -137,10 +143,14 @@ data class SyncFilterState(
 
 data class UpdateCheckState(
     val isChecking: Boolean = false,
+    val hasChecked: Boolean = false,
     val updateAvailable: Boolean = false,
     val latestVersion: String? = null,
     val downloadUrl: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val isDownloading: Boolean = false,
+    val downloadProgress: Int = 0,
+    val readyToInstall: Boolean = false
 )
 
 data class SettingsUiState(
@@ -173,7 +183,8 @@ class SettingsViewModel @Inject constructor(
     private val syncLibraryUseCase: SyncLibraryUseCase,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val migrateStorageUseCase: MigrateStorageUseCase,
-    private val updateRepository: UpdateRepository
+    private val updateRepository: UpdateRepository,
+    private val appInstaller: AppInstaller
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -181,6 +192,9 @@ class SettingsViewModel @Inject constructor(
 
     private val _openUrlEvent = MutableSharedFlow<String>()
     val openUrlEvent: SharedFlow<String> = _openUrlEvent.asSharedFlow()
+
+    private val _downloadUpdateEvent = MutableSharedFlow<Unit>()
+    val downloadUpdateEvent: SharedFlow<Unit> = _downloadUpdateEvent.asSharedFlow()
 
     val imageCacheProgress: StateFlow<ImageCacheProgress> = imageCacheManager.progress
 
@@ -784,7 +798,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 is UpdateState.UpToDate -> {
                     _uiState.update {
-                        it.copy(updateCheck = UpdateCheckState(isChecking = false, updateAvailable = false))
+                        it.copy(updateCheck = UpdateCheckState(isChecking = false, hasChecked = true, updateAvailable = false))
                     }
                 }
                 is UpdateState.Error -> {
@@ -797,6 +811,75 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun downloadAndInstallUpdate(context: android.content.Context) {
+        val state = _uiState.value.updateCheck
+        val url = state.downloadUrl ?: return
+        val version = state.latestVersion ?: return
+
+        if (state.isDownloading) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(updateCheck = it.updateCheck.copy(isDownloading = true, downloadProgress = 0, error = null)) }
+
+            try {
+                val apkFile = withContext(Dispatchers.IO) {
+                    downloadApk(context, url, version) { progress ->
+                        _uiState.update { it.copy(updateCheck = it.updateCheck.copy(downloadProgress = progress)) }
+                    }
+                }
+
+                _uiState.update {
+                    it.copy(updateCheck = it.updateCheck.copy(isDownloading = false, readyToInstall = true))
+                }
+
+                appInstaller.installApk(context, apkFile)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to download update", e)
+                _uiState.update {
+                    it.copy(updateCheck = it.updateCheck.copy(isDownloading = false, error = e.message ?: "Download failed"))
+                }
+            }
+        }
+    }
+
+    private fun downloadApk(
+        context: android.content.Context,
+        url: String,
+        version: String,
+        onProgress: (Int) -> Unit
+    ): File {
+        val client = OkHttpClient.Builder().build()
+        val request = Request.Builder().url(url).build()
+        val response = client.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            throw Exception("Download failed: ${response.code}")
+        }
+
+        val body = response.body ?: throw Exception("Empty response")
+        val contentLength = body.contentLength()
+        val apkFile = appInstaller.getApkCacheFile(context, version)
+
+        apkFile.outputStream().use { output ->
+            body.byteStream().use { input ->
+                val buffer = ByteArray(8192)
+                var bytesRead: Long = 0
+                var read: Int
+
+                while (input.read(buffer).also { read = it } != -1) {
+                    output.write(buffer, 0, read)
+                    bytesRead += read
+                    if (contentLength > 0) {
+                        val progress = ((bytesRead * 100) / contentLength).toInt()
+                        onProgress(progress)
+                    }
+                }
+            }
+        }
+
+        return apkFile
     }
 
     fun startRommConfig() {
@@ -970,7 +1053,13 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsSection.ABOUT -> {
                 when (state.focusedIndex) {
-                    3 -> checkForUpdates()
+                    3 -> {
+                        if (state.updateCheck.updateAvailable) {
+                            viewModelScope.launch { _downloadUpdateEvent.emit(Unit) }
+                        } else {
+                            checkForUpdates()
+                        }
+                    }
                 }
             }
             else -> {}

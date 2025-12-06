@@ -137,6 +137,12 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.downloadUpdateEvent.collect {
+            viewModel.downloadAndInstallUpdate(context)
+        }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -1058,6 +1064,7 @@ private fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewMode
 private fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val updateCheck = uiState.updateCheck
     val isDebug = com.nendo.argosy.BuildConfig.DEBUG
+    val context = LocalContext.current
 
     LazyColumn(
         modifier = Modifier.padding(Dimens.spacingMd),
@@ -1085,21 +1092,28 @@ private fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
         }
         item {
-            val subtitle = when {
-                isDebug -> "Disabled in debug builds"
-                updateCheck.isChecking -> "Checking..."
-                updateCheck.error != null -> "Error: ${updateCheck.error}"
-                updateCheck.updateAvailable -> "Update available: ${updateCheck.latestVersion}"
-                updateCheck.latestVersion != null -> "Up to date"
-                else -> "Check for new versions"
+            val (title, subtitle) = when {
+                isDebug -> "Check for Updates" to "Disabled in debug builds"
+                updateCheck.isDownloading -> "Downloading..." to "${updateCheck.downloadProgress}%"
+                updateCheck.isChecking -> "Check for Updates" to "Checking..."
+                updateCheck.error != null -> "Check for Updates" to "Error: ${updateCheck.error}"
+                updateCheck.updateAvailable -> "Install Update" to "Tap to download ${updateCheck.latestVersion}"
+                updateCheck.hasChecked -> "Check for Updates" to "Up to date"
+                else -> "Check for Updates" to "Check for new versions"
             }
             ActionPreference(
                 icon = Icons.Default.Sync,
-                title = "Check for Updates",
+                title = title,
                 subtitle = subtitle,
                 isFocused = uiState.focusedIndex == 3,
-                isEnabled = !isDebug && !updateCheck.isChecking,
-                onClick = { viewModel.checkForUpdates() }
+                isEnabled = !isDebug && !updateCheck.isChecking && !updateCheck.isDownloading,
+                onClick = {
+                    if (updateCheck.updateAvailable) {
+                        viewModel.downloadAndInstallUpdate(context)
+                    } else {
+                        viewModel.checkForUpdates()
+                    }
+                }
             )
         }
     }

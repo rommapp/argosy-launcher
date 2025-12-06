@@ -17,6 +17,9 @@ import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.data.remote.github.UpdateRepository
+import com.nendo.argosy.data.remote.github.UpdateState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
@@ -132,6 +135,14 @@ data class SyncFilterState(
     val syncScreenshotsEnabled: Boolean = false
 )
 
+data class UpdateCheckState(
+    val isChecking: Boolean = false,
+    val updateAvailable: Boolean = false,
+    val latestVersion: String? = null,
+    val downloadUrl: String? = null,
+    val error: String? = null
+)
+
 data class SettingsUiState(
     val currentSection: SettingsSection = SettingsSection.MAIN,
     val focusedIndex: Int = 0,
@@ -145,7 +156,8 @@ data class SettingsUiState(
     val showMigrationDialog: Boolean = false,
     val pendingStoragePath: String? = null,
     val isMigrating: Boolean = false,
-    val appVersion: String = "0.1.0"
+    val appVersion: String = BuildConfig.VERSION_NAME,
+    val updateCheck: UpdateCheckState = UpdateCheckState()
 )
 
 @HiltViewModel
@@ -160,7 +172,8 @@ class SettingsViewModel @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val syncLibraryUseCase: SyncLibraryUseCase,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
-    private val migrateStorageUseCase: MigrateStorageUseCase
+    private val migrateStorageUseCase: MigrateStorageUseCase,
+    private val updateRepository: UpdateRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -483,7 +496,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 SettingsSection.SYNC_FILTERS -> 5
                 SettingsSection.LIBRARY_BREAKDOWN -> (state.collection.platformBreakdowns.size - 1).coerceAtLeast(0)
-                SettingsSection.ABOUT -> 2
+                SettingsSection.ABOUT -> 3
             }
             state.copy(focusedIndex = (state.focusedIndex + delta).coerceIn(0, maxIndex))
         }
@@ -750,6 +763,42 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun checkForUpdates() {
+        if (BuildConfig.DEBUG) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(updateCheck = it.updateCheck.copy(isChecking = true, error = null)) }
+
+            when (val state = updateRepository.checkForUpdates()) {
+                is UpdateState.UpdateAvailable -> {
+                    _uiState.update {
+                        it.copy(
+                            updateCheck = UpdateCheckState(
+                                isChecking = false,
+                                updateAvailable = true,
+                                latestVersion = state.release.tagName,
+                                downloadUrl = state.apkAsset.downloadUrl
+                            )
+                        )
+                    }
+                }
+                is UpdateState.UpToDate -> {
+                    _uiState.update {
+                        it.copy(updateCheck = UpdateCheckState(isChecking = false, updateAvailable = false))
+                    }
+                }
+                is UpdateState.Error -> {
+                    _uiState.update {
+                        it.copy(updateCheck = UpdateCheckState(isChecking = false, error = state.message))
+                    }
+                }
+                else -> {
+                    _uiState.update { it.copy(updateCheck = UpdateCheckState(isChecking = false)) }
+                }
+            }
+        }
+    }
+
     fun startRommConfig() {
         _uiState.update {
             it.copy(
@@ -917,6 +966,11 @@ class SettingsViewModel @Inject constructor(
                     3 -> setExcludePrototype(!state.syncFilter.syncFilters.excludePrototype)
                     4 -> setExcludeDemo(!state.syncFilter.syncFilters.excludeDemo)
                     5 -> setDeleteOrphans(!state.syncFilter.syncFilters.deleteOrphans)
+                }
+            }
+            SettingsSection.ABOUT -> {
+                when (state.focusedIndex) {
+                    3 -> checkForUpdates()
                 }
             }
             else -> {}

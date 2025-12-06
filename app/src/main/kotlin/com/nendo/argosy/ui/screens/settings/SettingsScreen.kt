@@ -174,7 +174,7 @@ fun SettingsScreen(
             SettingsSection.COLLECTION -> CollectionSection(uiState, viewModel, imageCacheProgress)
             SettingsSection.SYNC_FILTERS -> SyncFiltersSection(uiState, viewModel)
             SettingsSection.LIBRARY_BREAKDOWN -> LibraryBreakdownSection(uiState)
-            SettingsSection.ABOUT -> AboutSection(uiState)
+            SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -1055,7 +1055,10 @@ private fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewMode
 }
 
 @Composable
-private fun AboutSection(uiState: SettingsUiState) {
+private fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+    val updateCheck = uiState.updateCheck
+    val isDebug = com.nendo.argosy.BuildConfig.DEBUG
+
     LazyColumn(
         modifier = Modifier.padding(Dimens.spacingMd),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
@@ -1079,6 +1082,24 @@ private fun AboutSection(uiState: SettingsUiState) {
                 title = "Argosy",
                 value = "Emulation-focused launcher for Android handhelds",
                 isFocused = uiState.focusedIndex == 2
+            )
+        }
+        item {
+            val subtitle = when {
+                isDebug -> "Disabled in debug builds"
+                updateCheck.isChecking -> "Checking..."
+                updateCheck.error != null -> "Error: ${updateCheck.error}"
+                updateCheck.updateAvailable -> "Update available: ${updateCheck.latestVersion}"
+                updateCheck.latestVersion != null -> "Up to date"
+                else -> "Check for new versions"
+            }
+            ActionPreference(
+                icon = Icons.Default.Sync,
+                title = "Check for Updates",
+                subtitle = subtitle,
+                isFocused = uiState.focusedIndex == 3,
+                isEnabled = !isDebug && !updateCheck.isChecking,
+                onClick = { viewModel.checkForUpdates() }
             )
         }
     }

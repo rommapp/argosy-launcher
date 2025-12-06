@@ -442,11 +442,9 @@ private fun FilterMenuOverlay(
                 }
             }
 
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
-
             LazyColumn(
                 state = listState,
-                modifier = Modifier.heightIn(max = 280.dp),
+                modifier = Modifier.heightIn(max = 200.dp),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 itemsIndexed(options) { index, option ->
@@ -463,8 +461,6 @@ private fun FilterMenuOverlay(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
             FooterBar(
                 hints = listOf(

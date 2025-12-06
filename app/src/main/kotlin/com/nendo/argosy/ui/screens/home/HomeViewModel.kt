@@ -72,7 +72,6 @@ data class HomeUiState(
     val favoriteGames: List<HomeGameUi> = emptyList(),
     val currentRow: HomeRow = HomeRow.Continue,
     val isLoading: Boolean = true,
-    val isSyncing: Boolean = false,
     val showGameMenu: Boolean = false,
     val gameMenuFocusIndex: Int = 0
 ) {
@@ -392,11 +391,9 @@ class HomeViewModel @Inject constructor(
     fun syncFromRomm() {
         viewModelScope.launch {
             Log.d(TAG, "syncFromRomm: starting")
-            _uiState.update { it.copy(isSyncing = true) }
             romMRepository.initialize()
             if (!romMRepository.isConnected()) {
                 Log.d(TAG, "syncFromRomm: not connected")
-                _uiState.update { it.copy(isSyncing = false) }
                 showError("RomM not connected")
                 return@launch
             }
@@ -405,7 +402,6 @@ class HomeViewModel @Inject constructor(
             when (val summary = romMRepository.getLibrarySummary()) {
                 is RomMResult.Error -> {
                     Log.e(TAG, "syncFromRomm: summary error: ${summary.message}")
-                    _uiState.update { it.copy(isSyncing = false) }
                     showError(summary.message)
                     return@launch
                 }
@@ -432,7 +428,6 @@ class HomeViewModel @Inject constructor(
                             }
 
                             Log.d(TAG, "syncFromRomm: syncLibrary returned - added=${result.gamesAdded}, updated=${result.gamesUpdated}, errors=${result.errors}")
-                            _uiState.update { it.copy(isSyncing = false) }
 
                             if (result.errors.isEmpty()) {
                                 Log.d(TAG, "syncFromRomm: completing with success")
@@ -455,7 +450,6 @@ class HomeViewModel @Inject constructor(
                     } catch (e: Exception) {
                         Log.e(TAG, "syncFromRomm: exception", e)
                         withContext(NonCancellable) {
-                            _uiState.update { it.copy(isSyncing = false) }
                             notificationManager.completePersistent(
                                 key = "romm-sync",
                                 title = "Sync failed",

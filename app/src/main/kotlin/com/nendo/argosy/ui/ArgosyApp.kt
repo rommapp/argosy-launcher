@@ -38,6 +38,7 @@ fun ArgosyApp(
 
     val uiState by viewModel.uiState.collectAsState()
     val drawerFocusIndex by viewModel.drawerFocusIndex.collectAsState()
+    val drawerUiState by viewModel.drawerState.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -102,6 +103,7 @@ fun ArgosyApp(
                         items = viewModel.drawerItems,
                         currentRoute = currentRoute,
                         focusedIndex = drawerFocusIndex,
+                        drawerState = drawerUiState,
                         onNavigate = { route ->
                             scope.launch { drawerState.close() }
                             if (route != currentRoute) {

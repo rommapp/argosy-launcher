@@ -2,7 +2,9 @@ package com.nendo.argosy.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.HapticFeedbackManager
@@ -15,16 +17,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class ALauncherUiState(
+data class ArgosyUiState(
     val isFirstRun: Boolean = true,
     val isLoading: Boolean = true,
     val nintendoButtonLayout: Boolean = false
+)
+
+data class DrawerState(
+    val rommConnected: Boolean = false,
+    val rommConnecting: Boolean = false,
+    val downloadCount: Int = 0
 )
 
 data class DrawerItem(
@@ -39,7 +48,9 @@ class ArgosyViewModel @Inject constructor(
     val hapticManager: HapticFeedbackManager,
     val notificationManager: NotificationManager,
     downloadNotificationObserver: DownloadNotificationObserver,
-    private val gameRepository: GameRepository
+    private val gameRepository: GameRepository,
+    romMRepository: RomMRepository,
+    downloadManager: DownloadManager
 ) : ViewModel() {
 
     init {
@@ -56,9 +67,9 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<ALauncherUiState> = preferencesRepository.userPreferences
+    val uiState: StateFlow<ArgosyUiState> = preferencesRepository.userPreferences
         .map { prefs ->
-            ALauncherUiState(
+            ArgosyUiState(
                 isFirstRun = !prefs.firstRunComplete,
                 isLoading = false,
                 nintendoButtonLayout = prefs.nintendoButtonLayout
@@ -67,8 +78,24 @@ class ArgosyViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ALauncherUiState()
+            initialValue = ArgosyUiState()
         )
+
+    val drawerState: StateFlow<DrawerState> = combine(
+        romMRepository.connectionState,
+        downloadManager.state
+    ) { connection, downloads ->
+        val downloadCount = (if (downloads.activeDownload != null) 1 else 0) + downloads.queue.size
+        DrawerState(
+            rommConnected = connection is RomMRepository.ConnectionState.Connected,
+            rommConnecting = connection is RomMRepository.ConnectionState.Connecting,
+            downloadCount = downloadCount
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = DrawerState()
+    )
 
     val drawerItems = listOf(
         DrawerItem(Screen.Home.route, "Home"),

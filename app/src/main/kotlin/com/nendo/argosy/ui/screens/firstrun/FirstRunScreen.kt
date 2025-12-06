@@ -1,5 +1,11 @@
 package com.nendo.argosy.ui.screens.firstrun
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Environment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -30,10 +36,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +54,29 @@ fun FirstRunScreen(
     viewModel: FirstRunViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            val filePath = getFilePathFromUri(context, it)
+            if (filePath != null) {
+                viewModel.setStoragePath(filePath)
+            }
+        }
+    }
+
+    LaunchedEffect(uiState.launchFolderPicker) {
+        if (uiState.launchFolderPicker) {
+            folderPickerLauncher.launch(null)
+            viewModel.clearFolderPickerFlag()
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -86,9 +117,9 @@ fun FirstRunScreen(
                 )
                 FirstRunStep.ROM_PATH -> RomPathStep(
                     currentPath = uiState.romStoragePath,
-                    onPathChange = viewModel::setRomStoragePath,
-                    onUseDefault = { viewModel.nextStep() },
-                    onChooseFolder = { viewModel.chooseFolder() }
+                    folderSelected = uiState.folderSelected,
+                    onChooseFolder = { viewModel.openFolderPicker() },
+                    onContinue = { viewModel.proceedFromRomPath() }
                 )
                 FirstRunStep.COMPLETE -> CompleteStep(
                     rommConnected = !uiState.skippedRomm,
@@ -112,7 +143,7 @@ private fun WelcomeStep(onGetStarted: () -> Unit) {
         modifier = Modifier.padding(32.dp)
     ) {
         Text(
-            text = "A-LAUNCHER",
+            text = "ARGOSY",
             style = MaterialTheme.typography.displayMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -281,10 +312,10 @@ private fun RommSuccessStep(
 
 @Composable
 private fun RomPathStep(
-    currentPath: String,
-    onPathChange: (String) -> Unit,
-    onUseDefault: () -> Unit,
-    onChooseFolder: () -> Unit
+    currentPath: String?,
+    folderSelected: Boolean,
+    onChooseFolder: () -> Unit,
+    onContinue: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -293,45 +324,76 @@ private fun RomPathStep(
         StepHeader(step = 2, title = "Select ROM Storage Folder")
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "This is where your game files will be stored. We'll automatically create subfolders for each console when syncing.",
+            text = "Choose where your game files will be stored. This grants the app permission to read and write to that folder.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(16.dp)
+        if (folderSelected && currentPath != null) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                modifier = Modifier.fillMaxWidth(0.8f)
             ) {
-                Icon(Icons.Default.Folder, contentDescription = null)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = currentPath,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = currentPath,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(onClick = onUseDefault) {
-            Text("Use This Location")
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(onClick = onChooseFolder) {
-            Text("Choose Different Folder")
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onContinue) {
+                Text("Continue")
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(onClick = onChooseFolder) {
+                Text("Choose Different Folder")
+            }
+        } else {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                modifier = Modifier.fillMaxWidth(0.8f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Folder, contentDescription = null)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "No folder selected",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onChooseFolder) {
+                Icon(Icons.Default.Folder, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Choose Folder")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "You can set per-system folders later in Settings.",
+            text = "We'll create subfolders for each console automatically.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -404,5 +466,28 @@ private fun StepHeader(step: Int, title: String) {
             text = title,
             style = MaterialTheme.typography.headlineSmall
         )
+    }
+}
+
+@Suppress("UNUSED_PARAMETER")
+private fun getFilePathFromUri(context: Context, uri: Uri): String? {
+    val rawPath = uri.path ?: return null
+    val path = Uri.decode(rawPath)
+
+    val treePath = path.substringAfter("/tree/", "")
+    if (treePath.isEmpty()) return null
+
+    return when {
+        treePath.startsWith("primary:") -> {
+            val relativePath = treePath.removePrefix("primary:")
+            "${Environment.getExternalStorageDirectory().absolutePath}/$relativePath"
+        }
+        treePath.contains(":") -> {
+            val parts = treePath.split(":", limit = 2)
+            if (parts.size == 2) {
+                "/storage/${parts[0]}/${parts[1]}"
+            } else null
+        }
+        else -> null
     }
 }

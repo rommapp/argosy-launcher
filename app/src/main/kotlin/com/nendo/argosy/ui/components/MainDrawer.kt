@@ -4,21 +4,23 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -37,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.DrawerItem
+import com.nendo.argosy.ui.DrawerState
 import com.nendo.argosy.ui.navigation.Screen
 
 @Composable
@@ -44,20 +47,12 @@ fun MainDrawer(
     items: List<DrawerItem>,
     currentRoute: String?,
     focusedIndex: Int,
+    drawerState: DrawerState,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ModalDrawerSheet(modifier = modifier) {
         Column(modifier = Modifier.padding(vertical = 24.dp)) {
-            Text(
-                text = "A-LAUNCHER",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             items.forEachIndexed { index, item ->
                 if (index == items.lastIndex) {
                     HorizontalDivider(
@@ -66,15 +61,48 @@ fun MainDrawer(
                     )
                 }
 
+                val badge = if (item.route == Screen.Downloads.route && drawerState.downloadCount > 0) {
+                    drawerState.downloadCount
+                } else null
+
                 DrawerMenuItem(
                     item = item,
                     icon = getIconForRoute(item.route),
                     isFocused = index == focusedIndex,
                     isSelected = currentRoute == item.route,
+                    badge = badge,
                     onClick = { onNavigate(item.route) }
                 )
             }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            RomMStatusFooter(isConnected = drawerState.rommConnected)
         }
+    }
+}
+
+@Composable
+private fun RomMStatusFooter(isConnected: Boolean) {
+    val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = if (isConnected) Icons.Default.Cloud else Icons.Default.CloudOff,
+            contentDescription = null,
+            tint = mutedColor,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = if (isConnected) "Connected" else "Offline",
+            style = MaterialTheme.typography.labelSmall,
+            color = mutedColor
+        )
     }
 }
 
@@ -84,6 +112,7 @@ private fun DrawerMenuItem(
     icon: ImageVector,
     isFocused: Boolean,
     isSelected: Boolean,
+    badge: Int? = null,
     onClick: () -> Unit
 ) {
     val animSpec = spring<Color>(stiffness = 500f)
@@ -143,8 +172,24 @@ private fun DrawerMenuItem(
         Text(
             text = item.label,
             style = MaterialTheme.typography.titleMedium,
-            color = contentColor
+            color = contentColor,
+            modifier = Modifier.weight(1f)
         )
+        if (badge != null) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = badge.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
     }
 }
 

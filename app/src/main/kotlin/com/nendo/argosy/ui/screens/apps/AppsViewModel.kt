@@ -41,7 +41,7 @@ enum class AppContextMenuItem {
 data class AppsUiState(
     val apps: List<AppUi> = emptyList(),
     val focusedIndex: Int = 0,
-    val columnsCount: Int = 6,
+    val columnsCount: Int = 5,
     val isLoading: Boolean = true,
     val showHiddenApps: Boolean = false,
     val showContextMenu: Boolean = false,

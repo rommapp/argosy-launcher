@@ -31,7 +31,9 @@ data class FirstRunUiState(
     val connectionError: String? = null,
     val rommGameCount: Int = 0,
     val rommPlatformCount: Int = 0,
-    val romStoragePath: String = "/storage/emulated/0/ROMs",
+    val romStoragePath: String? = null,
+    val folderSelected: Boolean = false,
+    val launchFolderPicker: Boolean = false,
     val skippedRomm: Boolean = false
 )
 
@@ -149,17 +151,34 @@ class FirstRunViewModel @Inject constructor(
         }
     }
 
-    fun setRomStoragePath(path: String) {
-        _uiState.update { it.copy(romStoragePath = path) }
+    fun openFolderPicker() {
+        _uiState.update { it.copy(launchFolderPicker = true) }
     }
 
-    fun chooseFolder() {
-        // TODO: Launch SAF folder picker - requires Activity integration
+    fun clearFolderPickerFlag() {
+        _uiState.update { it.copy(launchFolderPicker = false) }
+    }
+
+    fun setStoragePath(path: String) {
+        _uiState.update {
+            it.copy(
+                romStoragePath = path,
+                folderSelected = true
+            )
+        }
+    }
+
+    fun proceedFromRomPath() {
+        if (_uiState.value.folderSelected) {
+            nextStep()
+        }
     }
 
     fun completeSetup() {
         viewModelScope.launch {
-            preferencesRepository.setRomStoragePath(_uiState.value.romStoragePath)
+            _uiState.value.romStoragePath?.let { path ->
+                preferencesRepository.setRomStoragePath(path)
+            }
             preferencesRepository.setFirstRunComplete()
         }
     }

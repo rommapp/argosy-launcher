@@ -1059,7 +1059,7 @@ private fun AboutSection(uiState: SettingsUiState) {
         }
         item {
             InfoPreference(
-                title = "A-Launcher",
+                title = "Argosy",
                 value = "Emulation-focused launcher for Android handhelds",
                 isFocused = uiState.focusedIndex == 2
             )

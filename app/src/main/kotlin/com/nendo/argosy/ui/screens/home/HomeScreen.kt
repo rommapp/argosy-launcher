@@ -213,32 +213,6 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        if (uiState.isSyncing) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 80.dp)
-                    .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                    Text(
-                        text = "Syncing library...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
-                    )
-                }
-            }
-        }
-
         AnimatedVisibility(
             visible = uiState.showGameMenu,
             enter = fadeIn(),

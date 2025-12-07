@@ -85,8 +85,8 @@ class GamepadInputHandler @Inject constructor(
         KeyEvent.KEYCODE_ESCAPE,
         KeyEvent.KEYCODE_BACK -> GamepadEvent.Back
 
-        KeyEvent.KEYCODE_BUTTON_X -> if (nintendoLayout) GamepadEvent.ContextMenu else GamepadEvent.SecondaryAction
-        KeyEvent.KEYCODE_BUTTON_Y -> if (nintendoLayout) GamepadEvent.SecondaryAction else GamepadEvent.ContextMenu
+        KeyEvent.KEYCODE_BUTTON_X -> if (nintendoLayout) GamepadEvent.SecondaryAction else GamepadEvent.ContextMenu
+        KeyEvent.KEYCODE_BUTTON_Y -> if (nintendoLayout) GamepadEvent.ContextMenu else GamepadEvent.SecondaryAction
 
         KeyEvent.KEYCODE_BUTTON_L1 -> GamepadEvent.PrevSection
         KeyEvent.KEYCODE_BUTTON_R1 -> GamepadEvent.NextSection

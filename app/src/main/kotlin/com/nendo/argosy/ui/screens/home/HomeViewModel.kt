@@ -580,5 +580,17 @@ class HomeViewModel @Inject constructor(
             }
             return true
         }
+
+        override fun onSecondaryAction(): Boolean {
+            val game = _uiState.value.focusedGame ?: return false
+            toggleFavorite(game.id)
+            return true
+        }
+
+        override fun onContextMenu(): Boolean {
+            val game = _uiState.value.focusedGame ?: return false
+            onGameSelect(game.id)
+            return true
+        }
     }
 }

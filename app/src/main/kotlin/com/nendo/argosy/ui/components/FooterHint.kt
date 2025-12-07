@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -141,6 +142,38 @@ fun FooterBar(
                 FooterHint(button = button, action = action)
             }
             trailingContent?.invoke()
+        }
+    }
+}
+
+@Composable
+fun SubtleFooterBar(
+    hints: List<Pair<InputButton, String>>,
+    modifier: Modifier = Modifier
+) {
+    val dpadHints = hints.filter { it.first.category() == HintCategory.DPAD }
+    val faceHints = hints.filter { it.first.category() == HintCategory.FACE }
+        .sortedBy { it.first.faceButtonPriority() }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.4f))
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)) {
+            dpadHints.forEach { (button, action) ->
+                FooterHint(button = button, action = action)
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)) {
+            faceHints.forEach { (button, action) ->
+                FooterHint(button = button, action = action)
+            }
         }
     }
 }

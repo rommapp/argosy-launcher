@@ -66,7 +66,9 @@ import coil.size.Size
 import com.nendo.argosy.ui.components.FooterHint
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.SubtleFooterBar
 import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
 @Composable
@@ -213,7 +215,21 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            val focusedGame = uiState.focusedGame
+            if (focusedGame != null && !uiState.showGameMenu) {
+                SubtleFooterBar(
+                    hints = listOf(
+                        InputButton.DPAD_HORIZONTAL to "Game",
+                        InputButton.DPAD_VERTICAL to "Platform",
+                        InputButton.A to if (focusedGame.isDownloaded) "Play" else "Download",
+                        InputButton.Y to if (focusedGame.isFavorite) "Unfavorite" else "Favorite",
+                        InputButton.X to "Details"
+                    ),
+                    modifier = Modifier.padding(top = Dimens.spacingSm)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
 
         AnimatedVisibility(

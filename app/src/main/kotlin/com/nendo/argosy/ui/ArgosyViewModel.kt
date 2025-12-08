@@ -81,6 +81,16 @@ class ArgosyViewModel @Inject constructor(
             val invalidated = gameRepository.validateLocalFiles()
             if (invalidated > 0) {
                 android.util.Log.d("ArgosyViewModel", "Startup validation: $invalidated games had missing files")
+                recoverDownloadPaths()
+            }
+        }
+    }
+
+    private fun recoverDownloadPaths() {
+        viewModelScope.launch {
+            val recovered = gameRepository.recoverDownloadPaths()
+            if (recovered > 0) {
+                android.util.Log.d("ArgosyViewModel", "Download recovery: $recovered paths recovered")
             }
         }
     }

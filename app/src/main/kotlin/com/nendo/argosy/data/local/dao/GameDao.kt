@@ -107,6 +107,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE localPath IS NOT NULL")
     suspend fun getGamesWithLocalPath(): List<GameEntity>
 
+    @Query("SELECT * FROM games WHERE rommId IS NOT NULL AND localPath IS NULL")
+    suspend fun getGamesWithRommIdButNoPath(): List<GameEntity>
+
     @Query("SELECT * FROM games WHERE source = :source")
     suspend fun getBySource(source: GameSource): List<GameEntity>
 

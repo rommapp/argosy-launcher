@@ -1,13 +1,22 @@
 package com.nendo.argosy.data.repository
 
+import android.content.Context
+import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.remote.romm.RomMResult
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "GameRepository"
 
 data class PlatformStats(
     val platformId: String,
@@ -19,9 +28,55 @@ data class PlatformStats(
 
 @Singleton
 class GameRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
-    private val platformDao: PlatformDao
+    private val platformDao: PlatformDao,
+    private val romMRepository: RomMRepository,
+    private val preferencesRepository: UserPreferencesRepository
 ) {
+    private val defaultDownloadDir: File by lazy {
+        File(context.getExternalFilesDir(null), "downloads")
+    }
+
+    private suspend fun getDownloadDir(): File {
+        val prefs = preferencesRepository.userPreferences.first()
+        val customPath = prefs.romStoragePath
+        return if (customPath != null) File(customPath) else defaultDownloadDir
+    }
+
+    suspend fun recoverDownloadPaths(): Int = withContext(Dispatchers.IO) {
+        val gamesWithoutPath = gameDao.getGamesWithRommIdButNoPath()
+        if (gamesWithoutPath.isEmpty()) return@withContext 0
+
+        val downloadDir = getDownloadDir()
+        var recovered = 0
+
+        for (game in gamesWithoutPath) {
+            val rommId = game.rommId ?: continue
+
+            when (val result = romMRepository.getRom(rommId)) {
+                is RomMResult.Success -> {
+                    val rom = result.data
+                    val fileName = rom.fileName ?: continue
+                    val platformSlug = rom.platformSlug
+
+                    val expectedFile = File(downloadDir, "$platformSlug/$fileName")
+                    if (expectedFile.exists()) {
+                        gameDao.updateLocalPath(game.id, expectedFile.absolutePath, GameSource.ROMM_SYNCED)
+                        recovered++
+                        Log.d(TAG, "Recovered download path for: ${game.title}")
+                    }
+                }
+                is RomMResult.Error -> {
+                    Log.w(TAG, "Failed to get ROM info for ${game.title}: ${result.message}")
+                }
+            }
+        }
+
+        Log.d(TAG, "Download recovery complete: $recovered paths recovered")
+        recovered
+    }
+
     suspend fun validateLocalFiles(): Int = withContext(Dispatchers.IO) {
         val gamesWithPaths = gameDao.getGamesWithLocalPath()
         var invalidated = 0

@@ -5,9 +5,9 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,7 +32,7 @@ class GamepadInputHandler @Inject constructor(
     preferencesRepository: UserPreferencesRepository
 ) {
 
-    private val _events = Channel<GamepadEvent>(capacity = Channel.BUFFERED)
+    private val _events = MutableSharedFlow<GamepadEvent>(extraBufferCapacity = 16)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var nintendoLayout = false
@@ -47,7 +47,7 @@ class GamepadInputHandler @Inject constructor(
         }
     }
 
-    fun eventFlow(): Flow<GamepadEvent> = _events.receiveAsFlow()
+    fun eventFlow(): Flow<GamepadEvent> = _events.asSharedFlow()
 
     private var lastKeyTime = 0L
     private var lastKeyCode = 0
@@ -67,7 +67,7 @@ class GamepadInputHandler @Inject constructor(
         lastKeyCode = event.keyCode
 
         val gamepadEvent = mapKeyToEvent(event.keyCode) ?: return false
-        _events.trySend(gamepadEvent)
+        _events.tryEmit(gamepadEvent)
         return true
     }
 

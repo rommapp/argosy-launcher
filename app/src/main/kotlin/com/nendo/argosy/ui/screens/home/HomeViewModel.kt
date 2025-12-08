@@ -356,13 +356,14 @@ class HomeViewModel @Inject constructor(
         val nextRow = rows[nextIdx]
         val savedIndex = rowGameIndexes[nextRow] ?: 0
 
-        _uiState.update { it.copy(currentRow = nextRow, focusedGameIndex = savedIndex) }
-
         if (nextRow is HomeRow.Platform) {
+            _uiState.update { it.copy(currentRow = nextRow, focusedGameIndex = savedIndex, platformItems = emptyList()) }
             val platform = state.platforms.getOrNull(nextRow.index)
             if (platform != null) {
                 loadGamesForPlatform(platform.id, nextRow.index, useSavedIndex = true)
             }
+        } else {
+            _uiState.update { it.copy(currentRow = nextRow, focusedGameIndex = savedIndex) }
         }
     }
 
@@ -378,13 +379,14 @@ class HomeViewModel @Inject constructor(
         val prevRow = rows[prevIdx]
         val savedIndex = rowGameIndexes[prevRow] ?: 0
 
-        _uiState.update { it.copy(currentRow = prevRow, focusedGameIndex = savedIndex) }
-
         if (prevRow is HomeRow.Platform) {
+            _uiState.update { it.copy(currentRow = prevRow, focusedGameIndex = savedIndex, platformItems = emptyList()) }
             val platform = state.platforms.getOrNull(prevRow.index)
             if (platform != null) {
                 loadGamesForPlatform(platform.id, prevRow.index, useSavedIndex = true)
             }
+        } else {
+            _uiState.update { it.copy(currentRow = prevRow, focusedGameIndex = savedIndex) }
         }
     }
 

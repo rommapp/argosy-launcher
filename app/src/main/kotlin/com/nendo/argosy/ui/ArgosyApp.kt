@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -72,18 +73,23 @@ fun ArgosyApp(
     }
 
     var isFirstDrawerEffect by remember { mutableStateOf(true) }
-    LaunchedEffect(drawerState.isOpen) {
-        inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
+    LaunchedEffect(drawerState) {
         inputDispatcher.setDrawerOpen(drawerState.isOpen)
-        if (drawerState.isOpen) {
-            val parentRoute = navController.previousBackStackEntry?.destination?.route
-            viewModel.initDrawerFocus(currentRoute, parentRoute)
-            viewModel.onDrawerOpened()
-            viewModel.soundManager.play(SoundType.OPEN_MODAL)
-        } else if (!isFirstDrawerEffect) {
-            viewModel.soundManager.play(SoundType.CLOSE_MODAL)
-        }
-        isFirstDrawerEffect = false
+
+        snapshotFlow { drawerState.isOpen }
+            .collect { isOpen ->
+                inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
+                inputDispatcher.setDrawerOpen(isOpen)
+                if (isOpen) {
+                    val parentRoute = navController.previousBackStackEntry?.destination?.route
+                    viewModel.initDrawerFocus(currentRoute, parentRoute)
+                    viewModel.onDrawerOpened()
+                    viewModel.soundManager.play(SoundType.OPEN_MODAL)
+                } else if (!isFirstDrawerEffect) {
+                    viewModel.soundManager.play(SoundType.CLOSE_MODAL)
+                }
+                isFirstDrawerEffect = false
+            }
     }
 
     val drawerInputHandler = remember(currentRoute) {

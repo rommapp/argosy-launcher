@@ -91,8 +91,8 @@ class GameLauncher @Inject constructor(
         return Intent(emulator.launchAction).apply {
             setDataAndType(uri, getMimeType(romFile))
             setPackage(emulator.packageName)
+            addCategory(Intent.CATEGORY_DEFAULT)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            // Clear existing task to ensure new ROM loads instead of resuming previous game
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
     }
@@ -156,7 +156,8 @@ class GameLauncher @Inject constructor(
                 setPackage(emulator.packageName)
             }
 
-            // Only set data for ACTION_VIEW intents, not for ACTION_MAIN
+            addCategory(Intent.CATEGORY_DEFAULT)
+
             if (emulator.launchAction == Intent.ACTION_VIEW) {
                 val uri = getFileUri(romFile)
                 val mimeType = config.mimeTypeOverride ?: getMimeType(romFile)
@@ -164,7 +165,6 @@ class GameLauncher @Inject constructor(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            // If emulator needs absolute path, add it as extras
             if (config.useAbsolutePath) {
                 putExtra("path", romFile.absolutePath)
                 putExtra("file", romFile.absolutePath)
@@ -181,7 +181,6 @@ class GameLauncher @Inject constructor(
                 putExtra(key, value)
             }
 
-            // Clear existing task and top activities to ensure new ROM loads
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TASK or

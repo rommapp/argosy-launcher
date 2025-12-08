@@ -59,7 +59,7 @@ object EmulatorRegistry {
             packageName = "com.retroarch",
             displayName = "RetroArch",
             supportedPlatforms = setOf(
-                "nes", "snes", "n64", "gb", "gbc", "gba", "nds",
+                "nes", "snes", "n64", "gc", "ngc", "gb", "gbc", "gba", "nds",
                 "genesis", "sms", "gg", "scd", "32x",
                 "psx", "psp",
                 "tg16", "tgcd", "pcfx",
@@ -78,7 +78,7 @@ object EmulatorRegistry {
             packageName = "com.retroarch.aarch64",
             displayName = "RetroArch (64-bit)",
             supportedPlatforms = setOf(
-                "nes", "snes", "n64", "gb", "gbc", "gba", "nds",
+                "nes", "snes", "n64", "gc", "ngc", "gb", "gbc", "gba", "nds",
                 "genesis", "sms", "gg", "scd", "32x",
                 "psx", "psp",
                 "tg16", "tgcd", "pcfx",
@@ -104,7 +104,7 @@ object EmulatorRegistry {
             id = "dolphin",
             packageName = "org.dolphinemu.dolphinemu",
             displayName = "Dolphin",
-            supportedPlatforms = setOf("gc", "wii"),
+            supportedPlatforms = setOf("gc", "ngc", "wii"),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.dolphinemu.dolphinemu"
         ),
         EmulatorDef(
@@ -240,6 +240,10 @@ object EmulatorRegistry {
             packageName = "org.ppsspp.ppsspp",
             displayName = "PPSSPP",
             supportedPlatforms = setOf("psp"),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.ppsspp.ppsspp.PpssppActivity",
+                mimeTypeOverride = "application/octet-stream"
+            ),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.ppsspp.ppsspp"
         ),
         EmulatorDef(
@@ -247,6 +251,10 @@ object EmulatorRegistry {
             packageName = "org.ppsspp.ppssppgold",
             displayName = "PPSSPP Gold",
             supportedPlatforms = setOf("psp"),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.ppsspp.ppssppgold.PpssppActivity",
+                mimeTypeOverride = "application/octet-stream"
+            ),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.ppsspp.ppssppgold"
         ),
         EmulatorDef(
@@ -354,7 +362,8 @@ object EmulatorRegistry {
         "n64" to listOf("mupen64plus_fz", "retroarch", "retroarch_64", "lemuroid"),
         "nds" to listOf("drastic", "melonds", "retroarch", "retroarch_64", "lemuroid"),
         "3ds" to listOf("lime3ds", "citra", "citra_mmj"),
-        "gc" to listOf("dolphin"),
+        "gc" to listOf("dolphin", "retroarch", "retroarch_64"),
+        "ngc" to listOf("dolphin", "retroarch", "retroarch_64"),
         "wii" to listOf("dolphin"),
         "switch" to listOf("citron", "ryujinx", "yuzu", "strato", "eden", "skyline"),
         "gba" to listOf("pizza_boy_gba", "retroarch", "retroarch_64", "lemuroid"),
@@ -388,6 +397,8 @@ object EmulatorRegistry {
         "nes" to "fceumm",
         "snes" to "snes9x",
         "n64" to "mupen64plus_next",
+        "gc" to "dolphin",
+        "ngc" to "dolphin",
         "gb" to "gambatte",
         "gbc" to "gambatte",
         "gba" to "mgba",

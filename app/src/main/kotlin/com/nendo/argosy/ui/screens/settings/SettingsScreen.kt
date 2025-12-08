@@ -92,9 +92,10 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.PlatformPreference
+import androidx.activity.ComponentActivity
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
-import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.SoundPreset
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.theme.Dimens
@@ -126,15 +127,15 @@ fun SettingsScreen(
         }
     }
 
-    val inputDispatcher = LocalInputDispatcher.current
+    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(onBack = onBack)
     }
 
     DisposableEffect(inputHandler) {
-        inputDispatcher.setActiveScreen(inputHandler)
+        argosyViewModel.setScreenHandler(inputHandler)
         onDispose {
-            inputDispatcher.setActiveScreen(null)
+            argosyViewModel.setScreenHandler(null)
         }
     }
 

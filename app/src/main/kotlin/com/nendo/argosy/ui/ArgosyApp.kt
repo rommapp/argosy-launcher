@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -49,7 +48,8 @@ fun ArgosyApp(
 
     val uiState by viewModel.uiState.collectAsState()
     val drawerFocusIndex by viewModel.drawerFocusIndex.collectAsState()
-    val drawerUiState by viewModel.drawerState.collectAsState()
+    val drawerUiState by viewModel.drawerUiState.collectAsState()
+    val isDrawerOpen by viewModel.isDrawerOpen.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -66,19 +66,51 @@ fun ArgosyApp(
         Screen.Home.route
     }
 
+    // Register app-level handler once
+    DisposableEffect(Unit) {
+        inputDispatcher.setActiveScreen(viewModel.appInputHandler)
+        onDispose { inputDispatcher.setActiveScreen(null) }
+    }
+
+    // Set up drawer navigation callback
+    LaunchedEffect(Unit) {
+        viewModel.setDrawerNavigateCallback { route ->
+            scope.launch { drawerState.close() }
+            val current = navController.currentDestination?.route
+            if (route != current) {
+                navController.navigate(route) {
+                    popUpTo(Screen.Home.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
+
+    // Block input during route transitions
     LaunchedEffect(currentRoute) {
         if (currentRoute != null) {
             inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
         }
     }
 
+    // Sync ViewModel drawer state -> Compose drawer animation
+    LaunchedEffect(isDrawerOpen) {
+        if (isDrawerOpen && !drawerState.isOpen) {
+            drawerState.open()
+        } else if (!isDrawerOpen && drawerState.isOpen) {
+            drawerState.close()
+        }
+    }
+
+    // Sync Compose drawer animation -> ViewModel drawer state + handle side effects
     var isFirstDrawerEffect by remember { mutableStateOf(true) }
     LaunchedEffect(drawerState) {
         snapshotFlow { drawerState.isOpen }
-            .collect { isOpen ->
-                viewModel.setDrawerOpen(isOpen)
+            .collect { open ->
+                viewModel.setDrawerOpen(open)
                 inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
-                if (isOpen) {
+                if (open) {
                     val parentRoute = navController.previousBackStackEntry?.destination?.route
                     viewModel.initDrawerFocus(currentRoute, parentRoute)
                     viewModel.onDrawerOpened()
@@ -90,33 +122,12 @@ fun ArgosyApp(
             }
     }
 
-    val drawerInputHandler = remember {
-        viewModel.createDrawerInputHandler(
-            onNavigate = { route ->
-                scope.launch { drawerState.close() }
-                val current = navController.currentDestination?.route
-                if (route != current) {
-                    navController.navigate(route) {
-                        popUpTo(Screen.Home.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            },
-            onDismiss = { scope.launch { drawerState.close() } }
-        )
-    }
-
-    DisposableEffect(drawerInputHandler) {
-        inputDispatcher.setOverlayHandler(drawerInputHandler)
-        onDispose { inputDispatcher.setOverlayHandler(null) }
-    }
-
+    // Collect gamepad events (Menu opens drawer if unhandled)
     LaunchedEffect(Unit) {
         viewModel.gamepadInputHandler.eventFlow().collect { event ->
             val handled = inputDispatcher.dispatch(event)
             if (!handled && event == GamepadEvent.Menu) {
-                scope.launch { drawerState.open() }
+                viewModel.setDrawerOpen(true)
             }
         }
     }
@@ -162,7 +173,7 @@ fun ArgosyApp(
                 NavGraph(
                     navController = navController,
                     startDestination = startDestination,
-                    onDrawerToggle = { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } },
+                    onDrawerToggle = { viewModel.setDrawerOpen(!isDrawerOpen) },
                     modifier = Modifier.blur(contentBlur)
                 )
             }

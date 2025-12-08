@@ -71,11 +71,12 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
+import androidx.activity.ComponentActivity
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.components.FooterHint
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
-import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.launch
@@ -127,7 +128,7 @@ fun HomeScreen(
         }
     }
 
-    val inputDispatcher = LocalInputDispatcher.current
+    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
     val inputHandler = remember(onGameSelect, onDrawerToggle) {
         viewModel.createInputHandler(
             onGameSelect = onGameSelect,
@@ -136,9 +137,9 @@ fun HomeScreen(
     }
 
     DisposableEffect(inputHandler) {
-        inputDispatcher.setActiveScreen(inputHandler)
+        argosyViewModel.setScreenHandler(inputHandler)
         onDispose {
-            inputDispatcher.setActiveScreen(null)
+            argosyViewModel.setScreenHandler(null)
         }
     }
 

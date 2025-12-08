@@ -9,17 +9,11 @@ class InputDispatcher(
     private val soundManager: SoundFeedbackManager? = null
 ) {
     private var activeHandler: InputHandler? = null
-    private var overlayHandler: InputHandler? = null
     private var pendingEvent: GamepadEvent? = null
     private var inputBlockedUntil: Long = 0L
 
     fun setActiveScreen(handler: InputHandler?) {
         activeHandler = handler
-        handler?.let { processPendingEvent() }
-    }
-
-    fun setOverlayHandler(handler: InputHandler?) {
-        overlayHandler = handler
         handler?.let { processPendingEvent() }
     }
 
@@ -37,14 +31,6 @@ class InputDispatcher(
     fun dispatch(event: GamepadEvent): Boolean {
         if (System.currentTimeMillis() < inputBlockedUntil) {
             return true
-        }
-
-        overlayHandler?.let { handler ->
-            val result = dispatchToHandler(event, handler)
-            if (result.handled) {
-                playFeedback(event, result)
-                return true
-            }
         }
 
         val handler = activeHandler

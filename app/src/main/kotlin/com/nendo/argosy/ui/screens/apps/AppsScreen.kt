@@ -54,9 +54,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.ComponentActivity
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
-import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import androidx.compose.animation.core.animateDpAsState
@@ -108,7 +109,7 @@ fun AppsScreen(
         }
     }
 
-    val inputDispatcher = LocalInputDispatcher.current
+    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
     val inputHandler = remember(onDrawerToggle) {
         viewModel.createInputHandler(
             onDrawerToggle = onDrawerToggle,
@@ -117,9 +118,9 @@ fun AppsScreen(
     }
 
     DisposableEffect(inputHandler) {
-        inputDispatcher.setActiveScreen(inputHandler)
+        argosyViewModel.setScreenHandler(inputHandler)
         onDispose {
-            inputDispatcher.setActiveScreen(null)
+            argosyViewModel.setScreenHandler(null)
         }
     }
 

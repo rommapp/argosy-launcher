@@ -69,10 +69,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import androidx.activity.ComponentActivity
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
-import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.flow.collectLatest
 
@@ -106,7 +107,7 @@ fun GameDetailScreen(
         }
     }
 
-    val inputDispatcher = LocalInputDispatcher.current
+    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -123,9 +124,9 @@ fun GameDetailScreen(
     }
 
     DisposableEffect(inputHandler) {
-        inputDispatcher.setActiveScreen(inputHandler)
+        argosyViewModel.setScreenHandler(inputHandler)
         onDispose {
-            inputDispatcher.setActiveScreen(null)
+            argosyViewModel.setScreenHandler(null)
         }
     }
 

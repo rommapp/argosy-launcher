@@ -56,9 +56,10 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.icons.InputIcons
+import androidx.activity.ComponentActivity
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.SourceBadge
-import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
@@ -152,7 +153,7 @@ fun LibraryScreen(
         }
     }
 
-    val inputDispatcher = LocalInputDispatcher.current
+    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
     val inputHandler = remember(onGameSelect, onBack, onDrawerToggle) {
         viewModel.createInputHandler(
             onGameSelect = onGameSelect,
@@ -162,9 +163,9 @@ fun LibraryScreen(
     }
 
     DisposableEffect(inputHandler) {
-        inputDispatcher.setActiveScreen(inputHandler)
+        argosyViewModel.setScreenHandler(inputHandler)
         onDispose {
-            inputDispatcher.setActiveScreen(null)
+            argosyViewModel.setScreenHandler(null)
         }
     }
 

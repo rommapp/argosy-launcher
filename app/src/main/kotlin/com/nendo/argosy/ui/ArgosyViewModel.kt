@@ -11,6 +11,7 @@ import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
+import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.notification.DownloadNotificationObserver
 import com.nendo.argosy.ui.notification.NotificationManager
@@ -118,7 +119,7 @@ class ArgosyViewModel @Inject constructor(
             initialValue = ArgosyUiState()
         )
 
-    val drawerState: StateFlow<DrawerState> = combine(
+    val drawerUiState: StateFlow<DrawerState> = combine(
         romMRepository.connectionState,
         downloadManager.state
     ) { connection, downloads ->
@@ -148,8 +149,16 @@ class ArgosyViewModel @Inject constructor(
     private val _isDrawerOpen = MutableStateFlow(false)
     val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen.asStateFlow()
 
+    private val _screenHandler = MutableStateFlow<InputHandler?>(null)
+
+    private var _onDrawerNavigate: ((String) -> Unit)? = null
+
     fun setDrawerOpen(open: Boolean) {
         _isDrawerOpen.value = open
+    }
+
+    fun setScreenHandler(handler: InputHandler?) {
+        _screenHandler.value = handler
     }
 
     fun initDrawerFocus(currentRoute: String?, parentRoute: String? = null) {
@@ -160,47 +169,118 @@ class ArgosyViewModel @Inject constructor(
         _drawerFocusIndex.value = if (index >= 0) index else 0
     }
 
-    fun createDrawerInputHandler(
-        onNavigate: (String) -> Unit,
-        onDismiss: () -> Unit
-    ): InputHandler = object : InputHandler {
+    fun setDrawerNavigateCallback(callback: (String) -> Unit) {
+        _onDrawerNavigate = callback
+    }
+
+    val appInputHandler: InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
-            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
-            if (_drawerFocusIndex.value > 0) {
-                _drawerFocusIndex.update { it - 1 }
-                return InputResult.HANDLED
+            return if (_isDrawerOpen.value) {
+                if (_drawerFocusIndex.value > 0) {
+                    _drawerFocusIndex.update { it - 1 }
+                    InputResult.HANDLED
+                } else {
+                    InputResult.UNHANDLED
+                }
+            } else {
+                _screenHandler.value?.onUp() ?: InputResult.UNHANDLED
             }
-            return InputResult.UNHANDLED
         }
 
         override fun onDown(): InputResult {
-            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
-            if (_drawerFocusIndex.value < drawerItems.lastIndex) {
-                _drawerFocusIndex.update { it + 1 }
-                return InputResult.HANDLED
+            return if (_isDrawerOpen.value) {
+                if (_drawerFocusIndex.value < drawerItems.lastIndex) {
+                    _drawerFocusIndex.update { it + 1 }
+                    InputResult.HANDLED
+                } else {
+                    InputResult.UNHANDLED
+                }
+            } else {
+                _screenHandler.value?.onDown() ?: InputResult.UNHANDLED
             }
-            return InputResult.UNHANDLED
         }
 
-        override fun onLeft(): InputResult = InputResult.UNHANDLED
-        override fun onRight(): InputResult = InputResult.UNHANDLED
+        override fun onLeft(): InputResult {
+            return if (_isDrawerOpen.value) {
+                InputResult.UNHANDLED
+            } else {
+                _screenHandler.value?.onLeft() ?: InputResult.UNHANDLED
+            }
+        }
+
+        override fun onRight(): InputResult {
+            return if (_isDrawerOpen.value) {
+                InputResult.UNHANDLED
+            } else {
+                _screenHandler.value?.onRight() ?: InputResult.UNHANDLED
+            }
+        }
 
         override fun onConfirm(): InputResult {
-            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
-            onNavigate(drawerItems[_drawerFocusIndex.value].route)
-            return InputResult.HANDLED
+            return if (_isDrawerOpen.value) {
+                _onDrawerNavigate?.invoke(drawerItems[_drawerFocusIndex.value].route)
+                InputResult.HANDLED
+            } else {
+                _screenHandler.value?.onConfirm() ?: InputResult.UNHANDLED
+            }
         }
 
         override fun onBack(): InputResult {
-            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
-            onDismiss()
-            return InputResult.HANDLED
+            return if (_isDrawerOpen.value) {
+                _isDrawerOpen.value = false
+                InputResult.handled(SoundType.CLOSE_MODAL)
+            } else {
+                _screenHandler.value?.onBack() ?: InputResult.UNHANDLED
+            }
         }
 
         override fun onMenu(): InputResult {
-            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
-            onDismiss()
-            return InputResult.HANDLED
+            return if (_isDrawerOpen.value) {
+                _isDrawerOpen.value = false
+                InputResult.handled(SoundType.CLOSE_MODAL)
+            } else {
+                _screenHandler.value?.onMenu() ?: InputResult.UNHANDLED
+            }
+        }
+
+        override fun onSecondaryAction(): InputResult {
+            return if (_isDrawerOpen.value) {
+                InputResult.UNHANDLED
+            } else {
+                _screenHandler.value?.onSecondaryAction() ?: InputResult.UNHANDLED
+            }
+        }
+
+        override fun onContextMenu(): InputResult {
+            return if (_isDrawerOpen.value) {
+                InputResult.UNHANDLED
+            } else {
+                _screenHandler.value?.onContextMenu() ?: InputResult.UNHANDLED
+            }
+        }
+
+        override fun onPrevSection(): InputResult {
+            return if (_isDrawerOpen.value) {
+                InputResult.UNHANDLED
+            } else {
+                _screenHandler.value?.onPrevSection() ?: InputResult.UNHANDLED
+            }
+        }
+
+        override fun onNextSection(): InputResult {
+            return if (_isDrawerOpen.value) {
+                InputResult.UNHANDLED
+            } else {
+                _screenHandler.value?.onNextSection() ?: InputResult.UNHANDLED
+            }
+        }
+
+        override fun onSelect(): InputResult {
+            return if (_isDrawerOpen.value) {
+                InputResult.UNHANDLED
+            } else {
+                _screenHandler.value?.onSelect() ?: InputResult.UNHANDLED
+            }
         }
     }
 

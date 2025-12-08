@@ -76,6 +76,7 @@ fun ArgosyApp(
     LaunchedEffect(drawerState) {
         snapshotFlow { drawerState.isOpen }
             .collect { isOpen ->
+                viewModel.setDrawerOpen(isOpen)
                 inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
                 if (isOpen) {
                     val parentRoute = navController.previousBackStackEntry?.destination?.route
@@ -91,7 +92,6 @@ fun ArgosyApp(
 
     val drawerInputHandler = remember {
         viewModel.createDrawerInputHandler(
-            isDrawerOpen = { drawerState.isOpen },
             onNavigate = { route ->
                 scope.launch { drawerState.close() }
                 val current = navController.currentDestination?.route

@@ -145,6 +145,13 @@ class ArgosyViewModel @Inject constructor(
     private val _drawerFocusIndex = MutableStateFlow(0)
     val drawerFocusIndex: StateFlow<Int> = _drawerFocusIndex.asStateFlow()
 
+    private val _isDrawerOpen = MutableStateFlow(false)
+    val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen.asStateFlow()
+
+    fun setDrawerOpen(open: Boolean) {
+        _isDrawerOpen.value = open
+    }
+
     fun initDrawerFocus(currentRoute: String?, parentRoute: String? = null) {
         var index = drawerItems.indexOfFirst { it.route == currentRoute }
         if (index < 0 && parentRoute != null) {
@@ -154,12 +161,11 @@ class ArgosyViewModel @Inject constructor(
     }
 
     fun createDrawerInputHandler(
-        isDrawerOpen: () -> Boolean,
         onNavigate: (String) -> Unit,
         onDismiss: () -> Unit
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
-            if (!isDrawerOpen()) return InputResult.UNHANDLED
+            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
             if (_drawerFocusIndex.value > 0) {
                 _drawerFocusIndex.update { it - 1 }
                 return InputResult.HANDLED
@@ -168,7 +174,7 @@ class ArgosyViewModel @Inject constructor(
         }
 
         override fun onDown(): InputResult {
-            if (!isDrawerOpen()) return InputResult.UNHANDLED
+            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
             if (_drawerFocusIndex.value < drawerItems.lastIndex) {
                 _drawerFocusIndex.update { it + 1 }
                 return InputResult.HANDLED
@@ -180,19 +186,19 @@ class ArgosyViewModel @Inject constructor(
         override fun onRight(): InputResult = InputResult.UNHANDLED
 
         override fun onConfirm(): InputResult {
-            if (!isDrawerOpen()) return InputResult.UNHANDLED
+            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
             onNavigate(drawerItems[_drawerFocusIndex.value].route)
             return InputResult.HANDLED
         }
 
         override fun onBack(): InputResult {
-            if (!isDrawerOpen()) return InputResult.UNHANDLED
+            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
             onDismiss()
             return InputResult.HANDLED
         }
 
         override fun onMenu(): InputResult {
-            if (!isDrawerOpen()) return InputResult.UNHANDLED
+            if (!_isDrawerOpen.value) return InputResult.UNHANDLED
             onDismiss()
             return InputResult.HANDLED
         }

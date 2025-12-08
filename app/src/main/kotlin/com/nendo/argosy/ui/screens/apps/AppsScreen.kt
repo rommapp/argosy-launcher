@@ -54,8 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.activity.ComponentActivity
-import com.nendo.argosy.ui.ArgosyViewModel
+import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.theme.Dimens
@@ -109,7 +108,7 @@ fun AppsScreen(
         }
     }
 
-    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
+    val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onDrawerToggle) {
         viewModel.createInputHandler(
             onDrawerToggle = onDrawerToggle,
@@ -118,10 +117,8 @@ fun AppsScreen(
     }
 
     DisposableEffect(inputHandler) {
-        argosyViewModel.setScreenHandler(inputHandler)
-        onDispose {
-            argosyViewModel.setScreenHandler(null)
-        }
+        inputDispatcher.subscribeView(inputHandler)
+        onDispose { }
     }
 
     val modalBlur by animateDpAsState(

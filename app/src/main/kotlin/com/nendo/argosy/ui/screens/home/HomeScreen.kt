@@ -71,8 +71,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
-import androidx.activity.ComponentActivity
-import com.nendo.argosy.ui.ArgosyViewModel
+import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.components.FooterHint
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.InputButton
@@ -128,7 +127,7 @@ fun HomeScreen(
         }
     }
 
-    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
+    val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onGameSelect, onDrawerToggle) {
         viewModel.createInputHandler(
             onGameSelect = onGameSelect,
@@ -137,10 +136,8 @@ fun HomeScreen(
     }
 
     DisposableEffect(inputHandler) {
-        argosyViewModel.setScreenHandler(inputHandler)
-        onDispose {
-            argosyViewModel.setScreenHandler(null)
-        }
+        inputDispatcher.subscribeView(inputHandler)
+        onDispose { }
     }
 
     val modalBlur by animateDpAsState(

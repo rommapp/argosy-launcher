@@ -49,8 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadState
-import androidx.activity.ComponentActivity
-import com.nendo.argosy.ui.ArgosyViewModel
+import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 
@@ -60,17 +59,14 @@ fun DownloadsScreen(
     onDrawerToggle: () -> Unit,
     viewModel: DownloadsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
+    val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(onBack = onBack)
     }
 
     DisposableEffect(inputHandler) {
-        argosyViewModel.setScreenHandler(inputHandler)
-        onDispose {
-            argosyViewModel.setScreenHandler(null)
-        }
+        inputDispatcher.subscribeView(inputHandler)
+        onDispose { }
     }
 
     val uiState by viewModel.uiState.collectAsState()

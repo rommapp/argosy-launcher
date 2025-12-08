@@ -56,8 +56,7 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.icons.InputIcons
-import androidx.activity.ComponentActivity
-import com.nendo.argosy.ui.ArgosyViewModel
+import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.SourceBadge
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -153,7 +152,7 @@ fun LibraryScreen(
         }
     }
 
-    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
+    val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onGameSelect, onBack, onDrawerToggle) {
         viewModel.createInputHandler(
             onGameSelect = onGameSelect,
@@ -163,10 +162,8 @@ fun LibraryScreen(
     }
 
     DisposableEffect(inputHandler) {
-        argosyViewModel.setScreenHandler(inputHandler)
-        onDispose {
-            argosyViewModel.setScreenHandler(null)
-        }
+        inputDispatcher.subscribeView(inputHandler)
+        onDispose { }
     }
 
     val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu

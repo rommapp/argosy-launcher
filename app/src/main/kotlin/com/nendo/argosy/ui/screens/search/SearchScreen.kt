@@ -41,8 +41,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import androidx.activity.ComponentActivity
-import com.nendo.argosy.ui.ArgosyViewModel
+import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 
@@ -55,8 +54,7 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
 
-    val context = LocalContext.current
-    val argosyViewModel: ArgosyViewModel = hiltViewModel(context as ComponentActivity)
+    val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onGameSelect, onBack) {
         viewModel.createInputHandler(
             onGameSelect = onGameSelect,
@@ -65,10 +63,8 @@ fun SearchScreen(
     }
 
     DisposableEffect(inputHandler) {
-        argosyViewModel.setScreenHandler(inputHandler)
-        onDispose {
-            argosyViewModel.setScreenHandler(null)
-        }
+        inputDispatcher.subscribeView(inputHandler)
+        onDispose { }
     }
 
     LaunchedEffect(uiState.showKeyboard) {

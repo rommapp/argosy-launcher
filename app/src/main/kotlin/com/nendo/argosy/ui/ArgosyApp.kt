@@ -73,25 +73,22 @@ fun ArgosyApp(
         Screen.Home.route
     }
 
-    // Register app-level handler once
-    DisposableEffect(Unit) {
-        inputDispatcher.setActiveScreen(viewModel.appInputHandler)
-        onDispose { inputDispatcher.setActiveScreen(null) }
-    }
-
-    // Set up drawer navigation callback
-    LaunchedEffect(Unit) {
-        viewModel.setDrawerNavigateCallback { route ->
-            scope.launch { drawerState.close() }
-            val current = navController.currentDestination?.route
-            if (route != current) {
-                navController.navigate(route) {
-                    popUpTo(Screen.Home.route) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
+    // Create drawer input handler
+    val drawerInputHandler = remember {
+        viewModel.createDrawerInputHandler(
+            onNavigate = { route ->
+                scope.launch { drawerState.close() }
+                val current = navController.currentDestination?.route
+                if (route != current) {
+                    navController.navigate(route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
-            }
-        }
+            },
+            onDismiss = { viewModel.setDrawerOpen(false) }
+        )
     }
 
     // Block input during route transitions
@@ -110,15 +107,17 @@ fun ArgosyApp(
         }
     }
 
-    // Handle drawer state change side effects (sound, focus, input blocking)
-    // State sync is handled synchronously by confirmValueChange above
+    // Handle drawer state change: subscribe/unsubscribe handler and side effects
     LaunchedEffect(isDrawerOpen) {
         inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
         if (isDrawerOpen) {
+            inputDispatcher.subscribeDrawer(drawerInputHandler)
             val parentRoute = navController.previousBackStackEntry?.destination?.route
             viewModel.initDrawerFocus(currentRoute, parentRoute)
             viewModel.onDrawerOpened()
             viewModel.soundManager.play(SoundType.OPEN_MODAL)
+        } else {
+            inputDispatcher.unsubscribeDrawer()
         }
     }
 

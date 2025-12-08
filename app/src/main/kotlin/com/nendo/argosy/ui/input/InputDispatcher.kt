@@ -8,13 +8,39 @@ class InputDispatcher(
     private val hapticManager: HapticFeedbackManager? = null,
     private val soundManager: SoundFeedbackManager? = null
 ) {
-    private var activeHandler: InputHandler? = null
+    private val modalStack = mutableListOf<InputHandler>()
+    private var drawerHandler: InputHandler? = null
+    private var viewHandler: InputHandler? = null
     private var pendingEvent: GamepadEvent? = null
     private var inputBlockedUntil: Long = 0L
 
-    fun setActiveScreen(handler: InputHandler?) {
-        activeHandler = handler
-        handler?.let { processPendingEvent() }
+    fun pushModal(handler: InputHandler) {
+        modalStack.add(handler)
+        processPendingEvent()
+    }
+
+    fun popModal() {
+        modalStack.removeLastOrNull()
+    }
+
+    private fun clearModals() {
+        modalStack.clear()
+    }
+
+    fun subscribeDrawer(handler: InputHandler) {
+        clearModals()
+        drawerHandler = handler
+        processPendingEvent()
+    }
+
+    fun unsubscribeDrawer() {
+        drawerHandler = null
+    }
+
+    fun subscribeView(handler: InputHandler) {
+        clearModals()
+        viewHandler = handler
+        processPendingEvent()
     }
 
     private fun processPendingEvent() {
@@ -33,7 +59,7 @@ class InputDispatcher(
             return true
         }
 
-        val handler = activeHandler
+        val handler = modalStack.lastOrNull() ?: drawerHandler ?: viewHandler
         if (handler == null) {
             pendingEvent = event
             return false

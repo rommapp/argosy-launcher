@@ -1,7 +1,13 @@
 package com.nendo.argosy.data.repository
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.UserManager
 import android.util.Log
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.model.GameSource
@@ -44,6 +50,50 @@ class GameRepository @Inject constructor(
         return if (customPath != null) File(customPath) else defaultDownloadDir
     }
 
+    private fun isUserUnlocked(): Boolean {
+        val userManager = context.getSystemService(Context.USER_SERVICE) as UserManager
+        return userManager.isUserUnlocked
+    }
+
+    suspend fun awaitUserUnlocked() {
+        if (isUserUnlocked()) {
+            Log.d(TAG, "Device already unlocked, proceeding immediately")
+            return
+        }
+
+        Log.d(TAG, "Device not unlocked, waiting for ACTION_USER_UNLOCKED")
+        suspendCancellableCoroutine { continuation ->
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(ctx: Context?, intent: Intent?) {
+                    Log.d(TAG, "Received ACTION_USER_UNLOCKED")
+                    context.unregisterReceiver(this)
+                    continuation.resume(Unit)
+                }
+            }
+            context.registerReceiver(receiver, IntentFilter(Intent.ACTION_USER_UNLOCKED))
+            continuation.invokeOnCancellation {
+                try {
+                    context.unregisterReceiver(receiver)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    suspend fun validateLocalFiles(): Int = withContext(Dispatchers.IO) {
+
+        val gamesWithPaths = gameDao.getGamesWithLocalPath()
+        var invalidated = 0
+        gamesWithPaths.forEach { game ->
+            game.localPath?.let { path ->
+                if (!File(path).exists()) {
+                    gameDao.clearLocalPath(game.id)
+                    invalidated++
+                }
+            }
+        }
+        invalidated
+    }
+
     suspend fun recoverDownloadPaths(): Int = withContext(Dispatchers.IO) {
         val gamesWithoutPath = gameDao.getGamesWithRommIdButNoPath()
         if (gamesWithoutPath.isEmpty()) return@withContext 0
@@ -77,28 +127,10 @@ class GameRepository @Inject constructor(
         recovered
     }
 
-    suspend fun validateLocalFiles(): Int = withContext(Dispatchers.IO) {
-        val gamesWithPaths = gameDao.getGamesWithLocalPath()
-        var invalidated = 0
-        gamesWithPaths.forEach { game ->
-            game.localPath?.let { path ->
-                if (!File(path).exists()) {
-                    gameDao.clearLocalPath(game.id)
-                    invalidated++
-                }
-            }
-        }
-        invalidated
-    }
-
-    suspend fun validateGameFile(gameId: Long): Boolean = withContext(Dispatchers.IO) {
+    suspend fun checkGameFileExists(gameId: Long): Boolean = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext false
         val path = game.localPath ?: return@withContext false
-        if (!File(path).exists()) {
-            gameDao.clearLocalPath(gameId)
-            return@withContext false
-        }
-        true
+        File(path).exists()
     }
 
     suspend fun getDownloadedGamesSize(): Long = withContext(Dispatchers.IO) {

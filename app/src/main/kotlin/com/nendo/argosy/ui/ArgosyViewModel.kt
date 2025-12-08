@@ -59,9 +59,25 @@ class ArgosyViewModel @Inject constructor(
 
     init {
         downloadNotificationObserver.observe(viewModelScope)
-        validateLocalFilesAtStartup()
+        scheduleDownloadValidation()
         observeFeedbackSettings(preferencesRepository)
         downloadManager.clearCompleted()
+    }
+
+    private fun scheduleDownloadValidation() {
+        viewModelScope.launch {
+            gameRepository.awaitUserUnlocked()
+            validateAndRecoverDownloads()
+        }
+    }
+
+    private suspend fun validateAndRecoverDownloads() {
+        val invalidated = gameRepository.validateLocalFiles()
+        if (invalidated > 0) {
+            android.util.Log.d("ArgosyViewModel", "Validation: $invalidated games had missing files, attempting recovery")
+            val recovered = gameRepository.recoverDownloadPaths()
+            android.util.Log.d("ArgosyViewModel", "Recovery: $recovered paths restored")
+        }
     }
 
     private fun observeFeedbackSettings(preferencesRepository: UserPreferencesRepository) {
@@ -72,25 +88,6 @@ class ArgosyViewModel @Inject constructor(
                 soundManager.setEnabled(prefs.soundEnabled)
                 soundManager.setVolume(prefs.soundVolume)
                 soundManager.setSoundConfigs(prefs.soundConfigs)
-            }
-        }
-    }
-
-    private fun validateLocalFilesAtStartup() {
-        viewModelScope.launch {
-            val invalidated = gameRepository.validateLocalFiles()
-            if (invalidated > 0) {
-                android.util.Log.d("ArgosyViewModel", "Startup validation: $invalidated games had missing files")
-                recoverDownloadPaths()
-            }
-        }
-    }
-
-    private fun recoverDownloadPaths() {
-        viewModelScope.launch {
-            val recovered = gameRepository.recoverDownloadPaths()
-            if (recovered > 0) {
-                android.util.Log.d("ArgosyViewModel", "Download recovery: $recovered paths recovered")
             }
         }
     }

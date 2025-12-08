@@ -194,7 +194,7 @@ class GameDetailViewModel @Inject constructor(
             val emulatorName = emulatorConfig?.displayName
                 ?: emulatorDetector.getPreferredEmulator(game.platformId)?.def?.displayName
 
-            val fileExists = gameRepository.validateGameFile(gameId)
+            val fileExists = gameRepository.checkGameFileExists(gameId)
 
             val canPlay = fileExists && emulatorDetector.hasAnyEmulator(game.platformId)
 

@@ -12,9 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -36,6 +34,7 @@ import com.nendo.argosy.ui.navigation.NavGraph
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.notification.NotificationHost
 import com.nendo.argosy.ui.theme.Motion
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 @Composable
@@ -104,9 +103,10 @@ fun ArgosyApp(
     }
 
     // Sync Compose drawer animation -> ViewModel drawer state + handle side effects
-    var isFirstDrawerEffect by remember { mutableStateOf(true) }
+    // drop(1) skips initial emission to prevent overwriting ViewModel state on Activity recreation
     LaunchedEffect(drawerState) {
         snapshotFlow { drawerState.isOpen }
+            .drop(1)
             .collect { open ->
                 viewModel.setDrawerOpen(open)
                 inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
@@ -115,10 +115,9 @@ fun ArgosyApp(
                     viewModel.initDrawerFocus(currentRoute, parentRoute)
                     viewModel.onDrawerOpened()
                     viewModel.soundManager.play(SoundType.OPEN_MODAL)
-                } else if (!isFirstDrawerEffect) {
+                } else {
                     viewModel.soundManager.play(SoundType.CLOSE_MODAL)
                 }
-                isFirstDrawerEffect = false
             }
     }
 

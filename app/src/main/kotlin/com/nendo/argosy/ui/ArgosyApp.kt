@@ -14,7 +14,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -34,7 +33,6 @@ import com.nendo.argosy.ui.navigation.NavGraph
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.notification.NotificationHost
 import com.nendo.argosy.ui.theme.Motion
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 @Composable
@@ -49,8 +47,18 @@ fun ArgosyApp(
     val drawerFocusIndex by viewModel.drawerFocusIndex.collectAsState()
     val drawerUiState by viewModel.drawerUiState.collectAsState()
     val isDrawerOpen by viewModel.isDrawerOpen.collectAsState()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // Drawer state with synchronous ViewModel sync via confirmStateChange
+    // This ensures _isDrawerOpen is ALWAYS correct before any input is processed
+    val drawerState = rememberDrawerState(
+        initialValue = DrawerValue.Closed,
+        confirmStateChange = { newValue ->
+            val newOpen = newValue == DrawerValue.Open
+            viewModel.setDrawerOpen(newOpen)
+            true
+        }
+    )
 
     val inputDispatcher = remember {
         InputDispatcher(
@@ -102,23 +110,16 @@ fun ArgosyApp(
         }
     }
 
-    // Sync Compose drawer animation -> ViewModel drawer state + handle side effects
-    // drop(1) skips initial emission to prevent overwriting ViewModel state on Activity recreation
-    LaunchedEffect(drawerState) {
-        snapshotFlow { drawerState.isOpen }
-            .drop(1)
-            .collect { open ->
-                viewModel.setDrawerOpen(open)
-                inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
-                if (open) {
-                    val parentRoute = navController.previousBackStackEntry?.destination?.route
-                    viewModel.initDrawerFocus(currentRoute, parentRoute)
-                    viewModel.onDrawerOpened()
-                    viewModel.soundManager.play(SoundType.OPEN_MODAL)
-                } else {
-                    viewModel.soundManager.play(SoundType.CLOSE_MODAL)
-                }
-            }
+    // Handle drawer state change side effects (sound, focus, input blocking)
+    // State sync is handled synchronously by confirmValueChange above
+    LaunchedEffect(isDrawerOpen) {
+        inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
+        if (isDrawerOpen) {
+            val parentRoute = navController.previousBackStackEntry?.destination?.route
+            viewModel.initDrawerFocus(currentRoute, parentRoute)
+            viewModel.onDrawerOpened()
+            viewModel.soundManager.play(SoundType.OPEN_MODAL)
+        }
     }
 
     // Collect gamepad events (Menu opens drawer if unhandled)

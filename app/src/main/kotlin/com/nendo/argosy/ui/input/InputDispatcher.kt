@@ -9,36 +9,25 @@ class InputDispatcher(
     private val soundManager: SoundFeedbackManager? = null
 ) {
     private var activeHandler: InputHandler? = null
-    private var drawerHandler: InputHandler? = null
-    private var drawerOpenProvider: (() -> Boolean)? = null
+    private var overlayHandler: InputHandler? = null
     private var pendingEvent: GamepadEvent? = null
     private var inputBlockedUntil: Long = 0L
 
-    private val isDrawerOpen: Boolean
-        get() = drawerOpenProvider?.invoke() ?: false
-
     fun setActiveScreen(handler: InputHandler?) {
         activeHandler = handler
-        if (handler != null && !isDrawerOpen) {
-            pendingEvent?.let { event ->
-                pendingEvent = null
-                dispatch(event)
-            }
-        }
+        handler?.let { processPendingEvent() }
     }
 
-    fun setDrawerHandler(handler: InputHandler?) {
-        drawerHandler = handler
-        if (handler != null && isDrawerOpen) {
-            pendingEvent?.let { event ->
-                pendingEvent = null
-                dispatch(event)
-            }
-        }
+    fun setOverlayHandler(handler: InputHandler?) {
+        overlayHandler = handler
+        handler?.let { processPendingEvent() }
     }
 
-    fun setDrawerOpenProvider(provider: () -> Boolean) {
-        drawerOpenProvider = provider
+    private fun processPendingEvent() {
+        pendingEvent?.let { event ->
+            pendingEvent = null
+            dispatch(event)
+        }
     }
 
     fun blockInputFor(durationMs: Long) {
@@ -50,8 +39,15 @@ class InputDispatcher(
             return true
         }
 
-        val handler = if (isDrawerOpen) drawerHandler else activeHandler
+        overlayHandler?.let { handler ->
+            val result = dispatchToHandler(event, handler)
+            if (result.handled) {
+                playFeedback(event, result)
+                return true
+            }
+        }
 
+        val handler = activeHandler
         if (handler == null) {
             pendingEvent = event
             return false
@@ -59,11 +55,14 @@ class InputDispatcher(
 
         pendingEvent = null
         val result = dispatchToHandler(event, handler)
-        val handled = result.handled
+        playFeedback(event, result)
+        return result.handled
+    }
 
+    private fun playFeedback(event: GamepadEvent, result: InputResult) {
         when (event) {
             GamepadEvent.Up, GamepadEvent.Down, GamepadEvent.Left, GamepadEvent.Right -> {
-                if (handled) {
+                if (result.handled) {
                     hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
                     soundManager?.play(result.soundOverride ?: SoundType.NAVIGATE)
                 } else {
@@ -72,7 +71,7 @@ class InputDispatcher(
                 }
             }
             GamepadEvent.PrevSection, GamepadEvent.NextSection -> {
-                if (handled) {
+                if (result.handled) {
                     hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
                     soundManager?.play(result.soundOverride ?: SoundType.SECTION_CHANGE)
                 } else {
@@ -81,20 +80,18 @@ class InputDispatcher(
                 }
             }
             GamepadEvent.Confirm -> {
-                if (handled) {
+                if (result.handled) {
                     hapticManager?.vibrate(HapticPattern.SELECTION)
                     soundManager?.play(result.soundOverride ?: SoundType.SELECT)
                 }
             }
             GamepadEvent.Back -> {
-                if (handled) {
+                if (result.handled) {
                     soundManager?.play(result.soundOverride ?: SoundType.BACK)
                 }
             }
             else -> {}
         }
-
-        return handled
     }
 
     private fun dispatchToHandler(event: GamepadEvent, handler: InputHandler): InputResult {

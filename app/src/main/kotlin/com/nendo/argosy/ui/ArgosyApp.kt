@@ -53,11 +53,11 @@ fun ArgosyApp(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    val inputDispatcher = remember(drawerState) {
+    val inputDispatcher = remember {
         InputDispatcher(
             hapticManager = viewModel.hapticManager,
             soundManager = viewModel.soundManager
-        ).also { it.setDrawerOpenProvider { drawerState.isOpen } }
+        )
     }
 
     val startDestination = if (uiState.isFirstRun) {
@@ -89,11 +89,13 @@ fun ArgosyApp(
             }
     }
 
-    val drawerInputHandler = remember(currentRoute) {
+    val drawerInputHandler = remember {
         viewModel.createDrawerInputHandler(
+            isDrawerOpen = { drawerState.isOpen },
             onNavigate = { route ->
                 scope.launch { drawerState.close() }
-                if (route != currentRoute) {
+                val current = navController.currentDestination?.route
+                if (route != current) {
                     navController.navigate(route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
@@ -106,8 +108,8 @@ fun ArgosyApp(
     }
 
     DisposableEffect(drawerInputHandler) {
-        inputDispatcher.setDrawerHandler(drawerInputHandler)
-        onDispose { inputDispatcher.setDrawerHandler(null) }
+        inputDispatcher.setOverlayHandler(drawerInputHandler)
+        onDispose { inputDispatcher.setOverlayHandler(null) }
     }
 
     LaunchedEffect(Unit) {

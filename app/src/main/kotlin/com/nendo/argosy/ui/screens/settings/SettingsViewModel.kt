@@ -547,7 +547,7 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.SYNC_SETTINGS -> 7
                 SettingsSection.STORAGE -> 2
                 SettingsSection.DISPLAY -> 3
-                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 3 else 2
+                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 4 else 3
                 SettingsSection.SOUNDS -> if (state.sounds.enabled) 1 + SoundType.entries.size else 0
                 SettingsSection.EMULATORS -> {
                     val platformCount = state.emulators.platforms.size
@@ -1318,8 +1318,7 @@ class SettingsViewModel @Inject constructor(
                         1 -> { cycleHapticIntensity(); false }
                         2 -> { setSwapAB(!state.controls.swapAB); true }
                         3 -> { setSwapXY(!state.controls.swapXY); true }
-                        4 -> { cycleABIconLayout(); false }
-                        5 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
+                        4 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
                         else -> false
                     }
                 } else {
@@ -1327,8 +1326,7 @@ class SettingsViewModel @Inject constructor(
                         0 -> { setHapticEnabled(!state.controls.hapticEnabled); true }
                         1 -> { setSwapAB(!state.controls.swapAB); true }
                         2 -> { setSwapXY(!state.controls.swapXY); true }
-                        3 -> { cycleABIconLayout(); false }
-                        4 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
+                        3 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
                         else -> false
                     }
                 }

@@ -4,9 +4,12 @@ import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.provider.Settings
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -200,9 +203,9 @@ fun AppsScreen(
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(uiState.columnsCount),
                         state = gridState,
-                        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         itemsIndexed(
@@ -213,7 +216,9 @@ fun AppsScreen(
                                 icon = app.icon,
                                 label = app.label,
                                 isFocused = index == uiState.focusedIndex,
-                                isReorderMode = uiState.isReorderMode
+                                isReorderMode = uiState.isReorderMode,
+                                onClick = { viewModel.launchAppAt(index) },
+                                onLongClick = { viewModel.showContextMenuAt(index) }
                             )
                         }
                     }
@@ -230,9 +235,9 @@ fun AppsScreen(
                     else -> listOf(
                         InputButton.SOUTH to "Open",
                         InputButton.EAST to "Back",
-                        InputButton.WEST to "Reorder",
+                        InputButton.NORTH to "Reorder",
                         InputButton.SELECT to "Options",
-                        InputButton.NORTH to if (uiState.showHiddenApps) "Show Apps" else "Show Hidden"
+                        InputButton.WEST to if (uiState.showHiddenApps) "Show Apps" else "Show Hidden"
                     )
                 }
             )
@@ -242,13 +247,15 @@ fun AppsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.6f)),
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable { viewModel.dismissContextMenu() },
                 contentAlignment = Alignment.Center
             ) {
                 Surface(
                     shape = RoundedCornerShape(Dimens.radiusLg),
                     color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
+                    tonalElevation = 8.dp,
+                    modifier = Modifier.clickable(enabled = false) {}
                 ) {
                     Column(
                         modifier = Modifier
@@ -272,7 +279,10 @@ fun AppsScreen(
                             ContextMenuItem(
                                 item = item,
                                 isFocused = index == uiState.contextMenuFocusIndex,
-                                isAppHidden = uiState.focusedApp?.isHidden ?: false
+                                isAppHidden = uiState.focusedApp?.isHidden ?: false,
+                                onClick = {
+                                    viewModel.selectContextMenuItem(index)
+                                }
                             )
                         }
                     }
@@ -286,7 +296,8 @@ fun AppsScreen(
 private fun ContextMenuItem(
     item: AppContextMenuItem,
     isFocused: Boolean,
-    isAppHidden: Boolean = false
+    isAppHidden: Boolean = false,
+    onClick: () -> Unit = {}
 ) {
     val (icon, label) = when (item) {
         AppContextMenuItem.APP_INFO -> Icons.Default.Info to "App Info"
@@ -323,6 +334,7 @@ private fun ContextMenuItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .background(backgroundColor)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -342,12 +354,15 @@ private fun ContextMenuItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AppCard(
     icon: Drawable,
     label: String,
     isFocused: Boolean,
     isReorderMode: Boolean = false,
+    onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (isFocused) {
@@ -370,6 +385,10 @@ private fun AppCard(
         modifier = modifier
             .then(borderModifier)
             .clip(RoundedCornerShape(Dimens.radiusMd))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .background(backgroundColor)
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally

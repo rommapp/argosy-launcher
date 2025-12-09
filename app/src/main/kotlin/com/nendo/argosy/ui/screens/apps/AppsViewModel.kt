@@ -54,9 +54,9 @@ data class AppsUiState(
 ) {
     val columnsCount: Int
         get() = when (uiDensity) {
-            UiDensity.COMPACT -> 6
-            UiDensity.NORMAL -> 5
-            UiDensity.SPACIOUS -> 4
+            UiDensity.COMPACT -> 5
+            UiDensity.NORMAL -> 4
+            UiDensity.SPACIOUS -> 3
         }
 
     val focusedApp: AppUi?
@@ -174,6 +174,18 @@ class AppsViewModel @Inject constructor(
         loadApps()
     }
 
+    fun launchAppAt(index: Int) {
+        val app = _uiState.value.apps.getOrNull(index) ?: return
+        launchApp(app.packageName)
+    }
+
+    fun showContextMenuAt(index: Int) {
+        val apps = _uiState.value.apps
+        if (index < 0 || index >= apps.size) return
+        _uiState.update { it.copy(focusedIndex = index, showContextMenu = true, contextMenuFocusIndex = 0) }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
     fun showContextMenu() {
         if (_uiState.value.focusedApp == null) return
         _uiState.update { it.copy(showContextMenu = true, contextMenuFocusIndex = 0) }
@@ -183,6 +195,11 @@ class AppsViewModel @Inject constructor(
     fun dismissContextMenu() {
         _uiState.update { it.copy(showContextMenu = false, contextMenuFocusIndex = 0) }
         soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun selectContextMenuItem(index: Int) {
+        _uiState.update { it.copy(contextMenuFocusIndex = index) }
+        confirmContextMenuSelection()
     }
 
     fun moveContextMenuFocus(delta: Int) {

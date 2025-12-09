@@ -537,26 +537,6 @@ private fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewMod
         }
         item {
             val focusIndex = if (uiState.controls.hapticEnabled) 4 else 3
-            val detectedLabel = when (uiState.controls.detectedLayout) {
-                "xbox" -> "Xbox"
-                "nintendo" -> "Nintendo"
-                else -> "Unknown"
-            }
-            val layoutLabel = when (uiState.controls.abIconLayout) {
-                "auto" -> "Auto ($detectedLabel)"
-                "xbox" -> "Xbox Style"
-                "nintendo" -> "Nintendo Style"
-                else -> "Auto ($detectedLabel)"
-            }
-            CyclePreference(
-                title = "A/B Button Icons",
-                value = layoutLabel,
-                isFocused = uiState.focusedIndex == focusIndex,
-                onClick = { viewModel.cycleABIconLayout() }
-            )
-        }
-        item {
-            val focusIndex = if (uiState.controls.hapticEnabled) 5 else 4
             SwitchPreference(
                 title = "Swap Start/Select",
                 subtitle = "Flip the Start and Select button functions",

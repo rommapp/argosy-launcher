@@ -216,4 +216,7 @@ interface GameDao {
 
     @Query("UPDATE games SET nowPlaying = :nowPlaying WHERE id = :gameId")
     suspend fun updateNowPlaying(gameId: Long, nowPlaying: Boolean)
+
+    @Query("UPDATE games SET lastPlayedDiscId = :discId WHERE id = :gameId")
+    suspend fun updateLastPlayedDisc(gameId: Long, discId: Long)
 }

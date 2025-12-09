@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.StatFs
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -40,6 +41,7 @@ data class DownloadProgress(
     val id: Long = 0,
     val gameId: Long,
     val rommId: Long,
+    val discId: Long? = null,
     val fileName: String,
     val gameTitle: String,
     val platformSlug: String,
@@ -51,6 +53,8 @@ data class DownloadProgress(
 ) {
     val progressPercent: Float
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
+
+    val isDiscDownload: Boolean get() = discId != null
 }
 
 enum class DownloadState {
@@ -87,6 +91,7 @@ data class DownloadQueueState(
 class DownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
+    private val gameDiscDao: GameDiscDao,
     private val downloadQueueDao: DownloadQueueDao,
     private val romMRepository: RomMRepository,
     private val preferencesRepository: UserPreferencesRepository,
@@ -196,6 +201,63 @@ class DownloadManager @Inject constructor(
             id = id,
             gameId = gameId,
             rommId = rommId,
+            fileName = fileName,
+            gameTitle = gameTitle,
+            platformSlug = platformSlug,
+            coverPath = coverPath,
+            bytesDownloaded = 0,
+            totalBytes = expectedSizeBytes,
+            state = DownloadState.QUEUED
+        )
+
+        _state.value = _state.value.copy(
+            queue = _state.value.queue + progress
+        )
+
+        processQueue()
+    }
+
+    suspend fun enqueueDiscDownload(
+        gameId: Long,
+        discId: Long,
+        rommId: Long,
+        fileName: String,
+        gameTitle: String,
+        platformSlug: String,
+        coverPath: String?,
+        expectedSizeBytes: Long = 0
+    ) {
+        val currentState = _state.value
+        if (currentState.activeDownloads.any { it.discId == discId }) return
+        if (currentState.queue.any { it.discId == discId }) return
+
+        val downloadDir = getDownloadDir()
+        val platformDir = File(downloadDir, platformSlug)
+        val tempFilePath = File(platformDir, "${fileName}.tmp").absolutePath
+
+        val entity = DownloadQueueEntity(
+            gameId = gameId,
+            rommId = rommId,
+            discId = discId,
+            fileName = fileName,
+            gameTitle = gameTitle,
+            platformSlug = platformSlug,
+            coverPath = coverPath,
+            bytesDownloaded = 0,
+            totalBytes = expectedSizeBytes,
+            state = DownloadState.QUEUED.name,
+            errorReason = null,
+            tempFilePath = tempFilePath,
+            createdAt = Instant.now()
+        )
+
+        val id = downloadQueueDao.insert(entity)
+
+        val progress = DownloadProgress(
+            id = id,
+            gameId = gameId,
+            rommId = rommId,
+            discId = discId,
             fileName = fileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,
@@ -380,11 +442,15 @@ class DownloadManager @Inject constructor(
                                     tempFile.delete()
                                 }
 
-                                gameDao.updateLocalPath(
-                                    progress.gameId,
-                                    targetFile.absolutePath,
-                                    GameSource.ROMM_SYNCED
-                                )
+                                if (progress.isDiscDownload && progress.discId != null) {
+                                    gameDiscDao.updateLocalPath(progress.discId, targetFile.absolutePath)
+                                } else {
+                                    gameDao.updateLocalPath(
+                                        progress.gameId,
+                                        targetFile.absolutePath,
+                                        GameSource.ROMM_SYNCED
+                                    )
+                                }
 
                                 DownloadResult.Success(bytesRead)
                             }
@@ -569,6 +635,7 @@ class DownloadManager @Inject constructor(
             id = id,
             gameId = gameId,
             rommId = rommId,
+            discId = discId,
             fileName = fileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,

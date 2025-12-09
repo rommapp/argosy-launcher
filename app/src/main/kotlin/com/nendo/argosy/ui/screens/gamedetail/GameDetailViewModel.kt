@@ -12,6 +12,7 @@ import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -46,6 +47,14 @@ data class ScreenshotPair(
     val cachedPath: String?
 )
 
+data class DiscUi(
+    val id: Long,
+    val discNumber: Int,
+    val fileName: String,
+    val isDownloaded: Boolean,
+    val isLastPlayed: Boolean
+)
+
 data class GameDetailUi(
     val id: Long,
     val title: String,
@@ -68,7 +77,9 @@ data class GameDetailUi(
     val playTimeMinutes: Int,
     val screenshots: List<ScreenshotPair>,
     val emulatorName: String?,
-    val canPlay: Boolean
+    val canPlay: Boolean,
+    val isMultiDisc: Boolean = false,
+    val lastPlayedDiscId: Long? = null
 )
 
 sealed class LaunchEvent {
@@ -100,7 +111,12 @@ data class GameDetailUiState(
     val currentGameIndex: Int = -1,
     val showRatingPicker: Boolean = false,
     val ratingPickerType: RatingType = RatingType.OPINION,
-    val ratingPickerValue: Int = 0
+    val ratingPickerValue: Int = 0,
+    val discs: List<DiscUi> = emptyList(),
+    val showDiscPicker: Boolean = false,
+    val discPickerFocusIndex: Int = 0,
+    val showMissingDiscPrompt: Boolean = false,
+    val missingDiscNumbers: List<Int> = emptyList()
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1
@@ -110,6 +126,7 @@ data class GameDetailUiState(
 class GameDetailViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val gameDao: GameDao,
+    private val gameDiscDao: GameDiscDao,
     private val platformDao: PlatformDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
@@ -203,14 +220,34 @@ class GameDetailViewModel @Inject constructor(
             val canPlay = if (isSteamGame) {
                 val launcher = game.steamLauncher?.let { SteamLaunchers.getByPackage(it) }
                 launcher?.isInstalled(context) == true
+            } else if (game.isMultiDisc) {
+                val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
+                downloadedCount > 0 && emulatorDetector.hasAnyEmulator(game.platformId)
             } else {
                 fileExists && emulatorDetector.hasAnyEmulator(game.platformId)
             }
 
             val downloadStatus = if (isSteamGame || fileExists) {
                 GameDownloadStatus.DOWNLOADED
+            } else if (game.isMultiDisc) {
+                val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
+                if (downloadedCount > 0) GameDownloadStatus.DOWNLOADED else GameDownloadStatus.NOT_DOWNLOADED
             } else {
                 GameDownloadStatus.NOT_DOWNLOADED
+            }
+
+            val discsUi = if (game.isMultiDisc) {
+                gameDiscDao.getDiscsForGame(gameId).map { disc ->
+                    DiscUi(
+                        id = disc.id,
+                        discNumber = disc.discNumber,
+                        fileName = disc.fileName,
+                        isDownloaded = disc.localPath != null,
+                        isLastPlayed = disc.id == game.lastPlayedDiscId
+                    )
+                }
+            } else {
+                emptyList()
             }
 
             var siblingIds = gameNavigationContext.getGameIds()
@@ -232,7 +269,8 @@ class GameDetailViewModel @Inject constructor(
                     downloadStatus = downloadStatus,
                     downloadProgress = if (downloadStatus == GameDownloadStatus.DOWNLOADED) 1f else 0f,
                     siblingGameIds = siblingIds,
-                    currentGameIndex = currentIndex
+                    currentGameIndex = currentIndex,
+                    discs = discsUi
                 )
             }
         }
@@ -244,6 +282,9 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = gameActions.queueDownload(currentGameId)) {
                 is DownloadResult.Queued -> { }
+                is DownloadResult.MultiDiscQueued -> {
+                    notificationManager.showSuccess("Downloading ${result.discCount} discs")
+                }
                 is DownloadResult.Error -> notificationManager.showError(result.message)
             }
         }
@@ -267,11 +308,11 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun playGame() {
+    fun playGame(discId: Long? = null) {
         viewModelScope.launch {
             val game = _uiState.value.game ?: return@launch
 
-            when (val result = launchGameUseCase(currentGameId)) {
+            when (val result = launchGameUseCase(currentGameId, discId)) {
                 is LaunchResult.Success -> {
                     soundManager.play(SoundType.LAUNCH_GAME)
                     _launchEvents.emit(LaunchEvent.Launch(result.intent))
@@ -284,6 +325,14 @@ class GameDetailViewModel @Inject constructor(
                 }
                 is LaunchResult.NoSteamLauncher -> {
                     notificationManager.showError("Steam launcher not installed")
+                }
+                is LaunchResult.MissingDiscs -> {
+                    _uiState.update {
+                        it.copy(
+                            showMissingDiscPrompt = true,
+                            missingDiscNumbers = result.missingDiscNumbers
+                        )
+                    }
                 }
                 is LaunchResult.Error -> {
                     notificationManager.showError(result.message)
@@ -398,6 +447,68 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    fun showDiscPicker() {
+        val game = _uiState.value.game ?: return
+        if (!game.isMultiDisc) return
+
+        val discs = _uiState.value.discs
+        val lastPlayedIndex = discs.indexOfFirst { it.isLastPlayed }.takeIf { it >= 0 } ?: 0
+
+        _uiState.update {
+            it.copy(
+                showMoreOptions = false,
+                showDiscPicker = true,
+                discPickerFocusIndex = lastPlayedIndex
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissDiscPicker() {
+        _uiState.update { it.copy(showDiscPicker = false) }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveDiscPickerFocus(delta: Int) {
+        _uiState.update { state ->
+            val maxIndex = state.discs.size - 1
+            val newIndex = (state.discPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            state.copy(discPickerFocusIndex = newIndex)
+        }
+    }
+
+    fun confirmDiscSelection() {
+        val state = _uiState.value
+        val disc = state.discs.getOrNull(state.discPickerFocusIndex) ?: return
+        _uiState.update { it.copy(showDiscPicker = false) }
+        playGame(disc.id)
+    }
+
+    fun selectDiscAtIndex(index: Int) {
+        val disc = _uiState.value.discs.getOrNull(index) ?: return
+        _uiState.update { it.copy(showDiscPicker = false) }
+        playGame(disc.id)
+    }
+
+    fun dismissMissingDiscPrompt() {
+        _uiState.update { it.copy(showMissingDiscPrompt = false, missingDiscNumbers = emptyList()) }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun repairAndPlay() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(showMissingDiscPrompt = false, missingDiscNumbers = emptyList()) }
+
+            when (val result = gameActions.repairMissingDiscs(currentGameId)) {
+                is DownloadResult.MultiDiscQueued -> {
+                    notificationManager.showSuccess("Downloading ${result.discCount} missing discs")
+                }
+                is DownloadResult.Queued -> { }
+                is DownloadResult.Error -> notificationManager.showError(result.message)
+            }
+        }
+    }
+
     fun showRatingPicker(type: RatingType) {
         val game = _uiState.value.game ?: return
         val currentValue = when (type) {
@@ -500,7 +611,9 @@ class GameDetailViewModel @Inject constructor(
             playTimeMinutes = playTimeMinutes,
             screenshots = screenshots,
             emulatorName = emulatorName,
-            canPlay = canPlay
+            canPlay = canPlay,
+            isMultiDisc = isMultiDisc,
+            lastPlayedDiscId = lastPlayedDiscId
         )
     }
 
@@ -517,6 +630,11 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             return when {
                 state.showRatingPicker -> InputResult.UNHANDLED
+                state.showMissingDiscPrompt -> InputResult.UNHANDLED
+                state.showDiscPicker -> {
+                    moveDiscPickerFocus(-1)
+                    InputResult.HANDLED
+                }
                 state.showEmulatorPicker -> {
                     moveEmulatorPickerFocus(-1)
                     InputResult.HANDLED
@@ -536,6 +654,11 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             return when {
                 state.showRatingPicker -> InputResult.UNHANDLED
+                state.showMissingDiscPrompt -> InputResult.UNHANDLED
+                state.showDiscPicker -> {
+                    moveDiscPickerFocus(1)
+                    InputResult.HANDLED
+                }
                 state.showEmulatorPicker -> {
                     moveEmulatorPickerFocus(1)
                     InputResult.HANDLED
@@ -558,7 +681,9 @@ class GameDetailViewModel @Inject constructor(
                     changeRatingValue(-1)
                     return InputResult.HANDLED
                 }
-                state.showMoreOptions || state.showEmulatorPicker -> return InputResult.UNHANDLED
+                state.showMoreOptions || state.showEmulatorPicker || state.showDiscPicker || state.showMissingDiscPrompt -> {
+                    return InputResult.UNHANDLED
+                }
                 else -> {
                     gameNavigationContext.getPreviousGameId(currentGameId)?.let { prevId ->
                         loadGame(prevId)
@@ -575,7 +700,9 @@ class GameDetailViewModel @Inject constructor(
                     changeRatingValue(1)
                     return InputResult.HANDLED
                 }
-                state.showMoreOptions || state.showEmulatorPicker -> return InputResult.UNHANDLED
+                state.showMoreOptions || state.showEmulatorPicker || state.showDiscPicker || state.showMissingDiscPrompt -> {
+                    return InputResult.UNHANDLED
+                }
                 else -> {
                     gameNavigationContext.getNextGameId(currentGameId)?.let { nextId ->
                         loadGame(nextId)
@@ -589,6 +716,8 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             when {
                 state.showRatingPicker -> confirmRating()
+                state.showMissingDiscPrompt -> repairAndPlay()
+                state.showDiscPicker -> confirmDiscSelection()
                 state.showEmulatorPicker -> confirmEmulatorSelection()
                 state.showMoreOptions -> confirmOptionSelection(onBack)
                 else -> primaryAction()
@@ -600,6 +729,8 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             when {
                 state.showRatingPicker -> dismissRatingPicker()
+                state.showMissingDiscPrompt -> dismissMissingDiscPrompt()
+                state.showDiscPicker -> dismissDiscPicker()
                 state.showEmulatorPicker -> dismissEmulatorPicker()
                 state.showMoreOptions -> toggleMoreOptions()
                 else -> onBack()
@@ -611,6 +742,14 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             if (state.showRatingPicker) {
                 dismissRatingPicker()
+                return InputResult.UNHANDLED
+            }
+            if (state.showMissingDiscPrompt) {
+                dismissMissingDiscPrompt()
+                return InputResult.UNHANDLED
+            }
+            if (state.showDiscPicker) {
+                dismissDiscPicker()
                 return InputResult.UNHANDLED
             }
             if (state.showMoreOptions) {

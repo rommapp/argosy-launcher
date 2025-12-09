@@ -43,7 +43,10 @@ data class RomMRom(
     @Json(name = "revision") val revision: String?,
 
     @Json(name = "merged_screenshots") val screenshotPaths: List<String>? = null,
-    @Json(name = "rom_user") val romUser: RomMRomUser? = null
+    @Json(name = "rom_user") val romUser: RomMRomUser? = null,
+
+    @Json(name = "tags") val tags: List<String>? = null,
+    @Json(name = "siblings") val siblings: List<RomMSibling>? = null
 ) {
     val genres: List<String>? get() = metadatum?.genres
     val companies: List<String>? get() = metadatum?.companies
@@ -60,6 +63,44 @@ data class RomMRom(
             ?.filter { it.type.contains("Screenshot", ignoreCase = true) }
             ?.map { it.url }
             ?: emptyList()
+
+    val discNumber: Int?
+        get() = tags?.firstOrNull { DISC_TAG_REGEX.matches(it) }
+            ?.let { DISC_NUMBER_REGEX.find(it)?.value?.toIntOrNull() }
+
+    val isDiscVariant: Boolean
+        get() = discNumber != null
+
+    val hasDiscSiblings: Boolean
+        get() = isDiscVariant && siblings?.any { sibling ->
+            sibling.fileNameNoExt.contains(DISC_TAG_REGEX)
+        } == true
+
+    companion object {
+        private val DISC_TAG_REGEX = Regex("Disc \\d+", RegexOption.IGNORE_CASE)
+        private val DISC_NUMBER_REGEX = Regex("\\d+")
+    }
+}
+
+@JsonClass(generateAdapter = true)
+data class RomMSibling(
+    @Json(name = "id") val id: Long,
+    @Json(name = "name") val name: String,
+    @Json(name = "fs_name_no_tags") val fileNameNoTags: String,
+    @Json(name = "fs_name_no_ext") val fileNameNoExt: String
+) {
+    val discNumber: Int?
+        get() = DISC_NUMBER_REGEX.find(
+            DISC_TAG_REGEX.find(fileNameNoExt)?.value ?: ""
+        )?.value?.toIntOrNull()
+
+    val isDiscVariant: Boolean
+        get() = discNumber != null
+
+    companion object {
+        private val DISC_TAG_REGEX = Regex("\\(Disc \\d+\\)", RegexOption.IGNORE_CASE)
+        private val DISC_NUMBER_REGEX = Regex("\\d+")
+    }
 }
 
 @JsonClass(generateAdapter = true)

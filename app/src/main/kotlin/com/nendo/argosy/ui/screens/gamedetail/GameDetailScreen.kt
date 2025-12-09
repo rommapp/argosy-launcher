@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -27,6 +29,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
@@ -34,6 +38,7 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarOutline
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.icons.outlined.Whatshot
 import androidx.compose.foundation.layout.size
@@ -162,7 +167,8 @@ private fun GameDetailContent(
     viewModel: GameDetailViewModel,
     scrollState: ScrollState
 ) {
-    val showAnyOverlay = uiState.showMoreOptions || uiState.showEmulatorPicker || uiState.showRatingPicker
+    val showAnyOverlay = uiState.showMoreOptions || uiState.showEmulatorPicker ||
+        uiState.showRatingPicker || uiState.showDiscPicker || uiState.showMissingDiscPrompt
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -499,7 +505,29 @@ private fun GameDetailContent(
         }
 
         AnimatedVisibility(
-            visible = !uiState.showMoreOptions && !uiState.showEmulatorPicker && !uiState.showRatingPicker,
+            visible = uiState.showDiscPicker,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            DiscPickerOverlay(
+                discs = uiState.discs,
+                focusIndex = uiState.discPickerFocusIndex,
+                onSelectDisc = viewModel::selectDiscAtIndex
+            )
+        }
+
+        AnimatedVisibility(
+            visible = uiState.showMissingDiscPrompt,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            MissingDiscPromptOverlay(
+                missingDiscNumbers = uiState.missingDiscNumbers
+            )
+        }
+
+        AnimatedVisibility(
+            visible = !showAnyOverlay,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -860,6 +888,185 @@ private fun OptionItem(
                 text = "[$value]",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiscPickerOverlay(
+    discs: List<DiscUi>,
+    focusIndex: Int,
+    onSelectDisc: (Int) -> Unit
+) {
+    val listState = rememberLazyListState()
+    val itemHeight = 56.dp
+    val maxVisibleItems = 5
+
+    LaunchedEffect(focusIndex) {
+        listState.animateScrollToItem(focusIndex.coerceIn(0, (discs.size - 1).coerceAtLeast(0)))
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    MaterialTheme.colorScheme.surface,
+                    RoundedCornerShape(12.dp)
+                )
+                .padding(24.dp)
+                .width(350.dp)
+        ) {
+            Text(
+                text = "SELECT DISC",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            androidx.compose.foundation.lazy.LazyColumn(
+                state = listState,
+                modifier = Modifier.heightIn(max = itemHeight * maxVisibleItems)
+            ) {
+                items(discs.size) { index ->
+                    val disc = discs[index]
+                    val isFocused = focusIndex == index
+                    val backgroundColor = if (isFocused) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        Color.Transparent
+                    }
+                    val contentColor = if (isFocused) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(itemHeight)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(backgroundColor)
+                            .clickable { onSelectDisc(index) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Album,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.width(20.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Disc ${disc.discNumber}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = contentColor
+                            )
+                            Text(
+                                text = disc.fileName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = contentColor.copy(alpha = 0.7f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (disc.isLastPlayed) {
+                            Text(
+                                text = "[Last Played]",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        if (!disc.isDownloaded) {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = "Not downloaded",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FooterBar(
+                hints = listOf(
+                    InputButton.DPAD_VERTICAL to "Select",
+                    InputButton.SOUTH to "Play",
+                    InputButton.EAST to "Cancel"
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun MissingDiscPromptOverlay(
+    missingDiscNumbers: List<Int>
+) {
+    val discText = if (missingDiscNumbers.size == 1) {
+        "Disc ${missingDiscNumbers.first()}"
+    } else {
+        "Discs ${missingDiscNumbers.joinToString(", ")}"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    MaterialTheme.colorScheme.surface,
+                    RoundedCornerShape(12.dp)
+                )
+                .padding(24.dp)
+                .width(400.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(48.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "MISSING DISCS",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "$discText not downloaded.\nWould you like to download the missing discs?",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            FooterBar(
+                hints = listOf(
+                    InputButton.SOUTH to "Download",
+                    InputButton.EAST to "Cancel"
+                )
             )
         }
     }

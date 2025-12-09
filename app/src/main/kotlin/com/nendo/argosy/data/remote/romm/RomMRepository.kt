@@ -2,8 +2,10 @@ package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
@@ -61,6 +63,7 @@ data class SyncResult(
 class RomMRepository @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val gameDao: GameDao,
+    private val gameDiscDao: GameDiscDao,
     private val platformDao: PlatformDao,
     private val pendingSyncDao: PendingSyncDao,
     private val imageCacheManager: ImageCacheManager,
@@ -168,6 +171,7 @@ class RomMRepository @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         val filters = prefs.syncFilters
         val seenRommIds = mutableSetOf<Long>()
+        val allMultiDiscGroups = mutableListOf<MultiDiscGroup>()
 
         _syncProgress.value = SyncProgress(isSyncing = true)
 
@@ -202,10 +206,13 @@ class RomMRepository @Inject constructor(
                 gamesAdded += result.added
                 gamesUpdated += result.updated
                 seenRommIds.addAll(result.seenIds)
+                allMultiDiscGroups.addAll(result.multiDiscGroups)
                 result.error?.let { errors.add(it) }
 
                 platformsSynced++
             }
+
+            consolidateMultiDiscGames(currentApi, allMultiDiscGroups)
 
             platforms.forEach { platform ->
                 val count = gameDao.countByPlatform(platform.slug)
@@ -385,7 +392,14 @@ class RomMRepository @Inject constructor(
         val added: Int,
         val updated: Int,
         val seenIds: Set<Long>,
+        val multiDiscGroups: List<MultiDiscGroup>,
         val error: String? = null
+    )
+
+    data class MultiDiscGroup(
+        val primaryRommId: Long,
+        val siblingRommIds: List<Long>,
+        val platformSlug: String
     )
 
     private suspend fun syncPlatformRoms(
@@ -396,6 +410,8 @@ class RomMRepository @Inject constructor(
         var added = 0
         var updated = 0
         val seenIds = mutableSetOf<Long>()
+        val multiDiscGroups = mutableListOf<MultiDiscGroup>()
+        val processedDiscIds = mutableSetOf<Long>()
         var offset = 0
         var totalFetched = 0
 
@@ -407,7 +423,7 @@ class RomMRepository @Inject constructor(
             )
 
             if (!romsResponse.isSuccessful) {
-                return PlatformSyncResult(added, updated, seenIds,
+                return PlatformSyncResult(added, updated, seenIds, multiDiscGroups,
                     "Failed to fetch ROMs for ${platform.name}: ${romsResponse.code()}")
             }
 
@@ -423,9 +439,25 @@ class RomMRepository @Inject constructor(
             for (rom in romsPage.items) {
                 if (rom.igdbId == null || !shouldSyncRom(rom, filters)) continue
                 seenIds.add(rom.id)
+
                 try {
                     val (isNew, _) = syncRom(rom, platform.slug)
                     if (isNew) added++ else updated++
+
+                    if (rom.hasDiscSiblings && rom.id !in processedDiscIds) {
+                        val discSiblings = rom.siblings?.filter { it.isDiscVariant } ?: emptyList()
+                        val siblingIds = discSiblings.map { it.id }
+
+                        processedDiscIds.add(rom.id)
+                        processedDiscIds.addAll(siblingIds)
+                        seenIds.addAll(siblingIds)
+
+                        multiDiscGroups.add(MultiDiscGroup(
+                            primaryRommId = rom.id,
+                            siblingRommIds = siblingIds,
+                            platformSlug = platform.slug
+                        ))
+                    }
                 } catch (_: Exception) {
                 }
             }
@@ -434,7 +466,111 @@ class RomMRepository @Inject constructor(
             offset += SYNC_PAGE_SIZE
         }
 
-        return PlatformSyncResult(added, updated, seenIds)
+        return PlatformSyncResult(added, updated, seenIds, multiDiscGroups)
+    }
+
+    private suspend fun consolidateMultiDiscGames(
+        api: RomMApi,
+        groups: List<MultiDiscGroup>
+    ) {
+        for (group in groups) {
+            try {
+                consolidateMultiDiscGroup(api, group)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private suspend fun consolidateMultiDiscGroup(
+        api: RomMApi,
+        group: MultiDiscGroup
+    ) {
+        val allRommIds = listOf(group.primaryRommId) + group.siblingRommIds
+        val existingGames = allRommIds.mapNotNull { rommId ->
+            gameDao.getByRommId(rommId)
+        }.distinctBy { it.id }
+
+        if (existingGames.isEmpty()) return
+
+        val primaryGame = existingGames.find { it.isMultiDisc }
+            ?: existingGames.minByOrNull { game ->
+                allRommIds.indexOf(game.rommId).takeIf { it >= 0 } ?: Int.MAX_VALUE
+            }
+            ?: existingGames.first()
+
+        val redundantGames = existingGames.filter { it.id != primaryGame.id }
+
+        if (primaryGame.isMultiDisc && redundantGames.isEmpty()) {
+            return
+        }
+
+        val mergedIsFavorite = existingGames.any { it.isFavorite }
+        val mergedPlayCount = existingGames.sumOf { it.playCount }
+        val mergedPlayTime = existingGames.sumOf { it.playTimeMinutes }
+        val mergedLastPlayed = existingGames.mapNotNull { it.lastPlayed }.maxOrNull()
+        val mergedUserRating = existingGames.maxOf { it.userRating }
+        val mergedUserDifficulty = existingGames.maxOf { it.userDifficulty }
+        val mergedCompletion = existingGames.maxOf { it.completion }
+        val mergedBacklogged = existingGames.any { it.backlogged }
+        val mergedNowPlaying = existingGames.any { it.nowPlaying }
+        val earliestAddedAt = existingGames.minOf { it.addedAt }
+
+        val updatedGame = primaryGame.copy(
+            isFavorite = mergedIsFavorite,
+            playCount = mergedPlayCount,
+            playTimeMinutes = mergedPlayTime,
+            lastPlayed = mergedLastPlayed ?: primaryGame.lastPlayed,
+            userRating = mergedUserRating,
+            userDifficulty = mergedUserDifficulty,
+            completion = mergedCompletion,
+            backlogged = mergedBacklogged,
+            nowPlaying = mergedNowPlaying,
+            addedAt = earliestAddedAt,
+            isMultiDisc = true
+        )
+
+        gameDao.update(updatedGame)
+
+        val localPathsByRommId = existingGames
+            .filter { it.localPath != null && it.rommId != null }
+            .associate { it.rommId!! to it.localPath!! }
+
+        val existingDiscs = gameDiscDao.getDiscsForGame(primaryGame.id)
+        val existingDiscRommIds = existingDiscs.map { it.rommId }.toSet()
+
+        val discsToInsert = mutableListOf<GameDiscEntity>()
+
+        for (rommId in allRommIds) {
+            if (rommId in existingDiscRommIds) continue
+
+            val existingDisc = gameDiscDao.getByRommId(rommId)
+            val localPath = localPathsByRommId[rommId] ?: existingDisc?.localPath
+
+            val romData = try {
+                val response = api.getRom(rommId)
+                if (response.isSuccessful) response.body() else null
+            } catch (_: Exception) {
+                null
+            }
+
+            discsToInsert.add(GameDiscEntity(
+                id = existingDisc?.id ?: 0,
+                gameId = primaryGame.id,
+                discNumber = romData?.discNumber ?: (discsToInsert.size + existingDiscs.size + 1),
+                rommId = rommId,
+                fileName = romData?.fileName ?: "Disc",
+                localPath = localPath,
+                fileSize = romData?.fileSize ?: 0
+            ))
+        }
+
+        if (discsToInsert.isNotEmpty()) {
+            gameDiscDao.insertAll(discsToInsert)
+        }
+
+        for (redundantGame in redundantGames) {
+            gameDao.delete(redundantGame.id)
+        }
     }
 
     private suspend fun deleteOrphanedGames(seenRommIds: Set<Long>): Int {

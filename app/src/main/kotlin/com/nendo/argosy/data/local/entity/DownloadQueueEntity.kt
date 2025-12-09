@@ -9,7 +9,8 @@ import java.time.Instant
     tableName = "download_queue",
     indices = [
         Index(value = ["gameId"]),
-        Index(value = ["state"])
+        Index(value = ["state"]),
+        Index(value = ["discId"])
     ]
 )
 data class DownloadQueueEntity(
@@ -17,6 +18,7 @@ data class DownloadQueueEntity(
     val id: Long = 0,
     val gameId: Long,
     val rommId: Long,
+    val discId: Long? = null,
     val fileName: String,
     val gameTitle: String,
     val platformSlug: String,

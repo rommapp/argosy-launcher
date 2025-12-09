@@ -73,5 +73,8 @@ data class GameEntity(
     val playCount: Int = 0,
     val playTimeMinutes: Int = 0,
     val lastPlayed: Instant? = null,
-    val addedAt: Instant = Instant.now()
+    val addedAt: Instant = Instant.now(),
+
+    val isMultiDisc: Boolean = false,
+    val lastPlayedDiscId: Long? = null
 )

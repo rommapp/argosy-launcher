@@ -35,4 +35,8 @@ class GameActionsDelegate @Inject constructor(
     suspend fun queueDownload(gameId: Long): DownloadResult {
         return downloadGameUseCase(gameId)
     }
+
+    suspend fun repairMissingDiscs(gameId: Long): DownloadResult {
+        return downloadGameUseCase.repairMissingDiscs(gameId)
+    }
 }

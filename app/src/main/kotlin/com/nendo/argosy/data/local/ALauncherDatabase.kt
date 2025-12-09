@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -17,6 +18,7 @@ import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
+import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PendingSaveSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
@@ -32,15 +34,17 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         DownloadQueueEntity::class,
         SaveSyncEntity::class,
         PendingSaveSyncEntity::class,
-        EmulatorSaveConfigEntity::class
+        EmulatorSaveConfigEntity::class,
+        GameDiscEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun platformDao(): PlatformDao
     abstract fun gameDao(): GameDao
+    abstract fun gameDiscDao(): GameDiscDao
     abstract fun emulatorConfigDao(): EmulatorConfigDao
     abstract fun pendingSyncDao(): PendingSyncDao
     abstract fun downloadQueueDao(): DownloadQueueDao
@@ -211,6 +215,31 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     )
                 """)
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_emulator_save_config_emulatorId ON emulator_save_config(emulatorId)")
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN isMultiDisc INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE games ADD COLUMN lastPlayedDiscId INTEGER")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS game_discs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        discNumber INTEGER NOT NULL,
+                        rommId INTEGER NOT NULL,
+                        fileName TEXT NOT NULL,
+                        localPath TEXT,
+                        fileSize INTEGER NOT NULL,
+                        FOREIGN KEY (gameId) REFERENCES games(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_game_discs_gameId ON game_discs(gameId)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_game_discs_rommId ON game_discs(rommId)")
+
+                db.execSQL("ALTER TABLE download_queue ADD COLUMN discId INTEGER")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_download_queue_discId ON download_queue(discId)")
             }
         }
     }

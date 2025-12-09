@@ -10,8 +10,8 @@ class LaunchGameUseCase @Inject constructor(
     private val gameLauncher: GameLauncher,
     private val playSessionTracker: PlaySessionTracker
 ) {
-    suspend operator fun invoke(gameId: Long): LaunchResult {
-        return when (val result = gameLauncher.launch(gameId)) {
+    suspend operator fun invoke(gameId: Long, discId: Long? = null): LaunchResult {
+        return when (val result = gameLauncher.launch(gameId, discId)) {
             is LaunchResult.Success -> {
                 playSessionTracker.startSession(
                     gameId = gameId,

@@ -9,6 +9,8 @@ import androidx.core.content.FileProvider
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,10 +22,11 @@ import javax.inject.Singleton
 private const val TAG = "GameLauncher"
 
 sealed class LaunchResult {
-    data class Success(val intent: Intent) : LaunchResult()
+    data class Success(val intent: Intent, val discId: Long? = null) : LaunchResult()
     data class NoEmulator(val platformId: String) : LaunchResult()
     data class NoRomFile(val gamePath: String?) : LaunchResult()
     data class NoSteamLauncher(val launcherPackage: String) : LaunchResult()
+    data class MissingDiscs(val missingDiscNumbers: List<Int>) : LaunchResult()
     data class Error(val message: String) : LaunchResult()
 }
 
@@ -31,15 +34,20 @@ sealed class LaunchResult {
 class GameLauncher @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
+    private val gameDiscDao: GameDiscDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector
 ) {
-    suspend fun launch(gameId: Long): LaunchResult {
+    suspend fun launch(gameId: Long, discId: Long? = null): LaunchResult {
         val game = gameDao.getById(gameId)
             ?: return LaunchResult.Error("Game not found")
 
         if (game.source == GameSource.STEAM) {
             return launchSteamGame(game)
+        }
+
+        if (game.isMultiDisc) {
+            return launchMultiDiscGame(game, discId)
         }
 
         val romPath = game.localPath
@@ -59,6 +67,45 @@ class GameLauncher @Inject constructor(
         gameDao.recordPlayStart(gameId, Instant.now())
 
         return LaunchResult.Success(intent)
+    }
+
+    private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?): LaunchResult {
+        val discs = gameDiscDao.getDiscsForGame(game.id)
+        if (discs.isEmpty()) {
+            return LaunchResult.Error("No discs found for multi-disc game")
+        }
+
+        val missingDiscs = discs.filter { it.localPath == null }
+        if (missingDiscs.isNotEmpty()) {
+            return LaunchResult.MissingDiscs(missingDiscs.map { it.discNumber })
+        }
+
+        val targetDisc: GameDiscEntity = when {
+            requestedDiscId != null -> discs.find { it.id == requestedDiscId }
+            game.lastPlayedDiscId != null -> discs.find { it.id == game.lastPlayedDiscId }
+            else -> null
+        } ?: discs.minByOrNull { it.discNumber }
+            ?: return LaunchResult.Error("Could not determine which disc to launch")
+
+        val romPath = targetDisc.localPath
+            ?: return LaunchResult.NoRomFile(null)
+
+        val romFile = File(romPath)
+        if (!romFile.exists()) {
+            return LaunchResult.MissingDiscs(listOf(targetDisc.discNumber))
+        }
+
+        val emulator = resolveEmulator(game)
+            ?: return LaunchResult.NoEmulator(game.platformId)
+
+        val intent = buildIntent(emulator, romFile, game.platformId)
+            ?: return LaunchResult.Error("Failed to build launch intent")
+
+        gameDao.recordPlayStart(game.id, Instant.now())
+        gameDao.updateLastPlayedDisc(game.id, targetDisc.id)
+
+        Log.d(TAG, "Launching multi-disc game ${game.title} - Disc ${targetDisc.discNumber}")
+        return LaunchResult.Success(intent, targetDisc.id)
     }
 
     private suspend fun launchSteamGame(game: GameEntity): LaunchResult {

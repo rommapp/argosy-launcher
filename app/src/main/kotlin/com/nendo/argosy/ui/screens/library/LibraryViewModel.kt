@@ -614,6 +614,10 @@ class LibraryViewModel @Inject constructor(
                 is LaunchResult.NoSteamLauncher -> {
                     notificationManager.showError("Steam launcher not installed")
                 }
+                is LaunchResult.MissingDiscs -> {
+                    val discText = result.missingDiscNumbers.joinToString(", ")
+                    notificationManager.showError("Missing discs: $discText. View game details to repair.")
+                }
                 is LaunchResult.Error -> {
                     notificationManager.showError(result.message)
                 }
@@ -625,6 +629,9 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = gameActions.queueDownload(gameId)) {
                 is DownloadResult.Queued -> { }
+                is DownloadResult.MultiDiscQueued -> {
+                    notificationManager.showSuccess("Downloading ${result.discCount} discs")
+                }
                 is DownloadResult.Error -> notificationManager.showError(result.message)
             }
         }

@@ -114,6 +114,9 @@ class DownloadManager @Inject constructor(
     }
 
     private suspend fun restoreQueueFromDatabase() {
+        downloadQueueDao.clearFailed()
+        downloadQueueDao.clearCompleted()
+
         val pending = downloadQueueDao.getPendingDownloads()
         if (pending.isEmpty()) {
             updateAvailableStorage()

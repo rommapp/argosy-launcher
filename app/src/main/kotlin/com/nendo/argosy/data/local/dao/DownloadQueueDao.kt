@@ -46,4 +46,7 @@ interface DownloadQueueDao {
 
     @Query("DELETE FROM download_queue WHERE state = 'COMPLETED'")
     suspend fun clearCompleted()
+
+    @Query("DELETE FROM download_queue WHERE state = 'FAILED'")
+    suspend fun clearFailed()
 }

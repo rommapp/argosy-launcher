@@ -265,13 +265,16 @@ class RomMRepository @Inject constructor(
 
             consolidateMultiDiscGames(currentApi, allMultiDiscGroups)
 
+            gamesDeleted += cleanupInvalidExtensionGames()
+            gamesDeleted += cleanupDuplicateGames()
+
             platforms.forEach { platform ->
                 val count = gameDao.countByPlatform(platform.slug)
                 platformDao.updateGameCount(platform.slug, count)
             }
 
             if (filters.deleteOrphans) {
-                gamesDeleted = deleteOrphanedGames(seenRommIds)
+                gamesDeleted += deleteOrphanedGames(seenRommIds)
             }
 
             userPreferencesRepository.setLastRommSyncTime(Instant.now())
@@ -398,8 +401,28 @@ class RomMRepository @Inject constructor(
     }
 
     private fun shouldSyncRom(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
+        if (!passesExtensionFilter(rom)) return false
+        if (!passesBadDumpFilter(rom)) return false
         if (!passesRegionFilter(rom, filters)) return false
         if (!passesRevisionFilter(rom, filters)) return false
+        return true
+    }
+
+    private fun passesExtensionFilter(rom: RomMRom): Boolean {
+        val fileName = rom.fileName ?: return true
+        val extension = fileName.substringAfterLast('.', "").lowercase()
+        if (extension.isEmpty()) return true
+
+        val platformDef = PlatformDefinitions.getById(rom.platformSlug) ?: return true
+        if (platformDef.extensions.isEmpty()) return true
+
+        return extension in platformDef.extensions
+    }
+
+    private fun passesBadDumpFilter(rom: RomMRom): Boolean {
+        val name = rom.name.lowercase()
+        val fileName = rom.fileName?.lowercase() ?: ""
+        if (BAD_DUMP_REGEX.containsMatchIn(name) || BAD_DUMP_REGEX.containsMatchIn(fileName)) return false
         return true
     }
 
@@ -422,6 +445,7 @@ class RomMRepository @Inject constructor(
     private fun passesRevisionFilter(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
         val revision = rom.revision?.lowercase() ?: ""
         val name = rom.name.lowercase()
+        val tags = rom.tags?.map { it.lowercase() } ?: emptyList()
 
         if (filters.excludeBeta) {
             if (revision.contains("beta") || name.contains("(beta)")) return false
@@ -433,11 +457,30 @@ class RomMRepository @Inject constructor(
             if (revision.contains("demo") || name.contains("(demo)") || name.contains("(sample)")) return false
         }
         if (filters.excludeHack) {
-            if (revision.contains("hack") || name.contains("(hack)") ||
-                Regex("\\(.*hack.*\\)", RegexOption.IGNORE_CASE).containsMatchIn(name)) return false
+            if (isHack(name, revision, tags)) return false
         }
 
         return true
+    }
+
+    private fun isHack(name: String, revision: String, tags: List<String>): Boolean {
+        if (revision.contains("hack")) return true
+        if (tags.any { it.contains("hack") }) return true
+        if (NO_INTRO_HACK_REGEX.containsMatchIn(name)) return true
+        if (HACK_BRACKET_REGEX.containsMatchIn(name)) return true
+        if (HACK_PAREN_REGEX.containsMatchIn(name)) return true
+        return false
+    }
+
+    companion object {
+        // Matches No-Intro style hack tags: [h], [h1], [hC], [h M], etc.
+        private val NO_INTRO_HACK_REGEX = Regex("\\[h[0-9a-z ]*\\]")
+        // Matches [hack], [some hack], etc. - but not game titles like ".hack" since that's outside brackets
+        private val HACK_BRACKET_REGEX = Regex("\\[.*\\bhack\\b.*\\]")
+        // Matches (hack), (undub hack), etc. - but not ".hack (USA)" since "(USA)" doesn't contain "hack"
+        private val HACK_PAREN_REGEX = Regex("\\(.*\\bhack\\b.*\\)")
+        // Matches bad dumps: [b], [b1], [o], [o1] (overdumps), [!p] (pending), [t] (trained), [f] (fixed)
+        private val BAD_DUMP_REGEX = Regex("\\[[boftpBOFTP][0-9]*\\]")
     }
 
     private data class PlatformSyncResult(
@@ -462,6 +505,8 @@ class RomMRepository @Inject constructor(
         var added = 0
         var updated = 0
         val seenIds = mutableSetOf<Long>()
+        val seenIgdbIds = mutableMapOf<Long, Long>()
+        val syncedRomsWithRA = mutableSetOf<Long>()
         val multiDiscGroups = mutableListOf<MultiDiscGroup>()
         val processedDiscIds = mutableSetOf<Long>()
         var offset = 0
@@ -490,7 +535,28 @@ class RomMRepository @Inject constructor(
 
             for (rom in romsPage.items) {
                 if (rom.igdbId == null || !shouldSyncRom(rom, filters)) continue
+
+                val existingRomId = seenIgdbIds[rom.igdbId]
+                if (existingRomId != null) {
+                    val existingHasRA = syncedRomsWithRA.contains(existingRomId)
+                    val newHasRA = rom.raId != null || rom.raMetadata?.achievements?.isNotEmpty() == true
+                    if (!existingHasRA && newHasRA) {
+                        seenIds.remove(existingRomId)
+                        seenIgdbIds[rom.igdbId] = rom.id
+                        seenIds.add(rom.id)
+                        if (newHasRA) syncedRomsWithRA.add(rom.id)
+                        try {
+                            syncRom(rom, platform.slug)
+                            updated++
+                        } catch (_: Exception) {}
+                    }
+                    continue
+                }
+
+                seenIgdbIds[rom.igdbId] = rom.id
                 seenIds.add(rom.id)
+                val hasRA = rom.raId != null || rom.raMetadata?.achievements?.isNotEmpty() == true
+                if (hasRA) syncedRomsWithRA.add(rom.id)
 
                 try {
                     val (isNew, _) = syncRom(rom, platform.slug)
@@ -625,13 +691,112 @@ class RomMRepository @Inject constructor(
         }
     }
 
+    private suspend fun cleanupInvalidExtensionGames(): Int {
+        var deleted = 0
+        val allGames = gameDao.getBySource(GameSource.ROMM_REMOTE) + gameDao.getBySource(GameSource.ROMM_SYNCED)
+
+        for (game in allGames) {
+            val localPath = game.localPath ?: continue
+            val extension = localPath.substringAfterLast('.', "").lowercase()
+            if (extension.isEmpty()) continue
+
+            val platformDef = PlatformDefinitions.getById(game.platformId) ?: continue
+            if (platformDef.extensions.isEmpty()) continue
+
+            if (extension !in platformDef.extensions) {
+                try {
+                    val file = java.io.File(localPath)
+                    if (file.exists()) file.delete()
+                } catch (_: Exception) {}
+                gameDao.delete(game.id)
+                deleted++
+            }
+        }
+        return deleted
+    }
+
+    private suspend fun cleanupDuplicateGames(): Int {
+        var deleted = 0
+        val allGames = gameDao.getBySource(GameSource.ROMM_REMOTE) + gameDao.getBySource(GameSource.ROMM_SYNCED)
+        val deletedIds = mutableSetOf<Long>()
+
+        val gamesByPlatformAndIgdb = allGames
+            .filter { it.igdbId != null }
+            .groupBy { "${it.platformId}:${it.igdbId}" }
+
+        for ((_, duplicates) in gamesByPlatformAndIgdb) {
+            if (duplicates.size <= 1) continue
+
+            val sorted = duplicates.sortedWith(
+                compareByDescending<GameEntity> { it.achievementCount > 0 }
+                    .thenByDescending { it.localPath != null }
+                    .thenBy { it.id }
+            )
+
+            for (game in sorted.drop(1)) {
+                game.localPath?.let { path ->
+                    try {
+                        val file = java.io.File(path)
+                        if (file.exists()) file.delete()
+                    } catch (_: Exception) {}
+                }
+                gameDao.delete(game.id)
+                deletedIds.add(game.id)
+                deleted++
+            }
+        }
+
+        val remainingGames = allGames.filter { it.id !in deletedIds }
+        val gamesByPlatformAndTitle = remainingGames
+            .groupBy { "${it.platformId}:${it.title.lowercase()}" }
+
+        for ((_, duplicates) in gamesByPlatformAndTitle) {
+            if (duplicates.size <= 1) continue
+
+            val sorted = duplicates.sortedWith(
+                compareByDescending<GameEntity> { it.achievementCount > 0 }
+                    .thenByDescending { it.localPath != null }
+                    .thenBy { it.id }
+            )
+
+            for (game in sorted.drop(1)) {
+                game.localPath?.let { path ->
+                    try {
+                        val file = java.io.File(path)
+                        if (file.exists()) file.delete()
+                    } catch (_: Exception) {}
+                }
+                gameDao.delete(game.id)
+                deleted++
+            }
+        }
+
+        return deleted
+    }
+
     private suspend fun deleteOrphanedGames(seenRommIds: Set<Long>): Int {
-        val remoteOnlyGames = gameDao.getBySource(GameSource.ROMM_REMOTE)
         var deleted = 0
 
-        for (game in remoteOnlyGames) {
+        val remoteGames = gameDao.getBySource(GameSource.ROMM_REMOTE)
+        for (game in remoteGames) {
             val rommId = game.rommId ?: continue
-            if (rommId !in seenRommIds && game.localPath == null) {
+            if (rommId !in seenRommIds) {
+                gameDao.delete(game.id)
+                deleted++
+            }
+        }
+
+        val syncedGames = gameDao.getBySource(GameSource.ROMM_SYNCED)
+        for (game in syncedGames) {
+            val rommId = game.rommId ?: continue
+            if (rommId !in seenRommIds) {
+                game.localPath?.let { path ->
+                    try {
+                        val file = java.io.File(path)
+                        if (file.exists()) file.delete()
+                    } catch (_: Exception) {
+                    }
+                }
                 gameDao.delete(game.id)
                 deleted++
             }

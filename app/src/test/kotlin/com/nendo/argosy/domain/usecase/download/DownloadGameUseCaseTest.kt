@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.download
 
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -19,6 +20,7 @@ import org.junit.Test
 class DownloadGameUseCaseTest {
 
     private lateinit var gameDao: GameDao
+    private lateinit var gameDiscDao: GameDiscDao
     private lateinit var romMRepository: RomMRepository
     private lateinit var downloadManager: DownloadManager
     private lateinit var useCase: DownloadGameUseCase
@@ -26,9 +28,10 @@ class DownloadGameUseCaseTest {
     @Before
     fun setup() {
         gameDao = mockk(relaxed = true)
+        gameDiscDao = mockk(relaxed = true)
         romMRepository = mockk(relaxed = true)
         downloadManager = mockk(relaxed = true)
-        useCase = DownloadGameUseCase(gameDao, romMRepository, downloadManager)
+        useCase = DownloadGameUseCase(gameDao, gameDiscDao, romMRepository, downloadManager)
     }
 
     @Test

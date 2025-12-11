@@ -247,6 +247,7 @@ fun HomeScreen(
                     userRating = uiState.focusedGame?.userRating ?: 0,
                     userDifficulty = uiState.focusedGame?.userDifficulty ?: 0,
                     achievementCount = uiState.focusedGame?.achievementCount ?: 0,
+                    earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
                     modifier = Modifier
                         .fillMaxWidth(0.6f)
                         .align(Alignment.TopEnd)
@@ -374,6 +375,7 @@ private fun GameInfo(
     userRating: Int,
     userDifficulty: Int,
     achievementCount: Int,
+    earnedAchievementCount: Int,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -470,7 +472,7 @@ private fun GameInfo(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "0/$achievementCount",
+                            text = "$earnedAchievementCount/$achievementCount",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White.copy(alpha = 0.7f)
                         )

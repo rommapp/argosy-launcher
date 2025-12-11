@@ -132,7 +132,37 @@ data class RomMUser(
     @Json(name = "id") val id: Long,
     @Json(name = "username") val username: String,
     @Json(name = "enabled") val enabled: Boolean,
-    @Json(name = "role") val role: String
+    @Json(name = "role") val role: String,
+    @Json(name = "ra_username") val raUsername: String? = null,
+    @Json(name = "ra_progression") val raProgression: RomMRAProgression? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMRAProgression(
+    @Json(name = "total") val total: Int = 0,
+    @Json(name = "results") val results: List<RomMRAGameProgression> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMRAGameProgression(
+    @Json(name = "rom_ra_id") val romRaId: Long? = null,
+    @Json(name = "max_possible") val maxPossible: Int? = null,
+    @Json(name = "num_awarded") val numAwarded: Int? = null,
+    @Json(name = "num_awarded_hardcore") val numAwardedHardcore: Int? = null,
+    @Json(name = "most_recent_awarded_date") val mostRecentAwardedDate: String? = null,
+    @Json(name = "earned_achievements") val earnedAchievements: List<RomMEarnedAchievement> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMEarnedAchievement(
+    @Json(name = "id") val id: String,
+    @Json(name = "date") val date: String? = null,
+    @Json(name = "date_hardcore") val dateHardcore: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMRARefreshRequest(
+    @Json(name = "incremental") val incremental: Boolean = true
 )
 
 @JsonClass(generateAdapter = true)
@@ -203,6 +233,7 @@ data class RomMRAMetadata(
 @JsonClass(generateAdapter = true)
 data class RomMAchievement(
     @Json(name = "ra_id") val raId: Long,
+    @Json(name = "badge_id") val badgeId: String?,
     @Json(name = "title") val title: String,
     @Json(name = "description") val description: String?,
     @Json(name = "points") val points: Int,

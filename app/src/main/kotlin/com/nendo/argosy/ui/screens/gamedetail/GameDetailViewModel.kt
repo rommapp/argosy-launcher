@@ -328,38 +328,51 @@ class GameDetailViewModel @Inject constructor(
     private suspend fun fetchAndCacheAchievements(rommId: Long, gameId: Long): List<AchievementUi> {
         return when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
-                val apiAchievements = result.data.raMetadata?.achievements ?: emptyList()
-                if (apiAchievements.isNotEmpty()) {
-                    val entities = apiAchievements.map { achievement ->
-                        com.nendo.argosy.data.local.entity.AchievementEntity(
-                            gameId = gameId,
-                            raId = achievement.raId,
-                            title = achievement.title,
-                            description = achievement.description,
-                            points = achievement.points,
-                            type = achievement.type,
-                            badgeUrl = achievement.badgeUrl,
-                            badgeUrlLock = achievement.badgeUrlLock,
-                            isUnlocked = false
-                        )
-                    }
-                    achievementDao.replaceForGame(gameId, entities)
-                    gameDao.updateAchievementCount(gameId, entities.size)
+                val rom = result.data
+                val apiAchievements = rom.raMetadata?.achievements ?: emptyList()
+                if (apiAchievements.isEmpty()) return emptyList()
+
+                val earnedBadgeIds = getEarnedBadgeIds(rom.raId)
+
+                val entities = apiAchievements.map { achievement ->
+                    val isUnlocked = achievement.badgeId in earnedBadgeIds
+                    com.nendo.argosy.data.local.entity.AchievementEntity(
+                        gameId = gameId,
+                        raId = achievement.raId,
+                        title = achievement.title,
+                        description = achievement.description,
+                        points = achievement.points,
+                        type = achievement.type,
+                        badgeUrl = achievement.badgeUrl,
+                        badgeUrlLock = achievement.badgeUrlLock,
+                        isUnlocked = isUnlocked
+                    )
                 }
+                achievementDao.replaceForGame(gameId, entities)
+
+                val earnedCount = entities.count { it.isUnlocked }
+                gameDao.updateAchievementCount(gameId, entities.size, earnedCount)
+
                 apiAchievements.map { achievement ->
+                    val isUnlocked = achievement.badgeId in earnedBadgeIds
                     AchievementUi(
                         raId = achievement.raId,
                         title = achievement.title,
                         description = achievement.description,
                         points = achievement.points,
                         type = achievement.type,
-                        badgeUrl = achievement.badgeUrlLock ?: achievement.badgeUrl,
-                        isUnlocked = false
+                        badgeUrl = if (isUnlocked) achievement.badgeUrl else (achievement.badgeUrlLock ?: achievement.badgeUrl),
+                        isUnlocked = isUnlocked
                     )
                 }
             }
             is RomMResult.Error -> emptyList()
         }
+    }
+
+    private fun getEarnedBadgeIds(gameRaId: Long?): Set<String> {
+        if (gameRaId == null) return emptySet()
+        return romMRepository.getEarnedBadgeIds(gameRaId)
     }
 
     private suspend fun refreshAchievementsInBackground(rommId: Long, gameId: Long) {

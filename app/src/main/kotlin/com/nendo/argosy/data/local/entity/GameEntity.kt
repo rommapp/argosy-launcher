@@ -78,5 +78,6 @@ data class GameEntity(
     val isMultiDisc: Boolean = false,
     val lastPlayedDiscId: Long? = null,
 
-    val achievementCount: Int = 0
+    val achievementCount: Int = 0,
+    val earnedAchievementCount: Int = 0
 )

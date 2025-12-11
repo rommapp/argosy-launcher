@@ -14,8 +14,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.ui.ArgosyApp
 import com.nendo.argosy.ui.input.GamepadInputHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -28,6 +33,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var imageCacheManager: ImageCacheManager
+
+    @Inject
+    lateinit var romMRepository: RomMRepository
+
+    private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var hasResumedBefore = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +55,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (hasResumedBefore) {
+            romMRepository.onAppResumed()
+            activityScope.launch {
+                romMRepository.initialize()
+            }
+        }
+        hasResumedBefore = true
     }
 
     @SuppressLint("RestrictedApi")

@@ -88,6 +88,7 @@ data class HomeGameUi(
     val userRating: Int = 0,
     val userDifficulty: Int = 0,
     val achievementCount: Int = 0,
+    val earnedAchievementCount: Int = 0,
     val downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE
 )
 
@@ -647,7 +648,8 @@ class HomeViewModel @Inject constructor(
             rating = rating,
             userRating = userRating,
             userDifficulty = userDifficulty,
-            achievementCount = achievementCount
+            achievementCount = achievementCount,
+            earnedAchievementCount = earnedAchievementCount
         )
     }
 
@@ -767,8 +769,10 @@ class HomeViewModel @Inject constructor(
     private suspend fun fetchAndCacheAchievements(rommId: Long, gameId: Long) {
         when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
-                val apiAchievements = result.data.raMetadata?.achievements ?: return
+                val rom = result.data
+                val apiAchievements = rom.raMetadata?.achievements ?: return
                 if (apiAchievements.isNotEmpty()) {
+                    val earnedBadgeIds = rom.raId?.let { romMRepository.getEarnedBadgeIds(it) } ?: emptySet()
                     val entities = apiAchievements.map { achievement ->
                         com.nendo.argosy.data.local.entity.AchievementEntity(
                             gameId = gameId,
@@ -779,24 +783,25 @@ class HomeViewModel @Inject constructor(
                             type = achievement.type,
                             badgeUrl = achievement.badgeUrl,
                             badgeUrlLock = achievement.badgeUrlLock,
-                            isUnlocked = false
+                            isUnlocked = achievement.badgeId in earnedBadgeIds
                         )
                     }
                     achievementDao.replaceForGame(gameId, entities)
-                    gameDao.updateAchievementCount(gameId, entities.size)
+                    val earnedCount = entities.count { it.isUnlocked }
+                    gameDao.updateAchievementCount(gameId, entities.size, earnedCount)
 
                     _uiState.update { state ->
                         state.copy(
                             recentGames = state.recentGames.map {
-                                if (it.id == gameId) it.copy(achievementCount = entities.size) else it
+                                if (it.id == gameId) it.copy(achievementCount = entities.size, earnedAchievementCount = earnedCount) else it
                             },
                             favoriteGames = state.favoriteGames.map {
-                                if (it.id == gameId) it.copy(achievementCount = entities.size) else it
+                                if (it.id == gameId) it.copy(achievementCount = entities.size, earnedAchievementCount = earnedCount) else it
                             },
                             platformItems = state.platformItems.map { item ->
                                 when (item) {
                                     is HomeRowItem.Game -> if (item.game.id == gameId) {
-                                        HomeRowItem.Game(item.game.copy(achievementCount = entities.size))
+                                        HomeRowItem.Game(item.game.copy(achievementCount = entities.size, earnedAchievementCount = earnedCount))
                                     } else item
                                     is HomeRowItem.ViewAll -> item
                                 }

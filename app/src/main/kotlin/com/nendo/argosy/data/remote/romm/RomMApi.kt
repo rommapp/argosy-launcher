@@ -27,11 +27,17 @@ interface RomMApi {
     suspend fun login(
         @Field("username") username: String,
         @Field("password") password: String,
-        @Field("scope") scope: String = "me.read platforms.read roms.read assets.read assets.write roms.user.read roms.user.write"
+        @Field("scope") scope: String = "me.read me.write platforms.read roms.read assets.read assets.write roms.user.read roms.user.write"
     ): Response<RomMTokenResponse>
 
     @GET("api/users/me")
     suspend fun getCurrentUser(): Response<RomMUser>
+
+    @POST("api/users/{id}/ra/refresh")
+    suspend fun refreshRAProgression(
+        @Path("id") userId: Long,
+        @Body body: RomMRARefreshRequest = RomMRARefreshRequest()
+    ): Response<Unit>
 
     @GET("api/platforms")
     suspend fun getPlatforms(): Response<List<RomMPlatform>>

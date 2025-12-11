@@ -73,6 +73,9 @@ class RomMRepository @Inject constructor(
     private var baseUrl: String = ""
     private var accessToken: String? = null
     private val syncMutex = Mutex()
+    private var raProgressionRefreshedThisSession = false
+
+    private var cachedRAProgression: Map<Long, Set<String>> = emptyMap()
 
     private val _syncProgress = MutableStateFlow(SyncProgress())
     val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
@@ -90,8 +93,56 @@ class RomMRepository @Inject constructor(
     suspend fun initialize() {
         val prefs = userPreferencesRepository.preferences.first()
         if (!prefs.rommBaseUrl.isNullOrBlank()) {
-            connect(prefs.rommBaseUrl, prefs.rommToken)
+            val result = connect(prefs.rommBaseUrl, prefs.rommToken)
+            if (result is RomMResult.Success && prefs.rommToken != null) {
+                refreshRAProgressionOnStartup()
+            }
         }
+    }
+
+    private var shouldForceRefreshOnNextInit = false
+
+    fun onAppResumed() {
+        raProgressionRefreshedThisSession = false
+        cachedRAProgression = emptyMap()
+        shouldForceRefreshOnNextInit = true
+    }
+
+    private suspend fun refreshRAProgressionOnStartup() {
+        val currentApi = api ?: return
+        try {
+            val userResponse = currentApi.getCurrentUser()
+            if (!userResponse.isSuccessful) return
+
+            val user = userResponse.body() ?: return
+            if (user.raUsername.isNullOrBlank()) return
+
+            var progression = user.raProgression?.results ?: emptyList()
+            shouldForceRefreshOnNextInit = false
+
+            val refreshResponse = currentApi.refreshRAProgression(user.id)
+            if (refreshResponse.isSuccessful) {
+                raProgressionRefreshedThisSession = true
+                val refreshedUserResponse = currentApi.getCurrentUser()
+                if (refreshedUserResponse.isSuccessful) {
+                    progression = refreshedUserResponse.body()?.raProgression?.results ?: emptyList()
+                }
+            } else {
+                raProgressionRefreshedThisSession = true
+            }
+
+            cachedRAProgression = progression
+                .filter { it.romRaId != null }
+                .associate { gameProgress ->
+                    val earnedBadgeIds = gameProgress.earnedAchievements.map { it.id }.toSet()
+                    gameProgress.romRaId!! to earnedBadgeIds
+                }
+        } catch (_: Exception) {
+        }
+    }
+
+    fun getEarnedBadgeIds(raGameId: Long): Set<String> {
+        return cachedRAProgression[raGameId] ?: emptySet()
     }
 
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {
@@ -124,7 +175,7 @@ class RomMRepository @Inject constructor(
         val currentApi = api ?: return RomMResult.Error("Not connected")
 
         return try {
-            val scope = "me.read platforms.read roms.read assets.read roms.user.read roms.user.write"
+            val scope = "me.read me.write platforms.read roms.read assets.read roms.user.read roms.user.write"
             val response = currentApi.login(username, password, scope)
             if (response.isSuccessful) {
                 val token = response.body()?.accessToken
@@ -600,6 +651,48 @@ class RomMRepository @Inject constructor(
             }
         } catch (e: Exception) {
             RomMResult.Error(e.message ?: "Failed to fetch ROM")
+        }
+    }
+
+    suspend fun getCurrentUser(): RomMResult<RomMUser> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.getCurrentUser()
+            if (response.isSuccessful) {
+                RomMResult.Success(response.body()!!)
+            } else {
+                RomMResult.Error("Failed to fetch user", response.code())
+            }
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to fetch user")
+        }
+    }
+
+    suspend fun refreshRAProgressionIfNeeded(): RomMResult<Unit> {
+        if (raProgressionRefreshedThisSession) {
+            return RomMResult.Success(Unit)
+        }
+
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val userResponse = currentApi.getCurrentUser()
+            if (!userResponse.isSuccessful) {
+                return RomMResult.Error("Failed to get user", userResponse.code())
+            }
+            val user = userResponse.body() ?: return RomMResult.Error("No user data")
+            if (user.raUsername.isNullOrBlank()) {
+                return RomMResult.Error("No RetroAchievements username configured")
+            }
+
+            val response = currentApi.refreshRAProgression(user.id)
+            if (response.isSuccessful) {
+                raProgressionRefreshedThisSession = true
+                RomMResult.Success(Unit)
+            } else {
+                RomMResult.Error("Failed to refresh RA progression", response.code())
+            }
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to refresh RA progression")
         }
     }
 

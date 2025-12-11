@@ -220,6 +220,6 @@ interface GameDao {
     @Query("UPDATE games SET lastPlayedDiscId = :discId WHERE id = :gameId")
     suspend fun updateLastPlayedDisc(gameId: Long, discId: Long)
 
-    @Query("UPDATE games SET achievementCount = :count WHERE id = :gameId")
-    suspend fun updateAchievementCount(gameId: Long, count: Int)
+    @Query("UPDATE games SET achievementCount = :count, earnedAchievementCount = :earnedCount WHERE id = :gameId")
+    suspend fun updateAchievementCount(gameId: Long, count: Int, earnedCount: Int = 0)
 }

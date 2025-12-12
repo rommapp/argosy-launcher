@@ -34,7 +34,7 @@ object PlatformDefinitions {
         PlatformDef("dreamcast", "Sega Dreamcast", "Dreamcast", setOf("gdi", "cdi", "chd"), 25),
         PlatformDef("gg", "Sega Game Gear", "GG", setOf("gg"), 26),
 
-        PlatformDef("psx", "Sony PlayStation", "PS1", setOf("bin", "iso", "img", "chd", "pbp", "cue"), 30),
+        PlatformDef("psx", "Sony PlayStation", "PS1", setOf("bin", "iso", "img", "chd", "pbp", "cue", "7z", "zip"), 30),
         PlatformDef("ps2", "Sony PlayStation 2", "PS2", setOf("iso", "bin", "chd", "gz", "cso"), 31),
         PlatformDef("psp", "Sony PlayStation Portable", "PSP", setOf("iso", "cso", "pbp"), 32),
         PlatformDef("vita", "Sony PlayStation Vita", "Vita", setOf("vpk", "mai"), 33),

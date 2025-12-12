@@ -86,9 +86,10 @@ class DownloadGameUseCase @Inject constructor(
                 downloadManager.enqueueDiscDownload(
                     gameId = gameId,
                     discId = disc.id,
+                    discNumber = disc.discNumber,
                     rommId = disc.rommId,
                     fileName = fileName,
-                    gameTitle = "$gameTitle (Disc ${disc.discNumber})",
+                    gameTitle = gameTitle,
                     platformSlug = rom.platformSlug,
                     coverPath = coverPath,
                     expectedSizeBytes = rom.fileSize

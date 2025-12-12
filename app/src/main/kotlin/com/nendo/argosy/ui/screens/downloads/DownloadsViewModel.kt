@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 data class DownloadsUiState(
     val downloadState: DownloadQueueState = DownloadQueueState(),
-    val focusedGameId: Long? = null,
+    val focusedDownloadId: Long? = null,
     val maxActiveSlots: Int = 1
 ) {
     val activeItems: List<DownloadProgress>
@@ -33,20 +33,20 @@ data class DownloadsUiState(
             }
         }
 
-    private val activeGameIds: Set<Long>
-        get() = activeItems.map { it.gameId }.toSet()
+    private val activeDownloadIds: Set<Long>
+        get() = activeItems.map { it.id }.toSet()
 
     val queuedItems: List<DownloadProgress>
-        get() = downloadState.queue.filter { it.gameId !in activeGameIds }
+        get() = downloadState.queue.filter { it.id !in activeDownloadIds }
 
     val allItems: List<DownloadProgress>
         get() = activeItems + queuedItems
 
     val focusedIndex: Int
-        get() = allItems.indexOfFirst { it.gameId == focusedGameId }.takeIf { it >= 0 } ?: 0
+        get() = allItems.indexOfFirst { it.id == focusedDownloadId }.takeIf { it >= 0 } ?: 0
 
     val focusedItem: DownloadProgress?
-        get() = allItems.find { it.gameId == focusedGameId } ?: allItems.firstOrNull()
+        get() = allItems.find { it.id == focusedDownloadId } ?: allItems.firstOrNull()
 
     val canToggle: Boolean
         get() = focusedItem != null
@@ -82,7 +82,7 @@ class DownloadsViewModel @Inject constructor(
             ) { downloadState, maxActive ->
                 downloadState to maxActive
             }.collect { (downloadState, maxActive) ->
-                val currentFocusedId = _uiState.value.focusedGameId
+                val currentFocusedId = _uiState.value.focusedDownloadId
                 val allItems = buildList {
                     addAll(downloadState.activeDownloads)
                     addAll(downloadState.queue)
@@ -90,13 +90,13 @@ class DownloadsViewModel @Inject constructor(
 
                 val newFocusedId = when {
                     allItems.isEmpty() -> null
-                    currentFocusedId != null && allItems.any { it.gameId == currentFocusedId } -> currentFocusedId
-                    else -> allItems.firstOrNull()?.gameId
+                    currentFocusedId != null && allItems.any { it.id == currentFocusedId } -> currentFocusedId
+                    else -> allItems.firstOrNull()?.id
                 }
 
                 _uiState.value = _uiState.value.copy(
                     downloadState = downloadState,
-                    focusedGameId = newFocusedId,
+                    focusedDownloadId = newFocusedId,
                     maxActiveSlots = maxActive
                 )
             }
@@ -112,7 +112,7 @@ class DownloadsViewModel @Inject constructor(
         val newIndex = (currentIndex + delta).coerceIn(0, items.size - 1)
 
         if (newIndex != currentIndex) {
-            _uiState.value = currentState.copy(focusedGameId = items[newIndex].gameId)
+            _uiState.value = currentState.copy(focusedDownloadId = items[newIndex].id)
             return true
         }
         return false

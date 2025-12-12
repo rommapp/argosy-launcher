@@ -265,7 +265,7 @@ private fun DownloadItem(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = download.gameTitle,
+                    text = download.displayTitle,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -328,7 +328,7 @@ private fun CompletedDownloadItem(download: DownloadProgress) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = download.gameTitle,
+                    text = download.displayTitle,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

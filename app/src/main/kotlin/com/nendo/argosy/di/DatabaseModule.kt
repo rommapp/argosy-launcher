@@ -48,7 +48,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_13_14,
                 ALauncherDatabase.MIGRATION_14_15,
                 ALauncherDatabase.MIGRATION_15_16,
-                ALauncherDatabase.MIGRATION_16_17
+                ALauncherDatabase.MIGRATION_16_17,
+                ALauncherDatabase.MIGRATION_17_18
             )
             .build()
     }

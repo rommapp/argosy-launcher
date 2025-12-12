@@ -19,6 +19,7 @@ data class DownloadQueueEntity(
     val gameId: Long,
     val rommId: Long,
     val discId: Long? = null,
+    val discNumber: Int? = null,
     val fileName: String,
     val gameTitle: String,
     val platformSlug: String,

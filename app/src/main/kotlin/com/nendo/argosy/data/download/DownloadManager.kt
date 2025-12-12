@@ -42,6 +42,7 @@ data class DownloadProgress(
     val gameId: Long,
     val rommId: Long,
     val discId: Long? = null,
+    val discNumber: Int? = null,
     val fileName: String,
     val gameTitle: String,
     val platformSlug: String,
@@ -55,6 +56,9 @@ data class DownloadProgress(
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
 
     val isDiscDownload: Boolean get() = discId != null
+
+    val displayTitle: String
+        get() = if (discNumber != null) "$gameTitle (Disc $discNumber)" else gameTitle
 }
 
 enum class DownloadState {
@@ -223,6 +227,7 @@ class DownloadManager @Inject constructor(
     suspend fun enqueueDiscDownload(
         gameId: Long,
         discId: Long,
+        discNumber: Int,
         rommId: Long,
         fileName: String,
         gameTitle: String,
@@ -242,6 +247,7 @@ class DownloadManager @Inject constructor(
             gameId = gameId,
             rommId = rommId,
             discId = discId,
+            discNumber = discNumber,
             fileName = fileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,
@@ -261,6 +267,7 @@ class DownloadManager @Inject constructor(
             gameId = gameId,
             rommId = rommId,
             discId = discId,
+            discNumber = discNumber,
             fileName = fileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,
@@ -639,6 +646,7 @@ class DownloadManager @Inject constructor(
             gameId = gameId,
             rommId = rommId,
             discId = discId,
+            discNumber = discNumber,
             fileName = fileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,

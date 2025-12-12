@@ -34,6 +34,7 @@ import android.content.Intent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -192,7 +193,10 @@ class HomeViewModel @Inject constructor(
     val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
 
     private val rowGameIndexes = mutableMapOf<HomeRow, Int>()
-    private var platformGamesJob: kotlinx.coroutines.Job? = null
+    private var rowLoadJob: kotlinx.coroutines.Job? = null
+    private val loadViewDebounceMs = 150L
+    private var achievementPrefetchJob: kotlinx.coroutines.Job? = null
+    private val achievementPrefetchDebounceMs = 300L
 
     init {
         loadData()
@@ -247,16 +251,47 @@ class HomeViewModel @Inject constructor(
 
     private fun loadData() {
         viewModelScope.launch {
-            val totalGames = gameDao.countAll()
-            if (totalGames == 0) {
-                _uiState.update { it.copy(isLoading = false) }
+            // Load all data first
+            val platforms = platformDao.getPlatformsWithGames()
+            val recentGames = gameDao.getRecentlyPlayed(RECENT_GAMES_LIMIT)
+            val favorites = gameDao.getFavorites()
+
+            val platformUis = platforms.map { it.toUi() }
+            val recentUis = recentGames.map { it.toUi() }
+            val favoriteUis = favorites.map { it.toUi() }
+
+            // Determine starting row: recent -> favorites -> first platform
+            val startRow = when {
+                recentUis.isNotEmpty() -> HomeRow.Continue
+                favoriteUis.isNotEmpty() -> HomeRow.Favorites
+                platformUis.isNotEmpty() -> HomeRow.Platform(0)
+                else -> HomeRow.Continue
             }
-            launch { loadRecentGames() }
-            launch { loadFavorites() }
-            launch { loadPlatforms() }
+
+            _uiState.update { state ->
+                state.copy(
+                    platforms = platformUis,
+                    recentGames = recentUis,
+                    favoriteGames = favoriteUis,
+                    currentRow = startRow,
+                    isLoading = false
+                )
+            }
+
+            // Load platform games if starting on a platform row
+            if (startRow is HomeRow.Platform) {
+                val platform = platforms.getOrNull(startRow.index)
+                if (platform != null) {
+                    loadGamesForPlatform(platform.id, startRow.index)
+                }
+            }
+
+            // Start observing download state
             launch { observeDownloadState() }
         }
     }
+
+    private val completedGameIds = mutableSetOf<Long>()
 
     private suspend fun observeDownloadState() {
         downloadManager.state.collect { downloadState ->
@@ -282,128 +317,102 @@ class HomeViewModel @Inject constructor(
                 }
             }
 
+            val newlyCompleted = downloadState.completed
+                .map { it.gameId }
+                .filter { it !in completedGameIds }
+
+            if (newlyCompleted.isNotEmpty()) {
+                completedGameIds.addAll(newlyCompleted)
+                refreshCurrentRowInternal()
+            }
+
             _uiState.update { it.copy(downloadIndicators = indicators) }
         }
     }
 
     private suspend fun loadRecentGames() {
-        gameDao.observeRecentlyPlayed(RECENT_GAMES_LIMIT).collect { games ->
-            val filtered = games.filter { it.lastPlayed != null }
-            val gameUis = filtered.map { it.toUi() }
-            _uiState.update { state ->
-                val newState = state.copy(recentGames = gameUis)
-                if (state.currentRow == HomeRow.Continue && gameUis.isEmpty()) {
-                    val newRow = newState.availableRows.firstOrNull() ?: HomeRow.Continue
-                    newState.copy(currentRow = newRow, focusedGameIndex = 0)
-                } else if (state.currentRow == HomeRow.Continue) {
-                    val focusedGameId = state.focusedGame?.id
-                    val newIndex = if (focusedGameId != null) {
-                        gameUis.indexOfFirst { it.id == focusedGameId }
-                            .takeIf { it >= 0 } ?: state.focusedGameIndex
-                    } else {
-                        state.focusedGameIndex
-                    }
-                    newState.copy(focusedGameIndex = newIndex.coerceIn(0, (gameUis.size - 1).coerceAtLeast(0)))
-                } else {
-                    newState
-                }
+        val games = gameDao.getRecentlyPlayed(RECENT_GAMES_LIMIT)
+        val gameUis = games.map { it.toUi() }
+        _uiState.update { state ->
+            val newState = state.copy(recentGames = gameUis)
+            if (state.currentRow == HomeRow.Continue && gameUis.isEmpty()) {
+                val newRow = newState.availableRows.firstOrNull() ?: HomeRow.Continue
+                newState.copy(currentRow = newRow, focusedGameIndex = 0)
+            } else {
+                newState
             }
+        }
+    }
+
+    fun refreshRecentGames() {
+        viewModelScope.launch {
+            loadRecentGames()
         }
     }
 
     private suspend fun loadFavorites() {
-        gameDao.observeFavorites().collect { games ->
-            val gameUis = games.map { it.toUi() }
-            _uiState.update { state ->
-                val newState = state.copy(favoriteGames = gameUis)
-                if (state.currentRow == HomeRow.Favorites && gameUis.isEmpty()) {
-                    val newRow = newState.availableRows.firstOrNull() ?: HomeRow.Continue
-                    newState.copy(currentRow = newRow, focusedGameIndex = 0)
-                } else {
-                    newState
-                }
+        val games = gameDao.getFavorites()
+        val gameUis = games.map { it.toUi() }
+        _uiState.update { state ->
+            val newState = state.copy(favoriteGames = gameUis)
+            if (state.currentRow == HomeRow.Favorites && gameUis.isEmpty()) {
+                val newRow = newState.availableRows.firstOrNull() ?: HomeRow.Continue
+                newState.copy(currentRow = newRow, focusedGameIndex = 0)
+            } else {
+                newState
             }
+        }
+    }
+
+    fun refreshFavorites() {
+        viewModelScope.launch {
+            loadFavorites()
         }
     }
 
     private suspend fun loadPlatforms() {
-        platformDao.observePlatformsWithGames().collect { platforms ->
-            val platformUis = platforms.map { it.toUi() }
-            _uiState.update { state ->
-                val shouldSwitchRow = platforms.isNotEmpty() &&
-                    state.currentRow == HomeRow.Continue &&
-                    state.recentGames.isEmpty()
-                state.copy(
-                    platforms = platformUis,
-                    currentRow = if (shouldSwitchRow) HomeRow.Platform(0) else state.currentRow
-                )
-            }
-            val state = _uiState.value
-            if (platforms.isNotEmpty() && state.platformItems.isEmpty()) {
-                val currentRow = state.currentRow
-                if (currentRow is HomeRow.Platform) {
-                    val platform = platforms.getOrNull(currentRow.index)
-                    if (platform != null) {
-                        loadGamesForPlatform(platform.id, currentRow.index, setLoadingFalse = true)
-                    }
-                } else {
-                    loadGamesForPlatform(platforms.first().id, platformIndex = 0, setLoadingFalse = true)
-                }
-            }
+        val platforms = platformDao.getPlatformsWithGames()
+        val platformUis = platforms.map { it.toUi() }
+        _uiState.update { state ->
+            val shouldSwitchRow = platforms.isNotEmpty() &&
+                state.currentRow == HomeRow.Continue &&
+                state.recentGames.isEmpty()
+            state.copy(
+                platforms = platformUis,
+                currentRow = if (shouldSwitchRow) HomeRow.Platform(0) else state.currentRow,
+                isLoading = false
+            )
         }
     }
 
-    private fun loadGamesForPlatform(
-        platformId: String,
-        platformIndex: Int,
-        useSavedIndex: Boolean = false,
-        setLoadingFalse: Boolean = false
-    ) {
-        platformGamesJob?.cancel()
-        platformGamesJob = viewModelScope.launch {
-            var isFirstEmission = true
-            gameDao.observeByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT).collect { games ->
-                val platform = _uiState.value.platforms.getOrNull(platformIndex)
-                val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
-                val items: List<HomeRowItem> = if (platform != null) {
-                    gameItems + HomeRowItem.ViewAll(
-                        platformId = platform.id,
-                        platformName = platform.name,
-                        logoPath = platform.logoPath
-                    )
-                } else {
-                    gameItems
-                }
+    fun refreshPlatforms() {
+        viewModelScope.launch {
+            loadPlatforms()
+        }
+    }
 
-                _uiState.update { state ->
-                    val shouldClearLoading = setLoadingFalse && isFirstEmission
-                    if (useSavedIndex && isFirstEmission) {
-                        val row = HomeRow.Platform(platformIndex)
-                        val savedIndex = rowGameIndexes[row] ?: 0
-                        isFirstEmission = false
-                        state.copy(
-                            platformItems = items,
-                            focusedGameIndex = savedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)),
-                            isLoading = if (shouldClearLoading) false else state.isLoading
-                        )
-                    } else {
-                        val focusedGameId = state.focusedGame?.id
-                        val newIndex = if (focusedGameId != null) {
-                            items.indexOfFirst { (it as? HomeRowItem.Game)?.game?.id == focusedGameId }
-                                .takeIf { it >= 0 } ?: state.focusedGameIndex
-                        } else {
-                            state.focusedGameIndex
-                        }
-                        isFirstEmission = false
-                        state.copy(
-                            platformItems = items,
-                            focusedGameIndex = newIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)),
-                            isLoading = if (shouldClearLoading) false else state.isLoading
-                        )
-                    }
-                }
-                prefetchAchievementsForFocusedGame()
-            }
+    private fun loadGamesForPlatform(platformId: String, platformIndex: Int) {
+        viewModelScope.launch {
+            loadGamesForPlatformInternal(platformId, platformIndex)
+        }
+    }
+
+    private suspend fun loadGamesForPlatformInternal(platformId: String, platformIndex: Int) {
+        val games = gameDao.getByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT)
+        val platform = _uiState.value.platforms.getOrNull(platformIndex)
+        val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
+        val items: List<HomeRowItem> = if (platform != null) {
+            gameItems + HomeRowItem.ViewAll(
+                platformId = platform.id,
+                platformName = platform.name,
+                logoPath = platform.logoPath
+            )
+        } else {
+            gameItems
+        }
+
+        _uiState.update { state ->
+            state.copy(platformItems = items)
         }
     }
 
@@ -419,16 +428,8 @@ class HomeViewModel @Inject constructor(
         val nextRow = rows[nextIdx]
         val savedIndex = rowGameIndexes[nextRow] ?: 0
 
-        if (nextRow is HomeRow.Platform) {
-            _uiState.update { it.copy(currentRow = nextRow, focusedGameIndex = savedIndex, platformItems = emptyList()) }
-            val platform = state.platforms.getOrNull(nextRow.index)
-            if (platform != null) {
-                loadGamesForPlatform(platform.id, nextRow.index, useSavedIndex = true)
-            }
-        } else {
-            _uiState.update { it.copy(currentRow = nextRow, focusedGameIndex = savedIndex) }
-            prefetchAchievementsForFocusedGame()
-        }
+        _uiState.update { it.copy(currentRow = nextRow, focusedGameIndex = savedIndex) }
+        loadRowWithDebounce(nextRow)
         saveCurrentState()
     }
 
@@ -444,26 +445,38 @@ class HomeViewModel @Inject constructor(
         val prevRow = rows[prevIdx]
         val savedIndex = rowGameIndexes[prevRow] ?: 0
 
-        if (prevRow is HomeRow.Platform) {
-            _uiState.update { it.copy(currentRow = prevRow, focusedGameIndex = savedIndex, platformItems = emptyList()) }
-            val platform = state.platforms.getOrNull(prevRow.index)
-            if (platform != null) {
-                loadGamesForPlatform(platform.id, prevRow.index, useSavedIndex = true)
-            }
-        } else {
-            _uiState.update { it.copy(currentRow = prevRow, focusedGameIndex = savedIndex) }
-            prefetchAchievementsForFocusedGame()
-        }
+        _uiState.update { it.copy(currentRow = prevRow, focusedGameIndex = savedIndex) }
+        loadRowWithDebounce(prevRow)
         saveCurrentState()
+    }
+
+    private fun loadRowWithDebounce(row: HomeRow) {
+        rowLoadJob?.cancel()
+        rowLoadJob = viewModelScope.launch {
+            delay(loadViewDebounceMs)
+            when (row) {
+                is HomeRow.Platform -> {
+                    val platform = _uiState.value.platforms.getOrNull(row.index)
+                    if (platform != null) {
+                        loadGamesForPlatform(platform.id, row.index)
+                    }
+                }
+                HomeRow.Continue -> loadRecentGames()
+                HomeRow.Favorites -> loadFavorites()
+            }
+        }
     }
 
     fun nextGame(): Boolean {
         val state = _uiState.value
         if (state.currentItems.isEmpty()) return false
         if (state.focusedGameIndex >= state.currentItems.size - 1) return false
-        _uiState.update { it.copy(focusedGameIndex = state.focusedGameIndex + 1) }
+        _uiState.update {
+            if (it.focusedGameIndex >= it.currentItems.size - 1) it
+            else it.copy(focusedGameIndex = it.focusedGameIndex + 1)
+        }
         saveCurrentState()
-        prefetchAchievementsForFocusedGame()
+        prefetchAchievementsDebounced()
         return true
     }
 
@@ -471,10 +484,21 @@ class HomeViewModel @Inject constructor(
         val state = _uiState.value
         if (state.currentItems.isEmpty()) return false
         if (state.focusedGameIndex <= 0) return false
-        _uiState.update { it.copy(focusedGameIndex = state.focusedGameIndex - 1) }
+        _uiState.update {
+            if (it.focusedGameIndex <= 0) it
+            else it.copy(focusedGameIndex = it.focusedGameIndex - 1)
+        }
         saveCurrentState()
-        prefetchAchievementsForFocusedGame()
+        prefetchAchievementsDebounced()
         return true
+    }
+
+    private fun prefetchAchievementsDebounced() {
+        achievementPrefetchJob?.cancel()
+        achievementPrefetchJob = viewModelScope.launch {
+            delay(achievementPrefetchDebounceMs)
+            prefetchAchievementsForFocusedGame()
+        }
     }
 
     private fun scrollToFirstItem(): Boolean {
@@ -547,12 +571,14 @@ class HomeViewModel @Inject constructor(
     fun toggleFavorite(gameId: Long) {
         viewModelScope.launch {
             gameActions.toggleFavorite(gameId)
+            refreshCurrentRowInternal()
         }
     }
 
     fun hideGame(gameId: Long) {
         viewModelScope.launch {
             gameActions.hideGame(gameId)
+            refreshCurrentRowInternal()
         }
     }
 
@@ -560,6 +586,66 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             gameActions.deleteLocalFile(gameId)
             notificationManager.showSuccess("Download deleted")
+            refreshCurrentRowInternal()
+        }
+    }
+
+    private suspend fun refreshCurrentRowInternal() {
+        val state = _uiState.value
+        val focusedGameId = state.focusedGame?.id
+
+        when (val row = state.currentRow) {
+            HomeRow.Favorites -> {
+                val games = gameDao.getFavorites()
+                val gameUis = games.map { it.toUi() }
+                val newIndex = if (focusedGameId != null) {
+                    gameUis.indexOfFirst { it.id == focusedGameId }
+                        .takeIf { it >= 0 } ?: state.focusedGameIndex.coerceAtMost(gameUis.lastIndex.coerceAtLeast(0))
+                } else state.focusedGameIndex
+
+                _uiState.update { s ->
+                    val newState = s.copy(favoriteGames = gameUis, focusedGameIndex = newIndex)
+                    if (s.currentRow == HomeRow.Favorites && gameUis.isEmpty()) {
+                        val newRow = newState.availableRows.firstOrNull() ?: HomeRow.Continue
+                        newState.copy(currentRow = newRow, focusedGameIndex = 0)
+                    } else newState
+                }
+            }
+            HomeRow.Continue -> {
+                val games = gameDao.getRecentlyPlayed(RECENT_GAMES_LIMIT)
+                val gameUis = games.map { it.toUi() }
+                val newIndex = if (focusedGameId != null) {
+                    gameUis.indexOfFirst { it.id == focusedGameId }
+                        .takeIf { it >= 0 } ?: state.focusedGameIndex.coerceAtMost(gameUis.lastIndex.coerceAtLeast(0))
+                } else state.focusedGameIndex
+
+                _uiState.update { s ->
+                    val newState = s.copy(recentGames = gameUis, focusedGameIndex = newIndex)
+                    if (s.currentRow == HomeRow.Continue && gameUis.isEmpty()) {
+                        val newRow = newState.availableRows.firstOrNull() ?: HomeRow.Continue
+                        newState.copy(currentRow = newRow, focusedGameIndex = 0)
+                    } else newState
+                }
+            }
+            is HomeRow.Platform -> {
+                val platform = state.platforms.getOrNull(row.index) ?: return
+                val games = gameDao.getByPlatformSorted(platform.id, limit = PLATFORM_GAMES_LIMIT)
+                val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
+                val items: List<HomeRowItem> = gameItems + HomeRowItem.ViewAll(
+                    platformId = platform.id,
+                    platformName = platform.name,
+                    logoPath = platform.logoPath
+                )
+
+                val newIndex = if (focusedGameId != null) {
+                    items.indexOfFirst { (it as? HomeRowItem.Game)?.game?.id == focusedGameId }
+                        .takeIf { it >= 0 } ?: state.focusedGameIndex.coerceAtMost(items.lastIndex.coerceAtLeast(0))
+                } else state.focusedGameIndex
+
+                _uiState.update { s ->
+                    s.copy(platformItems = items, focusedGameIndex = newIndex)
+                }
+            }
         }
     }
 
@@ -762,18 +848,12 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private var achievementFetchJob: kotlinx.coroutines.Job? = null
-
     private fun prefetchAchievementsForFocusedGame() {
         val game = _uiState.value.focusedGame ?: return
         viewModelScope.launch {
             val entity = gameDao.getById(game.id) ?: return@launch
             val rommId = entity.rommId ?: return@launch
-
-            achievementFetchJob?.cancel()
-            achievementFetchJob = viewModelScope.launch {
-                fetchAndCacheAchievements(rommId, game.id)
-            }
+            fetchAndCacheAchievements(rommId, game.id)
         }
     }
 

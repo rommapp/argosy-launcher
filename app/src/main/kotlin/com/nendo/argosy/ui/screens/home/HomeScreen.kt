@@ -146,6 +146,9 @@ fun HomeScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_HOME)
+                viewModel.refreshPlatforms()
+                viewModel.refreshFavorites()
+                viewModel.refreshRecentGames()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

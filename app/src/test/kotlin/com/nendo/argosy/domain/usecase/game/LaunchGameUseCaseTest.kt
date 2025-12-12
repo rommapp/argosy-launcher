@@ -3,6 +3,7 @@ package com.nendo.argosy.domain.usecase.game
 import android.content.Intent
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.LaunchResult
+import com.nendo.argosy.data.emulator.LaunchRetryTracker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,13 +18,15 @@ class LaunchGameUseCaseTest {
 
     private lateinit var gameLauncher: GameLauncher
     private lateinit var playSessionTracker: PlaySessionTracker
+    private lateinit var launchRetryTracker: LaunchRetryTracker
     private lateinit var useCase: LaunchGameUseCase
 
     @Before
     fun setup() {
         gameLauncher = mockk(relaxed = true)
         playSessionTracker = mockk(relaxed = true)
-        useCase = LaunchGameUseCase(gameLauncher, playSessionTracker)
+        launchRetryTracker = mockk(relaxed = true)
+        useCase = LaunchGameUseCase(gameLauncher, playSessionTracker, launchRetryTracker)
     }
 
     @Test

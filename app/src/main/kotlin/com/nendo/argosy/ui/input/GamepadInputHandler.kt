@@ -52,7 +52,7 @@ class GamepadInputHandler @Inject constructor(
     fun eventFlow(): Flow<GamepadEvent> = _events.asSharedFlow()
 
     private val lastInputTimes = mutableMapOf<GamepadEvent, Long>()
-    private val debounceInterval = 250L
+    private val inputDebounceMs = 80L
 
     fun handleKeyEvent(event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN) return false
@@ -61,7 +61,7 @@ class GamepadInputHandler @Inject constructor(
 
         val currentTime = System.currentTimeMillis()
         val lastTime = lastInputTimes[gamepadEvent] ?: 0L
-        if (currentTime - lastTime < debounceInterval) return true
+        if (currentTime - lastTime < inputDebounceMs) return true
         lastInputTimes[gamepadEvent] = currentTime
 
         _events.tryEmit(gamepadEvent)

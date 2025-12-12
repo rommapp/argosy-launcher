@@ -20,7 +20,12 @@ interface GameDao {
         SELECT * FROM games
         WHERE platformId = :platformId AND isHidden = 0
         ORDER BY
-            CASE WHEN localPath IS NOT NULL THEN 0 ELSE 1 END,
+            CASE
+                WHEN localPath IS NOT NULL AND isFavorite = 1 THEN 0
+                WHEN localPath IS NOT NULL THEN 1
+                WHEN isFavorite = 1 THEN 2
+                ELSE 3
+            END,
             CASE WHEN lastPlayed IS NULL THEN 1 ELSE 0 END,
             lastPlayed DESC,
             CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
@@ -29,6 +34,25 @@ interface GameDao {
         LIMIT :limit
     """)
     fun observeByPlatformSorted(platformId: String, limit: Int = 20): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE platformId = :platformId AND isHidden = 0
+        ORDER BY
+            CASE
+                WHEN localPath IS NOT NULL AND isFavorite = 1 THEN 0
+                WHEN localPath IS NOT NULL THEN 1
+                WHEN isFavorite = 1 THEN 2
+                ELSE 3
+            END,
+            CASE WHEN lastPlayed IS NULL THEN 1 ELSE 0 END,
+            lastPlayed DESC,
+            CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
+            rating DESC,
+            sortTitle ASC
+        LIMIT :limit
+    """)
+    suspend fun getByPlatformSorted(platformId: String, limit: Int = 20): List<GameEntity>
 
     @Query("SELECT * FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
     fun observeAll(): Flow<List<GameEntity>>
@@ -47,8 +71,14 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
     fun observeFavorites(): Flow<List<GameEntity>>
 
-    @Query("SELECT * FROM games WHERE isHidden = 0 ORDER BY lastPlayed DESC LIMIT :limit")
+    @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
+    suspend fun getFavorites(): List<GameEntity>
+
+    @Query("SELECT * FROM games WHERE isHidden = 0 AND lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT :limit")
     fun observeRecentlyPlayed(limit: Int = 20): Flow<List<GameEntity>>
+
+    @Query("SELECT * FROM games WHERE isHidden = 0 AND lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT :limit")
+    suspend fun getRecentlyPlayed(limit: Int = 20): List<GameEntity>
 
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?

@@ -23,6 +23,9 @@ interface PlatformDao {
     @Query("SELECT * FROM platforms WHERE gameCount > 0 AND isVisible = 1 ORDER BY sortOrder ASC")
     fun observePlatformsWithGames(): Flow<List<PlatformEntity>>
 
+    @Query("SELECT * FROM platforms WHERE gameCount > 0 AND isVisible = 1 ORDER BY sortOrder ASC")
+    suspend fun getPlatformsWithGames(): List<PlatformEntity>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(platform: PlatformEntity)
 

@@ -35,6 +35,10 @@ sealed class LaunchConfig {
         val authority: String,
         val pathPrefix: String = ""
     ) : LaunchConfig()
+
+    data class Vita3K(
+        val activityClass: String = "org.vita3k.emulator.Emulator"
+    ) : LaunchConfig()
 }
 
 sealed class ExtraValue {
@@ -300,7 +304,18 @@ object EmulatorRegistry {
             packageName = "org.vita3k.emulator",
             displayName = "Vita3K",
             supportedPlatforms = setOf("vita"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Vita3K(),
             downloadUrl = "https://github.com/Vita3K/Vita3K-Android/releases"
+        ),
+        EmulatorDef(
+            id = "vita3k-zx",
+            packageName = "org.vita3k.emulator.ikhoeyZX",
+            displayName = "Vita3K ZX",
+            supportedPlatforms = setOf("vita"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Vita3K(),
+            downloadUrl = "https://github.com/ikhoeyZX/Vita3K-Android/releases"
         ),
 
         // NOTE: Redream has known Android 13+ issues - explicit activity launches fail
@@ -396,7 +411,7 @@ object EmulatorRegistry {
         "psx" to listOf("duckstation", "retroarch", "retroarch_64"),
         "ps2" to listOf("aethersx2", "pcsx2"),
         "psp" to listOf("ppsspp_gold", "ppsspp", "retroarch", "retroarch_64"),
-        "vita" to listOf("vita3k"),
+        "vita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("mupen64plus_fz", "retroarch", "retroarch_64"),
         "nds" to listOf("drastic", "melonds", "retroarch", "retroarch_64"),
         "3ds" to listOf("azahar", "lime3ds", "citra_mmj", "citra"),

@@ -188,6 +188,7 @@ class GameLauncher @Inject constructor(
             is LaunchConfig.RetroArch -> buildRetroArchIntent(emulator, romFile, game, config)
             is LaunchConfig.Custom -> buildCustomIntent(emulator, romFile, game.platformId, config)
             is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config)
+            is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config)
         }.also { intent ->
             Log.d(TAG, "buildIntent: action=${intent?.action}, package=${intent?.`package`}, component=${intent?.component}, data=${intent?.data}")
         }
@@ -364,6 +365,40 @@ class GameLauncher @Inject constructor(
                 Intent.FLAG_ACTIVITY_CLEAR_TOP
             )
         }
+    }
+
+    private fun buildVita3KIntent(
+        emulator: EmulatorDef,
+        romFile: File,
+        config: LaunchConfig.Vita3K
+    ): Intent {
+        val titleId = extractVitaTitleId(romFile.nameWithoutExtension)
+
+        return Intent(emulator.launchAction).apply {
+            component = ComponentName(emulator.packageName, "${emulator.packageName}.${config.activityClass.substringAfterLast('.')}")
+
+            if (titleId != null) {
+                Log.d(TAG, "Vita3K: Launching with title ID: $titleId")
+                putExtra("AppStartParameters", arrayOf("-r", titleId))
+            } else {
+                Log.d(TAG, "Vita3K: No title ID found in filename, opening emulator only")
+            }
+
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK
+            )
+        }
+    }
+
+    private fun extractVitaTitleId(filename: String): String? {
+        val bracketPattern = Regex("""\[([A-Z]{4}\d{5})\]""")
+        bracketPattern.find(filename)?.let { return it.groupValues[1] }
+
+        val prefixPattern = Regex("""^([A-Z]{4}\d{5})""")
+        prefixPattern.find(filename)?.let { return it.groupValues[1] }
+
+        return null
     }
 
     private fun getFileUri(file: File): Uri {

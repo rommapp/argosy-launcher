@@ -38,7 +38,8 @@ class GameLauncher @Inject constructor(
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
     private val emulatorConfigDao: EmulatorConfigDao,
-    private val emulatorDetector: EmulatorDetector
+    private val emulatorDetector: EmulatorDetector,
+    private val m3uManager: M3uManager
 ) {
     suspend fun launch(gameId: Long, discId: Long? = null): LaunchResult {
         val game = gameDao.getById(gameId)
@@ -86,25 +87,46 @@ class GameLauncher @Inject constructor(
             return LaunchResult.MissingDiscs(missingDiscs.map { it.discNumber })
         }
 
-        val targetDisc: GameDiscEntity = when {
-            requestedDiscId != null -> discs.find { it.id == requestedDiscId }
-            game.lastPlayedDiscId != null -> discs.find { it.id == game.lastPlayedDiscId }
-            else -> null
-        } ?: discs.minByOrNull { it.discNumber }
-            ?: return LaunchResult.Error("Could not determine which disc to launch")
-
-        val romPath = targetDisc.localPath
-            ?: return LaunchResult.NoRomFile(null)
-
-        val romFile = File(romPath)
-        if (!romFile.exists()) {
-            return LaunchResult.MissingDiscs(listOf(targetDisc.discNumber))
+        for (disc in discs) {
+            val discFile = disc.localPath?.let { File(it) }
+            if (discFile == null || !discFile.exists()) {
+                return LaunchResult.MissingDiscs(listOf(disc.discNumber))
+            }
         }
 
         val emulator = resolveEmulator(game)
             ?: return LaunchResult.NoEmulator(game.platformId)
 
-        val intent = buildIntent(emulator, romFile, game)
+        val launchFile = if (m3uManager.supportsM3u(game.platformId)) {
+            when (val m3uResult = m3uManager.ensureM3u(game)) {
+                is M3uResult.Valid -> {
+                    Log.d(TAG, "Using existing m3u: ${m3uResult.m3uFile.absolutePath}")
+                    m3uResult.m3uFile
+                }
+                is M3uResult.Generated -> {
+                    Log.d(TAG, "Generated m3u: ${m3uResult.m3uFile.absolutePath}")
+                    m3uResult.m3uFile
+                }
+                is M3uResult.NotApplicable -> {
+                    Log.d(TAG, "M3u not applicable: ${m3uResult.reason}, falling back to disc 1")
+                    File(discs.minByOrNull { it.discNumber }!!.localPath!!)
+                }
+                is M3uResult.Error -> {
+                    Log.w(TAG, "M3u error: ${m3uResult.message}, falling back to disc 1")
+                    File(discs.minByOrNull { it.discNumber }!!.localPath!!)
+                }
+            }
+        } else {
+            val targetDisc: GameDiscEntity = when {
+                requestedDiscId != null -> discs.find { it.id == requestedDiscId }
+                game.lastPlayedDiscId != null -> discs.find { it.id == game.lastPlayedDiscId }
+                else -> null
+            } ?: discs.minByOrNull { it.discNumber }
+                ?: return LaunchResult.Error("Could not determine which disc to launch")
+            File(targetDisc.localPath!!)
+        }
+
+        val intent = buildIntent(emulator, launchFile, game)
             ?: return if (emulator.launchConfig is LaunchConfig.RetroArch) {
                 LaunchResult.NoCore(game.platformId)
             } else {
@@ -112,10 +134,9 @@ class GameLauncher @Inject constructor(
             }
 
         gameDao.recordPlayStart(game.id, Instant.now())
-        gameDao.updateLastPlayedDisc(game.id, targetDisc.id)
 
-        Log.d(TAG, "Launching multi-disc game ${game.title} - Disc ${targetDisc.discNumber}")
-        return LaunchResult.Success(intent, targetDisc.id)
+        Log.d(TAG, "Launching multi-disc game ${game.title} via ${launchFile.name}")
+        return LaunchResult.Success(intent)
     }
 
     private suspend fun launchSteamGame(game: GameEntity): LaunchResult {

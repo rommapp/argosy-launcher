@@ -12,6 +12,7 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.emulator.M3uManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -99,7 +100,8 @@ class DownloadManager @Inject constructor(
     private val downloadQueueDao: DownloadQueueDao,
     private val romMRepository: RomMRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val soundManager: SoundFeedbackManager
+    private val soundManager: SoundFeedbackManager,
+    private val m3uManager: M3uManager
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
@@ -454,6 +456,7 @@ class DownloadManager @Inject constructor(
 
                                 if (progress.isDiscDownload && progress.discId != null) {
                                     gameDiscDao.updateLocalPath(progress.discId, targetFile.absolutePath)
+                                    m3uManager.generateM3uIfComplete(progress.gameId)
                                 } else {
                                     gameDao.updateLocalPath(
                                         progress.gameId,

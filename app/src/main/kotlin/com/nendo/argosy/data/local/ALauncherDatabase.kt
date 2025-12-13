@@ -40,7 +40,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         GameDiscEntity::class,
         AchievementEntity::class
     ],
-    version = 18,
+    version = 19,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -316,6 +316,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_17_18 = object : Migration(17, 18) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE download_queue ADD COLUMN discNumber INTEGER")
+            }
+        }
+
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN m3uPath TEXT")
             }
         }
     }

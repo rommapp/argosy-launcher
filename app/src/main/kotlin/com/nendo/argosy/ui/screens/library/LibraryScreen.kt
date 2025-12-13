@@ -113,7 +113,7 @@ fun LibraryScreen(
         val spacing = visibleItems.find { it.offset.y != firstItem.offset.y }
             ?.let { it.offset.y - firstItem.offset.y - rowHeight } ?: 0
         val rowStep = rowHeight + spacing
-        val scrollAnim = tween<Float>(durationMillis = 175)
+        val scrollAnim = tween<Float>(durationMillis = 60)
 
         val focusedItem = visibleItems.find { it.index == uiState.focusedIndex }
         if (focusedItem != null) {

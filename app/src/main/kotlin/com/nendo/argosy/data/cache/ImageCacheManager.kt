@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
@@ -236,8 +237,8 @@ class ImageCacheManager @Inject constructor(
         cacheDir.listFiles()?.forEach { it.delete() }
     }
 
-    fun deleteGameImages(rommId: Long) {
-        scope.launch {
+    suspend fun deleteGameImages(rommId: Long) {
+        withContext(Dispatchers.IO) {
             val prefixes = listOf("cover_${rommId}_", "bg_${rommId}_", "ss_${rommId}_")
             cacheDir.listFiles()?.forEach { file ->
                 if (prefixes.any { prefix -> file.name.startsWith(prefix) }) {

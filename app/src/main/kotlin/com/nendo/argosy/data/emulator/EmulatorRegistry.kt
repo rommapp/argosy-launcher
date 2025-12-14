@@ -125,6 +125,11 @@ object EmulatorRegistry {
             packageName = "org.dolphinemu.dolphinemu",
             displayName = "Dolphin",
             supportedPlatforms = setOf("gc", "ngc", "wii"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+                intentExtras = mapOf("AutoStartFile" to ExtraValue.FilePath)
+            ),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.dolphinemu.dolphinemu"
         ),
         EmulatorDef(
@@ -132,7 +137,12 @@ object EmulatorRegistry {
             packageName = "org.dolphinemu.handheld",
             displayName = "Dolphin (Handheld)",
             supportedPlatforms = setOf("gc", "ngc", "wii"),
-            downloadUrl = "https://github.com/dolphin-emu/dolphin/releases"
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+                intentExtras = mapOf("AutoStartFile" to ExtraValue.FilePath)
+            ),
+            downloadUrl = "https://dolphin-emu.org/download/"
         ),
         EmulatorDef(
             id = "cemu",
@@ -711,6 +721,11 @@ object EmulatorRegistry {
             displayNamePrefix = "Dolphin",
             packagePatterns = listOf("org.dolphinemu.*"),
             supportedPlatforms = setOf("gc", "ngc", "wii"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+                intentExtras = mapOf("AutoStartFile" to ExtraValue.FilePath)
+            ),
             downloadUrl = "https://dolphin-emu.org/download/"
         ),
         EmulatorFamily(

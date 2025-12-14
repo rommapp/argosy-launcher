@@ -23,8 +23,8 @@ android {
         applicationId = "com.nendo.argosy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 49
-        versionName = "0.9.4-beta.5"
+        versionCode = 50
+        versionName = "0.9.4-beta.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

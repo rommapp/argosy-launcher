@@ -3,7 +3,9 @@ package com.nendo.argosy.ui.screens.firstrun
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -24,8 +26,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -40,6 +44,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -77,6 +83,10 @@ fun FirstRunScreen(
             folderPickerLauncher.launch(null)
             viewModel.clearFolderPickerFlag()
         }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.checkStoragePermission()
     }
 
     Box(
@@ -119,6 +129,15 @@ fun FirstRunScreen(
                 FirstRunStep.ROM_PATH -> RomPathStep(
                     currentPath = uiState.romStoragePath,
                     folderSelected = uiState.folderSelected,
+                    hasStoragePermission = uiState.hasStoragePermission,
+                    onRequestPermission = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                                data = Uri.parse("package:${context.packageName}")
+                            }
+                            context.startActivity(intent)
+                        }
+                    },
                     onChooseFolder = { viewModel.openFolderPicker() },
                     onContinue = { viewModel.proceedFromRomPath() }
                 )
@@ -319,6 +338,8 @@ private fun RommSuccessStep(
 private fun RomPathStep(
     currentPath: String?,
     folderSelected: Boolean,
+    hasStoragePermission: Boolean,
+    onRequestPermission: () -> Unit,
     onChooseFolder: () -> Unit,
     onContinue: () -> Unit
 ) {
@@ -326,82 +347,123 @@ private fun RomPathStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(32.dp)
     ) {
-        StepHeader(step = 2, title = "Select ROM Storage Folder")
+        StepHeader(step = 2, title = "Storage Access")
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Choose where your game files will be stored. This grants the app permission to read and write to that folder.",
+            text = "Grant storage access to download and manage your game files.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (folderSelected && currentPath != null) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                modifier = Modifier.fillMaxWidth(0.8f)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = currentPath,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = if (hasStoragePermission) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.errorContainer
                 }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onContinue) {
-                Text("Continue")
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(onClick = onChooseFolder) {
-                Text("Choose Different Folder")
-            }
-        } else {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                modifier = Modifier.fillMaxWidth(0.8f)
+            ),
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Icon(Icons.Default.Folder, contentDescription = null)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "No folder selected",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onChooseFolder) {
-                Icon(Icons.Default.Folder, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Choose Folder")
+                Icon(
+                    if (hasStoragePermission) Icons.Default.CheckCircle else Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = if (hasStoragePermission) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    }
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = if (hasStoragePermission) "Storage access granted" else "Storage access required",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (hasStoragePermission) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    }
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "We'll create subfolders for each console automatically.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (!hasStoragePermission) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onRequestPermission) {
+                Icon(Icons.Default.Lock, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Grant Storage Access")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "This permission is required to download games and sync saves.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (folderSelected && currentPath != null) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = currentPath,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(onClick = onContinue) {
+                    Text("Continue")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(onClick = onChooseFolder) {
+                    Text("Choose Different Folder")
+                }
+            } else {
+                Text(
+                    text = "Choose where your game files will be stored.",
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onChooseFolder) {
+                    Icon(Icons.Default.Folder, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Choose Folder")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "We'll create subfolders for each console automatically.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

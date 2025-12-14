@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.firstrun
 
+import android.os.Build
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -36,7 +38,8 @@ data class FirstRunUiState(
     val folderSelected: Boolean = false,
     val launchFolderPicker: Boolean = false,
     val skippedRomm: Boolean = false,
-    val saveSyncEnabled: Boolean = false
+    val saveSyncEnabled: Boolean = false,
+    val hasStoragePermission: Boolean = false
 )
 
 @HiltViewModel
@@ -173,7 +176,8 @@ class FirstRunViewModel @Inject constructor(
     }
 
     fun proceedFromRomPath() {
-        if (_uiState.value.folderSelected) {
+        val state = _uiState.value
+        if (state.hasStoragePermission && state.folderSelected) {
             nextStep()
         }
     }
@@ -189,12 +193,28 @@ class FirstRunViewModel @Inject constructor(
     }
 
     fun completeSetup() {
+        val state = _uiState.value
+        if (!state.hasStoragePermission || !state.folderSelected) return
+
         viewModelScope.launch {
-            _uiState.value.romStoragePath?.let { path ->
+            state.romStoragePath?.let { path ->
                 preferencesRepository.setRomStoragePath(path)
             }
-            preferencesRepository.setSaveSyncEnabled(_uiState.value.saveSyncEnabled)
+            preferencesRepository.setSaveSyncEnabled(state.saveSyncEnabled)
             preferencesRepository.setFirstRunComplete()
         }
+    }
+
+    fun checkStoragePermission() {
+        val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true
+        }
+        _uiState.update { it.copy(hasStoragePermission = hasPermission) }
+    }
+
+    fun onStoragePermissionResult(granted: Boolean) {
+        _uiState.update { it.copy(hasStoragePermission = granted) }
     }
 }

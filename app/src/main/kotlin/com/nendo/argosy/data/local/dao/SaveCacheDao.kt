@@ -3,6 +3,7 @@ package com.nendo.argosy.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -17,6 +18,12 @@ interface SaveCacheDao {
 
     @Query("SELECT * FROM save_cache WHERE id = :id")
     suspend fun getById(id: Long): SaveCacheEntity?
+
+    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND note = :channelName LIMIT 1")
+    suspend fun getByGameAndChannel(gameId: Long, channelName: String): SaveCacheEntity?
+
+    @Update
+    suspend fun update(entity: SaveCacheEntity)
 
     @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId")
     suspend fun countByGame(gameId: Long): Int

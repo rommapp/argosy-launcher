@@ -41,10 +41,28 @@ class GetUnifiedSavesUseCase @Inject constructor(
         val result = mutableListOf<UnifiedSaveEntry>()
         val usedServerIds = mutableSetOf<Long>()
 
+        // Find the most recent cache for each channel (only these should match server saves)
+        val mostRecentByChannel = localCaches
+            .filter { it.note != null }
+            .groupBy { it.note }
+            .mapValues { (_, caches) -> caches.maxByOrNull { it.cachedAt }?.id }
+
+        // Find the most recent non-channel cache (for "Latest" matching)
+        val mostRecentNonChannel = localCaches
+            .filter { it.note == null }
+            .maxByOrNull { it.cachedAt }?.id
+
         for (cache in localCaches) {
             val channelName = cache.note
-            val matchingServer = serverSaves.find { serverSave ->
-                matchesLocalCache(cache, serverSave, channelName)
+            val isMostRecentForChannel = when {
+                channelName != null -> mostRecentByChannel[channelName] == cache.id
+                else -> mostRecentNonChannel == cache.id
+            }
+
+            val matchingServer = if (isMostRecentForChannel) {
+                serverSaves.find { serverSave -> matchesLocalCache(cache, serverSave, channelName, romBaseName) }
+            } else {
+                null
             }
 
             if (matchingServer != null) {
@@ -59,7 +77,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         channelName = channelName ?: serverChannelName,
                         source = UnifiedSaveEntry.Source.BOTH,
                         serverFileName = matchingServer.fileName,
-                        isLatest = isLatestFileName(matchingServer.fileName, romBaseName)
+                        isLatest = isLatestFileName(matchingServer.fileName, romBaseName),
+                        isLocked = cache.isLocked
                     )
                 )
             } else {
@@ -69,7 +88,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         timestamp = cache.cachedAt,
                         size = cache.saveSize,
                         channelName = channelName,
-                        source = UnifiedSaveEntry.Source.LOCAL
+                        source = UnifiedSaveEntry.Source.LOCAL,
+                        isLocked = cache.isLocked
                     )
                 )
             }
@@ -98,12 +118,18 @@ class GetUnifiedSavesUseCase @Inject constructor(
         return result
     }
 
-    private fun matchesLocalCache(cache: SaveCacheEntity, serverSave: RomMSave, channelName: String?): Boolean {
-        if (channelName != null) {
-            val serverBaseName = File(serverSave.fileName).nameWithoutExtension
-            return channelName.equals(serverBaseName, ignoreCase = true)
+    private fun matchesLocalCache(
+        cache: SaveCacheEntity,
+        serverSave: RomMSave,
+        channelName: String?,
+        romBaseName: String?
+    ): Boolean {
+        val serverBaseName = File(serverSave.fileName).nameWithoutExtension
+        return if (channelName != null) {
+            channelName.equals(serverBaseName, ignoreCase = true)
+        } else {
+            romBaseName != null && serverBaseName.equals(romBaseName, ignoreCase = true)
         }
-        return isSameTimestamp(cache.cachedAt, serverSave)
     }
 
     private fun parseServerChannelName(fileName: String, romBaseName: String?): String? {

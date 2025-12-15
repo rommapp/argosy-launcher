@@ -4,99 +4,61 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarOutline
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Whatshot
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.outlined.Whatshot
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
-import com.nendo.argosy.data.emulator.InstalledEmulator
-import com.nendo.argosy.data.emulator.RetroArchCore
-import com.nendo.argosy.domain.model.SyncState
-import com.nendo.argosy.domain.model.UnifiedSaveEntry
-import com.nendo.argosy.ui.input.LocalInputDispatcher
-import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SyncOverlay
+import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.screens.gamedetail.components.AchievementsSection
+import com.nendo.argosy.ui.screens.gamedetail.components.DescriptionSection
+import com.nendo.argosy.ui.screens.gamedetail.components.GameDetailSkeleton
+import com.nendo.argosy.ui.screens.gamedetail.components.GameHeader
+import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
+import com.nendo.argosy.ui.screens.gamedetail.components.SnapState
+import com.nendo.argosy.ui.screens.gamedetail.modals.CorePickerModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.DiscPickerModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.EmulatorPickerModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.MissingDiscModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.MoreOptionsModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
+import com.nendo.argosy.ui.common.savechannel.SaveChannelModal
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @Composable
 fun GameDetailScreen(
@@ -288,8 +250,6 @@ fun GameDetailScreen(
     }
 }
 
-private enum class SnapState { TOP, DESCRIPTION, SCREENSHOTS, ACHIEVEMENTS }
-
 @Composable
 private fun GameDetailContent(
     game: GameDetailUi,
@@ -330,473 +290,62 @@ private fun GameDetailContent(
                 )
             }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.5f),
-                            Color.Black.copy(alpha = 0.9f)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.5f),
+                                Color.Black.copy(alpha = 0.9f)
+                            )
                         )
                     )
-                )
-        )
+            )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 80.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(32.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 80.dp)
             ) {
-                AsyncImage(
-                    model = game.coverPath,
-                    contentDescription = game.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .width(200.dp)
-                        .height(280.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
+                GameHeader(game = game, uiState = uiState, viewModel = viewModel)
 
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = game.title,
-                        style = MaterialTheme.typography.displaySmall,
-                        color = Color.White
+                Spacer(modifier = Modifier.height(32.dp))
+
+                if (!game.description.isNullOrBlank()) {
+                    DescriptionSection(
+                        description = game.description,
+                        onPositioned = onDescriptionPositioned
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = game.platformName,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        game.releaseYear?.let { year ->
-                            Text(
-                                text = "|",
-                                color = Color.White.copy(alpha = 0.5f)
-                            )
-                            Text(
-                                text = year.toString(),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        game.developer?.let { dev ->
-                            Text(
-                                text = dev,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.6f)
-                            )
-                        }
-                        game.genre?.let { genre ->
-                            if (game.developer != null) {
-                                Text(
-                                    text = "|",
-                                    color = Color.White.copy(alpha = 0.4f)
-                                )
-                            }
-                            Text(
-                                text = genre,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        game.players?.let { players ->
-                            MetadataChip(label = "Players", value = players)
-                        }
-                        game.rating?.let { rating ->
-                            CommunityRatingChip(rating = rating)
-                        }
-                        if (game.userRating > 0) {
-                            RatingChip(
-                                label = "My Rating",
-                                value = game.userRating,
-                                icon = Icons.Default.Star,
-                                iconColor = Color(0xFFFFD700)
-                            )
-                        }
-                        if (game.userDifficulty > 0) {
-                            RatingChip(
-                                label = "Difficulty",
-                                value = game.userDifficulty,
-                                icon = Icons.Default.Whatshot,
-                                iconColor = Color(0xFFE53935)
-                            )
-                        }
-                    }
-
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick = { viewModel.primaryAction() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            when (uiState.downloadStatus) {
-                                GameDownloadStatus.DOWNLOADED -> {
-                                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("PLAY")
-                                }
-                                GameDownloadStatus.NOT_DOWNLOADED -> {
-                                    Icon(Icons.Default.Download, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("DOWNLOAD")
-                                }
-                                GameDownloadStatus.QUEUED -> {
-                                    Text("QUEUED...")
-                                }
-                                GameDownloadStatus.WAITING_FOR_STORAGE -> {
-                                    Text("NO SPACE")
-                                }
-                                GameDownloadStatus.DOWNLOADING -> {
-                                    Text("${(uiState.downloadProgress * 100).toInt()}%")
-                                }
-                                GameDownloadStatus.PAUSED -> {
-                                    Text("PAUSED ${(uiState.downloadProgress * 100).toInt()}%")
-                                }
-                            }
-                        }
-
-                        IconButton(onClick = { viewModel.toggleFavorite() }) {
-                            Icon(
-                                imageVector = if (game.isFavorite) Icons.Default.Favorite
-                                    else Icons.Default.FavoriteBorder,
-                                contentDescription = if (game.isFavorite) "Unfavorite" else "Favorite",
-                                tint = if (game.isFavorite) Color.Red
-                                    else Color.White
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        IconButton(onClick = { viewModel.toggleMoreOptions() }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More options",
-                                tint = Color.White
-                            )
-                        }
-                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            if (!game.description.isNullOrBlank()) {
-                Column(
-                    modifier = Modifier.onGloballyPositioned { coords ->
-                        onDescriptionPositioned(coords.positionInParent().y.toInt())
-                    }
-                ) {
-                    Text(
-                        text = "DESCRIPTION",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
+                if (game.screenshots.isNotEmpty()) {
+                    ScreenshotsSection(
+                        screenshots = game.screenshots,
+                        listState = screenshotListState,
+                        currentSnapState = currentSnapState,
+                        onPositioned = onScreenshotPositioned
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = game.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f),
-                        maxLines = 6,
-                        overflow = TextOverflow.Ellipsis
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                if (game.achievements.isNotEmpty()) {
+                    AchievementsSection(
+                        achievements = game.achievements,
+                        listState = achievementListState,
+                        currentSnapState = currentSnapState,
+                        onPositioned = onAchievementPositioned
                     )
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+
+                Spacer(modifier = Modifier.height(30.dp))
             }
-
-            if (game.screenshots.isNotEmpty()) {
-                Column(
-                    modifier = Modifier.onGloballyPositioned { coords ->
-                        onScreenshotPositioned(coords.positionInParent().y.toInt())
-                    }
-                ) {
-                    Text(
-                        text = "SCREENSHOTS",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    var scrollDirection by remember { mutableIntStateOf(1) }
-                    val currentSnapStateUpdated by rememberUpdatedState(currentSnapState)
-
-                    LaunchedEffect(game.screenshots) {
-                        if (game.screenshots.size <= 1) return@LaunchedEffect
-
-                        while (true) {
-                            delay(3000)
-                            if (currentSnapStateUpdated == SnapState.SCREENSHOTS) continue
-
-                            val layoutInfo = screenshotListState.layoutInfo
-                            val currentIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
-                            val lastIndex = game.screenshots.size - 1
-
-                            val nextIndex = when {
-                                scrollDirection > 0 && currentIndex >= lastIndex -> {
-                                    scrollDirection = -1
-                                    currentIndex - 1
-                                }
-                                scrollDirection < 0 && currentIndex <= 0 -> {
-                                    scrollDirection = 1
-                                    currentIndex + 1
-                                }
-                                else -> currentIndex + scrollDirection
-                            }.coerceIn(0, lastIndex)
-
-                            screenshotListState.animateScrollToItem(nextIndex)
-                        }
-                    }
-
-                    LazyRow(
-                        state = screenshotListState,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(game.screenshots) { screenshot ->
-                            Box(
-                                modifier = Modifier
-                                    .width(240.dp)
-                                    .height(135.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                screenshot.cachedPath?.let { path ->
-                                    AsyncImage(
-                                        model = java.io.File(path),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
-                                AsyncImage(
-                                    model = screenshot.remoteUrl,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            if (game.achievements.isNotEmpty()) {
-                Column(
-                    modifier = Modifier.onGloballyPositioned { coords ->
-                        onAchievementPositioned(coords.positionInParent().y.toInt())
-                    }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.EmojiEvents,
-                            contentDescription = null,
-                            tint = Color(0xFFFFB300),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "ACHIEVEMENTS",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "(0/${game.achievements.size})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.5f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val achievementColumns = game.achievements.chunked(3)
-                    val currentSnapStateForAchievements by rememberUpdatedState(currentSnapState)
-
-                    LaunchedEffect(achievementColumns) {
-                        if (achievementColumns.size <= 1) return@LaunchedEffect
-
-                        var scrollDirection = 1
-                        while (true) {
-                            delay(4000)
-                            if (currentSnapStateForAchievements == SnapState.ACHIEVEMENTS) continue
-
-                            val layoutInfo = achievementListState.layoutInfo
-                            val currentIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
-                            val lastIndex = achievementColumns.size - 1
-
-                            val nextIndex = when {
-                                scrollDirection > 0 && currentIndex >= lastIndex -> {
-                                    scrollDirection = -1
-                                    currentIndex - 1
-                                }
-                                scrollDirection < 0 && currentIndex <= 0 -> {
-                                    scrollDirection = 1
-                                    currentIndex + 1
-                                }
-                                else -> currentIndex + scrollDirection
-                            }.coerceIn(0, lastIndex)
-
-                            achievementListState.animateScrollToItem(nextIndex)
-                        }
-                    }
-
-                    BoxWithConstraints {
-                        val isWidescreen = maxWidth / maxHeight > 1.5f
-                        val columnWidth = if (isWidescreen) maxWidth / 2 else maxWidth
-
-                        LazyRow(
-                            state = achievementListState,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(achievementColumns) { columnAchievements ->
-                                AchievementColumn(
-                                    achievements = columnAchievements,
-                                    modifier = Modifier.width(columnWidth - 16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            Spacer(modifier = Modifier.height(30.dp))
-        }
         }
 
-        AnimatedVisibility(
-            visible = uiState.showMoreOptions,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            MoreOptionsOverlay(
-                game = game,
-                focusIndex = uiState.moreOptionsFocusIndex,
-                isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED
-            )
-        }
-
-        AnimatedVisibility(
-            visible = uiState.showEmulatorPicker,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            EmulatorPickerOverlay(
-                availableEmulators = uiState.availableEmulators,
-                currentEmulatorName = game.emulatorName,
-                focusIndex = uiState.emulatorPickerFocusIndex,
-                onSelectEmulator = viewModel::selectEmulator,
-                onDismiss = viewModel::dismissEmulatorPicker
-            )
-        }
-
-        AnimatedVisibility(
-            visible = uiState.showCorePicker,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            CorePickerOverlay(
-                availableCores = uiState.availableCores,
-                selectedCoreId = uiState.selectedCoreId,
-                focusIndex = uiState.corePickerFocusIndex,
-                onSelectCore = viewModel::selectCore,
-                onDismiss = viewModel::dismissCorePicker
-            )
-        }
-
-        AnimatedVisibility(
-            visible = uiState.showRatingPicker,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            RatingPickerOverlay(
-                type = uiState.ratingPickerType,
-                value = uiState.ratingPickerValue
-            )
-        }
-
-        AnimatedVisibility(
-            visible = uiState.showDiscPicker,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            DiscPickerOverlay(
-                discs = uiState.discs,
-                focusIndex = uiState.discPickerFocusIndex,
-                onSelectDisc = viewModel::selectDiscAtIndex
-            )
-        }
-
-        AnimatedVisibility(
-            visible = uiState.showMissingDiscPrompt,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            MissingDiscPromptOverlay(
-                missingDiscNumbers = uiState.missingDiscNumbers
-            )
-        }
-
-        AnimatedVisibility(
-            visible = uiState.showSaveCacheDialog,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            SaveCacheDialogOverlay(
-                entries = uiState.saveCacheEntries,
-                focusIndex = uiState.saveCacheFocusIndex,
-                isLoading = uiState.isLoadingSaveCache,
-                showRestoreConfirmation = uiState.showRestoreConfirmation,
-                restoreEntry = uiState.restoreSelectedEntry,
-                showRenameDialog = uiState.showRenameDialog,
-                renameText = uiState.renameText,
-                onRenameTextChange = viewModel::updateRenameText,
-                activeChannel = uiState.activeChannel
-            )
-        }
-
-        SyncOverlay(
-            syncState = if (uiState.isSyncing) uiState.syncState else null,
-            gameTitle = game.title
-        )
+        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel)
 
         AnimatedVisibility(
             visible = !showAnyOverlay,
@@ -826,1118 +375,91 @@ private fun GameDetailContent(
 }
 
 @Composable
-private fun MetadataChip(label: String, value: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .background(
-                Color.White.copy(alpha = 0.1f),
-                RoundedCornerShape(8.dp)
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.White
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-private fun RatingChip(
-    label: String,
-    value: Int,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconColor: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .background(
-                Color.White.copy(alpha = 0.1f),
-                RoundedCornerShape(6.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(14.dp)
-            )
-            Text(
-                text = "$value/10",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
-            )
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-private fun CommunityRatingChip(rating: Float) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .background(
-                Color.White.copy(alpha = 0.1f),
-                RoundedCornerShape(6.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.People,
-                contentDescription = null,
-                tint = Color(0xFF64B5F6),
-                modifier = Modifier.size(14.dp)
-            )
-            Text(
-                text = "${rating.toInt()}%",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
-            )
-        }
-        Text(
-            text = "Rating",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-private fun RatingPickerOverlay(
-    type: RatingType,
-    value: Int
-) {
-    val isRating = type == RatingType.OPINION
-    val title = if (isRating) "RATE GAME" else "SET DIFFICULTY"
-    val filledIcon = if (isRating) Icons.Default.Star else Icons.Default.Whatshot
-    val outlineIcon = if (isRating) Icons.Default.StarOutline else Icons.Outlined.Whatshot
-    val filledColor = if (isRating) Color(0xFFFFD700) else Color(0xFFE53935)
-    val outlineColor = Color.White.copy(alpha = 0.4f)
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .width(420.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                for (i in 1..10) {
-                    val isFilled = i <= value
-                    Icon(
-                        imageVector = if (isFilled) filledIcon else outlineIcon,
-                        contentDescription = null,
-                        tint = if (isFilled) filledColor else outlineColor,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = if (value == 0) "Not set" else "$value/10",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            FooterBar(
-                hints = listOf(
-                    InputButton.DPAD_HORIZONTAL to "Adjust",
-                    InputButton.SOUTH to "Confirm",
-                    InputButton.EAST to "Cancel"
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun MoreOptionsOverlay(
+private fun GameDetailModals(
     game: GameDetailUi,
-    focusIndex: Int,
-    isDownloaded: Boolean
+    uiState: GameDetailUiState,
+    viewModel: GameDetailViewModel
 ) {
-    val isRommGame = game.isRommGame
-    var currentIndex = 0
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
+    AnimatedVisibility(
+        visible = uiState.showMoreOptions,
+        enter = fadeIn(),
+        exit = fadeOut()
     ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(24.dp)
-                .width(350.dp)
-        ) {
-            Text(
-                text = "MORE OPTIONS",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (game.isMultiDisc) {
-                OptionItem(
-                    icon = Icons.Default.Album,
-                    label = "Select Disc",
-                    isFocused = focusIndex == currentIndex++
-                )
-            }
-            OptionItem(
-                label = "Change Emulator",
-                value = game.emulatorName ?: "Default",
-                isFocused = focusIndex == currentIndex++
-            )
-            if (game.isRetroArchEmulator) {
-                OptionItem(
-                    label = "Change Core",
-                    value = game.selectedCoreName ?: "Default",
-                    isFocused = focusIndex == currentIndex++
-                )
-            }
-            if (isRommGame) {
-                OptionItem(
-                    icon = Icons.Default.Refresh,
-                    label = "Refresh Game Data",
-                    isFocused = focusIndex == currentIndex++
-                )
-                OptionItem(
-                    icon = Icons.Default.Star,
-                    label = "Rate Game",
-                    value = if (game.userRating > 0) "${game.userRating}/10" else "Not rated",
-                    isFocused = focusIndex == currentIndex++
-                )
-                OptionItem(
-                    icon = Icons.Default.Whatshot,
-                    label = "Set Difficulty",
-                    value = if (game.userDifficulty > 0) "${game.userDifficulty}/10" else "Not set",
-                    isFocused = focusIndex == currentIndex++
-                )
-                OptionItem(
-                    icon = Icons.Default.Save,
-                    label = "Manage Cached Saves",
-                    isFocused = focusIndex == currentIndex++
-                )
-            }
-            if (isDownloaded) {
-                OptionItem(
-                    icon = Icons.Default.DeleteOutline,
-                    label = "Delete Download",
-                    isFocused = focusIndex == currentIndex++,
-                    isDangerous = true
-                )
-            }
-            OptionItem(
-                label = "Hide",
-                isFocused = focusIndex == currentIndex,
-                isDangerous = true
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmulatorPickerOverlay(
-    availableEmulators: List<InstalledEmulator>,
-    currentEmulatorName: String?,
-    focusIndex: Int,
-    onSelectEmulator: (InstalledEmulator?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
-            .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .clickable(enabled = false) {}
-                .padding(24.dp)
-                .width(350.dp)
-        ) {
-            Text(
-                text = "SELECT EMULATOR",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OptionItem(
-                label = "Use Platform Default",
-                isFocused = focusIndex == 0,
-                isSelected = currentEmulatorName == null,
-                onClick = { onSelectEmulator(null) }
-            )
-
-            availableEmulators.forEachIndexed { index, emulator ->
-                OptionItem(
-                    label = emulator.def.displayName,
-                    value = emulator.versionName,
-                    isFocused = focusIndex == index + 1,
-                    isSelected = emulator.def.displayName == currentEmulatorName,
-                    onClick = { onSelectEmulator(emulator) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CorePickerOverlay(
-    availableCores: List<RetroArchCore>,
-    selectedCoreId: String?,
-    focusIndex: Int,
-    onSelectCore: (String?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
-            .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .clickable(enabled = false) {}
-                .padding(24.dp)
-                .width(350.dp)
-        ) {
-            Text(
-                text = "SELECT CORE",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "Cores must be installed in RetroArch first",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OptionItem(
-                label = "Use Platform Default",
-                isFocused = focusIndex == 0,
-                isSelected = selectedCoreId == null,
-                onClick = { onSelectCore(null) }
-            )
-
-            availableCores.forEachIndexed { index, core ->
-                OptionItem(
-                    label = core.displayName,
-                    value = core.id,
-                    isFocused = focusIndex == index + 1,
-                    isSelected = core.id == selectedCoreId,
-                    onClick = { onSelectCore(core.id) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OptionItem(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    value: String? = null,
-    isFocused: Boolean = false,
-    isDangerous: Boolean = false,
-    isSelected: Boolean = false,
-    onClick: (() -> Unit)? = null
-) {
-    val contentColor = when {
-        isDangerous && isFocused -> MaterialTheme.colorScheme.onErrorContainer
-        isDangerous -> MaterialTheme.colorScheme.error
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val backgroundColor = when {
-        isDangerous && isFocused -> MaterialTheme.colorScheme.errorContainer
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        else -> Color.Transparent
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor, RoundedCornerShape(8.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.width(20.dp)
-            )
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = contentColor,
-            modifier = Modifier.weight(1f)
-        )
-        if (isSelected) {
-            Text(
-                text = "[Current]",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-        } else if (value != null) {
-            Text(
-                text = "[$value]",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun DiscPickerOverlay(
-    discs: List<DiscUi>,
-    focusIndex: Int,
-    onSelectDisc: (Int) -> Unit
-) {
-    val listState = rememberLazyListState()
-    val itemHeight = 56.dp
-    val maxVisibleItems = 5
-
-    LaunchedEffect(focusIndex) {
-        listState.animateScrollToItem(focusIndex.coerceIn(0, (discs.size - 1).coerceAtLeast(0)))
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(24.dp)
-                .width(350.dp)
-        ) {
-            Text(
-                text = "SELECT DISC",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            androidx.compose.foundation.lazy.LazyColumn(
-                state = listState,
-                modifier = Modifier.heightIn(max = itemHeight * maxVisibleItems)
-            ) {
-                items(discs.size) { index ->
-                    val disc = discs[index]
-                    val isFocused = focusIndex == index
-                    val backgroundColor = if (isFocused) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        Color.Transparent
-                    }
-                    val contentColor = if (isFocused) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(itemHeight)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(backgroundColor)
-                            .clickable { onSelectDisc(index) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Album,
-                            contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.width(20.dp)
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Disc ${disc.discNumber}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = contentColor
-                            )
-                            Text(
-                                text = disc.fileName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = contentColor.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        if (disc.isLastPlayed) {
-                            Text(
-                                text = "[Last Played]",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        if (!disc.isDownloaded) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "Not downloaded",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            FooterBar(
-                hints = listOf(
-                    InputButton.DPAD_VERTICAL to "Select",
-                    InputButton.SOUTH to "Play",
-                    InputButton.EAST to "Cancel"
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun MissingDiscPromptOverlay(
-    missingDiscNumbers: List<Int>
-) {
-    val discText = if (missingDiscNumbers.size == 1) {
-        "Disc ${missingDiscNumbers.first()}"
-    } else {
-        "Discs ${missingDiscNumbers.joinToString(", ")}"
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(24.dp)
-                .width(400.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "MISSING DISCS",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "$discText not downloaded.\nWould you like to download the missing discs?",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            FooterBar(
-                hints = listOf(
-                    InputButton.SOUTH to "Download",
-                    InputButton.EAST to "Cancel"
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun GameDetailSkeleton() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Black.copy(alpha = 0.5f),
-                        Color.Black.copy(alpha = 0.9f)
-                    )
-                )
-            )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .height(280.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.6f)
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.3f)
-                            .height(24.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AchievementRow(achievement: AchievementUi) {
-    val grayscaleMatrix = ColorMatrix().apply { setToSaturation(0f) }
-    val goldColor = Color(0xFFFFB300)
-    val lockedColor = Color.White.copy(alpha = 0.5f)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(56.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                if (achievement.badgeUrl != null) {
-                    AsyncImage(
-                        model = achievement.badgeUrl,
-                        contentDescription = achievement.title,
-                        contentScale = ContentScale.Fit,
-                        colorFilter = if (!achievement.isUnlocked) {
-                            ColorFilter.colorMatrix(grayscaleMatrix)
-                        } else null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .alpha(if (achievement.isUnlocked) 1f else 0.7f)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Filled.EmojiEvents,
-                        contentDescription = null,
-                        tint = if (achievement.isUnlocked) goldColor else Color.Gray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-            Text(
-                text = "${achievement.points} pts",
-                style = MaterialTheme.typography.labelSmall,
-                color = goldColor.copy(alpha = 0.8f),
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = achievement.title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (achievement.isUnlocked) goldColor else lockedColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (!achievement.description.isNullOrBlank()) {
-                Text(
-                    text = achievement.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.6f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AchievementColumn(
-    achievements: List<AchievementUi>,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        achievements.forEach { achievement ->
-            AchievementRow(achievement)
-        }
-    }
-}
-
-@Composable
-private fun SaveCacheDialogOverlay(
-    entries: List<UnifiedSaveEntry>,
-    focusIndex: Int,
-    isLoading: Boolean,
-    showRestoreConfirmation: Boolean,
-    restoreEntry: UnifiedSaveEntry?,
-    showRenameDialog: Boolean,
-    renameText: String,
-    onRenameTextChange: (String) -> Unit,
-    activeChannel: String?
-) {
-    val listState = rememberLazyListState()
-    val itemHeight = 56.dp
-    val maxVisibleItems = 5
-    val focusedEntry = entries.getOrNull(focusIndex)
-
-    LaunchedEffect(focusIndex) {
-        if (entries.isNotEmpty()) {
-            listState.animateScrollToItem(focusIndex.coerceIn(0, (entries.size - 1).coerceAtLeast(0)))
-        }
-    }
-
-    val yButtonHint = when {
-        focusedEntry?.isChannel == true -> {
-            if (focusedEntry.channelName == activeChannel) "Deactivate" else "Use Channel"
-        }
-        focusedEntry?.canBecomeChannel == true -> "Create Channel"
-        else -> null
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(24.dp)
-                .width(450.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "SAVE CHANNELS",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Select a save to restore",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (activeChannel != null) {
-                    Text(
-                        text = "Active: $activeChannel",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(itemHeight * 3),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (entries.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(itemHeight * 2),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No cached saves found",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                androidx.compose.foundation.lazy.LazyColumn(
-                    state = listState,
-                    modifier = Modifier.heightIn(max = itemHeight * maxVisibleItems)
-                ) {
-                    items(entries.size) { index ->
-                        val entry = entries[index]
-                        SaveCacheEntryRow(
-                            entry = entry,
-                            isFocused = focusIndex == index,
-                            isActiveChannel = entry.channelName == activeChannel
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val hints = mutableListOf(
-                InputButton.DPAD_VERTICAL to "Select",
-                InputButton.SOUTH to "Restore"
-            )
-            if (yButtonHint != null) {
-                hints.add(InputButton.NORTH to yButtonHint)
-            }
-            hints.add(InputButton.EAST to "Cancel")
-
-            FooterBar(hints = hints)
-        }
-
-        if (showRestoreConfirmation && restoreEntry != null) {
-            RestoreConfirmationOverlay(entry = restoreEntry)
-        }
-
-        if (showRenameDialog) {
-            RenameChannelOverlay(
-                text = renameText,
-                onTextChange = onRenameTextChange
-            )
-        }
-    }
-}
-
-@Composable
-private fun SaveCacheEntryRow(
-    entry: UnifiedSaveEntry,
-    isFocused: Boolean,
-    isActiveChannel: Boolean
-) {
-    val dateFormatter = remember {
-        java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
-            .withZone(java.time.ZoneId.systemDefault())
-    }
-    val formattedDate = remember(entry.timestamp) {
-        dateFormatter.format(entry.timestamp)
-    }
-    val formattedSize = remember(entry.size) {
-        when {
-            entry.size < 1024 -> "${entry.size} B"
-            entry.size < 1024 * 1024 -> "${entry.size / 1024} KB"
-            else -> String.format("%.1f MB", entry.size / (1024.0 * 1024.0))
-        }
-    }
-
-    val backgroundColor = when {
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        isActiveChannel -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-        else -> Color.Transparent
-    }
-    val contentColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-
-    val sourceText = when (entry.source) {
-        UnifiedSaveEntry.Source.LOCAL -> "Local"
-        UnifiedSaveEntry.Source.SERVER -> "Server"
-        UnifiedSaveEntry.Source.BOTH -> "Synced"
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        when {
-            entry.isChannel -> {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Channel",
-                    tint = if (isActiveChannel) MaterialTheme.colorScheme.primary else contentColor.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            entry.isLatest -> {
-                Icon(
-                    imageVector = Icons.Default.Save,
-                    contentDescription = "Latest",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            else -> {
-                Spacer(modifier = Modifier.width(20.dp))
-            }
-        }
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = entry.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (isActiveChannel) {
-                    Text(
-                        text = "[ACTIVE]",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (entry.isChannel) {
-                    Text(
-                        text = formattedDate,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.7f)
-                    )
-                }
-                Text(
-                    text = formattedSize,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.7f)
-                )
-            }
-        }
-
-        Text(
-            text = "[$sourceText]",
-            style = MaterialTheme.typography.bodySmall,
-            color = when (entry.source) {
-                UnifiedSaveEntry.Source.LOCAL -> MaterialTheme.colorScheme.tertiary
-                UnifiedSaveEntry.Source.SERVER -> MaterialTheme.colorScheme.secondary
-                UnifiedSaveEntry.Source.BOTH -> MaterialTheme.colorScheme.primary
-            }
+        MoreOptionsModal(
+            game = game,
+            focusIndex = uiState.moreOptionsFocusIndex,
+            isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED
         )
     }
-}
 
-@Composable
-private fun RestoreConfirmationOverlay(entry: UnifiedSaveEntry) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
-        contentAlignment = Alignment.Center
+    AnimatedVisibility(
+        visible = uiState.showEmulatorPicker,
+        enter = fadeIn(),
+        exit = fadeOut()
     ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(24.dp)
-                .width(400.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "RESTORE SAVE",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "How would you like to restore this save?",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            FooterBar(
-                hints = listOf(
-                    InputButton.DPAD_LEFT to "Local Only",
-                    InputButton.DPAD_RIGHT to "Sync to Server",
-                    InputButton.EAST to "Cancel"
-                )
-            )
-        }
+        EmulatorPickerModal(
+            availableEmulators = uiState.availableEmulators,
+            currentEmulatorName = game.emulatorName,
+            focusIndex = uiState.emulatorPickerFocusIndex,
+            onSelectEmulator = viewModel::selectEmulator,
+            onDismiss = viewModel::dismissEmulatorPicker
+        )
     }
-}
 
-@Composable
-private fun RenameChannelOverlay(
-    text: String,
-    onTextChange: (String) -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
-        contentAlignment = Alignment.Center
+    AnimatedVisibility(
+        visible = uiState.showCorePicker,
+        enter = fadeIn(),
+        exit = fadeOut()
     ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(12.dp)
-                )
-                .padding(24.dp)
-                .width(400.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "CREATE CHANNEL",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Enter a name for this save channel",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            androidx.compose.material3.OutlinedTextField(
-                value = text,
-                onValueChange = onTextChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text("Channel name")
-                },
-                singleLine = true,
-                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            FooterBar(
-                hints = listOf(
-                    InputButton.SOUTH to "Confirm",
-                    InputButton.EAST to "Cancel"
-                )
-            )
-        }
+        CorePickerModal(
+            availableCores = uiState.availableCores,
+            selectedCoreId = uiState.selectedCoreId,
+            focusIndex = uiState.corePickerFocusIndex,
+            onSelectCore = viewModel::selectCore,
+            onDismiss = viewModel::dismissCorePicker
+        )
     }
+
+    AnimatedVisibility(
+        visible = uiState.showRatingPicker,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        RatingPickerModal(
+            type = uiState.ratingPickerType,
+            value = uiState.ratingPickerValue
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.showDiscPicker,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        DiscPickerModal(
+            discs = uiState.discs,
+            focusIndex = uiState.discPickerFocusIndex,
+            onSelectDisc = viewModel::selectDiscAtIndex
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.showMissingDiscPrompt,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        MissingDiscModal(
+            missingDiscNumbers = uiState.missingDiscNumbers
+        )
+    }
+
+    SaveChannelModal(
+        state = uiState.saveChannel,
+        onRenameTextChange = viewModel::updateRenameText
+    )
+
+    SyncOverlay(
+        syncState = if (uiState.isSyncing) uiState.syncState else null,
+        gameTitle = game.title
+    )
 }

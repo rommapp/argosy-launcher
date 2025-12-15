@@ -241,3 +241,61 @@ data class RomMAchievement(
     @Json(name = "badge_url") val badgeUrl: String?,
     @Json(name = "badge_url_lock") val badgeUrlLock: String?
 )
+
+sealed class RomMResult<out T> {
+    data class Success<T>(val data: T) : RomMResult<T>()
+    data class Error(val message: String, val code: Int? = null) : RomMResult<Nothing>()
+}
+
+data class SyncProgress(
+    val isSyncing: Boolean = false,
+    val currentPlatform: String = "",
+    val platformsTotal: Int = 0,
+    val platformsDone: Int = 0,
+    val gamesTotal: Int = 0,
+    val gamesDone: Int = 0
+)
+
+data class SyncResult(
+    val platformsSynced: Int,
+    val gamesAdded: Int,
+    val gamesUpdated: Int,
+    val gamesDeleted: Int,
+    val errors: List<String>
+)
+
+data class MultiDiscGroup(
+    val primaryRommId: Long,
+    val siblingRommIds: List<Long>,
+    val platformSlug: String
+)
+
+data class DownloadResponse(
+    val body: okhttp3.ResponseBody,
+    val isPartialContent: Boolean
+)
+
+object RomMUtils {
+    fun createSortTitle(title: String): String {
+        val lower = title.lowercase()
+        return when {
+            lower.startsWith("the ") -> title.drop(4)
+            lower.startsWith("a ") -> title.drop(2)
+            lower.startsWith("an ") -> title.drop(3)
+            else -> title
+        }.lowercase()
+    }
+
+    fun buildMediaUrl(baseUrl: String, path: String): String {
+        return if (path.startsWith("http")) path else "$baseUrl$path"
+    }
+
+    fun getDedupKey(rom: RomMRom): String? {
+        return when {
+            rom.igdbId != null -> "igdb:${rom.igdbId}"
+            rom.mobyId != null -> "moby:${rom.mobyId}"
+            rom.raId != null -> "ra:${rom.raId}"
+            else -> null
+        }
+    }
+}

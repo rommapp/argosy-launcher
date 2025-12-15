@@ -1,65 +1,47 @@
 package com.nendo.argosy.ui.screens.settings
 
 import android.content.Context
-import android.os.Build
-import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.ImageCacheProgress
-import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.LaunchConfig
-import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
-import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.preferences.AnimationSpeed
-import com.nendo.argosy.data.preferences.HapticIntensity
-import com.nendo.argosy.data.preferences.RegionFilterMode
-import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UiDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.github.UpdateState
-import com.nendo.argosy.data.update.AppInstaller
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.File
 import com.nendo.argosy.data.remote.romm.RomMRepository
-import com.nendo.argosy.data.remote.romm.RomMResult
-import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
+import com.nendo.argosy.data.update.AppInstaller
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryResult
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
-import com.nendo.argosy.data.launcher.GameHubLogScanner
-import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.repository.GameRepository
-import com.nendo.argosy.data.repository.SteamRepository
-import com.nendo.argosy.data.repository.SteamResult
-import com.nendo.argosy.ui.input.ControllerDetector
-import com.nendo.argosy.ui.input.DetectedIconLayout
-import com.nendo.argosy.ui.input.HapticFeedbackManager
-import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
-import com.nendo.argosy.ui.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundFeedbackManager
-import com.nendo.argosy.ui.input.SoundPreset
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
-import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.EmulatorSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.ServerSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.SoundSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -67,207 +49,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
 import javax.inject.Inject
 
 private const val TAG = "SettingsViewModel"
-
-enum class SettingsSection {
-    MAIN,
-    SERVER,
-    SYNC_SETTINGS,
-    SYNC_FILTERS,
-    STEAM_SETTINGS,
-    STORAGE,
-    DISPLAY,
-    CONTROLS,
-    SOUNDS,
-    EMULATORS,
-    ABOUT
-}
-
-enum class ConnectionStatus {
-    CHECKING,
-    ONLINE,
-    OFFLINE,
-    NOT_CONFIGURED
-}
-
-data class PlatformEmulatorConfig(
-    val platform: PlatformEntity,
-    val selectedEmulator: String?,
-    val selectedEmulatorPackage: String? = null,
-    val selectedCore: String? = null,
-    val isUserConfigured: Boolean,
-    val availableEmulators: List<InstalledEmulator>,
-    val downloadableEmulators: List<EmulatorDef> = emptyList(),
-    val availableCores: List<RetroArchCore> = emptyList(),
-    val effectiveEmulatorIsRetroArch: Boolean = false,
-    val effectiveEmulatorName: String? = null
-) {
-    val hasInstalledEmulators: Boolean get() = availableEmulators.isNotEmpty()
-    val isRetroArchSelected: Boolean get() = selectedEmulatorPackage?.startsWith("com.retroarch") == true
-    val showCoreSelection: Boolean get() = effectiveEmulatorIsRetroArch && availableCores.isNotEmpty()
-}
-
-data class EmulatorPickerInfo(
-    val platformId: String,
-    val platformName: String,
-    val installedEmulators: List<InstalledEmulator>,
-    val downloadableEmulators: List<EmulatorDef>,
-    val selectedEmulatorName: String?
-)
-
-data class CorePickerInfo(
-    val platformId: String,
-    val platformName: String,
-    val availableCores: List<RetroArchCore>,
-    val selectedCoreId: String?
-)
-
-data class DisplayState(
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val primaryColor: Int? = null,
-    val animationSpeed: AnimationSpeed = AnimationSpeed.NORMAL,
-    val uiDensity: UiDensity = UiDensity.NORMAL,
-    val backgroundBlur: Int = 0,
-    val backgroundSaturation: Int = 100,
-    val backgroundOpacity: Int = 100,
-    val useGameBackground: Boolean = true,
-    val customBackgroundPath: String? = null
-)
-
-data class ControlsState(
-    val hapticEnabled: Boolean = true,
-    val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
-    val swapAB: Boolean = false,
-    val swapXY: Boolean = false,
-    val abIconLayout: String = "auto",
-    val detectedLayout: String? = null,
-    val swapStartSelect: Boolean = false
-)
-
-data class SoundState(
-    val enabled: Boolean = false,
-    val volume: Int = 40,
-    val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
-    val showSoundPicker: Boolean = false,
-    val soundPickerType: SoundType? = null,
-    val soundPickerFocusIndex: Int = 0
-) {
-    val presets: List<SoundPreset> get() = SoundPreset.entries.toList()
-
-    fun getCurrentPresetForType(type: SoundType): SoundPreset? {
-        val config = soundConfigs[type] ?: return null
-        return SoundPreset.entries.find { it.name == config.presetName }
-    }
-
-    fun getDisplayNameForType(type: SoundType): String {
-        val config = soundConfigs[type] ?: return "Default"
-        if (config.customFilePath != null) return "Custom"
-        return SoundPreset.entries.find { it.name == config.presetName }?.displayName ?: "Default"
-    }
-}
-
-data class EmulatorState(
-    val platforms: List<PlatformEmulatorConfig> = emptyList(),
-    val installedEmulators: List<InstalledEmulator> = emptyList(),
-    val canAutoAssign: Boolean = false,
-    val showEmulatorPicker: Boolean = false,
-    val emulatorPickerInfo: EmulatorPickerInfo? = null,
-    val emulatorPickerFocusIndex: Int = 0
-)
-
-data class StorageState(
-    val romStoragePath: String = "",
-    val downloadedGamesSize: Long = 0,
-    val downloadedGamesCount: Int = 0,
-    val maxConcurrentDownloads: Int = 1,
-    val availableSpace: Long = 0
-)
-
-data class ServerState(
-    val connectionStatus: ConnectionStatus = ConnectionStatus.NOT_CONFIGURED,
-    val rommUrl: String = "",
-    val rommUsername: String = "",
-    val rommVersion: String? = null,
-    val lastRommSync: java.time.Instant? = null,
-    val rommConfiguring: Boolean = false,
-    val rommConfigUrl: String = "",
-    val rommConfigUsername: String = "",
-    val rommConfigPassword: String = "",
-    val rommConnecting: Boolean = false,
-    val rommConfigError: String? = null,
-    val rommFocusField: Int? = null,
-    val syncScreenshotsEnabled: Boolean = false
-)
-
-data class SyncSettingsState(
-    val syncFilters: SyncFilterPreferences = SyncFilterPreferences(),
-    val showRegionPicker: Boolean = false,
-    val regionPickerFocusIndex: Int = 0,
-    val totalGames: Int = 0,
-    val totalPlatforms: Int = 0,
-    val saveSyncEnabled: Boolean = false,
-    val experimentalFolderSaveSync: Boolean = false,
-    val saveCacheLimit: Int = 10,
-    val pendingUploadsCount: Int = 0,
-    val hasStoragePermission: Boolean = false
-)
-
-data class InstalledSteamLauncher(
-    val packageName: String,
-    val displayName: String,
-    val gameCount: Int = 0,
-    val supportsScanning: Boolean = false
-)
-
-data class SteamSettingsState(
-    val hasStoragePermission: Boolean = false,
-    val installedLaunchers: List<InstalledSteamLauncher> = emptyList(),
-    val isSyncing: Boolean = false,
-    val syncingLauncher: String? = null,
-    val showAddGameDialog: Boolean = false,
-    val addGameAppId: String = "",
-    val addGameError: String? = null,
-    val isAddingGame: Boolean = false,
-    val selectedLauncherPackage: String? = null,
-    val launcherActionIndex: Int = 0
-)
-
-data class UpdateCheckState(
-    val isChecking: Boolean = false,
-    val hasChecked: Boolean = false,
-    val updateAvailable: Boolean = false,
-    val latestVersion: String? = null,
-    val downloadUrl: String? = null,
-    val error: String? = null,
-    val isDownloading: Boolean = false,
-    val downloadProgress: Int = 0,
-    val readyToInstall: Boolean = false
-)
-
-data class SettingsUiState(
-    val currentSection: SettingsSection = SettingsSection.MAIN,
-    val focusedIndex: Int = 0,
-    val colorFocusIndex: Int = 0,
-    val display: DisplayState = DisplayState(),
-    val controls: ControlsState = ControlsState(),
-    val sounds: SoundState = SoundState(),
-    val emulators: EmulatorState = EmulatorState(),
-    val server: ServerState = ServerState(),
-    val storage: StorageState = StorageState(),
-    val syncSettings: SyncSettingsState = SyncSettingsState(),
-    val steam: SteamSettingsState = SteamSettingsState(),
-    val launchFolderPicker: Boolean = false,
-    val showMigrationDialog: Boolean = false,
-    val pendingStoragePath: String? = null,
-    val isMigrating: Boolean = false,
-    val appVersion: String = BuildConfig.VERSION_NAME,
-    val updateCheck: UpdateCheckState = UpdateCheckState(),
-    val betaUpdatesEnabled: Boolean = false
-)
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -279,17 +72,21 @@ class SettingsViewModel @Inject constructor(
     private val romMRepository: RomMRepository,
     private val notificationManager: NotificationManager,
     private val gameRepository: GameRepository,
-    private val steamRepository: SteamRepository,
     private val imageCacheManager: ImageCacheManager,
     private val syncLibraryUseCase: SyncLibraryUseCase,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
-    private val migrateStorageUseCase: MigrateStorageUseCase,
     private val updateRepository: UpdateRepository,
     private val appInstaller: AppInstaller,
-    private val hapticManager: HapticFeedbackManager,
     private val soundManager: SoundFeedbackManager,
-    private val saveSyncRepository: SaveSyncRepository,
-    private val pendingSaveSyncDao: PendingSaveSyncDao
+    private val pendingSaveSyncDao: PendingSaveSyncDao,
+    val displayDelegate: DisplaySettingsDelegate,
+    val controlsDelegate: ControlsSettingsDelegate,
+    val soundsDelegate: SoundSettingsDelegate,
+    val emulatorDelegate: EmulatorSettingsDelegate,
+    val serverDelegate: ServerSettingsDelegate,
+    val storageDelegate: StorageSettingsDelegate,
+    val syncDelegate: SyncSettingsDelegate,
+    val steamDelegate: SteamSettingsDelegate
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -306,8 +103,76 @@ class SettingsViewModel @Inject constructor(
 
     val imageCacheProgress: StateFlow<ImageCacheProgress> = imageCacheManager.progress
 
+    val openBackgroundPickerEvent: SharedFlow<Unit> = displayDelegate.openBackgroundPickerEvent
+    val openCustomSoundPickerEvent: SharedFlow<SoundType> = soundsDelegate.openCustomSoundPickerEvent
+
     init {
+        observeDelegateStates()
+        observeDelegateEvents()
         loadSettings()
+    }
+
+    private fun observeDelegateStates() {
+        displayDelegate.state.onEach { display ->
+            _uiState.update { it.copy(display = display, colorFocusIndex = displayDelegate.colorFocusIndex) }
+        }.launchIn(viewModelScope)
+
+        controlsDelegate.state.onEach { controls ->
+            _uiState.update { it.copy(controls = controls) }
+        }.launchIn(viewModelScope)
+
+        soundsDelegate.state.onEach { sounds ->
+            _uiState.update { it.copy(sounds = sounds) }
+        }.launchIn(viewModelScope)
+
+        emulatorDelegate.state.onEach { emulators ->
+            _uiState.update { it.copy(emulators = emulators) }
+        }.launchIn(viewModelScope)
+
+        serverDelegate.state.onEach { server ->
+            _uiState.update { it.copy(server = server) }
+        }.launchIn(viewModelScope)
+
+        storageDelegate.state.onEach { storage ->
+            _uiState.update { it.copy(storage = storage) }
+        }.launchIn(viewModelScope)
+
+        storageDelegate.launchFolderPicker.onEach { launch ->
+            _uiState.update { it.copy(launchFolderPicker = launch) }
+        }.launchIn(viewModelScope)
+
+        storageDelegate.showMigrationDialog.onEach { show ->
+            _uiState.update { it.copy(showMigrationDialog = show) }
+        }.launchIn(viewModelScope)
+
+        storageDelegate.pendingStoragePath.onEach { path ->
+            _uiState.update { it.copy(pendingStoragePath = path) }
+        }.launchIn(viewModelScope)
+
+        storageDelegate.isMigrating.onEach { migrating ->
+            _uiState.update { it.copy(isMigrating = migrating) }
+        }.launchIn(viewModelScope)
+
+        syncDelegate.state.onEach { syncSettings ->
+            _uiState.update { it.copy(syncSettings = syncSettings) }
+        }.launchIn(viewModelScope)
+
+        steamDelegate.state.onEach { steam ->
+            _uiState.update { it.copy(steam = steam) }
+        }.launchIn(viewModelScope)
+    }
+
+    private fun observeDelegateEvents() {
+        merge(
+            syncDelegate.requestStoragePermissionEvent,
+            steamDelegate.requestStoragePermissionEvent
+        ).onEach {
+            _requestStoragePermissionEvent.emit(Unit)
+        }.launchIn(viewModelScope)
+
+        emulatorDelegate.openUrlEvent.onEach { url ->
+            _openUrlEvent.emit(url)
+        }.launchIn(viewModelScope)
     }
 
     private fun loadSettings() {
@@ -376,192 +241,105 @@ class SettingsViewModel @Inject constructor(
             val downloadedCount = gameRepository.getDownloadedGamesCount()
             val availableSpace = gameRepository.getAvailableStorageBytes()
 
-            _uiState.update { state ->
-                state.copy(
-                    display = state.display.copy(
-                        themeMode = prefs.themeMode,
-                        primaryColor = prefs.primaryColor,
-                        animationSpeed = prefs.animationSpeed,
-                        uiDensity = prefs.uiDensity,
-                        backgroundBlur = prefs.backgroundBlur,
-                        backgroundSaturation = prefs.backgroundSaturation,
-                        backgroundOpacity = prefs.backgroundOpacity,
-                        useGameBackground = prefs.useGameBackground,
-                        customBackgroundPath = prefs.customBackgroundPath
-                    ),
-                    controls = state.controls.copy(
-                        hapticEnabled = prefs.hapticEnabled,
-                        hapticIntensity = prefs.hapticIntensity,
-                        swapAB = prefs.swapAB,
-                        swapXY = prefs.swapXY,
-                        abIconLayout = prefs.abIconLayout,
-                        detectedLayout = detectControllerLayout(),
-                        swapStartSelect = prefs.swapStartSelect
-                    ),
-                    sounds = state.sounds.copy(
-                        enabled = prefs.soundEnabled,
-                        volume = prefs.soundVolume,
-                        soundConfigs = prefs.soundConfigs
-                    ),
-                    emulators = state.emulators.copy(
-                        platforms = platformConfigs,
-                        installedEmulators = installedEmulators,
-                        canAutoAssign = canAutoAssign
-                    ),
-                    server = state.server.copy(
-                        connectionStatus = connectionStatus,
-                        rommUrl = prefs.rommBaseUrl ?: "",
-                        rommUsername = prefs.rommUsername ?: "",
-                        rommVersion = rommVersion,
-                        lastRommSync = prefs.lastRommSync,
-                        syncScreenshotsEnabled = prefs.syncScreenshotsEnabled
-                    ),
-                    storage = state.storage.copy(
-                        romStoragePath = prefs.romStoragePath ?: "",
-                        downloadedGamesSize = downloadedSize,
-                        downloadedGamesCount = downloadedCount,
-                        maxConcurrentDownloads = prefs.maxConcurrentDownloads,
-                        availableSpace = availableSpace
-                    ),
-                    syncSettings = state.syncSettings.copy(
-                        syncFilters = prefs.syncFilters,
-                        totalPlatforms = platforms.count { it.gameCount > 0 },
-                        totalGames = platforms.sumOf { it.gameCount },
-                        saveSyncEnabled = prefs.saveSyncEnabled,
-                        experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
-                        saveCacheLimit = prefs.saveCacheLimit,
-                        pendingUploadsCount = pendingSaveSyncDao.getCount()
-                    ),
-                    betaUpdatesEnabled = prefs.betaUpdatesEnabled
-                )
-            }
+            displayDelegate.updateState(DisplayState(
+                themeMode = prefs.themeMode,
+                primaryColor = prefs.primaryColor,
+                animationSpeed = prefs.animationSpeed,
+                uiDensity = prefs.uiDensity,
+                backgroundBlur = prefs.backgroundBlur,
+                backgroundSaturation = prefs.backgroundSaturation,
+                backgroundOpacity = prefs.backgroundOpacity,
+                useGameBackground = prefs.useGameBackground,
+                customBackgroundPath = prefs.customBackgroundPath
+            ))
+
+            controlsDelegate.updateState(ControlsState(
+                hapticEnabled = prefs.hapticEnabled,
+                hapticIntensity = prefs.hapticIntensity,
+                swapAB = prefs.swapAB,
+                swapXY = prefs.swapXY,
+                abIconLayout = prefs.abIconLayout,
+                detectedLayout = controlsDelegate.detectControllerLayout(),
+                swapStartSelect = prefs.swapStartSelect
+            ))
+
+            soundsDelegate.updateState(SoundState(
+                enabled = prefs.soundEnabled,
+                volume = prefs.soundVolume,
+                soundConfigs = prefs.soundConfigs
+            ))
+
+            emulatorDelegate.updateState(EmulatorState(
+                platforms = platformConfigs,
+                installedEmulators = installedEmulators,
+                canAutoAssign = canAutoAssign
+            ))
+
+            serverDelegate.updateState(ServerState(
+                connectionStatus = connectionStatus,
+                rommUrl = prefs.rommBaseUrl ?: "",
+                rommUsername = prefs.rommUsername ?: "",
+                rommVersion = rommVersion,
+                lastRommSync = prefs.lastRommSync,
+                syncScreenshotsEnabled = prefs.syncScreenshotsEnabled
+            ))
+
+            storageDelegate.updateState(StorageState(
+                romStoragePath = prefs.romStoragePath ?: "",
+                downloadedGamesSize = downloadedSize,
+                downloadedGamesCount = downloadedCount,
+                maxConcurrentDownloads = prefs.maxConcurrentDownloads,
+                availableSpace = availableSpace
+            ))
+
+            syncDelegate.updateState(SyncSettingsState(
+                syncFilters = prefs.syncFilters,
+                totalPlatforms = platforms.count { it.gameCount > 0 },
+                totalGames = platforms.sumOf { it.gameCount },
+                saveSyncEnabled = prefs.saveSyncEnabled,
+                experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
+                saveCacheLimit = prefs.saveCacheLimit,
+                pendingUploadsCount = pendingSaveSyncDao.getCount()
+            ))
+
+            _uiState.update { it.copy(betaUpdatesEnabled = prefs.betaUpdatesEnabled) }
 
             soundManager.setVolume(prefs.soundVolume)
         }
     }
 
     fun autoAssignAllEmulators() {
-        viewModelScope.launch {
-            for (config in _uiState.value.emulators.platforms) {
-                if (!config.isUserConfigured && config.availableEmulators.isNotEmpty()) {
-                    val preferred = emulatorDetector.getPreferredEmulator(config.platform.id)
-                    if (preferred != null) {
-                        setPlatformEmulator(config.platform.id, preferred)
-                    }
-                }
-            }
-        }
+        emulatorDelegate.autoAssignAllEmulators(viewModelScope) { loadSettings() }
     }
 
     fun refreshEmulators() {
-        viewModelScope.launch {
-            val previousCounts = _uiState.value.emulators.platforms.associate {
-                it.platform.id to it.availableEmulators.size
-            }
-
-            loadSettings()
-
-            val currentPlatforms = _uiState.value.emulators.platforms
-            for (config in currentPlatforms) {
-                val prevCount = previousCounts[config.platform.id] ?: 0
-                val currentCount = config.availableEmulators.size
-
-                if (prevCount == 0 && currentCount > 0 && !config.isUserConfigured) {
-                    val preferred = emulatorDetector.getPreferredEmulator(config.platform.id)
-                    if (preferred != null) {
-                        setPlatformEmulator(config.platform.id, preferred)
-                    }
-                }
-            }
-        }
+        emulatorDelegate.refreshEmulators()
+        loadSettings()
     }
 
     fun showEmulatorPicker(config: PlatformEmulatorConfig) {
         if (config.availableEmulators.isEmpty() && config.downloadableEmulators.isEmpty()) return
-        _uiState.update {
-            it.copy(
-                emulators = it.emulators.copy(
-                    showEmulatorPicker = true,
-                    emulatorPickerInfo = EmulatorPickerInfo(
-                        platformId = config.platform.id,
-                        platformName = config.platform.name,
-                        installedEmulators = config.availableEmulators,
-                        downloadableEmulators = config.downloadableEmulators,
-                        selectedEmulatorName = config.selectedEmulator
-                    ),
-                    emulatorPickerFocusIndex = 0
-                )
-            )
-        }
-        soundManager.play(SoundType.OPEN_MODAL)
+        emulatorDelegate.showEmulatorPicker(config)
     }
 
     fun dismissEmulatorPicker() {
-        _uiState.update {
-            it.copy(
-                emulators = it.emulators.copy(
-                    showEmulatorPicker = false,
-                    emulatorPickerInfo = null,
-                    emulatorPickerFocusIndex = 0
-                )
-            )
-        }
-        soundManager.play(SoundType.CLOSE_MODAL)
+        emulatorDelegate.dismissEmulatorPicker()
     }
 
     fun cycleCoreForPlatform(config: PlatformEmulatorConfig, direction: Int) {
-        if (config.availableCores.isEmpty()) return
-        viewModelScope.launch {
-            val currentIndex = config.selectedCore?.let { selectedId ->
-                config.availableCores.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }
-            } ?: -1
-            val nextIndex = (currentIndex + direction + config.availableCores.size) % config.availableCores.size
-            val nextCore = config.availableCores[nextIndex]
-            configureEmulatorUseCase.setCoreForPlatform(config.platform.id, nextCore.id)
-            loadSettings()
-        }
+        emulatorDelegate.cycleCoreForPlatform(viewModelScope, config, direction) { loadSettings() }
     }
 
     fun moveEmulatorPickerFocus(delta: Int) {
-        _uiState.update { state ->
-            val info = state.emulators.emulatorPickerInfo ?: return@update state
-            val hasInstalled = info.installedEmulators.isNotEmpty()
-            val totalItems = (if (hasInstalled) 1 else 0) + info.installedEmulators.size + info.downloadableEmulators.size
-            val maxIndex = (totalItems - 1).coerceAtLeast(0)
-            val newIndex = (state.emulators.emulatorPickerFocusIndex + delta).coerceIn(0, maxIndex)
-            state.copy(emulators = state.emulators.copy(emulatorPickerFocusIndex = newIndex))
-        }
+        emulatorDelegate.moveEmulatorPickerFocus(delta)
     }
 
     fun confirmEmulatorPickerSelection() {
-        viewModelScope.launch {
-            val state = _uiState.value
-            val info = state.emulators.emulatorPickerInfo ?: return@launch
-            val index = state.emulators.emulatorPickerFocusIndex
-            val hasInstalled = info.installedEmulators.isNotEmpty()
-
-            if (hasInstalled) {
-                when {
-                    index == 0 -> {
-                        setPlatformEmulator(info.platformId, null)
-                        dismissEmulatorPicker()
-                    }
-                    index <= info.installedEmulators.size -> {
-                        val emulator = info.installedEmulators[index - 1]
-                        setPlatformEmulator(info.platformId, emulator)
-                        dismissEmulatorPicker()
-                    }
-                    else -> {
-                        val downloadIndex = index - 1 - info.installedEmulators.size
-                        val emulator = info.downloadableEmulators.getOrNull(downloadIndex)
-                        emulator?.downloadUrl?.let { _openUrlEvent.emit(it) }
-                    }
-                }
-            } else {
-                val emulator = info.downloadableEmulators.getOrNull(index)
-                emulator?.downloadUrl?.let { _openUrlEvent.emit(it) }
-            }
-        }
+        emulatorDelegate.confirmEmulatorPickerSelection(
+            viewModelScope,
+            onSetEmulator = { platformId, emulator -> setPlatformEmulator(platformId, emulator) },
+            onLoadSettings = { loadSettings() }
+        )
     }
 
     fun navigateToSection(section: SettingsSection) {
@@ -569,87 +347,27 @@ class SettingsViewModel @Inject constructor(
         when (section) {
             SettingsSection.EMULATORS -> refreshEmulators()
             SettingsSection.SERVER -> {
-                checkRommConnection()
-                loadLibrarySettings()
+                serverDelegate.checkRommConnection(viewModelScope)
+                syncDelegate.loadLibrarySettings(viewModelScope)
             }
-            SettingsSection.SYNC_SETTINGS -> loadLibrarySettings()
-            SettingsSection.STEAM_SETTINGS -> loadSteamSettings()
+            SettingsSection.SYNC_SETTINGS -> syncDelegate.loadLibrarySettings(viewModelScope)
+            SettingsSection.STEAM_SETTINGS -> steamDelegate.loadSteamSettings(context, viewModelScope)
             else -> {}
         }
     }
 
-    private fun loadLibrarySettings() {
-        viewModelScope.launch {
-            val prefs = preferencesRepository.preferences.first()
-            val hasPermission = checkStoragePermission()
-            val pendingCount = pendingSaveSyncDao.getCount()
-            _uiState.update {
-                it.copy(
-                    syncSettings = it.syncSettings.copy(
-                        syncFilters = prefs.syncFilters,
-                        saveSyncEnabled = prefs.saveSyncEnabled,
-                        experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
-                        saveCacheLimit = prefs.saveCacheLimit,
-                        hasStoragePermission = hasPermission,
-                        pendingUploadsCount = pendingCount
-                    )
-                )
-            }
-        }
-    }
-
-    private fun loadSteamSettings() {
-        viewModelScope.launch {
-            val hasPermission = checkStoragePermission()
-            val installedLaunchers = SteamLaunchers.getInstalled(context).map { launcher ->
-                InstalledSteamLauncher(
-                    packageName = launcher.packageName,
-                    displayName = launcher.displayName,
-                    gameCount = 0,
-                    supportsScanning = launcher.supportsScanning
-                )
-            }
-
-            _uiState.update {
-                it.copy(
-                    steam = it.steam.copy(
-                        hasStoragePermission = hasPermission,
-                        installedLaunchers = installedLaunchers,
-                        launcherActionIndex = 0
-                    )
-                )
-            }
-        }
-    }
-
     fun refreshSteamSettings() {
-        loadSteamSettings()
+        steamDelegate.loadSteamSettings(context, viewModelScope)
     }
 
     fun moveLauncherActionFocus(delta: Int) {
-        val state = _uiState.value
-        val launcherIndex = getLauncherIndexFromFocus(state)
-        if (launcherIndex < 0 || launcherIndex >= state.steam.installedLaunchers.size) return
-
-        val launcher = state.steam.installedLaunchers[launcherIndex]
-        val maxIndex = if (launcher.supportsScanning) 1 else 0
-        val newIndex = (state.steam.launcherActionIndex + delta).coerceIn(0, maxIndex)
-
-        _uiState.update { it.copy(steam = it.steam.copy(launcherActionIndex = newIndex)) }
+        val launcherIndex = getLauncherIndexFromFocus(_uiState.value)
+        steamDelegate.moveLauncherActionFocus(delta, launcherIndex)
     }
 
     fun confirmLauncherAction() {
-        val state = _uiState.value
-        val launcherIndex = getLauncherIndexFromFocus(state)
-        if (launcherIndex < 0 || launcherIndex >= state.steam.installedLaunchers.size) return
-
-        val launcher = state.steam.installedLaunchers[launcherIndex]
-
-        if (launcher.supportsScanning && state.steam.launcherActionIndex == 0) {
-            scanSteamLauncher(launcher.packageName)
-        } else {
-            showAddSteamGameDialog(launcher.packageName)
-        }
+        val launcherIndex = getLauncherIndexFromFocus(_uiState.value)
+        steamDelegate.confirmLauncherAction(context, viewModelScope, launcherIndex)
     }
 
     private fun getLauncherIndexFromFocus(state: SettingsUiState): Int {
@@ -670,184 +388,31 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun scanSteamLauncher(packageName: String) {
-        val launcher = _uiState.value.steam.installedLaunchers.find { it.packageName == packageName }
-        if (launcher == null) return
-
-        val steamLauncher = SteamLaunchers.getByPackage(packageName)
-
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(steam = it.steam.copy(isSyncing = true, syncingLauncher = packageName))
-            }
-
-            notificationManager.show("Scanning ${launcher.displayName}...")
-
-            val scannedGames = if (steamLauncher?.supportsScanning == true) {
-                withContext(Dispatchers.IO) {
-                    GameHubLogScanner.scan(packageName)
-                }
-            } else {
-                emptyList()
-            }
-
-            if (scannedGames.isEmpty()) {
-                _uiState.update {
-                    it.copy(steam = it.steam.copy(isSyncing = false, syncingLauncher = null))
-                }
-                notificationManager.show("No games found")
-                return@launch
-            }
-
-            var addedCount = 0
-            var skippedCount = 0
-
-            for (game in scannedGames) {
-                when (steamRepository.addGame(game.appId, packageName)) {
-                    is SteamResult.Success -> addedCount++
-                    is SteamResult.Error -> skippedCount++
-                }
-            }
-
-            _uiState.update {
-                it.copy(steam = it.steam.copy(isSyncing = false, syncingLauncher = null))
-            }
-
-            val message = when {
-                addedCount > 0 && skippedCount > 0 -> "Added $addedCount games, $skippedCount already existed"
-                addedCount > 0 -> "Added $addedCount games"
-                else -> "All ${scannedGames.size} games already in library"
-            }
-            notificationManager.show(message)
-            loadSteamSettings()
-        }
+        steamDelegate.scanSteamLauncher(context, viewModelScope, packageName)
     }
 
     fun refreshSteamMetadata() {
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(steam = it.steam.copy(isSyncing = true, syncingLauncher = "refresh"))
-            }
-
-            when (val result = steamRepository.refreshAllMetadata()) {
-                is SteamResult.Success -> {
-                    notificationManager.show("Refreshed metadata for ${result.data} games")
-                }
-                is SteamResult.Error -> {
-                    notificationManager.showError("Failed to refresh: ${result.message}")
-                }
-            }
-
-            _uiState.update {
-                it.copy(steam = it.steam.copy(isSyncing = false, syncingLauncher = null))
-            }
-            loadSteamSettings()
-        }
+        steamDelegate.refreshSteamMetadata(context, viewModelScope)
     }
 
     fun showAddSteamGameDialog(launcherPackage: String? = null) {
-        _uiState.update {
-            it.copy(steam = it.steam.copy(
-                showAddGameDialog = true,
-                addGameAppId = "",
-                addGameError = null,
-                isAddingGame = false,
-                selectedLauncherPackage = launcherPackage
-            ))
-        }
+        steamDelegate.showAddSteamGameDialog(launcherPackage)
     }
 
     fun dismissAddSteamGameDialog() {
-        _uiState.update {
-            it.copy(steam = it.steam.copy(
-                showAddGameDialog = false,
-                addGameAppId = "",
-                addGameError = null,
-                isAddingGame = false,
-                selectedLauncherPackage = null
-            ))
-        }
+        steamDelegate.dismissAddSteamGameDialog()
     }
 
     fun setAddGameAppId(appId: String) {
-        _uiState.update {
-            it.copy(steam = it.steam.copy(addGameAppId = appId, addGameError = null))
-        }
+        steamDelegate.setAddGameAppId(appId)
     }
 
     fun confirmAddSteamGame() {
-        val steamState = _uiState.value.steam
-        val appIdStr = steamState.addGameAppId.trim()
-        val appId = appIdStr.toLongOrNull()
-
-        if (appId == null || appId <= 0) {
-            _uiState.update {
-                it.copy(steam = it.steam.copy(addGameError = "Please enter a valid Steam App ID"))
-            }
-            return
-        }
-
-        val launcherPackage = steamState.selectedLauncherPackage
-            ?: SteamLaunchers.getPreferred(context)?.packageName
-        if (launcherPackage == null) {
-            _uiState.update {
-                it.copy(steam = it.steam.copy(addGameError = "No Steam launcher installed"))
-            }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(steam = it.steam.copy(isAddingGame = true, addGameError = null))
-            }
-
-            when (val result = steamRepository.addGame(appId, launcherPackage)) {
-                is SteamResult.Success -> {
-                    notificationManager.show("Added: ${result.data.title}")
-                    dismissAddSteamGameDialog()
-                    loadSteamSettings()
-                }
-                is SteamResult.Error -> {
-                    _uiState.update {
-                        it.copy(steam = it.steam.copy(
-                            isAddingGame = false,
-                            addGameError = result.message
-                        ))
-                    }
-                }
-            }
-        }
-    }
-
-    private fun checkStoragePermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
-        } else {
-            true
-        }
+        steamDelegate.confirmAddSteamGame(context, viewModelScope)
     }
 
     fun checkRommConnection() {
-        val url = _uiState.value.server.rommUrl
-        if (url.isBlank()) {
-            _uiState.update { it.copy(server = it.server.copy(connectionStatus = ConnectionStatus.NOT_CONFIGURED)) }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(server = it.server.copy(connectionStatus = ConnectionStatus.CHECKING)) }
-            try {
-                val result = romMRepository.getLibrarySummary()
-                val status = if (result is RomMResult.Success) {
-                    ConnectionStatus.ONLINE
-                } else {
-                    ConnectionStatus.OFFLINE
-                }
-                _uiState.update { it.copy(server = it.server.copy(connectionStatus = status)) }
-            } catch (e: Exception) {
-                Log.e(TAG, "checkRommConnection: failed", e)
-                _uiState.update { it.copy(server = it.server.copy(connectionStatus = ConnectionStatus.OFFLINE)) }
-            }
-        }
+        serverDelegate.checkRommConnection(viewModelScope)
     }
 
     fun navigateBack(): Boolean {
@@ -894,19 +459,17 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private val colorCount = 7
-
     fun moveFocus(delta: Int) {
         if (_uiState.value.sounds.showSoundPicker) {
-            moveSoundPickerFocus(delta)
+            soundsDelegate.moveSoundPickerFocus(delta)
             return
         }
         if (_uiState.value.syncSettings.showRegionPicker) {
-            moveRegionPickerFocus(delta)
+            syncDelegate.moveRegionPickerFocus(delta)
             return
         }
         if (_uiState.value.emulators.showEmulatorPicker) {
-            moveEmulatorPickerFocus(delta)
+            emulatorDelegate.moveEmulatorPickerFocus(delta)
             return
         }
         _uiState.update { state ->
@@ -956,164 +519,80 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun moveColorFocus(delta: Int) {
-        _uiState.update { state ->
-            state.copy(colorFocusIndex = (state.colorFocusIndex + delta).coerceIn(0, colorCount - 1))
-        }
+        displayDelegate.moveColorFocus(delta)
+        _uiState.update { it.copy(colorFocusIndex = displayDelegate.colorFocusIndex) }
     }
 
     fun selectFocusedColor() {
-        val colors = listOf<Int?>(
-            null,
-            0xFF9575CD.toInt(),
-            0xFF4DB6AC.toInt(),
-            0xFFFFB74D.toInt(),
-            0xFF81C784.toInt(),
-            0xFFF06292.toInt(),
-            0xFF64B5F6.toInt()
-        )
-        val color = colors.getOrNull(_uiState.value.colorFocusIndex)
-        setPrimaryColor(color)
+        displayDelegate.selectFocusedColor(viewModelScope)
     }
 
-    fun setThemeMode(mode: ThemeMode) {
-        viewModelScope.launch {
-            preferencesRepository.setThemeMode(mode)
-            _uiState.update { it.copy(display = it.display.copy(themeMode = mode)) }
-        }
+    fun setThemeMode(mode: com.nendo.argosy.data.preferences.ThemeMode) {
+        displayDelegate.setThemeMode(viewModelScope, mode)
     }
 
     fun setPrimaryColor(color: Int?) {
-        viewModelScope.launch {
-            preferencesRepository.setCustomColors(color, null, null)
-            _uiState.update { it.copy(display = it.display.copy(primaryColor = color)) }
-        }
+        displayDelegate.setPrimaryColor(viewModelScope, color)
     }
 
     fun adjustHue(delta: Float) {
-        val currentColor = _uiState.value.display.primaryColor
-        val currentHue = if (currentColor != null) {
-            val hsl = FloatArray(3)
-            androidx.core.graphics.ColorUtils.colorToHSL(currentColor, hsl)
-            hsl[0]
-        } else {
-            180f
-        }
-        val newHue = (currentHue + delta).mod(360f)
-        val newColor = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(newHue, 0.7f, 0.5f))
-        setPrimaryColor(newColor)
+        displayDelegate.adjustHue(viewModelScope, delta)
     }
 
     fun resetToDefaultColor() {
-        setPrimaryColor(null)
+        displayDelegate.resetToDefaultColor(viewModelScope)
     }
 
-    fun setAnimationSpeed(speed: AnimationSpeed) {
-        viewModelScope.launch {
-            preferencesRepository.setAnimationSpeed(speed)
-            _uiState.update { it.copy(display = it.display.copy(animationSpeed = speed)) }
-        }
+    fun setAnimationSpeed(speed: com.nendo.argosy.data.preferences.AnimationSpeed) {
+        displayDelegate.setAnimationSpeed(viewModelScope, speed)
     }
 
-    fun setUiDensity(density: UiDensity) {
-        viewModelScope.launch {
-            preferencesRepository.setUiDensity(density)
-            _uiState.update { it.copy(display = it.display.copy(uiDensity = density)) }
-        }
+    fun setUiDensity(density: com.nendo.argosy.data.preferences.UiDensity) {
+        displayDelegate.setUiDensity(viewModelScope, density)
     }
 
     fun adjustBackgroundBlur(delta: Int) {
-        val current = _uiState.value.display.backgroundBlur
-        val newValue = (current + delta).coerceIn(0, 100)
-        if (newValue != current) {
-            viewModelScope.launch {
-                preferencesRepository.setBackgroundBlur(newValue)
-                _uiState.update { it.copy(display = it.display.copy(backgroundBlur = newValue)) }
-            }
-        }
+        displayDelegate.adjustBackgroundBlur(viewModelScope, delta)
     }
 
     fun adjustBackgroundSaturation(delta: Int) {
-        val current = _uiState.value.display.backgroundSaturation
-        val newValue = (current + delta).coerceIn(0, 100)
-        if (newValue != current) {
-            viewModelScope.launch {
-                preferencesRepository.setBackgroundSaturation(newValue)
-                _uiState.update { it.copy(display = it.display.copy(backgroundSaturation = newValue)) }
-            }
-        }
+        displayDelegate.adjustBackgroundSaturation(viewModelScope, delta)
     }
 
     fun adjustBackgroundOpacity(delta: Int) {
-        val current = _uiState.value.display.backgroundOpacity
-        val newValue = (current + delta).coerceIn(0, 100)
-        if (newValue != current) {
-            viewModelScope.launch {
-                preferencesRepository.setBackgroundOpacity(newValue)
-                _uiState.update { it.copy(display = it.display.copy(backgroundOpacity = newValue)) }
-            }
-        }
+        displayDelegate.adjustBackgroundOpacity(viewModelScope, delta)
     }
 
     fun setUseGameBackground(use: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setUseGameBackground(use)
-            _uiState.update { it.copy(display = it.display.copy(useGameBackground = use)) }
-        }
+        displayDelegate.setUseGameBackground(viewModelScope, use)
     }
 
     fun setCustomBackgroundPath(path: String?) {
-        viewModelScope.launch {
-            preferencesRepository.setCustomBackgroundPath(path)
-            _uiState.update { it.copy(display = it.display.copy(customBackgroundPath = path)) }
-        }
+        displayDelegate.setCustomBackgroundPath(viewModelScope, path)
     }
 
     fun openBackgroundPicker() {
-        viewModelScope.launch {
-            _openBackgroundPickerEvent.emit(Unit)
-        }
+        displayDelegate.openBackgroundPicker(viewModelScope)
     }
 
     fun setHapticEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setHapticEnabled(enabled)
-            _uiState.update { it.copy(controls = it.controls.copy(hapticEnabled = enabled)) }
-        }
+        controlsDelegate.setHapticEnabled(viewModelScope, enabled)
     }
 
-    fun setHapticIntensity(intensity: HapticIntensity) {
-        viewModelScope.launch {
-            preferencesRepository.setHapticIntensity(intensity)
-            _uiState.update { it.copy(controls = it.controls.copy(hapticIntensity = intensity)) }
-        }
+    fun setHapticIntensity(intensity: com.nendo.argosy.data.preferences.HapticIntensity) {
+        controlsDelegate.setHapticIntensity(viewModelScope, intensity)
     }
 
     fun cycleHapticIntensity() {
-        adjustHapticIntensity(1)
+        controlsDelegate.cycleHapticIntensity(viewModelScope)
     }
 
     fun adjustHapticIntensity(delta: Int) {
-        val current = _uiState.value.controls.hapticIntensity
-        val currentIndex = current.ordinal
-        val newIndex = (currentIndex + delta).coerceIn(0, HapticIntensity.entries.lastIndex)
-        if (newIndex != currentIndex) {
-            val newIntensity = HapticIntensity.entries[newIndex]
-            hapticManager.setIntensity(newIntensity.amplitude)
-            setHapticIntensity(newIntensity)
-            // Delay preview so it fires AFTER InputDispatcher's FOCUS_CHANGE haptic
-            viewModelScope.launch {
-                kotlinx.coroutines.delay(100)
-                hapticManager.vibrate(HapticPattern.INTENSITY_PREVIEW)
-            }
-        }
+        controlsDelegate.adjustHapticIntensity(viewModelScope, delta)
     }
 
     fun setSoundEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSoundEnabled(enabled)
-            soundManager.setEnabled(enabled)
-            _uiState.update { it.copy(sounds = it.sounds.copy(enabled = enabled)) }
-        }
+        soundsDelegate.setSoundEnabled(viewModelScope, enabled)
     }
 
     fun setBetaUpdatesEnabled(enabled: Boolean) {
@@ -1124,454 +603,162 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setSoundVolume(volume: Int) {
-        viewModelScope.launch {
-            preferencesRepository.setSoundVolume(volume)
-            soundManager.setVolume(volume)
-            _uiState.update { it.copy(sounds = it.sounds.copy(volume = volume)) }
-            soundManager.play(SoundType.VOLUME_PREVIEW)
-        }
+        soundsDelegate.setSoundVolume(viewModelScope, volume)
     }
 
     fun adjustSoundVolume(delta: Int) {
-        val volumeLevels = listOf(10, 25, 40, 60, 80)
-        val current = _uiState.value.sounds.volume
-        val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
-        val newIndex = (currentIndex + delta).coerceIn(0, volumeLevels.lastIndex)
-        val newVolume = volumeLevels[newIndex]
-        if (newVolume != current) {
-            setSoundVolume(newVolume)
-        }
+        soundsDelegate.adjustSoundVolume(viewModelScope, delta)
     }
 
     fun showSoundPicker(type: SoundType) {
-        val currentConfig = _uiState.value.sounds.soundConfigs[type]
-        val initialIndex = if (currentConfig?.presetName != null) {
-            SoundPreset.entries.indexOfFirst { it.name == currentConfig.presetName }.takeIf { it >= 0 } ?: 0
-        } else {
-            0
-        }
-        _uiState.update {
-            it.copy(sounds = it.sounds.copy(
-                showSoundPicker = true,
-                soundPickerType = type,
-                soundPickerFocusIndex = initialIndex
-            ))
-        }
-        soundManager.play(SoundType.OPEN_MODAL)
+        soundsDelegate.showSoundPicker(type)
     }
 
     fun dismissSoundPicker() {
-        _uiState.update {
-            it.copy(sounds = it.sounds.copy(
-                showSoundPicker = false,
-                soundPickerType = null,
-                soundPickerFocusIndex = 0
-            ))
-        }
-        soundManager.play(SoundType.CLOSE_MODAL)
+        soundsDelegate.dismissSoundPicker()
     }
 
     fun moveSoundPickerFocus(delta: Int) {
-        _uiState.update { state ->
-            val maxIndex = SoundPreset.entries.size - 1
-            val newIndex = (state.sounds.soundPickerFocusIndex + delta).coerceIn(0, maxIndex)
-            state.copy(sounds = state.sounds.copy(soundPickerFocusIndex = newIndex))
-        }
+        soundsDelegate.moveSoundPickerFocus(delta)
     }
 
     fun previewSoundPickerSelection() {
-        val focusIndex = _uiState.value.sounds.soundPickerFocusIndex
-        val preset = SoundPreset.entries.getOrNull(focusIndex) ?: return
-        if (preset != SoundPreset.SILENT && preset != SoundPreset.CUSTOM) {
-            soundManager.playPreset(preset)
-        }
+        soundsDelegate.previewSoundPickerSelection()
     }
 
     fun confirmSoundPickerSelection() {
-        val state = _uiState.value.sounds
-        val type = state.soundPickerType ?: return
-        val focusIndex = state.soundPickerFocusIndex
-        val preset = SoundPreset.entries.getOrNull(focusIndex) ?: return
-
-        if (preset == SoundPreset.CUSTOM) {
-            viewModelScope.launch {
-                _openCustomSoundPickerEvent.emit(type)
-            }
-            dismissSoundPicker()
-            return
-        }
-
-        val config = if (preset == SoundPreset.SILENT) {
-            SoundConfig(presetName = SoundPreset.SILENT.name)
-        } else {
-            SoundConfig(presetName = preset.name)
-        }
-
-        viewModelScope.launch {
-            preferencesRepository.setSoundConfig(type, config)
-            val updatedConfigs = _uiState.value.sounds.soundConfigs + (type to config)
-            _uiState.update {
-                it.copy(sounds = it.sounds.copy(soundConfigs = updatedConfigs))
-            }
-            soundManager.setSoundConfig(type, config)
-        }
-        dismissSoundPicker()
+        soundsDelegate.confirmSoundPickerSelection(viewModelScope)
     }
 
     fun setCustomSoundFile(type: SoundType, filePath: String) {
-        val config = SoundConfig(customFilePath = filePath)
-        viewModelScope.launch {
-            preferencesRepository.setSoundConfig(type, config)
-            val updatedConfigs = _uiState.value.sounds.soundConfigs + (type to config)
-            _uiState.update {
-                it.copy(sounds = it.sounds.copy(soundConfigs = updatedConfigs))
-            }
-            soundManager.setSoundConfig(type, config)
-        }
+        soundsDelegate.setCustomSoundFile(viewModelScope, type, filePath)
     }
 
-    private val _openCustomSoundPickerEvent = MutableSharedFlow<SoundType>()
-    val openCustomSoundPickerEvent: SharedFlow<SoundType> = _openCustomSoundPickerEvent.asSharedFlow()
-
-    private val _openBackgroundPickerEvent = MutableSharedFlow<Unit>()
-    val openBackgroundPickerEvent: SharedFlow<Unit> = _openBackgroundPickerEvent.asSharedFlow()
-
     fun setSwapAB(enabled: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSwapAB(enabled)
-            _uiState.update { it.copy(controls = it.controls.copy(swapAB = enabled)) }
-        }
+        controlsDelegate.setSwapAB(viewModelScope, enabled)
     }
 
     fun setSwapXY(enabled: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSwapXY(enabled)
-            _uiState.update { it.copy(controls = it.controls.copy(swapXY = enabled)) }
-        }
+        controlsDelegate.setSwapXY(viewModelScope, enabled)
     }
 
     fun setABIconLayout(layout: String) {
-        viewModelScope.launch {
-            preferencesRepository.setABIconLayout(layout)
-            _uiState.update { it.copy(controls = it.controls.copy(abIconLayout = layout)) }
-        }
+        controlsDelegate.setABIconLayout(viewModelScope, layout)
     }
 
     fun cycleABIconLayout() {
-        val current = _uiState.value.controls.abIconLayout
-        val next = when (current) {
-            "auto" -> "xbox"
-            "xbox" -> "nintendo"
-            else -> "auto"
-        }
-        setABIconLayout(next)
-    }
-
-    private fun detectControllerLayout(): String? {
-        return when (ControllerDetector.detectFromActiveGamepad()) {
-            DetectedIconLayout.XBOX -> "xbox"
-            DetectedIconLayout.NINTENDO -> "nintendo"
-            null -> null
-        }
+        controlsDelegate.cycleABIconLayout(viewModelScope)
     }
 
     fun setSwapStartSelect(enabled: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSwapStartSelect(enabled)
-            _uiState.update { it.copy(controls = it.controls.copy(swapStartSelect = enabled)) }
-        }
+        controlsDelegate.setSwapStartSelect(viewModelScope, enabled)
     }
 
     fun showRegionPicker() {
-        _uiState.update { it.copy(syncSettings = it.syncSettings.copy(showRegionPicker = true, regionPickerFocusIndex = 0)) }
+        syncDelegate.showRegionPicker()
         soundManager.play(SoundType.OPEN_MODAL)
     }
 
     fun dismissRegionPicker() {
-        _uiState.update { it.copy(syncSettings = it.syncSettings.copy(showRegionPicker = false, regionPickerFocusIndex = 0)) }
+        syncDelegate.dismissRegionPicker()
         soundManager.play(SoundType.CLOSE_MODAL)
     }
 
     fun moveRegionPickerFocus(delta: Int) {
-        _uiState.update { state ->
-            val maxIndex = SyncFilterPreferences.ALL_KNOWN_REGIONS.size - 1
-            val newIndex = (state.syncSettings.regionPickerFocusIndex + delta).coerceIn(0, maxIndex)
-            state.copy(syncSettings = state.syncSettings.copy(regionPickerFocusIndex = newIndex))
-        }
+        syncDelegate.moveRegionPickerFocus(delta)
     }
 
     fun confirmRegionPickerSelection() {
-        val state = _uiState.value
-        val region = SyncFilterPreferences.ALL_KNOWN_REGIONS.getOrNull(state.syncSettings.regionPickerFocusIndex) ?: return
-        toggleRegion(region)
+        syncDelegate.confirmRegionPickerSelection(viewModelScope)
     }
 
     fun toggleRegion(region: String) {
-        viewModelScope.launch {
-            val current = _uiState.value.syncSettings.syncFilters.enabledRegions
-            val updated = if (region in current) current - region else current + region
-            preferencesRepository.setSyncFilterRegions(updated)
-            _uiState.update {
-                it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(enabledRegions = updated)))
-            }
-        }
+        syncDelegate.toggleRegion(viewModelScope, region)
     }
 
     fun toggleRegionMode() {
-        viewModelScope.launch {
-            val current = _uiState.value.syncSettings.syncFilters.regionMode
-            val next = when (current) {
-                RegionFilterMode.INCLUDE -> RegionFilterMode.EXCLUDE
-                RegionFilterMode.EXCLUDE -> RegionFilterMode.INCLUDE
-            }
-            preferencesRepository.setSyncFilterRegionMode(next)
-            _uiState.update {
-                it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(regionMode = next)))
-            }
-        }
+        syncDelegate.toggleRegionMode(viewModelScope)
     }
 
     fun setExcludeBeta(exclude: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSyncFilterExcludeBeta(exclude)
-            _uiState.update {
-                it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludeBeta = exclude)))
-            }
-        }
+        syncDelegate.setExcludeBeta(viewModelScope, exclude)
     }
 
     fun setExcludePrototype(exclude: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSyncFilterExcludePrototype(exclude)
-            _uiState.update {
-                it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludePrototype = exclude)))
-            }
-        }
+        syncDelegate.setExcludePrototype(viewModelScope, exclude)
     }
 
     fun setExcludeDemo(exclude: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSyncFilterExcludeDemo(exclude)
-            _uiState.update {
-                it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludeDemo = exclude)))
-            }
-        }
+        syncDelegate.setExcludeDemo(viewModelScope, exclude)
     }
 
     fun setExcludeHack(exclude: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSyncFilterExcludeHack(exclude)
-            _uiState.update {
-                it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludeHack = exclude)))
-            }
-        }
+        syncDelegate.setExcludeHack(viewModelScope, exclude)
     }
 
     fun setDeleteOrphans(delete: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setSyncFilterDeleteOrphans(delete)
-            _uiState.update {
-                it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(deleteOrphans = delete)))
-            }
-        }
+        syncDelegate.setDeleteOrphans(viewModelScope, delete)
     }
 
     fun toggleSyncScreenshots() {
-        viewModelScope.launch {
-            val newValue = !_uiState.value.server.syncScreenshotsEnabled
-            preferencesRepository.setSyncScreenshotsEnabled(newValue)
-            _uiState.update { it.copy(server = it.server.copy(syncScreenshotsEnabled = newValue)) }
-            if (newValue) {
-                imageCacheManager.resumePendingScreenshotCache()
-            }
-        }
+        syncDelegate.toggleSyncScreenshots(viewModelScope, _uiState.value.server.syncScreenshotsEnabled)
     }
 
     fun enableSaveSync() {
-        viewModelScope.launch {
-            val currentState = _uiState.value.syncSettings
-            if (!currentState.hasStoragePermission) {
-                _requestStoragePermissionEvent.emit(Unit)
-                return@launch
-            }
-
-            preferencesRepository.setSaveSyncEnabled(true)
-            _uiState.update { it.copy(syncSettings = it.syncSettings.copy(saveSyncEnabled = true)) }
-            runSaveSyncNow()
-        }
+        syncDelegate.enableSaveSync(viewModelScope)
     }
 
     fun toggleSaveSync() {
-        viewModelScope.launch {
-            val currentState = _uiState.value.syncSettings
-            val newValue = !currentState.saveSyncEnabled
-
-            preferencesRepository.setSaveSyncEnabled(newValue)
-            _uiState.update { it.copy(syncSettings = it.syncSettings.copy(saveSyncEnabled = newValue)) }
-
-            if (newValue) {
-                runSaveSyncNow()
-            }
-        }
+        syncDelegate.toggleSaveSync(viewModelScope)
     }
 
     fun toggleExperimentalFolderSaveSync() {
-        viewModelScope.launch {
-            val currentState = _uiState.value.syncSettings
-            val newValue = !currentState.experimentalFolderSaveSync
-
-            preferencesRepository.setExperimentalFolderSaveSync(newValue)
-            _uiState.update { it.copy(syncSettings = it.syncSettings.copy(experimentalFolderSaveSync = newValue)) }
-        }
+        syncDelegate.toggleExperimentalFolderSaveSync(viewModelScope)
     }
 
     fun cycleSaveCacheLimit() {
-        viewModelScope.launch {
-            val currentLimit = _uiState.value.syncSettings.saveCacheLimit
-            val values = listOf(5, 7, 10, 15, 20)
-            val currentIndex = values.indexOf(currentLimit).takeIf { it >= 0 } ?: 2
-            val newLimit = values[(currentIndex + 1) % values.size]
-
-            preferencesRepository.setSaveCacheLimit(newLimit)
-            _uiState.update { it.copy(syncSettings = it.syncSettings.copy(saveCacheLimit = newLimit)) }
-        }
+        syncDelegate.cycleSaveCacheLimit(viewModelScope)
     }
 
     fun onStoragePermissionResult(granted: Boolean) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(syncSettings = it.syncSettings.copy(hasStoragePermission = granted)) }
-            if (granted && _uiState.value.currentSection == SettingsSection.SYNC_SETTINGS) {
-                preferencesRepository.setSaveSyncEnabled(true)
-                _uiState.update { it.copy(syncSettings = it.syncSettings.copy(saveSyncEnabled = true)) }
-                runSaveSyncNow()
-            }
-            loadSteamSettings()
-        }
+        syncDelegate.onStoragePermissionResult(viewModelScope, granted, _uiState.value.currentSection)
+        steamDelegate.loadSteamSettings(context, viewModelScope)
     }
 
     fun runSaveSyncNow() {
-        viewModelScope.launch {
-            notificationManager.show("Checking for save updates...")
-            try {
-                saveSyncRepository.checkForAllServerUpdates()
-                val uploaded = saveSyncRepository.processPendingUploads()
-                val pendingCount = pendingSaveSyncDao.getCount()
-                _uiState.update { it.copy(syncSettings = it.syncSettings.copy(pendingUploadsCount = pendingCount)) }
-                if (uploaded > 0) {
-                    notificationManager.show("Uploaded $uploaded saves")
-                } else {
-                    notificationManager.show("Saves are up to date")
-                }
-            } catch (e: Exception) {
-                notificationManager.showError("Save sync failed: ${e.message}")
-            }
-        }
+        syncDelegate.runSaveSyncNow(viewModelScope)
     }
 
     fun cycleMaxConcurrentDownloads() {
-        viewModelScope.launch {
-            val current = _uiState.value.storage.maxConcurrentDownloads
-            val next = if (current >= 5) 1 else current + 1
-            preferencesRepository.setMaxConcurrentDownloads(next)
-            _uiState.update { it.copy(storage = it.storage.copy(maxConcurrentDownloads = next)) }
-        }
+        storageDelegate.cycleMaxConcurrentDownloads(viewModelScope)
     }
 
-    private fun adjustMaxConcurrentDownloads(delta: Int) {
-        viewModelScope.launch {
-            val current = _uiState.value.storage.maxConcurrentDownloads
-            val next = (current + delta).coerceIn(1, 5)
-            if (next != current) {
-                preferencesRepository.setMaxConcurrentDownloads(next)
-                _uiState.update { it.copy(storage = it.storage.copy(maxConcurrentDownloads = next)) }
-            }
-        }
+    fun adjustMaxConcurrentDownloads(delta: Int) {
+        storageDelegate.adjustMaxConcurrentDownloads(viewModelScope, delta)
     }
 
     fun openFolderPicker() {
-        _uiState.update { it.copy(launchFolderPicker = true) }
+        storageDelegate.openFolderPicker()
     }
 
     fun clearFolderPickerFlag() {
-        _uiState.update { it.copy(launchFolderPicker = false) }
+        storageDelegate.clearFolderPickerFlag()
     }
 
     fun setStoragePath(uriString: String) {
-        val currentState = _uiState.value
-        if (currentState.storage.downloadedGamesCount > 0 && currentState.storage.romStoragePath.isNotBlank()) {
-            _uiState.update {
-                it.copy(
-                    showMigrationDialog = true,
-                    pendingStoragePath = uriString
-                )
-            }
-        } else {
-            applyStoragePath(uriString)
-        }
+        storageDelegate.setStoragePath(uriString)
     }
 
     fun confirmMigration() {
-        val pendingPath = _uiState.value.pendingStoragePath ?: return
-        _uiState.update { it.copy(showMigrationDialog = false) }
-        migrateDownloads(pendingPath)
+        storageDelegate.confirmMigration(viewModelScope)
     }
 
     fun cancelMigration() {
-        _uiState.update {
-            it.copy(
-                showMigrationDialog = false,
-                pendingStoragePath = null
-            )
-        }
+        storageDelegate.cancelMigration()
     }
 
     fun skipMigration() {
-        val pendingPath = _uiState.value.pendingStoragePath ?: return
-        _uiState.update { it.copy(showMigrationDialog = false) }
-        applyStoragePath(pendingPath)
-    }
-
-    private fun applyStoragePath(uriString: String) {
-        viewModelScope.launch {
-            preferencesRepository.setRomStoragePath(uriString)
-            val availableSpace = gameRepository.getAvailableStorageBytes()
-            _uiState.update {
-                it.copy(
-                    storage = it.storage.copy(
-                        romStoragePath = uriString,
-                        availableSpace = availableSpace
-                    ),
-                    pendingStoragePath = null
-                )
-            }
-        }
-    }
-
-    private fun migrateDownloads(newPath: String) {
-        viewModelScope.launch {
-            val oldPath = _uiState.value.storage.romStoragePath
-            _uiState.update { it.copy(isMigrating = true, pendingStoragePath = null) }
-
-            migrateStorageUseCase(oldPath, newPath)
-
-            _uiState.update { it.copy(storage = it.storage.copy(romStoragePath = newPath), isMigrating = false) }
-            refreshCollectionStats()
-        }
-    }
-
-    private fun refreshCollectionStats() {
-        viewModelScope.launch {
-            val downloadedSize = gameRepository.getDownloadedGamesSize()
-            val downloadedCount = gameRepository.getDownloadedGamesCount()
-            _uiState.update {
-                it.copy(
-                    storage = it.storage.copy(
-                        downloadedGamesSize = downloadedSize,
-                        downloadedGamesCount = downloadedCount
-                    )
-                )
-            }
-        }
+        storageDelegate.skipMigration()
     }
 
     fun setPlatformEmulator(platformId: String, emulator: InstalledEmulator?) {
@@ -1582,10 +769,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setRomStoragePath(path: String) {
-        viewModelScope.launch {
-            preferencesRepository.setRomStoragePath(path)
-            _uiState.update { it.copy(storage = it.storage.copy(romStoragePath = path)) }
-        }
+        storageDelegate.setRomStoragePath(viewModelScope, path)
     }
 
     fun syncRomm() {
@@ -1598,7 +782,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun checkForUpdates() {
-        if (BuildConfig.DEBUG) return
+        if (com.nendo.argosy.BuildConfig.DEBUG) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(updateCheck = it.updateCheck.copy(isChecking = true, error = null)) }
@@ -1703,95 +887,35 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun startRommConfig() {
-        _uiState.update {
-            it.copy(
-                server = it.server.copy(
-                    rommConfiguring = true,
-                    rommConfigUrl = it.server.rommUrl,
-                    rommConfigUsername = it.server.rommUsername,
-                    rommConfigPassword = "",
-                    rommConfigError = null
-                ),
-                focusedIndex = 0
-            )
-        }
+        serverDelegate.startRommConfig { _uiState.update { it.copy(focusedIndex = 0) } }
     }
 
     fun cancelRommConfig() {
-        _uiState.update {
-            it.copy(
-                server = it.server.copy(
-                    rommConfiguring = false,
-                    rommConfigUrl = "",
-                    rommConfigUsername = "",
-                    rommConfigPassword = "",
-                    rommConfigError = null
-                ),
-                focusedIndex = 0
-            )
-        }
+        serverDelegate.cancelRommConfig { _uiState.update { it.copy(focusedIndex = 0) } }
     }
 
     fun setRommConfigUrl(url: String) {
-        _uiState.update { it.copy(server = it.server.copy(rommConfigUrl = url)) }
+        serverDelegate.setRommConfigUrl(url)
     }
 
     fun setRommConfigUsername(username: String) {
-        _uiState.update { it.copy(server = it.server.copy(rommConfigUsername = username)) }
+        serverDelegate.setRommConfigUsername(username)
     }
 
     fun setRommConfigPassword(password: String) {
-        _uiState.update { it.copy(server = it.server.copy(rommConfigPassword = password)) }
+        serverDelegate.setRommConfigPassword(password)
     }
 
     fun clearRommFocusField() {
-        _uiState.update { it.copy(server = it.server.copy(rommFocusField = null)) }
+        serverDelegate.clearRommFocusField()
+    }
+
+    fun setRommConfigFocusIndex(index: Int) {
+        _uiState.update { it.copy(focusedIndex = index) }
     }
 
     fun connectToRomm() {
-        val state = _uiState.value
-        if (state.server.rommConfigUrl.isBlank()) return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(server = it.server.copy(rommConnecting = true, rommConfigError = null)) }
-
-            when (val result = romMRepository.connect(state.server.rommConfigUrl)) {
-                is RomMResult.Success -> {
-                    if (state.server.rommConfigUsername.isNotBlank() && state.server.rommConfigPassword.isNotBlank()) {
-                        when (val loginResult = romMRepository.login(state.server.rommConfigUsername, state.server.rommConfigPassword)) {
-                            is RomMResult.Success -> {
-                                _uiState.update {
-                                    it.copy(
-                                        server = it.server.copy(
-                                            rommConnecting = false,
-                                            rommConfiguring = false,
-                                            connectionStatus = ConnectionStatus.ONLINE,
-                                            rommUrl = state.server.rommConfigUrl,
-                                            rommUsername = state.server.rommConfigUsername
-                                        )
-                                    )
-                                }
-                                loadSettings()
-                            }
-                            is RomMResult.Error -> {
-                                _uiState.update {
-                                    it.copy(server = it.server.copy(rommConnecting = false, rommConfigError = loginResult.message))
-                                }
-                            }
-                        }
-                    } else {
-                        _uiState.update {
-                            it.copy(server = it.server.copy(rommConnecting = false, rommConfigError = "Username and password required"))
-                        }
-                    }
-                }
-                is RomMResult.Error -> {
-                    _uiState.update {
-                        it.copy(server = it.server.copy(rommConnecting = false, rommConfigError = result.message))
-                    }
-                }
-            }
-        }
+        serverDelegate.connectToRomm(viewModelScope) { loadSettings() }
     }
 
     fun handleConfirm(): InputResult {
@@ -1935,7 +1059,7 @@ class SettingsViewModel @Inject constructor(
                     }
                     5 -> {
                         if (!state.display.useGameBackground) {
-                            viewModelScope.launch { _openBackgroundPickerEvent.emit(Unit) }
+                            openBackgroundPicker()
                         }
                     }
                 }
@@ -2008,180 +1132,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun createInputHandler(onBack: () -> Unit): InputHandler = object : InputHandler {
-        override fun onUp(): InputResult {
-            moveFocus(-1)
-            return InputResult.HANDLED
-        }
-
-        override fun onDown(): InputResult {
-            moveFocus(1)
-            return InputResult.HANDLED
-        }
-
-        override fun onLeft(): InputResult {
-            val state = _uiState.value
-            if (state.currentSection == SettingsSection.DISPLAY) {
-                val sliderOffset = if (state.display.useGameBackground) 0 else 1
-                when (state.focusedIndex) {
-                    1 -> { adjustHue(-10f); return InputResult.HANDLED }
-                    5 + sliderOffset -> { adjustBackgroundBlur(-10); return InputResult.HANDLED }
-                    6 + sliderOffset -> { adjustBackgroundSaturation(-10); return InputResult.HANDLED }
-                    7 + sliderOffset -> { adjustBackgroundOpacity(-10); return InputResult.HANDLED }
-                }
-            }
-            if (state.currentSection == SettingsSection.STORAGE && state.focusedIndex == 1) {
-                adjustMaxConcurrentDownloads(-1)
-                return InputResult.HANDLED
-            }
-            if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.focusedIndex == 1) {
-                adjustHapticIntensity(-1)
-                return InputResult.HANDLED
-            }
-            if (state.currentSection == SettingsSection.SOUNDS && state.sounds.enabled && state.focusedIndex == 1) {
-                adjustSoundVolume(-1)
-                return InputResult.HANDLED
-            }
-            if (state.currentSection == SettingsSection.SERVER) {
-                if (state.server.rommConfiguring && state.focusedIndex == 2) {
-                    _uiState.update { it.copy(focusedIndex = 1) }
-                    return InputResult.HANDLED
-                }
-                if (!state.server.rommConfiguring) {
-                    val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
-                        state.server.connectionStatus == ConnectionStatus.OFFLINE
-                    val steamBaseIndex = when {
-                        isConnected && state.syncSettings.saveSyncEnabled -> 5
-                        isConnected -> 3
-                        else -> 1
-                    }
-                    val launcherIndex = state.focusedIndex - steamBaseIndex
-                    if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
-                        moveLauncherActionFocus(-1)
-                        return InputResult.HANDLED
-                    }
-                }
-            }
-            if (state.currentSection == SettingsSection.STEAM_SETTINGS) {
-                val launcherIndex = state.focusedIndex - 1
-                if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
-                    moveLauncherActionFocus(-1)
-                    return InputResult.HANDLED
-                }
-            }
-            if (state.currentSection == SettingsSection.EMULATORS) {
-                val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-                val platformIndex = state.focusedIndex - focusOffset
-                val config = state.emulators.platforms.getOrNull(platformIndex)
-                if (config?.showCoreSelection == true) {
-                    cycleCoreForPlatform(config, -1)
-                    return InputResult.HANDLED
-                }
-            }
-            return InputResult.UNHANDLED
-        }
-
-        override fun onRight(): InputResult {
-            val state = _uiState.value
-            if (state.currentSection == SettingsSection.DISPLAY) {
-                val sliderOffset = if (state.display.useGameBackground) 0 else 1
-                when (state.focusedIndex) {
-                    1 -> { adjustHue(10f); return InputResult.HANDLED }
-                    5 + sliderOffset -> { adjustBackgroundBlur(10); return InputResult.HANDLED }
-                    6 + sliderOffset -> { adjustBackgroundSaturation(10); return InputResult.HANDLED }
-                    7 + sliderOffset -> { adjustBackgroundOpacity(10); return InputResult.HANDLED }
-                }
-            }
-            if (state.currentSection == SettingsSection.STORAGE && state.focusedIndex == 1) {
-                adjustMaxConcurrentDownloads(1)
-                return InputResult.HANDLED
-            }
-            if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.focusedIndex == 1) {
-                adjustHapticIntensity(1)
-                return InputResult.HANDLED
-            }
-            if (state.currentSection == SettingsSection.SOUNDS && state.sounds.enabled && state.focusedIndex == 1) {
-                adjustSoundVolume(1)
-                return InputResult.HANDLED
-            }
-            if (state.currentSection == SettingsSection.SERVER) {
-                if (state.server.rommConfiguring && state.focusedIndex == 1) {
-                    _uiState.update { it.copy(focusedIndex = 2) }
-                    return InputResult.HANDLED
-                }
-                if (!state.server.rommConfiguring) {
-                    val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
-                        state.server.connectionStatus == ConnectionStatus.OFFLINE
-                    val steamBaseIndex = when {
-                        isConnected && state.syncSettings.saveSyncEnabled -> 5
-                        isConnected -> 3
-                        else -> 1
-                    }
-                    val launcherIndex = state.focusedIndex - steamBaseIndex
-                    if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
-                        moveLauncherActionFocus(1)
-                        return InputResult.HANDLED
-                    }
-                }
-            }
-            if (state.currentSection == SettingsSection.STEAM_SETTINGS) {
-                val launcherIndex = state.focusedIndex - 1
-                if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
-                    moveLauncherActionFocus(1)
-                    return InputResult.HANDLED
-                }
-            }
-            if (state.currentSection == SettingsSection.EMULATORS) {
-                val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-                val platformIndex = state.focusedIndex - focusOffset
-                val config = state.emulators.platforms.getOrNull(platformIndex)
-                if (config?.showCoreSelection == true) {
-                    cycleCoreForPlatform(config, 1)
-                    return InputResult.HANDLED
-                }
-            }
-            return InputResult.UNHANDLED
-        }
-
-        override fun onConfirm(): InputResult {
-            val state = _uiState.value
-            if (state.sounds.showSoundPicker) {
-                confirmSoundPickerSelection()
-                return InputResult.HANDLED
-            }
-            if (state.syncSettings.showRegionPicker) {
-                confirmRegionPickerSelection()
-                return InputResult.handled(SoundType.TOGGLE)
-            }
-            if (state.emulators.showEmulatorPicker) {
-                confirmEmulatorPickerSelection()
-                return InputResult.HANDLED
-            }
-            if (state.currentSection == SettingsSection.DISPLAY && state.focusedIndex == 1) {
-                resetToDefaultColor()
-                return InputResult.HANDLED
-            }
-            return handleConfirm()
-        }
-
-        override fun onBack(): InputResult {
-            return if (!navigateBack()) {
-                onBack()
-                InputResult.HANDLED
-            } else {
-                InputResult.HANDLED
-            }
-        }
-
-        override fun onContextMenu(): InputResult {
-            val state = _uiState.value
-            if (state.sounds.showSoundPicker) {
-                previewSoundPickerSelection()
-                return InputResult.HANDLED
-            }
-            return InputResult.UNHANDLED
-        }
-
-        override fun onMenu(): InputResult = InputResult.UNHANDLED
-    }
+    fun createInputHandler(onBack: () -> Unit): InputHandler =
+        SettingsInputHandler(this, onBack)
 }

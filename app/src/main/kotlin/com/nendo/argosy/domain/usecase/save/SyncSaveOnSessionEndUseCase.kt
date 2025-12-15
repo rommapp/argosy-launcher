@@ -77,16 +77,16 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         if (!saveFile.exists()) return Result.NoSaveFound
 
         val localModified = Instant.ofEpochMilli(saveFile.lastModified())
+        val activeChannel = game.activeSaveChannel
 
         saveSyncRepository.createOrUpdateSyncEntity(
             gameId = gameId,
             rommId = game.rommId,
             emulatorId = emulatorId,
             localPath = savePath,
-            localUpdatedAt = localModified
+            localUpdatedAt = localModified,
+            channelName = activeChannel
         )
-
-        val activeChannel = game.activeSaveChannel
 
         return when (val syncResult = saveSyncRepository.uploadSave(gameId, emulatorId, activeChannel)) {
             is SaveSyncResult.Success -> Result.Uploaded

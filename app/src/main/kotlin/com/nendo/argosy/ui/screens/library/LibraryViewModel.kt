@@ -17,17 +17,7 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UiDensity
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.data.emulator.EmulatorDetector
-import com.nendo.argosy.data.emulator.EmulatorRegistry
-import com.nendo.argosy.data.emulator.LaunchResult
-import com.nendo.argosy.data.emulator.PlaySessionTracker
-import com.nendo.argosy.data.emulator.SavePathRegistry
-import com.nendo.argosy.domain.model.SyncState
-import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadResult
-import com.nendo.argosy.domain.usecase.game.DeleteGameUseCase
-import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
-import com.nendo.argosy.domain.usecase.game.LaunchWithSyncUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -37,10 +27,11 @@ import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
+import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
+import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -48,7 +39,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -129,11 +119,6 @@ data class LibraryGameUi(
             GameSource.STEAM -> Icons.Default.Cloud
         }
 }
-
-data class SyncOverlayState(
-    val gameTitle: String,
-    val syncState: SyncState
-)
 
 data class LibraryUiState(
     val platforms: List<HomePlatformUi> = emptyList(),
@@ -235,15 +220,11 @@ class LibraryViewModel @Inject constructor(
     private val platformDao: PlatformDao,
     private val gameDao: GameDao,
     private val gameNavigationContext: GameNavigationContext,
-    private val launchGameUseCase: LaunchGameUseCase,
-    private val launchWithSyncUseCase: LaunchWithSyncUseCase,
     private val notificationManager: NotificationManager,
     private val preferencesRepository: UserPreferencesRepository,
     private val soundManager: SoundFeedbackManager,
     private val gameActions: GameActionsDelegate,
-    private val playSessionTracker: PlaySessionTracker,
-    private val emulatorDetector: EmulatorDetector,
-    private val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao
+    private val gameLaunchDelegate: GameLaunchDelegate
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -258,6 +239,15 @@ class LibraryViewModel @Inject constructor(
         loadPlatforms()
         loadFilterOptions()
         observeUiDensity()
+        observeSyncOverlay()
+    }
+
+    private fun observeSyncOverlay() {
+        viewModelScope.launch {
+            gameLaunchDelegate.syncOverlayState.collect { overlayState ->
+                _uiState.update { it.copy(syncOverlayState = overlayState) }
+            }
+        }
     }
 
     private fun observeUiDensity() {
@@ -286,51 +276,7 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun onResume() {
-        val session = playSessionTracker.activeSession.value ?: return
-        if (_uiState.value.syncOverlayState != null) return
-
-        val emulatorId = resolveEmulatorId(session.emulatorPackage) ?: return
-        if (SavePathRegistry.getConfig(emulatorId) == null) {
-            playSessionTracker.endSession()
-            return
-        }
-
-        viewModelScope.launch {
-            val game = gameDao.getById(session.gameId)
-            val gameTitle = game?.title ?: "Game"
-
-            _uiState.update {
-                it.copy(syncOverlayState = SyncOverlayState(gameTitle, SyncState.Uploading))
-            }
-
-            val syncStartTime = System.currentTimeMillis()
-
-            playSessionTracker.endSession()
-
-            val elapsed = System.currentTimeMillis() - syncStartTime
-            val minDisplayTime = 2000L
-            if (elapsed < minDisplayTime) {
-                delay(minDisplayTime - elapsed)
-            }
-
-            _uiState.update { it.copy(syncOverlayState = null) }
-        }
-    }
-
-    private fun resolveEmulatorId(packageName: String): String? {
-        EmulatorRegistry.getByPackage(packageName)?.let { return it.id }
-        EmulatorRegistry.findFamilyForPackage(packageName)?.let { return it.baseId }
-        return emulatorDetector.getByPackage(packageName)?.id
-    }
-
-    private suspend fun getEmulatorPackageForGame(gameId: Long, platformId: String): String? {
-        val config = emulatorConfigDao.getByGameId(gameId)
-            ?: emulatorConfigDao.getDefaultForPlatform(platformId)
-        if (config?.packageName != null) return config.packageName
-        if (emulatorDetector.installedEmulators.value.isEmpty()) {
-            emulatorDetector.detectEmulators()
-        }
-        return emulatorDetector.getPreferredEmulator(platformId)?.def?.packageName
+        gameLaunchDelegate.handleSessionEnd(viewModelScope)
     }
 
     private fun loadFilterOptions() {
@@ -695,71 +641,8 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun launchGame(gameId: Long) {
-        if (_uiState.value.syncOverlayState != null) return
-
-        viewModelScope.launch {
-            val game = gameDao.getById(gameId) ?: return@launch
-            val gameTitle = game.title
-
-            val emulatorPackage = getEmulatorPackageForGame(gameId, game.platformId)
-            val emulatorId = emulatorPackage?.let { resolveEmulatorId(it) }
-            val prefs = preferencesRepository.userPreferences.first()
-            val canSync = emulatorId != null && SavePathRegistry.canSyncWithSettings(
-                emulatorId,
-                prefs.saveSyncEnabled,
-                prefs.experimentalFolderSaveSync
-            )
-
-            val syncStartTime = if (canSync) {
-                _uiState.update {
-                    it.copy(syncOverlayState = SyncOverlayState(gameTitle, SyncState.CheckingConnection))
-                }
-                System.currentTimeMillis()
-            } else null
-
-            launchWithSyncUseCase.invoke(gameId).collect { state ->
-                if (canSync && state != SyncState.Skipped && state != SyncState.Idle) {
-                    _uiState.update {
-                        it.copy(syncOverlayState = SyncOverlayState(gameTitle, state))
-                    }
-                }
-            }
-
-            syncStartTime?.let { startTime ->
-                val elapsed = System.currentTimeMillis() - startTime
-                val minDisplayTime = 2000L
-                if (elapsed < minDisplayTime) {
-                    delay(minDisplayTime - elapsed)
-                }
-            }
-
-            _uiState.update { it.copy(syncOverlayState = null) }
-
-            when (val result = launchGameUseCase(gameId)) {
-                is LaunchResult.Success -> {
-                    soundManager.play(SoundType.LAUNCH_GAME)
-                    _events.emit(LibraryEvent.LaunchGame(result.intent))
-                }
-                is LaunchResult.NoEmulator -> {
-                    notificationManager.showError("No emulator installed for this platform")
-                }
-                is LaunchResult.NoRomFile -> {
-                    notificationManager.showError("ROM file not found")
-                }
-                is LaunchResult.NoSteamLauncher -> {
-                    notificationManager.showError("Steam launcher not installed")
-                }
-                is LaunchResult.NoCore -> {
-                    notificationManager.showError("No compatible RetroArch core installed for ${result.platformId}")
-                }
-                is LaunchResult.MissingDiscs -> {
-                    val discText = result.missingDiscNumbers.joinToString(", ")
-                    notificationManager.showError("Missing discs: $discText. View game details to repair.")
-                }
-                is LaunchResult.Error -> {
-                    notificationManager.showError(result.message)
-                }
-            }
+        gameLaunchDelegate.launchGame(viewModelScope, gameId) { intent ->
+            viewModelScope.launch { _events.emit(LibraryEvent.LaunchGame(intent)) }
         }
     }
 

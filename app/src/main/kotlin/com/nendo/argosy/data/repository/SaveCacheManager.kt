@@ -39,7 +39,8 @@ class SaveCacheManager @Inject constructor(
     suspend fun cacheCurrentSave(
         gameId: Long,
         emulatorId: String,
-        savePath: String
+        savePath: String,
+        channelName: String? = null
     ): Boolean = withContext(Dispatchers.IO) {
         val saveFile = File(savePath)
         if (!saveFile.exists()) {
@@ -67,16 +68,18 @@ class SaveCacheManager @Inject constructor(
                 "$gameId/$timestamp/${saveFile.name}" to cachedFile.length()
             }
 
-            val entity = SaveCacheEntity(
+            // Always create a timeline entry with channel association
+            val timelineEntity = SaveCacheEntity(
                 gameId = gameId,
                 emulatorId = emulatorId,
                 cachedAt = now,
                 saveSize = saveSize,
-                cachePath = cachePath
+                cachePath = cachePath,
+                note = channelName,
+                isLocked = false
             )
-
-            saveCacheDao.insert(entity)
-            Log.d(TAG, "Cached save for game $gameId at $cachePath")
+            saveCacheDao.insert(timelineEntity)
+            Log.d(TAG, "Cached save for game $gameId at $cachePath${channelName?.let { " (channel: $it)" } ?: ""}")
 
             pruneOldCaches(gameId)
             true
@@ -139,6 +142,51 @@ class SaveCacheManager @Inject constructor(
     suspend fun renameSave(cacheId: Long, name: String?) = withContext(Dispatchers.IO) {
         saveCacheDao.setNote(cacheId, name?.takeIf { it.isNotBlank() })
     }
+
+    suspend fun copyToChannel(cacheId: Long, channelName: String): Long? = withContext(Dispatchers.IO) {
+        val source = saveCacheDao.getById(cacheId)
+        if (source == null) {
+            Log.e(TAG, "Source cache entry not found: $cacheId")
+            return@withContext null
+        }
+
+        val sourceFile = File(cacheBaseDir, source.cachePath)
+        if (!sourceFile.exists()) {
+            Log.e(TAG, "Source cache file not found: ${source.cachePath}")
+            return@withContext null
+        }
+
+        val now = Instant.now()
+        val timestamp = TIMESTAMP_FORMAT.format(now)
+        val gameDir = File(cacheBaseDir, "${source.gameId}/$timestamp")
+
+        try {
+            gameDir.mkdirs()
+            val destFile = File(gameDir, sourceFile.name)
+            sourceFile.copyTo(destFile, overwrite = true)
+
+            val cachePath = "${source.gameId}/$timestamp/${sourceFile.name}"
+            val entity = SaveCacheEntity(
+                gameId = source.gameId,
+                emulatorId = source.emulatorId,
+                cachedAt = now,
+                saveSize = destFile.length(),
+                cachePath = cachePath,
+                note = channelName,
+                isLocked = true
+            )
+
+            val newId = saveCacheDao.insert(entity)
+            Log.d(TAG, "Created channel '$channelName' from cache $cacheId -> $newId")
+            newId
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy cache to channel", e)
+            gameDir.deleteRecursively()
+            null
+        }
+    }
+
+    suspend fun deleteSave(cacheId: Long) = deleteCachedSave(cacheId)
 
     fun getCachesForGame(gameId: Long): Flow<List<SaveCacheEntity>> =
         saveCacheDao.observeByGame(gameId)

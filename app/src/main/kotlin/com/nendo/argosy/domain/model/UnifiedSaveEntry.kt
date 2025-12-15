@@ -10,16 +10,23 @@ data class UnifiedSaveEntry(
     val channelName: String? = null,
     val source: Source,
     val serverFileName: String? = null,
-    val isLatest: Boolean = false
+    val isLatest: Boolean = false,
+    val isActive: Boolean = false,
+    val isLocked: Boolean = false
 ) {
     enum class Source { LOCAL, SERVER, BOTH }
 
-    val isChannel: Boolean get() = channelName != null
-    val canBecomeChannel: Boolean get() = localCacheId != null && !isChannel
+    val isChannel: Boolean get() = isLocked && channelName != null
+    val canBecomeChannel: Boolean get() = localCacheId != null && channelName == null
     val canDeleteFromServer: Boolean get() = serverSaveId != null
 
     val displayName: String
-        get() = channelName ?: serverFileName ?: formatTimestamp()
+        get() = when {
+            channelName != null && isLatest -> "$channelName [Latest]"
+            channelName != null -> channelName
+            isLatest -> "Latest"
+            else -> formatTimestamp()
+        }
 
     private fun formatTimestamp(): String {
         val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")

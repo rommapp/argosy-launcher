@@ -446,7 +446,12 @@ class SaveSyncRepository @Inject constructor(
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         val api = this@SaveSyncRepository.api ?: return@withContext SaveSyncResult.NotConfigured
 
-        val syncEntity = saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        val syncEntity = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
+
         val game = gameDao.getById(gameId) ?: return@withContext SaveSyncResult.Error("Game not found")
         val rommId = game.rommId ?: return@withContext SaveSyncResult.NotConfigured
 
@@ -494,11 +499,24 @@ class SaveSyncRepository @Inject constructor(
                 fileToUpload.name
             }
 
+            val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+            val serverSaves = checkSavesForGame(gameId, rommId)
+            val existingServerSave = serverSaves.find { serverSave ->
+                val baseName = File(serverSave.fileName).nameWithoutExtension
+                if (channelName != null) {
+                    baseName.equals(channelName, ignoreCase = true)
+                } else {
+                    baseName.equals(romBaseName, ignoreCase = true)
+                }
+            }
+
+            val serverSaveIdToUpdate = syncEntity?.rommSaveId ?: existingServerSave?.id
+
             val requestBody = fileToUpload.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
-            val response = if (syncEntity?.rommSaveId != null) {
-                api.updateSave(syncEntity.rommSaveId, filePart)
+            val response = if (serverSaveIdToUpdate != null) {
+                api.updateSave(serverSaveIdToUpdate, filePart)
             } else {
                 api.uploadSave(rommId, emulatorId, filePart)
             }
@@ -511,6 +529,7 @@ class SaveSyncRepository @Inject constructor(
                         gameId = gameId,
                         rommId = rommId,
                         emulatorId = emulatorId,
+                        channelName = channelName,
                         rommSaveId = serverSave.id,
                         localSavePath = localPath,
                         localUpdatedAt = localModified,
@@ -800,14 +819,20 @@ class SaveSyncRepository @Inject constructor(
         rommId: Long,
         emulatorId: String,
         localPath: String?,
-        localUpdatedAt: Instant?
+        localUpdatedAt: Instant?,
+        channelName: String? = null
     ): SaveSyncEntity {
-        val existing = saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        val existing = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
         val entity = SaveSyncEntity(
             id = existing?.id ?: 0,
             gameId = gameId,
             rommId = rommId,
             emulatorId = emulatorId,
+            channelName = channelName,
             rommSaveId = existing?.rommSaveId,
             localSavePath = localPath ?: existing?.localSavePath,
             localUpdatedAt = localUpdatedAt ?: existing?.localUpdatedAt,

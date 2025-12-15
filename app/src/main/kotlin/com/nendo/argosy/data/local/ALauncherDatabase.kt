@@ -43,7 +43,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         AchievementEntity::class,
         SaveCacheEntity::class
     ],
-    version = 21,
+    version = 23,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -351,6 +351,20 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_20_21 = object : Migration(20, 21) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN activeSaveChannel TEXT")
+            }
+        }
+
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE save_sync ADD COLUMN channelName TEXT")
+                db.execSQL("DROP INDEX IF EXISTS index_save_sync_gameId_emulatorId")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_save_sync_gameId_emulatorId_channelName ON save_sync(gameId, emulatorId, channelName)")
+            }
+        }
+
+        val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN activeSaveTimestamp INTEGER")
             }
         }
     }

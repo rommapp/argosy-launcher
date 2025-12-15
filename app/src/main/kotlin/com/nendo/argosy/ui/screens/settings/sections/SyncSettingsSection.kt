@@ -1,0 +1,189 @@
+package com.nendo.argosy.ui.screens.settings.sections
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.nendo.argosy.data.cache.ImageCacheProgress
+import com.nendo.argosy.data.preferences.RegionFilterMode
+import com.nendo.argosy.data.preferences.SyncFilterPreferences
+import com.nendo.argosy.ui.components.ActionPreference
+import com.nendo.argosy.ui.components.NavigationPreference
+import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.screens.settings.SettingsSection
+import com.nendo.argosy.ui.screens.settings.SettingsUiState
+import com.nendo.argosy.ui.screens.settings.SettingsViewModel
+import com.nendo.argosy.ui.screens.settings.components.SectionHeader
+import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.Motion
+
+@Composable
+fun SyncSettingsSection(
+    uiState: SettingsUiState,
+    viewModel: SettingsViewModel,
+    imageCacheProgress: ImageCacheProgress
+) {
+    val listState = rememberLazyListState()
+    val maxIndex = if (uiState.syncSettings.saveSyncEnabled) 3 else 2
+
+    LaunchedEffect(uiState.focusedIndex) {
+        if (uiState.focusedIndex in 0..maxIndex) {
+            val viewportHeight = listState.layoutInfo.viewportSize.height
+            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
+            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
+            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        item {
+            val filtersSubtitle = buildFiltersSubtitle(uiState.syncSettings.syncFilters)
+            NavigationPreference(
+                icon = Icons.Default.Tune,
+                title = "Metadata Filters",
+                subtitle = filtersSubtitle,
+                isFocused = uiState.focusedIndex == 0,
+                onClick = { viewModel.navigateToSection(SettingsSection.SYNC_FILTERS) }
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+            SectionHeader("MEDIA")
+        }
+        item {
+            SwitchPreference(
+                title = "Cache Screenshots",
+                subtitle = "Boxart and backgrounds are always cached",
+                isEnabled = uiState.server.syncScreenshotsEnabled,
+                isFocused = uiState.focusedIndex == 1,
+                onToggle = { viewModel.toggleSyncScreenshots() }
+            )
+        }
+        item {
+            if (uiState.syncSettings.saveSyncEnabled) {
+                SwitchPreference(
+                    title = "Save Sync",
+                    subtitle = "Sync game saves with server",
+                    isEnabled = true,
+                    isFocused = uiState.focusedIndex == 2,
+                    onToggle = { viewModel.toggleSaveSync() }
+                )
+            } else {
+                ActionPreference(
+                    title = "Enable Save Sync",
+                    subtitle = "Sync game saves with server",
+                    isFocused = uiState.focusedIndex == 2,
+                    onClick = { viewModel.enableSaveSync() }
+                )
+            }
+        }
+        if (uiState.syncSettings.saveSyncEnabled) {
+            item {
+                SwitchPreference(
+                    title = "Experimental Folder Saves",
+                    subtitle = "Sync folder-based saves (3DS, Switch, PSP, Vita)",
+                    isEnabled = uiState.syncSettings.experimentalFolderSaveSync,
+                    isFocused = uiState.focusedIndex == 3,
+                    onToggle = { viewModel.toggleExperimentalFolderSaveSync() }
+                )
+            }
+        }
+
+        if (imageCacheProgress.isProcessing) {
+            item {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                ImageCacheProgressItem(imageCacheProgress)
+            }
+        }
+    }
+}
+
+private fun buildFiltersSubtitle(filters: SyncFilterPreferences): String {
+    val parts = mutableListOf<String>()
+    if (filters.enabledRegions.isNotEmpty()) {
+        val mode = if (filters.regionMode == RegionFilterMode.EXCLUDE) "excl" else "incl"
+        parts.add("${filters.enabledRegions.size} regions ($mode)")
+    }
+    val excludes = listOfNotNull(
+        if (filters.excludeBeta) "beta" else null,
+        if (filters.excludePrototype) "proto" else null,
+        if (filters.excludeDemo) "demo" else null,
+        if (filters.excludeHack) "hacks" else null
+    )
+    if (excludes.isNotEmpty()) {
+        parts.add("no ${excludes.joinToString("/")}")
+    }
+    return if (parts.isEmpty()) "No filters applied" else parts.joinToString(", ")
+}
+
+@Composable
+private fun ImageCacheProgressItem(progress: ImageCacheProgress) {
+    val disabledAlpha = 0.45f
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                RoundedCornerShape(Dimens.radiusMd)
+            )
+            .padding(Dimens.spacingMd)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Caching images",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha)
+            )
+            Text(
+                text = "${progress.progressPercent}%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = progress.currentGameTitle.take(30) + if (progress.currentGameTitle.length > 30) "..." else "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha * 0.7f)
+            )
+            Text(
+                text = progress.currentType,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha * 0.7f)
+            )
+        }
+    }
+}

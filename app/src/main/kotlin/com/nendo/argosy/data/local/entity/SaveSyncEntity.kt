@@ -8,7 +8,7 @@ import java.time.Instant
 @Entity(
     tableName = "save_sync",
     indices = [
-        Index(value = ["gameId", "emulatorId"], unique = true),
+        Index(value = ["gameId", "emulatorId", "channelName"], unique = true),
         Index("rommSaveId"),
         Index("lastSyncedAt")
     ]
@@ -19,6 +19,7 @@ data class SaveSyncEntity(
     val gameId: Long,
     val rommId: Long,
     val emulatorId: String,
+    val channelName: String? = null,
     val rommSaveId: Long? = null,
     val localSavePath: String? = null,
     val localUpdatedAt: Instant? = null,

@@ -52,8 +52,12 @@ class RestoreCachedSaveUseCase @Inject constructor(
             return Result.Error("Failed to restore save")
         }
 
+        // Switch to the target entry's channel context
+        val targetChannel = entry.channelName
+        gameDao.updateActiveSaveChannel(gameId, targetChannel)
+
         if (syncToServer && game.rommId != null) {
-            return when (val uploadResult = saveSyncRepository.uploadSave(gameId, emulatorId)) {
+            return when (val uploadResult = saveSyncRepository.uploadSave(gameId, emulatorId, targetChannel)) {
                 is SaveSyncResult.Success -> Result.RestoredAndSynced
                 is SaveSyncResult.Error -> {
                     Log.w(TAG, "Restored but failed to sync: ${uploadResult.message}")

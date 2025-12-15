@@ -1,0 +1,134 @@
+package com.nendo.argosy.ui.screens.settings.sections
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import com.nendo.argosy.ui.components.SliderPreference
+import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.input.SoundType
+import com.nendo.argosy.ui.screens.settings.SettingsUiState
+import com.nendo.argosy.ui.screens.settings.SettingsViewModel
+import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.Motion
+
+@Composable
+fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+    val listState = rememberLazyListState()
+    val soundTypes = SoundType.entries.toList()
+    val maxIndex = if (uiState.sounds.enabled) 1 + soundTypes.size else 0
+
+    LaunchedEffect(uiState.focusedIndex) {
+        if (uiState.focusedIndex in 0..maxIndex) {
+            val viewportHeight = listState.layoutInfo.viewportSize.height
+            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
+            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
+            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        item {
+            SwitchPreference(
+                title = "UI Sounds",
+                subtitle = "Play tones on navigation and selection",
+                isEnabled = uiState.sounds.enabled,
+                isFocused = uiState.focusedIndex == 0,
+                onToggle = { viewModel.setSoundEnabled(it) }
+            )
+        }
+        if (uiState.sounds.enabled) {
+            item {
+                val volumeLevels = listOf(10, 25, 40, 60, 80)
+                val sliderValue = (volumeLevels.indexOfFirst { it >= uiState.sounds.volume }.takeIf { it >= 0 } ?: 0) + 1
+                SliderPreference(
+                    title = "Volume",
+                    value = sliderValue,
+                    minValue = 1,
+                    maxValue = 5,
+                    isFocused = uiState.focusedIndex == 1
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                Text(
+                    text = "CUSTOMIZE SOUNDS",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = Dimens.spacingSm)
+                )
+            }
+            itemsIndexed(soundTypes) { index, soundType ->
+                val focusIndex = 2 + index
+                SoundCustomizationItem(
+                    soundType = soundType,
+                    displayValue = uiState.sounds.getDisplayNameForType(soundType),
+                    isFocused = uiState.focusedIndex == focusIndex,
+                    onClick = { viewModel.showSoundPicker(soundType) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SoundCustomizationItem(
+    soundType: SoundType,
+    displayValue: String,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val displayName = soundType.name
+        .replace("_", " ")
+        .lowercase()
+        .split(" ")
+        .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(
+                if (isFocused) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+            .clickable(onClick = onClick)
+            .padding(Dimens.spacingMd),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = displayName,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = displayValue,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}

@@ -167,13 +167,17 @@ class PlaySessionTracker @Inject constructor(
             )
 
             if (savePath != null) {
+                val activeChannel = game.activeSaveChannel
                 val cached = saveCacheManager.get().cacheCurrentSave(
                     gameId = session.gameId,
                     emulatorId = emulatorId,
-                    savePath = savePath
+                    savePath = savePath,
+                    channelName = activeChannel
                 )
                 if (cached) {
-                    Log.d(TAG, "Cached save for game ${session.gameId}")
+                    gameDao.updateActiveSaveTimestamp(session.gameId, null)
+                    val channelLog = activeChannel?.let { " (channel: $it)" } ?: ""
+                    Log.d(TAG, "Cached save for game ${session.gameId}$channelLog")
                 }
             }
         } catch (e: Exception) {

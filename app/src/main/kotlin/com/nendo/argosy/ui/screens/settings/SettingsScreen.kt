@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -46,7 +45,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
@@ -77,15 +75,11 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.data.cache.ImageCacheProgress
@@ -116,6 +110,7 @@ import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.data.emulator.RetroArchCore
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.ui.draw.blur
+import com.nendo.argosy.ui.screens.settings.sections.GameDataSection
 
 @Composable
 fun SettingsScreen(
@@ -257,7 +252,7 @@ fun SettingsScreen(
             Box(modifier = Modifier.weight(1f)) {
                 when (uiState.currentSection) {
                     SettingsSection.MAIN -> MainSettingsSection(uiState, viewModel)
-                    SettingsSection.SERVER -> ServerSection(uiState, viewModel)
+                    SettingsSection.SERVER -> GameDataSection(uiState, viewModel)
                     SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                     SettingsSection.SYNC_FILTERS -> SyncFiltersSection(uiState, viewModel)
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
@@ -1113,123 +1108,6 @@ private fun PlatformEmulatorItem(
 }
 
 @Composable
-private fun ServerSection(
-    uiState: SettingsUiState,
-    viewModel: SettingsViewModel
-) {
-    if (uiState.server.rommConfiguring) {
-        RomMConfigForm(uiState, viewModel)
-    } else {
-        val listState = rememberLazyListState()
-        val isConnected = uiState.server.connectionStatus == ConnectionStatus.ONLINE ||
-            uiState.server.connectionStatus == ConnectionStatus.OFFLINE
-
-        val maxIndex = when {
-            isConnected && uiState.syncSettings.saveSyncEnabled -> 4
-            isConnected -> 3
-            else -> 1
-        }
-
-        LaunchedEffect(uiState.focusedIndex) {
-            if (uiState.focusedIndex in 0..maxIndex) {
-                val viewportHeight = listState.layoutInfo.viewportSize.height
-                val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-                val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-                val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-                listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-            }
-        }
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
-            item {
-                NavigationPreference(
-                    icon = Icons.Default.Dns,
-                    title = "Rom Manager",
-                    subtitle = when (uiState.server.connectionStatus) {
-                        ConnectionStatus.CHECKING -> "Checking connection..."
-                        ConnectionStatus.ONLINE -> uiState.server.rommUrl ?: "Connected"
-                        ConnectionStatus.OFFLINE -> "${uiState.server.rommUrl} (offline)"
-                        ConnectionStatus.NOT_CONFIGURED -> "Not configured"
-                    },
-                    isFocused = uiState.focusedIndex == 0,
-                    onClick = { viewModel.startRommConfig() }
-                )
-            }
-            if (isConnected) {
-                item {
-                    NavigationPreference(
-                        icon = Icons.Default.Tune,
-                        title = "Sync Settings",
-                        subtitle = "Filters and media options",
-                        isFocused = uiState.focusedIndex == 1,
-                        onClick = { viewModel.navigateToSection(SettingsSection.SYNC_SETTINGS) }
-                    )
-                }
-                item {
-                    val lastSyncText = uiState.server.lastRommSync?.let { instant ->
-                        val formatter = java.time.format.DateTimeFormatter
-                            .ofPattern("MMM d, h:mm a")
-                            .withZone(java.time.ZoneId.systemDefault())
-                        "Last: ${formatter.format(instant)}"
-                    } ?: "Never synced"
-                    ActionPreference(
-                        icon = Icons.AutoMirrored.Filled.LibraryBooks,
-                        title = "Sync Library",
-                        subtitle = lastSyncText,
-                        isFocused = uiState.focusedIndex == 2,
-                        isEnabled = uiState.server.connectionStatus == ConnectionStatus.ONLINE,
-                        onClick = { viewModel.syncRomm() }
-                    )
-                }
-                if (uiState.syncSettings.saveSyncEnabled) {
-                    item {
-                        val pendingText = if (uiState.syncSettings.pendingUploadsCount > 0) {
-                            "${uiState.syncSettings.pendingUploadsCount} pending"
-                        } else {
-                            "Up to date"
-                        }
-                        ActionPreference(
-                            icon = Icons.Default.Sync,
-                            title = "Sync Saves",
-                            subtitle = pendingText,
-                            isFocused = uiState.focusedIndex == 3,
-                            onClick = { viewModel.runSaveSyncNow() }
-                        )
-                    }
-                }
-            }
-            item {
-                Spacer(modifier = Modifier.height(Dimens.spacingLg))
-            }
-            item {
-                val launcherCount = uiState.steam.installedLaunchers.size
-                val subtitle = if (launcherCount > 0) {
-                    "$launcherCount launcher${if (launcherCount > 1) "s" else ""} detected"
-                } else {
-                    "No launchers installed"
-                }
-                val steamIndex = when {
-                    isConnected && uiState.syncSettings.saveSyncEnabled -> 4
-                    isConnected -> 3
-                    else -> 1
-                }
-                NavigationPreference(
-                    icon = Icons.Default.Cloud,
-                    title = "Steam (Experimental)",
-                    subtitle = subtitle,
-                    isFocused = uiState.focusedIndex == steamIndex,
-                    onClick = { viewModel.navigateToSection(SettingsSection.STEAM_SETTINGS) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
@@ -1704,14 +1582,6 @@ private fun SyncSettingsSection(
                     onToggle = { viewModel.toggleExperimentalFolderSaveSync() }
                 )
             }
-            item {
-                CyclePreference(
-                    title = "Local Save Cache",
-                    value = "${uiState.syncSettings.saveCacheLimit} saves per game",
-                    isFocused = uiState.focusedIndex == 4,
-                    onClick = { viewModel.cycleSaveCacheLimit() }
-                )
-            }
         }
 
         if (imageCacheProgress.isProcessing) {
@@ -2052,113 +1922,6 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
             } else null
         }
         else -> null
-    }
-}
-
-@Composable
-private fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
-    val inputShape = RoundedCornerShape(Dimens.radiusMd)
-    val urlFocusRequester = remember { FocusRequester() }
-    val usernameFocusRequester = remember { FocusRequester() }
-    val passwordFocusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(uiState.server.rommFocusField) {
-        when (uiState.server.rommFocusField) {
-            0 -> urlFocusRequester.requestFocus()
-            1 -> usernameFocusRequester.requestFocus()
-            2 -> passwordFocusRequester.requestFocus()
-        }
-        if (uiState.server.rommFocusField != null) {
-            viewModel.clearRommFocusField()
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .padding(Dimens.spacingMd)
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        OutlinedTextField(
-            value = uiState.server.rommConfigUrl,
-            onValueChange = { viewModel.setRommConfigUrl(it) },
-            label = { Text("Server URL") },
-            placeholder = { Text("https://romm.example.com") },
-            singleLine = true,
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(urlFocusRequester)
-                .then(
-                    if (uiState.focusedIndex == 0)
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
-                    else Modifier
-                )
-        )
-
-        OutlinedTextField(
-            value = uiState.server.rommConfigUsername,
-            onValueChange = { viewModel.setRommConfigUsername(it) },
-            label = { Text("Username") },
-            singleLine = true,
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(usernameFocusRequester)
-                .then(
-                    if (uiState.focusedIndex == 1)
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
-                    else Modifier
-                )
-        )
-
-        OutlinedTextField(
-            value = uiState.server.rommConfigPassword,
-            onValueChange = { viewModel.setRommConfigPassword(it) },
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(passwordFocusRequester)
-                .then(
-                    if (uiState.focusedIndex == 2)
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
-                    else Modifier
-                )
-        )
-
-        if (uiState.server.rommConfigError != null) {
-            Text(
-                text = uiState.server.rommConfigError,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = Dimens.spacingSm)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(Dimens.spacingSm))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            ActionPreference(
-                title = if (uiState.server.rommConnecting) "Connecting..." else "Connect",
-                subtitle = "Connect to RomM server",
-                isFocused = uiState.focusedIndex == 3,
-                onClick = { viewModel.connectToRomm() }
-            )
-        }
-
-        ActionPreference(
-            title = "Cancel",
-            subtitle = "Return to Server settings",
-            isFocused = uiState.focusedIndex == 4,
-            onClick = { viewModel.cancelRommConfig() }
-        )
     }
 }
 

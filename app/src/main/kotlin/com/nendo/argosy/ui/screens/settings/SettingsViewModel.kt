@@ -628,7 +628,7 @@ class SettingsViewModel @Inject constructor(
 
     fun moveLauncherActionFocus(delta: Int) {
         val state = _uiState.value
-        val launcherIndex = state.focusedIndex - 1
+        val launcherIndex = getLauncherIndexFromFocus(state)
         if (launcherIndex < 0 || launcherIndex >= state.steam.installedLaunchers.size) return
 
         val launcher = state.steam.installedLaunchers[launcherIndex]
@@ -640,7 +640,7 @@ class SettingsViewModel @Inject constructor(
 
     fun confirmLauncherAction() {
         val state = _uiState.value
-        val launcherIndex = state.focusedIndex - 1
+        val launcherIndex = getLauncherIndexFromFocus(state)
         if (launcherIndex < 0 || launcherIndex >= state.steam.installedLaunchers.size) return
 
         val launcher = state.steam.installedLaunchers[launcherIndex]
@@ -649,6 +649,23 @@ class SettingsViewModel @Inject constructor(
             scanSteamLauncher(launcher.packageName)
         } else {
             showAddSteamGameDialog(launcher.packageName)
+        }
+    }
+
+    private fun getLauncherIndexFromFocus(state: SettingsUiState): Int {
+        return when (state.currentSection) {
+            SettingsSection.SERVER -> {
+                val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
+                    state.server.connectionStatus == ConnectionStatus.OFFLINE
+                val steamBaseIndex = when {
+                    isConnected && state.syncSettings.saveSyncEnabled -> 5
+                    isConnected -> 3
+                    else -> 1
+                }
+                state.focusedIndex - steamBaseIndex
+            }
+            SettingsSection.STEAM_SETTINGS -> state.focusedIndex - 1
+            else -> -1
         }
     }
 
@@ -899,11 +916,17 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.MAIN -> 6
                 SettingsSection.SERVER -> when {
                     state.server.rommConfiguring -> 4
-                    isConnected && state.syncSettings.saveSyncEnabled -> 4
-                    isConnected -> 3
-                    else -> 1
+                    else -> {
+                        val steamBaseIndex = when {
+                            isConnected && state.syncSettings.saveSyncEnabled -> 5
+                            isConnected -> 3
+                            else -> 1
+                        }
+                        val launcherCount = state.steam.installedLaunchers.size
+                        if (launcherCount > 0) steamBaseIndex + launcherCount else steamBaseIndex
+                    }
                 }
-                SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 4 else 2
+                SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 3 else 2
                 SettingsSection.SYNC_FILTERS -> 6
                 SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
                 SettingsSection.STORAGE -> 2
@@ -917,7 +940,18 @@ class SettingsViewModel @Inject constructor(
                 }
                 SettingsSection.ABOUT -> 4
             }
-            state.copy(focusedIndex = (state.focusedIndex + delta).coerceIn(0, maxIndex))
+            val newIndex = if (state.currentSection == SettingsSection.SERVER && state.server.rommConfiguring) {
+                when {
+                    delta > 0 && state.focusedIndex == 0 -> 1
+                    delta > 0 && (state.focusedIndex == 1 || state.focusedIndex == 2) -> 3
+                    delta < 0 && state.focusedIndex == 3 -> 1
+                    delta < 0 && (state.focusedIndex == 1 || state.focusedIndex == 2) -> 0
+                    else -> (state.focusedIndex + delta).coerceIn(0, maxIndex)
+                }
+            } else {
+                (state.focusedIndex + delta).coerceIn(0, maxIndex)
+            }
+            state.copy(focusedIndex = newIndex)
         }
     }
 
@@ -1780,6 +1814,7 @@ class SettingsViewModel @Inject constructor(
             SettingsSection.SERVER -> {
                 val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                     state.server.connectionStatus == ConnectionStatus.OFFLINE
+                val isOnline = state.server.connectionStatus == ConnectionStatus.ONLINE
                 when {
                     state.server.rommConfiguring -> when (state.focusedIndex) {
                         0, 1, 2 -> _uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) }
@@ -1787,27 +1822,27 @@ class SettingsViewModel @Inject constructor(
                         4 -> cancelRommConfig()
                     }
                     else -> {
-                        val steamIndex = when {
-                            isConnected && state.syncSettings.saveSyncEnabled -> 4
+                        val steamBaseIndex = when {
+                            isConnected && state.syncSettings.saveSyncEnabled -> 5
                             isConnected -> 3
                             else -> 1
                         }
-                        when (state.focusedIndex) {
-                            0 -> startRommConfig()
-                            1 -> if (isConnected) {
-                                navigateToSection(SettingsSection.SYNC_SETTINGS)
-                            } else {
-                                navigateToSection(SettingsSection.STEAM_SETTINGS)
+                        val launcherCount = state.steam.installedLaunchers.size
+                        val refreshIndex = steamBaseIndex + launcherCount
+                        when {
+                            state.focusedIndex == 0 -> startRommConfig()
+                            state.focusedIndex == 1 && isConnected -> navigateToSection(SettingsSection.SYNC_SETTINGS)
+                            state.focusedIndex == 2 && isConnected && isOnline -> syncRomm()
+                            state.focusedIndex == 3 && isConnected && state.syncSettings.saveSyncEnabled -> cycleSaveCacheLimit()
+                            state.focusedIndex == 4 && isConnected && state.syncSettings.saveSyncEnabled && isOnline -> runSaveSyncNow()
+                            state.focusedIndex >= steamBaseIndex && state.focusedIndex < refreshIndex -> {
+                                if (state.steam.hasStoragePermission && !state.steam.isSyncing) {
+                                    confirmLauncherAction()
+                                }
                             }
-                            2 -> if (isConnected && state.server.connectionStatus == ConnectionStatus.ONLINE) {
-                                syncRomm()
+                            state.focusedIndex == refreshIndex && launcherCount > 0 && !state.steam.isSyncing -> {
+                                refreshSteamMetadata()
                             }
-                            3 -> if (isConnected && state.syncSettings.saveSyncEnabled) {
-                                runSaveSyncNow()
-                            } else if (isConnected) {
-                                navigateToSection(SettingsSection.STEAM_SETTINGS)
-                            }
-                            steamIndex -> navigateToSection(SettingsSection.STEAM_SETTINGS)
                         }
                     }
                 }
@@ -1844,12 +1879,6 @@ class SettingsViewModel @Inject constructor(
                         if (state.syncSettings.saveSyncEnabled) {
                             toggleExperimentalFolderSaveSync()
                             return InputResult.handled(SoundType.TOGGLE)
-                        }
-                    }
-                    4 -> {
-                        if (state.syncSettings.saveSyncEnabled) {
-                            cycleSaveCacheLimit()
-                            return InputResult.handled(SoundType.SELECT)
                         }
                     }
                 }
@@ -2013,6 +2042,26 @@ class SettingsViewModel @Inject constructor(
                 adjustSoundVolume(-1)
                 return InputResult.HANDLED
             }
+            if (state.currentSection == SettingsSection.SERVER) {
+                if (state.server.rommConfiguring && state.focusedIndex == 2) {
+                    _uiState.update { it.copy(focusedIndex = 1) }
+                    return InputResult.HANDLED
+                }
+                if (!state.server.rommConfiguring) {
+                    val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
+                        state.server.connectionStatus == ConnectionStatus.OFFLINE
+                    val steamBaseIndex = when {
+                        isConnected && state.syncSettings.saveSyncEnabled -> 5
+                        isConnected -> 3
+                        else -> 1
+                    }
+                    val launcherIndex = state.focusedIndex - steamBaseIndex
+                    if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
+                        moveLauncherActionFocus(-1)
+                        return InputResult.HANDLED
+                    }
+                }
+            }
             if (state.currentSection == SettingsSection.STEAM_SETTINGS) {
                 val launcherIndex = state.focusedIndex - 1
                 if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
@@ -2054,6 +2103,26 @@ class SettingsViewModel @Inject constructor(
             if (state.currentSection == SettingsSection.SOUNDS && state.sounds.enabled && state.focusedIndex == 1) {
                 adjustSoundVolume(1)
                 return InputResult.HANDLED
+            }
+            if (state.currentSection == SettingsSection.SERVER) {
+                if (state.server.rommConfiguring && state.focusedIndex == 1) {
+                    _uiState.update { it.copy(focusedIndex = 2) }
+                    return InputResult.HANDLED
+                }
+                if (!state.server.rommConfiguring) {
+                    val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
+                        state.server.connectionStatus == ConnectionStatus.OFFLINE
+                    val steamBaseIndex = when {
+                        isConnected && state.syncSettings.saveSyncEnabled -> 5
+                        isConnected -> 3
+                        else -> 1
+                    }
+                    val launcherIndex = state.focusedIndex - steamBaseIndex
+                    if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
+                        moveLauncherActionFocus(1)
+                        return InputResult.HANDLED
+                    }
+                }
             }
             if (state.currentSection == SettingsSection.STEAM_SETTINGS) {
                 val launcherIndex = state.focusedIndex - 1

@@ -1,0 +1,554 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>ClassOrdering:ALauncherApp.kt$ArgosyApp$override val workManagerConfiguration: Configuration get() = Configuration.Builder() .setWorkerFactory(workerFactory) .build()</ID>
+    <ID>ClassOrdering:ArgosyViewModel.kt$ArgosyViewModel$private fun computeABIconsSwapped(abIconLayout: String): Boolean</ID>
+    <ID>ClassOrdering:ArgosyViewModel.kt$ArgosyViewModel$private fun observeFeedbackSettings(preferencesRepository: UserPreferencesRepository)</ID>
+    <ID>ClassOrdering:ArgosyViewModel.kt$ArgosyViewModel$private fun scheduleDownloadValidation()</ID>
+    <ID>ClassOrdering:ArgosyViewModel.kt$ArgosyViewModel$private suspend fun validateAndRecoverDownloads()</ID>
+    <ID>ClassOrdering:EmulatorRegistry.kt$EmulatorRegistry$private val emulatorFamilies = listOf( EmulatorFamily( baseId = "dolphin", displayNamePrefix = "Dolphin", packagePatterns = listOf("org.dolphinemu.*"), supportedPlatforms = setOf("gc", "ngc", "wii"), launchAction = Intent.ACTION_MAIN, launchConfig = LaunchConfig.Custom( activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity", intentExtras = mapOf("AutoStartFile" to ExtraValue.FilePath) ), downloadUrl = "https://dolphin-emu.org/download/" ), EmulatorFamily( baseId = "vita3k", displayNamePrefix = "Vita3K", packagePatterns = listOf("org.vita3k.emulator*"), supportedPlatforms = setOf("vita"), launchAction = Intent.ACTION_MAIN, launchConfig = LaunchConfig.Vita3K(), downloadUrl = "https://vita3k.org/" ), EmulatorFamily( baseId = "citra", displayNamePrefix = "Citra", packagePatterns = listOf("org.citra.*", "org.gamerytb.citra.*"), supportedPlatforms = setOf("3ds"), downloadUrl = "https://citra-emu.org/" ), EmulatorFamily( baseId = "lime3ds", displayNamePrefix = "Lime3DS", packagePatterns = listOf("io.github.lime3ds.*"), supportedPlatforms = setOf("3ds") ), EmulatorFamily( baseId = "azahar", displayNamePrefix = "Azahar", packagePatterns = listOf("io.github.azahar_emu.*"), supportedPlatforms = setOf("3ds"), downloadUrl = "https://github.com/azahar-emu/azahar/releases" ), EmulatorFamily( baseId = "borked3ds", displayNamePrefix = "Borked3DS", packagePatterns = listOf("io.github.borked3ds.*"), supportedPlatforms = setOf("3ds"), downloadUrl = "https://github.com/Borked3DS/Borked3DS/releases" ), EmulatorFamily( baseId = "yuzu", displayNamePrefix = "Yuzu", packagePatterns = listOf("org.yuzu.*"), supportedPlatforms = setOf("switch") ), EmulatorFamily( baseId = "sudachi", displayNamePrefix = "Sudachi", packagePatterns = listOf("org.sudachi.*"), supportedPlatforms = setOf("switch"), downloadUrl = "https://github.com/sudachi-emu/sudachi/releases" ), EmulatorFamily( baseId = "citron", displayNamePrefix = "Citron", packagePatterns = listOf("org.citron.*"), supportedPlatforms = setOf("switch"), downloadUrl = "https://git.citron-emu.org/Citron/Citron/releases" ), EmulatorFamily( baseId = "eden", displayNamePrefix = "Eden", packagePatterns = listOf("dev.eden.*", "dev.legacy.eden*"), supportedPlatforms = setOf("switch") ), EmulatorFamily( baseId = "strato", displayNamePrefix = "Strato", packagePatterns = listOf("org.stratoemu.*"), supportedPlatforms = setOf("switch"), downloadUrl = "https://github.com/strato-emu/strato/releases" ), EmulatorFamily( baseId = "skyline", displayNamePrefix = "Skyline", packagePatterns = listOf("skyline.*", "emu.skyline.*"), supportedPlatforms = setOf("switch") ), EmulatorFamily( baseId = "ryujinx", displayNamePrefix = "Ryujinx", packagePatterns = listOf("org.ryujinx.*"), supportedPlatforms = setOf("switch"), downloadUrl = "https://ryujinx.org/download" ), EmulatorFamily( baseId = "ppsspp", displayNamePrefix = "PPSSPP", packagePatterns = listOf("org.ppsspp.*"), supportedPlatforms = setOf("psp"), downloadUrl = "https://www.ppsspp.org/download/" ), EmulatorFamily( baseId = "aethersx2", displayNamePrefix = "AetherSX2", packagePatterns = listOf("xyz.aethersx2.*"), supportedPlatforms = setOf("ps2"), launchAction = Intent.ACTION_MAIN, launchConfig = LaunchConfig.Custom( activityClass = "xyz.aethersx2.android.EmulationActivity", intentExtras = mapOf("bootPath" to ExtraValue.FilePath) ) ), EmulatorFamily( baseId = "duckstation", displayNamePrefix = "DuckStation", packagePatterns = listOf("com.github.stenzek.duckstation*"), supportedPlatforms = setOf("psx"), launchConfig = LaunchConfig.Custom( activityClass = "com.github.stenzek.duckstation.EmulationActivity", intentExtras = mapOf("bootPath" to ExtraValue.FileUri) ), downloadUrl = "https://www.duckstation.org/android/" ), EmulatorFamily( baseId = "melonds", displayNamePrefix = "melonDS", packagePatterns = listOf("me.magnum.melonds*"), supportedPlatforms = setOf("nds"), launchConfig = LaunchConfig.Custom( activityClass = "me.magnum.melonds.ui.emulator.EmulatorActivity", intentExtras = mapOf("PATH" to ExtraValue.FilePath) ), downloadUrl = "https://melonds.kuribo64.net/downloads.php" ), EmulatorFamily( baseId = "retroarch", displayNamePrefix = "RetroArch", packagePatterns = listOf("com.retroarch*"), supportedPlatforms = setOf( "nes", "snes", "n64", "gc", "ngc", "gb", "gbc", "gba", "nds", "genesis", "sms", "gg", "scd", "32x", "psx", "psp", "saturn", "dreamcast", "dc", "tg16", "tgcd", "pcfx", "atari2600", "atari5200", "atari7800", "lynx", "ngp", "ngpc", "neogeo", "msx", "msx2", "wonderswan", "wonderswancolor", "arcade" ), launchAction = Intent.ACTION_MAIN, launchConfig = LaunchConfig.RetroArch(), downloadUrl = "https://www.retroarch.com/?page=platforms" ) )</ID>
+    <ID>ClassOrdering:EmulatorRegistry.kt$EmulatorRegistry$private val platformCores: Map&lt;String, List&lt;RetroArchCore&gt;&gt; = mapOf( "nes" to listOf( RetroArchCore("fceumm", "FCEUmm"), RetroArchCore("nestopia", "Nestopia"), RetroArchCore("mesen", "Mesen"), RetroArchCore("quicknes", "QuickNES") ), "snes" to listOf( RetroArchCore("snes9x", "Snes9x"), RetroArchCore("snes9x2010", "Snes9x 2010"), RetroArchCore("bsnes", "bsnes"), RetroArchCore("bsnes2014_accuracy", "bsnes 2014 Accuracy"), RetroArchCore("mesen-s", "Mesen-S") ), "n64" to listOf( RetroArchCore("mupen64plus_next_gles3", "Mupen64Plus-Next (GLES3)"), RetroArchCore("mupen64plus_next_gles2", "Mupen64Plus-Next (GLES2)") ), "gb" to listOf( RetroArchCore("gambatte", "Gambatte"), RetroArchCore("mgba", "mGBA"), RetroArchCore("sameboy", "SameBoy"), RetroArchCore("gearboy", "Gearboy"), RetroArchCore("tgbdual", "TGB Dual") ), "gbc" to listOf( RetroArchCore("gambatte", "Gambatte"), RetroArchCore("mgba", "mGBA"), RetroArchCore("sameboy", "SameBoy"), RetroArchCore("gearboy", "Gearboy"), RetroArchCore("tgbdual", "TGB Dual") ), "gba" to listOf( RetroArchCore("mgba", "mGBA"), RetroArchCore("vba_next", "VBA Next"), RetroArchCore("vbam", "VBA-M"), RetroArchCore("gpsp", "gpSP") ), "nds" to listOf( RetroArchCore("melonds", "melonDS"), RetroArchCore("desmume", "DeSmuME"), RetroArchCore("desmume2015", "DeSmuME 2015") ), "genesis" to listOf( RetroArchCore("genesis_plus_gx", "Genesis Plus GX"), RetroArchCore("picodrive", "PicoDrive") ), "sms" to listOf( RetroArchCore("genesis_plus_gx", "Genesis Plus GX"), RetroArchCore("picodrive", "PicoDrive"), RetroArchCore("gearsystem", "Gearsystem") ), "gg" to listOf( RetroArchCore("genesis_plus_gx", "Genesis Plus GX"), RetroArchCore("gearsystem", "Gearsystem") ), "scd" to listOf( RetroArchCore("genesis_plus_gx", "Genesis Plus GX"), RetroArchCore("picodrive", "PicoDrive") ), "32x" to listOf( RetroArchCore("picodrive", "PicoDrive") ), "psx" to listOf( RetroArchCore("pcsx_rearmed", "PCSX ReARMed"), RetroArchCore("swanstation", "SwanStation"), RetroArchCore("mednafen_psx", "Mednafen PSX"), RetroArchCore("mednafen_psx_hw", "Mednafen PSX HW") ), "psp" to listOf( RetroArchCore("ppsspp", "PPSSPP") ), "saturn" to listOf( RetroArchCore("yabasanshiro", "YabaSanshiro"), RetroArchCore("yabause", "Yabause"), RetroArchCore("mednafen_saturn", "Mednafen Saturn") ), "dreamcast" to listOf( RetroArchCore("flycast", "Flycast") ), "dc" to listOf( RetroArchCore("flycast", "Flycast") ), "tg16" to listOf( RetroArchCore("mednafen_pce_fast", "Mednafen PCE Fast"), RetroArchCore("mednafen_pce", "Mednafen PCE") ), "tgcd" to listOf( RetroArchCore("mednafen_pce_fast", "Mednafen PCE Fast"), RetroArchCore("mednafen_pce", "Mednafen PCE") ), "pcfx" to listOf( RetroArchCore("mednafen_pcfx", "Mednafen PC-FX") ), "atari2600" to listOf( RetroArchCore("stella", "Stella"), RetroArchCore("stella2014", "Stella 2014") ), "atari5200" to listOf( RetroArchCore("atari800", "Atari800"), RetroArchCore("a5200", "a5200") ), "atari7800" to listOf( RetroArchCore("prosystem", "ProSystem") ), "lynx" to listOf( RetroArchCore("handy", "Handy"), RetroArchCore("mednafen_lynx", "Mednafen Lynx") ), "ngp" to listOf( RetroArchCore("mednafen_ngp", "Mednafen NGP") ), "ngpc" to listOf( RetroArchCore("mednafen_ngp", "Mednafen NGP") ), "neogeo" to listOf( RetroArchCore("fbneo", "FinalBurn Neo"), RetroArchCore("fbalpha2012_neogeo", "FB Alpha 2012 Neo Geo") ), "arcade" to listOf( RetroArchCore("fbneo", "FinalBurn Neo"), RetroArchCore("mame2003_plus", "MAME 2003-Plus"), RetroArchCore("mame2010", "MAME 2010"), RetroArchCore("fbalpha2012", "FB Alpha 2012") ), "msx" to listOf( RetroArchCore("bluemsx", "blueMSX"), RetroArchCore("fmsx", "fMSX") ), "msx2" to listOf( RetroArchCore("bluemsx", "blueMSX"), RetroArchCore("fmsx", "fMSX") ), "wonderswan" to listOf( RetroArchCore("mednafen_wswan", "Mednafen WonderSwan") ), "wonderswancolor" to listOf( RetroArchCore("mednafen_wswan", "Mednafen WonderSwan") ) )</ID>
+    <ID>ClassOrdering:EmulatorRegistry.kt$EmulatorRegistry$private val preferredCores = mapOf( "nes" to "fceumm", "snes" to "snes9x", "n64" to "mupen64plus_next_gles3", "gc" to "dolphin", "ngc" to "dolphin", "gb" to "gambatte", "gbc" to "gambatte", "gba" to "mgba", "nds" to "melonds", "genesis" to "genesis_plus_gx", "sms" to "genesis_plus_gx", "gg" to "genesis_plus_gx", "scd" to "genesis_plus_gx", "32x" to "picodrive", "psx" to "pcsx_rearmed", "psp" to "ppsspp", "saturn" to "yabasanshiro", "dreamcast" to "flycast", "dc" to "flycast", "tg16" to "mednafen_pce_fast", "tgcd" to "mednafen_pce_fast", "pcfx" to "mednafen_pcfx", "atari2600" to "stella", "atari5200" to "atari800", "atari7800" to "prosystem", "lynx" to "handy", "ngp" to "mednafen_ngp", "ngpc" to "mednafen_ngp", "neogeo" to "fbneo", "arcade" to "fbneo", "msx" to "bluemsx", "msx2" to "bluemsx", "wonderswan" to "mednafen_wswan", "wonderswancolor" to "mednafen_wswan" )</ID>
+    <ID>ClassOrdering:GamepadInputHandler.kt$GamepadInputHandler$fun eventFlow(): Flow&lt;GamepadEvent&gt;</ID>
+    <ID>ClassOrdering:HomeViewModel.kt$HomeViewModel$private val completedGameIds = mutableSetOf&lt;Long&gt;()</ID>
+    <ID>ClassOrdering:HomeViewModel.kt$HomeViewModel$private val downloadQueueDebounceMs = 300L</ID>
+    <ID>ClassOrdering:HomeViewModel.kt$HomeViewModel$private var lastDownloadQueueTime = 0L</ID>
+    <ID>ClassOrdering:ImageCacheManager.kt$ImageCacheManager$private val badgeQueue = Channel&lt;AchievementBadgeCacheRequest&gt;(Channel.UNLIMITED)</ID>
+    <ID>ClassOrdering:ImageCacheManager.kt$ImageCacheManager$private var isProcessingBadges = false</ID>
+    <ID>ClassOrdering:ImageCacheManager.kt$ImageCacheManager$private var isProcessingLogos = false</ID>
+    <ID>ClassOrdering:M3uManager.kt$M3uManager$Companion</ID>
+    <ID>ClassOrdering:PlaySessionTracker.kt$PlaySessionTracker$Companion</ID>
+    <ID>ClassOrdering:RomMRepository.kt$RomMRepository$Companion</ID>
+    <ID>ClassOrdering:RomMRepository.kt$RomMRepository$private var shouldForceRefreshOnNextInit = false</ID>
+    <ID>ClassOrdering:SaveCacheManager.kt$SaveCacheManager$Companion</ID>
+    <ID>ClassOrdering:SaveSyncWorker.kt$SaveSyncWorker$override suspend fun doWork(): Result</ID>
+    <ID>ClassOrdering:SettingsViewModel.kt$SettingsViewModel$private val _openBackgroundPickerEvent = MutableSharedFlow&lt;Unit&gt;()</ID>
+    <ID>ClassOrdering:SettingsViewModel.kt$SettingsViewModel$private val _openCustomSoundPickerEvent = MutableSharedFlow&lt;SoundType&gt;()</ID>
+    <ID>ClassOrdering:SettingsViewModel.kt$SettingsViewModel$private val colorCount = 7</ID>
+    <ID>ClassOrdering:SettingsViewModel.kt$SettingsViewModel$val openBackgroundPickerEvent: SharedFlow&lt;Unit&gt; = _openBackgroundPickerEvent.asSharedFlow()</ID>
+    <ID>ClassOrdering:SettingsViewModel.kt$SettingsViewModel$val openCustomSoundPickerEvent: SharedFlow&lt;SoundType&gt; = _openCustomSoundPickerEvent.asSharedFlow()</ID>
+    <ID>ClassOrdering:SoundFeedback.kt$SoundFeedbackManager$Companion</ID>
+    <ID>ClassOrdering:UpdateCheckWorker.kt$UpdateCheckWorker$override suspend fun doWork(): Result</ID>
+    <ID>ClassOrdering:UpdateRepository.kt$UpdateRepository$Companion</ID>
+    <ID>ClassOrdering:UserPreferencesRepository.kt$UserPreferencesRepository$val preferences: Flow&lt;UserPreferences&gt; = userPreferences</ID>
+    <ID>CollapsibleIfStatements:RomMRepository.kt$RomMRepository$if (filters.excludeBeta) { if (revision.contains("beta") || name.contains("(beta)")) return false }</ID>
+    <ID>CollapsibleIfStatements:RomMRepository.kt$RomMRepository$if (filters.excludeDemo) { if (revision.contains("demo") || name.contains("(demo)") || name.contains("(sample)")) return false }</ID>
+    <ID>CollapsibleIfStatements:RomMRepository.kt$RomMRepository$if (filters.excludeHack) { if (isHack(name, revision, tags)) return false }</ID>
+    <ID>CollapsibleIfStatements:RomMRepository.kt$RomMRepository$if (filters.excludePrototype) { if (revision.contains("proto") || name.contains("(proto)")) return false }</ID>
+    <ID>ComplexCondition:GameDetailViewModel.kt$GameDetailViewModel.&lt;no name provided&gt;$state.showSaveCacheDialog || state.showRestoreConfirmation || state.showRatingPicker || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt</ID>
+    <ID>ComplexCondition:RomScanner.kt$RomScanner$dirName.contains(idLower) || dirName.contains(shortLower) || pathLower.contains("/$idLower/") || pathLower.contains("/${shortLower.lowercase()}/")</ID>
+    <ID>ComplexCondition:SaveSyncRepository.kt$SaveSyncRepository$channelName == null &amp;&amp; syncEntity?.serverUpdatedAt != null &amp;&amp; syncEntity.serverUpdatedAt.isAfter(syncEntity.lastSyncedAt ?: Instant.EPOCH) &amp;&amp; syncEntity.serverUpdatedAt.isAfter(localModified)</ID>
+    <ID>CyclomaticComplexMethod:AppsScreen.kt$@Composable fun AppsScreen( onDrawerToggle: () -&gt; Unit, viewModel: AppsViewModel = hiltViewModel() )</ID>
+    <ID>CyclomaticComplexMethod:DownloadManager.kt$DownloadManager$private suspend fun downloadRom(progress: DownloadProgress): DownloadResult</ID>
+    <ID>CyclomaticComplexMethod:GameCard.kt$@Composable fun GameCard( game: HomeGameUi, isFocused: Boolean, modifier: Modifier = Modifier, focusScale: Float = Motion.scaleFocused, scaleFromBottom: Boolean = false, downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE )</ID>
+    <ID>CyclomaticComplexMethod:GameDetailScreen.kt$@Composable fun GameDetailScreen( gameId: Long, onBack: () -&gt; Unit, viewModel: GameDetailViewModel = hiltViewModel() )</ID>
+    <ID>CyclomaticComplexMethod:GameDetailScreen.kt$@Composable private fun GameDetailContent( game: GameDetailUi, uiState: GameDetailUiState, viewModel: GameDetailViewModel, scrollState: ScrollState, screenshotListState: LazyListState, achievementListState: LazyListState, currentSnapState: SnapState, onDescriptionPositioned: (Int) -&gt; Unit, onScreenshotPositioned: (Int) -&gt; Unit, onAchievementPositioned: (Int) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:GameDetailViewModel.kt$GameDetailViewModel$fun loadGame(gameId: Long)</ID>
+    <ID>CyclomaticComplexMethod:GameDetailViewModel.kt$GameDetailViewModel$fun playGame(discId: Long? = null)</ID>
+    <ID>CyclomaticComplexMethod:GameLauncher.kt$GameLauncher$private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?): LaunchResult</ID>
+    <ID>CyclomaticComplexMethod:HomeScreen.kt$@Composable fun HomeScreen( onGameSelect: (Long) -&gt; Unit, onNavigateToLibrary: (String) -&gt; Unit = {}, onDrawerToggle: () -&gt; Unit, viewModel: HomeViewModel = hiltViewModel() )</ID>
+    <ID>CyclomaticComplexMethod:HomeViewModel.kt$HomeViewModel$fun launchGame(gameId: Long)</ID>
+    <ID>CyclomaticComplexMethod:HomeViewModel.kt$HomeViewModel$private suspend fun refreshCurrentRowInternal()</ID>
+    <ID>CyclomaticComplexMethod:LaunchWithSyncUseCase.kt$LaunchWithSyncUseCase$fun invoke(gameId: Long): Flow&lt;SyncState&gt;</ID>
+    <ID>CyclomaticComplexMethod:LibraryScreen.kt$@Composable fun LibraryScreen( onGameSelect: (Long) -&gt; Unit, onBack: () -&gt; Unit, onDrawerToggle: () -&gt; Unit, initialPlatformId: String? = null, viewModel: LibraryViewModel = hiltViewModel() )</ID>
+    <ID>CyclomaticComplexMethod:LibraryScreen.kt$@Composable private fun FilterMenuOverlay( uiState: LibraryUiState, onDismiss: () -&gt; Unit, onCategorySelect: (FilterCategory) -&gt; Unit, onOptionSelect: (Int) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:LibraryViewModel.kt$LibraryViewModel$fun launchGame(gameId: Long)</ID>
+    <ID>CyclomaticComplexMethod:RomMRepository.kt$RomMRepository$private fun passesRevisionFilter(rom: RomMRom, filters: SyncFilterPreferences): Boolean</ID>
+    <ID>CyclomaticComplexMethod:RomMRepository.kt$RomMRepository$private suspend fun cleanupDuplicateGames(): Int</ID>
+    <ID>CyclomaticComplexMethod:RomMRepository.kt$RomMRepository$private suspend fun consolidateMultiDiscGroup( api: RomMApi, group: MultiDiscGroup )</ID>
+    <ID>CyclomaticComplexMethod:RomMRepository.kt$RomMRepository$private suspend fun syncPlatformRoms( api: RomMApi, platform: RomMPlatform, filters: SyncFilterPreferences ): PlatformSyncResult</ID>
+    <ID>CyclomaticComplexMethod:RomMRepository.kt$RomMRepository$private suspend fun syncRom(rom: RomMRom, platformSlug: String): Pair&lt;Boolean, GameEntity&gt;</ID>
+    <ID>CyclomaticComplexMethod:SaveArchiver.kt$SaveArchiver$fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean</ID>
+    <ID>CyclomaticComplexMethod:SaveSyncRepository.kt$SaveSyncRepository$private fun findSaveFolderByTitleId( basePath: String, titleId: String, platformId: String ): String?</ID>
+    <ID>CyclomaticComplexMethod:SaveSyncRepository.kt$SaveSyncRepository$suspend fun downloadSave(gameId: Long, emulatorId: String): SaveSyncResult</ID>
+    <ID>CyclomaticComplexMethod:SaveSyncRepository.kt$SaveSyncRepository$suspend fun uploadSave( gameId: Long, emulatorId: String, channelName: String? = null ): SaveSyncResult</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable fun SettingsScreen( onBack: () -&gt; Unit, viewModel: SettingsViewModel = hiltViewModel() )</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable private fun EmulatorPickerPopup( info: EmulatorPickerInfo, focusIndex: Int, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable private fun ServerSection( uiState: SettingsUiState, viewModel: SettingsViewModel )</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable private fun SteamLauncherPreference( displayName: String, supportsScanning: Boolean, isSyncing: Boolean, isFocused: Boolean, isEnabled: Boolean, actionIndex: Int, onScan: () -&gt; Unit, onAdd: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable private fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>CyclomaticComplexMethod:SettingsViewModel.kt$SettingsViewModel$fun handleConfirm(): InputResult</ID>
+    <ID>CyclomaticComplexMethod:SteamRepository.kt$SteamRepository$suspend fun refreshAllMetadata(): SteamResult&lt;Int&gt;</ID>
+    <ID>FunctionOnlyReturningConstant:GameLauncher.kt$GameLauncher$private fun getMimeType(file: File): String</ID>
+    <ID>ImplicitDefaultLocale:GameDetailScreen.kt$String.format("%.1f MB", entry.size / (1024.0 * 1024.0))</ID>
+    <ID>LargeClass:EmulatorRegistry.kt$EmulatorRegistry</ID>
+    <ID>LargeClass:GameDetailViewModel.kt$GameDetailViewModel : ViewModel</ID>
+    <ID>LargeClass:HomeViewModel.kt$HomeViewModel : ViewModel</ID>
+    <ID>LargeClass:RomMRepository.kt$RomMRepository</ID>
+    <ID>LargeClass:SaveSyncRepository.kt$SaveSyncRepository</ID>
+    <ID>LargeClass:SettingsViewModel.kt$SettingsViewModel : ViewModel</ID>
+    <ID>LongMethod:AppsScreen.kt$@Composable fun AppsScreen( onDrawerToggle: () -&gt; Unit, viewModel: AppsViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:ArgosyApp.kt$@Composable fun ArgosyApp( viewModel: ArgosyViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:DownloadManager.kt$DownloadManager$private suspend fun downloadRom(progress: DownloadProgress): DownloadResult</ID>
+    <ID>LongMethod:DownloadManager.kt$DownloadManager$private suspend fun processQueue()</ID>
+    <ID>LongMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( onBack: () -&gt; Unit, onDrawerToggle: () -&gt; Unit, viewModel: DownloadsViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:DownloadsScreen.kt$@Composable private fun DownloadItem( download: DownloadProgress, isFocused: Boolean, availableStorage: Long )</ID>
+    <ID>LongMethod:FirstRunScreen.kt$@Composable fun FirstRunScreen( onComplete: () -&gt; Unit, viewModel: FirstRunViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:FirstRunScreen.kt$@Composable private fun RomPathStep( currentPath: String?, folderSelected: Boolean, hasStoragePermission: Boolean, onRequestPermission: () -&gt; Unit, onChooseFolder: () -&gt; Unit, onContinue: () -&gt; Unit )</ID>
+    <ID>LongMethod:FirstRunScreen.kt$@Composable private fun RommLoginStep( url: String, username: String, password: String, isConnecting: Boolean, error: String?, onUrlChange: (String) -&gt; Unit, onUsernameChange: (String) -&gt; Unit, onPasswordChange: (String) -&gt; Unit, onConnect: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:GameCard.kt$@Composable fun GameCard( game: HomeGameUi, isFocused: Boolean, modifier: Modifier = Modifier, focusScale: Float = Motion.scaleFocused, scaleFromBottom: Boolean = false, downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE )</ID>
+    <ID>LongMethod:GameDetailScreen.kt$@Composable fun GameDetailScreen( gameId: Long, onBack: () -&gt; Unit, viewModel: GameDetailViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:GameDetailScreen.kt$@Composable private fun AchievementRow(achievement: AchievementUi)</ID>
+    <ID>LongMethod:GameDetailScreen.kt$@Composable private fun DiscPickerOverlay( discs: List&lt;DiscUi&gt;, focusIndex: Int, onSelectDisc: (Int) -&gt; Unit )</ID>
+    <ID>LongMethod:GameDetailScreen.kt$@Composable private fun GameDetailContent( game: GameDetailUi, uiState: GameDetailUiState, viewModel: GameDetailViewModel, scrollState: ScrollState, screenshotListState: LazyListState, achievementListState: LazyListState, currentSnapState: SnapState, onDescriptionPositioned: (Int) -&gt; Unit, onScreenshotPositioned: (Int) -&gt; Unit, onAchievementPositioned: (Int) -&gt; Unit )</ID>
+    <ID>LongMethod:GameDetailScreen.kt$@Composable private fun MoreOptionsOverlay( game: GameDetailUi, focusIndex: Int, isDownloaded: Boolean )</ID>
+    <ID>LongMethod:GameDetailScreen.kt$@Composable private fun SaveCacheDialogOverlay( entries: List&lt;UnifiedSaveEntry&gt;, focusIndex: Int, isLoading: Boolean, showRestoreConfirmation: Boolean, restoreEntry: UnifiedSaveEntry?, showRenameDialog: Boolean, renameText: String, onRenameTextChange: (String) -&gt; Unit, activeChannel: String? )</ID>
+    <ID>LongMethod:GameDetailScreen.kt$@Composable private fun SaveCacheEntryRow( entry: UnifiedSaveEntry, isFocused: Boolean, isActiveChannel: Boolean )</ID>
+    <ID>LongMethod:GameDetailViewModel.kt$GameDetailViewModel$fun loadGame(gameId: Long)</ID>
+    <ID>LongMethod:GameDetailViewModel.kt$GameDetailViewModel$fun playGame(discId: Long? = null)</ID>
+    <ID>LongMethod:HomeScreen.kt$@Composable fun HomeScreen( onGameSelect: (Long) -&gt; Unit, onNavigateToLibrary: (String) -&gt; Unit = {}, onDrawerToggle: () -&gt; Unit, viewModel: HomeViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:HomeScreen.kt$@Composable private fun GameInfo( title: String, developer: String?, rating: Float?, userRating: Int, userDifficulty: Int, achievementCount: Int, earnedAchievementCount: Int, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:HomeScreen.kt$@Composable private fun GameSelectOverlay( game: HomeGameUi, focusIndex: Int, onDismiss: () -&gt; Unit, onPlayOrDownload: () -&gt; Unit, onFavorite: () -&gt; Unit, onDetails: () -&gt; Unit, onRefresh: () -&gt; Unit, onDelete: () -&gt; Unit, onHide: () -&gt; Unit )</ID>
+    <ID>LongMethod:HomeViewModel.kt$HomeViewModel$fun launchGame(gameId: Long)</ID>
+    <ID>LongMethod:LaunchWithSyncUseCase.kt$LaunchWithSyncUseCase$fun invoke(gameId: Long): Flow&lt;SyncState&gt;</ID>
+    <ID>LongMethod:LibraryScreen.kt$@Composable fun LibraryScreen( onGameSelect: (Long) -&gt; Unit, onBack: () -&gt; Unit, onDrawerToggle: () -&gt; Unit, initialPlatformId: String? = null, viewModel: LibraryViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:LibraryScreen.kt$@Composable private fun FilterMenuOverlay( uiState: LibraryUiState, onDismiss: () -&gt; Unit, onCategorySelect: (FilterCategory) -&gt; Unit, onOptionSelect: (Int) -&gt; Unit )</ID>
+    <ID>LongMethod:LibraryScreen.kt$@Composable private fun QuickMenuOverlay( game: LibraryGameUi, focusIndex: Int, onDismiss: () -&gt; Unit, onPlayOrDownload: () -&gt; Unit, onFavorite: () -&gt; Unit, onDetails: () -&gt; Unit, onRefresh: () -&gt; Unit, onDelete: () -&gt; Unit, onHide: () -&gt; Unit )</ID>
+    <ID>LongMethod:LibraryViewModel.kt$LibraryViewModel$fun launchGame(gameId: Long)</ID>
+    <ID>LongMethod:MainDrawer.kt$@Composable private fun DrawerMenuItem( item: DrawerItem, icon: ImageVector, isFocused: Boolean, isSelected: Boolean, badge: Int? = null, onClick: () -&gt; Unit )</ID>
+    <ID>LongMethod:MigrateStorageUseCase.kt$MigrateStorageUseCase$suspend operator fun invoke( oldPath: String, newPath: String, onProgress: ((current: Int, total: Int, title: String) -&gt; Unit)? = null ): MigrationResult</ID>
+    <ID>LongMethod:NavGraph.kt$@Composable fun NavGraph( navController: NavHostController, startDestination: String, onDrawerToggle: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:PreferenceItem.kt$@Composable fun HueSliderPreference( title: String, currentHue: Float?, isFocused: Boolean, onHueChange: (Float?) -&gt; Unit, saturation: Float = 0.7f, lightness: Float = 0.5f )</ID>
+    <ID>LongMethod:RomMRepository.kt$RomMRepository$private suspend fun consolidateMultiDiscGroup( api: RomMApi, group: MultiDiscGroup )</ID>
+    <ID>LongMethod:RomMRepository.kt$RomMRepository$private suspend fun syncPlatformRoms( api: RomMApi, platform: RomMPlatform, filters: SyncFilterPreferences ): PlatformSyncResult</ID>
+    <ID>LongMethod:RomMRepository.kt$RomMRepository$private suspend fun syncRom(rom: RomMRom, platformSlug: String): Pair&lt;Boolean, GameEntity&gt;</ID>
+    <ID>LongMethod:SaveSyncRepository.kt$SaveSyncRepository$suspend fun downloadSave(gameId: Long, emulatorId: String): SaveSyncResult</ID>
+    <ID>LongMethod:SaveSyncRepository.kt$SaveSyncRepository$suspend fun uploadSave( gameId: Long, emulatorId: String, channelName: String? = null ): SaveSyncResult</ID>
+    <ID>LongMethod:SearchScreen.kt$@Composable fun SearchScreen( onGameSelect: (Long) -&gt; Unit, onBack: () -&gt; Unit, viewModel: SearchViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:SearchScreen.kt$@Composable private fun SearchResultItem( result: SearchResultUi, isFocused: Boolean, onClick: () -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable fun SettingsScreen( onBack: () -&gt; Unit, viewModel: SettingsViewModel = hiltViewModel() )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun EmulatorPickerPopup( info: EmulatorPickerInfo, focusIndex: Int, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun PlatformEmulatorItem( config: PlatformEmulatorConfig, isFocused: Boolean, onEmulatorClick: () -&gt; Unit, onCycleCore: (Int) -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun RegionPickerPopup( enabledRegions: Set&lt;String&gt;, focusIndex: Int, onToggle: (String) -&gt; Unit, onDismiss: () -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun ServerSection( uiState: SettingsUiState, viewModel: SettingsViewModel )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun SoundPickerPopup( soundType: SoundType, presets: List&lt;SoundPreset&gt;, focusIndex: Int, currentPreset: SoundPreset?, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun SteamLauncherPreference( displayName: String, supportsScanning: Boolean, isSyncing: Boolean, isFocused: Boolean, isEnabled: Boolean, actionIndex: Int, onScan: () -&gt; Unit, onAdd: () -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun SyncFiltersSection( uiState: SettingsUiState, viewModel: SettingsViewModel )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable private fun SyncSettingsSection( uiState: SettingsUiState, viewModel: SettingsViewModel, imageCacheProgress: ImageCacheProgress )</ID>
+    <ID>LongMethod:SettingsViewModel.kt$SettingsViewModel$fun handleConfirm(): InputResult</ID>
+    <ID>LongMethod:SettingsViewModel.kt$SettingsViewModel$private fun loadSettings()</ID>
+    <ID>LongMethod:SteamRepository.kt$SteamRepository$suspend fun addGame( steamAppId: Long, launcherPackage: String ): SteamResult&lt;GameEntity&gt;</ID>
+    <ID>LongMethod:SyncLibraryUseCase.kt$SyncLibraryUseCase$suspend operator fun invoke( initializeFirst: Boolean = false, onProgress: ((current: Int, total: Int, platform: String) -&gt; Unit)? = null ): SyncLibraryResult</ID>
+    <ID>LongMethod:SyncOverlay.kt$@Composable fun SyncOverlay( syncState: SyncState?, modifier: Modifier = Modifier, gameTitle: String? = null )</ID>
+    <ID>LongMethod:UpdateRepository.kt$UpdateRepository$suspend fun checkForUpdates(): UpdateState</ID>
+    <ID>LongParameterList:DownloadManager.kt$DownloadManager$( gameId: Long, discId: Long, discNumber: Int, rommId: Long, fileName: String, gameTitle: String, platformSlug: String, coverPath: String?, expectedSizeBytes: Long = 0 )</ID>
+    <ID>LongParameterList:FirstRunScreen.kt$( url: String, username: String, password: String, isConnecting: Boolean, error: String?, onUrlChange: (String) -&gt; Unit, onUsernameChange: (String) -&gt; Unit, onPasswordChange: (String) -&gt; Unit, onConnect: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongParameterList:GameDetailScreen.kt$( entries: List&lt;UnifiedSaveEntry&gt;, focusIndex: Int, isLoading: Boolean, showRestoreConfirmation: Boolean, restoreEntry: UnifiedSaveEntry?, showRenameDialog: Boolean, renameText: String, onRenameTextChange: (String) -&gt; Unit, activeChannel: String? )</ID>
+    <ID>LongParameterList:GameDetailScreen.kt$( game: GameDetailUi, uiState: GameDetailUiState, viewModel: GameDetailViewModel, scrollState: ScrollState, screenshotListState: LazyListState, achievementListState: LazyListState, currentSnapState: SnapState, onDescriptionPositioned: (Int) -&gt; Unit, onScreenshotPositioned: (Int) -&gt; Unit, onAchievementPositioned: (Int) -&gt; Unit )</ID>
+    <ID>LongParameterList:GameDetailViewModel.kt$GameDetailViewModel$( @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context, private val gameDao: GameDao, private val gameDiscDao: GameDiscDao, private val platformDao: PlatformDao, private val emulatorConfigDao: EmulatorConfigDao, private val emulatorDetector: EmulatorDetector, private val downloadManager: DownloadManager, private val notificationManager: NotificationManager, private val gameRepository: GameRepository, private val gameNavigationContext: GameNavigationContext, private val launchGameUseCase: LaunchGameUseCase, private val launchWithSyncUseCase: LaunchWithSyncUseCase, private val configureEmulatorUseCase: ConfigureEmulatorUseCase, private val romMRepository: RomMRepository, private val soundManager: SoundFeedbackManager, private val gameActions: GameActionsDelegate, private val achievementDao: com.nendo.argosy.data.local.dao.AchievementDao, private val imageCacheManager: ImageCacheManager, private val playSessionTracker: PlaySessionTracker, private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository, private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase, private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase, private val saveCacheManager: SaveCacheManager )</ID>
+    <ID>LongParameterList:HomeScreen.kt$( game: HomeGameUi, focusIndex: Int, onDismiss: () -&gt; Unit, onPlayOrDownload: () -&gt; Unit, onFavorite: () -&gt; Unit, onDetails: () -&gt; Unit, onRefresh: () -&gt; Unit, onDelete: () -&gt; Unit, onHide: () -&gt; Unit )</ID>
+    <ID>LongParameterList:HomeViewModel.kt$HomeViewModel$( private val savedStateHandle: SavedStateHandle, private val platformDao: PlatformDao, private val gameDao: GameDao, private val romMRepository: RomMRepository, private val preferencesRepository: UserPreferencesRepository, private val notificationManager: NotificationManager, private val gameNavigationContext: GameNavigationContext, private val syncLibraryUseCase: SyncLibraryUseCase, private val launchGameUseCase: LaunchGameUseCase, private val launchWithSyncUseCase: LaunchWithSyncUseCase, private val downloadManager: DownloadManager, private val soundManager: SoundFeedbackManager, private val gameActions: GameActionsDelegate, private val achievementDao: com.nendo.argosy.data.local.dao.AchievementDao, private val imageCacheManager: ImageCacheManager, private val playSessionTracker: PlaySessionTracker, private val emulatorDetector: EmulatorDetector, private val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao )</ID>
+    <ID>LongParameterList:LibraryScreen.kt$( game: LibraryGameUi, focusIndex: Int, onDismiss: () -&gt; Unit, onPlayOrDownload: () -&gt; Unit, onFavorite: () -&gt; Unit, onDetails: () -&gt; Unit, onRefresh: () -&gt; Unit, onDelete: () -&gt; Unit, onHide: () -&gt; Unit )</ID>
+    <ID>LongParameterList:LibraryViewModel.kt$LibraryViewModel$( private val platformDao: PlatformDao, private val gameDao: GameDao, private val gameNavigationContext: GameNavigationContext, private val launchGameUseCase: LaunchGameUseCase, private val launchWithSyncUseCase: LaunchWithSyncUseCase, private val notificationManager: NotificationManager, private val preferencesRepository: UserPreferencesRepository, private val soundManager: SoundFeedbackManager, private val gameActions: GameActionsDelegate, private val playSessionTracker: PlaySessionTracker, private val emulatorDetector: EmulatorDetector, private val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao )</ID>
+    <ID>LongParameterList:SettingsScreen.kt$( displayName: String, supportsScanning: Boolean, isSyncing: Boolean, isFocused: Boolean, isEnabled: Boolean, actionIndex: Int, onScan: () -&gt; Unit, onAdd: () -&gt; Unit )</ID>
+    <ID>LongParameterList:SettingsViewModel.kt$SettingsViewModel$( @ApplicationContext private val context: Context, private val preferencesRepository: UserPreferencesRepository, private val platformDao: PlatformDao, private val emulatorConfigDao: EmulatorConfigDao, private val emulatorDetector: EmulatorDetector, private val romMRepository: RomMRepository, private val notificationManager: NotificationManager, private val gameRepository: GameRepository, private val steamRepository: SteamRepository, private val imageCacheManager: ImageCacheManager, private val syncLibraryUseCase: SyncLibraryUseCase, private val configureEmulatorUseCase: ConfigureEmulatorUseCase, private val migrateStorageUseCase: MigrateStorageUseCase, private val updateRepository: UpdateRepository, private val appInstaller: AppInstaller, private val hapticManager: HapticFeedbackManager, private val soundManager: SoundFeedbackManager, private val saveSyncRepository: SaveSyncRepository, private val pendingSaveSyncDao: PendingSaveSyncDao )</ID>
+    <ID>LoopWithTooManyJumpStatements:RomMRepository.kt$RomMRepository$for</ID>
+    <ID>LoopWithTooManyJumpStatements:SteamRepository.kt$SteamRepository$for</ID>
+    <ID>MagicNumber:AppsScreen.kt$128</ID>
+    <ID>MagicNumber:ArgosyViewModel.kt$ArgosyViewModel$30_000L</ID>
+    <ID>MagicNumber:FirstRunScreen.kt$0.8f</ID>
+    <ID>MagicNumber:FirstRunScreen.kt$150</ID>
+    <ID>MagicNumber:FooterHint.kt$3</ID>
+    <ID>MagicNumber:GameCard.kt$0.25f</ID>
+    <ID>MagicNumber:GameCard.kt$0.5f</ID>
+    <ID>MagicNumber:GameCard.kt$1300</ID>
+    <ID>MagicNumber:GameCard.kt$16f</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$0.3f</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$0.6f</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$0.7f</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$0xFF64B5F6</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$0xFFE53935</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$0xFFFFB300</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$0xFFFFD700</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$1.5f</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$3</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$3000</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$4000</ID>
+    <ID>MagicNumber:GameDetailScreen.kt$5</ID>
+    <ID>MagicNumber:GameDetailViewModel.kt$GameDetailViewModel$10</ID>
+    <ID>MagicNumber:GameDetailViewModel.kt$GameDetailViewModel$2000L</ID>
+    <ID>MagicNumber:GameDetailViewModel.kt$GameDetailViewModel$4</ID>
+    <ID>MagicNumber:GameLauncher.kt$GameLauncher$200</ID>
+    <ID>MagicNumber:GameRepository.kt$GameRepository$500</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$140</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$150L</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$180</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$180L</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$220</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$240L</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$255</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$300L</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$45</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$45L</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$500</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$80</ID>
+    <ID>MagicNumber:HapticFeedback.kt$HapticFeedbackManager$90L</ID>
+    <ID>MagicNumber:HomeScreen.kt$0.3f</ID>
+    <ID>MagicNumber:HomeScreen.kt$0.4f</ID>
+    <ID>MagicNumber:HomeScreen.kt$0.5f</ID>
+    <ID>MagicNumber:HomeScreen.kt$0.6f</ID>
+    <ID>MagicNumber:HomeScreen.kt$0.7f</ID>
+    <ID>MagicNumber:HomeScreen.kt$0xFF64B5F6</ID>
+    <ID>MagicNumber:HomeScreen.kt$0xFFE53935</ID>
+    <ID>MagicNumber:HomeScreen.kt$0xFFFFB300</ID>
+    <ID>MagicNumber:HomeScreen.kt$0xFFFFD700</ID>
+    <ID>MagicNumber:HomeScreen.kt$150</ID>
+    <ID>MagicNumber:HomeScreen.kt$200</ID>
+    <ID>MagicNumber:HomeScreen.kt$300</ID>
+    <ID>MagicNumber:HomeScreen.kt$360</ID>
+    <ID>MagicNumber:HomeScreen.kt$640</ID>
+    <ID>MagicNumber:HomeViewModel.kt$HomeViewModel$2000L</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$10_000</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$12</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$30</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$30_000</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$400</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$480</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$640</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$75</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$80</ID>
+    <ID>MagicNumber:ImageCacheManager.kt$ImageCacheManager$85</ID>
+    <ID>MagicNumber:LibraryViewModel.kt$LibraryViewModel$2000L</ID>
+    <ID>MagicNumber:LibraryViewModel.kt$LibraryViewModel$3</ID>
+    <ID>MagicNumber:LibraryViewModel.kt$LibraryViewModel$4</ID>
+    <ID>MagicNumber:LibraryViewModel.kt$LibraryViewModel.&lt;no name provided&gt;$5</ID>
+    <ID>MagicNumber:NavGraph.kt$150</ID>
+    <ID>MagicNumber:NotificationHost.kt$0xFF2A2A2A</ID>
+    <ID>MagicNumber:NotificationHost.kt$0xFF2D4A3E</ID>
+    <ID>MagicNumber:NotificationHost.kt$0xFF3A4A5C</ID>
+    <ID>MagicNumber:NotificationHost.kt$0xFF5C3A3A</ID>
+    <ID>MagicNumber:NotificationHost.kt$0xFF5C4A2D</ID>
+    <ID>MagicNumber:PlaySessionTracker.kt$PlaySessionTracker.&lt;no name provided&gt;$30</ID>
+    <ID>MagicNumber:PreferenceItem.kt$0.45f</ID>
+    <ID>MagicNumber:PreferenceItem.kt$3</ID>
+    <ID>MagicNumber:PreferenceItem.kt$36</ID>
+    <ID>MagicNumber:PreferenceItem.kt$360f</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$206</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$3</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$30</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$4</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$400</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$401</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$403</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$404</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$500</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$502</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$503</ID>
+    <ID>MagicNumber:RomMRepository.kt$RomMRepository$60</ID>
+    <ID>MagicNumber:RomScanner.kt$RomScanner$3</ID>
+    <ID>MagicNumber:RomScanner.kt$RomScanner$4</ID>
+    <ID>MagicNumber:SaveSyncWorker.kt$SaveSyncWorker.Companion$6</ID>
+    <ID>MagicNumber:SearchViewModel.kt$SearchViewModel$300</ID>
+    <ID>MagicNumber:SettingsScreen.kt$0.45f</ID>
+    <ID>MagicNumber:SettingsScreen.kt$0.85f</ID>
+    <ID>MagicNumber:SettingsScreen.kt$0xFF5C6BC0</ID>
+    <ID>MagicNumber:SettingsScreen.kt$10</ID>
+    <ID>MagicNumber:SettingsScreen.kt$25</ID>
+    <ID>MagicNumber:SettingsScreen.kt$3</ID>
+    <ID>MagicNumber:SettingsScreen.kt$30</ID>
+    <ID>MagicNumber:SettingsScreen.kt$4</ID>
+    <ID>MagicNumber:SettingsScreen.kt$40</ID>
+    <ID>MagicNumber:SettingsScreen.kt$6</ID>
+    <ID>MagicNumber:SettingsScreen.kt$60</ID>
+    <ID>MagicNumber:SettingsScreen.kt$7</ID>
+    <ID>MagicNumber:SettingsScreen.kt$8</ID>
+    <ID>MagicNumber:SettingsScreen.kt$80</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$0.5f</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$0.7f</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$10</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$15</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$180f</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$20</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$25</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$3</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$360f</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$4</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$40</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$5</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$6</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$60</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$7</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$8</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$80</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel$8192</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$10</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$10f</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$5</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$6</ID>
+    <ID>MagicNumber:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$7</ID>
+    <ID>MagicNumber:SoundFeedback.kt$SoundFeedbackManager$6</ID>
+    <ID>MagicNumber:SteamRepository.kt$SteamRepository$3</ID>
+    <ID>MagicNumber:SteamRepository.kt$SteamRepository$30</ID>
+    <ID>MagicNumber:SteamRepository.kt$SteamRepository$4</ID>
+    <ID>MagicNumber:SyncOverlay.kt$300</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0.05f</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0.1f</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0.2f</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0.3f</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0.4f</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0.6f</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0xFF4CAF50</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$0xFFE53935</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$20</ID>
+    <ID>MagicNumber:SystemStatusBar.kt$60_000L</ID>
+    <ID>MagicNumber:Theme.kt$0.22f</ID>
+    <ID>MagicNumber:Theme.kt$0.2f</ID>
+    <ID>MagicNumber:Theme.kt$0.3f</ID>
+    <ID>MagicNumber:Theme.kt$0.95f</ID>
+    <ID>MagicNumber:Theme.kt$255</ID>
+    <ID>MagicNumber:Theme.kt$3</ID>
+    <ID>MagicNumber:TitleIdExtractor.kt$TitleIdExtractor$16</ID>
+    <ID>MagicNumber:TitleIdExtractor.kt$TitleIdExtractor$8</ID>
+    <ID>MagicNumber:UpdateCheckWorker.kt$UpdateCheckWorker.Companion$12</ID>
+    <ID>MagicNumber:UpdateRepository.kt$UpdateRepository$15</ID>
+    <ID>MagicNumber:UserPreferencesRepository.kt$UserPreferencesRepository$5</ID>
+    <ID>MatchingDeclarationName:ALauncherApp.kt$ArgosyApp : ApplicationProvider</ID>
+    <ID>MatchingDeclarationName:Color.kt$ALauncherColors</ID>
+    <ID>MatchingDeclarationName:Dimensions.kt$Dimens</ID>
+    <ID>MatchingDeclarationName:FooterHint.kt$InputButton</ID>
+    <ID>MatchingDeclarationName:SystemStatusBar.kt$BatteryState</ID>
+    <ID>MaxLineLength:ALauncherDatabase.kt$ALauncherDatabase.Companion.&lt;no name provided&gt;$db.execSQL("CREATE INDEX IF NOT EXISTS index_emulator_configs_platformId ON emulator_configs(platformId)")</ID>
+    <ID>MaxLineLength:ALauncherDatabase.kt$ALauncherDatabase.Companion.&lt;no name provided&gt;$db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_save_sync_createdAt ON pending_save_sync(createdAt)")</ID>
+    <ID>MaxLineLength:ALauncherDatabase.kt$ALauncherDatabase.Companion.&lt;no name provided&gt;$db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_emulator_configs_gameId ON emulator_configs(gameId)")</ID>
+    <ID>MaxLineLength:ALauncherDatabase.kt$ALauncherDatabase.Companion.&lt;no name provided&gt;$db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_emulator_save_config_emulatorId ON emulator_save_config(emulatorId)")</ID>
+    <ID>MaxLineLength:ALauncherDatabase.kt$ALauncherDatabase.Companion.&lt;no name provided&gt;$db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_save_sync_gameId_emulatorId ON save_sync(gameId, emulatorId)")</ID>
+    <ID>MaxLineLength:AppInstaller.kt$AppInstaller$context.cacheDir.listFiles()?.filter { it.name.startsWith("argosy-") &amp;&amp; it.name.endsWith(".apk") }?.forEach { it.delete() }</ID>
+    <ID>MaxLineLength:ArgosyViewModel.kt$ArgosyViewModel$android.util.Log.d("ArgosyViewModel", "Validation: $invalidated games had missing files, attempting recovery")</ID>
+    <ID>MaxLineLength:DownloadNotificationObserver.kt$DownloadNotificationObserver$Log.d(TAG, "collect: previous=${previous?.toNotificationState()}, current=${current.toNotificationState()}, isInitialLoad=$isInitialLoad")</ID>
+    <ID>MaxLineLength:DownloadQueueDao.kt$DownloadQueueDao$@Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'WAITING_FOR_STORAGE') ORDER BY createdAt ASC")</ID>
+    <ID>MaxLineLength:DownloadsScreen.kt$"Waiting for storage - Need ${formatBytes(download.totalBytes - download.bytesDownloaded)}, Available ${formatBytes(availableStorage)}"</ID>
+    <ID>MaxLineLength:DownloadsScreen.kt$return String.format(java.util.Locale.US, "%.1f %s", bytes / Math.pow(1024.0, safeIndex.toDouble()), units[safeIndex])</ID>
+    <ID>MaxLineLength:EmulatorConfigDao.kt$EmulatorConfigDao$@Query("UPDATE emulator_configs SET coreName = :coreName WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")</ID>
+    <ID>MaxLineLength:GameDao.kt$GameDao$@Query("SELECT * FROM games WHERE screenshotPaths IS NOT NULL AND cachedScreenshotPaths IS NULL AND rommId IS NOT NULL")</ID>
+    <ID>MaxLineLength:GameDao.kt$GameDao$@Query("SELECT COUNT(*) FROM games WHERE backgroundPath IS NOT NULL AND (rommId IS NOT NULL OR steamAppId IS NOT NULL)")</ID>
+    <ID>MaxLineLength:GameDao.kt$GameDao$@Query("SELECT COUNT(*) FROM games WHERE backgroundPath LIKE '/%' AND (rommId IS NOT NULL OR steamAppId IS NOT NULL)")</ID>
+    <ID>MaxLineLength:GameDetailViewModel.kt$GameDetailViewModel$availableCores = if (isRetroArch) EmulatorRegistry.getCoresForPlatform(game.platformId) else emptyList()</ID>
+    <ID>MaxLineLength:GameDetailViewModel.kt$GameDetailViewModel$badgeUrl = if (isUnlocked) achievement.badgeUrl else (achievement.badgeUrlLock ?: achievement.badgeUrl)</ID>
+    <ID>MaxLineLength:GameDetailViewModel.kt$GameDetailViewModel$imageCacheManager.queueBadgeCache(achievement.id, achievement.badgeUrl, achievement.badgeUrlLock)</ID>
+    <ID>MaxLineLength:GameDetailViewModel.kt$GameDetailViewModel.&lt;no name provided&gt;$state.showSaveCacheDialog || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt</ID>
+    <ID>MaxLineLength:GameLauncher.kt$GameLauncher$Log.d(TAG, "buildIntent: action=${intent?.action}, package=${intent?.`package`}, component=${intent?.component}, data=${intent?.data}")</ID>
+    <ID>MaxLineLength:GameLauncher.kt$GameLauncher$Log.d(TAG, "buildIntent: emulator=${emulator.displayName}, config=${emulator.launchConfig::class.simpleName}, rom=${romFile.name}")</ID>
+    <ID>MaxLineLength:HapticFeedback.kt$HapticFeedbackManager$HapticPattern.FOCUS_CHANGE -&gt; VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)</ID>
+    <ID>MaxLineLength:HapticFeedback.kt$HapticFeedbackManager$HapticPattern.SELECTION -&gt; VibrationEffect.createOneShot(duration + 45, VibrationEffect.DEFAULT_AMPLITUDE)</ID>
+    <ID>MaxLineLength:HomeViewModel.kt$HomeViewModel$HomeRowItem.Game(item.game.copy(achievementCount = entities.size, earnedAchievementCount = earnedCount))</ID>
+    <ID>MaxLineLength:HomeViewModel.kt$HomeViewModel$if (it.id == gameId) it.copy(achievementCount = entities.size, earnedAchievementCount = earnedCount) else it</ID>
+    <ID>MaxLineLength:HomeViewModel.kt$HomeViewModel$imageCacheManager.queueBadgeCache(achievement.id, achievement.badgeUrl, achievement.badgeUrlLock)</ID>
+    <ID>MaxLineLength:LibraryViewModel.kt$LibraryViewModel$Log.d(TAG, "loadFilterOptions: genres=${genres.size}, players=${players.size}, franchises=${franchises.size}")</ID>
+    <ID>MaxLineLength:LibraryViewModel.kt$LibraryViewModel$focusedIndex = if (shouldResetFocus) 0 else uiState.focusedIndex.coerceAtMost((filteredGames.size - 1).coerceAtLeast(0))</ID>
+    <ID>MaxLineLength:LibraryViewModel.kt$LibraryViewModel$val newFranchises = if (franchise in currentFranchises) currentFranchises - franchise else currentFranchises + franchise</ID>
+    <ID>MaxLineLength:RetroArchConfigParser.kt$RetroArchConfigParser$Log.d(TAG, "Parsed: savefileDirectory=$savefileDirectory, inContentDir=$savefilesInContentDir, sortBySystem=$sortBySystem, sortByCore=$sortByCore")</ID>
+    <ID>MaxLineLength:RetroArchConfigParser.kt$RetroArchConfigParser$Log.d(TAG, "resolveSavePaths: generated ${paths.size} paths for package=$packageName, system=$systemName, core=$coreName")</ID>
+    <ID>MaxLineLength:RomMApi.kt$RomMApi$@Field("scope") scope: String = "me.read me.write platforms.read roms.read assets.read assets.write roms.user.read roms.user.write"</ID>
+    <ID>MaxLineLength:RomMRepository.kt$RomMRepository$pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))</ID>
+    <ID>MaxLineLength:RomMRepository.kt$RomMRepository$pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))</ID>
+    <ID>MaxLineLength:RomMRepository.kt$RomMRepository$val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(data = RomMUserPropsUpdateData(difficulty = difficulty)))</ID>
+    <ID>MaxLineLength:RomMRepository.kt$RomMRepository$val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(data = RomMUserPropsUpdateData(rating = rating)))</ID>
+    <ID>MaxLineLength:RomMRepository.kt$RomMRepository$val scope = "me.read me.write platforms.read roms.read assets.read assets.write roms.user.read roms.user.write"</ID>
+    <ID>MaxLineLength:SavePathRegistry.kt$SavePathRegistry$fun getRetroArchCore(platformId: String): String?</ID>
+    <ID>MaxLineLength:SaveSyncRepository.kt$SaveSyncRepository$?:</ID>
+    <ID>MaxLineLength:SaveSyncRepository.kt$SaveSyncRepository$if</ID>
+    <ID>MaxLineLength:SettingsScreen.kt$"Enter the Steam App ID to add a game for $selectedLauncherName. You can find this in the game's Steam store URL."</ID>
+    <ID>MaxLineLength:SettingsScreen.kt$text = if (config.hasInstalledEmulators) "${config.availableEmulators.size} emulators available" else "No emulators installed"</ID>
+    <ID>MaxLineLength:SettingsScreen.kt$val sliderValue = (volumeLevels.indexOfFirst { it &gt;= uiState.sounds.volume }.takeIf { it &gt;= 0 } ?: 0) + 1</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$0, 1, 2 -&gt; _uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$2 -&gt; { setExcludeBeta(!state.syncSettings.syncFilters.excludeBeta); return InputResult.handled(SoundType.TOGGLE) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$3 -&gt; { setExcludePrototype(!state.syncSettings.syncFilters.excludePrototype); return InputResult.handled(SoundType.TOGGLE) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$4 -&gt; { setExcludeDemo(!state.syncSettings.syncFilters.excludeDemo); return InputResult.handled(SoundType.TOGGLE) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$5 -&gt; { setExcludeHack(!state.syncSettings.syncFilters.excludeHack); return InputResult.handled(SoundType.TOGGLE) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$6 -&gt; { setDeleteOrphans(!state.syncSettings.syncFilters.deleteOrphans); return InputResult.handled(SoundType.TOGGLE) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$_uiState.update { it.copy(syncSettings = it.syncSettings.copy(showRegionPicker = false, regionPickerFocusIndex = 0)) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$_uiState.update { it.copy(syncSettings = it.syncSettings.copy(showRegionPicker = true, regionPickerFocusIndex = 0)) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$_uiState.update { it.copy(updateCheck = it.updateCheck.copy(isDownloading = true, downloadProgress = 0, error = null)) }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(server = it.server.copy(rommConnecting = false, rommConfigError = "Username and password required"))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(server = it.server.copy(rommConnecting = false, rommConfigError = loginResult.message))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(deleteOrphans = delete)))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(enabledRegions = updated)))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludeBeta = exclude)))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludeDemo = exclude)))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludeHack = exclude)))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(excludePrototype = exclude)))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(syncSettings = it.syncSettings.copy(syncFilters = it.syncSettings.syncFilters.copy(regionMode = next)))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(updateCheck = UpdateCheckState(isChecking = false, hasChecked = true, updateAvailable = false))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$it.copy(updateCheck = it.updateCheck.copy(isDownloading = false, error = e.message ?: "Download failed"))</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$state.focusedIndex &gt; 0 &amp;&amp; state.focusedIndex &lt; refreshIndex &amp;&amp; state.steam.hasStoragePermission &amp;&amp; !state.steam.isSyncing</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$val region = SyncFilterPreferences.ALL_KNOWN_REGIONS.getOrNull(state.syncSettings.regionPickerFocusIndex) ?: return</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$val totalItems = (if (hasInstalled) 1 else 0) + info.installedEmulators.size + info.downloadableEmulators.size</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$when</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$if</ID>
+    <ID>MaxLineLength:SyncLibraryUseCase.kt$SyncLibraryUseCase$Log.d(TAG, "invoke: syncLibrary returned - added=${result.gamesAdded}, updated=${result.gamesUpdated}, deleted=${result.gamesDeleted}, errors=${result.errors}")</ID>
+    <ID>NestedBlockDepth:RomMRepository.kt$RomMRepository$private suspend fun cleanupDuplicateGames(): Int</ID>
+    <ID>NestedBlockDepth:RomMRepository.kt$RomMRepository$private suspend fun deleteOrphanedGames(seenRommIds: Set&lt;Long&gt;): Int</ID>
+    <ID>NestedBlockDepth:RomMRepository.kt$RomMRepository$private suspend fun syncPlatformRoms( api: RomMApi, platform: RomMPlatform, filters: SyncFilterPreferences ): PlatformSyncResult</ID>
+    <ID>NestedBlockDepth:SaveArchiver.kt$SaveArchiver$fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean</ID>
+    <ID>NestedBlockDepth:SaveArchiver.kt$SaveArchiver$fun unzipToFolder(sourceZip: File, targetFolder: File): Boolean</ID>
+    <ID>NestedBlockDepth:SaveSyncRepository.kt$SaveSyncRepository$private fun findSaveFolderByTitleId( basePath: String, titleId: String, platformId: String ): String?</ID>
+    <ID>ReturnCount:GameDetailViewModel.kt$GameDetailViewModel.&lt;no name provided&gt;$override fun onMenu(): InputResult</ID>
+    <ID>ReturnCount:GameLauncher.kt$GameLauncher$private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?): LaunchResult</ID>
+    <ID>ReturnCount:RomMRepository.kt$RomMRepository$private fun passesRevisionFilter(rom: RomMRom, filters: SyncFilterPreferences): Boolean</ID>
+    <ID>ReturnCount:SaveSyncRepository.kt$SaveSyncRepository$private fun findSaveFolderByTitleId( basePath: String, titleId: String, platformId: String ): String?</ID>
+    <ID>ReturnCount:SettingsViewModel.kt$SettingsViewModel$fun handleConfirm(): InputResult</ID>
+    <ID>ReturnCount:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$override fun onConfirm(): InputResult</ID>
+    <ID>ReturnCount:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$override fun onLeft(): InputResult</ID>
+    <ID>ReturnCount:SettingsViewModel.kt$SettingsViewModel.&lt;no name provided&gt;$override fun onRight(): InputResult</ID>
+    <ID>ReturnCount:SyncSaveOnSessionEndUseCase.kt$SyncSaveOnSessionEndUseCase$suspend fun canSync(gameId: Long, emulatorPackage: String): Boolean</ID>
+    <ID>ReturnCount:SyncSaveOnSessionEndUseCase.kt$SyncSaveOnSessionEndUseCase$suspend operator fun invoke(gameId: Long, emulatorPackage: String): Result</ID>
+    <ID>ReturnCount:UpdateRepository.kt$UpdateRepository$suspend fun checkForUpdates(): UpdateState</ID>
+    <ID>SwallowedException:DownloadManager.kt$DownloadManager$e: Exception</ID>
+    <ID>SwallowedException:EmulatorDetector.kt$EmulatorDetector$e: PackageManager.NameNotFoundException</ID>
+    <ID>SwallowedException:RomMRepository.kt$RomMRepository$e: Exception</ID>
+    <ID>SwallowedException:SaveSyncRepository.kt$SaveSyncRepository$e2: Exception</ID>
+    <ID>SwallowedException:SaveSyncRepository.kt$SaveSyncRepository$e: Exception</ID>
+    <ID>SwallowedException:SteamLauncher.kt$SteamLauncher$e: PackageManager.NameNotFoundException</ID>
+    <ID>SwallowedException:UserPreferencesRepository.kt$UserPreferencesRepository$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:SettingsViewModel.kt$SettingsViewModel$throw Exception("Download failed: ${response.code}")</ID>
+    <ID>TooGenericExceptionThrown:SettingsViewModel.kt$SettingsViewModel$throw Exception("Empty response")</ID>
+    <ID>TooManyFunctions:GameDao.kt$GameDao</ID>
+    <ID>TooManyFunctions:GameDetailViewModel.kt$GameDetailViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:HomeViewModel.kt$HomeViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:ImageCacheManager.kt$ImageCacheManager</ID>
+    <ID>TooManyFunctions:LibraryViewModel.kt$LibraryViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:RomMRepository.kt$RomMRepository</ID>
+    <ID>TooManyFunctions:SaveSyncRepository.kt$SaveSyncRepository</ID>
+    <ID>TooManyFunctions:SettingsScreen.kt$com.nendo.argosy.ui.screens.settings.SettingsScreen.kt</ID>
+    <ID>TooManyFunctions:SettingsViewModel.kt$SettingsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:UserPreferencesRepository.kt$UserPreferencesRepository</ID>
+    <ID>UnnecessaryParentheses:AppsRepository.kt$AppsRepository$(appInfo.flags and ApplicationInfo.FLAG_SYSTEM)</ID>
+    <ID>UnnecessaryParentheses:AppsViewModel.kt$AppsViewModel$(!isExplicitlyHidden &amp;&amp; !app.isSystemApp)</ID>
+    <ID>UnnecessaryParentheses:AppsViewModel.kt$AppsViewModel$(app.isSystemApp &amp;&amp; app.packageName !in visibleSystemApps)</ID>
+    <ID>UnnecessaryParentheses:DownloadsScreen.kt$(activeItems.size + index)</ID>
+    <ID>UnnecessaryParentheses:GameDetailViewModel.kt$GameDetailViewModel$(achievement.badgeUrlLock ?: achievement.badgeUrl)</ID>
+    <ID>UnnecessaryParentheses:HomeScreen.kt$(slideInVertically { -it / 2 } + fadeIn(tween(200)))</ID>
+    <ID>UnnecessaryParentheses:HomeScreen.kt$(slideOutVertically { it / 2 } + fadeOut(tween(150)))</ID>
+    <ID>UnnecessaryParentheses:LaunchRetryTracker.kt$LaunchRetryTracker$(focusLostTimeMs &gt; 0 &amp;&amp; timeSinceFocusLost &lt; QUICK_RETURN_THRESHOLD_MS)</ID>
+    <ID>UnnecessaryParentheses:PreferenceItem.kt$(step * 360f / hueSteps)</ID>
+    <ID>UnnecessaryParentheses:RomMRepository.kt$RomMRepository$(discsToInsert.size + existingDiscs.size + 1)</ID>
+    <ID>UnnecessaryParentheses:SettingsScreen.kt$(if (supportsScanning) actionIndex == 1 else true)</ID>
+    <ID>UnnecessaryParentheses:SettingsViewModel.kt$SettingsViewModel$(bytesRead * 100)</ID>
+    <ID>UnnecessaryParentheses:SystemStatusBar.kt$(System.currentTimeMillis() % 60_000L)</ID>
+    <ID>UnnecessaryParentheses:SystemStatusBar.kt$(level * 100)</ID>
+    <ID>UnnecessaryParentheses:SystemStatusBar.kt$&lt;no name provided&gt;$(level * 100)</ID>
+    <ID>UnusedImports:AppsScreen.kt$import androidx.compose.ui.graphics.vector.ImageVector</ID>
+    <ID>UnusedImports:AppsViewModel.kt$import android.net.Uri</ID>
+    <ID>UnusedImports:AppsViewModel.kt$import android.provider.Settings</ID>
+    <ID>UnusedImports:ArgosyApp.kt$import androidx.compose.runtime.DisposableEffect</ID>
+    <ID>UnusedImports:DownloadsScreen.kt$import androidx.compose.material.icons.filled.PlayArrow</ID>
+    <ID>UnusedImports:DownloadsScreen.kt$import androidx.compose.material.icons.filled.Refresh</ID>
+    <ID>UnusedImports:DownloadsScreen.kt$import androidx.compose.ui.platform.LocalContext</ID>
+    <ID>UnusedImports:FirstRunScreen.kt$import androidx.compose.material.icons.filled.Cloud</ID>
+    <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.geometry.CornerRadius</ID>
+    <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.geometry.Offset</ID>
+    <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.geometry.Size</ID>
+    <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.graphics.BlurEffect</ID>
+    <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.graphics.TileMode</ID>
+    <ID>UnusedImports:GameCard.kt$import androidx.compose.ui.graphics.toArgb</ID>
+    <ID>UnusedImports:GameDetailScreen.kt$import androidx.compose.material.icons.filled.LockOpen</ID>
+    <ID>UnusedImports:GameDetailScreen.kt$import androidx.compose.runtime.mutableStateOf</ID>
+    <ID>UnusedImports:GameDetailScreen.kt$import com.nendo.argosy.domain.model.SyncState</ID>
+    <ID>UnusedImports:GameDetailViewModel.kt$import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase</ID>
+    <ID>UnusedImports:GameDetailViewModel.kt$import com.nendo.argosy.domain.usecase.game.DeleteGameUseCase</ID>
+    <ID>UnusedImports:HomeScreen.kt$import coil.size.Size</ID>
+    <ID>UnusedImports:HomeViewModel.kt$import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase</ID>
+    <ID>UnusedImports:HomeViewModel.kt$import com.nendo.argosy.domain.usecase.game.DeleteGameUseCase</ID>
+    <ID>UnusedImports:HomeViewModel.kt$import kotlinx.coroutines.CancellationException</ID>
+    <ID>UnusedImports:HomeViewModel.kt$import kotlinx.coroutines.NonCancellable</ID>
+    <ID>UnusedImports:HomeViewModel.kt$import kotlinx.coroutines.withContext</ID>
+    <ID>UnusedImports:LaunchGameUseCase.kt$import android.content.Intent</ID>
+    <ID>UnusedImports:LibraryScreen.kt$import androidx.compose.material.icons.filled.Folder</ID>
+    <ID>UnusedImports:LibraryScreen.kt$import com.nendo.argosy.data.model.GameSource</ID>
+    <ID>UnusedImports:LibraryScreen.kt$import com.nendo.argosy.ui.components.SourceBadge</ID>
+    <ID>UnusedImports:LibraryViewModel.kt$import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase</ID>
+    <ID>UnusedImports:LibraryViewModel.kt$import com.nendo.argosy.domain.usecase.game.DeleteGameUseCase</ID>
+    <ID>UnusedImports:PreferenceItem.kt$import androidx.compose.foundation.layout.offset</ID>
+    <ID>UnusedImports:RomMApi.kt$import okhttp3.RequestBody</ID>
+    <ID>UnusedImports:RomMRepository.kt$import retrofit2.Response</ID>
+    <ID>UnusedImports:SaveSyncRepository.kt$import com.nendo.argosy.data.emulator.EmulatorRegistry</ID>
+    <ID>UnusedImports:SaveSyncRepository.kt$import okhttp3.RequestBody.Companion.toRequestBody</ID>
+    <ID>UnusedImports:SearchScreen.kt$import androidx.compose.ui.platform.LocalContext</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import androidx.compose.foundation.layout.fillMaxHeight</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import androidx.compose.foundation.layout.widthIn</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import androidx.compose.material.icons.outlined.Image</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import androidx.compose.material3.Card</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import androidx.compose.material3.CardDefaults</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import androidx.compose.material3.HorizontalDivider</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import com.nendo.argosy.data.emulator.RetroArchCore</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import com.nendo.argosy.data.preferences.HapticIntensity</ID>
+    <ID>UnusedImports:SettingsScreen.kt$import com.nendo.argosy.ui.components.PlatformPreference</ID>
+    <ID>UnusedImports:SteamRepository.kt$import com.nendo.argosy.data.remote.steam.SteamAppData</ID>
+    <ID>UnusedImports:SyncLibraryUseCaseTest.kt$import io.mockk.slot</ID>
+    <ID>UnusedParameter:DownloadGameUseCase.kt$DownloadGameUseCase$platformId: String</ID>
+    <ID>UnusedParameter:DownloadsScreen.kt$onDrawerToggle: () -&gt; Unit</ID>
+    <ID>UnusedParameter:GameDetailScreen.kt$entry: UnifiedSaveEntry</ID>
+    <ID>UnusedParameter:GameLauncher.kt$GameLauncher$file: File</ID>
+    <ID>UnusedParameter:HomeScreen.kt$onDismiss: () -&gt; Unit</ID>
+    <ID>UnusedParameter:HomeScreen.kt$onSync: () -&gt; Unit</ID>
+    <ID>UnusedParameter:LibraryScreen.kt$onDismiss: () -&gt; Unit</ID>
+    <ID>UnusedParameter:PreferenceItem.kt$onHueChange: (Float?) -&gt; Unit</ID>
+    <ID>UnusedParameter:RomScanner.kt$RomScanner$contentResolver: android.content.ContentResolver</ID>
+    <ID>UnusedParameter:RomScanner.kt$RomScanner$uri: Uri</ID>
+    <ID>UnusedParameter:SaveSyncRepository.kt$SaveSyncRepository$gameId: Long</ID>
+    <ID>UnusedParameter:SearchScreen.kt$onClick: () -&gt; Unit</ID>
+    <ID>UnusedPrivateMember:FooterHint.kt$private fun InputButton.isDpadButton(): Boolean</ID>
+    <ID>UnusedPrivateMember:GameLauncher.kt$GameLauncher$private suspend fun killRetroArchProcess(packageName: String)</ID>
+    <ID>UnusedPrivateMember:SettingsScreen.kt$@Composable private fun ColorCircle(color: Int?, isSelected: Boolean, isFocused: Boolean)</ID>
+    <ID>UnusedPrivateProperty:AppsViewModel.kt$AppsViewModel$@ApplicationContext private val context: Context</ID>
+    <ID>UnusedPrivateProperty:GameHubLogScanner.kt$GameHubLogScanner$private val jsonPattern = Pattern.compile( "ACFWriter extend.*-&gt;\\s*(\\{.*\"subTask\":\\[\\{.*?\"appId\":(\\d+).*?\"name\":\"([^\"]+)\".*?\\}\\].*\\})" )</ID>
+    <ID>UnusedPrivateProperty:RomScanner.kt$RomScanner$val nameLower = candidate.name.lowercase()</ID>
+    <ID>UseIfInsteadOfWhen:AppsScreen.kt$when { uiState.isReorderMode -&gt; listOf( InputButton.DPAD to "Move", InputButton.SOUTH to "Save", InputButton.EAST to "Cancel" ) else -&gt; listOf( InputButton.SOUTH to "Open", InputButton.EAST to "Back", InputButton.NORTH to "Reorder", InputButton.SELECT to "Options", InputButton.WEST to if (uiState.showHiddenApps) "Show Apps" else "Show Hidden" ) }</ID>
+    <ID>UseIfInsteadOfWhen:FooterHint.kt$when (button) { InputButton.LB_RB -&gt; { Row(verticalAlignment = Alignment.CenterVertically) { Icon( painter = InputIcons.BumperLeft, contentDescription = "LB", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp) ) Text( text = "/", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 2.dp) ) Icon( painter = InputIcons.BumperRight, contentDescription = "RB", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp) ) } } else -&gt; {} }</ID>
+    <ID>UseIfInsteadOfWhen:LaunchGameUseCase.kt$LaunchGameUseCase$when (val result = gameLauncher.launch(gameId, discId)) { is LaunchResult.Success -&gt; { playSessionTracker.startSession( gameId = gameId, emulatorPackage = result.intent.component?.packageName ?: result.intent.`package` ?: "" ) launchRetryTracker.onLaunchStarted(result.intent) result } else -&gt; result }</ID>
+    <ID>UseIfInsteadOfWhen:LibraryViewModel.kt$LibraryViewModel$when { platformIndex &gt;= 0 -&gt; { val platformId = state.platforms[platformIndex].id gameDao.observeByPlatform(platformId) } else -&gt; when (filters.source) { SourceFilter.ALL -&gt; gameDao.observeAll() SourceFilter.PLAYABLE -&gt; gameDao.observePlayable() } }</ID>
+    <ID>UseIfInsteadOfWhen:PreferenceItem.kt$when { !isEnabled -&gt; MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha) else -&gt; preferenceContentColor(isFocused) }</ID>
+    <ID>UseIfInsteadOfWhen:PreferenceItem.kt$when { !isEnabled -&gt; MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha) else -&gt; preferenceSecondaryColor(isFocused) }</ID>
+    <ID>UseIfInsteadOfWhen:SaveSyncRepository.kt$SaveSyncRepository$when (emulatorId) { "retroarch_64" -&gt; "com.retroarch.aarch64" else -&gt; "com.retroarch" }</ID>
+    <ID>UseIfInsteadOfWhen:SettingsScreen.kt$when { decoded.contains("/tree/") -&gt; decoded.substringAfter("/tree/") else -&gt; decoded }</ID>
+    <ID>UseIfInsteadOfWhen:SettingsViewModel.kt$SettingsViewModel$when { state.server.rommConfiguring -&gt; when (state.focusedIndex) { 0, 1, 2 -&gt; _uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) } 3 -&gt; connectToRomm() 4 -&gt; cancelRommConfig() } else -&gt; { val steamIndex = when { isConnected &amp;&amp; state.syncSettings.saveSyncEnabled -&gt; 4 isConnected -&gt; 3 else -&gt; 1 } when (state.focusedIndex) { 0 -&gt; startRommConfig() 1 -&gt; if (isConnected) { navigateToSection(SettingsSection.SYNC_SETTINGS) } else { navigateToSection(SettingsSection.STEAM_SETTINGS) } 2 -&gt; if (isConnected &amp;&amp; state.server.connectionStatus == ConnectionStatus.ONLINE) { syncRomm() } 3 -&gt; if (isConnected &amp;&amp; state.syncSettings.saveSyncEnabled) { runSaveSyncNow() } else if (isConnected) { navigateToSection(SettingsSection.STEAM_SETTINGS) } steamIndex -&gt; navigateToSection(SettingsSection.STEAM_SETTINGS) } } }</ID>
+    <ID>UseIfInsteadOfWhen:SyncOverlay.kt$when (syncState) { is SyncState.Error -&gt; syncState.message else -&gt; "Syncing..." }</ID>
+    <ID>UseIfInsteadOfWhen:UserPreferencesRepository.kt$UserPreferencesRepository$when { value.startsWith("custom:") -&gt; SoundConfig(customFilePath = value.removePrefix("custom:")) else -&gt; SoundConfig(presetName = value) }</ID>
+    <ID>VariableNaming:AppsViewModel.kt$AppsViewModel$private val _events = MutableSharedFlow&lt;AppsEvent&gt;()</ID>
+    <ID>VariableNaming:AppsViewModel.kt$AppsViewModel$private val _uiState = MutableStateFlow(AppsUiState())</ID>
+    <ID>VariableNaming:ArgosyViewModel.kt$ArgosyViewModel$private val _drawerFocusIndex = MutableStateFlow(0)</ID>
+    <ID>VariableNaming:ArgosyViewModel.kt$ArgosyViewModel$private val _isDrawerOpen = MutableStateFlow(false)</ID>
+    <ID>VariableNaming:DownloadManager.kt$DownloadManager$private val _state = MutableStateFlow(DownloadQueueState())</ID>
+    <ID>VariableNaming:DownloadsViewModel.kt$DownloadsViewModel$private val _uiState = MutableStateFlow(DownloadsUiState())</ID>
+    <ID>VariableNaming:EmulatorDetector.kt$EmulatorDetector$private val _installedEmulators = MutableStateFlow&lt;List&lt;InstalledEmulator&gt;&gt;(emptyList())</ID>
+    <ID>VariableNaming:FirstRunViewModel.kt$FirstRunViewModel$private val _uiState = MutableStateFlow(FirstRunUiState())</ID>
+    <ID>VariableNaming:GameDetailViewModel.kt$GameDetailViewModel$private val _launchEvents = MutableSharedFlow&lt;LaunchEvent&gt;()</ID>
+    <ID>VariableNaming:GameDetailViewModel.kt$GameDetailViewModel$private val _uiState = MutableStateFlow(GameDetailUiState())</ID>
+    <ID>VariableNaming:GamepadInputHandler.kt$GamepadInputHandler$private val _events = MutableSharedFlow&lt;GamepadEvent&gt;(extraBufferCapacity = 16)</ID>
+    <ID>VariableNaming:HomeViewModel.kt$HomeViewModel$private val _events = MutableSharedFlow&lt;HomeEvent&gt;()</ID>
+    <ID>VariableNaming:HomeViewModel.kt$HomeViewModel$private val _uiState = MutableStateFlow(restoreInitialState())</ID>
+    <ID>VariableNaming:ImageCacheManager.kt$ImageCacheManager$private val _progress = kotlinx.coroutines.flow.MutableStateFlow(ImageCacheProgress())</ID>
+    <ID>VariableNaming:ImageCacheManager.kt$ImageCacheManager$private val _screenshotProgress = kotlinx.coroutines.flow.MutableStateFlow(ImageCacheProgress())</ID>
+    <ID>VariableNaming:LaunchRetryTracker.kt$LaunchRetryTracker$private val _retryEvents = MutableSharedFlow&lt;Intent&gt;(extraBufferCapacity = 1)</ID>
+    <ID>VariableNaming:LibraryViewModel.kt$LibraryViewModel$private val _events = MutableSharedFlow&lt;LibraryEvent&gt;()</ID>
+    <ID>VariableNaming:LibraryViewModel.kt$LibraryViewModel$private val _uiState = MutableStateFlow(LibraryUiState())</ID>
+    <ID>VariableNaming:NotificationManager.kt$NotificationManager$private val _notifications = MutableStateFlow&lt;List&lt;Notification&gt;&gt;(emptyList())</ID>
+    <ID>VariableNaming:NotificationManager.kt$NotificationManager$private val _persistentNotification = MutableStateFlow&lt;Notification?&gt;(null)</ID>
+    <ID>VariableNaming:PlaySessionTracker.kt$PlaySessionTracker$private val _activeSession = MutableStateFlow&lt;ActiveSession?&gt;(null)</ID>
+    <ID>VariableNaming:PlaySessionTracker.kt$PlaySessionTracker$private val _conflictEvents = MutableSharedFlow&lt;SaveConflictEvent&gt;()</ID>
+    <ID>VariableNaming:RestoreCachedSaveUseCase.kt$RestoreCachedSaveUseCase$private val TAG = "RestoreCachedSaveUseCase"</ID>
+    <ID>VariableNaming:RomMRepository.kt$RomMRepository$private val _connectionState = MutableStateFlow&lt;ConnectionState&gt;(ConnectionState.Disconnected)</ID>
+    <ID>VariableNaming:RomMRepository.kt$RomMRepository$private val _syncProgress = MutableStateFlow(SyncProgress())</ID>
+    <ID>VariableNaming:RomScanner.kt$RomScanner$private val _progress = MutableStateFlow(ScanProgress())</ID>
+    <ID>VariableNaming:SaveArchiver.kt$SaveArchiver$private val BUFFER_SIZE = 8192</ID>
+    <ID>VariableNaming:SaveArchiver.kt$SaveArchiver$private val TAG = "SaveArchiver"</ID>
+    <ID>VariableNaming:SaveCacheManager.kt$SaveCacheManager$private val TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss") .withZone(ZoneId.systemDefault())</ID>
+    <ID>VariableNaming:SearchViewModel.kt$SearchViewModel$private val _uiState = MutableStateFlow(SearchUiState())</ID>
+    <ID>VariableNaming:SettingsViewModel.kt$SettingsViewModel$private val _downloadUpdateEvent = MutableSharedFlow&lt;Unit&gt;()</ID>
+    <ID>VariableNaming:SettingsViewModel.kt$SettingsViewModel$private val _openBackgroundPickerEvent = MutableSharedFlow&lt;Unit&gt;()</ID>
+    <ID>VariableNaming:SettingsViewModel.kt$SettingsViewModel$private val _openCustomSoundPickerEvent = MutableSharedFlow&lt;SoundType&gt;()</ID>
+    <ID>VariableNaming:SettingsViewModel.kt$SettingsViewModel$private val _openUrlEvent = MutableSharedFlow&lt;String&gt;()</ID>
+    <ID>VariableNaming:SettingsViewModel.kt$SettingsViewModel$private val _requestStoragePermissionEvent = MutableSharedFlow&lt;Unit&gt;()</ID>
+    <ID>VariableNaming:SettingsViewModel.kt$SettingsViewModel$private val _uiState = MutableStateFlow(SettingsUiState())</ID>
+    <ID>VariableNaming:TitleIdExtractor.kt$TitleIdExtractor$private val TAG = "TitleIdExtractor"</ID>
+    <ID>VariableNaming:UpdateRepository.kt$UpdateRepository$private val _updateState = MutableStateFlow&lt;UpdateState&gt;(UpdateState.Idle)</ID>
+  </CurrentIssues>
+</SmellBaseline>

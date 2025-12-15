@@ -25,9 +25,13 @@ class SaveCacheManager @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val saveArchiver: SaveArchiver
 ) {
-    private val TAG = "SaveCacheManager"
     private val TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
         .withZone(ZoneId.systemDefault())
+
+    companion object {
+        private const val TAG = "SaveCacheManager"
+        private const val MIN_UNLOCKED_SLOTS = 5
+    }
 
     private val cacheBaseDir: File
         get() = File(context.filesDir, "save_cache")
@@ -132,11 +136,6 @@ class SaveCacheManager @Inject constructor(
         Log.d(TAG, "Deleted cached save $cacheId")
     }
 
-    suspend fun toggleLock(cacheId: Long) = withContext(Dispatchers.IO) {
-        val entity = saveCacheDao.getById(cacheId) ?: return@withContext
-        saveCacheDao.setLocked(cacheId, !entity.isLocked)
-    }
-
     suspend fun renameSave(cacheId: Long, name: String?) = withContext(Dispatchers.IO) {
         saveCacheDao.setNote(cacheId, name?.takeIf { it.isNotBlank() })
     }
@@ -156,10 +155,7 @@ class SaveCacheManager @Inject constructor(
 
         val caches = saveCacheDao.getByGame(gameId)
         val lockedCount = caches.count { it.isLocked }
-        val unlockedCount = totalCount - lockedCount
-
-        val minUnlockedSlots = 5
-        val effectiveLimit = maxOf(limit, lockedCount + minUnlockedSlots)
+        val effectiveLimit = maxOf(limit, lockedCount + MIN_UNLOCKED_SLOTS)
 
         val toDeleteCount = totalCount - effectiveLimit
         if (toDeleteCount <= 0) return@withContext

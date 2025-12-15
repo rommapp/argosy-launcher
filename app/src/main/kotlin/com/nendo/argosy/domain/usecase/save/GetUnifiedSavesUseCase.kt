@@ -17,10 +17,6 @@ class GetUnifiedSavesUseCase @Inject constructor(
     private val saveSyncRepository: SaveSyncRepository,
     private val gameDao: GameDao
 ) {
-    companion object {
-        private val TIMESTAMP_PATTERN = Regex("""_\d{8}_\d{6}$""")
-    }
-
     suspend operator fun invoke(gameId: Long): List<UnifiedSaveEntry> {
         val localCaches = saveCacheManager.getCachesForGameOnce(gameId)
         val game = gameDao.getById(gameId)
@@ -147,18 +143,23 @@ class GetUnifiedSavesUseCase @Inject constructor(
     private fun isSameTimestamp(localTime: Instant, serverSave: RomMSave): Boolean {
         val serverTime = parseServerTimestamp(serverSave.updatedAt) ?: return false
         val diffSeconds = kotlin.math.abs(localTime.epochSecond - serverTime.epochSecond)
-        return diffSeconds < 60
+        return diffSeconds < TIMESTAMP_TOLERANCE_SECONDS
     }
 
     private fun parseServerTimestamp(timestamp: String): Instant? {
         return try {
             ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME).toInstant()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             try {
                 Instant.parse(timestamp)
-            } catch (e2: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
+    }
+
+    companion object {
+        private val TIMESTAMP_PATTERN = Regex("""_\d{8}_\d{6}$""")
+        private const val TIMESTAMP_TOLERANCE_SECONDS = 60L
     }
 }

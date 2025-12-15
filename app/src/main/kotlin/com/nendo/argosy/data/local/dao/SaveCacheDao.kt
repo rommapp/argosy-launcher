@@ -21,16 +21,10 @@ interface SaveCacheDao {
     @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId")
     suspend fun countByGame(gameId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId AND isLocked = 0")
-    suspend fun countUnlockedByGame(gameId: Long): Int
-
     @Insert
     suspend fun insert(entity: SaveCacheEntity): Long
 
-    @Query("UPDATE save_cache SET isLocked = :isLocked WHERE id = :id")
-    suspend fun setLocked(id: Long, isLocked: Boolean)
-
-    @Query("UPDATE save_cache SET note = :note WHERE id = :id")
+    @Query("UPDATE save_cache SET note = :note, isLocked = (:note IS NOT NULL) WHERE id = :id")
     suspend fun setNote(id: Long, note: String?)
 
     @Query("DELETE FROM save_cache WHERE id = :id")

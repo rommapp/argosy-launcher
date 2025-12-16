@@ -31,6 +31,9 @@ interface PendingSaveSyncDao {
     @Query("DELETE FROM pending_save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId")
     suspend fun deleteByGameAndEmulator(gameId: Long, emulatorId: String)
 
+    @Query("DELETE FROM pending_save_sync WHERE gameId = :gameId")
+    suspend fun deleteByGame(gameId: Long)
+
     @Query("UPDATE pending_save_sync SET retryCount = retryCount + 1, lastError = :error WHERE id = :id")
     suspend fun incrementRetry(id: Long, error: String)
 

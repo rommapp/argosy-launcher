@@ -40,7 +40,8 @@ class SaveCacheManager @Inject constructor(
         gameId: Long,
         emulatorId: String,
         savePath: String,
-        channelName: String? = null
+        channelName: String? = null,
+        isLocked: Boolean = false
     ): Boolean = withContext(Dispatchers.IO) {
         val saveFile = File(savePath)
         if (!saveFile.exists()) {
@@ -68,17 +69,16 @@ class SaveCacheManager @Inject constructor(
                 "$gameId/$timestamp/${saveFile.name}" to cachedFile.length()
             }
 
-            // Always create a timeline entry with channel association
-            val timelineEntity = SaveCacheEntity(
+            val entity = SaveCacheEntity(
                 gameId = gameId,
                 emulatorId = emulatorId,
                 cachedAt = now,
                 saveSize = saveSize,
                 cachePath = cachePath,
                 note = channelName,
-                isLocked = false
+                isLocked = isLocked
             )
-            saveCacheDao.insert(timelineEntity)
+            saveCacheDao.insert(entity)
             Log.d(TAG, "Cached save for game $gameId at $cachePath${channelName?.let { " (channel: $it)" } ?: ""}")
 
             pruneOldCaches(gameId)
@@ -226,4 +226,24 @@ class SaveCacheManager @Inject constructor(
 
     suspend fun getCacheById(cacheId: Long): SaveCacheEntity? =
         saveCacheDao.getById(cacheId)
+
+    suspend fun deleteAllCachesForGame(gameId: Long) = withContext(Dispatchers.IO) {
+        val caches = saveCacheDao.getByGame(gameId)
+        for (cache in caches) {
+            val cacheFile = File(cacheBaseDir, cache.cachePath)
+            val parentDir = cacheFile.parentFile
+            cacheFile.delete()
+            if (parentDir?.listFiles()?.isEmpty() == true) {
+                parentDir.delete()
+            }
+        }
+        saveCacheDao.deleteByGame(gameId)
+
+        val gameDir = File(cacheBaseDir, gameId.toString())
+        if (gameDir.exists() && gameDir.isDirectory) {
+            gameDir.deleteRecursively()
+        }
+
+        Log.d(TAG, "Deleted all ${caches.size} cached saves for game $gameId")
+    }
 }

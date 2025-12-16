@@ -35,6 +35,7 @@ import javax.inject.Singleton
 
 private const val TAG = "SaveSyncRepository"
 private const val DEFAULT_SAVE_NAME = "argosy-latest"
+private val TIMESTAMP_ONLY_PATTERN = Regex("""^\d{4}-\d{2}-\d{2}[_-]\d{2}[_-]\d{2}[_-]\d{2}$""")
 
 sealed class SaveSyncResult {
     data object Success : SaveSyncResult()
@@ -392,7 +393,12 @@ class SaveSyncRepository @Inject constructor(
         for (serverSave in serverSaves) {
             val game = downloadedGames.find { it.rommId == serverSave.romId } ?: continue
             val emulatorId = serverSave.emulator ?: "default"
-            val existing = saveSyncDao.getByGameAndEmulator(game.id, emulatorId)
+            val channelName = parseServerChannelName(serverSave.fileName)
+
+            // Skip timestamp saves - they're not synced
+            if (channelName == null) continue
+
+            val existing = saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName)
 
             val serverTime = parseTimestamp(serverSave.updatedAt)
 
@@ -402,6 +408,7 @@ class SaveSyncRepository @Inject constructor(
                     gameId = game.id,
                     rommId = game.rommId!!,
                     emulatorId = emulatorId,
+                    channelName = channelName,
                     rommSaveId = serverSave.id,
                     localSavePath = existing?.localSavePath,
                     localUpdatedAt = existing?.localUpdatedAt,
@@ -438,6 +445,16 @@ class SaveSyncRepository @Inject constructor(
             localTime.isAfter(serverTime) -> SaveSyncEntity.STATUS_LOCAL_NEWER
             else -> SaveSyncEntity.STATUS_SYNCED
         }
+    }
+
+    private fun isTimestampSaveName(baseName: String): Boolean {
+        return TIMESTAMP_ONLY_PATTERN.matches(baseName)
+    }
+
+    private fun parseServerChannelName(fileName: String): String? {
+        val baseName = File(fileName).nameWithoutExtension
+        if (isTimestampSaveName(baseName)) return null
+        return baseName
     }
 
     suspend fun uploadSave(
@@ -509,7 +526,7 @@ class SaveSyncRepository @Inject constructor(
                     baseName.equals(channelName, ignoreCase = true)
                 } else {
                     baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true) ||
-                        (romBaseName != null && baseName.equals(romBaseName, ignoreCase = true))
+                        romBaseName != null && baseName.equals(romBaseName, ignoreCase = true)
                 }
             }
 
@@ -554,11 +571,20 @@ class SaveSyncRepository @Inject constructor(
         }
     }
 
-    suspend fun downloadSave(gameId: Long, emulatorId: String): SaveSyncResult = withContext(Dispatchers.IO) {
-        val api = this@SaveSyncRepository.api ?: return@withContext SaveSyncResult.NotConfigured
+    suspend fun downloadSave(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String? = null,
+        skipBackup: Boolean = false
+    ): SaveSyncResult = withContext(Dispatchers.IO) {
+        val api = this@SaveSyncRepository.api
+            ?: return@withContext SaveSyncResult.NotConfigured
 
-        val syncEntity = saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
-            ?: return@withContext SaveSyncResult.Error("No save tracking found")
+        val syncEntity = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        } ?: return@withContext SaveSyncResult.Error("No save tracking found")
 
         val saveId = syncEntity.rommSaveId
             ?: return@withContext SaveSyncResult.Error("No server save ID")
@@ -591,7 +617,7 @@ class SaveSyncRepository @Inject constructor(
         } ?: return@withContext SaveSyncResult.Error("Cannot determine save path")
 
         val targetFile = File(targetPath)
-        if (targetFile.exists()) {
+        if (targetFile.exists() && !skipBackup) {
             try {
                 saveCacheManager.get().cacheCurrentSave(gameId, emulatorId, targetPath)
                 Log.d(TAG, "Cached existing save before download for game $gameId")
@@ -645,6 +671,27 @@ class SaveSyncRepository @Inject constructor(
                     syncStatus = SaveSyncEntity.STATUS_SYNCED
                 )
             )
+
+            val effectiveChannelName = channelName ?: syncEntity.channelName
+            val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+            val isLatestSave = effectiveChannelName == null ||
+                effectiveChannelName.equals(DEFAULT_SAVE_NAME, ignoreCase = true) ||
+                romBaseName != null && effectiveChannelName.equals(romBaseName, ignoreCase = true)
+
+            val cacheChannelName = if (isLatestSave) null else effectiveChannelName
+            val cacheIsLocked = !isLatestSave
+
+            try {
+                saveCacheManager.get().cacheCurrentSave(
+                    gameId = gameId,
+                    emulatorId = emulatorId,
+                    savePath = targetPath,
+                    channelName = cacheChannelName,
+                    isLocked = cacheIsLocked
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Cache creation failed", e)
+            }
 
             SaveSyncResult.Success
         } catch (e: Exception) {
@@ -805,7 +852,7 @@ class SaveSyncRepository @Inject constructor(
         var downloaded = 0
 
         for (syncEntity in pendingDownloads) {
-            when (downloadSave(syncEntity.gameId, syncEntity.emulatorId)) {
+            when (downloadSave(syncEntity.gameId, syncEntity.emulatorId, syncEntity.channelName)) {
                 is SaveSyncResult.Success -> downloaded++
                 else -> {}
             }
@@ -917,5 +964,55 @@ class SaveSyncRepository @Inject constructor(
                 Instant.now()
             }
         }
+    }
+
+    suspend fun syncSavesForNewDownload(gameId: Long, rommId: Long, emulatorId: String) = withContext(Dispatchers.IO) {
+        val prefs = userPreferencesRepository.preferences.first()
+        if (!prefs.saveSyncEnabled) return@withContext
+
+        val serverSaves = checkSavesForGame(gameId, rommId)
+        if (serverSaves.isEmpty()) return@withContext
+
+        val game = gameDao.getById(gameId) ?: return@withContext
+        val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+
+        for (serverSave in serverSaves) {
+            val channelName = parseServerChannelNameForSync(serverSave.fileName, romBaseName)
+            val serverTime = parseTimestamp(serverSave.updatedAt)
+
+            saveSyncDao.upsert(
+                SaveSyncEntity(
+                    id = 0,
+                    gameId = gameId,
+                    rommId = rommId,
+                    emulatorId = emulatorId,
+                    channelName = channelName,
+                    rommSaveId = serverSave.id,
+                    localSavePath = null,
+                    localUpdatedAt = null,
+                    serverUpdatedAt = serverTime,
+                    lastSyncedAt = null,
+                    syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
+                )
+            )
+
+            val result = downloadSave(gameId, emulatorId, channelName, skipBackup = true)
+            if (result is SaveSyncResult.Error) {
+                Log.e(TAG, "syncSavesForNewDownload: failed '${serverSave.fileName}': ${result.message}")
+            }
+        }
+    }
+
+    private fun parseServerChannelNameForSync(fileName: String, romBaseName: String?): String? {
+        val baseName = File(fileName).nameWithoutExtension
+        if (isTimestampSaveName(baseName)) return null
+        if (isLatestSaveFileName(fileName, romBaseName)) return null
+        return baseName
+    }
+
+    private fun isLatestSaveFileName(fileName: String, romBaseName: String?): Boolean {
+        val baseName = File(fileName).nameWithoutExtension
+        return baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true) ||
+            romBaseName != null && baseName.equals(romBaseName, ignoreCase = true)
     }
 }

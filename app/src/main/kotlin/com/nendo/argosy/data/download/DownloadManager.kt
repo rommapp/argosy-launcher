@@ -20,8 +20,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -92,6 +95,13 @@ data class DownloadQueueState(
         get() = activeDownloads.firstOrNull()
 }
 
+data class DownloadCompletionEvent(
+    val gameId: Long,
+    val rommId: Long,
+    val localPath: String,
+    val isDiscDownload: Boolean = false
+)
+
 @Singleton
 class DownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -105,6 +115,9 @@ class DownloadManager @Inject constructor(
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
+
+    private val _completionEvents = MutableSharedFlow<DownloadCompletionEvent>()
+    val completionEvents: SharedFlow<DownloadCompletionEvent> = _completionEvents.asSharedFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val downloadJobs = mutableMapOf<Long, Job>()
@@ -464,6 +477,15 @@ class DownloadManager @Inject constructor(
                                         GameSource.ROMM_SYNCED
                                     )
                                 }
+
+                                _completionEvents.emit(
+                                    DownloadCompletionEvent(
+                                        gameId = progress.gameId,
+                                        rommId = progress.rommId,
+                                        localPath = targetFile.absolutePath,
+                                        isDiscDownload = progress.isDiscDownload
+                                    )
+                                )
 
                                 DownloadResult.Success(bytesRead)
                             }

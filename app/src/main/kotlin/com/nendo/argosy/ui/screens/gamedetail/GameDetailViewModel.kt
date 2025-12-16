@@ -222,7 +222,8 @@ class GameDetailViewModel @Inject constructor(
             }
 
             val emulatorId = emulatorResolver.getEmulatorIdForGame(gameId, game.platformId)
-            val canManageSaves = game.rommId != null &&
+            val canManageSaves = downloadStatus == GameDownloadStatus.DOWNLOADED &&
+                game.rommId != null &&
                 emulatorId != null &&
                 SavePathRegistry.getConfig(emulatorId) != null
 

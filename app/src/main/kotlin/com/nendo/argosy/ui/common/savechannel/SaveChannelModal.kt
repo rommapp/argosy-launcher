@@ -130,9 +130,17 @@ fun SaveChannelModal(
             } else {
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.heightIn(max = itemHeight * maxVisibleItems)
+                    modifier = Modifier
+                        .heightIn(max = itemHeight * maxVisibleItems)
+                        .clip(RoundedCornerShape(8.dp))
                 ) {
-                    items(entries.size) { index ->
+                    items(
+                        count = entries.size,
+                        key = { index ->
+                            val entry = entries[index]
+                            "${entry.localCacheId ?: "null"}-${entry.serverSaveId ?: "null"}"
+                        }
+                    ) { index ->
                         val entry = entries[index]
                         val isActiveChannel = entry.isChannel &&
                             entry.channelName != null &&
@@ -312,9 +320,10 @@ private fun SaveCacheEntryRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(56.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -353,7 +362,7 @@ private fun SaveCacheEntryRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                if (isActiveChannel) {
+                if (entry.isActive) {
                     Text(
                         text = "[ACTIVE]",
                         style = MaterialTheme.typography.labelSmall,

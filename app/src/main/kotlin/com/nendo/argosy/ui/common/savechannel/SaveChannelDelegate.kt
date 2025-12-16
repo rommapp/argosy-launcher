@@ -47,7 +47,7 @@ class SaveChannelDelegate @Inject constructor(
             val activeSaveTimestamp = gameDao.getActiveSaveTimestamp(gameId)
             val entries = getUnifiedSavesUseCase(gameId)
             val slots = entries.filter { it.isLocked }.sortedBy { it.channelName?.lowercase() }
-            val timeline = buildTimeline(entries.filter { !it.isLocked }, activeChannel, activeSaveTimestamp)
+            val timeline = buildTimeline(entries, activeChannel, activeSaveTimestamp)
 
             val initialTab = determineInitialTab(slots.isNotEmpty(), activeChannel)
 
@@ -73,20 +73,19 @@ class SaveChannelDelegate @Inject constructor(
 
         val sorted = entries.sortedByDescending { it.timestamp }
 
-        val latestEntryId = sorted.firstOrNull()?.localCacheId
-
-        val activeEntryId = if (activeSaveTimestamp != null) {
-            sorted.firstOrNull { it.timestamp.toEpochMilli() == activeSaveTimestamp }?.localCacheId
+        val activeEntry = if (activeSaveTimestamp != null) {
+            sorted.firstOrNull { it.timestamp.toEpochMilli() == activeSaveTimestamp }
         } else if (activeChannel != null) {
-            sorted.firstOrNull { it.channelName == activeChannel }?.localCacheId
+            sorted.firstOrNull { it.channelName == activeChannel }
         } else {
-            sorted.firstOrNull { it.channelName == null }?.localCacheId
+            sorted.firstOrNull { it.channelName == null && it.isLatest }
+                ?: sorted.firstOrNull { it.channelName == null }
         }
 
-        return sorted.map { entry ->
+        return sorted.mapIndexed { index, entry ->
             entry.copy(
-                isLatest = entry.localCacheId == latestEntryId,
-                isActive = entry.localCacheId == activeEntryId
+                isLatest = index == 0,
+                isActive = entry === activeEntry
             )
         }
     }
@@ -112,10 +111,10 @@ class SaveChannelDelegate @Inject constructor(
         val newEntries = if (tab == SaveTab.SLOTS) state.slotsEntries else state.timelineEntries
         var newFocusIndex = 0
 
-        if (tab == SaveTab.TIMELINE && state.activeChannel == null && newEntries.isNotEmpty()) {
-            if (newEntries.first().isLatest) {
-                newFocusIndex = if (newEntries.size > 1) 1 else 0
-            }
+        if (tab == SaveTab.TIMELINE && state.activeChannel == null &&
+            newEntries.isNotEmpty() && newEntries.first().isLatest
+        ) {
+            newFocusIndex = if (newEntries.size > 1) 1 else 0
         }
 
         _state.update {
@@ -383,6 +382,7 @@ class SaveChannelDelegate @Inject constructor(
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun secondaryAction(scope: CoroutineScope, onChannelChanged: (String?) -> Unit) {
         val state = _state.value
         if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation || state.showResetConfirmation) return
@@ -431,7 +431,7 @@ class SaveChannelDelegate @Inject constructor(
         val state = _state.value
         val entries = getUnifiedSavesUseCase(currentGameId)
         val slots = entries.filter { it.isLocked }.sortedBy { it.channelName?.lowercase() }
-        val timeline = buildTimeline(entries.filter { !it.isLocked }, state.activeChannel, state.activeSaveTimestamp)
+        val timeline = buildTimeline(entries, state.activeChannel, state.activeSaveTimestamp)
 
         _state.update {
             it.copy(

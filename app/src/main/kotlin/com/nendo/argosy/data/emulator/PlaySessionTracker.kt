@@ -172,7 +172,8 @@ class PlaySessionTracker @Inject constructor(
                     gameId = session.gameId,
                     emulatorId = emulatorId,
                     savePath = savePath,
-                    channelName = activeChannel
+                    channelName = activeChannel,
+                    isLocked = false
                 )
                 if (cached) {
                     gameDao.updateActiveSaveTimestamp(session.gameId, null)

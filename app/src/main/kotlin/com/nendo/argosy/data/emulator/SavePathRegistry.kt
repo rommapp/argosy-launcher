@@ -260,6 +260,16 @@ object SavePathRegistry {
             usesFolderBasedSaves = true
         ),
 
+        // Wii U - folder-based saves by title ID
+        "cemu" to SavePathConfig(
+            emulatorId = "cemu",
+            defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/info.cemu.cemu/files/mlc01/usr/save/00050000"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true
+        ),
+
         // Dreamcast - uses shared VMU files, not yet supported
         "redream" to SavePathConfig(
             emulatorId = "redream",

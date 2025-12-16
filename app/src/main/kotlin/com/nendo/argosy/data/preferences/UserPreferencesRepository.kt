@@ -105,7 +105,7 @@ class UserPreferencesRepository @Inject constructor(
                 deleteOrphans = prefs[Keys.SYNC_FILTER_DELETE_ORPHANS] ?: true
             ),
             syncScreenshotsEnabled = prefs[Keys.SYNC_SCREENSHOTS_ENABLED] ?: false,
-            backgroundBlur = prefs[Keys.BACKGROUND_BLUR] ?: 0,
+            backgroundBlur = prefs[Keys.BACKGROUND_BLUR] ?: 40,
             backgroundSaturation = prefs[Keys.BACKGROUND_SATURATION] ?: 100,
             backgroundOpacity = prefs[Keys.BACKGROUND_OPACITY] ?: 100,
             useGameBackground = prefs[Keys.USE_GAME_BACKGROUND] ?: true,

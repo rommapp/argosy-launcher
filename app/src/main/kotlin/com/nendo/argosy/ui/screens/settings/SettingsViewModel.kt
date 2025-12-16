@@ -1034,9 +1034,11 @@ class SettingsViewModel @Inject constructor(
             SettingsSection.STORAGE -> {
                 val hasPermissionRow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
                 val folderPickerIndex = if (hasPermissionRow) 1 else 0
+                val sliderIndex = if (hasPermissionRow) 2 else 1
                 when (state.focusedIndex) {
                     0 -> if (hasPermissionRow && !state.storage.hasAllFilesAccess) requestStoragePermission()
                     folderPickerIndex -> openFolderPicker()
+                    sliderIndex -> cycleMaxConcurrentDownloads()
                 }
                 InputResult.HANDLED
             }

@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.remote.romm
 
+import android.util.Log
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -35,6 +36,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val SYNC_PAGE_SIZE = 100
+private const val TAG = "RomMRepository"
 
 @Singleton
 class RomMRepository @Inject constructor(
@@ -69,8 +71,10 @@ class RomMRepository @Inject constructor(
 
     suspend fun initialize() {
         val prefs = userPreferencesRepository.preferences.first()
+        Log.d(TAG, "initialize: baseUrl=${prefs.rommBaseUrl?.take(30)}, hasToken=${prefs.rommToken != null}")
         if (!prefs.rommBaseUrl.isNullOrBlank()) {
             val result = connect(prefs.rommBaseUrl, prefs.rommToken)
+            Log.d(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
             if (result is RomMResult.Success && prefs.rommToken != null) {
                 refreshRAProgressionOnStartup()
             }
@@ -130,19 +134,23 @@ class RomMRepository @Inject constructor(
         accessToken = token
 
         return try {
-            api = createApi(normalizedUrl, token)
-            saveSyncRepository.get().setApi(api)
-            val response = api!!.heartbeat()
+            val newApi = createApi(normalizedUrl, token)
+            val response = newApi.heartbeat()
 
             if (response.isSuccessful) {
+                api = newApi
+                saveSyncRepository.get().setApi(api)
                 val version = response.body()?.version ?: "unknown"
                 _connectionState.value = ConnectionState.Connected(version)
+                Log.d(TAG, "connect: success, version=$version")
                 RomMResult.Success(version)
             } else {
+                Log.d(TAG, "connect: heartbeat failed with ${response.code()}")
                 _connectionState.value = ConnectionState.Failed("Server returned ${response.code()}")
                 RomMResult.Error("Connection failed", response.code())
             }
         } catch (e: Exception) {
+            Log.d(TAG, "connect: exception: ${e.message}")
             _connectionState.value = ConnectionState.Failed(e.message ?: "Unknown error")
             RomMResult.Error(e.message ?: "Connection failed")
         }
@@ -883,6 +891,8 @@ class RomMRepository @Inject constructor(
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
+            .connectionPool(okhttp3.ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
+            .dns(okhttp3.Dns.SYSTEM)
             .build()
 
         return Retrofit.Builder()
@@ -947,18 +957,40 @@ class RomMRepository @Inject constructor(
         }
     }
 
-    suspend fun checkConnection() {
+    suspend fun checkConnection(retryCount: Int = 2) {
+        if (api == null) {
+            Log.d(TAG, "checkConnection: api is null, initializing")
+            initialize()
+            return
+        }
+
         val currentApi = api ?: return
         try {
             val response = currentApi.heartbeat()
             if (response.isSuccessful) {
                 val version = response.body()?.version ?: "unknown"
                 _connectionState.value = ConnectionState.Connected(version)
+                Log.d(TAG, "checkConnection: connected, version=$version")
             } else {
+                Log.d(TAG, "checkConnection: heartbeat failed with ${response.code()}, reinitializing")
                 _connectionState.value = ConnectionState.Disconnected
+                api = null
+                initialize()
             }
         } catch (e: Exception) {
+            Log.d(TAG, "checkConnection: exception: ${e.message}, retries left=$retryCount")
             _connectionState.value = ConnectionState.Disconnected
+            api = null
+            if (retryCount > 0) {
+                delay(1000)
+                initialize()
+                if (_connectionState.value !is ConnectionState.Connected && retryCount > 1) {
+                    delay(2000)
+                    checkConnection(retryCount - 1)
+                }
+            } else {
+                initialize()
+            }
         }
     }
 

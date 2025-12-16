@@ -32,9 +32,12 @@ class SettingsInputHandler(
             }
         }
 
-        if (state.currentSection == SettingsSection.STORAGE && state.focusedIndex == 1) {
-            viewModel.cycleMaxConcurrentDownloads()
-            return InputResult.HANDLED
+        if (state.currentSection == SettingsSection.STORAGE) {
+            val sliderIndex = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) 2 else 1
+            if (state.focusedIndex == sliderIndex) {
+                viewModel.adjustMaxConcurrentDownloads(-1)
+                return InputResult.HANDLED
+            }
         }
 
         if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.focusedIndex == 1) {
@@ -102,9 +105,12 @@ class SettingsInputHandler(
             }
         }
 
-        if (state.currentSection == SettingsSection.STORAGE && state.focusedIndex == 1) {
-            viewModel.cycleMaxConcurrentDownloads()
-            return InputResult.HANDLED
+        if (state.currentSection == SettingsSection.STORAGE) {
+            val sliderIndex = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) 2 else 1
+            if (state.focusedIndex == sliderIndex) {
+                viewModel.adjustMaxConcurrentDownloads(1)
+                return InputResult.HANDLED
+            }
         }
 
         if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.focusedIndex == 1) {

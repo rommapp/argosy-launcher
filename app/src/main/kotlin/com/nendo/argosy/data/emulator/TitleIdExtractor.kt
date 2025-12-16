@@ -17,6 +17,7 @@ class TitleIdExtractor @Inject constructor() {
             "psp" -> extractPSPTitleId(romFile)
             "switch" -> extractSwitchTitleId(romFile)
             "3ds" -> extract3DSTitleId(romFile)
+            "wiiu" -> extractWiiUTitleId(romFile)
             else -> null
         }
     }
@@ -90,6 +91,20 @@ class TitleIdExtractor @Inject constructor() {
             val id = it.groupValues[1]
             return if (id.length == 16) id.takeLast(8).uppercase() else id.uppercase()
         }
+
+        return null
+    }
+
+    fun extractWiiUTitleId(romFile: File): String? {
+        val filename = romFile.nameWithoutExtension
+
+        // Pattern: [10118300] - 8 hex characters
+        val bracketPattern = Regex("""\[([0-9A-Fa-f]{8})\]""")
+        bracketPattern.find(filename)?.let { return it.groupValues[1].uppercase() }
+
+        // Parentheses variant
+        val parenPattern = Regex("""\(([0-9A-Fa-f]{8})\)""")
+        parenPattern.find(filename)?.let { return it.groupValues[1].uppercase() }
 
         return null
     }

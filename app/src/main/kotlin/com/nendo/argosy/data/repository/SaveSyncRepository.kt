@@ -81,7 +81,8 @@ class SaveSyncRepository @Inject constructor(
         emulatorId: String,
         gameTitle: String,
         platformId: String,
-        romPath: String? = null
+        romPath: String? = null,
+        cachedTitleId: String? = null
     ): String? = withContext(Dispatchers.IO) {
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
         if (userConfig?.isUserOverride == true) {
@@ -94,7 +95,7 @@ class SaveSyncRepository @Inject constructor(
             if (!isFolderSaveSyncEnabled()) {
                 return@withContext null
             }
-            return@withContext discoverFolderSavePath(config, platformId, romPath)
+            return@withContext discoverFolderSavePath(config, platformId, romPath, cachedTitleId)
         }
 
         val paths = if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
@@ -127,10 +128,15 @@ class SaveSyncRepository @Inject constructor(
     private fun discoverFolderSavePath(
         config: SavePathConfig,
         platformId: String,
-        romPath: String
+        romPath: String,
+        cachedTitleId: String? = null
     ): String? {
         val romFile = File(romPath)
-        val titleId = titleIdExtractor.extractTitleId(romFile, platformId) ?: return null
+        val titleId = cachedTitleId
+            ?: titleIdExtractor.extractTitleId(romFile, platformId)
+            ?: return null
+
+        Log.d(TAG, "Using titleId: $titleId (cached: ${cachedTitleId != null})")
 
         for (basePath in config.defaultPaths) {
             val saveFolder = findSaveFolderByTitleId(basePath, titleId, platformId)
@@ -161,6 +167,14 @@ class SaveSyncRepository @Inject constructor(
                         if (saveFolder.exists() && saveFolder.isDirectory) {
                             return saveFolder.absolutePath
                         }
+                        userFolder.listFiles()?.forEach { profileFolder ->
+                            if (profileFolder.isDirectory) {
+                                val nestedSave = File(profileFolder, titleId)
+                                if (nestedSave.exists() && nestedSave.isDirectory) {
+                                    return nestedSave.absolutePath
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -183,6 +197,12 @@ class SaveSyncRepository @Inject constructor(
                     if (folder.isDirectory && folder.name.startsWith(titleId)) {
                         return folder.absolutePath
                     }
+                }
+            }
+            "wiiu" -> {
+                val saveFolder = File(baseDir, titleId)
+                if (saveFolder.exists() && saveFolder.isDirectory) {
+                    return saveFolder.absolutePath
                 }
             }
         }
@@ -785,9 +805,14 @@ class SaveSyncRepository @Inject constructor(
         return when (platformId) {
             "vita", "psvita" -> "$baseDir/$titleId"
             "switch" -> {
-                val existingUserFolder = File(baseDir).listFiles()?.firstOrNull { it.isDirectory }
-                if (existingUserFolder != null) {
-                    "${existingUserFolder.absolutePath}/$titleId"
+                val userFolder = File(baseDir).listFiles()?.firstOrNull { it.isDirectory }
+                if (userFolder != null) {
+                    val profileFolder = userFolder.listFiles()?.firstOrNull { it.isDirectory }
+                    if (profileFolder != null) {
+                        "${profileFolder.absolutePath}/$titleId"
+                    } else {
+                        "${userFolder.absolutePath}/$titleId"
+                    }
                 } else {
                     "$baseDir/0000000000000001/$titleId"
                 }

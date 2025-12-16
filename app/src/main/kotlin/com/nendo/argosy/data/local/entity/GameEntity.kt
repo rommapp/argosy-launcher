@@ -83,5 +83,7 @@ data class GameEntity(
     val earnedAchievementCount: Int = 0,
 
     val activeSaveChannel: String? = null,
-    val activeSaveTimestamp: Long? = null
+    val activeSaveTimestamp: Long? = null,
+
+    val titleId: String? = null
 )

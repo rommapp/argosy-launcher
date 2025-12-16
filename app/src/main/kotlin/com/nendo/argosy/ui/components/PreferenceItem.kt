@@ -150,10 +150,11 @@ fun SliderPreference(
     value: Int,
     minValue: Int,
     maxValue: Int,
-    isFocused: Boolean
+    isFocused: Boolean,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
-        modifier = preferenceModifier(isFocused),
+        modifier = preferenceModifier(isFocused, onClick = onClick),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

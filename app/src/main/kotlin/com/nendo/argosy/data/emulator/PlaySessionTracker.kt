@@ -81,9 +81,13 @@ class PlaySessionTracker @Inject constructor(
                 gameDao.addPlayTime(session.gameId, minutes)
             }
 
-            cacheCurrentSave(session)
+            val result = syncSaveOnSessionEndUseCase.get()(
+                session.gameId,
+                session.emulatorPackage,
+                session.startTime.toEpochMilli()
+            )
 
-            val result = syncSaveOnSessionEndUseCase.get()(session.gameId, session.emulatorPackage)
+            cacheCurrentSave(session)
             when (result) {
                 is SyncSaveOnSessionEndUseCase.Result.Conflict -> {
                     _conflictEvents.emit(
@@ -163,7 +167,8 @@ class PlaySessionTracker @Inject constructor(
                 emulatorId,
                 game.title,
                 game.platformId,
-                game.localPath
+                game.localPath,
+                game.titleId
             )
 
             if (savePath != null) {

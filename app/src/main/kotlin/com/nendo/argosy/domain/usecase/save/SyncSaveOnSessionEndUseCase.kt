@@ -1,8 +1,10 @@
 package com.nendo.argosy.domain.usecase.save
 
+import android.util.Log
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.emulator.TitleIdDetector
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -20,8 +22,13 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val preferencesRepository: UserPreferencesRepository,
-    private val romMRepository: RomMRepository
+    private val romMRepository: RomMRepository,
+    private val titleIdDetector: TitleIdDetector
 ) {
+    companion object {
+        private const val TAG = "SyncSaveOnSessionEnd"
+    }
+
     sealed class Result {
         data object Uploaded : Result()
         data object Queued : Result()
@@ -56,22 +63,65 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         )
     }
 
-    suspend operator fun invoke(gameId: Long, emulatorPackage: String): Result {
+    suspend operator fun invoke(gameId: Long, emulatorPackage: String, sessionStartTime: Long = 0L): Result {
         val prefs = preferencesRepository.userPreferences.first()
-        if (!prefs.saveSyncEnabled) return Result.NotConfigured
-        if (!romMRepository.isConnected()) return Result.NotConfigured
+        if (!prefs.saveSyncEnabled) {
+            Log.d(TAG, "Save sync disabled")
+            return Result.NotConfigured
+        }
+        if (!romMRepository.isConnected()) {
+            Log.d(TAG, "RomM not connected, attempting reconnect...")
+            romMRepository.checkConnection()
+        }
+        if (!romMRepository.isConnected()) {
+            Log.d(TAG, "RomM still not connected after retry")
+            return Result.NotConfigured
+        }
 
         val game = gameDao.getById(gameId) ?: return Result.Error("Game not found")
-        if (game.rommId == null) return Result.NotConfigured
+        if (game.rommId == null) {
+            Log.d(TAG, "Game $gameId has no rommId")
+            return Result.NotConfigured
+        }
 
         val emulatorConfig = emulatorConfigDao.getByGameId(gameId)
             ?: emulatorConfigDao.getDefaultForPlatform(game.platformId)
 
         val emulatorId = resolveEmulatorId(emulatorConfig?.packageName, emulatorPackage)
-            ?: return Result.NotConfigured
+        if (emulatorId == null) {
+            Log.d(TAG, "Cannot resolve emulator for package: $emulatorPackage")
+            return Result.NotConfigured
+        }
+        Log.d(TAG, "Resolved emulator: $emulatorId for game ${game.title}")
 
-        val savePath = saveSyncRepository.discoverSavePath(emulatorId, game.title, game.platformId, game.localPath)
-            ?: return Result.NoSaveFound
+        var titleId = game.titleId
+        var savePath = saveSyncRepository.discoverSavePath(
+            emulatorId, game.title, game.platformId, game.localPath, titleId
+        )
+
+        if (savePath == null && titleId == null && sessionStartTime > 0) {
+            Log.d(TAG, "No save path found, attempting title ID detection...")
+            val detected = titleIdDetector.detectRecentTitleId(
+                emulatorId, game.platformId, sessionStartTime
+            )
+            if (detected != null) {
+                val existingGame = gameDao.getByTitleIdAndPlatform(detected.titleId, game.platformId)
+                if (existingGame == null || existingGame.id == gameId) {
+                    Log.d(TAG, "Detected and caching titleId: ${detected.titleId}")
+                    gameDao.updateTitleId(gameId, detected.titleId)
+                    titleId = detected.titleId
+                    savePath = detected.savePath
+                } else {
+                    Log.d(TAG, "TitleId ${detected.titleId} already assigned to game ${existingGame.id}, skipping")
+                }
+            }
+        }
+
+        if (savePath == null) {
+            Log.d(TAG, "No save path found for ${game.title} (platform: ${game.platformId}, romPath: ${game.localPath}, titleId: $titleId)")
+            return Result.NoSaveFound
+        }
+        Log.d(TAG, "Found save path: $savePath")
 
         val saveFile = File(savePath)
         if (!saveFile.exists()) return Result.NoSaveFound

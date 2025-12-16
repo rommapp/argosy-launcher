@@ -81,7 +81,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 value = uiState.storage.maxConcurrentDownloads,
                 minValue = 1,
                 maxValue = 5,
-                isFocused = uiState.focusedIndex == focusOffset
+                isFocused = uiState.focusedIndex == focusOffset,
+                onClick = { viewModel.cycleMaxConcurrentDownloads() }
             )
         }
         item {

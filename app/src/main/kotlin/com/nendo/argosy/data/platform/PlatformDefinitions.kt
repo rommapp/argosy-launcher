@@ -12,134 +12,399 @@ data class PlatformDef(
 
 object PlatformDefinitions {
 
-    private val platforms = listOf(
-        // Nintendo consoles (1-9) - chronological
-        PlatformDef("nes", "Nintendo Entertainment System", "NES", setOf("nes", "unf", "unif", "zip", "7z", "chd"), 1),
-        PlatformDef("famicom", "Famicom", "Famicom", setOf("nes", "unf", "unif", "zip", "7z", "chd"), 1),
-        PlatformDef("fds", "Famicom Disk System", "FDS", setOf("fds", "zip", "7z", "chd"), 2),
-        PlatformDef("snes", "Super Nintendo", "SNES", setOf("sfc", "smc", "fig", "swc", "zip", "7z", "chd"), 3),
-        PlatformDef("n64", "Nintendo 64", "N64", setOf("n64", "z64", "v64", "zip", "7z", "chd"), 4),
-        PlatformDef("gc", "GameCube", "GameCube", setOf("iso", "gcm", "gcz", "rvz", "ciso", "zip", "7z", "chd"), 5),
-        PlatformDef("ngc", "Nintendo GameCube", "GameCube", setOf("iso", "gcm", "gcz", "rvz", "ciso", "zip", "7z", "chd"), 5),
-        PlatformDef("wii", "Nintendo Wii", "Wii", setOf("wbfs", "iso", "rvz", "gcz", "zip", "7z", "chd"), 6),
-        PlatformDef("wiiu", "Nintendo Wii U", "Wii U", setOf("wud", "wux", "rpx", "wua", "zip", "7z", "chd"), 7),
-        PlatformDef("switch", "Nintendo Switch", "Switch", setOf("nsp", "xci", "nsz", "xcz", "zip", "7z", "chd"), 8),
-
-        // Nintendo handhelds (10-19) - chronological
-        PlatformDef("gameandwatch", "Game & Watch", "G&W", emptySet(), 10),
-        PlatformDef("gb", "Game Boy", "Game Boy", setOf("gb", "zip", "7z", "chd"), 11),
-        PlatformDef("gbc", "Game Boy Color", "Game Boy Color", setOf("gbc", "zip", "7z", "chd"), 12),
-        PlatformDef("virtualboy", "Virtual Boy", "VB", setOf("vb", "zip", "7z", "chd"), 13),
-        PlatformDef("gba", "Game Boy Advance", "Game Boy Advance", setOf("gba", "zip", "7z", "chd"), 14),
-        PlatformDef("nds", "Nintendo DS", "NDS", setOf("nds", "dsi", "zip", "7z", "chd"), 15),
-        PlatformDef("dsi", "Nintendo DSi", "DSi", setOf("nds", "dsi", "zip", "7z", "chd"), 16),
-        PlatformDef("3ds", "Nintendo 3DS", "3DS", setOf("3ds", "cia", "cxi", "app", "zip", "7z", "chd"), 17),
-        PlatformDef("n3ds", "New Nintendo 3DS", "N3DS", setOf("3ds", "cia", "cxi", "app", "zip", "7z", "chd"), 18),
-
-        // Sega consoles (20-29) - chronological
-        PlatformDef("sg1000", "Sega SG-1000", "SG-1000", setOf("sg", "zip", "7z", "chd"), 20),
-        PlatformDef("sms", "Sega Master System", "SMS", setOf("sms", "sg", "zip", "7z", "chd"), 21),
-        PlatformDef("genesis", "Sega Genesis", "Genesis", setOf("md", "gen", "smd", "bin", "zip", "7z", "chd"), 22),
-        PlatformDef("megadrive", "Sega Mega Drive", "Mega Drive", setOf("md", "gen", "smd", "bin", "zip", "7z", "chd"), 22),
-        PlatformDef("scd", "Sega CD", "Sega CD", setOf("iso", "bin", "chd", "zip", "7z"), 23),
-        PlatformDef("segacd", "Sega CD", "Sega CD", setOf("iso", "bin", "chd", "zip", "7z"), 23),
-        PlatformDef("32x", "Sega 32X", "32X", setOf("32x", "zip", "7z", "chd"), 24),
-        PlatformDef("sega32x", "Sega 32X", "32X", setOf("32x", "zip", "7z", "chd"), 24),
-        PlatformDef("saturn", "Sega Saturn", "Saturn", setOf("iso", "bin", "cue", "chd", "zip", "7z"), 25),
-        PlatformDef("dreamcast", "Sega Dreamcast", "Dreamcast", setOf("gdi", "cdi", "chd", "zip", "7z"), 26),
-        PlatformDef("dc", "Sega Dreamcast", "Dreamcast", setOf("gdi", "cdi", "chd", "zip", "7z"), 26),
-        PlatformDef("gg", "Sega Game Gear", "GG", setOf("gg", "zip", "7z", "chd"), 27),
-        PlatformDef("gamegear", "Sega Game Gear", "GG", setOf("gg", "zip", "7z", "chd"), 27),
-        PlatformDef("naomi", "Sega NAOMI", "NAOMI", setOf("zip", "7z", "chd"), 28),
-        PlatformDef("atomiswave", "Sammy Atomiswave", "Atomiswave", setOf("zip", "7z", "chd"), 29),
-
-        // Sony (30-39) - chronological
-        PlatformDef("psx", "Sony PlayStation", "PS1", setOf("bin", "iso", "img", "chd", "pbp", "cue", "zip", "7z"), 30),
-        PlatformDef("ps", "Sony PlayStation", "PS1", setOf("bin", "iso", "img", "chd", "pbp", "cue", "zip", "7z"), 30),
-        PlatformDef("ps2", "Sony PlayStation 2", "PS2", setOf("iso", "bin", "chd", "gz", "cso", "zip", "7z"), 31),
-        PlatformDef("psp", "Sony PlayStation Portable", "PSP", setOf("iso", "cso", "pbp", "zip", "7z", "chd"), 32),
-        PlatformDef("ps3", "Sony PlayStation 3", "PS3", setOf("iso", "pkg", "zip", "7z"), 33),
-        PlatformDef("vita", "Sony PlayStation Vita", "Vita", setOf("vpk", "mai", "zip", "7z", "chd"), 34),
-        PlatformDef("psvita", "Sony PlayStation Vita", "Vita", setOf("vpk", "mai", "zip", "7z", "chd"), 34),
-        PlatformDef("ps4", "Sony PlayStation 4", "PS4", setOf("pkg", "zip", "7z"), 35),
-        PlatformDef("ps5", "Sony PlayStation 5", "PS5", emptySet(), 36),
-
-        // Microsoft (40-49) - chronological
-        PlatformDef("xbox", "Microsoft Xbox", "Xbox", setOf("iso", "xiso", "zip", "7z"), 40),
-        PlatformDef("xbox360", "Microsoft Xbox 360", "X360", setOf("iso", "xex", "zip", "7z"), 41),
-        PlatformDef("xboxone", "Microsoft Xbox One", "XB1", emptySet(), 42),
-
-        // NEC (50-59)
-        PlatformDef("tg16", "TurboGrafx-16", "TG16", setOf("pce", "zip", "7z", "chd"), 50),
-        PlatformDef("pce", "PC Engine", "PCE", setOf("pce", "zip", "7z", "chd"), 50),
-        PlatformDef("tgcd", "TurboGrafx-CD", "TG-CD", setOf("chd", "cue", "ccd", "zip", "7z"), 51),
-        PlatformDef("pcfx", "PC-FX", "PC-FX", setOf("chd", "cue", "ccd", "zip", "7z"), 52),
-        PlatformDef("supergrafx", "SuperGrafx", "SGX", setOf("pce", "sgx", "zip", "7z", "chd"), 53),
-
-        // SNK (60-69)
-        PlatformDef("neogeo", "Neo Geo", "Neo Geo", setOf("zip", "7z", "chd"), 60),
-        PlatformDef("neogeomvs", "Neo Geo MVS", "MVS", setOf("zip", "7z", "chd"), 60),
-        PlatformDef("neogeoaes", "Neo Geo AES", "AES", setOf("zip", "7z", "chd"), 61),
-        PlatformDef("ngp", "Neo Geo Pocket", "NGP", setOf("ngp", "ngc", "zip", "7z", "chd"), 62),
-        PlatformDef("ngpc", "Neo Geo Pocket Color", "NGPC", setOf("ngpc", "ngc", "zip", "7z", "chd"), 63),
-        PlatformDef("neocd", "Neo Geo CD", "NGCD", setOf("chd", "cue", "iso", "zip", "7z"), 64),
-
-        // Atari (70-79)
-        PlatformDef("atari2600", "Atari 2600", "2600", setOf("a26", "bin", "zip", "7z", "chd"), 70),
-        PlatformDef("atari5200", "Atari 5200", "5200", setOf("a52", "bin", "zip", "7z", "chd"), 71),
-        PlatformDef("atari7800", "Atari 7800", "7800", setOf("a78", "bin", "zip", "7z", "chd"), 72),
-        PlatformDef("atarist", "Atari ST", "ST", setOf("st", "stx", "zip", "7z"), 73),
-        PlatformDef("lynx", "Atari Lynx", "Lynx", setOf("lnx", "zip", "7z", "chd"), 74),
-        PlatformDef("jaguar", "Atari Jaguar", "Jaguar", setOf("j64", "jag", "zip", "7z", "chd"), 75),
-        PlatformDef("jaguarcd", "Atari Jaguar CD", "Jag CD", setOf("chd", "cue", "zip", "7z"), 76),
-
-        // Commodore (80-89)
-        PlatformDef("c64", "Commodore 64", "C64", setOf("d64", "t64", "prg", "crt", "zip", "7z"), 80),
-        PlatformDef("c128", "Commodore 128", "C128", setOf("d64", "d81", "prg", "zip", "7z"), 81),
-        PlatformDef("amiga", "Commodore Amiga", "Amiga", setOf("adf", "ipf", "lha", "zip", "7z"), 82),
-        PlatformDef("vic20", "Commodore VIC-20", "VIC-20", setOf("prg", "crt", "zip", "7z"), 83),
-
-        // 3DO / Other 90s (90-99)
-        PlatformDef("3do", "3DO", "3DO", setOf("iso", "chd", "cue", "zip", "7z"), 90),
-        PlatformDef("cdi", "Philips CD-i", "CD-i", setOf("chd", "cue", "iso", "zip", "7z"), 91),
-
-        // MSX (100-109)
-        PlatformDef("msx", "MSX", "MSX", setOf("rom", "mx1", "mx2", "zip", "7z", "chd"), 100),
-        PlatformDef("msx2", "MSX2", "MSX2", setOf("rom", "mx2", "zip", "7z", "chd"), 101),
-
-        // Arcade (110-119)
-        PlatformDef("arcade", "Arcade", "Arcade", setOf("zip", "7z", "chd"), 110),
-        PlatformDef("mame", "MAME", "MAME", setOf("zip", "7z", "chd"), 110),
-        PlatformDef("cps1", "Capcom CPS-1", "CPS1", setOf("zip", "7z"), 111),
-        PlatformDef("cps2", "Capcom CPS-2", "CPS2", setOf("zip", "7z"), 112),
-        PlatformDef("cps3", "Capcom CPS-3", "CPS3", setOf("zip", "7z"), 113),
-
-        // PC (120-129)
-        PlatformDef("dos", "DOS", "DOS", setOf("exe", "com", "bat", "zip", "7z", "chd"), 120),
-        PlatformDef("scummvm", "ScummVM", "ScummVM", setOf("scummvm", "zip", "7z", "chd"), 121),
-        PlatformDef("pc", "PC", "PC", emptySet(), 122),
-        PlatformDef("windows", "Windows", "Windows", setOf("exe", "zip", "7z"), 123),
-
-        // Bandai (130-139)
-        PlatformDef("wonderswan", "WonderSwan", "WS", setOf("ws", "zip", "7z", "chd"), 130),
-        PlatformDef("wonderswancolor", "WonderSwan Color", "WSC", setOf("wsc", "zip", "7z", "chd"), 131),
-
-        // Other (140-149)
-        PlatformDef("vectrex", "Vectrex", "Vectrex", setOf("vec", "zip", "7z", "chd"), 140),
-        PlatformDef("coleco", "ColecoVision", "Coleco", setOf("col", "zip", "7z", "chd"), 141),
-        PlatformDef("colecovision", "ColecoVision", "Coleco", setOf("col", "zip", "7z", "chd"), 141),
-        PlatformDef("intellivision", "Intellivision", "Intv", setOf("int", "bin", "zip", "7z", "chd"), 142),
-        PlatformDef("channelf", "Fairchild Channel F", "Channel F", setOf("bin", "chf", "zip", "7z"), 143),
-        PlatformDef("odyssey2", "Magnavox Odyssey 2", "Odyssey 2", setOf("bin", "zip", "7z"), 144),
-
-        // Streaming/Launcher (150+)
-        PlatformDef("steam", "Steam", "Steam", emptySet(), 150),
+    // Slug aliases: maps alternate slugs to canonical slug
+    private val slugAliases = mapOf(
+        // Nintendo
+        "famicom" to "nes",
+        "ngc" to "gc",
+        "gamecube" to "gc",
+        "nintendoswitch" to "switch",
+        "nswitch" to "switch",
+        "new_nintendo3ds" to "n3ds",
+        "nintendo_dsi" to "dsi",
+        "sfam" to "snes",
+        "superfamicom" to "snes",
+        "super_famicom" to "snes",
+        "super_nintendo" to "snes",
+        "nintendo64" to "n64",
+        "nintendo_64" to "n64",
+        "gameboy" to "gb",
+        "game_boy" to "gb",
+        "gameboycolor" to "gbc",
+        "game_boy_color" to "gbc",
+        "gameboyadvance" to "gba",
+        "game_boy_advance" to "gba",
+        "virtualboy" to "vb",
+        "virtual_boy" to "vb",
+        "pokemonmini" to "pokemini",
+        "pokemon_mini" to "pokemini",
+        // Sega
+        "megadrive" to "genesis",
+        "mega_drive" to "genesis",
+        "sega_genesis" to "genesis",
+        "segacd" to "scd",
+        "sega_cd" to "scd",
+        "mega_cd" to "scd",
+        "megacd" to "scd",
+        "sega32x" to "32x",
+        "sega_32x" to "32x",
+        "dc" to "dreamcast",
+        "sega_dreamcast" to "dreamcast",
+        "gamegear" to "gg",
+        "game_gear" to "gg",
+        "sega_game_gear" to "gg",
+        "sega_saturn" to "saturn",
+        "sega_sg1000" to "sg1000",
+        "sega_master_system" to "sms",
+        "mastersystem" to "sms",
+        "master_system" to "sms",
+        "segapico" to "pico",
+        "sega_pico" to "pico",
+        // Sony
+        "ps" to "psx",
+        "ps1" to "psx",
+        "playstation" to "psx",
+        "playstation1" to "psx",
+        "playstation_1" to "psx",
+        "sony_playstation" to "psx",
+        "playstation2" to "ps2",
+        "playstation_2" to "ps2",
+        "sony_playstation_2" to "ps2",
+        "playstation3" to "ps3",
+        "playstation_3" to "ps3",
+        "sony_playstation_3" to "ps3",
+        "playstation4" to "ps4",
+        "playstation_4" to "ps4",
+        "sony_playstation_4" to "ps4",
+        "playstation5" to "ps5",
+        "playstation_5" to "ps5",
+        "sony_playstation_5" to "ps5",
+        "psvita" to "vita",
+        "ps_vita" to "vita",
+        "playstation_vita" to "vita",
+        "playstationportable" to "psp",
+        "playstation_portable" to "psp",
+        // Microsoft
+        "originalxbox" to "xbox",
+        "microsoft_xbox" to "xbox",
+        "x360" to "xbox360",
+        "microsoft_xbox_360" to "xbox360",
+        "xb1" to "xboxone",
+        "xone" to "xboxone",
+        "microsoft_xbox_one" to "xboxone",
+        "xsx" to "xboxseriesx",
+        "xbox_series_x" to "xboxseriesx",
+        // NEC
+        "pce" to "tg16",
+        "pcengine" to "tg16",
+        "pc_engine" to "tg16",
+        "pc-engine" to "tg16",
+        "turbografx16" to "tg16",
+        "turbografx-16" to "tg16",
+        "turbografx_16" to "tg16",
+        "sgx" to "supergrafx",
+        "super_grafx" to "supergrafx",
+        "pcecd" to "tgcd",
+        "pc_engine_cd" to "tgcd",
+        "turbografxcd" to "tgcd",
+        "turbografx-cd" to "tgcd",
+        "pc-fx" to "pcfx",
+        // SNK
+        "neogeoaes" to "neogeo",
+        "neogeo_aes" to "neogeo",
+        "neo_geo" to "neogeo",
+        "neogeomvs" to "neogeo",
+        "neogeo_mvs" to "neogeo",
+        "neocd" to "neogeocd",
+        "neogeo_cd" to "neogeocd",
+        "neo_geo_cd" to "neogeocd",
+        "neogeopocket" to "ngp",
+        "neo_geo_pocket" to "ngp",
+        "neogeopocketcolor" to "ngpc",
+        "neo_geo_pocket_color" to "ngpc",
+        // Atari
+        "atari_2600" to "atari2600",
+        "a2600" to "atari2600",
+        "atari_5200" to "atari5200",
+        "a5200" to "atari5200",
+        "atari_7800" to "atari7800",
+        "a7800" to "atari7800",
+        "atari_st" to "atarist",
+        "atari_lynx" to "lynx",
+        "atari_jaguar" to "jaguar",
+        "atarijaguar" to "jaguar",
+        "atari_jaguar_cd" to "jaguarcd",
+        "atarijaguarcd" to "jaguarcd",
+        // Commodore
+        "commodore64" to "c64",
+        "commodore_64" to "c64",
+        "commodore128" to "c128",
+        "commodore_128" to "c128",
+        "commodore_amiga" to "amiga",
+        "commodore_vic20" to "vic20",
+        "vic-20" to "vic20",
+        // Other
+        "colecovision" to "coleco",
+        "coleco_vision" to "coleco",
+        "mattel_intellivision" to "intellivision",
+        "philips_cdi" to "cdi",
+        "cd-i" to "cdi",
+        "cdinteractive" to "cdi",
+        "3do_interactive" to "3do",
+        "panasonic_3do" to "3do",
+        "wonderswancolor" to "wsc",
+        "wonderswan_color" to "wsc",
+        "ws" to "wonderswan",
+        "bandai_wonderswan" to "wonderswan",
+        // Arcade
+        "mame" to "arcade",
+        "fbneo" to "arcade",
+        "fba" to "arcade",
+        "cps-1" to "cps1",
+        "cps-2" to "cps2",
+        "cps-3" to "cps3",
+        "naomi2" to "naomi",
+        "hikaru" to "naomi",
+        // Computers
+        "ibm_pc" to "dos",
+        "msdos" to "dos",
+        "ms-dos" to "dos",
+        "scumm" to "scummvm",
+        "windows_pc" to "windows",
+        "msx1" to "msx",
+        "msx_2" to "msx2",
+        "amstrad" to "amstradcpc",
+        "amstrad_cpc" to "amstradcpc",
+        "zxspectrum" to "zx",
+        "zx_spectrum" to "zx",
+        "sinclair_zx_spectrum" to "zx",
+        "bbc_micro" to "bbcmicro",
+        "fm-towns" to "fmtowns",
+        "fm_towns" to "fmtowns",
+        "sharp_x68000" to "x68000",
+        "x68k" to "x68000",
+        "sharp_x1" to "sharpx1",
+        "pc88" to "pc8800",
+        "pc-88" to "pc8800",
+        "pc_8800" to "pc8800",
+        "pc_8800_series" to "pc8800",
+        "pc98" to "pc9800",
+        "pc-98" to "pc9800",
+        "pc_9800" to "pc9800",
+        "pc_9800_series" to "pc9800"
     )
 
-    private val platformMap = platforms.associateBy { it.id }
+    private val platforms = listOf(
+        // =====================================================================
+        // NINTENDO CONSOLES (100-149) - Chronological order
+        // =====================================================================
+        PlatformDef("nes", "Nintendo Entertainment System", "NES", setOf("nes", "unf", "unif", "fds", "zip", "7z"), 100),
+        PlatformDef("fds", "Famicom Disk System", "FDS", setOf("fds", "zip", "7z"), 102),
+        PlatformDef("snes", "Super Nintendo", "SNES", setOf("sfc", "smc", "fig", "swc", "bs", "zip", "7z"), 105),
+        PlatformDef("satellaview", "Satellaview", "BS-X", setOf("bs", "sfc", "zip", "7z"), 106),
+        PlatformDef("n64", "Nintendo 64", "N64", setOf("n64", "z64", "v64", "zip", "7z"), 110),
+        PlatformDef("n64dd", "Nintendo 64DD", "64DD", setOf("ndd", "zip", "7z"), 111),
+        PlatformDef("gc", "GameCube", "GCN", setOf("iso", "gcm", "gcz", "rvz", "ciso", "wbfs", "zip", "7z"), 115),
+        PlatformDef("wii", "Wii", "Wii", setOf("wbfs", "iso", "rvz", "gcz", "wad", "zip", "7z"), 120),
+        PlatformDef("wiiu", "Wii U", "Wii U", setOf("wud", "wux", "rpx", "wua", "zip", "7z"), 125),
+        PlatformDef("switch", "Switch", "Switch", setOf("nsp", "xci", "nsz", "xcz", "zip", "7z"), 130),
+
+        // =====================================================================
+        // NINTENDO HANDHELDS (150-199) - Chronological order
+        // =====================================================================
+        PlatformDef("gameandwatch", "Game & Watch", "G&W", setOf("mgw", "zip", "7z"), 150),
+        PlatformDef("gb", "Game Boy", "GB", setOf("gb", "zip", "7z"), 155),
+        PlatformDef("gbc", "Game Boy Color", "GBC", setOf("gbc", "gb", "zip", "7z"), 160),
+        PlatformDef("vb", "Virtual Boy", "VB", setOf("vb", "vboy", "zip", "7z"), 163),
+        PlatformDef("gba", "Game Boy Advance", "GBA", setOf("gba", "zip", "7z"), 165),
+        PlatformDef("pokemini", "Pokemon Mini", "PokeMini", setOf("min", "zip", "7z"), 167),
+        PlatformDef("nds", "Nintendo DS", "NDS", setOf("nds", "dsi", "zip", "7z"), 170),
+        PlatformDef("dsi", "Nintendo DSi", "DSi", setOf("nds", "dsi", "zip", "7z"), 172),
+        PlatformDef("3ds", "Nintendo 3DS", "3DS", setOf("3ds", "cia", "cxi", "app", "zip", "7z"), 175),
+        PlatformDef("n3ds", "New Nintendo 3DS", "N3DS", setOf("3ds", "cia", "cxi", "app", "zip", "7z"), 177),
+
+        // =====================================================================
+        // SONY CONSOLES (200-249) - Chronological order
+        // =====================================================================
+        PlatformDef("psx", "PlayStation", "PS1", setOf("bin", "iso", "img", "chd", "pbp", "cue", "ecm", "zip", "7z"), 200),
+        PlatformDef("ps2", "PlayStation 2", "PS2", setOf("iso", "bin", "chd", "gz", "cso", "zso", "zip", "7z"), 210),
+        PlatformDef("ps3", "PlayStation 3", "PS3", setOf("iso", "pkg", "zip", "7z"), 220),
+        PlatformDef("ps4", "PlayStation 4", "PS4", setOf("pkg", "zip", "7z"), 230),
+        PlatformDef("ps5", "PlayStation 5", "PS5", emptySet(), 240),
+
+        // =====================================================================
+        // SONY HANDHELDS (250-299) - Chronological order
+        // =====================================================================
+        PlatformDef("psp", "PlayStation Portable", "PSP", setOf("iso", "cso", "pbp", "zip", "7z"), 250),
+        PlatformDef("vita", "PlayStation Vita", "Vita", setOf("vpk", "mai", "zip", "7z"), 260),
+
+        // =====================================================================
+        // SEGA CONSOLES (300-349) - Chronological order
+        // =====================================================================
+        PlatformDef("sg1000", "SG-1000", "SG-1000", setOf("sg", "zip", "7z"), 300),
+        PlatformDef("sms", "Master System", "SMS", setOf("sms", "sg", "zip", "7z"), 305),
+        PlatformDef("genesis", "Genesis", "Genesis", setOf("md", "gen", "smd", "bin", "zip", "7z"), 310),
+        PlatformDef("scd", "Sega CD", "Sega CD", setOf("iso", "bin", "chd", "cue", "zip", "7z"), 315),
+        PlatformDef("32x", "32X", "32X", setOf("32x", "zip", "7z"), 317),
+        PlatformDef("pico", "Pico", "Pico", setOf("md", "bin", "zip", "7z"), 318),
+        PlatformDef("saturn", "Saturn", "Saturn", setOf("iso", "bin", "cue", "chd", "zip", "7z"), 320),
+        PlatformDef("dreamcast", "Dreamcast", "DC", setOf("gdi", "cdi", "chd", "zip", "7z"), 325),
+
+        // =====================================================================
+        // SEGA HANDHELDS (350-399)
+        // =====================================================================
+        PlatformDef("gg", "Game Gear", "GG", setOf("gg", "zip", "7z"), 350),
+        PlatformDef("nomad", "Nomad", "Nomad", setOf("md", "gen", "zip", "7z"), 355),
+
+        // =====================================================================
+        // SEGA ARCADE (360-379)
+        // =====================================================================
+        PlatformDef("naomi", "NAOMI", "NAOMI", setOf("zip", "7z", "chd"), 360),
+        PlatformDef("naomi2", "NAOMI 2", "NAOMI 2", setOf("zip", "7z", "chd"), 361),
+        PlatformDef("atomiswave", "Atomiswave", "Atomiswave", setOf("zip", "7z", "chd"), 365),
+
+        // =====================================================================
+        // MICROSOFT (400-449) - Chronological order
+        // =====================================================================
+        PlatformDef("xbox", "Xbox", "Xbox", setOf("iso", "xiso", "zip", "7z"), 400),
+        PlatformDef("xbox360", "Xbox 360", "X360", setOf("iso", "xex", "god", "zip", "7z"), 410),
+        PlatformDef("xboxone", "Xbox One", "XB1", emptySet(), 420),
+        PlatformDef("xboxseriesx", "Xbox Series X", "XSX", emptySet(), 430),
+
+        // =====================================================================
+        // ATARI CONSOLES (450-469) - Chronological order
+        // =====================================================================
+        PlatformDef("atari2600", "Atari 2600", "2600", setOf("a26", "bin", "zip", "7z"), 450),
+        PlatformDef("atari5200", "Atari 5200", "5200", setOf("a52", "bin", "zip", "7z"), 455),
+        PlatformDef("atari7800", "Atari 7800", "7800", setOf("a78", "bin", "zip", "7z"), 460),
+        PlatformDef("jaguar", "Jaguar", "Jaguar", setOf("j64", "jag", "zip", "7z"), 470),
+        PlatformDef("jaguarcd", "Jaguar CD", "Jag CD", setOf("chd", "cue", "zip", "7z"), 475),
+
+        // =====================================================================
+        // ATARI HANDHELDS & COMPUTERS (480-499)
+        // =====================================================================
+        PlatformDef("lynx", "Lynx", "Lynx", setOf("lnx", "zip", "7z"), 480),
+        PlatformDef("atarist", "Atari ST", "ST", setOf("st", "stx", "msa", "zip", "7z"), 485),
+        PlatformDef("atari8bit", "Atari 8-bit", "A8", setOf("atr", "xex", "xfd", "zip", "7z"), 490),
+
+        // =====================================================================
+        // NEC (500-549) - Chronological order
+        // =====================================================================
+        PlatformDef("tg16", "TurboGrafx-16", "TG16", setOf("pce", "zip", "7z"), 500),
+        PlatformDef("supergrafx", "SuperGrafx", "SGX", setOf("pce", "sgx", "zip", "7z"), 505),
+        PlatformDef("tgcd", "TurboGrafx-CD", "TG-CD", setOf("chd", "cue", "ccd", "zip", "7z"), 510),
+        PlatformDef("pcfx", "PC-FX", "PC-FX", setOf("chd", "cue", "ccd", "zip", "7z"), 520),
+
+        // =====================================================================
+        // SNK (550-599) - Chronological order
+        // =====================================================================
+        PlatformDef("neogeo", "Neo Geo", "Neo Geo", setOf("zip", "7z"), 550),
+        PlatformDef("neogeocd", "Neo Geo CD", "NGCD", setOf("chd", "cue", "iso", "zip", "7z"), 555),
+        PlatformDef("ngp", "Neo Geo Pocket", "NGP", setOf("ngp", "ngc", "zip", "7z"), 560),
+        PlatformDef("ngpc", "Neo Geo Pocket Color", "NGPC", setOf("ngpc", "ngc", "zip", "7z"), 565),
+        PlatformDef("hyperneogeo64", "Hyper Neo Geo 64", "HNG64", setOf("zip", "7z"), 570),
+
+        // =====================================================================
+        // COMMODORE (600-649) - Chronological order
+        // =====================================================================
+        PlatformDef("vic20", "VIC-20", "VIC-20", setOf("prg", "crt", "t64", "zip", "7z"), 600),
+        PlatformDef("c64", "Commodore 64", "C64", setOf("d64", "t64", "prg", "crt", "tap", "zip", "7z"), 605),
+        PlatformDef("c128", "Commodore 128", "C128", setOf("d64", "d81", "prg", "zip", "7z"), 610),
+        PlatformDef("amiga", "Amiga", "Amiga", setOf("adf", "ipf", "lha", "hdf", "zip", "7z"), 620),
+        PlatformDef("amigacd32", "Amiga CD32", "CD32", setOf("chd", "cue", "iso", "zip", "7z"), 625),
+        PlatformDef("cdtv", "CDTV", "CDTV", setOf("chd", "cue", "iso", "zip", "7z"), 627),
+
+        // =====================================================================
+        // ARCADE (650-699) - Alphabetical by system name
+        // =====================================================================
+        PlatformDef("arcade", "Arcade", "Arcade", setOf("zip", "7z", "chd"), 650),
+        PlatformDef("cps1", "CPS-1", "CPS1", setOf("zip", "7z"), 655),
+        PlatformDef("cps2", "CPS-2", "CPS2", setOf("zip", "7z"), 660),
+        PlatformDef("cps3", "CPS-3", "CPS3", setOf("zip", "7z"), 665),
+        PlatformDef("daphne", "Daphne", "Daphne", setOf("daphne", "zip", "7z"), 670),
+        PlatformDef("model2", "Model 2", "Model 2", setOf("zip", "7z"), 675),
+        PlatformDef("model3", "Model 3", "Model 3", setOf("zip", "7z"), 676),
+
+        // =====================================================================
+        // COMPUTERS (700-749) - Alphabetical
+        // =====================================================================
+        PlatformDef("amstradcpc", "Amstrad CPC", "CPC", setOf("dsk", "sna", "cdt", "zip", "7z"), 700),
+        PlatformDef("bbcmicro", "BBC Micro", "BBC", setOf("ssd", "dsd", "uef", "zip", "7z"), 705),
+        PlatformDef("dos", "DOS", "DOS", setOf("exe", "com", "bat", "zip", "7z"), 710),
+        PlatformDef("fmtowns", "FM Towns", "FM Towns", setOf("chd", "cue", "iso", "zip", "7z"), 715),
+        PlatformDef("msx", "MSX", "MSX", setOf("rom", "mx1", "mx2", "dsk", "zip", "7z"), 720),
+        PlatformDef("msx2", "MSX2", "MSX2", setOf("rom", "mx2", "dsk", "zip", "7z"), 721),
+        PlatformDef("pc8800", "PC-8800", "PC-88", setOf("d88", "zip", "7z"), 725),
+        PlatformDef("pc9800", "PC-9800", "PC-98", setOf("hdi", "fdi", "d98", "zip", "7z"), 726),
+        PlatformDef("scummvm", "ScummVM", "ScummVM", setOf("scummvm", "zip", "7z"), 730),
+        PlatformDef("sharpx1", "Sharp X1", "X1", setOf("2d", "zip", "7z"), 735),
+        PlatformDef("x68000", "X68000", "X68K", setOf("dim", "xdf", "hdm", "zip", "7z"), 736),
+        PlatformDef("zx", "ZX Spectrum", "ZX", setOf("tzx", "tap", "z80", "sna", "zip", "7z"), 740),
+        PlatformDef("zx81", "ZX81", "ZX81", setOf("p", "81", "zip", "7z"), 741),
+        PlatformDef("pc", "PC", "PC", emptySet(), 745),
+        PlatformDef("windows", "Windows", "Windows", setOf("exe", "zip", "7z"), 746),
+
+        // =====================================================================
+        // OTHER CLASSIC (750-799) - Alphabetical by name
+        // =====================================================================
+        PlatformDef("3do", "3DO", "3DO", setOf("iso", "chd", "cue", "zip", "7z"), 750),
+        PlatformDef("cdi", "CD-i", "CD-i", setOf("chd", "cue", "iso", "zip", "7z"), 755),
+        PlatformDef("channelf", "Channel F", "Channel F", setOf("bin", "chf", "zip", "7z"), 760),
+        PlatformDef("coleco", "ColecoVision", "Coleco", setOf("col", "zip", "7z"), 765),
+        PlatformDef("intellivision", "Intellivision", "Intv", setOf("int", "bin", "rom", "zip", "7z"), 770),
+        PlatformDef("odyssey2", "Odyssey 2", "O2", setOf("bin", "zip", "7z"), 775),
+        PlatformDef("vectrex", "Vectrex", "Vectrex", setOf("vec", "zip", "7z"), 780),
+
+        // =====================================================================
+        // BANDAI (800-849)
+        // =====================================================================
+        PlatformDef("wonderswan", "WonderSwan", "WS", setOf("ws", "zip", "7z"), 800),
+        PlatformDef("wsc", "WonderSwan Color", "WSC", setOf("wsc", "ws", "zip", "7z"), 805),
+        PlatformDef("playdia", "Playdia", "Playdia", setOf("chd", "cue", "zip", "7z"), 810),
+
+        // =====================================================================
+        // OBSCURE / NICHE (850-899) - Alphabetical by name
+        // =====================================================================
+        PlatformDef("casioloopy", "Casio Loopy", "Loopy", setOf("zip", "7z"), 850),
+        PlatformDef("cassettevision", "Cassette Vision", "CV", setOf("zip", "7z"), 851),
+        PlatformDef("supercassettevision", "Super Cassette Vision", "SCV", setOf("zip", "7z"), 852),
+        PlatformDef("evercade", "Evercade", "Evercade", emptySet(), 855),
+        PlatformDef("gamate", "Gamate", "Gamate", setOf("bin", "zip", "7z"), 860),
+        PlatformDef("gp32", "GP32", "GP32", setOf("gxb", "zip", "7z"), 865),
+        PlatformDef("megaduck", "Mega Duck", "Mega Duck", setOf("bin", "zip", "7z"), 870),
+        PlatformDef("supervision", "Supervision", "Supervision", setOf("sv", "bin", "zip", "7z"), 875),
+        PlatformDef("playdate", "Playdate", "Playdate", setOf("pdx", "zip", "7z"), 880),
+        PlatformDef("nuon", "Nuon", "Nuon", setOf("iso", "zip", "7z"), 885),
+        PlatformDef("arduboy", "Arduboy", "Arduboy", setOf("hex", "arduboy", "zip", "7z"), 890),
+        PlatformDef("uzebox", "Uzebox", "Uzebox", setOf("uze", "zip", "7z"), 891),
+        PlatformDef("tic80", "TIC-80", "TIC-80", setOf("tic", "zip", "7z"), 892),
+        PlatformDef("pico8", "PICO-8", "PICO-8", setOf("p8", "png", "zip", "7z"), 893),
+        PlatformDef("lowresnx", "LowRes NX", "LowRes NX", setOf("nx", "zip", "7z"), 894),
+
+        // =====================================================================
+        // STREAMING / LAUNCHER (950-999)
+        // =====================================================================
+        PlatformDef("steam", "Steam", "Steam", emptySet(), 950),
+        PlatformDef("android", "Android", "Android", setOf("apk", "xapk"), 960),
+        PlatformDef("ios", "iOS", "iOS", emptySet(), 965)
+    )
+
+    private val platformMap: Map<String, PlatformDef>
     private val extensionMap: Map<String, List<PlatformDef>>
 
     init {
+        // Build platform map with both canonical IDs and aliases
+        val pMap = mutableMapOf<String, PlatformDef>()
+        platforms.forEach { platform ->
+            pMap[platform.id] = platform
+        }
+        // Add aliases pointing to canonical platforms
+        slugAliases.forEach { (alias, canonical) ->
+            pMap[canonical]?.let { pMap[alias] = it }
+        }
+        platformMap = pMap
+
+        // Build extension map
         val extMap = mutableMapOf<String, MutableList<PlatformDef>>()
         platforms.forEach { platform ->
             platform.extensions.forEach { ext ->
@@ -151,10 +416,31 @@ object PlatformDefinitions {
 
     fun getAll(): List<PlatformDef> = platforms
 
-    fun getById(id: String): PlatformDef? = platformMap[id]
+    fun getById(id: String): PlatformDef? = platformMap[id.lowercase()]
 
     fun getPlatformsForExtension(extension: String): List<PlatformDef> =
         extensionMap[extension.lowercase()] ?: emptyList()
+
+    fun normalizeDisplayName(name: String): String {
+        return name
+            .removePrefix("Sony ")
+            .removePrefix("Sega ")
+            .removePrefix("Microsoft ")
+            .removePrefix("Nintendo ")
+            .removePrefix("Atari ")
+            .removePrefix("Commodore ")
+            .removePrefix("Bandai ")
+            .removePrefix("SNK ")
+            .removePrefix("NEC ")
+            .removePrefix("Philips ")
+            .removePrefix("Panasonic ")
+            .removePrefix("Mattel ")
+            .removePrefix("Magnavox ")
+            .removePrefix("Sharp ")
+            .removePrefix("Sinclair ")
+            .removePrefix("Fujitsu ")
+            .trim()
+    }
 
     fun toEntity(def: PlatformDef) = PlatformEntity(
         id = def.id,

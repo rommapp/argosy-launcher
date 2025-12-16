@@ -270,15 +270,17 @@ class RomMRepository @Inject constructor(
         val platformDef = PlatformDefinitions.getById(remote.slug)
 
         val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
+        val normalizedName = platformDef?.name
+            ?: PlatformDefinitions.normalizeDisplayName(remote.name)
         val entity = PlatformEntity(
             id = remote.slug,
-            name = platformDef?.name ?: remote.name,
-            shortName = platformDef?.shortName ?: remote.name,
+            name = normalizedName,
+            shortName = platformDef?.shortName ?: normalizedName,
             romExtensions = platformDef?.extensions?.joinToString(",") ?: "",
             gameCount = remote.romCount,
             isVisible = existing?.isVisible ?: true,
             logoPath = logoUrl ?: existing?.logoPath,
-            sortOrder = platformDef?.sortOrder ?: existing?.sortOrder ?: 9999,
+            sortOrder = platformDef?.sortOrder ?: existing?.sortOrder ?: 999,
             lastScanned = existing?.lastScanned
         )
 

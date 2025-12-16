@@ -1,6 +1,9 @@
 package com.nendo.argosy.ui.common.savechannel
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,10 +43,15 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SaveChannelModal(
     state: SaveChannelState,
-    onRenameTextChange: (String) -> Unit
+    onRenameTextChange: (String) -> Unit,
+    onTabSelect: (SaveTab) -> Unit = {},
+    onEntryClick: (Int) -> Unit = {},
+    onEntryLongClick: (Int) -> Unit = {},
+    onDismiss: () -> Unit = {}
 ) {
     if (!state.isVisible) return
 
@@ -52,7 +60,7 @@ fun SaveChannelModal(
     val maxVisibleItems = 5
     val entries = state.currentTabEntries
 
-    LaunchedEffect(state.focusIndex, entries.size) {
+    LaunchedEffect(state.focusIndex, state.selectedTab, entries.size) {
         if (entries.isNotEmpty()) {
             val centerOffset = maxVisibleItems / 2
             val maxScrollIndex = (entries.size - maxVisibleItems).coerceAtLeast(0)
@@ -64,7 +72,8 @@ fun SaveChannelModal(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
+            .background(Color.Black.copy(alpha = 0.7f))
+            .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -74,6 +83,7 @@ fun SaveChannelModal(
                     RoundedCornerShape(12.dp)
                 )
                 .width(450.dp)
+                .clickable(enabled = false, onClick = {})
                 .padding(24.dp)
         ) {
             Row(
@@ -100,7 +110,8 @@ fun SaveChannelModal(
 
             TabBar(
                 selectedTab = state.selectedTab,
-                hasSaveSlots = state.hasSaveSlots
+                hasSaveSlots = state.hasSaveSlots,
+                onTabSelect = onTabSelect
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -148,7 +159,9 @@ fun SaveChannelModal(
                         SaveCacheEntryRow(
                             entry = entry,
                             isFocused = state.focusIndex == index,
-                            isActiveChannel = isActiveChannel
+                            isActiveChannel = isActiveChannel,
+                            onClick = { onEntryClick(index) },
+                            onLongClick = { onEntryLongClick(index) }
                         )
                     }
                 }
@@ -204,7 +217,8 @@ private fun ActiveSaveIndicator(activeChannel: String?) {
 @Composable
 private fun TabBar(
     selectedTab: SaveTab,
-    hasSaveSlots: Boolean
+    hasSaveSlots: Boolean,
+    onTabSelect: (SaveTab) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -213,12 +227,14 @@ private fun TabBar(
         TabButton(
             label = "Save Slots",
             isSelected = selectedTab == SaveTab.SLOTS,
-            isEnabled = hasSaveSlots
+            isEnabled = hasSaveSlots,
+            onClick = { onTabSelect(SaveTab.SLOTS) }
         )
         TabButton(
             label = "Recent Saves",
             isSelected = selectedTab == SaveTab.TIMELINE,
-            isEnabled = true
+            isEnabled = true,
+            onClick = { onTabSelect(SaveTab.TIMELINE) }
         )
     }
 }
@@ -227,7 +243,8 @@ private fun TabBar(
 private fun TabButton(
     label: String,
     isSelected: Boolean,
-    isEnabled: Boolean
+    isEnabled: Boolean,
+    onClick: () -> Unit
 ) {
     val backgroundColor = when {
         isSelected -> MaterialTheme.colorScheme.primary
@@ -244,6 +261,7 @@ private fun TabButton(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
+            .clickable(enabled = isEnabled && !isSelected, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
@@ -279,11 +297,14 @@ private fun buildFooterHints(state: SaveChannelState): List<Pair<InputButton, St
     return hints
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SaveCacheEntryRow(
     entry: UnifiedSaveEntry,
     isFocused: Boolean,
-    isActiveChannel: Boolean
+    isActiveChannel: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     val dateFormatter = remember {
         java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
@@ -323,6 +344,10 @@ private fun SaveCacheEntryRow(
             .height(56.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

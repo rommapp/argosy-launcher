@@ -760,6 +760,14 @@ class GameDetailViewModel @Inject constructor(
         saveChannelDelegate.moveFocus(delta)
     }
 
+    fun setSaveCacheFocusIndex(index: Int) {
+        saveChannelDelegate.setFocusIndex(index)
+    }
+
+    fun handleSaveCacheLongPress(index: Int) {
+        saveChannelDelegate.handleLongPress(index)
+    }
+
     fun switchSaveTab(tab: com.nendo.argosy.ui.common.savechannel.SaveTab) {
         saveChannelDelegate.switchTab(tab)
     }

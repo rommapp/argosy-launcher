@@ -143,6 +143,27 @@ class SaveChannelDelegate @Inject constructor(
         }
     }
 
+    fun setFocusIndex(index: Int) {
+        _state.update { state ->
+            val entries = state.currentTabEntries
+            if (entries.isEmpty()) return@update state
+
+            val maxIndex = (entries.size - 1).coerceAtLeast(0)
+            val newIndex = index.coerceIn(0, maxIndex)
+
+            state.copy(focusIndex = newIndex)
+        }
+    }
+
+    fun handleLongPress(index: Int) {
+        setFocusIndex(index)
+        val state = _state.value
+        when (state.selectedTab) {
+            SaveTab.TIMELINE -> showCreateChannelDialog()
+            SaveTab.SLOTS -> showRenameChannelDialog()
+        }
+    }
+
     fun confirmSelection(
         scope: CoroutineScope,
         emulatorId: String,

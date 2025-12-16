@@ -455,7 +455,11 @@ private fun GameDetailModals(
 
     SaveChannelModal(
         state = uiState.saveChannel,
-        onRenameTextChange = viewModel::updateRenameText
+        onRenameTextChange = viewModel::updateRenameText,
+        onTabSelect = viewModel::switchSaveTab,
+        onEntryClick = viewModel::setSaveCacheFocusIndex,
+        onEntryLongClick = viewModel::handleSaveCacheLongPress,
+        onDismiss = viewModel::dismissSaveCacheDialog
     )
 
     SyncOverlay(

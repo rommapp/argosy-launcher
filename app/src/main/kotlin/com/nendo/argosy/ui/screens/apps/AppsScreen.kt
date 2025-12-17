@@ -72,6 +72,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.launch
 
 @Composable
@@ -130,6 +131,11 @@ fun AppsScreen(
                     viewModel.enterTouchMode()
                 }
             }
+    }
+
+    val configuration = LocalConfiguration.current
+    LaunchedEffect(configuration.screenWidthDp) {
+        viewModel.updateScreenWidth(configuration.screenWidthDp)
     }
 
     val inputDispatcher = LocalInputDispatcher.current

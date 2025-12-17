@@ -58,6 +58,7 @@ import androidx.compose.material3.Text
 import com.nendo.argosy.ui.icons.InputIcons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -312,10 +313,17 @@ fun HomeScreen(
                     .then(swipeGestureModifier)
             )
 
+            val configuration = LocalConfiguration.current
+            val screenWidth = configuration.screenWidthDp.dp
+            val cardWidth = screenWidth * 0.16f
+            val cardHeight = cardWidth * 4f / 3f
+            val focusScale = 1.8f
+            val railHeight = cardHeight * focusScale + 16.dp
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
+                    .height(railHeight)
             ) {
                 when {
                     uiState.isLoading -> {
@@ -344,7 +352,7 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(130.dp)
+                        .height(railHeight * 0.4f)
                         .align(Alignment.TopCenter)
                         .then(swipeGestureModifier)
                 )
@@ -360,7 +368,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth(0.6f)
                         .align(Alignment.TopEnd)
-                        .offset(y = (-32).dp)
+                        .offset(y = -(railHeight * 0.1f))
                 )
             }
 
@@ -625,16 +633,27 @@ private fun GameRail(
     onItemLongPress: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val focusSpacingPx = with(LocalDensity.current) { 64.dp.toPx() }
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
+    val cardWidth = screenWidth * 0.16f
+    val cardHeight = cardWidth * 4f / 3f
+    val focusScale = 1.8f
+    val railHeight = cardHeight * focusScale + 16.dp
+
+    val focusSpacingPx = with(LocalDensity.current) { (cardWidth * 0.5f).toPx() }
+    val itemSpacing = cardWidth * 0.13f
+    val startPadding = screenWidth * 0.09f
+    val endPadding = screenWidth * 0.65f
 
     LazyRow(
         state = listState,
-        contentPadding = PaddingValues(start = 58.dp, end = 600.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(start = startPadding, end = endPadding),
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
         verticalAlignment = Alignment.Bottom,
         modifier = modifier
             .fillMaxWidth()
-            .height(290.dp)
+            .height(railHeight)
     ) {
         itemsIndexed(
             items,
@@ -661,13 +680,13 @@ private fun GameRail(
                     GameCard(
                         game = item.game,
                         isFocused = isFocused,
-                        focusScale = 1.8f,
+                        focusScale = focusScale,
                         scaleFromBottom = true,
                         downloadIndicator = downloadIndicatorFor(item.game.id),
                         modifier = Modifier
                             .graphicsLayer { this.translationX = translationX }
-                            .width(120.dp)
-                            .height(160.dp)
+                            .width(cardWidth)
+                            .height(cardHeight)
                             .combinedClickable(
                                 onClick = { onItemTap(index) },
                                 onLongClick = { onItemLongPress(index) },
@@ -682,8 +701,8 @@ private fun GameRail(
                         onClick = { onItemTap(index) },
                         modifier = Modifier
                             .graphicsLayer { this.translationX = translationX }
-                            .width(120.dp)
-                            .height(160.dp)
+                            .width(cardWidth)
+                            .height(cardHeight)
                     )
                 }
             }

@@ -213,6 +213,5 @@ data class SettingsUiState(
     val betaUpdatesEnabled: Boolean = false,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
-    val fileLogLevel: LogLevel = LogLevel.INFO,
-    val launchLogFolderPicker: Boolean = false
+    val fileLogLevel: LogLevel = LogLevel.INFO
 )

@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -47,6 +48,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.zIndex
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -57,11 +61,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.preferences.UiDensity
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SyncOverlay
@@ -159,15 +165,8 @@ fun LibraryScreen(
                 }
             }
         } else {
-            val cols = uiState.columnsCount
-            val focusedRow = uiState.focusedIndex / cols
-            val firstVisibleRow = firstItem.index / cols
             isProgrammaticScroll = true
-            if (focusedRow > firstVisibleRow) {
-                gridState.animateScrollBy(rowStep.toFloat(), scrollAnim)
-            } else {
-                gridState.animateScrollBy(-rowStep.toFloat(), scrollAnim)
-            }
+            gridState.scrollToItem(uiState.focusedIndex)
             isProgrammaticScroll = false
         }
     }
@@ -269,6 +268,7 @@ fun LibraryScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .graphicsLayer { clip = false }
                     .then(swipeGestureModifier)
             ) {
                 when {
@@ -288,26 +288,42 @@ fun LibraryScreen(
                     else -> {
                         key(uiState.currentPlatformIndex) {
                             val gridSpacing = uiState.gridSpacingDp.dp
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(uiState.columnsCount),
-                                state = gridState,
-                                contentPadding = PaddingValues(gridSpacing),
-                                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
-                                verticalArrangement = Arrangement.spacedBy(gridSpacing),
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                itemsIndexed(
-                                    items = uiState.games,
-                                    key = { _, game -> game.id }
-                                ) { index, game ->
-                                    LibraryGameCard(
-                                        game = game,
-                                        isFocused = index == uiState.focusedIndex,
-                                        showFocus = !uiState.isTouchMode || uiState.hasSelectedGame,
-                                        cardHeightDp = uiState.cardHeightDp,
-                                        onClick = { viewModel.handleItemTap(index, onGameSelect) },
-                                        onLongClick = { viewModel.handleItemLongPress(index) }
-                                    )
+                            val columnsCount = uiState.columnsCount
+                            val aspectRatio = if (uiState.uiDensity == UiDensity.COMPACT) 2f / 3f else 3f / 4f
+
+                            val configuration = LocalConfiguration.current
+                            LaunchedEffect(configuration.screenWidthDp) {
+                                viewModel.updateScreenWidth(configuration.screenWidthDp)
+                            }
+
+                            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                                val totalSpacing = gridSpacing * (columnsCount + 1)
+                                val columnWidth = (maxWidth - totalSpacing) / columnsCount
+                                val cardHeight = columnWidth / aspectRatio
+
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(columnsCount),
+                                    state = gridState,
+                                    contentPadding = PaddingValues(gridSpacing),
+                                    horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                                    verticalArrangement = Arrangement.spacedBy(gridSpacing),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    itemsIndexed(
+                                        items = uiState.games,
+                                        key = { _, game -> game.id }
+                                    ) { index, game ->
+                                        val isFocused = index == uiState.focusedIndex
+                                        LibraryGameCard(
+                                            game = game,
+                                            isFocused = isFocused,
+                                            showFocus = !uiState.isTouchMode || uiState.hasSelectedGame,
+                                            cardHeight = cardHeight,
+                                            onClick = { viewModel.handleItemTap(index, onGameSelect) },
+                                            onLongClick = { viewModel.handleItemLongPress(index) },
+                                            modifier = Modifier.zIndex(if (isFocused) 1f else 0f)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -398,7 +414,7 @@ private fun LibraryHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f))
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
     ) {
         Row(
@@ -481,9 +497,10 @@ private fun LibraryGameCard(
     game: LibraryGameUi,
     isFocused: Boolean,
     showFocus: Boolean,
-    cardHeightDp: Int,
+    cardHeight: Dp,
     onClick: () -> Unit = {},
-    onLongClick: () -> Unit = {}
+    onLongClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val effectiveFocused = isFocused && showFocus
     GameCard(
@@ -499,9 +516,9 @@ private fun LibraryGameCard(
             isDownloaded = game.isDownloaded
         ),
         isFocused = effectiveFocused,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(cardHeightDp.dp)
+            .height(cardHeight)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,

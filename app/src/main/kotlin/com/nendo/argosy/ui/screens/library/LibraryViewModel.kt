@@ -139,13 +139,21 @@ data class LibraryUiState(
     val filterOptionIndex: Int = 0,
     val syncOverlayState: SyncOverlayState? = null,
     val isTouchMode: Boolean = false,
-    val hasSelectedGame: Boolean = false
+    val hasSelectedGame: Boolean = false,
+    val screenWidthDp: Int = 0
 ) {
     val columnsCount: Int
-        get() = when (uiDensity) {
-            UiDensity.COMPACT -> 5
-            UiDensity.NORMAL -> 4
-            UiDensity.SPACIOUS -> 3
+        get() {
+            val baseColumns = when (uiDensity) {
+                UiDensity.COMPACT -> 5
+                UiDensity.NORMAL -> 4
+                UiDensity.SPACIOUS -> 3
+            }
+            return if (screenWidthDp > 900) {
+                (baseColumns * 1.5f).toInt()
+            } else {
+                baseColumns
+            }
         }
 
     val cardHeightDp: Int
@@ -393,7 +401,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         Log.d(TAG, "nextPlatform: changing to index $nextIndex")
-        _uiState.update { it.copy(currentPlatformIndex = nextIndex) }
+        _uiState.update { it.copy(currentPlatformIndex = nextIndex, focusedIndex = 0) }
         loadGames()
     }
 
@@ -409,7 +417,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         Log.d(TAG, "previousPlatform: changing to index $prevIndex")
-        _uiState.update { it.copy(currentPlatformIndex = prevIndex) }
+        _uiState.update { it.copy(currentPlatformIndex = prevIndex, focusedIndex = 0) }
         loadGames()
     }
 
@@ -732,6 +740,12 @@ class LibraryViewModel @Inject constructor(
 
     fun exitTouchMode() {
         _uiState.update { it.copy(isTouchMode = false) }
+    }
+
+    fun updateScreenWidth(widthDp: Int) {
+        if (_uiState.value.screenWidthDp != widthDp) {
+            _uiState.update { it.copy(screenWidthDp = widthDp) }
+        }
     }
 
     fun clearSelection() {

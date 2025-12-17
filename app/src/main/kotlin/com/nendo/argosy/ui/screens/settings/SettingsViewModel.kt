@@ -108,6 +108,9 @@ class SettingsViewModel @Inject constructor(
     val openBackgroundPickerEvent: SharedFlow<Unit> = displayDelegate.openBackgroundPickerEvent
     val openCustomSoundPickerEvent: SharedFlow<SoundType> = soundsDelegate.openCustomSoundPickerEvent
 
+    private val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
+    val openLogFolderPickerEvent: SharedFlow<Unit> = _openLogFolderPickerEvent.asSharedFlow()
+
     init {
         observeDelegateStates()
         observeDelegateEvents()
@@ -827,11 +830,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun openLogFolderPicker() {
-        _uiState.update { it.copy(launchLogFolderPicker = true) }
-    }
-
-    fun clearLogFolderPickerFlag() {
-        _uiState.update { it.copy(launchLogFolderPicker = false) }
+        viewModelScope.launch {
+            _openLogFolderPickerEvent.emit(Unit)
+        }
     }
 
     fun setFileLoggingPath(path: String) {

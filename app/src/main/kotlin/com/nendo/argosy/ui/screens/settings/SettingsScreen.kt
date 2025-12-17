@@ -144,10 +144,9 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(uiState.launchLogFolderPicker) {
-        if (uiState.launchLogFolderPicker) {
+    LaunchedEffect(Unit) {
+        viewModel.openLogFolderPickerEvent.collect {
             logFolderPickerLauncher.launch(null)
-            viewModel.clearLogFolderPickerFlag()
         }
     }
 
@@ -184,7 +183,6 @@ fun SettingsScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshEmulators()
                 viewModel.checkStoragePermission()
             }
         }
@@ -343,19 +341,31 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
     val path = Uri.decode(rawPath)
 
     // Tree URIs have format: /tree/primary:path/to/folder
+    // or /tree/primary:path/to/folder/document/primary:path/to/folder
     val treePath = path.substringAfter("/tree/", "")
+        .substringBefore("/document/") // Handle document URIs
     if (treePath.isEmpty()) return null
 
     return when {
         treePath.startsWith("primary:") -> {
             val relativePath = treePath.removePrefix("primary:")
-            "${Environment.getExternalStorageDirectory().absolutePath}/$relativePath"
+            if (relativePath.isEmpty()) {
+                Environment.getExternalStorageDirectory().absolutePath
+            } else {
+                "${Environment.getExternalStorageDirectory().absolutePath}/$relativePath"
+            }
         }
         treePath.contains(":") -> {
             // External SD card: storage-id:path
             val parts = treePath.split(":", limit = 2)
             if (parts.size == 2) {
-                "/storage/${parts[0]}/${parts[1]}"
+                val storageId = parts[0]
+                val subPath = parts[1]
+                if (subPath.isEmpty()) {
+                    "/storage/$storageId"
+                } else {
+                    "/storage/$storageId/$subPath"
+                }
             } else null
         }
         else -> null

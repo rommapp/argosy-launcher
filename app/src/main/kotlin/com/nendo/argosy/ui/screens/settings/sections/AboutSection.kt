@@ -80,7 +80,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         }
         item { Spacer(modifier = Modifier.height(Dimens.spacingMd)) }
         item { SectionHeader("DEBUG") }
-        item {
+        item(key = "fileLogging-${uiState.fileLoggingPath}") {
             if (uiState.fileLoggingPath != null) {
                 SwitchPreference(
                     icon = Icons.Default.Description,
@@ -102,7 +102,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
         }
         if (uiState.fileLoggingPath != null) {
-            item {
+            item(key = "logLevel") {
                 CyclePreference(
                     title = "Log Level",
                     value = uiState.fileLogLevel.name,

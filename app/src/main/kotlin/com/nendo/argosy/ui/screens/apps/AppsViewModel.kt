@@ -52,13 +52,21 @@ data class AppsUiState(
     val contextMenuFocusIndex: Int = 0,
     val isReorderMode: Boolean = false,
     val isTouchMode: Boolean = false,
-    val hasSelectedApp: Boolean = false
+    val hasSelectedApp: Boolean = false,
+    val screenWidthDp: Int = 0
 ) {
     val columnsCount: Int
-        get() = when (uiDensity) {
-            UiDensity.COMPACT -> 5
-            UiDensity.NORMAL -> 4
-            UiDensity.SPACIOUS -> 3
+        get() {
+            val baseColumns = when (uiDensity) {
+                UiDensity.COMPACT -> 5
+                UiDensity.NORMAL -> 4
+                UiDensity.SPACIOUS -> 3
+            }
+            return if (screenWidthDp > 900) {
+                (baseColumns * 1.5f).toInt()
+            } else {
+                baseColumns
+            }
         }
 
     val focusedApp: AppUi?
@@ -355,6 +363,12 @@ class AppsViewModel @Inject constructor(
 
     fun enterTouchMode() {
         _uiState.update { it.copy(isTouchMode = true, hasSelectedApp = false) }
+    }
+
+    fun updateScreenWidth(widthDp: Int) {
+        if (_uiState.value.screenWidthDp != widthDp) {
+            _uiState.update { it.copy(screenWidthDp = widthDp) }
+        }
     }
 
     fun handleAppTap(index: Int) {

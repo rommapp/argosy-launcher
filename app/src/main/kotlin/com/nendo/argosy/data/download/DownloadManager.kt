@@ -5,6 +5,7 @@ import android.os.StatFs
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -108,6 +109,7 @@ class DownloadManager @Inject constructor(
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
     private val downloadQueueDao: DownloadQueueDao,
+    private val platformDao: PlatformDao,
     private val romMRepository: RomMRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val soundManager: SoundFeedbackManager,
@@ -145,26 +147,31 @@ class DownloadManager @Inject constructor(
         val restored = pending.map { it.toDownloadProgress() }
         _state.value = DownloadQueueState(
             queue = restored,
-            availableStorageBytes = getAvailableStorageBytes()
+            availableStorageBytes = getGlobalStorageBytes()
         )
 
         processQueue()
     }
 
-    private suspend fun getDownloadDir(): File {
+    private suspend fun getDownloadDir(platformSlug: String): File {
+        val platform = platformDao.getById(platformSlug)
+        if (platform?.customRomPath != null) {
+            return File(platform.customRomPath).also { it.mkdirs() }
+        }
+
         val prefs = preferencesRepository.userPreferences.first()
         val customPath = prefs.romStoragePath
         return if (customPath != null) {
-            File(customPath).also { it.mkdirs() }
+            File(customPath, platformSlug).also { it.mkdirs() }
         } else {
-            defaultDownloadDir
+            File(defaultDownloadDir, platformSlug).also { it.mkdirs() }
         }
     }
 
-    private suspend fun getAvailableStorageBytes(): Long {
+    private suspend fun getAvailableStorageBytes(platformSlug: String): Long {
         return withContext(Dispatchers.IO) {
             try {
-                val downloadDir = getDownloadDir()
+                val downloadDir = getDownloadDir(platformSlug)
                 val stat = StatFs(downloadDir.absolutePath)
                 stat.availableBytes
             } catch (_: Exception) {
@@ -177,8 +184,21 @@ class DownloadManager @Inject constructor(
         return availableBytes >= requiredBytes + STORAGE_BUFFER_BYTES
     }
 
+    private suspend fun getGlobalStorageBytes(): Long {
+        return withContext(Dispatchers.IO) {
+            try {
+                val prefs = preferencesRepository.userPreferences.first()
+                val dir = prefs.romStoragePath?.let { File(it) } ?: defaultDownloadDir
+                val stat = StatFs(dir.absolutePath)
+                stat.availableBytes
+            } catch (_: Exception) {
+                0L
+            }
+        }
+    }
+
     private suspend fun updateAvailableStorage() {
-        val available = getAvailableStorageBytes()
+        val available = getGlobalStorageBytes()
         _state.value = _state.value.copy(availableStorageBytes = available)
     }
 
@@ -198,8 +218,7 @@ class DownloadManager @Inject constructor(
         val existing = downloadQueueDao.getByGameId(gameId)
         if (existing != null) return
 
-        val downloadDir = getDownloadDir()
-        val platformDir = File(downloadDir, platformSlug)
+        val platformDir = getDownloadDir(platformSlug)
         val tempFilePath = File(platformDir, "${fileName}.tmp").absolutePath
 
         val entity = DownloadQueueEntity(
@@ -254,8 +273,7 @@ class DownloadManager @Inject constructor(
         if (currentState.activeDownloads.any { it.discId == discId }) return
         if (currentState.queue.any { it.discId == discId }) return
 
-        val downloadDir = getDownloadDir()
-        val platformDir = File(downloadDir, platformSlug)
+        val platformDir = getDownloadDir(platformSlug)
         val tempFilePath = File(platformDir, "${fileName}.tmp").absolutePath
 
         val entity = DownloadQueueEntity(
@@ -312,11 +330,10 @@ class DownloadManager @Inject constructor(
 
         if (nextItems.isEmpty()) return
 
-        val availableStorage = getAvailableStorageBytes()
-
         for (next in nextItems) {
             if (downloadJobs[next.id]?.isActive == true) continue
 
+            val availableStorage = getAvailableStorageBytes(next.platformSlug)
             val requiredBytes = next.totalBytes - next.bytesDownloaded
 
             if (!hasEnoughStorage(requiredBytes, availableStorage)) {
@@ -381,8 +398,7 @@ class DownloadManager @Inject constructor(
     private suspend fun downloadRom(progress: DownloadProgress): DownloadResult =
         withContext(Dispatchers.IO) {
             try {
-                val downloadDir = getDownloadDir()
-                val platformDir = File(downloadDir, progress.platformSlug).also { it.mkdirs() }
+                val platformDir = getDownloadDir(progress.platformSlug)
                 val tempFile = File(platformDir, "${progress.fileName}.tmp")
                 val targetFile = File(platformDir, progress.fileName)
 
@@ -598,10 +614,9 @@ class DownloadManager @Inject constructor(
             return
         }
 
-        val availableStorage = getAvailableStorageBytes()
-
         var anyResumed = false
         for (item in waiting) {
+            val availableStorage = getAvailableStorageBytes(item.platformSlug)
             val requiredBytes = item.totalBytes - item.bytesDownloaded
             if (hasEnoughStorage(requiredBytes, availableStorage)) {
                 downloadQueueDao.updateState(item.id, DownloadState.QUEUED.name)
@@ -625,8 +640,8 @@ class DownloadManager @Inject constructor(
             scope.launch {
                 downloadQueueDao.deleteById(active.id)
                 withContext(Dispatchers.IO) {
-                    val downloadDir = getDownloadDir()
-                    val tempFile = File(downloadDir, "${active.platformSlug}/${active.fileName}.tmp")
+                    val platformDir = getDownloadDir(active.platformSlug)
+                    val tempFile = File(platformDir, "${active.fileName}.tmp")
                     if (tempFile.exists()) tempFile.delete()
                 }
             }
@@ -640,8 +655,8 @@ class DownloadManager @Inject constructor(
                 scope.launch {
                     downloadQueueDao.deleteById(queued.id)
                     withContext(Dispatchers.IO) {
-                        val downloadDir = getDownloadDir()
-                        val tempFile = File(downloadDir, "${queued.platformSlug}/${queued.fileName}.tmp")
+                        val platformDir = getDownloadDir(queued.platformSlug)
+                        val tempFile = File(platformDir, "${queued.fileName}.tmp")
                         if (tempFile.exists()) tempFile.delete()
                     }
                 }
@@ -660,8 +675,7 @@ class DownloadManager @Inject constructor(
     }
 
     suspend fun getDownloadPath(platformSlug: String, fileName: String): File {
-        val downloadDir = getDownloadDir()
-        val platformDir = File(downloadDir, platformSlug)
+        val platformDir = getDownloadDir(platformSlug)
         return File(platformDir, fileName)
     }
 

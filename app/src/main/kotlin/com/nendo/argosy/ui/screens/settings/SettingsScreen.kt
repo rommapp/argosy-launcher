@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,7 +32,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -47,6 +50,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
+import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
 import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
@@ -118,6 +122,24 @@ fun SettingsScreen(
         }
     }
 
+    var pendingPlatformId by remember { mutableStateOf<String?>(null) }
+    val platformFolderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        val platformId = pendingPlatformId
+        if (uri != null && platformId != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            val filePath = getFilePathFromUri(context, uri)
+            if (filePath != null) {
+                viewModel.setPlatformPath(platformId, filePath)
+            }
+        }
+        pendingPlatformId = null
+    }
+
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(onBack = onBack)
@@ -177,6 +199,13 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.openBackgroundPickerEvent.collect {
             backgroundPickerLauncher.launch(arrayOf("image/*"))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.launchPlatformFolderPicker.collect { platformId ->
+            pendingPlatformId = platformId
+            platformFolderPickerLauncher.launch(null)
         }
     }
 
@@ -256,6 +285,27 @@ fun SettingsScreen(
                 )
             }
         }
+
+        AnimatedVisibility(
+            visible = uiState.storage.platformSettingsModalId != null,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            uiState.storage.platformSettingsModalId?.let { platformId ->
+                val config = uiState.storage.platformConfigs.find { it.platformId == platformId }
+                if (config != null) {
+                    PlatformSettingsModal(
+                        config = config,
+                        focusIndex = uiState.storage.platformSettingsFocusIndex,
+                        onDismiss = { viewModel.closePlatformSettingsModal() },
+                        onToggleSync = { viewModel.togglePlatformSync(platformId, !config.syncEnabled) },
+                        onChangePath = { viewModel.openPlatformFolderPicker(platformId) },
+                        onResetPath = { viewModel.resetPlatformToGlobal(platformId) },
+                        onPurge = { viewModel.requestPurgePlatform(platformId) }
+                    )
+                }
+            }
+        }
     }
 
     if (uiState.showMigrationDialog) {
@@ -279,6 +329,57 @@ fun SettingsScreen(
                     TextButton(onClick = { viewModel.skipMigration() }) {
                         Text("Skip")
                     }
+                }
+            }
+        )
+    }
+
+    uiState.storage.showMigratePlatformConfirm?.let { info ->
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelPlatformMigration() },
+            title = { Text("Migrate ${info.platformName} ROMs?") },
+            text = {
+                Text("Move downloaded games to the new location? Files will be copied and then removed from the old location.")
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.confirmPlatformMigration() }) {
+                    Text("Migrate")
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { viewModel.cancelPlatformMigration() }) {
+                        Text("Cancel")
+                    }
+                    TextButton(onClick = { viewModel.skipPlatformMigration() }) {
+                        Text("Skip")
+                    }
+                }
+            }
+        )
+    }
+
+    uiState.storage.showPurgePlatformConfirm?.let { platformId ->
+        val config = uiState.storage.platformConfigs.find { it.platformId == platformId }
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelPurgePlatform() },
+            title = { Text("Purge ${config?.platformName ?: "Platform"}?") },
+            text = {
+                Text("This will delete all ${config?.gameCount ?: 0} games and their local ROM files. This cannot be undone.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.confirmPurgePlatform() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Purge")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelPurgePlatform() }) {
+                    Text("Cancel")
                 }
             }
         )

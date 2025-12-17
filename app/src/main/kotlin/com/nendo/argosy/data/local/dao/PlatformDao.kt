@@ -49,4 +49,16 @@ interface PlatformDao {
 
     @Query("SELECT * FROM platforms WHERE logoPath LIKE 'http%'")
     suspend fun getPlatformsWithRemoteLogos(): List<PlatformEntity>
+
+    @Query("UPDATE platforms SET syncEnabled = :enabled WHERE id = :platformId")
+    suspend fun updateSyncEnabled(platformId: String, enabled: Boolean)
+
+    @Query("UPDATE platforms SET customRomPath = :path WHERE id = :platformId")
+    suspend fun updateCustomRomPath(platformId: String, path: String?)
+
+    @Query("SELECT * FROM platforms WHERE syncEnabled = 1")
+    suspend fun getSyncEnabledPlatforms(): List<PlatformEntity>
+
+    @Query("SELECT * FROM platforms WHERE gameCount > 0 OR syncEnabled = 0 ORDER BY sortOrder ASC, name ASC")
+    fun observeConfigurablePlatforms(): Flow<List<PlatformEntity>>
 }

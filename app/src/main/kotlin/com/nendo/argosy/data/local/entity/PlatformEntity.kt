@@ -15,5 +15,7 @@ data class PlatformEntity(
     val logoPath: String? = null,
     val romExtensions: String,
     val lastScanned: Instant? = null,
-    val gameCount: Int = 0
+    val gameCount: Int = 0,
+    val syncEnabled: Boolean = true,
+    val customRomPath: String? = null
 )

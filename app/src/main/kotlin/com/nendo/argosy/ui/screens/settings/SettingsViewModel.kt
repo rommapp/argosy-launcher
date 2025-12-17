@@ -107,6 +107,7 @@ class SettingsViewModel @Inject constructor(
 
     val openBackgroundPickerEvent: SharedFlow<Unit> = displayDelegate.openBackgroundPickerEvent
     val openCustomSoundPickerEvent: SharedFlow<SoundType> = soundsDelegate.openCustomSoundPickerEvent
+    val launchPlatformFolderPicker: SharedFlow<String> = storageDelegate.launchPlatformFolderPicker
 
     private val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
     val openLogFolderPickerEvent: SharedFlow<Unit> = _openLogFolderPickerEvent.asSharedFlow()
@@ -298,6 +299,7 @@ class SettingsViewModel @Inject constructor(
                 availableSpace = availableSpace
             ))
             storageDelegate.checkAllFilesAccess()
+            storageDelegate.loadPlatformConfigs(viewModelScope)
 
             syncDelegate.updateState(SyncSettingsState(
                 syncFilters = prefs.syncFilters,
@@ -468,6 +470,10 @@ class SettingsViewModel @Inject constructor(
     fun navigateBack(): Boolean {
         val state = _uiState.value
         return when {
+            state.storage.platformSettingsModalId != null -> {
+                closePlatformSettingsModal()
+                true
+            }
             state.steam.showAddGameDialog -> {
                 dismissAddSteamGameDialog()
                 true
@@ -510,6 +516,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun moveFocus(delta: Int) {
+        if (_uiState.value.storage.platformSettingsModalId != null) {
+            storageDelegate.movePlatformSettingsFocus(delta)
+            return
+        }
         if (_uiState.value.sounds.showSoundPicker) {
             soundsDelegate.moveSoundPickerFocus(delta)
             return
@@ -542,7 +552,11 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 3 else 2
                 SettingsSection.SYNC_FILTERS -> 6
                 SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
-                SettingsSection.STORAGE -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) 3 else 2
+                SettingsSection.STORAGE -> {
+                    val baseItemCount = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) 4 else 3
+                    val platformCount = state.storage.platformConfigs.size
+                    (baseItemCount + platformCount - 1).coerceAtLeast(baseItemCount - 1)
+                }
                 SettingsSection.DISPLAY -> if (state.display.useGameBackground) 7 else 8
                 SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 4 else 3
                 SettingsSection.SOUNDS -> if (state.sounds.enabled) 1 + SoundType.entries.size else 0
@@ -827,6 +841,62 @@ class SettingsViewModel @Inject constructor(
 
     fun skipMigration() {
         storageDelegate.skipMigration()
+    }
+
+    fun togglePlatformSync(platformId: String, enabled: Boolean) {
+        storageDelegate.togglePlatformSync(viewModelScope, platformId, enabled)
+    }
+
+    fun openPlatformFolderPicker(platformId: String) {
+        storageDelegate.openPlatformFolderPicker(viewModelScope, platformId)
+    }
+
+    fun setPlatformPath(platformId: String, path: String) {
+        storageDelegate.setPlatformPath(viewModelScope, platformId, path)
+    }
+
+    fun resetPlatformToGlobal(platformId: String) {
+        storageDelegate.resetPlatformToGlobal(viewModelScope, platformId)
+    }
+
+    fun requestPurgePlatform(platformId: String) {
+        storageDelegate.requestPurgePlatform(platformId)
+    }
+
+    fun confirmPurgePlatform() {
+        storageDelegate.confirmPurgePlatform(viewModelScope)
+    }
+
+    fun cancelPurgePlatform() {
+        storageDelegate.cancelPurgePlatform()
+    }
+
+    fun confirmPlatformMigration() {
+        storageDelegate.confirmPlatformMigration(viewModelScope)
+    }
+
+    fun cancelPlatformMigration() {
+        storageDelegate.cancelPlatformMigration()
+    }
+
+    fun skipPlatformMigration() {
+        storageDelegate.skipPlatformMigration(viewModelScope)
+    }
+
+    fun openPlatformSettingsModal(platformId: String) {
+        storageDelegate.openPlatformSettingsModal(platformId)
+    }
+
+    fun closePlatformSettingsModal() {
+        storageDelegate.closePlatformSettingsModal()
+    }
+
+    fun movePlatformSettingsFocus(delta: Int) {
+        storageDelegate.movePlatformSettingsFocus(delta)
+    }
+
+    fun selectPlatformSettingsOption() {
+        storageDelegate.selectPlatformSettingsOption(viewModelScope)
     }
 
     fun openLogFolderPicker() {
@@ -1127,12 +1197,18 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsSection.STORAGE -> {
                 val hasPermissionRow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                val baseItemCount = if (hasPermissionRow) 4 else 3
                 val folderPickerIndex = if (hasPermissionRow) 1 else 0
                 val sliderIndex = if (hasPermissionRow) 2 else 1
-                when (state.focusedIndex) {
-                    0 -> if (hasPermissionRow && !state.storage.hasAllFilesAccess) requestStoragePermission()
-                    folderPickerIndex -> openFolderPicker()
-                    sliderIndex -> cycleMaxConcurrentDownloads()
+                when {
+                    state.focusedIndex == 0 && hasPermissionRow && !state.storage.hasAllFilesAccess -> requestStoragePermission()
+                    state.focusedIndex == folderPickerIndex -> openFolderPicker()
+                    state.focusedIndex == sliderIndex -> cycleMaxConcurrentDownloads()
+                    state.focusedIndex >= baseItemCount -> {
+                        val platformIndex = state.focusedIndex - baseItemCount
+                        val config = state.storage.platformConfigs.getOrNull(platformIndex)
+                        config?.let { openPlatformSettingsModal(it.platformId) }
+                    }
                 }
                 InputResult.HANDLED
             }

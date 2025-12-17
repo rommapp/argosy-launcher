@@ -43,10 +43,24 @@ class GameRepository @Inject constructor(
         File(context.getExternalFilesDir(null), "downloads")
     }
 
-    private suspend fun getDownloadDir(): File {
+    private suspend fun getDownloadDir(platformId: String): File {
+        val platform = platformDao.getById(platformId)
+        if (platform?.customRomPath != null) {
+            return File(platform.customRomPath).also { it.mkdirs() }
+        }
+
         val prefs = preferencesRepository.userPreferences.first()
         val customPath = prefs.romStoragePath
-        return if (customPath != null) File(customPath) else defaultDownloadDir
+        return if (customPath != null) {
+            File(customPath, platformId).also { it.mkdirs() }
+        } else {
+            File(defaultDownloadDir, platformId).also { it.mkdirs() }
+        }
+    }
+
+    private suspend fun getGlobalDownloadDir(): File {
+        val prefs = preferencesRepository.userPreferences.first()
+        return prefs.romStoragePath?.let { File(it) } ?: defaultDownloadDir
     }
 
     private fun isStorageReady(): Boolean {
@@ -82,13 +96,12 @@ class GameRepository @Inject constructor(
             return@withContext 0
         }
 
-        val downloadDir = getDownloadDir()
         val gamesWithoutPath = gameDao.getGamesWithRommIdButNoPath()
         if (gamesWithoutPath.isEmpty()) return@withContext 0
 
         var discovered = 0
         for (game in gamesWithoutPath) {
-            val platformDir = File(downloadDir, game.platformId)
+            val platformDir = getDownloadDir(game.platformId)
             if (!platformDir.exists()) continue
 
             val candidates = platformDir.listFiles { f -> f.isFile && !f.name.endsWith(".tmp") } ?: continue
@@ -133,7 +146,6 @@ class GameRepository @Inject constructor(
         val gamesWithoutPath = gameDao.getGamesWithRommIdButNoPath()
         if (gamesWithoutPath.isEmpty()) return@withContext 0
 
-        val downloadDir = getDownloadDir()
         var recovered = 0
 
         for (game in gamesWithoutPath) {
@@ -145,7 +157,8 @@ class GameRepository @Inject constructor(
                     val fileName = rom.fileName ?: continue
                     val platformSlug = rom.platformSlug
 
-                    val expectedFile = File(downloadDir, "$platformSlug/$fileName")
+                    val platformDir = getDownloadDir(platformSlug)
+                    val expectedFile = File(platformDir, fileName)
                     if (expectedFile.exists()) {
                         gameDao.updateLocalPath(game.id, expectedFile.absolutePath, GameSource.ROMM_SYNCED)
                         recovered++
@@ -184,7 +197,7 @@ class GameRepository @Inject constructor(
 
     suspend fun getAvailableStorageBytes(): Long = withContext(Dispatchers.IO) {
         try {
-            val downloadDir = getDownloadDir()
+            val downloadDir = getGlobalDownloadDir()
             downloadDir.mkdirs()
             val stat = android.os.StatFs(downloadDir.absolutePath)
             stat.availableBytes
@@ -195,6 +208,14 @@ class GameRepository @Inject constructor(
 
     suspend fun getGamesWithLocalPaths() = withContext(Dispatchers.IO) {
         gameDao.getGamesWithLocalPath()
+    }
+
+    suspend fun getGamesWithLocalPathsForPlatform(platformId: String) = withContext(Dispatchers.IO) {
+        gameDao.getGamesWithLocalPath().filter { it.platformId == platformId }
+    }
+
+    suspend fun getDownloadDirForPlatform(platformId: String): File = withContext(Dispatchers.IO) {
+        getDownloadDir(platformId)
     }
 
     suspend fun updateLocalPath(gameId: Long, newPath: String) = withContext(Dispatchers.IO) {

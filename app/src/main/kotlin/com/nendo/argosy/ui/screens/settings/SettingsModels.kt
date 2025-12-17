@@ -122,13 +122,37 @@ data class EmulatorState(
     val emulatorPickerSelectedIndex: Int? = null
 )
 
+data class PlatformStorageConfig(
+    val platformId: String,
+    val platformName: String,
+    val gameCount: Int,
+    val downloadedCount: Int = 0,
+    val syncEnabled: Boolean,
+    val customRomPath: String?,
+    val effectivePath: String,
+    val isExpanded: Boolean = false
+)
+
 data class StorageState(
     val romStoragePath: String = "",
     val downloadedGamesSize: Long = 0,
     val downloadedGamesCount: Int = 0,
     val maxConcurrentDownloads: Int = 1,
     val availableSpace: Long = 0,
-    val hasAllFilesAccess: Boolean = false
+    val hasAllFilesAccess: Boolean = false,
+    val platformConfigs: List<PlatformStorageConfig> = emptyList(),
+    val showPurgePlatformConfirm: String? = null,
+    val showMigratePlatformConfirm: PlatformMigrationInfo? = null,
+    val platformSettingsModalId: String? = null,
+    val platformSettingsFocusIndex: Int = 0
+)
+
+data class PlatformMigrationInfo(
+    val platformId: String,
+    val platformName: String,
+    val oldPath: String,
+    val newPath: String,
+    val isResetToGlobal: Boolean
 )
 
 data class ServerState(

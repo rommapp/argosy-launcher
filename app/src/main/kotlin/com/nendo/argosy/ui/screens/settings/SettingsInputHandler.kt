@@ -168,6 +168,11 @@ class SettingsInputHandler(
     override fun onConfirm(): InputResult {
         val state = viewModel.uiState.value
 
+        if (state.storage.platformSettingsModalId != null) {
+            viewModel.selectPlatformSettingsOption()
+            return InputResult.HANDLED
+        }
+
         if (state.sounds.showSoundPicker) {
             viewModel.confirmSoundPickerSelection()
             return InputResult.HANDLED

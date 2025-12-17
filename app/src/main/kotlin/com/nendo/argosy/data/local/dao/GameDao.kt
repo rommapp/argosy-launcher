@@ -131,8 +131,14 @@ interface GameDao {
     @Query("DELETE FROM games WHERE id = :gameId")
     suspend fun delete(gameId: Long)
 
+    @Query("DELETE FROM games WHERE platformId = :platformId")
+    suspend fun deleteByPlatform(platformId: String)
+
     @Query("SELECT COUNT(*) FROM games WHERE platformId = :platformId AND isHidden = 0")
     suspend fun countByPlatform(platformId: String): Int
+
+    @Query("SELECT COUNT(*) FROM games WHERE platformId = :platformId AND localPath IS NOT NULL")
+    suspend fun countDownloadedByPlatform(platformId: String): Int
 
     @Query("SELECT * FROM games WHERE platformId = :platformId AND isHidden = 0 ORDER BY sortTitle ASC")
     suspend fun getByPlatform(platformId: String): List<GameEntity>

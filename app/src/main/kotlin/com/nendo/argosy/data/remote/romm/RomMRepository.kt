@@ -238,6 +238,13 @@ class RomMRepository @Inject constructor(
 
                 syncPlatform(platform)
 
+                val localPlatform = platformDao.getById(platform.slug)
+                if (localPlatform?.syncEnabled == false) {
+                    Logger.info(TAG, "Skipping game sync for disabled platform: ${platform.name}")
+                    platformsSynced++
+                    continue
+                }
+
                 val result = syncPlatformRoms(currentApi, platform, filters)
                 gamesAdded += result.added
                 gamesUpdated += result.updated
@@ -289,7 +296,9 @@ class RomMRepository @Inject constructor(
             isVisible = existing?.isVisible ?: true,
             logoPath = logoUrl ?: existing?.logoPath,
             sortOrder = platformDef?.sortOrder ?: existing?.sortOrder ?: 999,
-            lastScanned = existing?.lastScanned
+            lastScanned = existing?.lastScanned,
+            syncEnabled = existing?.syncEnabled ?: true,
+            customRomPath = existing?.customRomPath
         )
 
         if (existing == null) {

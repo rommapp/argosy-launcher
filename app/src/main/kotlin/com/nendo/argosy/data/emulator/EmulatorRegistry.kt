@@ -175,16 +175,15 @@ object EmulatorRegistry {
             downloadUrl = "https://github.com/weihuoya/citra/releases"
         ),
         // NOTE: Azahar took over Lime3DS development, keeping the same package name
-        // BUG: Azahar doesn't support external launching - EmulationActivity ignores intent.data
-        // See: https://github.com/azahar-emu/azahar/issues/1484
-        // For now, just open the app - users must launch games from within Azahar
+        // Uses Citra's internal namespace for activities
         EmulatorDef(
             id = "azahar",
             packageName = "io.github.lime3ds.android",
             displayName = "Azahar",
             supportedPlatforms = setOf("3ds"),
             launchConfig = LaunchConfig.Custom(
-                activityClass = "org.citra.citra_emu.ui.main.MainActivity"
+                activityClass = "org.citra.citra_emu.activities.EmulationActivity",
+                intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://github.com/azahar-emu/azahar/releases"
         ),
@@ -745,7 +744,8 @@ object EmulatorRegistry {
             packagePatterns = listOf("io.github.lime3ds.*"),
             supportedPlatforms = setOf("3ds"),
             launchConfig = LaunchConfig.Custom(
-                activityClass = "org.citra.citra_emu.ui.main.MainActivity"
+                activityClass = "org.citra.citra_emu.activities.EmulationActivity",
+                intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://github.com/azahar-emu/azahar/releases"
         ),

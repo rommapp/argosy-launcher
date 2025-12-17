@@ -174,23 +174,17 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://github.com/weihuoya/citra/releases"
         ),
-        EmulatorDef(
-            id = "lime3ds",
-            packageName = "io.github.lime3ds.android",
-            displayName = "Lime3DS",
-            supportedPlatforms = setOf("3ds"),
-            launchConfig = LaunchConfig.Custom(
-                activityClass = "io.github.lime3ds.android.activities.EmulationActivity"
-            ),
-            downloadUrl = "https://github.com/Lime3DS/Lime3DS/releases"
-        ),
+        // NOTE: Azahar took over Lime3DS development, keeping the same package name
+        // BUG: Azahar doesn't support external launching - EmulationActivity ignores intent.data
+        // See: https://github.com/azahar-emu/azahar/issues/1484
+        // For now, just open the app - users must launch games from within Azahar
         EmulatorDef(
             id = "azahar",
-            packageName = "io.github.azahar_emu.azahar",
+            packageName = "io.github.lime3ds.android",
             displayName = "Azahar",
             supportedPlatforms = setOf("3ds"),
             launchConfig = LaunchConfig.Custom(
-                activityClass = "io.github.azahar_emu.azahar.activities.EmulationActivity"
+                activityClass = "org.citra.citra_emu.ui.main.MainActivity"
             ),
             downloadUrl = "https://github.com/azahar-emu/azahar/releases"
         ),
@@ -460,7 +454,7 @@ object EmulatorRegistry {
         "psvita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("mupen64plus_fz", "retroarch", "retroarch_64"),
         "nds" to listOf("drastic", "melonds", "retroarch", "retroarch_64"),
-        "3ds" to listOf("azahar", "borked3ds", "lime3ds", "citra_mmj", "citra"),
+        "3ds" to listOf("citra_mmj", "azahar", "borked3ds", "citra"),
         "gc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "ngc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "wii" to listOf("dolphin", "dolphin_handheld"),
@@ -746,16 +740,13 @@ object EmulatorRegistry {
             downloadUrl = "https://citra-emu.org/"
         ),
         EmulatorFamily(
-            baseId = "lime3ds",
-            displayNamePrefix = "Lime3DS",
-            packagePatterns = listOf("io.github.lime3ds.*"),
-            supportedPlatforms = setOf("3ds")
-        ),
-        EmulatorFamily(
             baseId = "azahar",
             displayNamePrefix = "Azahar",
-            packagePatterns = listOf("io.github.azahar_emu.*"),
+            packagePatterns = listOf("io.github.lime3ds.*"),
             supportedPlatforms = setOf("3ds"),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.citra.citra_emu.ui.main.MainActivity"
+            ),
             downloadUrl = "https://github.com/azahar-emu/azahar/releases"
         ),
         EmulatorFamily(

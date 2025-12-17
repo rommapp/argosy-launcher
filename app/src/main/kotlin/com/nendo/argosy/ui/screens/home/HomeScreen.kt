@@ -18,6 +18,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -595,7 +596,9 @@ private fun GameRail(
                             .height(160.dp)
                             .combinedClickable(
                                 onClick = { onItemTap(index) },
-                                onLongClick = { onItemLongPress(index) }
+                                onLongClick = { onItemLongPress(index) },
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
                             )
                     )
                 }
@@ -650,7 +653,11 @@ private fun ViewAllCard(
                 RoundedCornerShape(8.dp)
             )
             .border(1.dp, borderColor, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -849,7 +856,11 @@ private fun MenuOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .background(backgroundColor, RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

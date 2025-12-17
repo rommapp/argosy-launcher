@@ -93,7 +93,14 @@ fun NavGraph(
         }
 
         composable(Screen.Apps.route) {
-            AppsScreen(onDrawerToggle = onDrawerToggle)
+            AppsScreen(
+                onBack = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = false }
+                    }
+                },
+                onDrawerToggle = onDrawerToggle
+            )
         }
 
         composable(Screen.Settings.route) {

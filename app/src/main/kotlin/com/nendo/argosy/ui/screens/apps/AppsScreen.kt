@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +73,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AppsScreen(
+    onBack: () -> Unit,
     onDrawerToggle: () -> Unit,
     viewModel: AppsViewModel = hiltViewModel()
 ) {
@@ -116,10 +118,10 @@ fun AppsScreen(
     }
 
     val inputDispatcher = LocalInputDispatcher.current
-    val inputHandler = remember(onDrawerToggle) {
+    val inputHandler = remember(onBack, onDrawerToggle) {
         viewModel.createInputHandler(
             onDrawerToggle = onDrawerToggle,
-            onBack = onDrawerToggle
+            onBack = onBack
         )
     }
 
@@ -334,7 +336,11 @@ private fun ContextMenuItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .background(backgroundColor)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -387,7 +393,9 @@ private fun AppCard(
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = onLongClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
             )
             .background(backgroundColor)
             .padding(12.dp),

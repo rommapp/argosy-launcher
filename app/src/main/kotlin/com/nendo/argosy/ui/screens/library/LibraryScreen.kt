@@ -77,6 +77,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 @Composable
 fun LibraryScreen(
@@ -418,7 +419,9 @@ private fun LibraryGameCard(
             .height(cardHeightDp.dp)
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = onLongClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
             )
     )
 }
@@ -536,7 +539,11 @@ private fun FilterMenuOverlay(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(Dimens.radiusMd))
-                            .clickable { onCategorySelect(category) }
+                            .clickable(
+                                onClick = { onCategorySelect(category) },
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            )
                             .then(
                                 if (hasActiveFilters && !isCurrent) {
                                     Modifier.border(
@@ -606,7 +613,11 @@ private fun FilterOptionItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
-            .clickable(onClick = onClick)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .background(
                 when {
                     isFocused -> MaterialTheme.colorScheme.primaryContainer
@@ -747,7 +758,11 @@ private fun QuickMenuItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .background(backgroundColor, RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

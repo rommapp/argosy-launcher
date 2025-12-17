@@ -629,6 +629,55 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun setFocusIndex(index: Int) {
+        val state = _uiState.value
+        if (index < 0 || index >= state.currentItems.size) return
+        if (index == state.focusedGameIndex) return
+        _uiState.update { it.copy(focusedGameIndex = index) }
+        soundManager.play(SoundType.NAVIGATE)
+        saveCurrentState()
+        prefetchAchievementsDebounced()
+    }
+
+    fun handleItemTap(index: Int, onGameSelect: (Long) -> Unit) {
+        val state = _uiState.value
+        if (index < 0 || index >= state.currentItems.size) return
+
+        if (index != state.focusedGameIndex) {
+            setFocusIndex(index)
+            return
+        }
+
+        when (val item = state.currentItems[index]) {
+            is HomeRowItem.Game -> {
+                val game = item.game
+                val indicator = state.downloadIndicatorFor(game.id)
+                when {
+                    game.isDownloaded -> launchGame(game.id)
+                    indicator.isPaused || indicator.isQueued -> downloadManager.resumeDownload(game.id)
+                    else -> queueDownload(game.id)
+                }
+            }
+            is HomeRowItem.ViewAll -> {
+                navigateToLibrary(item.platformId, item.sourceFilter)
+            }
+        }
+    }
+
+    fun handleItemLongPress(index: Int) {
+        val state = _uiState.value
+        if (index < 0 || index >= state.currentItems.size) return
+
+        val item = state.currentItems[index]
+        if (item !is HomeRowItem.Game) return
+
+        if (index != state.focusedGameIndex) {
+            _uiState.update { it.copy(focusedGameIndex = index) }
+            saveCurrentState()
+        }
+        toggleGameMenu()
+    }
+
     private fun scrollToFirstItem(): Boolean {
         val state = _uiState.value
 

@@ -13,9 +13,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,8 +57,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -100,16 +105,35 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.focusedGameIndex, uiState.currentRow, uiState.currentItems.size) {
         if (uiState.currentItems.isNotEmpty()) {
+            isProgrammaticScroll = true
             scope.launch {
                 listState.animateScrollToItem(
                     index = uiState.focusedGameIndex.coerceIn(0, uiState.currentItems.lastIndex),
                     scrollOffset = SCROLL_OFFSET
                 )
+                isProgrammaticScroll = false
             }
         }
+    }
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .collect { isScrolling ->
+                if (!isScrolling && !isProgrammaticScroll) {
+                    val layoutInfo = listState.layoutInfo
+                    val visibleItems = layoutInfo.visibleItemsInfo
+                    if (visibleItems.isNotEmpty()) {
+                        val leftmostVisible = visibleItems.minByOrNull { it.offset }
+                        if (leftmostVisible != null && leftmostVisible.index != uiState.focusedGameIndex) {
+                            viewModel.setFocusIndex(leftmostVisible.index)
+                        }
+                    }
+                }
+            }
     }
 
     BackHandler(enabled = true) {
@@ -258,6 +282,8 @@ fun HomeScreen(
                             listState = listState,
                             rowKey = uiState.currentRow.toString(),
                             downloadIndicatorFor = uiState::downloadIndicatorFor,
+                            onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
+                            onItemLongPress = viewModel::handleItemLongPress,
                             modifier = Modifier.align(Alignment.BottomStart)
                         )
                     }
@@ -512,6 +538,7 @@ private fun GameInfo(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GameRail(
     items: List<HomeRowItem>,
@@ -519,6 +546,8 @@ private fun GameRail(
     listState: androidx.compose.foundation.lazy.LazyListState,
     rowKey: String,
     downloadIndicatorFor: (Long) -> GameDownloadIndicator,
+    onItemTap: (Int) -> Unit = {},
+    onItemLongPress: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val focusSpacingPx = with(LocalDensity.current) { 64.dp.toPx() }
@@ -564,11 +593,16 @@ private fun GameRail(
                             .graphicsLayer { this.translationX = translationX }
                             .width(120.dp)
                             .height(160.dp)
+                            .combinedClickable(
+                                onClick = { onItemTap(index) },
+                                onLongClick = { onItemLongPress(index) }
+                            )
                     )
                 }
                 is HomeRowItem.ViewAll -> {
                     ViewAllCard(
                         isFocused = isFocused,
+                        onClick = { onItemTap(index) },
                         modifier = Modifier
                             .graphicsLayer { this.translationX = translationX }
                             .width(120.dp)
@@ -583,6 +617,7 @@ private fun GameRail(
 @Composable
 private fun ViewAllCard(
     isFocused: Boolean,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scale by animateFloatAsState(
@@ -615,6 +650,7 @@ private fun ViewAllCard(
                 RoundedCornerShape(8.dp)
             )
             .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

@@ -37,6 +37,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -154,6 +157,15 @@ fun LibraryScreen(
         }
     }
 
+    LaunchedEffect(gridState) {
+        snapshotFlow { gridState.isScrollInProgress }
+            .collect { isScrolling ->
+                if (isScrolling) {
+                    viewModel.setTouchScrolling(true)
+                }
+            }
+    }
+
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -241,7 +253,10 @@ fun LibraryScreen(
                                 LibraryGameCard(
                                     game = game,
                                     isFocused = index == uiState.focusedIndex,
-                                    cardHeightDp = uiState.cardHeightDp
+                                    isTouchScrolling = uiState.isTouchScrolling,
+                                    cardHeightDp = uiState.cardHeightDp,
+                                    onClick = { viewModel.handleItemTap(index, onGameSelect) },
+                                    onLongClick = { viewModel.handleItemLongPress(index) }
                                 )
                             }
                         }
@@ -374,12 +389,17 @@ private fun LibraryHeader(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LibraryGameCard(
     game: LibraryGameUi,
     isFocused: Boolean,
-    cardHeightDp: Int
+    isTouchScrolling: Boolean,
+    cardHeightDp: Int,
+    onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {}
 ) {
+    val effectiveFocused = isFocused && !isTouchScrolling
     GameCard(
         game = HomeGameUi(
             id = game.id,
@@ -392,10 +412,14 @@ private fun LibraryGameCard(
             isFavorite = game.isFavorite,
             isDownloaded = game.isDownloaded
         ),
-        isFocused = isFocused,
+        isFocused = effectiveFocused,
         modifier = Modifier
             .fillMaxWidth()
             .height(cardHeightDp.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
     )
 }
 

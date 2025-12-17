@@ -137,7 +137,8 @@ data class LibraryUiState(
     val filterOptions: FilterOptions = FilterOptions(),
     val filterCategoryIndex: Int = 0,
     val filterOptionIndex: Int = 0,
-    val syncOverlayState: SyncOverlayState? = null
+    val syncOverlayState: SyncOverlayState? = null,
+    val isTouchScrolling: Boolean = false
 ) {
     val columnsCount: Int
         get() = when (uiDensity) {
@@ -723,6 +724,42 @@ class LibraryViewModel @Inject constructor(
         isRommGame = rommId != null,
         emulatorName = null
     )
+
+    fun setTouchScrolling(isScrolling: Boolean) {
+        _uiState.update { it.copy(isTouchScrolling = isScrolling) }
+    }
+
+    fun setFocusIndex(index: Int) {
+        val state = _uiState.value
+        if (index < 0 || index >= state.games.size) return
+        if (index == state.focusedIndex) return
+        _uiState.update { it.copy(focusedIndex = index, isTouchScrolling = false) }
+        soundManager.play(SoundType.NAVIGATE)
+    }
+
+    fun handleItemTap(index: Int, onGameSelect: (Long) -> Unit) {
+        val state = _uiState.value
+        if (index < 0 || index >= state.games.size) return
+
+        if (state.isTouchScrolling || index != state.focusedIndex) {
+            setFocusIndex(index)
+            return
+        }
+
+        val game = state.games[index]
+        gameNavigationContext.setContext(state.games.map { it.id })
+        onGameSelect(game.id)
+    }
+
+    fun handleItemLongPress(index: Int) {
+        val state = _uiState.value
+        if (index < 0 || index >= state.games.size) return
+
+        if (index != state.focusedIndex) {
+            _uiState.update { it.copy(focusedIndex = index, isTouchScrolling = false) }
+        }
+        toggleQuickMenu()
+    }
 
     fun createInputHandler(
         onGameSelect: (Long) -> Unit,

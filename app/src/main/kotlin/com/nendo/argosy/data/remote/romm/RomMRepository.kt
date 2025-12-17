@@ -226,24 +226,25 @@ class RomMRepository @Inject constructor(
             if (platforms.isNullOrEmpty()) {
                 return SyncResult(0, 0, 0, 0, listOf("No platforms returned from server"))
             }
-            _syncProgress.value = _syncProgress.value.copy(platformsTotal = platforms.size)
 
-            for ((index, platform) in platforms.withIndex()) {
-                onProgress?.invoke(index + 1, platforms.size, platform.name)
+            for (platform in platforms) {
+                syncPlatform(platform)
+            }
+
+            val enabledPlatforms = platforms.filter { platform ->
+                val local = platformDao.getById(platform.slug)
+                local?.syncEnabled != false
+            }
+
+            _syncProgress.value = _syncProgress.value.copy(platformsTotal = enabledPlatforms.size)
+
+            for ((index, platform) in enabledPlatforms.withIndex()) {
+                onProgress?.invoke(index + 1, enabledPlatforms.size, platform.name)
 
                 _syncProgress.value = _syncProgress.value.copy(
                     currentPlatform = platform.name,
                     platformsDone = index
                 )
-
-                syncPlatform(platform)
-
-                val localPlatform = platformDao.getById(platform.slug)
-                if (localPlatform?.syncEnabled == false) {
-                    Logger.info(TAG, "Skipping game sync for disabled platform: ${platform.name}")
-                    platformsSynced++
-                    continue
-                }
 
                 val result = syncPlatformRoms(currentApi, platform, filters)
                 gamesAdded += result.added
@@ -678,8 +679,14 @@ class RomMRepository @Inject constructor(
     private suspend fun deleteOrphanedGames(seenRommIds: Set<Long>): Int {
         var deleted = 0
 
+        val disabledPlatforms = platformDao.observeAllPlatforms().first()
+            .filter { !it.syncEnabled }
+            .map { it.id }
+            .toSet()
+
         val remoteGames = gameDao.getBySource(GameSource.ROMM_REMOTE)
         for (game in remoteGames) {
+            if (game.platformId in disabledPlatforms) continue
             val rommId = game.rommId ?: continue
             if (rommId !in seenRommIds) {
                 gameDao.delete(game.id)
@@ -689,6 +696,7 @@ class RomMRepository @Inject constructor(
 
         val syncedGames = gameDao.getBySource(GameSource.ROMM_SYNCED)
         for (game in syncedGames) {
+            if (game.platformId in disabledPlatforms) continue
             val rommId = game.rommId ?: continue
             if (rommId !in seenRommIds) {
                 game.localPath?.let { path ->

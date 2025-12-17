@@ -279,7 +279,44 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                 } else if (newPlatformUis != currentPlatforms) {
-                    _uiState.update { it.copy(platforms = newPlatformUis) }
+                    val currentIds = currentPlatforms.map { it.id }.toSet()
+                    val newIds = newPlatformUis.map { it.id }.toSet()
+                    val platformsChanged = currentIds != newIds
+
+                    if (platformsChanged) {
+                        rowGameIndexes.clear()
+                        val state = _uiState.value
+                        val newRow = when (val row = state.currentRow) {
+                            is HomeRow.Platform -> {
+                                val currentPlatformId = currentPlatforms.getOrNull(row.index)?.id
+                                val newIndex = currentPlatformId?.let { id ->
+                                    newPlatformUis.indexOfFirst { it.id == id }
+                                }?.takeIf { it >= 0 }
+
+                                when {
+                                    newIndex != null -> HomeRow.Platform(newIndex)
+                                    newPlatformUis.isNotEmpty() -> HomeRow.Platform(0)
+                                    else -> state.availableRows.firstOrNull() ?: HomeRow.Continue
+                                }
+                            }
+                            else -> row
+                        }
+                        _uiState.update {
+                            it.copy(
+                                platforms = newPlatformUis,
+                                currentRow = newRow,
+                                focusedGameIndex = 0
+                            )
+                        }
+                        if (newRow is HomeRow.Platform) {
+                            val platform = newPlatformUis.getOrNull(newRow.index)
+                            if (platform != null) {
+                                loadGamesForPlatformInternal(platform.id, newRow.index)
+                            }
+                        }
+                    } else {
+                        _uiState.update { it.copy(platforms = newPlatformUis) }
+                    }
                 }
             }
         }

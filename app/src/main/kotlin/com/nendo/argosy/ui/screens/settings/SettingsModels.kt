@@ -46,7 +46,10 @@ data class PlatformEmulatorConfig(
     val downloadableEmulators: List<EmulatorDef> = emptyList(),
     val availableCores: List<RetroArchCore> = emptyList(),
     val effectiveEmulatorIsRetroArch: Boolean = false,
-    val effectiveEmulatorName: String? = null
+    val effectiveEmulatorName: String? = null,
+    val effectiveSavePath: String? = null,
+    val isUserSavePathOverride: Boolean = false,
+    val showSavePath: Boolean = false
 ) {
     val hasInstalledEmulators: Boolean get() = availableEmulators.isNotEmpty()
     val isRetroArchSelected: Boolean get() = selectedEmulatorPackage?.startsWith("com.retroarch") == true
@@ -116,10 +119,23 @@ data class EmulatorState(
     val platforms: List<PlatformEmulatorConfig> = emptyList(),
     val installedEmulators: List<InstalledEmulator> = emptyList(),
     val canAutoAssign: Boolean = false,
+    val platformSubFocusIndex: Int = 0,
     val showEmulatorPicker: Boolean = false,
     val emulatorPickerInfo: EmulatorPickerInfo? = null,
     val emulatorPickerFocusIndex: Int = 0,
-    val emulatorPickerSelectedIndex: Int? = null
+    val emulatorPickerSelectedIndex: Int? = null,
+    val showSavePathModal: Boolean = false,
+    val savePathModalInfo: SavePathModalInfo? = null,
+    val savePathModalFocusIndex: Int = 0,
+    val savePathModalButtonIndex: Int = 0
+)
+
+data class SavePathModalInfo(
+    val emulatorId: String,
+    val emulatorName: String,
+    val platformName: String,
+    val savePath: String?,
+    val isUserOverride: Boolean
 )
 
 data class PlatformStorageConfig(

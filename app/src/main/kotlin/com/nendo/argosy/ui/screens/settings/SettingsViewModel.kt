@@ -11,6 +11,8 @@ import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.LaunchConfig
+import com.nendo.argosy.data.emulator.RetroArchConfigParser
+import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -81,6 +83,7 @@ class SettingsViewModel @Inject constructor(
     private val appInstaller: AppInstaller,
     private val soundManager: SoundFeedbackManager,
     private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val retroArchConfigParser: RetroArchConfigParser,
     val displayDelegate: DisplaySettingsDelegate,
     val controlsDelegate: ControlsSettingsDelegate,
     val soundsDelegate: SoundSettingsDelegate,
@@ -108,6 +111,7 @@ class SettingsViewModel @Inject constructor(
     val openBackgroundPickerEvent: SharedFlow<Unit> = displayDelegate.openBackgroundPickerEvent
     val openCustomSoundPickerEvent: SharedFlow<SoundType> = soundsDelegate.openCustomSoundPickerEvent
     val launchPlatformFolderPicker: SharedFlow<String> = storageDelegate.launchPlatformFolderPicker
+    val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
 
     private val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
     val openLogFolderPickerEvent: SharedFlow<Unit> = _openLogFolderPickerEvent.asSharedFlow()
@@ -220,6 +224,31 @@ class SettingsViewModel @Inject constructor(
                     null
                 }
 
+                val emulatorId = effectiveEmulatorDef?.id
+                val savePathConfig = emulatorId?.let { SavePathRegistry.getConfig(it) }
+                val showSavePath = savePathConfig != null
+
+                val computedSavePath = when {
+                    emulatorId == null -> null
+                    isRetroArch -> {
+                        val packageName = effectiveEmulatorDef.packageName
+                        retroArchConfigParser.resolveSavePaths(
+                            packageName = packageName,
+                            systemName = platform.id,
+                            coreName = selectedCore
+                        ).firstOrNull()
+                    }
+                    else -> savePathConfig?.defaultPaths?.firstOrNull()
+                }
+
+                val userSaveConfig = emulatorId?.let { emulatorDelegate.getEmulatorSaveConfig(it) }
+                val isUserSavePathOverride = userSaveConfig?.isUserOverride == true
+                val effectiveSavePath = if (isUserSavePathOverride) {
+                    userSaveConfig?.savePathPattern
+                } else {
+                    computedSavePath
+                }
+
                 PlatformEmulatorConfig(
                     platform = platform,
                     selectedEmulator = defaultConfig?.displayName,
@@ -230,7 +259,10 @@ class SettingsViewModel @Inject constructor(
                     downloadableEmulators = downloadable,
                     availableCores = availableCores,
                     effectiveEmulatorIsRetroArch = isRetroArch,
-                    effectiveEmulatorName = effectiveEmulatorDef?.displayName
+                    effectiveEmulatorName = effectiveEmulatorDef?.displayName,
+                    effectiveSavePath = effectiveSavePath,
+                    isUserSavePathOverride = isUserSavePathOverride,
+                    showSavePath = showSavePath
                 )
             }
 
@@ -276,10 +308,12 @@ class SettingsViewModel @Inject constructor(
                 soundConfigs = prefs.soundConfigs
             ))
 
+            val currentEmulatorState = emulatorDelegate.state.value
             emulatorDelegate.updateState(EmulatorState(
                 platforms = platformConfigs,
                 installedEmulators = installedEmulators,
-                canAutoAssign = canAutoAssign
+                canAutoAssign = canAutoAssign,
+                platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex
             ))
 
             serverDelegate.updateState(ServerState(
@@ -350,6 +384,14 @@ class SettingsViewModel @Inject constructor(
         emulatorDelegate.dismissEmulatorPicker()
     }
 
+    fun movePlatformSubFocus(delta: Int, maxIndex: Int): Boolean {
+        return emulatorDelegate.movePlatformSubFocus(delta, maxIndex)
+    }
+
+    fun resetPlatformSubFocus() {
+        emulatorDelegate.resetPlatformSubFocus()
+    }
+
     fun cycleCoreForPlatform(config: PlatformEmulatorConfig, direction: Int) {
         emulatorDelegate.cycleCoreForPlatform(viewModelScope, config, direction) { loadSettings() }
     }
@@ -373,6 +415,46 @@ class SettingsViewModel @Inject constructor(
             onSetEmulator = { platformId, emulator -> setPlatformEmulator(platformId, emulator) },
             onLoadSettings = { loadSettings() }
         )
+    }
+
+    fun setEmulatorSavePath(emulatorId: String, path: String) {
+        emulatorDelegate.setEmulatorSavePath(viewModelScope, emulatorId, path) { loadSettings() }
+    }
+
+    fun resetEmulatorSavePath(emulatorId: String) {
+        emulatorDelegate.resetEmulatorSavePath(viewModelScope, emulatorId) { loadSettings() }
+    }
+
+    fun showSavePathModal(config: PlatformEmulatorConfig) {
+        val emulatorId = config.availableEmulators
+            .find { it.def.displayName == config.selectedEmulator || it.def.displayName == config.effectiveEmulatorName }
+            ?.def?.id ?: return
+        emulatorDelegate.showSavePathModal(
+            emulatorId = emulatorId,
+            emulatorName = config.effectiveEmulatorName ?: config.selectedEmulator ?: "Unknown",
+            platformName = config.platform.name,
+            savePath = config.effectiveSavePath,
+            isUserOverride = config.isUserSavePathOverride
+        )
+    }
+
+    fun dismissSavePathModal() {
+        emulatorDelegate.dismissSavePathModal()
+    }
+
+    fun moveSavePathModalFocus(delta: Int) {
+        emulatorDelegate.moveSavePathModalFocus(delta)
+    }
+
+    fun moveSavePathModalButtonFocus(delta: Int) {
+        emulatorDelegate.moveSavePathModalButtonFocus(delta)
+    }
+
+    fun confirmSavePathModalSelection() {
+        val emulatorId = _uiState.value.emulators.savePathModalInfo?.emulatorId ?: return
+        emulatorDelegate.confirmSavePathModalSelection(viewModelScope) {
+            resetEmulatorSavePath(emulatorId)
+        }
     }
 
     fun handlePlatformItemTap(index: Int) {
@@ -470,6 +552,10 @@ class SettingsViewModel @Inject constructor(
     fun navigateBack(): Boolean {
         val state = _uiState.value
         return when {
+            state.emulators.showSavePathModal -> {
+                dismissSavePathModal()
+                true
+            }
             state.storage.platformSettingsModalId != null -> {
                 closePlatformSettingsModal()
                 true
@@ -516,6 +602,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun moveFocus(delta: Int) {
+        if (_uiState.value.emulators.showSavePathModal) {
+            emulatorDelegate.moveSavePathModalFocus(delta)
+            return
+        }
         if (_uiState.value.storage.platformSettingsModalId != null) {
             storageDelegate.movePlatformSettingsFocus(delta)
             return
@@ -579,6 +669,9 @@ class SettingsViewModel @Inject constructor(
                 (state.focusedIndex + delta).coerceIn(0, maxIndex)
             }
             state.copy(focusedIndex = newIndex)
+        }
+        if (_uiState.value.currentSection == SettingsSection.EMULATORS) {
+            emulatorDelegate.resetPlatformSubFocus()
         }
     }
 

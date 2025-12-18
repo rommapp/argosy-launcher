@@ -140,6 +140,24 @@ fun SettingsScreen(
         pendingPlatformId = null
     }
 
+    var pendingSavePathEmulatorId by remember { mutableStateOf<String?>(null) }
+    val savePathFolderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        val emulatorId = pendingSavePathEmulatorId
+        if (uri != null && emulatorId != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            val filePath = getFilePathFromUri(context, uri)
+            if (filePath != null) {
+                viewModel.setEmulatorSavePath(emulatorId, filePath)
+            }
+        }
+        pendingSavePathEmulatorId = null
+    }
+
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(onBack = onBack)
@@ -209,10 +227,22 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.launchSavePathPicker.collect {
+            uiState.emulators.savePathModalInfo?.emulatorId?.let { emulatorId ->
+                pendingSavePathEmulatorId = emulatorId
+                savePathFolderPickerLauncher.launch(null)
+            }
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.checkStoragePermission()
+                if (viewModel.uiState.value.currentSection == SettingsSection.EMULATORS) {
+                    viewModel.refreshEmulators()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -261,12 +291,21 @@ fun SettingsScreen(
                     SettingsSection.DISPLAY -> DisplaySection(uiState, viewModel)
                     SettingsSection.CONTROLS -> ControlsSection(uiState, viewModel)
                     SettingsSection.SOUNDS -> SoundsSection(uiState, viewModel)
-                    SettingsSection.EMULATORS -> EmulatorsSection(uiState, viewModel)
+                    SettingsSection.EMULATORS -> EmulatorsSection(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        onLaunchSavePathPicker = {
+                            uiState.emulators.savePathModalInfo?.emulatorId?.let { emulatorId ->
+                                pendingSavePathEmulatorId = emulatorId
+                                savePathFolderPickerLauncher.launch(null)
+                            }
+                        }
+                    )
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                 }
             }
 
-            SettingsFooter()
+            SettingsFooter(uiState)
         }
 
         AnimatedVisibility(
@@ -474,13 +513,20 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
 }
 
 @Composable
-private fun SettingsFooter() {
-    FooterBar(
-        hints = listOf(
-            InputButton.DPAD to "Navigate",
-            InputButton.SOUTH to "Select",
-            InputButton.EAST to "Back"
-        )
-    )
+private fun SettingsFooter(uiState: SettingsUiState) {
+    if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker) {
+        return
+    }
+
+    val hints = buildList {
+        add(InputButton.DPAD to "Navigate")
+        add(InputButton.SOUTH to "Select")
+        if (uiState.currentSection == SettingsSection.EMULATORS) {
+            add(InputButton.WEST to "Saves")
+        }
+        add(InputButton.EAST to "Back")
+    }
+
+    FooterBar(hints = hints)
 }
 

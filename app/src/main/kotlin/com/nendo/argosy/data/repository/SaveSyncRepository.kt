@@ -339,7 +339,7 @@ class SaveSyncRepository @Inject constructor(
                 File(romPath).parent
             }
             raConfig?.savefileDirectory != null -> {
-                if (raConfig.sortSavefilesByContentEnable) {
+                if (raConfig.sortByCore) {
                     "${raConfig.savefileDirectory}/$coreName"
                 } else {
                     raConfig.savefileDirectory
@@ -419,7 +419,7 @@ class SaveSyncRepository @Inject constructor(
                 File(romPath).parent
             }
             raConfig?.savefileDirectory != null -> {
-                if (raConfig.sortSavefilesByContentEnable && coreName != null) {
+                if (raConfig.sortByCore && coreName != null) {
                     "${raConfig.savefileDirectory}/$coreName"
                 } else {
                     raConfig.savefileDirectory

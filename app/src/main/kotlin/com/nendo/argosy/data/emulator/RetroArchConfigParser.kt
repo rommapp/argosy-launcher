@@ -10,8 +10,8 @@ private const val TAG = "RetroArchConfigParser"
 data class RetroArchSaveConfig(
     val savefileDirectory: String?,
     val savefilesInContentDir: Boolean,
-    val sortSavefilesEnable: Boolean,
-    val sortSavefilesByContentEnable: Boolean
+    val sortByContentDirectory: Boolean,
+    val sortByCore: Boolean
 )
 
 @Singleton
@@ -75,16 +75,16 @@ class RetroArchConfigParser @Inject constructor() {
             it != "default" && it.isNotBlank()
         }
         val savefilesInContentDir = config["savefiles_in_content_dir"] == "true"
-        val sortBySystem = config["sort_savefiles_enable"] == "true"
-        val sortByCore = config["sort_savefiles_by_content_enable"] == "true"
-
-        Log.d(TAG, "Parsed: savefileDirectory=$savefileDirectory, inContentDir=$savefilesInContentDir, sortBySystem=$sortBySystem, sortByCore=$sortByCore")
+        // sort_savefiles_enable = "Sort into folders by Core Name"
+        val sortByCore = config["sort_savefiles_enable"] == "true"
+        // sort_savefiles_by_content_enable = "Sort into folders by Content Directory" (ROM's parent folder)
+        val sortByContentDir = config["sort_savefiles_by_content_enable"] == "true"
 
         return RetroArchSaveConfig(
             savefileDirectory = savefileDirectory,
             savefilesInContentDir = savefilesInContentDir,
-            sortSavefilesEnable = sortBySystem,
-            sortSavefilesByContentEnable = sortByCore
+            sortByContentDirectory = sortByContentDir,
+            sortByCore = sortByCore
         )
     }
 
@@ -97,35 +97,30 @@ class RetroArchConfigParser @Inject constructor() {
         val config = parse(packageName)
         val paths = mutableListOf<String>()
 
-        val baseDirs = mutableListOf<String>()
-
         if (config?.savefilesInContentDir == true && contentDirectory != null) {
-            baseDirs.add(contentDirectory)
+            paths.add(contentDirectory)
+            return paths
         }
 
-        config?.savefileDirectory?.let { baseDirs.add(it) }
+        val baseDir = config?.savefileDirectory
+            ?: "/storage/emulated/0/RetroArch/saves"
 
-        if (baseDirs.isEmpty()) {
-            baseDirs.addAll(listOf(
-                "/storage/emulated/0/RetroArch/saves",
-                "/storage/emulated/0/Android/data/$packageName/files/saves"
-            ))
+        val sortByContentDir = config?.sortByContentDirectory == true
+        val sortByCore = config?.sortByCore == true
+
+        val path = buildString {
+            append(baseDir)
+            if (sortByContentDir && systemName != null) {
+                append("/").append(systemName)
+            }
+            if (sortByCore && coreName != null) {
+                append("/").append(coreName)
+            }
         }
 
-        for (base in baseDirs) {
-            if (systemName != null && coreName != null) {
-                paths.add("$base/$systemName/$coreName")
-            }
-            if (coreName != null) {
-                paths.add("$base/$coreName")
-            }
-            if (systemName != null) {
-                paths.add("$base/$systemName")
-            }
-            paths.add(base)
-        }
+        paths.add(path)
 
-        Log.d(TAG, "resolveSavePaths: generated ${paths.size} paths for package=$packageName, system=$systemName, core=$coreName")
-        return paths.distinct()
+        Log.d(TAG, "resolveSavePaths: $path (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
+        return paths
     }
 }

@@ -10,17 +10,101 @@ class SettingsInputHandler(
 ) : InputHandler {
 
     override fun onUp(): InputResult {
+        val state = viewModel.uiState.value
+
+        // Modal priority checks
+        if (state.emulators.showSavePathModal) {
+            viewModel.moveSavePathModalFocus(-1)
+            return InputResult.HANDLED
+        }
+        if (state.storage.platformSettingsModalId != null) {
+            viewModel.movePlatformSettingsFocus(-1)
+            return InputResult.HANDLED
+        }
+        if (state.sounds.showSoundPicker) {
+            viewModel.moveSoundPickerFocus(-1)
+            return InputResult.HANDLED
+        }
+        if (state.syncSettings.showRegionPicker) {
+            viewModel.moveRegionPickerFocus(-1)
+            return InputResult.HANDLED
+        }
+        if (state.emulators.showEmulatorPicker) {
+            viewModel.moveEmulatorPickerFocus(-1)
+            return InputResult.HANDLED
+        }
+
+        // Normal navigation
+        if (state.currentSection == SettingsSection.EMULATORS) {
+            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
+            val platformIndex = state.focusedIndex - focusOffset
+            val config = state.emulators.platforms.getOrNull(platformIndex)
+            if (config != null && config.hasInstalledEmulators && config.showSavePath) {
+                if (state.emulators.platformSubFocusIndex == 1) {
+                    viewModel.movePlatformSubFocus(-1, 1)
+                    return InputResult.HANDLED
+                }
+            }
+        }
         viewModel.moveFocus(-1)
         return InputResult.HANDLED
     }
 
     override fun onDown(): InputResult {
+        val state = viewModel.uiState.value
+
+        // Modal priority checks
+        if (state.emulators.showSavePathModal) {
+            viewModel.moveSavePathModalFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.storage.platformSettingsModalId != null) {
+            viewModel.movePlatformSettingsFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.sounds.showSoundPicker) {
+            viewModel.moveSoundPickerFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.syncSettings.showRegionPicker) {
+            viewModel.moveRegionPickerFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.emulators.showEmulatorPicker) {
+            viewModel.moveEmulatorPickerFocus(1)
+            return InputResult.HANDLED
+        }
+
+        // Normal navigation
+        if (state.currentSection == SettingsSection.EMULATORS) {
+            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
+            val platformIndex = state.focusedIndex - focusOffset
+            val config = state.emulators.platforms.getOrNull(platformIndex)
+            if (config != null && config.hasInstalledEmulators && config.showSavePath) {
+                if (state.emulators.platformSubFocusIndex == 0) {
+                    viewModel.movePlatformSubFocus(1, 1)
+                    return InputResult.HANDLED
+                }
+            }
+        }
         viewModel.moveFocus(1)
         return InputResult.HANDLED
     }
 
     override fun onLeft(): InputResult {
         val state = viewModel.uiState.value
+
+        // Modal priority - handle or block left/right in modals
+        if (state.emulators.showSavePathModal) {
+            viewModel.moveSavePathModalButtonFocus(1) // Left goes to Reset (higher index, left side)
+            return InputResult.HANDLED
+        }
+        if (state.storage.platformSettingsModalId != null ||
+            state.sounds.showSoundPicker ||
+            state.syncSettings.showRegionPicker ||
+            state.emulators.showEmulatorPicker) {
+            return InputResult.HANDLED
+        }
 
         if (state.currentSection == SettingsSection.DISPLAY) {
             val sliderOffset = if (state.display.useGameBackground) 0 else 1
@@ -94,6 +178,18 @@ class SettingsInputHandler(
 
     override fun onRight(): InputResult {
         val state = viewModel.uiState.value
+
+        // Modal priority - handle or block left/right in modals
+        if (state.emulators.showSavePathModal) {
+            viewModel.moveSavePathModalButtonFocus(-1) // Right goes to Change (lower index, right side)
+            return InputResult.HANDLED
+        }
+        if (state.storage.platformSettingsModalId != null ||
+            state.sounds.showSoundPicker ||
+            state.syncSettings.showRegionPicker ||
+            state.emulators.showEmulatorPicker) {
+            return InputResult.HANDLED
+        }
 
         if (state.currentSection == SettingsSection.DISPLAY) {
             val sliderOffset = if (state.display.useGameBackground) 0 else 1
@@ -188,9 +284,27 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
 
+        if (state.emulators.showSavePathModal) {
+            viewModel.confirmSavePathModalSelection()
+            return InputResult.HANDLED
+        }
+
         if (state.currentSection == SettingsSection.DISPLAY && state.focusedIndex == 1) {
             viewModel.resetToDefaultColor()
             return InputResult.HANDLED
+        }
+
+        if (state.currentSection == SettingsSection.EMULATORS) {
+            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
+            val platformIndex = state.focusedIndex - focusOffset
+            val config = state.emulators.platforms.getOrNull(platformIndex)
+            if (config != null && config.hasInstalledEmulators && config.showSavePath) {
+                val subFocus = state.emulators.platformSubFocusIndex
+                if (subFocus == 1) {
+                    viewModel.showSavePathModal(config)
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         return viewModel.handleConfirm()
@@ -207,9 +321,27 @@ class SettingsInputHandler(
 
     override fun onContextMenu(): InputResult {
         val state = viewModel.uiState.value
+
+        // Modal priority - block context menu in modals
+        if (state.emulators.showSavePathModal ||
+            state.storage.platformSettingsModalId != null ||
+            state.emulators.showEmulatorPicker) {
+            return InputResult.HANDLED
+        }
+
         if (state.sounds.showSoundPicker) {
             viewModel.previewSoundPickerSelection()
             return InputResult.HANDLED
+        }
+
+        if (state.currentSection == SettingsSection.EMULATORS) {
+            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
+            val platformIndex = state.focusedIndex - focusOffset
+            val config = state.emulators.platforms.getOrNull(platformIndex)
+            if (config?.showSavePath == true && config.hasInstalledEmulators) {
+                viewModel.showSavePathModal(config)
+                return InputResult.HANDLED
+            }
         }
         return InputResult.UNHANDLED
     }

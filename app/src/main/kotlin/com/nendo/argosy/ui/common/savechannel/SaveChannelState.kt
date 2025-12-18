@@ -13,6 +13,7 @@ data class SaveChannelState(
     val focusIndex: Int = 0,
     val activeChannel: String? = null,
     val activeSaveTimestamp: Long? = null,
+    val savePath: String? = null,
     val showRestoreConfirmation: Boolean = false,
     val restoreSelectedEntry: UnifiedSaveEntry? = null,
     val showRenameDialog: Boolean = false,

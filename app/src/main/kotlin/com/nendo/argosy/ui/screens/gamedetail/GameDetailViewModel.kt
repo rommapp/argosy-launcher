@@ -17,6 +17,7 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -31,6 +32,7 @@ import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
 import com.nendo.argosy.domain.usecase.save.CheckSaveSyncPermissionUseCase
+import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
@@ -85,7 +87,8 @@ class GameDetailViewModel @Inject constructor(
     private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
     val saveChannelDelegate: SaveChannelDelegate,
     private val saveSyncDao: SaveSyncDao,
-    private val checkSaveSyncPermissionUseCase: CheckSaveSyncPermissionUseCase
+    private val checkSaveSyncPermissionUseCase: CheckSaveSyncPermissionUseCase,
+    private val emulatorSaveConfigDao: EmulatorSaveConfigDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -236,7 +239,7 @@ class GameDetailViewModel @Inject constructor(
                 SavePathRegistry.getConfig(emulatorId) != null
 
             val saveStatusInfo = if (canManageSaves) {
-                loadSaveStatusInfo(gameId, emulatorId!!)
+                loadSaveStatusInfo(gameId, emulatorId!!, game.activeSaveChannel, game.activeSaveTimestamp)
             } else null
 
             _uiState.update { state ->
@@ -269,8 +272,17 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadSaveStatusInfo(gameId: Long, emulatorId: String): SaveStatusInfo? {
-        val syncEntity = saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+    private suspend fun loadSaveStatusInfo(
+        gameId: Long,
+        emulatorId: String,
+        activeChannel: String?,
+        activeSaveTimestamp: Long?
+    ): SaveStatusInfo? {
+        val syncEntity = if (activeChannel != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, activeChannel)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
         return if (syncEntity != null) {
             SaveStatusInfo(
                 status = when (syncEntity.syncStatus) {
@@ -281,14 +293,50 @@ class GameDetailViewModel @Inject constructor(
                     SaveSyncEntity.STATUS_CONFLICT -> SaveSyncStatus.LOCAL_NEWER
                     else -> SaveSyncStatus.NO_SAVE
                 },
-                channelName = syncEntity.channelName,
+                channelName = activeChannel,
+                activeSaveTimestamp = activeSaveTimestamp,
                 lastSyncTime = syncEntity.lastSyncedAt
             )
         } else {
             SaveStatusInfo(
                 status = SaveSyncStatus.NO_SAVE,
-                channelName = null,
+                channelName = activeChannel,
+                activeSaveTimestamp = activeSaveTimestamp,
                 lastSyncTime = null
+            )
+        }
+    }
+
+    private fun refreshSaveStatusInfo() {
+        viewModelScope.launch {
+            val game = gameDao.getById(currentGameId) ?: return@launch
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId) ?: return@launch
+            val saveStatusInfo = loadSaveStatusInfo(currentGameId, emulatorId, game.activeSaveChannel, game.activeSaveTimestamp)
+            _uiState.update { it.copy(
+                saveChannel = it.saveChannel.copy(activeChannel = game.activeSaveChannel),
+                saveStatusInfo = saveStatusInfo
+            ) }
+        }
+    }
+
+    private fun handleSaveStatusChanged(event: SaveStatusEvent) {
+        val status = if (event.isLocalOnly) {
+            SaveSyncStatus.LOCAL_ONLY
+        } else {
+            _uiState.value.saveStatusInfo?.status?.takeIf {
+                it != SaveSyncStatus.LOCAL_ONLY
+            } ?: SaveSyncStatus.SYNCED
+        }
+
+        _uiState.update { state ->
+            state.copy(
+                saveChannel = state.saveChannel.copy(activeChannel = event.channelName),
+                saveStatusInfo = SaveStatusInfo(
+                    status = status,
+                    channelName = event.channelName,
+                    activeSaveTimestamp = event.timestamp,
+                    lastSyncTime = if (event.isLocalOnly) null else state.saveStatusInfo?.lastSyncTime
+                )
             )
         }
     }
@@ -798,7 +846,22 @@ class GameDetailViewModel @Inject constructor(
 
     fun showSaveCacheDialog() {
         _uiState.update { it.copy(showMoreOptions = false) }
-        saveChannelDelegate.show(viewModelScope, currentGameId, _uiState.value.saveChannel.activeChannel)
+        viewModelScope.launch {
+            val game = gameDao.getById(currentGameId) ?: return@launch
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId)
+            val savePath = emulatorId?.let { computeEffectiveSavePath(it, game.platformId) }
+            saveChannelDelegate.show(viewModelScope, currentGameId, _uiState.value.saveChannel.activeChannel, savePath)
+        }
+    }
+
+    private suspend fun computeEffectiveSavePath(emulatorId: String, platformId: String): String? {
+        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
+        if (userConfig?.isUserOverride == true) {
+            return userConfig.savePathPattern
+        }
+        val config = SavePathRegistry.getConfig(emulatorId) ?: return null
+        val paths = SavePathRegistry.resolvePath(config, platformId)
+        return paths.firstOrNull()
     }
 
     fun dismissSaveCacheDialog() {
@@ -832,7 +895,7 @@ class GameDetailViewModel @Inject constructor(
             saveChannelDelegate.confirmSelection(
                 scope = viewModelScope,
                 emulatorId = emulatorId,
-                onChannelChanged = { },
+                onSaveStatusChanged = ::handleSaveStatusChanged,
                 onRestored = { }
             )
         }
@@ -857,7 +920,7 @@ class GameDetailViewModel @Inject constructor(
                 scope = viewModelScope,
                 emulatorId = emulatorId,
                 syncToServer = syncToServer,
-                onChannelChanged = { }
+                onSaveStatusChanged = ::handleSaveStatusChanged
             )
         }
     }
@@ -880,7 +943,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun saveChannelSecondaryAction() {
-        saveChannelDelegate.secondaryAction(viewModelScope) { }
+        saveChannelDelegate.secondaryAction(viewModelScope, ::handleSaveStatusChanged)
     }
 
     fun saveChannelTertiaryAction() {
@@ -892,7 +955,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun confirmDeleteChannel() {
-        saveChannelDelegate.confirmDeleteChannel(viewModelScope) { }
+        saveChannelDelegate.confirmDeleteChannel(viewModelScope, ::handleSaveStatusChanged)
     }
 
     fun showResetConfirmation() {
@@ -904,7 +967,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun confirmReset() {
-        saveChannelDelegate.confirmReset(viewModelScope) { }
+        saveChannelDelegate.confirmReset(viewModelScope, ::handleSaveStatusChanged)
     }
 
     fun refreshGameData() {

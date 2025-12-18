@@ -116,7 +116,10 @@ fun GameHeader(
                     Text(
                         text = dev,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.6f)
+                        color = Color.White.copy(alpha = 0.6f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                 }
                 game.genre?.let { genre ->
@@ -126,7 +129,8 @@ fun GameHeader(
                     Text(
                         text = genre,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.6f)
+                        color = Color.White.copy(alpha = 0.6f),
+                        maxLines = 1
                     )
                 }
             }
@@ -158,14 +162,14 @@ fun GameHeader(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            ActionButtons(game = game, uiState = uiState, viewModel = viewModel)
+
             uiState.saveStatusInfo?.let { statusInfo ->
                 Spacer(modifier = Modifier.height(12.dp))
                 SaveStatusRow(status = statusInfo)
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            ActionButtons(game = game, uiState = uiState, viewModel = viewModel)
         }
     }
 }

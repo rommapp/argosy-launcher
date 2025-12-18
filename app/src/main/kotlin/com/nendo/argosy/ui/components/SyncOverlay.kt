@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -17,25 +18,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -47,18 +45,6 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.theme.Dimens
-
-private enum class StepState {
-    PENDING,
-    IN_PROGRESS,
-    SUCCESS,
-    FAILED
-}
-
-private data class SyncStep(
-    val label: String,
-    val state: StepState
-)
 
 @Composable
 fun SyncOverlay(
@@ -85,23 +71,25 @@ fun SyncOverlay(
 
     val displayRotation = if (isActiveSync) rotation else 0f
 
-    val channelName by remember(syncProgress) {
-        derivedStateOf { syncProgress?.displayChannelName }
-    }
+    val channelName = syncProgress?.displayChannelName
+    val rawStatusMessage = syncProgress?.statusMessage ?: ""
 
-    val statusMessage by remember(syncProgress) {
-        derivedStateOf { syncProgress?.statusMessage ?: "" }
-    }
+    var debouncedStatusMessage by remember { mutableStateOf("") }
 
-    val steps by remember(syncProgress) {
-        derivedStateOf { buildSteps(syncProgress) }
+    LaunchedEffect(rawStatusMessage) {
+        if (debouncedStatusMessage.isEmpty() && rawStatusMessage.isNotEmpty()) {
+            debouncedStatusMessage = rawStatusMessage
+        } else if (rawStatusMessage != debouncedStatusMessage) {
+            delay(150)
+            debouncedStatusMessage = rawStatusMessage
+        }
     }
 
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300)),
-        modifier = modifier
+        modifier = modifier.fillMaxSize()
     ) {
         Box(
             modifier = Modifier
@@ -138,10 +126,11 @@ fun SyncOverlay(
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
                 AnimatedContent(
-                    targetState = statusMessage,
+                    targetState = debouncedStatusMessage,
                     transitionSpec = {
                         (slideInVertically { -it / 2 } + fadeIn(tween(200))) togetherWith
-                            (slideOutVertically { it / 2 } + fadeOut(tween(150)))
+                            (slideOutVertically { it / 2 } + fadeOut(tween(150))) using
+                            SizeTransform(clip = true)
                     },
                     label = "syncStatus"
                 ) { message ->
@@ -160,190 +149,9 @@ fun SyncOverlay(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                Spacer(modifier = Modifier.height(Dimens.spacingXl))
-
-                Column(
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    steps.forEach { step ->
-                        SyncStepRow(step = step)
-                    }
-                }
             }
         }
     }
-}
-
-@Composable
-private fun SyncStepRow(step: SyncStep) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = Dimens.spacingMd)
-    ) {
-        Box(
-            modifier = Modifier.size(20.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            when (step.state) {
-                StepState.PENDING -> {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                StepState.IN_PROGRESS -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                StepState.SUCCESS -> {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                StepState.FAILED -> {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Text(
-            text = step.label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = when (step.state) {
-                StepState.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                StepState.IN_PROGRESS -> MaterialTheme.colorScheme.onSurface
-                StepState.SUCCESS -> MaterialTheme.colorScheme.onSurfaceVariant
-                StepState.FAILED -> MaterialTheme.colorScheme.error
-            }
-        )
-    }
-}
-
-private fun buildSteps(progress: SyncProgress?): List<SyncStep> {
-    return when (progress) {
-        is SyncProgress.PreLaunch -> buildPreLaunchSteps(progress)
-        is SyncProgress.PostSession -> buildPostSessionSteps(progress)
-        else -> emptyList()
-    }
-}
-
-private fun buildPreLaunchSteps(progress: SyncProgress.PreLaunch): List<SyncStep> {
-    val checkingSave = when (progress) {
-        is SyncProgress.PreLaunch.CheckingSave -> when (progress.found) {
-            null -> StepState.IN_PROGRESS
-            true -> StepState.SUCCESS
-            false -> StepState.FAILED
-        }
-        else -> StepState.SUCCESS
-    }
-
-    val connecting = when (progress) {
-        is SyncProgress.PreLaunch.CheckingSave -> StepState.PENDING
-        is SyncProgress.PreLaunch.Connecting -> when (progress.success) {
-            null -> StepState.IN_PROGRESS
-            true -> StepState.SUCCESS
-            false -> StepState.FAILED
-        }
-        else -> StepState.SUCCESS
-    }
-
-    val downloading = when (progress) {
-        is SyncProgress.PreLaunch.CheckingSave,
-        is SyncProgress.PreLaunch.Connecting -> StepState.PENDING
-        is SyncProgress.PreLaunch.Downloading -> when (progress.success) {
-            null -> StepState.IN_PROGRESS
-            true -> StepState.SUCCESS
-            false -> StepState.FAILED
-        }
-        else -> StepState.SUCCESS
-    }
-
-    val writing = when (progress) {
-        is SyncProgress.PreLaunch.CheckingSave,
-        is SyncProgress.PreLaunch.Connecting,
-        is SyncProgress.PreLaunch.Downloading -> StepState.PENDING
-        is SyncProgress.PreLaunch.Writing -> when (progress.success) {
-            null -> StepState.IN_PROGRESS
-            true -> StepState.SUCCESS
-            false -> StepState.FAILED
-        }
-        else -> StepState.SUCCESS
-    }
-
-    val launching = when (progress) {
-        is SyncProgress.PreLaunch.Launching -> StepState.IN_PROGRESS
-        else -> StepState.PENDING
-    }
-
-    return listOf(
-        SyncStep("Save found", checkingSave),
-        SyncStep("Connected", connecting),
-        SyncStep("Downloaded", downloading),
-        SyncStep("Written to disk", writing),
-        SyncStep("Launching game", launching)
-    )
-}
-
-private fun buildPostSessionSteps(progress: SyncProgress.PostSession): List<SyncStep> {
-    val checkingSave = when (progress) {
-        is SyncProgress.PostSession.CheckingSave -> when (progress.found) {
-            null -> StepState.IN_PROGRESS
-            true -> StepState.SUCCESS
-            false -> StepState.FAILED
-        }
-        else -> StepState.SUCCESS
-    }
-
-    val connecting = when (progress) {
-        is SyncProgress.PostSession.CheckingSave -> StepState.PENDING
-        is SyncProgress.PostSession.Connecting -> when (progress.success) {
-            null -> StepState.IN_PROGRESS
-            true -> StepState.SUCCESS
-            false -> StepState.FAILED
-        }
-        else -> StepState.SUCCESS
-    }
-
-    val uploading = when (progress) {
-        is SyncProgress.PostSession.CheckingSave,
-        is SyncProgress.PostSession.Connecting -> StepState.PENDING
-        is SyncProgress.PostSession.Uploading -> when (progress.success) {
-            null -> StepState.IN_PROGRESS
-            true -> StepState.SUCCESS
-            false -> StepState.FAILED
-        }
-        SyncProgress.PostSession.Complete -> StepState.SUCCESS
-    }
-
-    val complete = when (progress) {
-        SyncProgress.PostSession.Complete -> StepState.SUCCESS
-        is SyncProgress.PostSession.Uploading -> if (progress.success == true) StepState.IN_PROGRESS else StepState.PENDING
-        else -> StepState.PENDING
-    }
-
-    return listOf(
-        SyncStep("Save found", checkingSave),
-        SyncStep("Connected", connecting),
-        SyncStep("Uploaded", uploading),
-        SyncStep("Sync complete", complete)
-    )
 }
 
 @Deprecated(
@@ -381,7 +189,7 @@ fun SyncOverlay(
         visible = isVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300)),
-        modifier = modifier
+        modifier = modifier.fillMaxSize()
     ) {
         Box(
             modifier = Modifier

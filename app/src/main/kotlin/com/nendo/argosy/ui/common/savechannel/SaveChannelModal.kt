@@ -34,6 +34,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +51,7 @@ import com.nendo.argosy.ui.components.NestedModal
 @Composable
 fun SaveChannelModal(
     state: SaveChannelState,
+    savePath: String? = null,
     onRenameTextChange: (String) -> Unit,
     onTabSelect: (SaveTab) -> Unit = {},
     onEntryClick: (Int) -> Unit = {},
@@ -60,6 +64,11 @@ fun SaveChannelModal(
     val itemHeight = 56.dp
     val maxVisibleItems = 5
     val entries = state.currentTabEntries
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     LaunchedEffect(state.focusIndex, state.selectedTab, entries.size) {
         if (entries.isNotEmpty()) {
@@ -73,6 +82,8 @@ fun SaveChannelModal(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable()
             .background(Color.Black.copy(alpha = 0.7f))
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center
@@ -94,15 +105,20 @@ fun SaveChannelModal(
             ) {
                 Column {
                     Text(
-                        text = "SAVE CHANNELS",
+                        text = "Save Management",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Text(
-                        text = if (state.selectedTab == SaveTab.SLOTS) "Select a save slot" else "Recent save history",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (savePath != null) {
+                        val displayPath = formatTruncatedPath(savePath, maxSegments = 5)
+                        Text(
+                            text = displayPath,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 ActiveSaveIndicator(activeChannel = state.activeChannel)
             }
@@ -275,6 +291,15 @@ private fun TabButton(
             style = MaterialTheme.typography.labelMedium,
             color = contentColor
         )
+    }
+}
+
+private fun formatTruncatedPath(path: String, maxSegments: Int = 3): String {
+    val segments = path.split("/").filter { it.isNotEmpty() }
+    return if (segments.size <= maxSegments) {
+        segments.joinToString("/")
+    } else {
+        "../" + segments.takeLast(maxSegments).joinToString("/")
     }
 }
 

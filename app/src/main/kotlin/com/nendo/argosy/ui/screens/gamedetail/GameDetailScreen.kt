@@ -456,6 +456,7 @@ private fun GameDetailModals(
 
     SaveChannelModal(
         state = uiState.saveChannel,
+        savePath = uiState.saveChannel.savePath,
         onRenameTextChange = viewModel::updateRenameText,
         onTabSelect = viewModel::switchSaveTab,
         onEntryClick = viewModel::setSaveCacheFocusIndex,

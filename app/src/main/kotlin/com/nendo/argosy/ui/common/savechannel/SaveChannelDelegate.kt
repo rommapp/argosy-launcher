@@ -10,6 +10,7 @@ import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
+import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,14 +32,15 @@ class SaveChannelDelegate @Inject constructor(
 
     private var currentGameId: Long = 0
 
-    fun show(scope: CoroutineScope, gameId: Long, activeChannel: String?) {
+    fun show(scope: CoroutineScope, gameId: Long, activeChannel: String?, savePath: String? = null) {
         currentGameId = gameId
         _state.update {
             it.copy(
                 isVisible = true,
                 isLoading = true,
                 focusIndex = 0,
-                activeChannel = activeChannel
+                activeChannel = activeChannel,
+                savePath = savePath
             )
         }
         soundManager.play(SoundType.OPEN_MODAL)
@@ -98,7 +100,7 @@ class SaveChannelDelegate @Inject constructor(
 
     fun dismiss() {
         _state.update {
-            SaveChannelState(activeChannel = it.activeChannel)
+            SaveChannelState(activeChannel = it.activeChannel, savePath = it.savePath)
         }
         soundManager.play(SoundType.CLOSE_MODAL)
     }
@@ -167,7 +169,7 @@ class SaveChannelDelegate @Inject constructor(
     fun confirmSelection(
         scope: CoroutineScope,
         emulatorId: String,
-        onChannelChanged: (String?) -> Unit,
+        onSaveStatusChanged: (SaveStatusEvent) -> Unit,
         onRestored: () -> Unit = {}
     ) {
         val state = _state.value
@@ -179,7 +181,7 @@ class SaveChannelDelegate @Inject constructor(
                 gameDao.updateActiveSaveChannel(currentGameId, channelName)
                 gameDao.updateActiveSaveTimestamp(currentGameId, null)
                 _state.update { it.copy(activeChannel = channelName, activeSaveTimestamp = null) }
-                onChannelChanged(channelName)
+                onSaveStatusChanged(SaveStatusEvent(channelName = channelName, timestamp = null))
 
                 when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, false)) {
                     is RestoreCachedSaveUseCase.Result.Restored,
@@ -216,7 +218,7 @@ class SaveChannelDelegate @Inject constructor(
         scope: CoroutineScope,
         emulatorId: String,
         syncToServer: Boolean,
-        onChannelChanged: (String?) -> Unit,
+        onSaveStatusChanged: (SaveStatusEvent) -> Unit,
         onRestored: () -> Unit = {}
     ) {
         val entry = _state.value.restoreSelectedEntry ?: return
@@ -233,7 +235,7 @@ class SaveChannelDelegate @Inject constructor(
                     activeSaveTimestamp = targetTimestamp
                 )
             }
-            onChannelChanged(targetChannel)
+            onSaveStatusChanged(SaveStatusEvent(channelName = targetChannel, timestamp = targetTimestamp))
 
             when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, syncToServer)) {
                 is RestoreCachedSaveUseCase.Result.Restored -> {
@@ -375,7 +377,7 @@ class SaveChannelDelegate @Inject constructor(
         }
     }
 
-    fun confirmDeleteChannel(scope: CoroutineScope, onChannelChanged: (String?) -> Unit) {
+    fun confirmDeleteChannel(scope: CoroutineScope, onSaveStatusChanged: (SaveStatusEvent) -> Unit) {
         val state = _state.value
         val entry = state.deleteSelectedEntry ?: return
         val channelName = entry.channelName ?: return
@@ -385,8 +387,9 @@ class SaveChannelDelegate @Inject constructor(
 
             if (state.activeChannel == channelName) {
                 gameDao.updateActiveSaveChannel(currentGameId, null)
-                _state.update { it.copy(activeChannel = null) }
-                onChannelChanged(null)
+                gameDao.updateActiveSaveTimestamp(currentGameId, null)
+                _state.update { it.copy(activeChannel = null, activeSaveTimestamp = null) }
+                onSaveStatusChanged(SaveStatusEvent(channelName = null, timestamp = null))
             }
 
             refreshEntries()
@@ -404,7 +407,7 @@ class SaveChannelDelegate @Inject constructor(
     }
 
     @Suppress("UNUSED_PARAMETER")
-    fun secondaryAction(scope: CoroutineScope, onChannelChanged: (String?) -> Unit) {
+    fun secondaryAction(scope: CoroutineScope, onSaveStatusChanged: (SaveStatusEvent) -> Unit) {
         val state = _state.value
         if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation || state.showResetConfirmation) return
 
@@ -431,7 +434,7 @@ class SaveChannelDelegate @Inject constructor(
         _state.update { it.copy(showResetConfirmation = false) }
     }
 
-    fun confirmReset(scope: CoroutineScope, onChannelChanged: (String?) -> Unit) {
+    fun confirmReset(scope: CoroutineScope, onSaveStatusChanged: (SaveStatusEvent) -> Unit) {
         scope.launch {
             gameDao.updateActiveSaveChannel(currentGameId, null)
             gameDao.updateActiveSaveTimestamp(currentGameId, null)
@@ -443,7 +446,7 @@ class SaveChannelDelegate @Inject constructor(
                     isVisible = false
                 )
             }
-            onChannelChanged(null)
+            onSaveStatusChanged(SaveStatusEvent(channelName = null, timestamp = null))
             notificationManager.showSuccess("Reset to latest save")
         }
     }

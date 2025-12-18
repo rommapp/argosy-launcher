@@ -57,7 +57,7 @@ private fun darken(color: Color, factor: Float = 0.6f): Color {
 private fun createDarkColorScheme(
     primary: Color = ALauncherColors.Indigo,
     secondary: Color = ALauncherColors.Teal,
-    tertiary: Color = ALauncherColors.Orange
+    tertiary: Color = ALauncherColors.Green
 ) = darkColorScheme(
     primary = primary,
     onPrimary = Color.White,
@@ -89,7 +89,7 @@ private fun createDarkColorScheme(
 private fun createLightColorScheme(
     primary: Color = ALauncherColors.IndigoDark,
     secondary: Color = ALauncherColors.TealDark,
-    tertiary: Color = ALauncherColors.OrangeDark
+    tertiary: Color = ALauncherColors.GreenDark
 ) = lightColorScheme(
     primary = primary,
     onPrimary = Color.White,
@@ -118,11 +118,48 @@ private fun createLightColorScheme(
     outlineVariant = Color.Black.copy(alpha = 0.06f)
 )
 
+data class SemanticColors(
+    val success: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color,
+    val warning: Color,
+    val warningContainer: Color,
+    val onWarningContainer: Color,
+    val info: Color,
+    val infoContainer: Color,
+    val onInfoContainer: Color
+)
+
 data class LauncherThemeConfig(
     val isDarkTheme: Boolean,
     val focusGlowColor: Color,
     val overlayLight: Color,
-    val overlayDark: Color
+    val overlayDark: Color,
+    val semanticColors: SemanticColors
+)
+
+private val DarkSemanticColors = SemanticColors(
+    success = ALauncherColors.Green,
+    successContainer = toContainerDark(ALauncherColors.Green),
+    onSuccessContainer = ALauncherColors.Green,
+    warning = ALauncherColors.Orange,
+    warningContainer = toContainerDark(ALauncherColors.Orange),
+    onWarningContainer = ALauncherColors.Orange,
+    info = ALauncherColors.Indigo,
+    infoContainer = toContainerDark(ALauncherColors.Indigo),
+    onInfoContainer = ALauncherColors.Indigo
+)
+
+private val LightSemanticColors = SemanticColors(
+    success = ALauncherColors.GreenDark,
+    successContainer = toContainerLight(ALauncherColors.GreenDark),
+    onSuccessContainer = darken(ALauncherColors.GreenDark),
+    warning = ALauncherColors.OrangeDark,
+    warningContainer = toContainerLight(ALauncherColors.OrangeDark),
+    onWarningContainer = darken(ALauncherColors.OrangeDark),
+    info = ALauncherColors.IndigoDark,
+    infoContainer = toContainerLight(ALauncherColors.IndigoDark),
+    onInfoContainer = darken(ALauncherColors.IndigoDark)
 )
 
 val LocalLauncherTheme = staticCompositionLocalOf {
@@ -130,7 +167,8 @@ val LocalLauncherTheme = staticCompositionLocalOf {
         isDarkTheme = true,
         focusGlowColor = ALauncherColors.FocusGlow,
         overlayLight = Color.Black.copy(alpha = 0.3f),
-        overlayDark = Color.Black.copy(alpha = 0.7f)
+        overlayDark = Color.Black.copy(alpha = 0.7f),
+        semanticColors = DarkSemanticColors
     )
 }
 
@@ -162,12 +200,14 @@ fun ALauncherTheme(
     }
 
     val focusGlow = (primaryColor ?: defaultPrimary).copy(alpha = 0.4f)
+    val semanticColors = if (isDarkTheme) DarkSemanticColors else LightSemanticColors
 
     val launcherConfig = LauncherThemeConfig(
         isDarkTheme = isDarkTheme,
         focusGlowColor = focusGlow,
         overlayLight = Color.Black.copy(alpha = 0.3f),
-        overlayDark = Color.Black.copy(alpha = 0.7f)
+        overlayDark = Color.Black.copy(alpha = 0.7f),
+        semanticColors = semanticColors
     )
 
     CompositionLocalProvider(LocalLauncherTheme provides launcherConfig) {

@@ -15,6 +15,10 @@ object ALauncherColors {
     val OrangeLight = Color(0xFFFFAB91)
     val OrangeDark = Color(0xFFC63F17)
 
+    val Green = Color(0xFF66BB6A)
+    val GreenLight = Color(0xFFA5D6A7)
+    val GreenDark = Color(0xFF388E3C)
+
     val SurfaceDark = Color(0xFF121212)
     val SurfaceDarkVariant = Color(0xFF1E1E1E)
     val SurfaceLight = Color(0xFFFFFBFE)

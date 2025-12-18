@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -119,7 +120,7 @@ fun SyncOverlay(
                 Text(
                     text = buildAnnotatedString {
                         append("Channel: ")
-                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.tertiary)) {
+                        withStyle(SpanStyle(color = LocalLauncherTheme.current.semanticColors.info)) {
                             append(channelName ?: "Latest")
                         }
                     },

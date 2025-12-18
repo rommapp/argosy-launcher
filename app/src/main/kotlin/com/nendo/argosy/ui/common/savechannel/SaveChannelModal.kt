@@ -30,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -452,7 +453,7 @@ private fun SaveCacheEntryRow(
             text = "[$sourceText]",
             style = MaterialTheme.typography.bodySmall,
             color = when (entry.source) {
-                UnifiedSaveEntry.Source.LOCAL -> MaterialTheme.colorScheme.tertiary
+                UnifiedSaveEntry.Source.LOCAL -> LocalLauncherTheme.current.semanticColors.warning
                 UnifiedSaveEntry.Source.SERVER -> MaterialTheme.colorScheme.secondary
                 UnifiedSaveEntry.Source.BOTH -> MaterialTheme.colorScheme.primary
             }

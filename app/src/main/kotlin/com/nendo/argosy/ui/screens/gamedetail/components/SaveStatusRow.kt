@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -91,7 +92,7 @@ fun SaveStatusRow(
 
         Text(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = MaterialTheme.colorScheme.tertiary)) {
+                withStyle(SpanStyle(color = LocalLauncherTheme.current.semanticColors.warning)) {
                     append(status.displayLabel)
                 }
             },
@@ -128,7 +129,7 @@ private val SaveSyncStatus.icon: ImageVector
 @Composable
 private fun SaveSyncStatus.color() = when (this) {
     SaveSyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
-    SaveSyncStatus.LOCAL_NEWER -> MaterialTheme.colorScheme.tertiary
+    SaveSyncStatus.LOCAL_NEWER -> LocalLauncherTheme.current.semanticColors.warning
     SaveSyncStatus.LOCAL_ONLY -> MaterialTheme.colorScheme.onSurfaceVariant
     SaveSyncStatus.PENDING_UPLOAD -> MaterialTheme.colorScheme.secondary
     SaveSyncStatus.NO_SAVE -> MaterialTheme.colorScheme.onSurfaceVariant

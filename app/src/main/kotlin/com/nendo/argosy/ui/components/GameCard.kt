@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -337,7 +338,7 @@ fun SourceBadge(
     isSynced: Boolean
 ) {
     val (text, color) = when {
-        isLocal && !isSynced -> "F" to MaterialTheme.colorScheme.tertiary
+        isLocal && !isSynced -> "F" to LocalLauncherTheme.current.semanticColors.warning
         isSynced -> "C" to MaterialTheme.colorScheme.primary
         else -> return
     }

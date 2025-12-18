@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import kotlinx.coroutines.delay
 
 private val PERSISTENT_BAR_HEIGHT = 72.dp
@@ -223,18 +224,19 @@ private data class NotificationColors(
 
 @Composable
 private fun notificationColors(type: NotificationType): NotificationColors {
+    val semantic = LocalLauncherTheme.current.semanticColors
     return when (type) {
         NotificationType.SUCCESS -> NotificationColors(
-            container = MaterialTheme.colorScheme.tertiaryContainer,
-            content = MaterialTheme.colorScheme.onTertiaryContainer
+            container = semantic.successContainer,
+            content = semantic.onSuccessContainer
         )
         NotificationType.INFO -> NotificationColors(
-            container = MaterialTheme.colorScheme.primaryContainer,
-            content = MaterialTheme.colorScheme.onPrimaryContainer
+            container = semantic.infoContainer,
+            content = semantic.onInfoContainer
         )
         NotificationType.WARNING -> NotificationColors(
-            container = MaterialTheme.colorScheme.secondaryContainer,
-            content = MaterialTheme.colorScheme.onSecondaryContainer
+            container = semantic.warningContainer,
+            content = semantic.onWarningContainer
         )
         NotificationType.ERROR -> NotificationColors(
             container = MaterialTheme.colorScheme.errorContainer,

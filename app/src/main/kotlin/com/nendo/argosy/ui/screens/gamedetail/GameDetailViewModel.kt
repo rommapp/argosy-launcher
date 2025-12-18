@@ -426,12 +426,18 @@ class GameDetailViewModel @Inject constructor(
         if (_uiState.value.isSyncing) return
 
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage) ?: return
-        if (SavePathRegistry.getConfig(emulatorId) == null) {
-            playSessionTracker.endSession()
-            return
-        }
 
         viewModelScope.launch {
+            val prefs = preferencesRepository.preferences.first()
+            if (!SavePathRegistry.canSyncWithSettings(
+                    emulatorId,
+                    prefs.saveSyncEnabled,
+                    prefs.experimentalFolderSaveSync
+                )
+            ) {
+                playSessionTracker.endSession()
+                return@launch
+            }
             _uiState.update { it.copy(isSyncing = true, syncState = SyncState.Uploading) }
 
             val syncStartTime = System.currentTimeMillis()

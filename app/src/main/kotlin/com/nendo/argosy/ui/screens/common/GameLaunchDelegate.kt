@@ -128,12 +128,18 @@ class GameLaunchDelegate @Inject constructor(
         if (isSyncing) return
 
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage) ?: return
-        if (SavePathRegistry.getConfig(emulatorId) == null) {
-            playSessionTracker.endSession()
-            return
-        }
 
         scope.launch {
+            val prefs = preferencesRepository.preferences.first()
+            if (!SavePathRegistry.canSyncWithSettings(
+                    emulatorId,
+                    prefs.saveSyncEnabled,
+                    prefs.experimentalFolderSaveSync
+                )
+            ) {
+                playSessionTracker.endSession()
+                return@launch
+            }
             val game = gameDao.getById(session.gameId)
             val gameTitle = game?.title ?: "Game"
             val channelName: String? = null

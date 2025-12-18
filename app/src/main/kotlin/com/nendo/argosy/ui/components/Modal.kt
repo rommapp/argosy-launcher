@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 @Composable
 fun Modal(
@@ -32,10 +33,13 @@ fun Modal(
     footerHints: List<Pair<InputButton, String>>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .background(overlayColor)
             .then(
                 if (onDismiss != null) {
                     Modifier.clickable(
@@ -97,10 +101,13 @@ fun CenteredModal(
     footerHints: List<Pair<InputButton, String>>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
+            .background(overlayColor),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -138,10 +145,13 @@ fun NestedModal(
     footerHints: List<Pair<InputButton, String>>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
+            .background(overlayColor),
         contentAlignment = Alignment.Center
     ) {
         Column(

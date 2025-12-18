@@ -83,8 +83,13 @@ fun rememberBatteryState(): State<BatteryState> {
 @Composable
 fun SystemStatusBar(
     modifier: Modifier = Modifier,
-    contentColor: Color = Color.White.copy(alpha = 0.8f)
+    contentColor: Color = Color.Unspecified
 ) {
+    val effectiveColor = if (contentColor == Color.Unspecified) {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+    } else {
+        contentColor
+    }
     val currentTime = remember { mutableLongStateOf(System.currentTimeMillis()) }
     val batteryState by rememberBatteryState()
 
@@ -104,13 +109,13 @@ fun SystemStatusBar(
             text = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
                 .format(java.util.Date(currentTime.longValue)),
             style = MaterialTheme.typography.titleMedium,
-            color = contentColor
+            color = effectiveColor
         )
 
         BatteryIndicator(
             level = batteryState.level,
             isCharging = batteryState.isCharging,
-            color = contentColor
+            color = effectiveColor
         )
     }
 }

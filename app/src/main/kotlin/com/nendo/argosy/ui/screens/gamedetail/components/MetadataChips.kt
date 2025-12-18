@@ -25,7 +25,7 @@ fun MetadataChip(label: String, value: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .background(
-                Color.White.copy(alpha = 0.1f),
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                 RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -33,12 +33,12 @@ fun MetadataChip(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -54,7 +54,7 @@ fun RatingChip(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .background(
-                Color.White.copy(alpha = 0.1f),
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                 RoundedCornerShape(6.dp)
             )
             .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -72,13 +72,13 @@ fun RatingChip(
             Text(
                 text = "$value/10",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -89,7 +89,7 @@ fun CommunityRatingChip(rating: Float) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .background(
-                Color.White.copy(alpha = 0.1f),
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                 RoundedCornerShape(6.dp)
             )
             .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -101,19 +101,19 @@ fun CommunityRatingChip(rating: Float) {
             Icon(
                 imageVector = Icons.Default.People,
                 contentDescription = null,
-                tint = Color(0xFF64B5F6),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(14.dp)
             )
             Text(
                 text = "${rating.toInt()}%",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
         Text(
             text = "Rating",
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

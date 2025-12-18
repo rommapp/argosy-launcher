@@ -57,6 +57,7 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.MoreOptionsModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.PermissionRequiredModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.common.savechannel.SaveChannelModal
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -291,14 +292,17 @@ private fun GameDetailContent(
                 )
             }
 
+            val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+            val overlayColor = if (isDarkTheme) Color.Black else Color.White
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.5f),
-                                Color.Black.copy(alpha = 0.9f)
+                                overlayColor.copy(alpha = if (isDarkTheme) 0.5f else 0.3f),
+                                overlayColor.copy(alpha = if (isDarkTheme) 0.9f else 0.7f)
                             )
                         )
                     )

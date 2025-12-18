@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 @Composable
 fun SyncOverlay(
@@ -85,6 +86,9 @@ fun SyncOverlay(
         }
     }
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.55f)
+
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(animationSpec = tween(300)),
@@ -94,7 +98,7 @@ fun SyncOverlay(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.8f)),
+                .background(overlayColor),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -185,6 +189,9 @@ fun SyncOverlay(
         else -> "Syncing..."
     }
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(animationSpec = tween(300)),
@@ -194,7 +201,7 @@ fun SyncOverlay(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.7f)),
+                .background(overlayColor),
             contentAlignment = Alignment.Center
         ) {
             Column(

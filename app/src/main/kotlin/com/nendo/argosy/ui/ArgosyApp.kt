@@ -32,7 +32,9 @@ import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.navigation.NavGraph
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.notification.NotificationHost
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 
 @Composable
@@ -154,10 +156,14 @@ fun ArgosyApp(
         LocalABIconsSwapped provides uiState.abIconsSwapped,
         LocalSwapStartSelect provides uiState.swapStartSelect
     ) {
+        val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+        val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
+
         Box(modifier = Modifier.fillMaxSize()) {
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 gesturesEnabled = !uiState.isFirstRun,
+                scrimColor = scrimColor,
                 drawerContent = {
                     MainDrawer(
                         items = viewModel.drawerItems,

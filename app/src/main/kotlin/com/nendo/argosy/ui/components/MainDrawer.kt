@@ -1,8 +1,5 @@
 package com.nendo.argosy.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -137,34 +134,19 @@ private fun DrawerMenuItem(
     badge: Int? = null,
     onClick: () -> Unit
 ) {
-    val animSpec = spring<Color>(stiffness = 500f)
-    val dpAnimSpec = spring<androidx.compose.ui.unit.Dp>(stiffness = 500f)
+    val backgroundColor = when {
+        isFocused -> MaterialTheme.colorScheme.primaryContainer
+        isSelected -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        else -> Color.Transparent
+    }
 
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isFocused -> MaterialTheme.colorScheme.primaryContainer
-            isSelected -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            else -> Color.Transparent
-        },
-        animationSpec = animSpec,
-        label = "bg"
-    )
+    val contentColor = when {
+        isFocused -> MaterialTheme.colorScheme.primary
+        isSelected -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface
+    }
 
-    val contentColor by animateColorAsState(
-        targetValue = when {
-            isFocused -> MaterialTheme.colorScheme.primary
-            isSelected -> MaterialTheme.colorScheme.primary
-            else -> MaterialTheme.colorScheme.onSurface
-        },
-        animationSpec = animSpec,
-        label = "content"
-    )
-
-    val indicatorWidth by animateDpAsState(
-        targetValue = if (isFocused) 4.dp else 0.dp,
-        animationSpec = dpAnimSpec,
-        label = "indicator"
-    )
+    val indicatorWidth = if (isFocused) 4.dp else 0.dp
 
     val shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
 

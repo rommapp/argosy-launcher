@@ -152,8 +152,8 @@ private fun PersistentNotificationBar(
     notification: Notification,
     modifier: Modifier = Modifier
 ) {
-    val containerColor = Color(0xFF2A2A2A)
-    val contentColor = Color.White.copy(alpha = 0.9f)
+    val containerColor = MaterialTheme.colorScheme.surfaceVariant
+    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     val accentColor = MaterialTheme.colorScheme.primary
 
     Column(
@@ -225,20 +225,20 @@ private data class NotificationColors(
 private fun notificationColors(type: NotificationType): NotificationColors {
     return when (type) {
         NotificationType.SUCCESS -> NotificationColors(
-            container = Color(0xFF2D4A3E),
-            content = Color.White
+            container = MaterialTheme.colorScheme.tertiaryContainer,
+            content = MaterialTheme.colorScheme.onTertiaryContainer
         )
         NotificationType.INFO -> NotificationColors(
-            container = Color(0xFF3A4A5C),
-            content = Color.White
+            container = MaterialTheme.colorScheme.primaryContainer,
+            content = MaterialTheme.colorScheme.onPrimaryContainer
         )
         NotificationType.WARNING -> NotificationColors(
-            container = Color(0xFF5C4A2D),
-            content = Color.White
+            container = MaterialTheme.colorScheme.secondaryContainer,
+            content = MaterialTheme.colorScheme.onSecondaryContainer
         )
         NotificationType.ERROR -> NotificationColors(
-            container = Color(0xFF5C3A3A),
-            content = Color.White
+            container = MaterialTheme.colorScheme.errorContainer,
+            content = MaterialTheme.colorScheme.onErrorContainer
         )
     }
 }

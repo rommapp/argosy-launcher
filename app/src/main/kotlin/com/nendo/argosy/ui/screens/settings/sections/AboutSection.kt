@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.nendo.argosy.ui.components.ActionPreference
@@ -20,15 +22,29 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+    val listState = rememberLazyListState()
     val updateCheck = uiState.updateCheck
     val isDebug = com.nendo.argosy.BuildConfig.DEBUG
     val isOnBetaVersion = com.nendo.argosy.BuildConfig.VERSION_NAME.contains("-")
     val context = LocalContext.current
+    val maxIndex = if (uiState.fileLoggingPath != null) 4 else 3
+
+    LaunchedEffect(uiState.focusedIndex) {
+        if (uiState.focusedIndex in 0..maxIndex) {
+            val viewportHeight = listState.layoutInfo.viewportSize.height
+            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
+            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
+            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
+        }
+    }
 
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {

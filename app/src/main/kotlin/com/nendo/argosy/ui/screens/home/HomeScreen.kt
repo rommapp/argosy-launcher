@@ -97,6 +97,7 @@ import com.nendo.argosy.ui.components.SubtleFooterBar
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.launch
 
@@ -209,7 +210,7 @@ fun HomeScreen(
     }
 
     val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showGameMenu) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
@@ -219,6 +220,9 @@ fun HomeScreen(
     val opacityFraction = uiState.backgroundOpacity / 100f
     val overlayAlphaTop = 0.3f + (1f - opacityFraction) * 0.4f
     val overlayAlphaBottom = 0.7f + (1f - opacityFraction) * 0.3f
+
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayBaseColor = if (isDarkTheme) Color.Black else Color.White
 
     val effectiveBackgroundPath = if (uiState.useGameBackground) {
         uiState.focusedGame?.backgroundPath
@@ -265,8 +269,8 @@ fun HomeScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = overlayAlphaTop),
-                                Color.Black.copy(alpha = overlayAlphaBottom)
+                                overlayBaseColor.copy(alpha = overlayAlphaTop),
+                                overlayBaseColor.copy(alpha = overlayAlphaBottom)
                             )
                         )
                     )
@@ -477,7 +481,7 @@ private fun HomeHeader(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -489,13 +493,13 @@ private fun HomeHeader(
                     Icon(
                         painter = InputIcons.BumperLeft,
                         contentDescription = "Previous platform",
-                        tint = Color.White.copy(alpha = 0.5f),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         modifier = Modifier.size(20.dp)
                     )
                     Icon(
                         painter = InputIcons.BumperRight,
                         contentDescription = "Next platform",
-                        tint = Color.White.copy(alpha = 0.5f),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -525,7 +529,7 @@ private fun GameInfo(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
@@ -534,7 +538,7 @@ private fun GameInfo(
             Text(
                 text = developer,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -553,13 +557,13 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Default.People,
                             contentDescription = null,
-                            tint = Color(0xFF64B5F6),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "${rating.toInt()}%",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -577,7 +581,7 @@ private fun GameInfo(
                         Text(
                             text = "$userRating/10",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -595,7 +599,7 @@ private fun GameInfo(
                         Text(
                             text = "$userDifficulty/10",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -613,7 +617,7 @@ private fun GameInfo(
                         Text(
                             text = "$earnedAchievementCount/$achievementCount",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -723,8 +727,9 @@ private fun ViewAllCard(
         label = "viewAllScale"
     )
 
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val borderColor by animateColorAsState(
-        targetValue = if (isFocused) Color.White else Color.White.copy(alpha = 0.3f),
+        targetValue = if (isFocused) onSurfaceColor else onSurfaceColor.copy(alpha = 0.3f),
         animationSpec = tween(200),
         label = "viewAllBorder"
     )
@@ -740,8 +745,8 @@ private fun ViewAllCard(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.15f),
-                        Color.White.copy(alpha = 0.05f)
+                        onSurfaceColor.copy(alpha = 0.15f),
+                        onSurfaceColor.copy(alpha = 0.05f)
                     )
                 ),
                 RoundedCornerShape(8.dp)
@@ -774,7 +779,7 @@ private fun ViewAllCard(
             Text(
                 text = "View All",
                 style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.3f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                 textAlign = TextAlign.Center
             )
         }
@@ -787,7 +792,7 @@ private fun GridBox() {
         modifier = Modifier
             .size(24.dp)
             .background(
-                Color.White.copy(alpha = 0.3f),
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                 RoundedCornerShape(4.dp)
             )
     )
@@ -803,8 +808,8 @@ private fun LoadingState() {
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(48.dp),
-            color = Color.White,
-            trackColor = Color.White.copy(alpha = 0.2f)
+            color = MaterialTheme.colorScheme.onSurface,
+            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
         )
     }
 }
@@ -823,7 +828,7 @@ private fun EmptyState(
         Text(
             text = "No games yet",
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -833,7 +838,7 @@ private fun EmptyState(
                 "Connect to a Rom Manager server in Settings to get started"
             },
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         if (isRommConfigured) {
@@ -863,10 +868,13 @@ private fun GameSelectOverlay(
     val deleteIdx = if (game.isDownloaded) currentIndex++ else -1
     val hideIdx = currentIndex
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
+            .background(overlayColor),
         contentAlignment = Alignment.Center
     ) {
         Column(

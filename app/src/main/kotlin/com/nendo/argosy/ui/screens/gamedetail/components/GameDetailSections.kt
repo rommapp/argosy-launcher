@@ -81,7 +81,7 @@ fun GameHeader(
             Text(
                 text = game.title,
                 style = MaterialTheme.typography.displaySmall,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -97,11 +97,11 @@ fun GameHeader(
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 game.releaseYear?.let { year ->
-                    Text(text = "|", color = Color.White.copy(alpha = 0.5f))
+                    Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                     Text(
                         text = year.toString(),
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -116,7 +116,7 @@ fun GameHeader(
                     Text(
                         text = dev,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
@@ -124,12 +124,12 @@ fun GameHeader(
                 }
                 game.genre?.let { genre ->
                     if (game.developer != null) {
-                        Text(text = "|", color = Color.White.copy(alpha = 0.4f))
+                        Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
                     }
                     Text(
                         text = genre,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 }
@@ -213,7 +213,7 @@ fun ActionButtons(
             Icon(
                 imageVector = if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                 contentDescription = if (game.isFavorite) "Unfavorite" else "Favorite",
-                tint = if (game.isFavorite) Color.Red else Color.White
+                tint = if (game.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -223,7 +223,7 @@ fun ActionButtons(
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = "More options",
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -248,7 +248,7 @@ fun DescriptionSection(
         Text(
             text = description,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.8f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             maxLines = 6,
             overflow = TextOverflow.Ellipsis
         )
@@ -368,7 +368,7 @@ fun AchievementsSection(
             Text(
                 text = "(0/${achievements.size})",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
         }
         Spacer(modifier = Modifier.height(12.dp))

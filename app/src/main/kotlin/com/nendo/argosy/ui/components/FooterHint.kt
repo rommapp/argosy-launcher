@@ -24,6 +24,7 @@ import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 enum class InputButton {
     SOUTH, EAST, WEST, NORTH,
@@ -225,10 +226,13 @@ fun SubtleFooterBar(
     val faceHints = hints.filter { it.first.category() == HintCategory.FACE }
         .sortedBy { it.first.faceButtonPriority() }
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.4f)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.4f))
+            .background(overlayColor)
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {

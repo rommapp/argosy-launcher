@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.input.SoundPreset
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.theme.Dimens
@@ -70,10 +71,13 @@ fun SoundPickerPopup(
         listState.animateScrollToItem(safeIndex, -centerOffset + paddingBuffer)
     }
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .background(overlayColor)
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {

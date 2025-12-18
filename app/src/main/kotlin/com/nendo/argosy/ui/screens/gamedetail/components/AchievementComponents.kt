@@ -34,7 +34,7 @@ import com.nendo.argosy.ui.screens.gamedetail.AchievementUi
 fun AchievementRow(achievement: AchievementUi) {
     val grayscaleMatrix = ColorMatrix().apply { setToSaturation(0f) }
     val goldColor = Color(0xFFFFB300)
-    val lockedColor = Color.White.copy(alpha = 0.5f)
+    val lockedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
 
     Row(
         modifier = Modifier
@@ -98,7 +98,7 @@ fun AchievementRow(achievement: AchievementUi) {
                 Text(
                     text = achievement.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

@@ -46,6 +46,7 @@ import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -79,12 +80,15 @@ fun SaveChannelModal(
         }
     }
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .focusRequester(focusRequester)
             .focusable()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .background(overlayColor)
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {

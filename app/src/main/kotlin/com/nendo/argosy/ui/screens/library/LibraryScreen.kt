@@ -75,6 +75,7 @@ import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.SourceBadge
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -600,10 +601,13 @@ private fun FilterMenuOverlay(
         }
     }
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .background(overlayColor)
             .clickable(
                 onClick = onDismiss,
                 indication = null,
@@ -778,10 +782,13 @@ private fun QuickMenuOverlay(
     val deleteIdx = if (game.isDownloaded) currentIndex++ else -1
     val hideIdx = currentIndex
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .background(overlayColor)
             .clickable(
                 onClick = onDismiss,
                 indication = null,

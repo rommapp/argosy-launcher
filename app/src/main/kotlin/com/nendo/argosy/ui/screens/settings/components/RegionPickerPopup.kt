@@ -36,6 +36,7 @@ import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 
 @Composable
@@ -64,10 +65,13 @@ fun RegionPickerPopup(
         listState.animateScrollToItem(safeIndex, -centerOffset + paddingBuffer)
     }
 
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .background(overlayColor)
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {

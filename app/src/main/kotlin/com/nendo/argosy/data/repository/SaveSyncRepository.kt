@@ -29,7 +29,6 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -596,6 +595,13 @@ class SaveSyncRepository @Inject constructor(
 
             val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
             val serverSaves = checkSavesForGame(gameId, rommId)
+
+            val latestServerSave = if (channelName != null) {
+                serverSaves.find { File(it.fileName).nameWithoutExtension.equals(channelName, ignoreCase = true) }
+            } else {
+                serverSaves.find { isLatestSaveFileName(it.fileName, romBaseName) }
+            }
+
             val existingServerSave = serverSaves.find { serverSave ->
                 val baseName = File(serverSave.fileName).nameWithoutExtension
                 if (channelName != null) {
@@ -606,9 +612,9 @@ class SaveSyncRepository @Inject constructor(
                 }
             }
 
-            if (channelName == null && existingServerSave != null) {
-                val serverTime = parseTimestamp(existingServerSave.updatedAt)
-                Logger.debug(TAG, "uploadSave: comparing local=$localModified vs server=$serverTime (raw=${existingServerSave.updatedAt})")
+            if (channelName == null && latestServerSave != null) {
+                val serverTime = parseTimestamp(latestServerSave.updatedAt)
+                Logger.debug(TAG, "uploadSave: comparing local=$localModified vs server=$serverTime (raw=${latestServerSave.updatedAt})")
                 if (serverTime.isAfter(localModified)) {
                     Logger.debug(TAG, "uploadSave: conflict - server is after local, blocking upload")
                     return@withContext SaveSyncResult.Conflict(gameId, localModified, serverTime)
@@ -621,10 +627,17 @@ class SaveSyncRepository @Inject constructor(
             val requestBody = fileToUpload.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
-            val response = if (serverSaveIdToUpdate != null) {
+            var response = if (serverSaveIdToUpdate != null) {
                 api.updateSave(serverSaveIdToUpdate, filePart)
             } else {
                 api.uploadSave(rommId, emulatorId, filePart)
+            }
+
+            if (!response.isSuccessful && serverSaveIdToUpdate != null) {
+                Logger.debug(TAG, "uploadSave: update failed with ${response.code()}, retrying as new upload")
+                val retryRequestBody = fileToUpload.asRequestBody("application/octet-stream".toMediaType())
+                val retryFilePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, retryRequestBody)
+                response = api.uploadSave(rommId, emulatorId, retryFilePart)
             }
 
             if (response.isSuccessful) {
@@ -1060,6 +1073,7 @@ class SaveSyncRepository @Inject constructor(
         data class ServerIsNewer(val serverTimestamp: Instant) : PreLaunchSyncResult()
     }
 
+    @Suppress("SwallowedException")
     private fun parseTimestamp(timestamp: String): Instant {
         return try {
             Instant.parse(timestamp)
@@ -1123,7 +1137,18 @@ class SaveSyncRepository @Inject constructor(
 
     private fun isLatestSaveFileName(fileName: String, romBaseName: String?): Boolean {
         val baseName = File(fileName).nameWithoutExtension
-        return baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true) ||
-            romBaseName != null && baseName.equals(romBaseName, ignoreCase = true)
+        if (baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true)) return true
+        if (romBaseName == null) return false
+        if (baseName.equals(romBaseName, ignoreCase = true)) return true
+        if (baseName.startsWith(romBaseName, ignoreCase = true)) {
+            val suffix = baseName.drop(romBaseName.length).trim()
+            if (suffix.isEmpty()) return true
+            if (ROMM_TIMESTAMP_TAG.matches(suffix)) return true
+        }
+        return false
+    }
+
+    companion object {
+        private val ROMM_TIMESTAMP_TAG = Regex("""^\[\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}(-\d+)?\]$""")
     }
 }

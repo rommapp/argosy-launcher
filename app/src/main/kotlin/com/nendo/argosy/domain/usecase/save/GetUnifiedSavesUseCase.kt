@@ -138,8 +138,7 @@ class GetUnifiedSavesUseCase @Inject constructor(
         return if (channelName != null) {
             channelName.equals(serverBaseName, ignoreCase = true)
         } else {
-            serverBaseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true) ||
-                romBaseName != null && serverBaseName.equals(romBaseName, ignoreCase = true)
+            isLatestName(serverBaseName, romBaseName)
         }
     }
 
@@ -155,8 +154,15 @@ class GetUnifiedSavesUseCase @Inject constructor(
     }
 
     private fun isLatestName(baseName: String, romBaseName: String?): Boolean {
-        return baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true) ||
-            romBaseName != null && baseName.equals(romBaseName, ignoreCase = true)
+        if (baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true)) return true
+        if (romBaseName == null) return false
+        if (baseName.equals(romBaseName, ignoreCase = true)) return true
+        if (baseName.startsWith(romBaseName, ignoreCase = true)) {
+            val suffix = baseName.drop(romBaseName.length).trim()
+            if (suffix.isEmpty()) return true
+            if (ROMM_TIMESTAMP_TAG.matches(suffix)) return true
+        }
+        return false
     }
 
     private fun isLatestFileName(fileName: String, romBaseName: String?): Boolean {
@@ -190,5 +196,6 @@ class GetUnifiedSavesUseCase @Inject constructor(
     companion object {
         private const val DEFAULT_SAVE_NAME = "argosy-latest"
         private val TIMESTAMP_ONLY_PATTERN = Regex("""^\d{4}-\d{2}-\d{2}[_-]\d{2}[_-]\d{2}[_-]\d{2}$""")
+        private val ROMM_TIMESTAMP_TAG = Regex("""^\[\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}(-\d+)?\]$""")
     }
 }

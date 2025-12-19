@@ -133,8 +133,8 @@ fun SyncOverlay(
                 AnimatedContent(
                     targetState = debouncedStatusMessage,
                     transitionSpec = {
-                        (slideInVertically { -it / 2 } + fadeIn(tween(200))) togetherWith
-                            (slideOutVertically { it / 2 } + fadeOut(tween(150))) using
+                        slideInVertically { -it / 2 } + fadeIn(tween(200)) togetherWith
+                            slideOutVertically { it / 2 } + fadeOut(tween(150)) using
                             SizeTransform(clip = true)
                     },
                     label = "syncStatus"

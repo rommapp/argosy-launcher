@@ -6,6 +6,11 @@ import com.nendo.argosy.data.preferences.SyncFilterPreferences
 
 object RomMSyncFilter {
 
+    private val NO_INTRO_HACK_REGEX = Regex("\\[h[0-9a-z ]*\\]")
+    private val HACK_BRACKET_REGEX = Regex("\\[.*\\bhack\\b.*\\]")
+    private val HACK_PAREN_REGEX = Regex("\\(.*\\bhack\\b.*\\)")
+    private val BAD_DUMP_REGEX = Regex("\\[[boftpBOFTP][0-9]*\\]")
+
     fun shouldSyncRom(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
         if (!passesExtensionFilter(rom)) return false
         if (!passesBadDumpFilter(rom)) return false
@@ -53,18 +58,12 @@ object RomMSyncFilter {
         val name = rom.name.lowercase()
         val tags = rom.tags?.map { it.lowercase() } ?: emptyList()
 
-        if (filters.excludeBeta) {
-            if (revision.contains("beta") || name.contains("(beta)")) return false
+        if (filters.excludeBeta && (revision.contains("beta") || name.contains("(beta)"))) return false
+        if (filters.excludePrototype && (revision.contains("proto") || name.contains("(proto)"))) return false
+        if (filters.excludeDemo && (revision.contains("demo") || name.contains("(demo)") || name.contains("(sample)"))) {
+            return false
         }
-        if (filters.excludePrototype) {
-            if (revision.contains("proto") || name.contains("(proto)")) return false
-        }
-        if (filters.excludeDemo) {
-            if (revision.contains("demo") || name.contains("(demo)") || name.contains("(sample)")) return false
-        }
-        if (filters.excludeHack) {
-            if (isHack(name, revision, tags)) return false
-        }
+        if (filters.excludeHack && isHack(name, revision, tags)) return false
 
         return true
     }
@@ -77,13 +76,4 @@ object RomMSyncFilter {
         if (HACK_PAREN_REGEX.containsMatchIn(name)) return true
         return false
     }
-
-    // Matches No-Intro style hack tags: [h], [h1], [hC], [h M], etc.
-    private val NO_INTRO_HACK_REGEX = Regex("\\[h[0-9a-z ]*\\]")
-    // Matches [hack], [some hack], etc. - but not game titles like ".hack" since that's outside brackets
-    private val HACK_BRACKET_REGEX = Regex("\\[.*\\bhack\\b.*\\]")
-    // Matches (hack), (undub hack), etc. - but not ".hack (USA)" since "(USA)" doesn't contain "hack"
-    private val HACK_PAREN_REGEX = Regex("\\(.*\\bhack\\b.*\\)")
-    // Matches bad dumps: [b], [b1], [o], [o1] (overdumps), [!p] (pending), [t] (trained), [f] (fixed)
-    private val BAD_DUMP_REGEX = Regex("\\[[boftpBOFTP][0-9]*\\]")
 }

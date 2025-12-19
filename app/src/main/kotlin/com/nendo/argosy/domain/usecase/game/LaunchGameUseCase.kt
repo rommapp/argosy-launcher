@@ -13,21 +13,19 @@ class LaunchGameUseCase @Inject constructor(
     private val launchRetryTracker: LaunchRetryTracker
 ) {
     suspend operator fun invoke(gameId: Long, discId: Long? = null): LaunchResult {
-        return when (val result = gameLauncher.launch(gameId, discId)) {
-            is LaunchResult.Success -> {
-                val coreName = extractCoreName(result.intent)
-                playSessionTracker.startSession(
-                    gameId = gameId,
-                    emulatorPackage = result.intent.component?.packageName
-                        ?: result.intent.`package`
-                        ?: "",
-                    coreName = coreName
-                )
-                launchRetryTracker.onLaunchStarted(result.intent)
-                result
-            }
-            else -> result
+        val result = gameLauncher.launch(gameId, discId)
+        if (result is LaunchResult.Success) {
+            val coreName = extractCoreName(result.intent)
+            playSessionTracker.startSession(
+                gameId = gameId,
+                emulatorPackage = result.intent.component?.packageName
+                    ?: result.intent.`package`
+                    ?: "",
+                coreName = coreName
+            )
+            launchRetryTracker.onLaunchStarted(result.intent)
         }
+        return result
     }
 
     private fun extractCoreName(intent: Intent): String? {

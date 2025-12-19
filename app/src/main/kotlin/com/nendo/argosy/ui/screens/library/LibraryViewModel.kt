@@ -374,12 +374,11 @@ class LibraryViewModel @Inject constructor(
 
         gamesJob?.cancel()
         gamesJob = viewModelScope.launch {
-            val baseFlow = when {
-                platformIndex >= 0 -> {
-                    val platformId = state.platforms[platformIndex].id
-                    gameDao.observeByPlatform(platformId)
-                }
-                else -> when (filters.source) {
+            val baseFlow = if (platformIndex >= 0) {
+                val platformId = state.platforms[platformIndex].id
+                gameDao.observeByPlatform(platformId)
+            } else {
+                when (filters.source) {
                     SourceFilter.ALL -> gameDao.observeAll()
                     SourceFilter.PLAYABLE -> gameDao.observePlayable()
                     SourceFilter.FAVORITES -> gameDao.observeFavorites()

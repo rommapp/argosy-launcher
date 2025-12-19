@@ -1,15 +1,12 @@
 package com.nendo.argosy.domain.usecase.save
 
-import android.content.Context
 import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class CheckSaveSyncPermissionUseCase @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val preferencesRepository: UserPreferencesRepository
 ) {
     sealed class Result {

@@ -318,7 +318,7 @@ private fun SteamLauncherPreference(
                 }
             }
 
-            val addSelected = isFocused && (if (supportsScanning) actionIndex == 1 else true)
+            val addSelected = isFocused && if (supportsScanning) actionIndex == 1 else true
             val addBgColor = when {
                 addSelected -> MaterialTheme.colorScheme.primary
                 isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)

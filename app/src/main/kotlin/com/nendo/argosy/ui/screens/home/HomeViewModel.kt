@@ -303,8 +303,9 @@ class HomeViewModel @Inject constructor(
                     if (platformsChanged) {
                         rowGameIndexes.clear()
                         val state = _uiState.value
-                        val newRow = when (val row = state.currentRow) {
-                            is HomeRow.Platform -> {
+                        val newRow = run {
+                            val row = state.currentRow
+                            if (row is HomeRow.Platform) {
                                 val currentPlatformId = currentPlatforms.getOrNull(row.index)?.id
                                 val newIndex = currentPlatformId?.let { id ->
                                     newPlatformUis.indexOfFirst { it.id == id }
@@ -315,8 +316,9 @@ class HomeViewModel @Inject constructor(
                                     newPlatformUis.isNotEmpty() -> HomeRow.Platform(0)
                                     else -> state.availableRows.firstOrNull() ?: HomeRow.Continue
                                 }
+                            } else {
+                                row
                             }
-                            else -> row
                         }
                         _uiState.update {
                             it.copy(
@@ -696,7 +698,8 @@ class HomeViewModel @Inject constructor(
         prefetchAchievementsDebounced()
     }
 
-    fun handleItemTap(index: Int, onGameSelect: (Long) -> Unit) {
+    @Suppress("UNUSED_PARAMETER")
+    fun handleItemTap(index: Int, _onGameSelect: (Long) -> Unit) {
         val state = _uiState.value
         if (index < 0 || index >= state.currentItems.size) return
 

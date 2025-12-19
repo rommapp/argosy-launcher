@@ -12,7 +12,6 @@ import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
-import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -21,7 +20,6 @@ import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.PlatformDao
-import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.repository.GameRepository
@@ -30,7 +28,6 @@ import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
-import com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
 import com.nendo.argosy.domain.usecase.save.CheckSaveSyncPermissionUseCase
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
@@ -81,7 +78,6 @@ class GameDetailViewModel @Inject constructor(
     private val romMRepository: RomMRepository,
     private val soundManager: SoundFeedbackManager,
     private val gameActions: GameActionsDelegate,
-    private val fetchAchievementsUseCase: FetchAchievementsUseCase,
     private val achievementDao: com.nendo.argosy.data.local.dao.AchievementDao,
     private val imageCacheManager: ImageCacheManager,
     private val playSessionTracker: PlaySessionTracker,
@@ -306,18 +302,6 @@ class GameDetailViewModel @Inject constructor(
                 activeSaveTimestamp = activeSaveTimestamp,
                 lastSyncTime = null
             )
-        }
-    }
-
-    private fun refreshSaveStatusInfo() {
-        viewModelScope.launch {
-            val game = gameDao.getById(currentGameId) ?: return@launch
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId) ?: return@launch
-            val saveStatusInfo = loadSaveStatusInfo(currentGameId, emulatorId, game.activeSaveChannel, game.activeSaveTimestamp)
-            _uiState.update { it.copy(
-                saveChannel = it.saveChannel.copy(activeChannel = game.activeSaveChannel),
-                saveStatusInfo = saveStatusInfo
-            ) }
         }
     }
 

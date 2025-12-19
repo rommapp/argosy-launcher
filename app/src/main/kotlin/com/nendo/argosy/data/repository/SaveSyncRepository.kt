@@ -950,9 +950,8 @@ class SaveSyncRepository @Inject constructor(
         var downloaded = 0
 
         for (syncEntity in pendingDownloads) {
-            when (downloadSave(syncEntity.gameId, syncEntity.emulatorId, syncEntity.channelName)) {
-                is SaveSyncResult.Success -> downloaded++
-                else -> {}
+            if (downloadSave(syncEntity.gameId, syncEntity.emulatorId, syncEntity.channelName) is SaveSyncResult.Success) {
+                downloaded++
             }
         }
 

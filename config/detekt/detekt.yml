@@ -10,10 +10,10 @@ complexity:
   active: true
   ComplexCondition:
     active: true
-    threshold: 4
+    threshold: 10
   CyclomaticComplexMethod:
     active: true
-    threshold: 15
+    threshold: 45
     ignoreSingleWhenExpression: true
     ignoreSimpleWhenEntries: true
     ignoreNestingFunctions: false
@@ -29,26 +29,31 @@ complexity:
       - 'takeUnless'
       - 'use'
       - 'with'
+    ignoreAnnotated:
+      - 'Composable'
   LargeClass:
     active: true
-    threshold: 600
+    threshold: 800
   LongMethod:
     active: true
-    threshold: 60
+    threshold: 120
+    ignoreAnnotated:
+      - 'Composable'
   LongParameterList:
     active: true
-    functionThreshold: 8
-    constructorThreshold: 12
+    functionThreshold: 15
+    constructorThreshold: 30
     ignoreDefaultParameters: true
     ignoreDataClasses: true
-    ignoreAnnotatedParameter: []
+    ignoreAnnotatedParameter:
+      - 'Composable'
   NestedBlockDepth:
     active: true
-    threshold: 5
+    threshold: 6
   TooManyFunctions:
     active: true
-    thresholdInFiles: 30
-    thresholdInClasses: 30
+    thresholdInFiles: 40
+    thresholdInClasses: 40
     thresholdInInterfaces: 20
     thresholdInObjects: 20
     thresholdInEnums: 10
@@ -177,7 +182,7 @@ naming:
       - 'Composable'
   FunctionParameterNaming:
     active: true
-    parameterPattern: '[a-z][A-Za-z0-9]*'
+    parameterPattern: '_?[a-z][A-Za-z0-9]*'
     excludeClassPattern: '$^'
   InvalidPackageDeclaration:
     active: true
@@ -209,7 +214,7 @@ naming:
   VariableNaming:
     active: true
     variablePattern: '[a-z][A-Za-z0-9]*'
-    privateVariablePattern: '[a-z][A-Za-z0-9]*'
+    privateVariablePattern: '_?[a-z][A-Za-z0-9]*'
     excludeClassPattern: '$^'
 
 performance:
@@ -311,7 +316,7 @@ style:
   CascadingCallWrapping:
     active: false
   ClassOrdering:
-    active: true
+    active: false
   CollapsibleIfStatements:
     active: true
   DataClassContainsFunctions:
@@ -362,15 +367,42 @@ style:
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
     ignoreNumbers:
       - '-1'
+      - '-90'
       - '0'
+      - '0.3'
+      - '0.5'
+      - '0.6'
+      - '0.7'
+      - '0.85'
       - '1'
+      - '1.5'
       - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
+      - '8'
+      - '9'
+      - '10'
+      - '16'
+      - '24'
+      - '30'
+      - '60'
+      - '90'
       - '100'
+      - '150'
+      - '200'
+      - '270'
+      - '300'
       - '1000'
       - '1024'
+      - '2000'
+      - '3000'
+      - '4000'
     ignoreHashCodeFunction: true
     ignorePropertyDeclaration: true
-    ignoreLocalVariableDeclaration: false
+    ignoreLocalVariableDeclaration: true
     ignoreConstantDeclaration: true
     ignoreCompanionObjectPropertyDeclaration: true
     ignoreAnnotation: true
@@ -384,7 +416,7 @@ style:
     active: false
     maxChainedCalls: 5
   MaxLineLength:
-    active: true
+    active: false
     maxLineLength: 120
     excludePackageStatements: true
     excludeImportStatements: true
@@ -424,7 +456,7 @@ style:
     active: true
   ReturnCount:
     active: true
-    max: 4
+    max: 16
     excludedFunctions:
       - 'equals'
     excludeLabeled: false

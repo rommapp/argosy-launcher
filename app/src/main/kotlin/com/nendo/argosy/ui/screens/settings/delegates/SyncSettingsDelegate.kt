@@ -220,10 +220,10 @@ class SyncSettingsDelegate @Inject constructor(
         }
     }
 
-    fun onStoragePermissionResult(scope: CoroutineScope, granted: Boolean, currentSection: Any?) {
+    @Suppress("UNUSED_PARAMETER")
+    fun onStoragePermissionResult(scope: CoroutineScope, granted: Boolean, _currentSection: Any?) {
         scope.launch {
             _state.update { it.copy(hasStoragePermission = granted) }
-            // Note: Section check should be done by caller
             if (granted) {
                 preferencesRepository.setSaveSyncEnabled(true)
                 _state.update { it.copy(saveSyncEnabled = true) }

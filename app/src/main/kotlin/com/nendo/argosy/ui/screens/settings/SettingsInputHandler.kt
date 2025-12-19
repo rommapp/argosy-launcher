@@ -9,6 +9,11 @@ class SettingsInputHandler(
     private val onBackNavigation: () -> Unit
 ) : InputHandler {
 
+    companion object {
+        private const val SLIDER_STEP = 10
+        private const val HUE_STEP = 10f
+    }
+
     override fun onUp(): InputResult {
         val state = viewModel.uiState.value
 
@@ -39,11 +44,11 @@ class SettingsInputHandler(
             val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
             val platformIndex = state.focusedIndex - focusOffset
             val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config != null && config.hasInstalledEmulators && config.showSavePath) {
-                if (state.emulators.platformSubFocusIndex == 1) {
-                    viewModel.movePlatformSubFocus(-1, 1)
-                    return InputResult.HANDLED
-                }
+            if (config != null && config.hasInstalledEmulators && config.showSavePath &&
+                state.emulators.platformSubFocusIndex == 1
+            ) {
+                viewModel.movePlatformSubFocus(-1, 1)
+                return InputResult.HANDLED
             }
         }
         viewModel.moveFocus(-1)
@@ -80,11 +85,11 @@ class SettingsInputHandler(
             val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
             val platformIndex = state.focusedIndex - focusOffset
             val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config != null && config.hasInstalledEmulators && config.showSavePath) {
-                if (state.emulators.platformSubFocusIndex == 0) {
-                    viewModel.movePlatformSubFocus(1, 1)
-                    return InputResult.HANDLED
-                }
+            if (config != null && config.hasInstalledEmulators && config.showSavePath &&
+                state.emulators.platformSubFocusIndex == 0
+            ) {
+                viewModel.movePlatformSubFocus(1, 1)
+                return InputResult.HANDLED
             }
         }
         viewModel.moveFocus(1)
@@ -108,16 +113,16 @@ class SettingsInputHandler(
 
         if (state.currentSection == SettingsSection.DISPLAY) {
             when (state.focusedIndex) {
-                1 -> { viewModel.adjustHue(-10f); return InputResult.HANDLED }
+                1 -> { viewModel.adjustHue(-HUE_STEP); return InputResult.HANDLED }
             }
         }
 
         if (state.currentSection == SettingsSection.HOME_SCREEN) {
             val sliderOffset = if (state.display.useGameBackground) 0 else 1
             when (state.focusedIndex) {
-                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(-10); return InputResult.HANDLED }
-                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(-10); return InputResult.HANDLED }
-                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(-10); return InputResult.HANDLED }
+                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(-SLIDER_STEP); return InputResult.HANDLED }
+                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(-SLIDER_STEP); return InputResult.HANDLED }
+                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(-SLIDER_STEP); return InputResult.HANDLED }
             }
         }
 
@@ -210,16 +215,16 @@ class SettingsInputHandler(
 
         if (state.currentSection == SettingsSection.DISPLAY) {
             when (state.focusedIndex) {
-                1 -> { viewModel.adjustHue(10f); return InputResult.HANDLED }
+                1 -> { viewModel.adjustHue(HUE_STEP); return InputResult.HANDLED }
             }
         }
 
         if (state.currentSection == SettingsSection.HOME_SCREEN) {
             val sliderOffset = if (state.display.useGameBackground) 0 else 1
             when (state.focusedIndex) {
-                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(10); return InputResult.HANDLED }
-                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(10); return InputResult.HANDLED }
-                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(10); return InputResult.HANDLED }
+                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(SLIDER_STEP); return InputResult.HANDLED }
+                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(SLIDER_STEP); return InputResult.HANDLED }
+                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(SLIDER_STEP); return InputResult.HANDLED }
             }
         }
 

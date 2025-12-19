@@ -15,7 +15,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -132,30 +131,27 @@ fun FooterHint(
 
 @Composable
 private fun CompositeButtonIcon(button: InputButton, iconColor: Color) {
-    when (button) {
-        InputButton.LB_RB -> {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = InputIcons.BumperLeft,
-                    contentDescription = "LB",
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = "/",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = iconColor,
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                )
-                Icon(
-                    painter = InputIcons.BumperRight,
-                    contentDescription = "RB",
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+    if (button == InputButton.LB_RB) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = InputIcons.BumperLeft,
+                contentDescription = "LB",
+                tint = iconColor,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = "/",
+                style = MaterialTheme.typography.bodySmall,
+                color = iconColor,
+                modifier = Modifier.padding(horizontal = 2.dp)
+            )
+            Icon(
+                painter = InputIcons.BumperRight,
+                contentDescription = "RB",
+                tint = iconColor,
+                modifier = Modifier.size(20.dp)
+            )
         }
-        else -> {}
     }
 }
 

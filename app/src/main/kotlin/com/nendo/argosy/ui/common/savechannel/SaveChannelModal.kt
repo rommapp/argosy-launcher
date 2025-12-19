@@ -353,7 +353,7 @@ private fun SaveCacheEntryRow(
         when {
             entry.size < 1024 -> "${entry.size} B"
             entry.size < 1024 * 1024 -> "${entry.size / 1024} KB"
-            else -> String.format("%.1f MB", entry.size / (1024.0 * 1024.0))
+            else -> String.format(java.util.Locale.US, "%.1f MB", entry.size / (1024.0 * 1024.0))
         }
     }
 

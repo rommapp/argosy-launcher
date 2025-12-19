@@ -28,4 +28,8 @@ object ALauncherColors {
     val OnSurfaceLight = Color(0xFF1C1B1F)
 
     val FocusGlow = Color(0x665C6BC0)
+
+    val StarGold = Color(0xFFFFD700)
+    val DifficultyRed = Color(0xFFE53935)
+    val TrophyAmber = Color(0xFFFFB300)
 }

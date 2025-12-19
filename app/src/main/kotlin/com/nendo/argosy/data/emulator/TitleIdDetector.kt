@@ -73,14 +73,14 @@ class TitleIdDetector @Inject constructor() {
                     if (!isValidSwitchTitleId(titleFolder.name)) return@forEach
 
                     val modified = titleFolder.lastModified()
-                    if (modified >= sessionStartTime - RECENT_THRESHOLD_MS) {
-                        if (mostRecent == null || modified > mostRecent!!.modifiedAt) {
-                            mostRecent = DetectedTitleId(
-                                titleId = titleFolder.name.uppercase(),
-                                modifiedAt = modified,
-                                savePath = titleFolder.absolutePath
-                            )
-                        }
+                    if (modified >= sessionStartTime - RECENT_THRESHOLD_MS &&
+                        (mostRecent == null || modified > mostRecent!!.modifiedAt)
+                    ) {
+                        mostRecent = DetectedTitleId(
+                            titleId = titleFolder.name.uppercase(),
+                            modifiedAt = modified,
+                            savePath = titleFolder.absolutePath
+                        )
                     }
                 }
             }
@@ -97,14 +97,14 @@ class TitleIdDetector @Inject constructor() {
             if (!isValidVitaTitleId(titleFolder.name)) return@forEach
 
             val modified = titleFolder.lastModified()
-            if (modified >= sessionStartTime - RECENT_THRESHOLD_MS) {
-                if (mostRecent == null || modified > mostRecent!!.modifiedAt) {
-                    mostRecent = DetectedTitleId(
-                        titleId = titleFolder.name.uppercase(),
-                        modifiedAt = modified,
-                        savePath = titleFolder.absolutePath
-                    )
-                }
+            if (modified >= sessionStartTime - RECENT_THRESHOLD_MS &&
+                (mostRecent == null || modified > mostRecent!!.modifiedAt)
+            ) {
+                mostRecent = DetectedTitleId(
+                    titleId = titleFolder.name.uppercase(),
+                    modifiedAt = modified,
+                    savePath = titleFolder.absolutePath
+                )
             }
         }
 
@@ -120,14 +120,14 @@ class TitleIdDetector @Inject constructor() {
             val titleId = extractPspTitleIdFromFolder(saveFolder.name)
             if (titleId != null) {
                 val modified = saveFolder.lastModified()
-                if (modified >= sessionStartTime - RECENT_THRESHOLD_MS) {
-                    if (mostRecent == null || modified > mostRecent!!.modifiedAt) {
-                        mostRecent = DetectedTitleId(
-                            titleId = titleId,
-                            modifiedAt = modified,
-                            savePath = saveFolder.absolutePath
-                        )
-                    }
+                if (modified >= sessionStartTime - RECENT_THRESHOLD_MS &&
+                    (mostRecent == null || modified > mostRecent!!.modifiedAt)
+                ) {
+                    mostRecent = DetectedTitleId(
+                        titleId = titleId,
+                        modifiedAt = modified,
+                        savePath = saveFolder.absolutePath
+                    )
                 }
             }
         }
@@ -156,14 +156,14 @@ class TitleIdDetector @Inject constructor() {
                     val folderToCheck = if (dataFolder.exists()) dataFolder else titleFolder
 
                     val modified = folderToCheck.lastModified()
-                    if (modified >= sessionStartTime - RECENT_THRESHOLD_MS) {
-                        if (mostRecent == null || modified > mostRecent!!.modifiedAt) {
-                            mostRecent = DetectedTitleId(
-                                titleId = titleFolder.name.uppercase(),
-                                modifiedAt = modified,
-                                savePath = folderToCheck.absolutePath
-                            )
-                        }
+                    if (modified >= sessionStartTime - RECENT_THRESHOLD_MS &&
+                        (mostRecent == null || modified > mostRecent!!.modifiedAt)
+                    ) {
+                        mostRecent = DetectedTitleId(
+                            titleId = titleFolder.name.uppercase(),
+                            modifiedAt = modified,
+                            savePath = folderToCheck.absolutePath
+                        )
                     }
                 }
             }
@@ -184,14 +184,14 @@ class TitleIdDetector @Inject constructor() {
             val folderToCheck = if (userFolder.exists()) userFolder else titleFolder
 
             val modified = folderToCheck.lastModified()
-            if (modified >= sessionStartTime - RECENT_THRESHOLD_MS) {
-                if (mostRecent == null || modified > mostRecent!!.modifiedAt) {
-                    mostRecent = DetectedTitleId(
-                        titleId = titleFolder.name.uppercase(),
-                        modifiedAt = modified,
-                        savePath = titleFolder.absolutePath
-                    )
-                }
+            if (modified >= sessionStartTime - RECENT_THRESHOLD_MS &&
+                (mostRecent == null || modified > mostRecent!!.modifiedAt)
+            ) {
+                mostRecent = DetectedTitleId(
+                    titleId = titleFolder.name.uppercase(),
+                    modifiedAt = modified,
+                    savePath = titleFolder.absolutePath
+                )
             }
         }
 

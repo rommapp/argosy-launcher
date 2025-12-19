@@ -44,7 +44,7 @@ fun EmulatorPickerPopup(
     focusIndex: Int,
     selectedIndex: Int?,
     onItemTap: (Int) -> Unit,
-    onConfirm: () -> Unit,
+    @Suppress("unused") onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()

@@ -381,27 +381,21 @@ private fun calculateScrollIndex(
 ): Int {
     return when {
         !isConnected -> {
-            // Only SERVER header + Rom Manager + STEAM header + steam items
-            when {
-                focusedIndex == 0 -> 1  // Rom Manager
-                else -> focusedIndex + 2  // Steam items (skip SERVER header, Rom Manager, STEAM header)
-            }
+            if (focusedIndex == 0) 1 else focusedIndex + 2
         }
         !saveSyncEnabled -> {
-            // SERVER + LIBRARY + STEAM
             when {
-                focusedIndex == 0 -> 1  // Rom Manager
-                focusedIndex in 1..2 -> focusedIndex + 2  // Library items (skip headers)
-                else -> focusedIndex + 3  // Steam items
+                focusedIndex == 0 -> 1
+                focusedIndex in 1..2 -> focusedIndex + 2
+                else -> focusedIndex + 3
             }
         }
         else -> {
-            // SERVER + LIBRARY + SAVE GAMES + STEAM
             when {
-                focusedIndex == 0 -> 1  // Rom Manager
-                focusedIndex in 1..2 -> focusedIndex + 2  // Library items
-                focusedIndex in 3..4 -> focusedIndex + 3  // Save Games items
-                else -> focusedIndex + 4  // Steam items
+                focusedIndex == 0 -> 1
+                focusedIndex in 1..2 -> focusedIndex + 2
+                focusedIndex in 3..4 -> focusedIndex + 3
+                else -> focusedIndex + 4
             }
         }
     }

@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUiState
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailViewModel
@@ -149,7 +150,7 @@ fun GameHeader(
                         label = "My Rating",
                         value = game.userRating,
                         icon = Icons.Default.Star,
-                        iconColor = Color(0xFFFFD700)
+                        iconColor = ALauncherColors.StarGold
                     )
                 }
                 if (game.userDifficulty > 0) {
@@ -157,7 +158,7 @@ fun GameHeader(
                         label = "Difficulty",
                         value = game.userDifficulty,
                         icon = Icons.Default.Whatshot,
-                        iconColor = Color(0xFFE53935)
+                        iconColor = ALauncherColors.DifficultyRed
                     )
                 }
             }
@@ -357,7 +358,7 @@ fun AchievementsSection(
             Icon(
                 imageVector = Icons.Filled.EmojiEvents,
                 contentDescription = null,
-                tint = Color(0xFFFFB300),
+                tint = ALauncherColors.TrophyAmber,
                 modifier = Modifier.size(20.dp)
             )
             Text(

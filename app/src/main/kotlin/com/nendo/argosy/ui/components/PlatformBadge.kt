@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -128,7 +127,7 @@ fun PlatformBadge(
     val primaryColor = MaterialTheme.colorScheme.primary
     val borderOffset = if (isFocused) boxArtStyle.borderThicknessDp else 0.dp
     val isExtremeCase = isFocused && boxArtStyle.borderThicknessDp >= 4.dp && userPadding <= 1.dp
-    val earSize = if (isExtremeCase) cornerRadius - (boxArtStyle.borderThicknessDp / 2) else cornerRadius
+    val earSize = if (isExtremeCase) cornerRadius - boxArtStyle.borderThicknessDp / 2 else cornerRadius
 
     when (position) {
         SystemIconPosition.TOP_LEFT -> {

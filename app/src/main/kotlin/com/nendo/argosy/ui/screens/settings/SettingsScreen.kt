@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -49,7 +47,6 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
-import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
 import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
@@ -66,7 +63,6 @@ import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncFiltersSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.formatFileSize
-import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 
 @Composable
@@ -445,39 +441,6 @@ private fun SettingsHeader(title: String) {
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
-    }
-}
-
-private fun formatStoragePath(rawPath: String): String {
-    if (rawPath.isBlank()) return "Not set"
-    val decoded = Uri.decode(rawPath)
-
-    // Extract tree path from various URI formats
-    val treePath = when {
-        decoded.contains("/tree/") -> decoded.substringAfter("/tree/")
-        else -> decoded
-    }
-
-    // Handle drive:path format (e.g., "primary:Games" or "SDCARD-ID:path")
-    if (treePath.contains(":")) {
-        val drive = treePath.substringBefore(":")
-        val folder = treePath.substringAfter(":")
-        val driveName = if (drive == "primary") "Internal" else "SD Card"
-        return if (folder.isEmpty()) driveName else "$driveName:/$folder"
-    }
-
-    // Handle regular file paths
-    val externalStorage = Environment.getExternalStorageDirectory().absolutePath
-    return when {
-        treePath.startsWith(externalStorage) -> {
-            val relative = treePath.removePrefix(externalStorage).trimStart('/')
-            if (relative.isEmpty()) "Internal" else "Internal:/$relative"
-        }
-        treePath.startsWith("/storage/") -> {
-            val parts = treePath.removePrefix("/storage/").split("/", limit = 2)
-            if (parts.size == 2) "SD Card:/${parts[1]}" else "SD Card"
-        }
-        else -> treePath.substringAfterLast("/").ifEmpty { treePath }
     }
 }
 

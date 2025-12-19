@@ -265,13 +265,14 @@ fun AppsScreen(
                     )
                 },
                 onHintClick = { button ->
-                    when {
-                        uiState.isReorderMode -> when (button) {
+                    if (uiState.isReorderMode) {
+                        when (button) {
                             InputButton.SOUTH -> viewModel.saveReorderAndExit()
                             InputButton.EAST -> viewModel.cancelReorderAndExit()
                             else -> {}
                         }
-                        else -> when (button) {
+                    } else {
+                        when (button) {
                             InputButton.SOUTH -> uiState.focusedApp?.let { viewModel.launchAppAt(uiState.focusedIndex) }
                             InputButton.EAST -> onBack()
                             InputButton.NORTH -> viewModel.enterReorderMode()

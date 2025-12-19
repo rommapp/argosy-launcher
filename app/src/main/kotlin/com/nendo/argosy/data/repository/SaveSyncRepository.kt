@@ -571,14 +571,7 @@ class SaveSyncRepository @Inject constructor(
         }
 
         val localModified = Instant.ofEpochMilli(saveLocation.lastModified())
-
-        if (channelName == null &&
-            syncEntity?.serverUpdatedAt != null &&
-            syncEntity.serverUpdatedAt.isAfter(syncEntity.lastSyncedAt ?: Instant.EPOCH) &&
-            syncEntity.serverUpdatedAt.isAfter(localModified)
-        ) {
-            return@withContext SaveSyncResult.Conflict(gameId, localModified, syncEntity.serverUpdatedAt)
-        }
+        Logger.debug(TAG, "uploadSave: localModified=$localModified (epochMillis=${saveLocation.lastModified()})")
 
         var tempZipFile: File? = null
 
@@ -611,6 +604,16 @@ class SaveSyncRepository @Inject constructor(
                     baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true) ||
                         romBaseName != null && baseName.equals(romBaseName, ignoreCase = true)
                 }
+            }
+
+            if (channelName == null && existingServerSave != null) {
+                val serverTime = parseTimestamp(existingServerSave.updatedAt)
+                Logger.debug(TAG, "uploadSave: comparing local=$localModified vs server=$serverTime (raw=${existingServerSave.updatedAt})")
+                if (serverTime.isAfter(localModified)) {
+                    Logger.debug(TAG, "uploadSave: conflict - server is after local, blocking upload")
+                    return@withContext SaveSyncResult.Conflict(gameId, localModified, serverTime)
+                }
+                Logger.debug(TAG, "uploadSave: local is newer or equal, proceeding with upload")
             }
 
             val serverSaveIdToUpdate = syncEntity?.rommSaveId ?: existingServerSave?.id
@@ -1019,9 +1022,13 @@ class SaveSyncRepository @Inject constructor(
                 val serverTime = parseTimestamp(serverSave.updatedAt)
                 val existing = saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
 
-                val localFileExists = existing?.localSavePath?.let { File(it).exists() } ?: false
+                val localFile = existing?.localSavePath?.let { File(it) }?.takeIf { it.exists() }
+                val localFileTime = localFile?.let { Instant.ofEpochMilli(it.lastModified()) }
 
-                if (localFileExists && existing?.localUpdatedAt != null && !serverTime.isAfter(existing.localUpdatedAt)) {
+                Logger.debug(TAG, "preLaunchSync: serverTime=$serverTime (raw=${serverSave.updatedAt}), localFileTime=$localFileTime")
+
+                if (localFileTime != null && !serverTime.isAfter(localFileTime)) {
+                    Logger.debug(TAG, "preLaunchSync: local file is newer or equal")
                     return@withContext PreLaunchSyncResult.LocalIsNewer
                 }
 
@@ -1058,9 +1065,14 @@ class SaveSyncRepository @Inject constructor(
             Instant.parse(timestamp)
         } catch (e: Exception) {
             try {
-                DateTimeFormatter.ISO_DATE_TIME.parse(timestamp, Instant::from)
+                java.time.OffsetDateTime.parse(timestamp).toInstant()
             } catch (e2: Exception) {
-                Instant.now()
+                try {
+                    java.time.ZonedDateTime.parse(timestamp).toInstant()
+                } catch (e3: Exception) {
+                    Logger.warn(TAG, "Failed to parse timestamp: $timestamp, using current time")
+                    Instant.now()
+                }
             }
         }
     }

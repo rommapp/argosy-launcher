@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.local.dao.GameDao
@@ -13,6 +14,9 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.domain.model.Changelog
+import com.nendo.argosy.domain.model.ChangelogEntry
+import com.nendo.argosy.domain.model.RequiredAction
 import com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.domain.usecase.recommendation.GenerateRecommendationsUseCase
@@ -140,7 +144,8 @@ data class HomeUiState(
     val backgroundOpacity: Int = 100,
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
-    val syncOverlayState: SyncOverlayState? = null
+    val syncOverlayState: SyncOverlayState? = null,
+    val changelogEntry: ChangelogEntry? = null
 ) {
     val availableRows: List<HomeRow>
         get() = buildList {
@@ -625,7 +630,43 @@ class HomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             refreshRecommendationsIfNeeded()
+            checkForChangelog()
         }
+    }
+
+    private suspend fun checkForChangelog() {
+        val prefs = preferencesRepository.preferences.first()
+        val lastSeenVersion = prefs.lastSeenVersion
+        val currentVersion = BuildConfig.VERSION_NAME
+
+        if (lastSeenVersion == null) {
+            preferencesRepository.setLastSeenVersion(currentVersion)
+            return
+        }
+
+        if (lastSeenVersion != currentVersion) {
+            val entry = Changelog.getEntry(currentVersion)
+            if (entry != null) {
+                _uiState.update { it.copy(changelogEntry = entry) }
+            } else {
+                preferencesRepository.setLastSeenVersion(currentVersion)
+            }
+        }
+    }
+
+    fun dismissChangelog() {
+        viewModelScope.launch {
+            preferencesRepository.setLastSeenVersion(BuildConfig.VERSION_NAME)
+            _uiState.update { it.copy(changelogEntry = null) }
+        }
+    }
+
+    fun handleChangelogAction(action: RequiredAction): RequiredAction {
+        viewModelScope.launch {
+            preferencesRepository.setLastSeenVersion(BuildConfig.VERSION_NAME)
+            _uiState.update { it.copy(changelogEntry = null) }
+        }
+        return action
     }
 
     private suspend fun refreshRecommendationsIfNeeded() {

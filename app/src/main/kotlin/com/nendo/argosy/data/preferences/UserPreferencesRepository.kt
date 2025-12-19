@@ -84,6 +84,7 @@ class UserPreferencesRepository @Inject constructor(
         val LAST_RECOMMENDATION_GENERATION = stringPreferencesKey("last_recommendation_generation")
         val RECOMMENDATION_PENALTIES = stringPreferencesKey("recommendation_penalties")
         val LAST_PENALTY_DECAY_WEEK = stringPreferencesKey("last_penalty_decay_week")
+        val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -167,7 +168,8 @@ class UserPreferencesRepository @Inject constructor(
                 ?: emptyList(),
             lastRecommendationGeneration = prefs[Keys.LAST_RECOMMENDATION_GENERATION]?.let { Instant.parse(it) },
             recommendationPenalties = parseRecommendationPenalties(prefs[Keys.RECOMMENDATION_PENALTIES]),
-            lastPenaltyDecayWeek = prefs[Keys.LAST_PENALTY_DECAY_WEEK]
+            lastPenaltyDecayWeek = prefs[Keys.LAST_PENALTY_DECAY_WEEK],
+            lastSeenVersion = prefs[Keys.LAST_SEEN_VERSION]
         )
     }
 
@@ -591,6 +593,12 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.LAST_PENALTY_DECAY_WEEK] = weekKey
         }
     }
+
+    suspend fun setLastSeenVersion(version: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.LAST_SEEN_VERSION] = version
+        }
+    }
 }
 
 data class UserPreferences(
@@ -644,7 +652,8 @@ data class UserPreferences(
     val recommendedGameIds: List<Long> = emptyList(),
     val lastRecommendationGeneration: Instant? = null,
     val recommendationPenalties: Map<Long, Float> = emptyMap(),
-    val lastPenaltyDecayWeek: String? = null
+    val lastPenaltyDecayWeek: String? = null,
+    val lastSeenVersion: String? = null
 )
 
 enum class ThemeMode {

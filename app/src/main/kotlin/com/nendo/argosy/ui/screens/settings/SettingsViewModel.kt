@@ -502,6 +502,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setFocusIndex(index: Int) {
+        _uiState.update { it.copy(focusedIndex = index) }
+    }
+
     fun refreshSteamSettings() {
         steamDelegate.loadSteamSettings(context, viewModelScope)
     }

@@ -68,11 +68,27 @@ import com.nendo.argosy.ui.theme.Motion
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    initialSection: String? = null,
+    initialAction: String? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val imageCacheProgress by viewModel.imageCacheProgress.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(initialSection, initialAction) {
+        if (initialSection != null) {
+            val section = SettingsSection.entries.find { it.name == initialSection }
+            if (section != null) {
+                viewModel.navigateToSection(section)
+                kotlinx.coroutines.delay(300)
+                when (initialAction) {
+                    "rommConfig" -> viewModel.startRommConfig()
+                    "syncLibrary" -> viewModel.setFocusIndex(2)
+                }
+            }
+        }
+    }
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()

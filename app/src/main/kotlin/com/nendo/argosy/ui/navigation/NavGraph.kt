@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.nendo.argosy.data.preferences.DefaultView
+import com.nendo.argosy.domain.model.RequiredAction
 import com.nendo.argosy.ui.screens.apps.AppsScreen
 import com.nendo.argosy.ui.screens.downloads.DownloadsScreen
 import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
@@ -69,7 +70,11 @@ fun NavGraph(
                     navController.navigate(Screen.Library.createRoute(platformId, sourceFilter))
                 },
                 onNavigateToDefault = navigateToDefault,
-                onDrawerToggle = onDrawerToggle
+                onDrawerToggle = onDrawerToggle,
+                onChangelogAction = { action ->
+                    val section = action.section.name
+                    navController.navigate(Screen.Settings.createRoute(section, action.actionKey))
+                }
             )
         }
 
@@ -116,8 +121,28 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Settings.route) {
-            SettingsScreen(onBack = navigateToDefault)
+        composable(
+            route = Screen.Settings.route,
+            arguments = listOf(
+                navArgument("section") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("action") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val section = backStackEntry.arguments?.getString("section")
+            val action = backStackEntry.arguments?.getString("action")
+            SettingsScreen(
+                onBack = navigateToDefault,
+                initialSection = section,
+                initialAction = action
+            )
         }
 
         composable(

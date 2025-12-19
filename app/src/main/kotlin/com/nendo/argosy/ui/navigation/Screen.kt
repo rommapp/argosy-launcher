@@ -13,7 +13,14 @@ sealed class Screen(val route: String) {
     }
     data object Downloads : Screen("downloads")
     data object Apps : Screen("apps")
-    data object Settings : Screen("settings")
+    data object Settings : Screen("settings?section={section}&action={action}") {
+        fun createRoute(section: String? = null, action: String? = null): String {
+            val params = mutableListOf<String>()
+            if (section != null) params.add("section=$section")
+            if (action != null) params.add("action=$action")
+            return if (params.isEmpty()) "settings" else "settings?${params.joinToString("&")}"
+        }
+    }
     data object GameDetail : Screen("game/{gameId}") {
         fun createRoute(gameId: Long) = "game/$gameId"
     }

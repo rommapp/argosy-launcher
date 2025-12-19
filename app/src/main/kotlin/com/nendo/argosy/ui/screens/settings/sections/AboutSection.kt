@@ -31,7 +31,9 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val isDebug = com.nendo.argosy.BuildConfig.DEBUG
     val isOnBetaVersion = com.nendo.argosy.BuildConfig.VERSION_NAME.contains("-")
     val context = LocalContext.current
-    val maxIndex = if (uiState.fileLoggingPath != null) 4 else 3
+    var debugItemCount = 1
+    if (uiState.fileLoggingPath != null) debugItemCount++
+    val maxIndex = 2 + debugItemCount
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex in 0..maxIndex) {

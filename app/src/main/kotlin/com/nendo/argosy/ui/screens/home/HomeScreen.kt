@@ -90,12 +90,15 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.domain.model.RequiredAction
+import com.nendo.argosy.ui.components.ChangelogModal
 import com.nendo.argosy.ui.components.FooterHint
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.components.SystemStatusBar
+import com.nendo.argosy.ui.input.ChangelogInputHandler
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
@@ -110,6 +113,7 @@ fun HomeScreen(
     onNavigateToLibrary: (platformId: String?, sourceFilter: String?) -> Unit = { _, _ -> },
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
+    onChangelogAction: (RequiredAction) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -214,10 +218,34 @@ fun HomeScreen(
     }
 
     val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
+
+    val changelogInputHandler = remember(viewModel) {
+        ChangelogInputHandler(
+            getEntry = { uiState.changelogEntry },
+            onDismiss = { viewModel.dismissChangelog() },
+            onAction = { action ->
+                onChangelogAction(viewModel.handleChangelogAction(action))
+            }
+        )
+    }
+
+    LaunchedEffect(uiState.changelogEntry) {
+        if (uiState.changelogEntry != null) {
+            inputDispatcher.pushModal(changelogInputHandler)
+        }
+    }
+
+    DisposableEffect(uiState.changelogEntry) {
+        onDispose {
+            if (uiState.changelogEntry != null) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
 
     val backgroundBlurDp = (uiState.backgroundBlur * 0.5f).dp
     val saturationFraction = uiState.backgroundSaturation / 100f
@@ -457,6 +485,16 @@ fun HomeScreen(
             syncProgress = uiState.syncOverlayState?.syncProgress,
             gameTitle = uiState.syncOverlayState?.gameTitle
         )
+
+        uiState.changelogEntry?.let { entry ->
+            ChangelogModal(
+                entry = entry,
+                onDismiss = { viewModel.dismissChangelog() },
+                onAction = { action ->
+                    onChangelogAction(viewModel.handleChangelogAction(action))
+                }
+            )
+        }
     }
 }
 

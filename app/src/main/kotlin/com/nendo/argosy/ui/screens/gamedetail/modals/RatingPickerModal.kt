@@ -23,7 +23,8 @@ import com.nendo.argosy.ui.screens.gamedetail.RatingType
 @Composable
 fun RatingPickerModal(
     type: RatingType,
-    value: Int
+    value: Int,
+    onDismiss: () -> Unit
 ) {
     val isRating = type == RatingType.OPINION
     val title = if (isRating) "RATE GAME" else "SET DIFFICULTY"
@@ -35,6 +36,7 @@ fun RatingPickerModal(
     CenteredModal(
         title = title,
         width = 420.dp,
+        onDismiss = onDismiss,
         footerHints = listOf(
             InputButton.DPAD_HORIZONTAL to "Adjust",
             InputButton.SOUTH to "Confirm",

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
@@ -275,6 +276,7 @@ private fun GameDetailContent(
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Background layer - extends behind footer
         Box(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
             if (game.backgroundPath != null) {
                 val imageData = if (game.backgroundPath.startsWith("/")) {
@@ -307,75 +309,96 @@ private fun GameDetailContent(
                         )
                     )
             )
+        }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 80.dp)
+        // Content + Footer in Column (content doesn't flow behind footer)
+        Column(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
+            val isDark = LocalLauncherTheme.current.isDarkTheme
+            val fadeColor = if (isDark) Color.Black else Color.White
+
+            Box(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 32.dp)
+                ) {
+                    GameHeader(game = game, uiState = uiState, viewModel = viewModel)
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    if (!game.description.isNullOrBlank()) {
+                        DescriptionSection(
+                            description = game.description,
+                            onPositioned = onDescriptionPositioned
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    if (game.screenshots.isNotEmpty()) {
+                        ScreenshotsSection(
+                            screenshots = game.screenshots,
+                            listState = screenshotListState,
+                            currentSnapState = currentSnapState,
+                            onPositioned = onScreenshotPositioned
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    if (game.achievements.isNotEmpty()) {
+                        AchievementsSection(
+                            achievements = game.achievements,
+                            listState = achievementListState,
+                            currentSnapState = currentSnapState,
+                            onPositioned = onAchievementPositioned
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                }
+
+                // Gradient fade at bottom of content
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    fadeColor.copy(alpha = 0.8f)
+                                )
+                            )
+                        )
+                )
+            }
+
+            AnimatedVisibility(
+                visible = !showAnyOverlay,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                GameHeader(game = game, uiState = uiState, viewModel = viewModel)
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                if (!game.description.isNullOrBlank()) {
-                    DescriptionSection(
-                        description = game.description,
-                        onPositioned = onDescriptionPositioned
+                FooterBar(
+                    hints = listOf(
+                        InputButton.LB_RB to "Prev/Next Game",
+                        InputButton.SOUTH to when {
+                            uiState.isSyncing -> "Syncing..."
+                            uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
+                            uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
+                            uiState.downloadStatus == GameDownloadStatus.QUEUED -> "Queued"
+                            uiState.downloadStatus == GameDownloadStatus.WAITING_FOR_STORAGE -> "No Space"
+                            uiState.downloadStatus == GameDownloadStatus.DOWNLOADING -> "Downloading"
+                            uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
+                            else -> "Play"
+                        },
+                        InputButton.EAST to "Back",
+                        InputButton.NORTH to if (uiState.game?.isFavorite == true) "Unfavorite" else "Favorite"
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                if (game.screenshots.isNotEmpty()) {
-                    ScreenshotsSection(
-                        screenshots = game.screenshots,
-                        listState = screenshotListState,
-                        currentSnapState = currentSnapState,
-                        onPositioned = onScreenshotPositioned
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                if (game.achievements.isNotEmpty()) {
-                    AchievementsSection(
-                        achievements = game.achievements,
-                        listState = achievementListState,
-                        currentSnapState = currentSnapState,
-                        onPositioned = onAchievementPositioned
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                Spacer(modifier = Modifier.height(30.dp))
+                )
             }
         }
 
         GameDetailModals(game = game, uiState = uiState, viewModel = viewModel)
-
-        AnimatedVisibility(
-            visible = !showAnyOverlay,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            FooterBar(
-                hints = listOf(
-                    InputButton.LB_RB to "Prev/Next Game",
-                    InputButton.SOUTH to when {
-                        uiState.isSyncing -> "Syncing..."
-                        uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
-                        uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
-                        uiState.downloadStatus == GameDownloadStatus.QUEUED -> "Queued"
-                        uiState.downloadStatus == GameDownloadStatus.WAITING_FOR_STORAGE -> "No Space"
-                        uiState.downloadStatus == GameDownloadStatus.DOWNLOADING -> "Downloading"
-                        uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
-                        else -> "Play"
-                    },
-                    InputButton.EAST to "Back",
-                    InputButton.NORTH to if (uiState.game?.isFavorite == true) "Unfavorite" else "Favorite"
-                )
-            )
-        }
     }
 }
 
@@ -393,7 +416,8 @@ private fun GameDetailModals(
         MoreOptionsModal(
             game = game,
             focusIndex = uiState.moreOptionsFocusIndex,
-            isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED
+            isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
+            onDismiss = viewModel::toggleMoreOptions
         )
     }
 
@@ -432,7 +456,8 @@ private fun GameDetailModals(
     ) {
         RatingPickerModal(
             type = uiState.ratingPickerType,
-            value = uiState.ratingPickerValue
+            value = uiState.ratingPickerValue,
+            onDismiss = viewModel::dismissRatingPicker
         )
     }
 
@@ -444,7 +469,8 @@ private fun GameDetailModals(
         DiscPickerModal(
             discs = uiState.discs,
             focusIndex = uiState.discPickerFocusIndex,
-            onSelectDisc = viewModel::selectDiscAtIndex
+            onSelectDisc = viewModel::selectDiscAtIndex,
+            onDismiss = viewModel::dismissDiscPicker
         )
     }
 
@@ -454,7 +480,8 @@ private fun GameDetailModals(
         exit = fadeOut()
     ) {
         MissingDiscModal(
-            missingDiscNumbers = uiState.missingDiscNumbers
+            missingDiscNumbers = uiState.missingDiscNumbers,
+            onDismiss = viewModel::dismissMissingDiscPrompt
         )
     }
 

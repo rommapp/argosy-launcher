@@ -2,6 +2,11 @@ package com.nendo.argosy.ui.theme
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.preferences.BoxArtBorderThickness
+import com.nendo.argosy.data.preferences.BoxArtCornerRadius
+import com.nendo.argosy.data.preferences.BoxArtGlowStrength
+import com.nendo.argosy.data.preferences.SystemIconPadding
+import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +21,13 @@ data class ThemeState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val primaryColor: Int? = null,
     val secondaryColor: Int? = null,
-    val tertiaryColor: Int? = null
+    val tertiaryColor: Int? = null,
+    val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
+    val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
+    val boxArtGlowStrength: BoxArtGlowStrength = BoxArtGlowStrength.MEDIUM,
+    val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
+    val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val useAccentColorFooter: Boolean = false
 )
 
 @HiltViewModel
@@ -30,7 +41,13 @@ class ThemeViewModel @Inject constructor(
                 themeMode = prefs.themeMode,
                 primaryColor = prefs.primaryColor,
                 secondaryColor = prefs.secondaryColor,
-                tertiaryColor = prefs.tertiaryColor
+                tertiaryColor = prefs.tertiaryColor,
+                boxArtCornerRadius = prefs.boxArtCornerRadius,
+                boxArtBorderThickness = prefs.boxArtBorderThickness,
+                boxArtGlowStrength = prefs.boxArtGlowStrength,
+                systemIconPosition = prefs.systemIconPosition,
+                systemIconPadding = prefs.systemIconPadding,
+                useAccentColorFooter = prefs.useAccentColorFooter
             )
         }
         .stateIn(

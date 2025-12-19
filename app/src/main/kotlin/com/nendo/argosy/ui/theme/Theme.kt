@@ -11,9 +11,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
+import com.nendo.argosy.ui.components.FooterStyleConfig
+import com.nendo.argosy.ui.components.LocalFooterStyle
 
 private fun colorToHsv(color: Color): FloatArray {
     val hsv = FloatArray(3)
@@ -172,6 +177,16 @@ val LocalLauncherTheme = staticCompositionLocalOf {
     )
 }
 
+data class BoxArtStyleConfig(
+    val cornerRadiusDp: Dp = 8.dp,
+    val borderThicknessDp: Dp = 2.dp,
+    val glowAlpha: Float = 0.4f,
+    val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
+    val systemIconPaddingDp: Dp = 8.dp
+)
+
+val LocalBoxArtStyle = staticCompositionLocalOf { BoxArtStyleConfig() }
+
 @Composable
 fun ALauncherTheme(
     viewModel: ThemeViewModel = hiltViewModel(),
@@ -210,7 +225,23 @@ fun ALauncherTheme(
         semanticColors = semanticColors
     )
 
-    CompositionLocalProvider(LocalLauncherTheme provides launcherConfig) {
+    val boxArtStyle = BoxArtStyleConfig(
+        cornerRadiusDp = themeState.boxArtCornerRadius.dp.dp,
+        borderThicknessDp = themeState.boxArtBorderThickness.dp.dp,
+        glowAlpha = themeState.boxArtGlowStrength.alpha,
+        systemIconPosition = themeState.systemIconPosition,
+        systemIconPaddingDp = themeState.systemIconPadding.dp.dp
+    )
+
+    val footerStyle = FooterStyleConfig(
+        useAccentColor = themeState.useAccentColorFooter
+    )
+
+    CompositionLocalProvider(
+        LocalLauncherTheme provides launcherConfig,
+        LocalBoxArtStyle provides boxArtStyle,
+        LocalFooterStyle provides footerStyle
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

@@ -7,7 +7,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.preferences.UiDensity
+import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.data.repository.InstalledApp
@@ -45,7 +45,7 @@ enum class AppContextMenuItem {
 data class AppsUiState(
     val apps: List<AppUi> = emptyList(),
     val focusedIndex: Int = 0,
-    val uiDensity: UiDensity = UiDensity.NORMAL,
+    val gridDensity: GridDensity = GridDensity.NORMAL,
     val isLoading: Boolean = true,
     val showHiddenApps: Boolean = false,
     val showContextMenu: Boolean = false,
@@ -57,10 +57,10 @@ data class AppsUiState(
 ) {
     val columnsCount: Int
         get() {
-            val baseColumns = when (uiDensity) {
-                UiDensity.COMPACT -> 5
-                UiDensity.NORMAL -> 4
-                UiDensity.SPACIOUS -> 3
+            val baseColumns = when (gridDensity) {
+                GridDensity.COMPACT -> 5
+                GridDensity.NORMAL -> 4
+                GridDensity.SPACIOUS -> 3
             }
             return if (screenWidthDp > 900) {
                 (baseColumns * 1.5f).toInt()
@@ -108,7 +108,7 @@ class AppsViewModel @Inject constructor(
     init {
         loadApps()
         observePackageChanges()
-        observeUiDensity()
+        observeGridDensity()
     }
 
     private fun observePackageChanges() {
@@ -119,10 +119,10 @@ class AppsViewModel @Inject constructor(
         }
     }
 
-    private fun observeUiDensity() {
+    private fun observeGridDensity() {
         viewModelScope.launch {
             preferencesRepository.preferences.collect { prefs ->
-                _uiState.update { it.copy(uiDensity = prefs.uiDensity) }
+                _uiState.update { it.copy(gridDensity = prefs.gridDensity) }
             }
         }
     }

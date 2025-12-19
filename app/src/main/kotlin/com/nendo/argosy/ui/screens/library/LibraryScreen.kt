@@ -68,7 +68,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.data.model.GameSource
-import com.nendo.argosy.data.preferences.UiDensity
+import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SyncOverlay
@@ -291,7 +291,7 @@ fun LibraryScreen(
                         key(uiState.currentPlatformIndex) {
                             val gridSpacing = uiState.gridSpacingDp.dp
                             val columnsCount = uiState.columnsCount
-                            val aspectRatio = if (uiState.uiDensity == UiDensity.COMPACT) 2f / 3f else 3f / 4f
+                            val aspectRatio = if (uiState.gridDensity == GridDensity.COMPACT) 2f / 3f else 3f / 4f
 
                             val configuration = LocalConfiguration.current
                             LaunchedEffect(configuration.screenWidthDp) {
@@ -509,6 +509,7 @@ private fun LibraryGameCard(
         game = HomeGameUi(
             id = game.id,
             title = game.title,
+            platformId = game.platformId,
             coverPath = game.coverPath,
             backgroundPath = null,
             developer = null,

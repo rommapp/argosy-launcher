@@ -3,6 +3,7 @@ package com.nendo.argosy.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.GameRepository
@@ -33,7 +34,8 @@ data class ArgosyUiState(
     val isFirstRun: Boolean = true,
     val isLoading: Boolean = true,
     val abIconsSwapped: Boolean = false,
-    val swapStartSelect: Boolean = false
+    val swapStartSelect: Boolean = false,
+    val defaultView: DefaultView = DefaultView.HOME
 )
 
 data class DrawerState(
@@ -113,7 +115,8 @@ class ArgosyViewModel @Inject constructor(
                 isFirstRun = !prefs.firstRunComplete,
                 isLoading = false,
                 abIconsSwapped = abIconsSwapped,
-                swapStartSelect = prefs.swapStartSelect
+                swapStartSelect = prefs.swapStartSelect,
+                defaultView = prefs.defaultView
             )
         }
         .stateIn(

@@ -4,11 +4,16 @@ import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.local.entity.PlatformEntity
-import com.nendo.argosy.data.preferences.AnimationSpeed
+import com.nendo.argosy.data.preferences.BoxArtBorderThickness
+import com.nendo.argosy.data.preferences.BoxArtCornerRadius
+import com.nendo.argosy.data.preferences.BoxArtGlowStrength
+import com.nendo.argosy.data.preferences.DefaultView
+import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.HapticIntensity
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
+import com.nendo.argosy.data.preferences.SystemIconPadding
+import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
-import com.nendo.argosy.data.preferences.UiDensity
 import com.nendo.argosy.ui.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundPreset
 import com.nendo.argosy.ui.input.SoundType
@@ -23,10 +28,18 @@ enum class SettingsSection {
     STEAM_SETTINGS,
     STORAGE,
     DISPLAY,
+    BOX_ART,
+    HOME_SCREEN,
     CONTROLS,
     SOUNDS,
     EMULATORS,
     ABOUT
+}
+
+enum class BoxArtPreviewRatio(val ratio: Float, val displayName: String) {
+    VERTICAL_2_3(2f / 3f, "2:3"),
+    VERTICAL_3_4(3f / 4f, "3:4"),
+    SQUARE_1_1(1f, "1:1")
 }
 
 enum class ConnectionStatus {
@@ -74,13 +87,19 @@ data class CorePickerInfo(
 data class DisplayState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val primaryColor: Int? = null,
-    val animationSpeed: AnimationSpeed = AnimationSpeed.NORMAL,
-    val uiDensity: UiDensity = UiDensity.NORMAL,
+    val gridDensity: GridDensity = GridDensity.NORMAL,
     val backgroundBlur: Int = 0,
     val backgroundSaturation: Int = 100,
     val backgroundOpacity: Int = 100,
     val useGameBackground: Boolean = true,
-    val customBackgroundPath: String? = null
+    val customBackgroundPath: String? = null,
+    val useAccentColorFooter: Boolean = false,
+    val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
+    val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
+    val boxArtGlowStrength: BoxArtGlowStrength = BoxArtGlowStrength.MEDIUM,
+    val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
+    val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val defaultView: DefaultView = DefaultView.HOME
 )
 
 data class ControlsState(
@@ -254,5 +273,6 @@ data class SettingsUiState(
     val betaUpdatesEnabled: Boolean = false,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
-    val fileLogLevel: LogLevel = LogLevel.INFO
+    val fileLogLevel: LogLevel = LogLevel.INFO,
+    val boxArtPreviewRatio: BoxArtPreviewRatio = BoxArtPreviewRatio.VERTICAL_3_4
 )

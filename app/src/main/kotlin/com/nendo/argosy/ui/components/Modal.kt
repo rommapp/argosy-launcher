@@ -98,6 +98,7 @@ fun CenteredModal(
     title: String,
     modifier: Modifier = Modifier,
     width: Dp = 400.dp,
+    onDismiss: (() -> Unit)? = null,
     footerHints: List<Pair<InputButton, String>>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -107,7 +108,16 @@ fun CenteredModal(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(overlayColor),
+            .background(overlayColor)
+            .then(
+                if (onDismiss != null) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss
+                    )
+                } else Modifier
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -116,6 +126,15 @@ fun CenteredModal(
                 .background(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(12.dp)
+                )
+                .then(
+                    if (onDismiss != null) {
+                        Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {}
+                        )
+                    } else Modifier
                 )
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -142,6 +161,7 @@ fun NestedModal(
     title: String,
     modifier: Modifier = Modifier,
     width: Dp = 400.dp,
+    onDismiss: (() -> Unit)? = null,
     footerHints: List<Pair<InputButton, String>>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -151,7 +171,16 @@ fun NestedModal(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(overlayColor),
+            .background(overlayColor)
+            .then(
+                if (onDismiss != null) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss
+                    )
+                } else Modifier
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -160,6 +189,15 @@ fun NestedModal(
                 .background(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(12.dp)
+                )
+                .then(
+                    if (onDismiss != null) {
+                        Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {}
+                        )
+                    } else Modifier
                 )
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally

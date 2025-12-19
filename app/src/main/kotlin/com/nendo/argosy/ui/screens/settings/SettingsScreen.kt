@@ -53,10 +53,12 @@ import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
 import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
+import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.DisplaySection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
 import com.nendo.argosy.ui.screens.settings.sections.GameDataSection
+import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.SoundsSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
@@ -273,6 +275,8 @@ fun SettingsScreen(
                     SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
                     SettingsSection.STORAGE -> "STORAGE"
                     SettingsSection.DISPLAY -> "DISPLAY"
+                    SettingsSection.BOX_ART -> "BOX ART"
+                    SettingsSection.HOME_SCREEN -> "HOME SCREEN"
                     SettingsSection.CONTROLS -> "CONTROLS"
                     SettingsSection.SOUNDS -> "SOUNDS"
                     SettingsSection.EMULATORS -> "EMULATORS"
@@ -289,6 +293,8 @@ fun SettingsScreen(
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
                     SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
                     SettingsSection.DISPLAY -> DisplaySection(uiState, viewModel)
+                    SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)
+                    SettingsSection.HOME_SCREEN -> HomeScreenSection(uiState, viewModel)
                     SettingsSection.CONTROLS -> ControlsSection(uiState, viewModel)
                     SettingsSection.SOUNDS -> SoundsSection(uiState, viewModel)
                     SettingsSection.EMULATORS -> EmulatorsSection(
@@ -520,6 +526,9 @@ private fun SettingsFooter(uiState: SettingsUiState) {
 
     val hints = buildList {
         add(InputButton.DPAD to "Navigate")
+        if (uiState.currentSection == SettingsSection.BOX_ART) {
+            add(InputButton.LB_RB to "Preview Size")
+        }
         add(InputButton.SOUTH to "Select")
         if (uiState.currentSection == SettingsSection.EMULATORS) {
             add(InputButton.WEST to "Saves")

@@ -78,6 +78,7 @@ data class GameDownloadIndicator(
 data class HomeGameUi(
     val id: Long,
     val title: String,
+    val platformId: String,
     val coverPath: String?,
     val backgroundPath: String?,
     val developer: String?,
@@ -1007,6 +1008,7 @@ class HomeViewModel @Inject constructor(
         return HomeGameUi(
             id = id,
             title = title,
+            platformId = platformId,
             coverPath = coverPath,
             backgroundPath = effectiveBackground,
             developer = developer,

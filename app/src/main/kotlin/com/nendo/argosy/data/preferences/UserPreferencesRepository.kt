@@ -39,7 +39,6 @@ class UserPreferencesRepository @Inject constructor(
         val SWAP_XY = booleanPreferencesKey("swap_xy")
         val AB_ICON_LAYOUT = stringPreferencesKey("ab_icon_layout")  // "auto", "xbox", "nintendo"
         val SWAP_START_SELECT = booleanPreferencesKey("swap_start_select")
-        val ANIMATION_SPEED = stringPreferencesKey("animation_speed")
         val LAST_ROMM_SYNC = stringPreferencesKey("last_romm_sync")
 
         val SYNC_FILTER_REGIONS = stringPreferencesKey("sync_filter_regions")
@@ -67,10 +66,18 @@ class UserPreferencesRepository @Inject constructor(
         val BACKGROUND_OPACITY = intPreferencesKey("background_opacity")
         val USE_GAME_BACKGROUND = booleanPreferencesKey("use_game_background")
         val CUSTOM_BACKGROUND_PATH = stringPreferencesKey("custom_background_path")
+        val USE_ACCENT_COLOR_FOOTER = booleanPreferencesKey("use_accent_color_footer")
 
         val FILE_LOGGING_ENABLED = booleanPreferencesKey("file_logging_enabled")
         val FILE_LOGGING_PATH = stringPreferencesKey("file_logging_path")
         val FILE_LOG_LEVEL = stringPreferencesKey("file_log_level")
+
+        val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
+        val BOX_ART_BORDER_THICKNESS = stringPreferencesKey("box_art_border_thickness")
+        val BOX_ART_GLOW_STRENGTH = stringPreferencesKey("box_art_glow_strength")
+        val SYSTEM_ICON_POSITION = stringPreferencesKey("system_icon_position")
+        val SYSTEM_ICON_PADDING = stringPreferencesKey("system_icon_padding")
+        val DEFAULT_VIEW = stringPreferencesKey("default_view")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -92,7 +99,6 @@ class UserPreferencesRepository @Inject constructor(
             swapXY = prefs[Keys.SWAP_XY] ?: false,
             abIconLayout = prefs[Keys.AB_ICON_LAYOUT] ?: "auto",
             swapStartSelect = prefs[Keys.SWAP_START_SELECT] ?: false,
-            animationSpeed = AnimationSpeed.fromString(prefs[Keys.ANIMATION_SPEED]),
             lastRommSync = prefs[Keys.LAST_ROMM_SYNC]?.let { Instant.parse(it) },
             syncFilters = SyncFilterPreferences(
                 enabledRegions = prefs[Keys.SYNC_FILTER_REGIONS]
@@ -115,6 +121,7 @@ class UserPreferencesRepository @Inject constructor(
             backgroundOpacity = prefs[Keys.BACKGROUND_OPACITY] ?: 100,
             useGameBackground = prefs[Keys.USE_GAME_BACKGROUND] ?: true,
             customBackgroundPath = prefs[Keys.CUSTOM_BACKGROUND_PATH],
+            useAccentColorFooter = prefs[Keys.USE_ACCENT_COLOR_FOOTER] ?: false,
             hiddenApps = prefs[Keys.HIDDEN_APPS]
                 ?.split(",")
                 ?.filter { it.isNotBlank() }
@@ -130,7 +137,7 @@ class UserPreferencesRepository @Inject constructor(
                 ?.filter { it.isNotBlank() }
                 ?: emptyList(),
             maxConcurrentDownloads = prefs[Keys.MAX_CONCURRENT_DOWNLOADS] ?: 1,
-            uiDensity = UiDensity.fromString(prefs[Keys.UI_DENSITY]),
+            gridDensity = GridDensity.fromString(prefs[Keys.UI_DENSITY]),
             soundConfigs = parseSoundConfigs(prefs[Keys.SOUND_CONFIGS]),
             betaUpdatesEnabled = prefs[Keys.BETA_UPDATES_ENABLED] ?: false,
             saveSyncEnabled = prefs[Keys.SAVE_SYNC_ENABLED] ?: false,
@@ -138,7 +145,13 @@ class UserPreferencesRepository @Inject constructor(
             saveCacheLimit = prefs[Keys.SAVE_CACHE_LIMIT] ?: 10,
             fileLoggingEnabled = prefs[Keys.FILE_LOGGING_ENABLED] ?: false,
             fileLoggingPath = prefs[Keys.FILE_LOGGING_PATH],
-            fileLogLevel = LogLevel.fromString(prefs[Keys.FILE_LOG_LEVEL])
+            fileLogLevel = LogLevel.fromString(prefs[Keys.FILE_LOG_LEVEL]),
+            boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
+            boxArtBorderThickness = BoxArtBorderThickness.fromString(prefs[Keys.BOX_ART_BORDER_THICKNESS]),
+            boxArtGlowStrength = BoxArtGlowStrength.fromString(prefs[Keys.BOX_ART_GLOW_STRENGTH]),
+            systemIconPosition = SystemIconPosition.fromString(prefs[Keys.SYSTEM_ICON_POSITION]),
+            systemIconPadding = SystemIconPadding.fromString(prefs[Keys.SYSTEM_ICON_PADDING]),
+            defaultView = DefaultView.fromString(prefs[Keys.DEFAULT_VIEW])
         )
     }
 
@@ -269,12 +282,6 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setAnimationSpeed(speed: AnimationSpeed) {
-        dataStore.edit { prefs ->
-            prefs[Keys.ANIMATION_SPEED] = speed.name
-        }
-    }
-
     suspend fun setLastRommSyncTime(time: Instant) {
         dataStore.edit { prefs ->
             prefs[Keys.LAST_ROMM_SYNC] = time.toString()
@@ -365,7 +372,7 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setUiDensity(density: UiDensity) {
+    suspend fun setGridDensity(density: GridDensity) {
         dataStore.edit { prefs ->
             prefs[Keys.UI_DENSITY] = density.name
         }
@@ -445,6 +452,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setUseAccentColorFooter(use: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.USE_ACCENT_COLOR_FOOTER] = use
+        }
+    }
+
     suspend fun setCustomBackgroundPath(path: String?) {
         dataStore.edit { prefs ->
             if (path != null) prefs[Keys.CUSTOM_BACKGROUND_PATH] = path
@@ -470,6 +483,42 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.FILE_LOG_LEVEL] = level.name
         }
     }
+
+    suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BOX_ART_CORNER_RADIUS] = radius.name
+        }
+    }
+
+    suspend fun setBoxArtBorderThickness(thickness: BoxArtBorderThickness) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BOX_ART_BORDER_THICKNESS] = thickness.name
+        }
+    }
+
+    suspend fun setBoxArtGlowStrength(strength: BoxArtGlowStrength) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BOX_ART_GLOW_STRENGTH] = strength.name
+        }
+    }
+
+    suspend fun setSystemIconPosition(position: SystemIconPosition) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SYSTEM_ICON_POSITION] = position.name
+        }
+    }
+
+    suspend fun setSystemIconPadding(padding: SystemIconPadding) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SYSTEM_ICON_PADDING] = padding.name
+        }
+    }
+
+    suspend fun setDefaultView(view: DefaultView) {
+        dataStore.edit { prefs ->
+            prefs[Keys.DEFAULT_VIEW] = view.name
+        }
+    }
 }
 
 data class UserPreferences(
@@ -490,7 +539,6 @@ data class UserPreferences(
     val swapXY: Boolean = false,
     val abIconLayout: String = "auto",
     val swapStartSelect: Boolean = false,
-    val animationSpeed: AnimationSpeed = AnimationSpeed.NORMAL,
     val lastRommSync: Instant? = null,
     val syncFilters: SyncFilterPreferences = SyncFilterPreferences(),
     val syncScreenshotsEnabled: Boolean = false,
@@ -498,7 +546,7 @@ data class UserPreferences(
     val visibleSystemApps: Set<String> = emptySet(),
     val appOrder: List<String> = emptyList(),
     val maxConcurrentDownloads: Int = 1,
-    val uiDensity: UiDensity = UiDensity.NORMAL,
+    val gridDensity: GridDensity = GridDensity.NORMAL,
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,
@@ -509,9 +557,16 @@ data class UserPreferences(
     val backgroundOpacity: Int = 100,
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
+    val useAccentColorFooter: Boolean = false,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
-    val fileLogLevel: LogLevel = LogLevel.INFO
+    val fileLogLevel: LogLevel = LogLevel.INFO,
+    val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
+    val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
+    val boxArtGlowStrength: BoxArtGlowStrength = BoxArtGlowStrength.MEDIUM,
+    val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
+    val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val defaultView: DefaultView = DefaultView.HOME
 )
 
 enum class ThemeMode {
@@ -523,20 +578,11 @@ enum class ThemeMode {
     }
 }
 
-enum class AnimationSpeed {
-    SLOW, NORMAL, FAST, OFF;
-
-    companion object {
-        fun fromString(value: String?): AnimationSpeed =
-            entries.find { it.name == value } ?: NORMAL
-    }
-}
-
-enum class UiDensity {
+enum class GridDensity {
     COMPACT, NORMAL, SPACIOUS;
 
     companion object {
-        fun fromString(value: String?): UiDensity =
+        fun fromString(value: String?): GridDensity =
             entries.find { it.name == value } ?: NORMAL
     }
 }
@@ -549,5 +595,59 @@ enum class HapticIntensity(val amplitude: Int) {
     companion object {
         fun fromString(value: String?): HapticIntensity =
             entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class BoxArtCornerRadius(val dp: Int) {
+    NONE(0), SMALL(4), MEDIUM(8), LARGE(12), EXTRA_LARGE(16);
+
+    companion object {
+        fun fromString(value: String?): BoxArtCornerRadius =
+            entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class BoxArtBorderThickness(val dp: Int) {
+    NONE(0), THIN(1), MEDIUM(2), THICK(4);
+
+    companion object {
+        fun fromString(value: String?): BoxArtBorderThickness =
+            entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class BoxArtGlowStrength(val alpha: Float) {
+    OFF(0f), LOW(0.2f), MEDIUM(0.4f), HIGH(0.6f);
+
+    companion object {
+        fun fromString(value: String?): BoxArtGlowStrength =
+            entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class SystemIconPosition {
+    OFF, TOP_LEFT, TOP_RIGHT;
+
+    companion object {
+        fun fromString(value: String?): SystemIconPosition =
+            entries.find { it.name == value } ?: TOP_LEFT
+    }
+}
+
+enum class SystemIconPadding(val dp: Int) {
+    SMALL(4), MEDIUM(8), LARGE(12);
+
+    companion object {
+        fun fromString(value: String?): SystemIconPadding =
+            entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class DefaultView {
+    HOME, LIBRARY;
+
+    companion object {
+        fun fromString(value: String?): DefaultView =
+            entries.find { it.name == value } ?: HOME
     }
 }

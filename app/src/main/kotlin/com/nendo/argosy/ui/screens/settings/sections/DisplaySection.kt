@@ -6,20 +6,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import com.nendo.argosy.data.preferences.AnimationSpeed
+import com.nendo.argosy.data.preferences.DefaultView
+import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
-import com.nendo.argosy.data.preferences.UiDensity
-import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.HueSliderPreference
-import com.nendo.argosy.ui.components.SliderPreference
-import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.colorIntToHue
 import com.nendo.argosy.ui.components.hueToColorInt
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -31,7 +30,7 @@ import com.nendo.argosy.ui.theme.Motion
 fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val currentHue = uiState.display.primaryColor?.let { colorIntToHue(it) }
-    val maxIndex = if (uiState.display.useGameBackground) 7 else 8
+    val maxIndex = 5
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex in 0..maxIndex) {
@@ -82,92 +81,49 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         }
         item {
             CyclePreference(
-                title = "Animation Speed",
-                value = uiState.display.animationSpeed.name.lowercase().replaceFirstChar { it.uppercase() },
+                title = "Grid Density",
+                value = uiState.display.gridDensity.name.lowercase().replaceFirstChar { it.uppercase() },
                 isFocused = uiState.focusedIndex == 2,
                 onClick = {
-                    val next = when (uiState.display.animationSpeed) {
-                        AnimationSpeed.SLOW -> AnimationSpeed.NORMAL
-                        AnimationSpeed.NORMAL -> AnimationSpeed.FAST
-                        AnimationSpeed.FAST -> AnimationSpeed.OFF
-                        AnimationSpeed.OFF -> AnimationSpeed.SLOW
+                    val next = when (uiState.display.gridDensity) {
+                        GridDensity.COMPACT -> GridDensity.NORMAL
+                        GridDensity.NORMAL -> GridDensity.SPACIOUS
+                        GridDensity.SPACIOUS -> GridDensity.COMPACT
                     }
-                    viewModel.setAnimationSpeed(next)
+                    viewModel.setGridDensity(next)
                 }
             )
+        }
+        item {
+            NavigationPreference(
+                icon = Icons.Outlined.Image,
+                title = "Box Art",
+                subtitle = "Customize card appearance",
+                isFocused = uiState.focusedIndex == 3,
+                onClick = { viewModel.navigateToBoxArt() }
+            )
+        }
+        item {
+            NavigationPreference(
+                icon = Icons.Outlined.Home,
+                title = "Home Screen",
+                subtitle = "Background and footer settings",
+                isFocused = uiState.focusedIndex == 4,
+                onClick = { viewModel.navigateToHomeScreen() }
+            )
+        }
+        item {
+            DisplaySectionHeader("Default")
         }
         item {
             CyclePreference(
-                title = "UI Density",
-                value = uiState.display.uiDensity.name.lowercase().replaceFirstChar { it.uppercase() },
-                isFocused = uiState.focusedIndex == 3,
-                onClick = {
-                    val next = when (uiState.display.uiDensity) {
-                        UiDensity.COMPACT -> UiDensity.NORMAL
-                        UiDensity.NORMAL -> UiDensity.SPACIOUS
-                        UiDensity.SPACIOUS -> UiDensity.COMPACT
-                    }
-                    viewModel.setUiDensity(next)
-                }
-            )
-        }
-        item {
-            DisplaySectionHeader("Background")
-        }
-        item {
-            SwitchPreference(
-                title = "Game Artwork",
-                subtitle = "Use game cover as background",
-                isEnabled = uiState.display.useGameBackground,
-                isFocused = uiState.focusedIndex == 4,
-                onToggle = { viewModel.setUseGameBackground(it) }
-            )
-        }
-        if (!uiState.display.useGameBackground) {
-            item {
-                val subtitle = if (uiState.display.customBackgroundPath != null) {
-                    "Custom image selected"
-                } else {
-                    "No image selected"
-                }
-                ActionPreference(
-                    icon = Icons.Outlined.PhotoLibrary,
-                    title = "Custom Image",
-                    subtitle = subtitle,
-                    isFocused = uiState.focusedIndex == 5,
-                    onClick = { viewModel.openBackgroundPicker() }
-                )
-            }
-        }
-        val sliderOffset = if (uiState.display.useGameBackground) 0 else 1
-        item {
-            SliderPreference(
-                title = "Blur",
-                value = uiState.display.backgroundBlur / 10,
-                minValue = 0,
-                maxValue = 10,
-                isFocused = uiState.focusedIndex == 5 + sliderOffset,
-                onClick = { viewModel.cycleBackgroundBlur() }
-            )
-        }
-        item {
-            SliderPreference(
-                title = "Saturation",
-                value = uiState.display.backgroundSaturation / 10,
-                minValue = 0,
-                maxValue = 10,
-                isFocused = uiState.focusedIndex == 6 + sliderOffset,
-                onClick = { viewModel.cycleBackgroundSaturation() }
-            )
-        }
-        item {
-            SliderPreference(
-                title = "Opacity",
-                value = uiState.display.backgroundOpacity / 10,
-                minValue = 0,
-                maxValue = 10,
-                isFocused = uiState.focusedIndex == 7 + sliderOffset,
-                onClick = { viewModel.cycleBackgroundOpacity() }
+                title = "Default View",
+                value = when (uiState.display.defaultView) {
+                    DefaultView.HOME -> "Home"
+                    DefaultView.LIBRARY -> "Library"
+                },
+                isFocused = uiState.focusedIndex == 5,
+                onClick = { viewModel.cycleDefaultView() }
             )
         }
     }

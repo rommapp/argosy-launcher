@@ -1,9 +1,14 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import androidx.core.graphics.ColorUtils
-import com.nendo.argosy.data.preferences.AnimationSpeed
+import com.nendo.argosy.data.preferences.BoxArtBorderThickness
+import com.nendo.argosy.data.preferences.BoxArtCornerRadius
+import com.nendo.argosy.data.preferences.BoxArtGlowStrength
+import com.nendo.argosy.data.preferences.DefaultView
+import com.nendo.argosy.data.preferences.GridDensity
+import com.nendo.argosy.data.preferences.SystemIconPadding
+import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
-import com.nendo.argosy.data.preferences.UiDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.screens.settings.DisplayState
 import kotlinx.coroutines.CoroutineScope
@@ -94,37 +99,20 @@ class DisplaySettingsDelegate @Inject constructor(
         setPrimaryColor(scope, null)
     }
 
-    fun setAnimationSpeed(scope: CoroutineScope, speed: AnimationSpeed) {
+    fun setGridDensity(scope: CoroutineScope, density: GridDensity) {
         scope.launch {
-            preferencesRepository.setAnimationSpeed(speed)
-            _state.update { it.copy(animationSpeed = speed) }
+            preferencesRepository.setGridDensity(density)
+            _state.update { it.copy(gridDensity = density) }
         }
     }
 
-    fun cycleAnimationSpeed(scope: CoroutineScope) {
-        val next = when (_state.value.animationSpeed) {
-            AnimationSpeed.SLOW -> AnimationSpeed.NORMAL
-            AnimationSpeed.NORMAL -> AnimationSpeed.FAST
-            AnimationSpeed.FAST -> AnimationSpeed.OFF
-            AnimationSpeed.OFF -> AnimationSpeed.SLOW
+    fun cycleGridDensity(scope: CoroutineScope) {
+        val next = when (_state.value.gridDensity) {
+            GridDensity.COMPACT -> GridDensity.NORMAL
+            GridDensity.NORMAL -> GridDensity.SPACIOUS
+            GridDensity.SPACIOUS -> GridDensity.COMPACT
         }
-        setAnimationSpeed(scope, next)
-    }
-
-    fun setUiDensity(scope: CoroutineScope, density: UiDensity) {
-        scope.launch {
-            preferencesRepository.setUiDensity(density)
-            _state.update { it.copy(uiDensity = density) }
-        }
-    }
-
-    fun cycleUiDensity(scope: CoroutineScope) {
-        val next = when (_state.value.uiDensity) {
-            UiDensity.COMPACT -> UiDensity.NORMAL
-            UiDensity.NORMAL -> UiDensity.SPACIOUS
-            UiDensity.SPACIOUS -> UiDensity.COMPACT
-        }
-        setUiDensity(scope, next)
+        setGridDensity(scope, next)
     }
 
     fun adjustBackgroundBlur(scope: CoroutineScope, delta: Int) {
@@ -167,6 +155,13 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setUseAccentColorFooter(scope: CoroutineScope, use: Boolean) {
+        scope.launch {
+            preferencesRepository.setUseAccentColorFooter(use)
+            _state.update { it.copy(useAccentColorFooter = use) }
+        }
+    }
+
     fun setCustomBackgroundPath(scope: CoroutineScope, path: String?) {
         scope.launch {
             preferencesRepository.setCustomBackgroundPath(path)
@@ -177,6 +172,68 @@ class DisplaySettingsDelegate @Inject constructor(
     fun openBackgroundPicker(scope: CoroutineScope) {
         scope.launch {
             _openBackgroundPickerEvent.emit(Unit)
+        }
+    }
+
+    fun cycleBoxArtCornerRadius(scope: CoroutineScope, direction: Int = 1) {
+        val current = _state.value.boxArtCornerRadius
+        val values = BoxArtCornerRadius.entries
+        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        scope.launch {
+            preferencesRepository.setBoxArtCornerRadius(next)
+            _state.update { it.copy(boxArtCornerRadius = next) }
+        }
+    }
+
+    fun cycleBoxArtBorderThickness(scope: CoroutineScope, direction: Int = 1) {
+        val current = _state.value.boxArtBorderThickness
+        val values = BoxArtBorderThickness.entries
+        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        scope.launch {
+            preferencesRepository.setBoxArtBorderThickness(next)
+            _state.update { it.copy(boxArtBorderThickness = next) }
+        }
+    }
+
+    fun cycleBoxArtGlowStrength(scope: CoroutineScope, direction: Int = 1) {
+        val current = _state.value.boxArtGlowStrength
+        val values = BoxArtGlowStrength.entries
+        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        scope.launch {
+            preferencesRepository.setBoxArtGlowStrength(next)
+            _state.update { it.copy(boxArtGlowStrength = next) }
+        }
+    }
+
+    fun cycleSystemIconPosition(scope: CoroutineScope, direction: Int = 1) {
+        val current = _state.value.systemIconPosition
+        val values = SystemIconPosition.entries
+        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        scope.launch {
+            preferencesRepository.setSystemIconPosition(next)
+            _state.update { it.copy(systemIconPosition = next) }
+        }
+    }
+
+    fun cycleSystemIconPadding(scope: CoroutineScope, direction: Int = 1) {
+        val current = _state.value.systemIconPadding
+        val values = SystemIconPadding.entries
+        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        scope.launch {
+            preferencesRepository.setSystemIconPadding(next)
+            _state.update { it.copy(systemIconPadding = next) }
+        }
+    }
+
+    fun cycleDefaultView(scope: CoroutineScope) {
+        val current = _state.value.defaultView
+        val next = when (current) {
+            DefaultView.HOME -> DefaultView.LIBRARY
+            DefaultView.LIBRARY -> DefaultView.HOME
+        }
+        scope.launch {
+            preferencesRepository.setDefaultView(next)
+            _state.update { it.copy(defaultView = next) }
         }
     }
 }

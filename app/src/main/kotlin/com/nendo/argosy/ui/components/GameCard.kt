@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,9 +54,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 
@@ -69,6 +72,7 @@ fun GameCard(
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE
 ) {
     val themeConfig = LocalLauncherTheme.current
+    val boxArtStyle = LocalBoxArtStyle.current
 
     val scale by animateFloatAsState(
         targetValue = if (isFocused) focusScale else Motion.scaleDefault,
@@ -89,14 +93,14 @@ fun GameCard(
     )
 
     val glowAlpha by animateFloatAsState(
-        targetValue = if (isFocused) Motion.glowAlphaFocused else Motion.glowAlphaUnfocused,
+        targetValue = if (isFocused) boxArtStyle.glowAlpha else Motion.glowAlphaUnfocused,
         animationSpec = Motion.focusSpring,
         label = "glow"
     )
 
     val glowColor = themeConfig.focusGlowColor
     val borderColor = MaterialTheme.colorScheme.primary
-    val shape = RoundedCornerShape(Dimens.radiusMd)
+    val shape = RoundedCornerShape(boxArtStyle.cornerRadiusDp)
 
     val saturationMatrix = ColorMatrix().apply {
         setToSaturation(saturation)
@@ -104,7 +108,7 @@ fun GameCard(
 
     val glowRadius = 16f
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .graphicsLayer {
                 scaleX = scale
@@ -127,13 +131,14 @@ fun GameCard(
                                 )
                             }
                             val spread = glowRadius
+                            val cornerRadius = boxArtStyle.cornerRadiusDp.toPx()
                             canvas.nativeCanvas.drawRoundRect(
                                 -spread,
                                 -spread,
                                 size.width + spread,
                                 size.height + spread,
-                                Dimens.radiusLg.toPx() + spread,
-                                Dimens.radiusLg.toPx() + spread,
+                                cornerRadius + spread,
+                                cornerRadius + spread,
                                 frameworkPaint
                             )
                         }
@@ -141,8 +146,8 @@ fun GameCard(
                 } else Modifier
             )
             .then(
-                if (isFocused) {
-                    Modifier.border(Dimens.borderThick, borderColor, shape)
+                if (isFocused && boxArtStyle.borderThicknessDp.value > 0f) {
+                    Modifier.border(boxArtStyle.borderThicknessDp, borderColor, shape)
                 } else Modifier
             )
             .clip(shape)
@@ -175,6 +180,19 @@ fun GameCard(
                     modifier = Modifier.padding(Dimens.spacingSm)
                 )
             }
+        }
+
+        if (boxArtStyle.systemIconPosition != SystemIconPosition.OFF) {
+            val badgeAlignment = when (boxArtStyle.systemIconPosition) {
+                SystemIconPosition.TOP_LEFT -> Alignment.TopStart
+                SystemIconPosition.TOP_RIGHT -> Alignment.TopEnd
+                else -> Alignment.TopStart
+            }
+            PlatformBadge(
+                platformId = game.platformId,
+                cardWidthDp = maxWidth,
+                modifier = Modifier.align(badgeAlignment)
+            )
         }
 
         if (downloadIndicator.isActive) {

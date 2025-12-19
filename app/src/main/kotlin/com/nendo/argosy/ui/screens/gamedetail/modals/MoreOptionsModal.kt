@@ -24,12 +24,13 @@ import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 fun MoreOptionsModal(
     game: GameDetailUi,
     focusIndex: Int,
-    isDownloaded: Boolean
+    isDownloaded: Boolean,
+    onDismiss: () -> Unit
 ) {
     val isRommGame = game.isRommGame
     var currentIndex = 0
 
-    Modal(title = "MORE OPTIONS") {
+    Modal(title = "MORE OPTIONS", onDismiss = onDismiss) {
         if (game.canManageSaves) {
             OptionItem(
                 icon = Icons.Default.Save,

@@ -16,9 +16,8 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
-import com.nendo.argosy.data.preferences.AnimationSpeed
+import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
-import com.nendo.argosy.data.preferences.UiDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.github.UpdateState
@@ -290,13 +289,19 @@ class SettingsViewModel @Inject constructor(
             displayDelegate.updateState(DisplayState(
                 themeMode = prefs.themeMode,
                 primaryColor = prefs.primaryColor,
-                animationSpeed = prefs.animationSpeed,
-                uiDensity = prefs.uiDensity,
+                gridDensity = prefs.gridDensity,
                 backgroundBlur = prefs.backgroundBlur,
                 backgroundSaturation = prefs.backgroundSaturation,
                 backgroundOpacity = prefs.backgroundOpacity,
                 useGameBackground = prefs.useGameBackground,
-                customBackgroundPath = prefs.customBackgroundPath
+                customBackgroundPath = prefs.customBackgroundPath,
+                useAccentColorFooter = prefs.useAccentColorFooter,
+                boxArtCornerRadius = prefs.boxArtCornerRadius,
+                boxArtBorderThickness = prefs.boxArtBorderThickness,
+                boxArtGlowStrength = prefs.boxArtGlowStrength,
+                systemIconPosition = prefs.systemIconPosition,
+                systemIconPadding = prefs.systemIconPadding,
+                defaultView = prefs.defaultView
             ))
 
             controlsDelegate.updateState(ControlsState(
@@ -600,6 +605,14 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = steamIndex) }
                 true
             }
+            state.currentSection == SettingsSection.BOX_ART -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.DISPLAY, focusedIndex = 3) }
+                true
+            }
+            state.currentSection == SettingsSection.HOME_SCREEN -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.DISPLAY, focusedIndex = 4) }
+                true
+            }
             state.currentSection != SettingsSection.MAIN -> {
                 _uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = 0) }
                 true
@@ -654,7 +667,12 @@ class SettingsViewModel @Inject constructor(
                     val platformCount = state.storage.platformConfigs.size
                     (baseItemCount + platformCount - 1).coerceAtLeast(baseItemCount - 1)
                 }
-                SettingsSection.DISPLAY -> if (state.display.useGameBackground) 7 else 8
+                SettingsSection.DISPLAY -> 5
+                SettingsSection.HOME_SCREEN -> if (state.display.useGameBackground) 4 else 5
+                SettingsSection.BOX_ART -> {
+                    val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
+                    if (showIconPadding) 4 else 3
+                }
                 SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 4 else 3
                 SettingsSection.SOUNDS -> if (state.sounds.enabled) 1 + SoundType.entries.size else 0
                 SettingsSection.EMULATORS -> {
@@ -707,12 +725,8 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.resetToDefaultColor(viewModelScope)
     }
 
-    fun setAnimationSpeed(speed: com.nendo.argosy.data.preferences.AnimationSpeed) {
-        displayDelegate.setAnimationSpeed(viewModelScope, speed)
-    }
-
-    fun setUiDensity(density: com.nendo.argosy.data.preferences.UiDensity) {
-        displayDelegate.setUiDensity(viewModelScope, density)
+    fun setGridDensity(density: GridDensity) {
+        displayDelegate.setGridDensity(viewModelScope, density)
     }
 
     fun adjustBackgroundBlur(delta: Int) {
@@ -749,12 +763,62 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.setUseGameBackground(viewModelScope, use)
     }
 
+    fun setUseAccentColorFooter(use: Boolean) {
+        displayDelegate.setUseAccentColorFooter(viewModelScope, use)
+    }
+
     fun setCustomBackgroundPath(path: String?) {
         displayDelegate.setCustomBackgroundPath(viewModelScope, path)
     }
 
     fun openBackgroundPicker() {
         displayDelegate.openBackgroundPicker(viewModelScope)
+    }
+
+    fun navigateToBoxArt() {
+        _uiState.update { it.copy(currentSection = SettingsSection.BOX_ART, focusedIndex = 0) }
+    }
+
+    fun navigateToHomeScreen() {
+        _uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = 0) }
+    }
+
+    fun cycleBoxArtCornerRadius(direction: Int = 1) {
+        displayDelegate.cycleBoxArtCornerRadius(viewModelScope, direction)
+    }
+
+    fun cycleBoxArtBorderThickness(direction: Int = 1) {
+        displayDelegate.cycleBoxArtBorderThickness(viewModelScope, direction)
+    }
+
+    fun cycleBoxArtGlowStrength(direction: Int = 1) {
+        displayDelegate.cycleBoxArtGlowStrength(viewModelScope, direction)
+    }
+
+    fun cycleSystemIconPosition(direction: Int = 1) {
+        displayDelegate.cycleSystemIconPosition(viewModelScope, direction)
+    }
+
+    fun cycleSystemIconPadding(direction: Int = 1) {
+        displayDelegate.cycleSystemIconPadding(viewModelScope, direction)
+    }
+
+    fun cycleDefaultView() {
+        displayDelegate.cycleDefaultView(viewModelScope)
+    }
+
+    fun cyclePrevPreviewRatio() {
+        val values = BoxArtPreviewRatio.entries
+        val currentIndex = values.indexOf(_uiState.value.boxArtPreviewRatio)
+        val prevIndex = if (currentIndex <= 0) values.lastIndex else currentIndex - 1
+        _uiState.update { it.copy(boxArtPreviewRatio = values[prevIndex]) }
+    }
+
+    fun cycleNextPreviewRatio() {
+        val values = BoxArtPreviewRatio.entries
+        val currentIndex = values.indexOf(_uiState.value.boxArtPreviewRatio)
+        val nextIndex = if (currentIndex >= values.lastIndex) 0 else currentIndex + 1
+        _uiState.update { it.copy(boxArtPreviewRatio = values[nextIndex]) }
     }
 
     fun setHapticEnabled(enabled: Boolean) {
@@ -1323,31 +1387,49 @@ class SettingsViewModel @Inject constructor(
                         setThemeMode(next)
                     }
                     2 -> {
-                        val next = when (state.display.animationSpeed) {
-                            AnimationSpeed.SLOW -> AnimationSpeed.NORMAL
-                            AnimationSpeed.NORMAL -> AnimationSpeed.FAST
-                            AnimationSpeed.FAST -> AnimationSpeed.OFF
-                            AnimationSpeed.OFF -> AnimationSpeed.SLOW
+                        val next = when (state.display.gridDensity) {
+                            GridDensity.COMPACT -> GridDensity.NORMAL
+                            GridDensity.NORMAL -> GridDensity.SPACIOUS
+                            GridDensity.SPACIOUS -> GridDensity.COMPACT
                         }
-                        setAnimationSpeed(next)
+                        setGridDensity(next)
                     }
-                    3 -> {
-                        val next = when (state.display.uiDensity) {
-                            UiDensity.COMPACT -> UiDensity.NORMAL
-                            UiDensity.NORMAL -> UiDensity.SPACIOUS
-                            UiDensity.SPACIOUS -> UiDensity.COMPACT
-                        }
-                        setUiDensity(next)
-                    }
-                    4 -> {
+                    3 -> navigateToBoxArt()
+                    4 -> navigateToHomeScreen()
+                    5 -> cycleDefaultView()
+                }
+                InputResult.HANDLED
+            }
+            SettingsSection.HOME_SCREEN -> {
+                val sliderOffset = if (state.display.useGameBackground) 0 else 1
+                when (state.focusedIndex) {
+                    0 -> {
                         setUseGameBackground(!state.display.useGameBackground)
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    5 -> {
+                    1 -> {
                         if (!state.display.useGameBackground) {
                             openBackgroundPicker()
                         }
                     }
+                    1 + sliderOffset -> cycleBackgroundBlur()
+                    2 + sliderOffset -> cycleBackgroundSaturation()
+                    3 + sliderOffset -> cycleBackgroundOpacity()
+                    4 + sliderOffset -> {
+                        setUseAccentColorFooter(!state.display.useAccentColorFooter)
+                        return InputResult.handled(SoundType.TOGGLE)
+                    }
+                }
+                InputResult.HANDLED
+            }
+            SettingsSection.BOX_ART -> {
+                val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
+                when (state.focusedIndex) {
+                    0 -> cycleBoxArtCornerRadius()
+                    1 -> cycleBoxArtBorderThickness()
+                    2 -> cycleBoxArtGlowStrength()
+                    3 -> cycleSystemIconPosition()
+                    4 -> if (showIconPadding) cycleSystemIconPadding()
                 }
                 InputResult.HANDLED
             }

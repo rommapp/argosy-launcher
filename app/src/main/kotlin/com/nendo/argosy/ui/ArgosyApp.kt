@@ -23,6 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.nendo.argosy.ui.components.MainDrawer
+import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -63,10 +64,10 @@ fun ArgosyApp(
         )
     }
 
-    val startDestination = if (uiState.isFirstRun) {
-        Screen.FirstRun.route
-    } else {
-        Screen.Home.route
+    val startDestination = when {
+        uiState.isFirstRun -> Screen.FirstRun.route
+        uiState.defaultView == DefaultView.LIBRARY -> Screen.Library.route
+        else -> Screen.Home.route
     }
 
     // Create drawer input handler

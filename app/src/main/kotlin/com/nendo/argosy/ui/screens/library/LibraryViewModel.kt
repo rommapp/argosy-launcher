@@ -14,7 +14,7 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
-import com.nendo.argosy.data.preferences.UiDensity
+import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.usecase.download.DownloadResult
@@ -105,6 +105,7 @@ enum class FocusMove {
 data class LibraryGameUi(
     val id: Long,
     val title: String,
+    val platformId: String,
     val coverPath: String?,
     val source: GameSource,
     val isFavorite: Boolean,
@@ -131,7 +132,7 @@ data class LibraryUiState(
     val showFilterMenu: Boolean = false,
     val showQuickMenu: Boolean = false,
     val quickMenuFocusIndex: Int = 0,
-    val uiDensity: UiDensity = UiDensity.NORMAL,
+    val gridDensity: GridDensity = GridDensity.NORMAL,
     val isLoading: Boolean = true,
     val activeFilters: ActiveFilters = ActiveFilters(),
     val filterOptions: FilterOptions = FilterOptions(),
@@ -144,10 +145,10 @@ data class LibraryUiState(
 ) {
     val columnsCount: Int
         get() {
-            val baseColumns = when (uiDensity) {
-                UiDensity.COMPACT -> 5
-                UiDensity.NORMAL -> 4
-                UiDensity.SPACIOUS -> 3
+            val baseColumns = when (gridDensity) {
+                GridDensity.COMPACT -> 5
+                GridDensity.NORMAL -> 4
+                GridDensity.SPACIOUS -> 3
             }
             return if (screenWidthDp > 900) {
                 (baseColumns * 1.5f).toInt()
@@ -157,17 +158,17 @@ data class LibraryUiState(
         }
 
     val cardHeightDp: Int
-        get() = when (uiDensity) {
-            UiDensity.COMPACT -> 150
-            UiDensity.NORMAL -> 180
-            UiDensity.SPACIOUS -> 220
+        get() = when (gridDensity) {
+            GridDensity.COMPACT -> 150
+            GridDensity.NORMAL -> 180
+            GridDensity.SPACIOUS -> 220
         }
 
     val gridSpacingDp: Int
-        get() = when (uiDensity) {
-            UiDensity.COMPACT -> 12
-            UiDensity.NORMAL -> 16
-            UiDensity.SPACIOUS -> 20
+        get() = when (gridDensity) {
+            GridDensity.COMPACT -> 12
+            GridDensity.NORMAL -> 16
+            GridDensity.SPACIOUS -> 20
         }
 
     val currentPlatform: HomePlatformUi?
@@ -251,7 +252,7 @@ class LibraryViewModel @Inject constructor(
     init {
         loadPlatforms()
         loadFilterOptions()
-        observeUiDensity()
+        observeGridDensity()
         observeSyncOverlay()
     }
 
@@ -263,10 +264,10 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    private fun observeUiDensity() {
+    private fun observeGridDensity() {
         viewModelScope.launch {
             preferencesRepository.userPreferences.collectLatest { prefs ->
-                _uiState.update { it.copy(uiDensity = prefs.uiDensity) }
+                _uiState.update { it.copy(gridDensity = prefs.gridDensity) }
             }
         }
     }
@@ -745,6 +746,7 @@ class LibraryViewModel @Inject constructor(
     private fun GameEntity.toUi() = LibraryGameUi(
         id = id,
         title = title,
+        platformId = platformId,
         coverPath = coverPath,
         source = source,
         isFavorite = isFavorite,

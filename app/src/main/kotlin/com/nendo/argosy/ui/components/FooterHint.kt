@@ -15,7 +15,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
@@ -25,6 +27,12 @@ import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+
+data class FooterStyleConfig(
+    val useAccentColor: Boolean = false
+)
+
+val LocalFooterStyle = staticCompositionLocalOf { FooterStyleConfig() }
 
 enum class InputButton {
     SOUTH, EAST, WEST, NORTH,
@@ -85,18 +93,30 @@ fun FooterHint(
     action: String,
     modifier: Modifier = Modifier
 ) {
+    val footerStyle = LocalFooterStyle.current
+    val iconColor = if (footerStyle.useAccentColor) {
+        MaterialTheme.colorScheme.surface
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val textColor = if (footerStyle.useAccentColor) {
+        MaterialTheme.colorScheme.surface
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (button.isComposite()) {
-            CompositeButtonIcon(button)
+            CompositeButtonIcon(button, iconColor)
         } else {
             button.toPainter()?.let { painter ->
                 Icon(
                     painter = painter,
                     contentDescription = button.name,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = iconColor,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -105,32 +125,32 @@ fun FooterHint(
         Text(
             text = action,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = textColor
         )
     }
 }
 
 @Composable
-private fun CompositeButtonIcon(button: InputButton) {
+private fun CompositeButtonIcon(button: InputButton, iconColor: Color) {
     when (button) {
         InputButton.LB_RB -> {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painter = InputIcons.BumperLeft,
                     contentDescription = "LB",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = iconColor,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = "/",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = iconColor,
                     modifier = Modifier.padding(horizontal = 2.dp)
                 )
                 Icon(
                     painter = InputIcons.BumperRight,
                     contentDescription = "RB",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = iconColor,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -154,6 +174,13 @@ fun FooterBar(
     onHintClick: ((InputButton) -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
+    val footerStyle = LocalFooterStyle.current
+    val backgroundColor = if (footerStyle.useAccentColor) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+
     val dpadHints = hints.filter { it.first.category() == HintCategory.DPAD }
     val bumperHints = hints.filter { it.first.category() == HintCategory.BUMPER }
     val shoulderHints = hints.filter { it.first.category() == HintCategory.SHOULDER_MENU }
@@ -163,7 +190,7 @@ fun FooterBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(backgroundColor)
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm + Dimens.spacingXs),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -222,17 +249,22 @@ fun SubtleFooterBar(
     modifier: Modifier = Modifier,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
+    val footerStyle = LocalFooterStyle.current
     val dpadHints = hints.filter { it.first.category() == HintCategory.DPAD }
     val faceHints = hints.filter { it.first.category() == HintCategory.FACE }
         .sortedBy { it.first.faceButtonPriority() }
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
-    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.4f)
+    val backgroundColor = if (footerStyle.useAccentColor) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+    } else {
+        if (isDarkTheme) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.4f)
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(overlayColor)
+            .background(backgroundColor)
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {

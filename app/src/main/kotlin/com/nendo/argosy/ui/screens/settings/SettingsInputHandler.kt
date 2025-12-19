@@ -107,13 +107,30 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.DISPLAY) {
-            val sliderOffset = if (state.display.useGameBackground) 0 else 1
             when (state.focusedIndex) {
                 1 -> { viewModel.adjustHue(-10f); return InputResult.HANDLED }
-                5 + sliderOffset -> { viewModel.adjustBackgroundBlur(-10); return InputResult.HANDLED }
-                6 + sliderOffset -> { viewModel.adjustBackgroundSaturation(-10); return InputResult.HANDLED }
-                7 + sliderOffset -> { viewModel.adjustBackgroundOpacity(-10); return InputResult.HANDLED }
             }
+        }
+
+        if (state.currentSection == SettingsSection.HOME_SCREEN) {
+            val sliderOffset = if (state.display.useGameBackground) 0 else 1
+            when (state.focusedIndex) {
+                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(-10); return InputResult.HANDLED }
+                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(-10); return InputResult.HANDLED }
+                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(-10); return InputResult.HANDLED }
+            }
+        }
+
+        if (state.currentSection == SettingsSection.BOX_ART) {
+            val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
+            when (state.focusedIndex) {
+                0 -> viewModel.cycleBoxArtCornerRadius(-1)
+                1 -> viewModel.cycleBoxArtBorderThickness(-1)
+                2 -> viewModel.cycleBoxArtGlowStrength(-1)
+                3 -> viewModel.cycleSystemIconPosition(-1)
+                4 -> if (showIconPadding) viewModel.cycleSystemIconPadding(-1)
+            }
+            return InputResult.HANDLED
         }
 
         if (state.currentSection == SettingsSection.STORAGE) {
@@ -192,13 +209,30 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.DISPLAY) {
-            val sliderOffset = if (state.display.useGameBackground) 0 else 1
             when (state.focusedIndex) {
                 1 -> { viewModel.adjustHue(10f); return InputResult.HANDLED }
-                5 + sliderOffset -> { viewModel.adjustBackgroundBlur(10); return InputResult.HANDLED }
-                6 + sliderOffset -> { viewModel.adjustBackgroundSaturation(10); return InputResult.HANDLED }
-                7 + sliderOffset -> { viewModel.adjustBackgroundOpacity(10); return InputResult.HANDLED }
             }
+        }
+
+        if (state.currentSection == SettingsSection.HOME_SCREEN) {
+            val sliderOffset = if (state.display.useGameBackground) 0 else 1
+            when (state.focusedIndex) {
+                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(10); return InputResult.HANDLED }
+                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(10); return InputResult.HANDLED }
+                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(10); return InputResult.HANDLED }
+            }
+        }
+
+        if (state.currentSection == SettingsSection.BOX_ART) {
+            val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
+            when (state.focusedIndex) {
+                0 -> viewModel.cycleBoxArtCornerRadius(1)
+                1 -> viewModel.cycleBoxArtBorderThickness(1)
+                2 -> viewModel.cycleBoxArtGlowStrength(1)
+                3 -> viewModel.cycleSystemIconPosition(1)
+                4 -> if (showIconPadding) viewModel.cycleSystemIconPadding(1)
+            }
+            return InputResult.HANDLED
         }
 
         if (state.currentSection == SettingsSection.STORAGE) {
@@ -347,4 +381,22 @@ class SettingsInputHandler(
     }
 
     override fun onMenu(): InputResult = InputResult.UNHANDLED
+
+    override fun onPrevSection(): InputResult {
+        val state = viewModel.uiState.value
+        if (state.currentSection == SettingsSection.BOX_ART) {
+            viewModel.cyclePrevPreviewRatio()
+            return InputResult.HANDLED
+        }
+        return InputResult.UNHANDLED
+    }
+
+    override fun onNextSection(): InputResult {
+        val state = viewModel.uiState.value
+        if (state.currentSection == SettingsSection.BOX_ART) {
+            viewModel.cycleNextPreviewRatio()
+            return InputResult.HANDLED
+        }
+        return InputResult.UNHANDLED
+    }
 }

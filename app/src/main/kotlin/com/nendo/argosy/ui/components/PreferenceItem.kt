@@ -40,6 +40,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.nendo.argosy.ui.theme.Dimens
 
 private val preferenceShape = RoundedCornerShape(Dimens.radiusLg)
@@ -62,7 +63,11 @@ private fun preferenceModifier(
         .clip(preferenceShape)
         .background(backgroundColor, preferenceShape)
         .then(
-            if (onClick != null) Modifier.clickable(onClick = onClick)
+            if (onClick != null) Modifier.clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
             else Modifier
         )
         .padding(Dimens.spacingMd)

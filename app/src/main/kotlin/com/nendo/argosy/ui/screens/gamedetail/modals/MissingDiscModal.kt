@@ -16,7 +16,8 @@ import com.nendo.argosy.ui.components.InputButton
 
 @Composable
 fun MissingDiscModal(
-    missingDiscNumbers: List<Int>
+    missingDiscNumbers: List<Int>,
+    onDismiss: () -> Unit
 ) {
     val discText = if (missingDiscNumbers.size == 1) {
         "Disc ${missingDiscNumbers.first()}"
@@ -26,6 +27,7 @@ fun MissingDiscModal(
 
     CenteredModal(
         title = "MISSING DISCS",
+        onDismiss = onDismiss,
         footerHints = listOf(
             InputButton.SOUTH to "Download",
             InputButton.EAST to "Cancel"

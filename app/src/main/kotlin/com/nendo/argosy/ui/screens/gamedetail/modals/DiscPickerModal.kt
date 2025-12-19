@@ -36,7 +36,8 @@ import com.nendo.argosy.ui.screens.gamedetail.DiscUi
 fun DiscPickerModal(
     discs: List<DiscUi>,
     focusIndex: Int,
-    onSelectDisc: (Int) -> Unit
+    onSelectDisc: (Int) -> Unit,
+    onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
     val itemHeight = 56.dp
@@ -48,6 +49,7 @@ fun DiscPickerModal(
 
     Modal(
         title = "SELECT DISC",
+        onDismiss = onDismiss,
         footerHints = listOf(
             InputButton.DPAD_VERTICAL to "Select",
             InputButton.SOUTH to "Play",

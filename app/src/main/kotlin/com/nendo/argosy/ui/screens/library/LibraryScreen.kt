@@ -84,14 +84,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import kotlin.math.abs
 
 @Composable
@@ -362,7 +369,8 @@ fun LibraryScreen(
                 onOptionSelect = { index ->
                     viewModel.moveFilterOptionFocus(index - uiState.filterOptionIndex)
                     viewModel.confirmFilterSelection()
-                }
+                },
+                onSearchQueryChange = { viewModel.updateSearchQuery(it) }
             )
         }
 
@@ -580,16 +588,20 @@ private fun FilterMenuOverlay(
     uiState: LibraryUiState,
     onDismiss: () -> Unit,
     onCategorySelect: (FilterCategory) -> Unit,
-    onOptionSelect: (Int) -> Unit
+    onOptionSelect: (Int) -> Unit,
+    onSearchQueryChange: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
     val options = uiState.currentCategoryOptions
     val categories = uiState.availableCategories
     val isMultiSelect = uiState.isCurrentCategoryMultiSelect
     val selectedOptions = uiState.selectedOptionsInCurrentCategory
+    val isSearchCategory = uiState.currentFilterCategory == FilterCategory.SEARCH
+    val searchQuery = uiState.activeFilters.searchQuery
+    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(uiState.filterOptionIndex) {
-        if (options.isNotEmpty() && uiState.filterOptionIndex in options.indices) {
+        if (!isSearchCategory && options.isNotEmpty() && uiState.filterOptionIndex in options.indices) {
             val viewportHeight = listState.layoutInfo.viewportSize.height
             val visibleItems = listState.layoutInfo.visibleItemsInfo
             val itemHeight = visibleItems.firstOrNull()?.size ?: 0
@@ -604,6 +616,12 @@ private fun FilterMenuOverlay(
             } else {
                 listState.animateScrollToItem(uiState.filterOptionIndex)
             }
+        }
+    }
+
+    LaunchedEffect(isSearchCategory) {
+        if (isSearchCategory && uiState.screenWidthDp > 900) {
+            focusRequester.requestFocus()
         }
     }
 
@@ -651,10 +669,10 @@ private fun FilterMenuOverlay(
                 categories.forEach { category ->
                     val isCurrent = category == uiState.currentFilterCategory
                     val hasActiveFilters = when (category) {
+                        FilterCategory.SEARCH -> uiState.activeFilters.searchQuery.isNotEmpty()
                         FilterCategory.SOURCE -> uiState.activeFilters.source != SourceFilter.ALL
                         FilterCategory.GENRE -> uiState.activeFilters.genres.isNotEmpty()
                         FilterCategory.PLAYERS -> uiState.activeFilters.players.isNotEmpty()
-                        FilterCategory.FRANCHISE -> uiState.activeFilters.franchises.isNotEmpty()
                     }
 
                     Box(
@@ -690,34 +708,131 @@ private fun FilterMenuOverlay(
                 }
             }
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.heightIn(max = 200.dp),
-                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                itemsIndexed(options) { index, option ->
-                    val isFocused = index == uiState.filterOptionIndex
-                    val isSelected = if (isMultiSelect) {
-                        option in selectedOptions
-                    } else {
-                        index == uiState.selectedSourceIndex
-                    }
-                    FilterOptionItem(
-                        label = option,
-                        isFocused = isFocused,
-                        isSelected = isSelected,
-                        onClick = { onOptionSelect(index) }
+            if (isSearchCategory) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(Dimens.radiusMd))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(Dimens.spacingMd),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchQueryChange,
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(focusRequester),
+                        textStyle = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        singleLine = true,
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        text = "Type to search...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
+                }
+
+                if (options.isNotEmpty()) {
+                    Text(
+                        text = "Recent searches",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.heightIn(max = 150.dp),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    itemsIndexed(options) { index, recentQuery ->
+                        val isFocused = index == uiState.filterOptionIndex
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(Dimens.radiusSm))
+                                .then(
+                                    if (isFocused) Modifier.background(MaterialTheme.colorScheme.primaryContainer)
+                                    else Modifier
+                                )
+                                .clickable { onOptionSelect(index) }
+                                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.History,
+                                contentDescription = null,
+                                tint = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+                                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = recentQuery,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.heightIn(max = 200.dp),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    itemsIndexed(options) { index, option ->
+                        val isFocused = index == uiState.filterOptionIndex
+                        val isSelected = if (isMultiSelect) {
+                            option in selectedOptions
+                        } else {
+                            index == uiState.selectedSourceIndex
+                        }
+                        FilterOptionItem(
+                            label = option,
+                            isFocused = isFocused,
+                            isSelected = isSelected,
+                            onClick = { onOptionSelect(index) }
+                        )
+                    }
                 }
             }
 
             FooterBar(
-                hints = listOf(
-                    InputButton.DPAD to "Navigate",
-                    InputButton.WEST to "Reset",
-                    InputButton.SOUTH to if (isMultiSelect) "Toggle" else "Select",
-                    InputButton.EAST to "Close"
-                )
+                hints = if (isSearchCategory) {
+                    listOf(
+                        InputButton.DPAD to "Navigate",
+                        InputButton.WEST to "Clear",
+                        InputButton.EAST to "Close"
+                    )
+                } else {
+                    listOf(
+                        InputButton.DPAD to "Navigate",
+                        InputButton.WEST to "Reset",
+                        InputButton.SOUTH to if (isMultiSelect) "Toggle" else "Select",
+                        InputButton.EAST to "Close"
+                    )
+                }
             )
         }
     }

@@ -45,10 +45,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class FilterCategory(val label: String) {
+    SEARCH("Search"),
     SOURCE("Source"),
     GENRE("Genre"),
-    PLAYERS("Players"),
-    FRANCHISE("Franchise")
+    PLAYERS("Players")
 }
 
 enum class SourceFilter(val label: String) {
@@ -58,27 +58,27 @@ enum class SourceFilter(val label: String) {
 }
 
 data class ActiveFilters(
+    val searchQuery: String = "",
     val source: SourceFilter = SourceFilter.ALL,
     val genres: Set<String> = emptySet(),
-    val players: Set<String> = emptySet(),
-    val franchises: Set<String> = emptySet()
+    val players: Set<String> = emptySet()
 ) {
     val activeCount: Int
         get() = listOf(
+            if (searchQuery.isNotEmpty()) 1 else 0,
             if (source != SourceFilter.ALL) 1 else 0,
             genres.size,
-            players.size,
-            franchises.size
+            players.size
         ).sum()
 
     val summary: String
         get() = when {
             activeCount == 0 -> "All Games"
             activeCount == 1 -> when {
+                searchQuery.isNotEmpty() -> "\"$searchQuery\""
                 source != SourceFilter.ALL -> source.label
                 genres.isNotEmpty() -> genres.first()
                 players.isNotEmpty() -> players.first()
-                franchises.isNotEmpty() -> franchises.first()
                 else -> "All Games"
             }
             else -> "$activeCount filters"
@@ -87,8 +87,7 @@ data class ActiveFilters(
 
 data class FilterOptions(
     val genres: List<String> = emptyList(),
-    val players: List<String> = emptyList(),
-    val franchises: List<String> = emptyList()
+    val players: List<String> = emptyList()
 )
 
 enum class LibraryFilter(val label: String) {
@@ -142,7 +141,8 @@ data class LibraryUiState(
     val syncOverlayState: SyncOverlayState? = null,
     val isTouchMode: Boolean = false,
     val hasSelectedGame: Boolean = false,
-    val screenWidthDp: Int = 0
+    val screenWidthDp: Int = 0,
+    val recentSearches: List<String> = emptyList()
 ) {
     val columnsCount: Int
         get() {
@@ -183,41 +183,41 @@ data class LibraryUiState(
 
     val currentCategoryOptions: List<String>
         get() = when (currentFilterCategory) {
+            FilterCategory.SEARCH -> recentSearches
             FilterCategory.SOURCE -> SourceFilter.entries.map { it.label }
             FilterCategory.GENRE -> filterOptions.genres
             FilterCategory.PLAYERS -> filterOptions.players
-            FilterCategory.FRANCHISE -> filterOptions.franchises
         }
 
     val isCurrentCategoryMultiSelect: Boolean
-        get() = currentFilterCategory != FilterCategory.SOURCE
+        get() = currentFilterCategory !in listOf(FilterCategory.SOURCE, FilterCategory.SEARCH)
 
     val selectedSourceIndex: Int
         get() = activeFilters.source.ordinal
 
     val selectedOptionsInCurrentCategory: Set<String>
         get() = when (currentFilterCategory) {
+            FilterCategory.SEARCH -> emptySet()
             FilterCategory.SOURCE -> emptySet()
             FilterCategory.GENRE -> activeFilters.genres
             FilterCategory.PLAYERS -> activeFilters.players
-            FilterCategory.FRANCHISE -> activeFilters.franchises
         }
 
     val currentCategoryActiveCount: Int
         get() = when (currentFilterCategory) {
+            FilterCategory.SEARCH -> if (activeFilters.searchQuery.isNotEmpty()) 1 else 0
             FilterCategory.SOURCE -> if (activeFilters.source != SourceFilter.ALL) 1 else 0
             FilterCategory.GENRE -> activeFilters.genres.size
             FilterCategory.PLAYERS -> activeFilters.players.size
-            FilterCategory.FRANCHISE -> activeFilters.franchises.size
         }
 
     val availableCategories: List<FilterCategory>
         get() = FilterCategory.entries.filter { category ->
             when (category) {
+                FilterCategory.SEARCH -> true
                 FilterCategory.SOURCE -> true
                 FilterCategory.GENRE -> filterOptions.genres.isNotEmpty()
                 FilterCategory.PLAYERS -> filterOptions.players.isNotEmpty()
-                FilterCategory.FRANCHISE -> filterOptions.franchises.isNotEmpty()
             }
         }
 }
@@ -269,7 +269,12 @@ class LibraryViewModel @Inject constructor(
     private fun observeGridDensity() {
         viewModelScope.launch {
             preferencesRepository.userPreferences.collectLatest { prefs ->
-                _uiState.update { it.copy(gridDensity = prefs.gridDensity) }
+                _uiState.update {
+                    it.copy(
+                        gridDensity = prefs.gridDensity,
+                        recentSearches = prefs.libraryRecentSearches
+                    )
+                }
             }
         }
     }
@@ -353,21 +358,13 @@ class LibraryViewModel @Inject constructor(
                 .distinct()
                 .sorted()
 
-            val franchises = gameDao.getDistinctFranchises()
-                .flatMap { it.split(",") }
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-                .distinct()
-                .sorted()
-
-            Log.d(TAG, "loadFilterOptions: genres=${genres.size}, players=${players.size}, franchises=${franchises.size}")
+            Log.d(TAG, "loadFilterOptions: genres=${genres.size}, players=${players.size}")
 
             _uiState.update { state ->
                 state.copy(
                     filterOptions = FilterOptions(
                         genres = genres,
-                        players = players,
-                        franchises = franchises
+                        players = players
                     )
                 )
             }
@@ -395,13 +392,13 @@ class LibraryViewModel @Inject constructor(
 
             baseFlow.collectLatest { games ->
                 val filteredGames = games.filter { game ->
+                    val matchesSearch = filters.searchQuery.isEmpty() ||
+                        game.title.contains(filters.searchQuery, ignoreCase = true)
                     val matchesGenre = filters.genres.isEmpty() ||
                         filters.genres.contains(game.genre)
                     val matchesPlayers = filters.players.isEmpty() ||
                         game.gameModes?.split(",")?.map { it.trim() }?.any { it in filters.players } == true
-                    val matchesFranchise = filters.franchises.isEmpty() ||
-                        game.franchises?.split(",")?.map { it.trim() }?.any { it in filters.franchises } == true
-                    matchesGenre && matchesPlayers && matchesFranchise
+                    matchesSearch && matchesGenre && matchesPlayers
                 }
 
                 Log.d(TAG, "loadGames: ${games.size} total, ${filteredGames.size} after filters")
@@ -571,6 +568,10 @@ class LibraryViewModel @Inject constructor(
         val options = state.currentCategoryOptions
 
         val newFilters = when (category) {
+            FilterCategory.SEARCH -> {
+                val query = options.getOrNull(optionIndex) ?: return
+                state.activeFilters.copy(searchQuery = query)
+            }
             FilterCategory.SOURCE -> {
                 val source = SourceFilter.entries.getOrElse(optionIndex) { SourceFilter.ALL }
                 state.activeFilters.copy(source = source)
@@ -587,12 +588,6 @@ class LibraryViewModel @Inject constructor(
                 val newPlayers = if (player in currentPlayers) currentPlayers - player else currentPlayers + player
                 state.activeFilters.copy(players = newPlayers)
             }
-            FilterCategory.FRANCHISE -> {
-                val franchise = options.getOrNull(optionIndex) ?: return
-                val currentFranchises = state.activeFilters.franchises
-                val newFranchises = if (franchise in currentFranchises) currentFranchises - franchise else currentFranchises + franchise
-                state.activeFilters.copy(franchises = newFranchises)
-            }
         }
 
         _uiState.update { it.copy(activeFilters = newFilters) }
@@ -604,10 +599,10 @@ class LibraryViewModel @Inject constructor(
         val category = state.currentFilterCategory
 
         val newFilters = when (category) {
+            FilterCategory.SEARCH -> state.activeFilters.copy(searchQuery = "")
             FilterCategory.SOURCE -> state.activeFilters.copy(source = SourceFilter.ALL)
             FilterCategory.GENRE -> state.activeFilters.copy(genres = emptySet())
             FilterCategory.PLAYERS -> state.activeFilters.copy(players = emptySet())
-            FilterCategory.FRANCHISE -> state.activeFilters.copy(franchises = emptySet())
         }
 
         _uiState.update { it.copy(activeFilters = newFilters) }
@@ -616,6 +611,20 @@ class LibraryViewModel @Inject constructor(
 
     fun clearAllFilters() {
         _uiState.update { it.copy(activeFilters = ActiveFilters(), filterOptionIndex = 0) }
+        loadGames()
+    }
+
+    fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(activeFilters = it.activeFilters.copy(searchQuery = query)) }
+        loadGames()
+    }
+
+    fun applySearchQuery(query: String) {
+        if (query.isBlank()) return
+        viewModelScope.launch {
+            preferencesRepository.addLibraryRecentSearch(query)
+        }
+        _uiState.update { it.copy(activeFilters = it.activeFilters.copy(searchQuery = query)) }
         loadGames()
     }
 
@@ -874,6 +883,10 @@ class LibraryViewModel @Inject constructor(
             val state = _uiState.value
             return when {
                 state.showFilterMenu -> {
+                    if (state.currentFilterCategory == FilterCategory.SEARCH &&
+                        state.activeFilters.searchQuery.isNotEmpty()) {
+                        applySearchQuery(state.activeFilters.searchQuery)
+                    }
                     toggleFilterMenu()
                     InputResult.HANDLED
                 }

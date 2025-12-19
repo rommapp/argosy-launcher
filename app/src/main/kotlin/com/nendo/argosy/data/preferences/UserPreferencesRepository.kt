@@ -85,6 +85,7 @@ class UserPreferencesRepository @Inject constructor(
         val RECOMMENDATION_PENALTIES = stringPreferencesKey("recommendation_penalties")
         val LAST_PENALTY_DECAY_WEEK = stringPreferencesKey("last_penalty_decay_week")
         val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
+        val LIBRARY_RECENT_SEARCHES = stringPreferencesKey("library_recent_searches")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -169,7 +170,11 @@ class UserPreferencesRepository @Inject constructor(
             lastRecommendationGeneration = prefs[Keys.LAST_RECOMMENDATION_GENERATION]?.let { Instant.parse(it) },
             recommendationPenalties = parseRecommendationPenalties(prefs[Keys.RECOMMENDATION_PENALTIES]),
             lastPenaltyDecayWeek = prefs[Keys.LAST_PENALTY_DECAY_WEEK],
-            lastSeenVersion = prefs[Keys.LAST_SEEN_VERSION]
+            lastSeenVersion = prefs[Keys.LAST_SEEN_VERSION],
+            libraryRecentSearches = prefs[Keys.LIBRARY_RECENT_SEARCHES]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?: emptyList()
         )
     }
 
@@ -599,6 +604,18 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.LAST_SEEN_VERSION] = version
         }
     }
+
+    suspend fun addLibraryRecentSearch(query: String) {
+        if (query.isBlank()) return
+        dataStore.edit { prefs ->
+            val current = prefs[Keys.LIBRARY_RECENT_SEARCHES]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?: emptyList()
+            val updated = listOf(query) + current.filter { it != query }
+            prefs[Keys.LIBRARY_RECENT_SEARCHES] = updated.take(5).joinToString(",")
+        }
+    }
 }
 
 data class UserPreferences(
@@ -653,7 +670,8 @@ data class UserPreferences(
     val lastRecommendationGeneration: Instant? = null,
     val recommendationPenalties: Map<Long, Float> = emptyMap(),
     val lastPenaltyDecayWeek: String? = null,
-    val lastSeenVersion: String? = null
+    val lastSeenVersion: String? = null,
+    val libraryRecentSearches: List<String> = emptyList()
 )
 
 enum class ThemeMode {

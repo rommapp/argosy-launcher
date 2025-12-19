@@ -315,19 +315,33 @@ fun HomeScreen(
                 showPlatformNav = false
             )
 
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .then(swipeGestureModifier)
-            )
-
             val configuration = LocalConfiguration.current
             val screenWidth = configuration.screenWidthDp.dp
             val cardWidth = screenWidth * 0.16f
             val cardHeight = cardWidth * 4f / 3f
             val focusScale = 1.8f
             val railHeight = cardHeight * focusScale + 16.dp
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .then(swipeGestureModifier)
+            ) {
+                GameInfo(
+                    title = uiState.focusedGame?.title ?: "",
+                    developer = uiState.focusedGame?.developer,
+                    rating = uiState.focusedGame?.rating,
+                    userRating = uiState.focusedGame?.userRating ?: 0,
+                    userDifficulty = uiState.focusedGame?.userDifficulty ?: 0,
+                    achievementCount = uiState.focusedGame?.achievementCount ?: 0,
+                    earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f)
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 8.dp)
+                )
+            }
 
             Box(
                 modifier = Modifier
@@ -364,20 +378,6 @@ fun HomeScreen(
                         .height(railHeight * 0.4f)
                         .align(Alignment.TopCenter)
                         .then(swipeGestureModifier)
-                )
-
-                GameInfo(
-                    title = uiState.focusedGame?.title ?: "",
-                    developer = uiState.focusedGame?.developer,
-                    rating = uiState.focusedGame?.rating,
-                    userRating = uiState.focusedGame?.userRating ?: 0,
-                    userDifficulty = uiState.focusedGame?.userDifficulty ?: 0,
-                    achievementCount = uiState.focusedGame?.achievementCount ?: 0,
-                    earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .align(Alignment.TopEnd)
-                        .offset(y = -(railHeight * 0.1f))
                 )
             }
 
@@ -528,7 +528,8 @@ private fun GameInfo(
     Column(
         modifier = modifier
             .padding(horizontal = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Bottom
     ) {
         Text(
             text = title,

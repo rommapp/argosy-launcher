@@ -151,7 +151,7 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("wiiu"),
             downloadUrl = "https://github.com/SSimco/Cemu/releases"
         ),
-        // NOTE: Original Citra is discontinued - most users should use Lime3DS or Azahar
+        // NOTE: Original Citra is discontinued - use Azahar or Borked3DS instead
         EmulatorDef(
             id = "citra",
             packageName = "org.citra.citra_emu",
@@ -160,8 +160,7 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "org.citra.citra_emu.activities.EmulationActivity",
                 intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
-            ),
-            downloadUrl = "https://github.com/citra-emu/citra-android/releases"
+            )
         ),
         EmulatorDef(
             id = "citra_mmj",
@@ -201,50 +200,53 @@ object EmulatorRegistry {
             id = "yuzu",
             packageName = "org.yuzu.yuzu_emu",
             displayName = "Yuzu",
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/yuzu-emu/yuzu-android/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorDef(
             id = "ryujinx",
             packageName = "org.ryujinx.android",
             displayName = "Ryujinx",
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/Ryujinx/Ryujinx/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorDef(
             id = "skyline",
             packageName = "skyline.emu",
             displayName = "Skyline",
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/skyline-emu/skyline/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorDef(
             id = "eden",
             packageName = "dev.eden.eden_emulator",
             displayName = "Eden",
             supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/AKuHAK/eden/releases"
+            downloadUrl = "https://github.com/eden-emulator/Releases/releases"
         ),
         EmulatorDef(
             id = "strato",
             packageName = "org.stratoemu.strato",
             displayName = "Strato",
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/strato-emu/strato/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorDef(
             id = "citron",
             packageName = "org.citron.emu",
             displayName = "Citron",
             supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://git.citron-emu.org/Citron/Citron/releases"
+            downloadUrl = "https://git.citron-emu.org/citron/emulator/releases"
+        ),
+        // NOTE: Kenji-NX is an active fork of Ryujinx for Android
+        EmulatorDef(
+            id = "kenjinx",
+            packageName = "org.kenjinx.android",
+            displayName = "Kenji-NX",
+            supportedPlatforms = setOf("switch"),
+            downloadUrl = "https://github.com/Kenji-NX/Android-Releases/releases"
         ),
         EmulatorDef(
             id = "sudachi",
             packageName = "org.sudachi.sudachi_emu",
             displayName = "Sudachi",
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/sudachi-emu/sudachi/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorDef(
             id = "drastic",
@@ -296,6 +298,7 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.github.stenzek.duckstation"
         ),
+        // NOTE: AetherSX2 is discontinued - NetherSX2 is the actively maintained fork
         EmulatorDef(
             id = "aethersx2",
             packageName = "xyz.aethersx2.android",
@@ -306,7 +309,7 @@ object EmulatorRegistry {
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
-            downloadUrl = "https://github.com/AetherSX2-backup/AetherSX2-builds"
+            downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
         ),
         EmulatorDef(
             id = "pcsx2",
@@ -766,28 +769,27 @@ object EmulatorRegistry {
             baseId = "sudachi",
             displayNamePrefix = "Sudachi",
             packagePatterns = listOf("org.sudachi.*"),
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/sudachi-emu/sudachi/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorFamily(
             baseId = "citron",
             displayNamePrefix = "Citron",
             packagePatterns = listOf("org.citron.*"),
             supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://git.citron-emu.org/Citron/Citron/releases"
+            downloadUrl = "https://git.citron-emu.org/citron/emulator/releases"
         ),
         EmulatorFamily(
             baseId = "eden",
             displayNamePrefix = "Eden",
             packagePatterns = listOf("dev.eden.*", "dev.legacy.eden*"),
-            supportedPlatforms = setOf("switch")
+            supportedPlatforms = setOf("switch"),
+            downloadUrl = "https://github.com/eden-emulator/Releases/releases"
         ),
         EmulatorFamily(
             baseId = "strato",
             displayNamePrefix = "Strato",
             packagePatterns = listOf("org.stratoemu.*"),
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/strato-emu/strato/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorFamily(
             baseId = "skyline",
@@ -799,8 +801,14 @@ object EmulatorRegistry {
             baseId = "ryujinx",
             displayNamePrefix = "Ryujinx",
             packagePatterns = listOf("org.ryujinx.*"),
+            supportedPlatforms = setOf("switch")
+        ),
+        EmulatorFamily(
+            baseId = "kenjinx",
+            displayNamePrefix = "Kenji-NX",
+            packagePatterns = listOf("org.kenjinx.*"),
             supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://ryujinx.org/download"
+            downloadUrl = "https://github.com/Kenji-NX/Android-Releases/releases"
         ),
         EmulatorFamily(
             baseId = "ppsspp",
@@ -818,7 +826,8 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
-            )
+            ),
+            downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
         ),
         EmulatorFamily(
             baseId = "duckstation",

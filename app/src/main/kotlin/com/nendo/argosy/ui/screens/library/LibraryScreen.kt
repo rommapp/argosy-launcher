@@ -522,6 +522,7 @@ private fun LibraryGameCard(
             id = game.id,
             title = game.title,
             platformId = game.platformId,
+            platformSlug = game.platformSlug,
             coverPath = game.coverPath,
             backgroundPath = null,
             developer = null,

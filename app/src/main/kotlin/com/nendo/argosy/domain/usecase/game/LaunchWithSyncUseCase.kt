@@ -46,7 +46,7 @@ class LaunchWithSyncUseCase @Inject constructor(
         val emulatorConfig = emulatorConfigDao.getByGameId(gameId)
             ?: emulatorConfigDao.getDefaultForPlatform(game.platformId)
 
-        val preferredEmulator = emulatorDetector.getPreferredEmulator(game.platformId)
+        val preferredEmulator = emulatorDetector.getPreferredEmulator(game.platformSlug)
         val emulatorPackage = emulatorConfig?.packageName ?: preferredEmulator?.def?.packageName
         if (emulatorPackage == null) {
             emit(SyncState.Skipped)
@@ -120,7 +120,7 @@ class LaunchWithSyncUseCase @Inject constructor(
         val emulatorConfig = emulatorConfigDao.getByGameId(gameId)
             ?: emulatorConfigDao.getDefaultForPlatform(game.platformId)
 
-        val preferredEmulator = emulatorDetector.getPreferredEmulator(game.platformId)
+        val preferredEmulator = emulatorDetector.getPreferredEmulator(game.platformSlug)
         val emulatorPackage = emulatorConfig?.packageName ?: preferredEmulator?.def?.packageName
         if (emulatorPackage == null) {
             emit(SyncProgress.PreLaunch.CheckingSave(channelName, found = false))

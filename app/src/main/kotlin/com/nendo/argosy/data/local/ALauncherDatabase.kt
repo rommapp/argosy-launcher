@@ -43,7 +43,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         AchievementEntity::class,
         SaveCacheEntity::class
     ],
-    version = 25,
+    version = 27,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -378,6 +378,20 @@ abstract class ALauncherDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE platforms ADD COLUMN syncEnabled INTEGER NOT NULL DEFAULT 1")
                 db.execSQL("ALTER TABLE platforms ADD COLUMN customRomPath TEXT")
+            }
+        }
+
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE platforms ADD COLUMN slug TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE platforms SET slug = id")
+            }
+        }
+
+        val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN platformSlug TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE games SET platformSlug = platformId")
             }
         }
     }

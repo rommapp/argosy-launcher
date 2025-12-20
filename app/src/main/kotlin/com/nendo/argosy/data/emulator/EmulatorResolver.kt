@@ -15,17 +15,17 @@ class EmulatorResolver @Inject constructor(
         return emulatorDetector.getByPackage(packageName)?.id
     }
 
-    suspend fun getEmulatorPackageForGame(gameId: Long, platformId: String): String? {
+    suspend fun getEmulatorPackageForGame(gameId: Long, platformId: String, platformSlug: String): String? {
         val config = emulatorConfigDao.getByGameId(gameId)
             ?: emulatorConfigDao.getDefaultForPlatform(platformId)
         if (config?.packageName != null) return config.packageName
         if (emulatorDetector.installedEmulators.value.isEmpty()) {
             emulatorDetector.detectEmulators()
         }
-        return emulatorDetector.getPreferredEmulator(platformId)?.def?.packageName
+        return emulatorDetector.getPreferredEmulator(platformSlug)?.def?.packageName
     }
 
-    suspend fun getEmulatorIdForGame(gameId: Long, platformId: String): String? {
-        return getEmulatorPackageForGame(gameId, platformId)?.let { resolveEmulatorId(it) }
+    suspend fun getEmulatorIdForGame(gameId: Long, platformId: String, platformSlug: String): String? {
+        return getEmulatorPackageForGame(gameId, platformId, platformSlug)?.let { resolveEmulatorId(it) }
     }
 }

@@ -62,7 +62,7 @@ class GameLaunchDelegate @Inject constructor(
                 val game = gameDao.getById(gameId) ?: return@launch
                 val gameTitle = game.title
 
-                val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId)
+                val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
                 val emulatorId = emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
                 val prefs = preferencesRepository.preferences.first()
                 val canSync = emulatorId != null && SavePathRegistry.canSyncWithSettings(

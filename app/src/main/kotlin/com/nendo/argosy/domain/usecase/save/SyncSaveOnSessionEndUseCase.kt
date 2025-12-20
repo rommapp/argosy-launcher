@@ -103,13 +103,13 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
 
         var titleId = game.titleId
         var savePath = saveSyncRepository.discoverSavePath(
-            emulatorId, game.title, game.platformId, game.localPath, titleId, coreName
+            emulatorId, game.title, game.platformSlug, game.localPath, titleId, coreName
         )
 
         if (savePath == null && titleId == null && sessionStartTime > 0) {
             Logger.debug(TAG, "No single-file save found, checking for folder-based save detection...")
             val detected = titleIdDetector.detectRecentTitleId(
-                emulatorId, game.platformId, sessionStartTime
+                emulatorId, game.platformSlug, sessionStartTime
             )
             if (detected == null) {
                 Logger.debug(TAG, "Folder-based save detection not applicable for emulator: $emulatorId")

@@ -34,6 +34,7 @@ data class GameEntity(
     val id: Long = 0,
 
     val platformId: String,
+    val platformSlug: String = "",
     val title: String,
     val sortTitle: String,
 

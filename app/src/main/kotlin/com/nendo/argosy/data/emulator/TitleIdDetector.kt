@@ -21,7 +21,7 @@ class TitleIdDetector @Inject constructor() {
 
     fun detectRecentTitleId(
         emulatorId: String,
-        platformId: String,
+        platformSlug: String,
         sessionStartTime: Long
     ): DetectedTitleId? {
         val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId) ?: return null
@@ -31,7 +31,7 @@ class TitleIdDetector @Inject constructor() {
         }
 
         for (basePath in config.defaultPaths) {
-            val detected = scanForRecentTitleId(basePath, platformId, sessionStartTime)
+            val detected = scanForRecentTitleId(basePath, platformSlug, sessionStartTime)
             if (detected != null) {
                 Logger.debug(TAG, "Detected title ID: ${detected.titleId} at ${detected.savePath}")
                 return detected
@@ -43,13 +43,13 @@ class TitleIdDetector @Inject constructor() {
 
     private fun scanForRecentTitleId(
         basePath: String,
-        platformId: String,
+        platformSlug: String,
         sessionStartTime: Long
     ): DetectedTitleId? {
         val baseDir = File(basePath)
         if (!baseDir.exists()) return null
 
-        return when (platformId) {
+        return when (platformSlug) {
             "switch" -> scanSwitchSaves(baseDir, sessionStartTime)
             "vita", "psvita" -> scanVitaSaves(baseDir, sessionStartTime)
             "psp" -> scanPspSaves(baseDir, sessionStartTime)

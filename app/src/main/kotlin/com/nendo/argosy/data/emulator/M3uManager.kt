@@ -35,8 +35,8 @@ class M3uManager @Inject constructor(
             return M3uResult.NotApplicable("Not a multi-disc game")
         }
 
-        if (!supportsM3u(game.platformId)) {
-            return M3uResult.NotApplicable("Platform ${game.platformId} does not support m3u")
+        if (!supportsM3u(game.platformSlug)) {
+            return M3uResult.NotApplicable("Platform ${game.platformSlug} does not support m3u")
         }
 
         val discs = gameDiscDao.getDiscsForGame(game.id)
@@ -62,7 +62,7 @@ class M3uManager @Inject constructor(
         val game = gameDao.getById(gameId)
             ?: return M3uResult.Error("Game not found")
 
-        if (!game.isMultiDisc || !supportsM3u(game.platformId)) {
+        if (!game.isMultiDisc || !supportsM3u(game.platformSlug)) {
             return M3uResult.NotApplicable("Not applicable for this game")
         }
 

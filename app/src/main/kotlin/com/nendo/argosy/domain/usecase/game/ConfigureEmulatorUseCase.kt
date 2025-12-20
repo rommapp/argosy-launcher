@@ -9,7 +9,7 @@ import javax.inject.Inject
 class ConfigureEmulatorUseCase @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao
 ) {
-    suspend fun setForGame(gameId: Long, platformId: String, emulator: InstalledEmulator?) {
+    suspend fun setForGame(gameId: Long, platformId: String, platformSlug: String, emulator: InstalledEmulator?) {
         emulatorConfigDao.deleteGameOverride(gameId)
 
         if (emulator != null) {
@@ -18,14 +18,14 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = gameId,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getRetroArchCorePatterns()[platformId]?.firstOrNull(),
+                coreName = EmulatorRegistry.getRetroArchCorePatterns()[platformSlug]?.firstOrNull(),
                 isDefault = false
             )
             emulatorConfigDao.insert(config)
         }
     }
 
-    suspend fun setForPlatform(platformId: String, emulator: InstalledEmulator?) {
+    suspend fun setForPlatform(platformId: String, platformSlug: String, emulator: InstalledEmulator?) {
         emulatorConfigDao.clearPlatformDefaults(platformId)
 
         if (emulator != null) {
@@ -34,7 +34,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = null,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getRetroArchCorePatterns()[platformId]?.firstOrNull(),
+                coreName = EmulatorRegistry.getRetroArchCorePatterns()[platformSlug]?.firstOrNull(),
                 isDefault = true
             )
             emulatorConfigDao.insert(config)

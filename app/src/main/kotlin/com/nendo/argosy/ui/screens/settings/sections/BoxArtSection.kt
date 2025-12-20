@@ -140,6 +140,7 @@ fun BoxArtSection(
                 id = 0,
                 title = "GAME",
                 platformId = "snes",
+                platformSlug = "snes",
                 coverPath = null,
                 backgroundPath = null,
                 developer = null,

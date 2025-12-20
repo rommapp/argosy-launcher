@@ -20,6 +20,9 @@ interface PlatformDao {
     @Query("SELECT * FROM platforms WHERE id = :id")
     suspend fun getById(id: String): PlatformEntity?
 
+    @Query("SELECT * FROM platforms WHERE slug = :slug LIMIT 1")
+    suspend fun getBySlug(slug: String): PlatformEntity?
+
     @Query("SELECT * FROM platforms WHERE gameCount > 0 AND isVisible = 1 AND syncEnabled = 1 ORDER BY sortOrder ASC, name ASC")
     fun observePlatformsWithGames(): Flow<List<PlatformEntity>>
 
@@ -61,4 +64,7 @@ interface PlatformDao {
 
     @Query("SELECT * FROM platforms WHERE gameCount > 0 OR syncEnabled = 0 ORDER BY sortOrder ASC, name ASC")
     fun observeConfigurablePlatforms(): Flow<List<PlatformEntity>>
+
+    @Query("DELETE FROM platforms WHERE id = :id")
+    suspend fun deleteById(id: String)
 }

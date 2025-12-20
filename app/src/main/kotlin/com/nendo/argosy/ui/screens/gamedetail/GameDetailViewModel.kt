@@ -166,17 +166,17 @@ class GameDetailViewModel @Inject constructor(
             val emulatorConfig = gameSpecificConfig ?: platformDefaultConfig
 
             val emulatorName = emulatorConfig?.displayName
-                ?: emulatorDetector.getPreferredEmulator(game.platformId)?.def?.displayName
+                ?: emulatorDetector.getPreferredEmulator(game.platformSlug)?.def?.displayName
 
             val emulatorDef = emulatorConfig?.packageName?.let { emulatorDetector.getByPackage(it) }
-                ?: emulatorDetector.getPreferredEmulator(game.platformId)?.def
+                ?: emulatorDetector.getPreferredEmulator(game.platformSlug)?.def
             val isRetroArch = emulatorDef?.launchConfig is LaunchConfig.RetroArch
 
             val selectedCoreId = gameSpecificConfig?.coreName
                 ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultCore(game.platformId)?.id
+                ?: EmulatorRegistry.getDefaultCore(game.platformSlug)?.id
             val selectedCoreName = if (isRetroArch) {
-                EmulatorRegistry.getCoresForPlatform(game.platformId)
+                EmulatorRegistry.getCoresForPlatform(game.platformSlug)
                     .find { it.id == selectedCoreId }?.displayName
             } else null
 
@@ -188,9 +188,9 @@ class GameDetailViewModel @Inject constructor(
                 launcher?.isInstalled(context) == true
             } else if (game.isMultiDisc) {
                 val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
-                downloadedCount > 0 && emulatorDetector.hasAnyEmulator(game.platformId)
+                downloadedCount > 0 && emulatorDetector.hasAnyEmulator(game.platformSlug)
             } else {
-                fileExists && emulatorDetector.hasAnyEmulator(game.platformId)
+                fileExists && emulatorDetector.hasAnyEmulator(game.platformSlug)
             }
 
             val downloadStatus = if (isSteamGame || fileExists) {
@@ -230,7 +230,7 @@ class GameDetailViewModel @Inject constructor(
                 emptyList()
             }
 
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(gameId, game.platformId)
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, game.platformSlug)
             val canManageSaves = downloadStatus == GameDownloadStatus.DOWNLOADED &&
                 game.rommId != null &&
                 emulatorId != null &&
@@ -257,7 +257,7 @@ class GameDetailViewModel @Inject constructor(
                     siblingGameIds = siblingIds,
                     currentGameIndex = currentIndex,
                     discs = discsUi,
-                    availableCores = if (isRetroArch) EmulatorRegistry.getCoresForPlatform(game.platformId) else emptyList(),
+                    availableCores = if (isRetroArch) EmulatorRegistry.getCoresForPlatform(game.platformSlug) else emptyList(),
                     selectedCoreId = selectedCoreId,
                     saveChannel = state.saveChannel.copy(activeChannel = game.activeSaveChannel),
                     saveStatusInfo = saveStatusInfo
@@ -473,7 +473,7 @@ class GameDetailViewModel @Inject constructor(
 
             val game = _uiState.value.game ?: return@launch
 
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId)
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
             val prefs = preferencesRepository.preferences.first()
             val canSync = emulatorId != null && SavePathRegistry.canSyncWithSettings(
                 emulatorId,
@@ -616,7 +616,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun showEmulatorPicker() {
         val game = _uiState.value.game ?: return
-        val available = emulatorDetector.getInstalledForPlatform(game.platformId)
+        val available = emulatorDetector.getInstalledForPlatform(game.platformSlug)
         _uiState.update {
             it.copy(
                 showMoreOptions = false,
@@ -646,7 +646,7 @@ class GameDetailViewModel @Inject constructor(
             val gameId = currentGameId
             val game = gameDao.getById(gameId) ?: return@launch
 
-            configureEmulatorUseCase.setForGame(gameId, game.platformId, emulator)
+            configureEmulatorUseCase.setForGame(gameId, game.platformId, game.platformSlug, emulator)
 
             _uiState.update { it.copy(showEmulatorPicker = false) }
             loadGame(gameId)
@@ -667,7 +667,7 @@ class GameDetailViewModel @Inject constructor(
     fun showCorePicker() {
         val game = _uiState.value.game ?: return
         if (!game.isRetroArchEmulator) return
-        val cores = EmulatorRegistry.getCoresForPlatform(game.platformId)
+        val cores = EmulatorRegistry.getCoresForPlatform(game.platformSlug)
         if (cores.isEmpty()) return
 
         val initialIndex = _uiState.value.selectedCoreId?.let { selectedId ->
@@ -843,19 +843,19 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showMoreOptions = false) }
         viewModelScope.launch {
             val game = gameDao.getById(currentGameId) ?: return@launch
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId)
-            val savePath = emulatorId?.let { computeEffectiveSavePath(it, game.platformId) }
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
+            val savePath = emulatorId?.let { computeEffectiveSavePath(it, game.platformSlug) }
             saveChannelDelegate.show(viewModelScope, currentGameId, _uiState.value.saveChannel.activeChannel, savePath)
         }
     }
 
-    private suspend fun computeEffectiveSavePath(emulatorId: String, platformId: String): String? {
+    private suspend fun computeEffectiveSavePath(emulatorId: String, platformSlug: String): String? {
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
         if (userConfig?.isUserOverride == true) {
             return userConfig.savePathPattern
         }
         val config = SavePathRegistry.getConfig(emulatorId) ?: return null
-        val paths = SavePathRegistry.resolvePath(config, platformId)
+        val paths = SavePathRegistry.resolvePath(config, platformSlug)
         return paths.firstOrNull()
     }
 
@@ -882,7 +882,7 @@ class GameDetailViewModel @Inject constructor(
     fun confirmSaveCacheSelection() {
         val game = _uiState.value.game ?: return
         viewModelScope.launch {
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId)
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
             if (emulatorId == null) {
                 notificationManager.showError("Cannot determine emulator")
                 return@launch
@@ -904,7 +904,7 @@ class GameDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
 
         viewModelScope.launch {
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId)
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
 
             if (emulatorId == null) {
                 notificationManager.showError("Cannot determine emulator for save restore")

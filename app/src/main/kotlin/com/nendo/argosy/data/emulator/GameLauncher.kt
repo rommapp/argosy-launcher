@@ -131,7 +131,7 @@ class GameLauncher @Inject constructor(
 
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName}")
 
-        val launchFile = if (m3uManager.supportsM3u(game.platformId)) {
+        val launchFile = if (m3uManager.supportsM3u(game.platformSlug)) {
             when (val m3uResult = m3uManager.ensureM3u(game)) {
                 is M3uResult.Valid -> {
                     Logger.debug(TAG, "Using existing m3u: ${m3uResult.m3uFile.name}")
@@ -228,7 +228,7 @@ class GameLauncher @Inject constructor(
             return emulatorDetector.getByPackage(platformDefault.packageName)
         }
 
-        return emulatorDetector.getPreferredEmulator(game.platformId)?.def
+        return emulatorDetector.getPreferredEmulator(game.platformSlug)?.def
     }
 
     private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity): Intent? {
@@ -239,7 +239,7 @@ class GameLauncher @Inject constructor(
             is LaunchConfig.FileUri -> buildFileUriIntent(emulator, romFile)
             is LaunchConfig.FilePathExtra -> buildFilePathIntent(emulator, romFile, config)
             is LaunchConfig.RetroArch -> buildRetroArchIntent(emulator, romFile, game, config)
-            is LaunchConfig.Custom -> buildCustomIntent(emulator, romFile, game.platformId, config)
+            is LaunchConfig.Custom -> buildCustomIntent(emulator, romFile, game.platformSlug, config)
             is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config)
             is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config)
         }.also { intent ->
@@ -289,12 +289,12 @@ class GameLauncher @Inject constructor(
 
         val corePath = getCorePath(game, retroArchPackage)
         if (corePath == null) {
-            Logger.error(TAG, "No compatible core found for platform: ${game.platformId}")
+            Logger.error(TAG, "No compatible core found for platform: ${game.platformSlug}")
             return null
         }
 
         val coreName = corePath.substringAfterLast("/").removeSuffix("_libretro_android.so")
-        Logger.debug(TAG, "RetroArch core: $coreName for platform: ${game.platformId}")
+        Logger.debug(TAG, "RetroArch core: $coreName for platform: ${game.platformSlug}")
 
         return Intent(emulator.launchAction).apply {
             component = ComponentName(retroArchPackage, config.activityClass)
@@ -315,7 +315,7 @@ class GameLauncher @Inject constructor(
     private suspend fun getCorePath(game: GameEntity, retroArchPackage: String): String? {
         val coreName = resolveCoreName(game)
         if (coreName == null) {
-            Logger.warn(TAG, "No core found for platform: ${game.platformId}")
+            Logger.warn(TAG, "No core found for platform: ${game.platformSlug}")
             return null
         }
         val corePath = "/data/data/$retroArchPackage/cores/${coreName}_libretro_android.so"
@@ -335,13 +335,13 @@ class GameLauncher @Inject constructor(
             return platformConfig.coreName
         }
 
-        val defaultCore = EmulatorRegistry.getDefaultCore(game.platformId)
+        val defaultCore = EmulatorRegistry.getDefaultCore(game.platformSlug)
         if (defaultCore != null) {
             Logger.debug(TAG, "Core selection: registry default -> ${defaultCore.id}")
             return defaultCore.id
         }
 
-        val preferredCore = EmulatorRegistry.getPreferredCore(game.platformId)
+        val preferredCore = EmulatorRegistry.getPreferredCore(game.platformSlug)
         Logger.debug(TAG, "Core selection: registry preferred -> $preferredCore")
         return preferredCore
     }
@@ -349,7 +349,7 @@ class GameLauncher @Inject constructor(
     private fun buildCustomIntent(
         emulator: EmulatorDef,
         romFile: File,
-        platformId: String,
+        platformSlug: String,
         config: LaunchConfig.Custom
     ): Intent {
         return Intent(emulator.launchAction).apply {
@@ -382,7 +382,7 @@ class GameLauncher @Inject constructor(
                         hasFileUri = true
                         getFileUri(romFile).toString()
                     }
-                    is ExtraValue.Platform -> platformId
+                    is ExtraValue.Platform -> platformSlug
                     is ExtraValue.Literal -> extraValue.value
                 }
                 putExtra(key, value)

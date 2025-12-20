@@ -194,23 +194,23 @@ class SettingsViewModel @Inject constructor(
             val installedPackages = installedEmulators.map { it.def.packageName }.toSet()
 
             val platformConfigs = platforms
-                .filter { it.id != "steam" }
+                .filter { it.slug != "steam" }
                 .map { platform ->
                 val defaultConfig = emulatorConfigDao.getDefaultForPlatform(platform.id)
-                val available = installedEmulators.filter { platform.id in it.def.supportedPlatforms }
+                val available = installedEmulators.filter { platform.slug in it.def.supportedPlatforms }
                 val isUserConfigured = defaultConfig != null
 
-                val recommended = EmulatorRegistry.getRecommendedEmulators()[platform.id] ?: emptyList()
+                val recommended = EmulatorRegistry.getRecommendedEmulators()[platform.slug] ?: emptyList()
                 val downloadable = recommended
                     .mapNotNull { EmulatorRegistry.getById(it) }
                     .filter { it.packageName !in installedPackages && it.downloadUrl != null }
 
                 val selectedEmulatorDef = defaultConfig?.packageName?.let { emulatorDetector.getByPackage(it) }
-                val autoResolvedEmulator = emulatorDetector.getPreferredEmulator(platform.id)?.def
+                val autoResolvedEmulator = emulatorDetector.getPreferredEmulator(platform.slug)?.def
                 val effectiveEmulatorDef = selectedEmulatorDef ?: autoResolvedEmulator
                 val isRetroArch = effectiveEmulatorDef?.launchConfig is LaunchConfig.RetroArch
                 val availableCores = if (isRetroArch) {
-                    EmulatorRegistry.getCoresForPlatform(platform.id)
+                    EmulatorRegistry.getCoresForPlatform(platform.slug)
                 } else {
                     emptyList()
                 }
@@ -218,7 +218,7 @@ class SettingsViewModel @Inject constructor(
                 val selectedCore = if (isRetroArch && defaultConfig?.coreName != null) {
                     defaultConfig.coreName
                 } else if (isRetroArch) {
-                    EmulatorRegistry.getDefaultCore(platform.id)?.id
+                    EmulatorRegistry.getDefaultCore(platform.slug)?.id
                 } else {
                     null
                 }
@@ -415,7 +415,7 @@ class SettingsViewModel @Inject constructor(
     fun confirmEmulatorPickerSelection() {
         emulatorDelegate.confirmEmulatorPickerSelection(
             viewModelScope,
-            onSetEmulator = { platformId, emulator -> setPlatformEmulator(platformId, emulator) },
+            onSetEmulator = { platformId, platformSlug, emulator -> setPlatformEmulator(platformId, platformSlug, emulator) },
             onLoadSettings = { loadSettings() }
         )
     }
@@ -424,7 +424,7 @@ class SettingsViewModel @Inject constructor(
         emulatorDelegate.handleEmulatorPickerItemTap(
             index,
             viewModelScope,
-            onSetEmulator = { platformId, emulator -> setPlatformEmulator(platformId, emulator) },
+            onSetEmulator = { platformId, platformSlug, emulator -> setPlatformEmulator(platformId, platformSlug, emulator) },
             onLoadSettings = { loadSettings() }
         )
     }
@@ -1103,9 +1103,9 @@ class SettingsViewModel @Inject constructor(
         setFileLogLevel(currentLevel.next())
     }
 
-    fun setPlatformEmulator(platformId: String, emulator: InstalledEmulator?) {
+    fun setPlatformEmulator(platformId: String, platformSlug: String, emulator: InstalledEmulator?) {
         viewModelScope.launch {
-            configureEmulatorUseCase.setForPlatform(platformId, emulator)
+            configureEmulatorUseCase.setForPlatform(platformId, platformSlug, emulator)
             loadSettings()
         }
     }

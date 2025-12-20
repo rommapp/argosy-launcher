@@ -79,7 +79,7 @@ class SaveSyncRepository @Inject constructor(
     suspend fun discoverSavePath(
         emulatorId: String,
         gameTitle: String,
-        platformId: String,
+        platformSlug: String,
         romPath: String? = null,
         cachedTitleId: String? = null,
         coreName: String? = null
@@ -101,7 +101,7 @@ class SaveSyncRepository @Inject constructor(
             if (!isFolderSaveSyncEnabled()) {
                 return@withContext null
             }
-            return@withContext discoverFolderSavePath(config, platformId, romPath, cachedTitleId)
+            return@withContext discoverFolderSavePath(config, platformSlug, romPath, cachedTitleId)
         }
 
         val basePathOverride = if (isRetroArch && userConfig?.isUserOverride == true) {
@@ -113,16 +113,16 @@ class SaveSyncRepository @Inject constructor(
             val contentDir = romPath?.let { File(it).parent }
             if (coreName != null) {
                 Logger.debug(TAG, "discoverSavePath: RetroArch using known core=$coreName (baseOverride=$basePathOverride)")
-                retroArchConfigParser.resolveSavePaths(packageName, platformId, coreName, contentDir, basePathOverride)
+                retroArchConfigParser.resolveSavePaths(packageName, platformSlug, coreName, contentDir, basePathOverride)
             } else {
-                val corePatterns = EmulatorRegistry.getRetroArchCorePatterns()[platformId] ?: emptyList()
+                val corePatterns = EmulatorRegistry.getRetroArchCorePatterns()[platformSlug] ?: emptyList()
                 Logger.debug(TAG, "discoverSavePath: RetroArch trying all cores=$corePatterns (baseOverride=$basePathOverride)")
                 corePatterns.flatMap { core ->
-                    retroArchConfigParser.resolveSavePaths(packageName, platformId, core, contentDir, basePathOverride)
-                } + retroArchConfigParser.resolveSavePaths(packageName, platformId, null, contentDir, basePathOverride)
+                    retroArchConfigParser.resolveSavePaths(packageName, platformSlug, core, contentDir, basePathOverride)
+                } + retroArchConfigParser.resolveSavePaths(packageName, platformSlug, null, contentDir, basePathOverride)
             }
         } else {
-            SavePathRegistry.resolvePath(config, platformId)
+            SavePathRegistry.resolvePath(config, platformSlug)
         }
 
         Logger.debug(TAG, "discoverSavePath: searching ${paths.size} paths for '$gameTitle' (romPath=$romPath)")
@@ -167,19 +167,19 @@ class SaveSyncRepository @Inject constructor(
 
     private fun discoverFolderSavePath(
         config: SavePathConfig,
-        platformId: String,
+        platformSlug: String,
         romPath: String,
         cachedTitleId: String? = null
     ): String? {
         val romFile = File(romPath)
         val titleId = cachedTitleId
-            ?: titleIdExtractor.extractTitleId(romFile, platformId)
+            ?: titleIdExtractor.extractTitleId(romFile, platformSlug)
             ?: return null
 
         Logger.debug(TAG, "Using titleId: $titleId (cached: ${cachedTitleId != null})")
 
         for (basePath in config.defaultPaths) {
-            val saveFolder = findSaveFolderByTitleId(basePath, titleId, platformId)
+            val saveFolder = findSaveFolderByTitleId(basePath, titleId, platformSlug)
             if (saveFolder != null) return saveFolder
         }
         return null
@@ -188,12 +188,12 @@ class SaveSyncRepository @Inject constructor(
     private fun findSaveFolderByTitleId(
         basePath: String,
         titleId: String,
-        platformId: String
+        platformSlug: String
     ): String? {
         val baseDir = File(basePath)
         if (!baseDir.exists()) return null
 
-        when (platformId) {
+        when (platformSlug) {
             "vita", "psvita" -> {
                 val saveFolder = File(baseDir, titleId)
                 if (saveFolder.exists() && saveFolder.isDirectory) {
@@ -381,33 +381,33 @@ class SaveSyncRepository @Inject constructor(
 
     fun constructSavePathWithFileName(
         emulatorId: String,
-        platformId: String,
+        platformSlug: String,
         romPath: String?,
         serverFileName: String
     ): String? {
-        val baseDir = getSaveDirectory(emulatorId, platformId, romPath) ?: return null
+        val baseDir = getSaveDirectory(emulatorId, platformSlug, romPath) ?: return null
         return "$baseDir/$serverFileName"
     }
 
     private fun getSaveDirectory(
         emulatorId: String,
-        platformId: String,
+        platformSlug: String,
         romPath: String?
     ): String? {
         val config = SavePathRegistry.getConfig(emulatorId) ?: return null
 
         if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
-            return getRetroArchSaveDirectory(emulatorId, platformId, romPath)
+            return getRetroArchSaveDirectory(emulatorId, platformSlug, romPath)
         }
 
-        val resolvedPaths = SavePathRegistry.resolvePath(config, platformId)
+        val resolvedPaths = SavePathRegistry.resolvePath(config, platformSlug)
         return resolvedPaths.firstOrNull { File(it).exists() }
             ?: resolvedPaths.firstOrNull()
     }
 
     private fun getRetroArchSaveDirectory(
         emulatorId: String,
-        platformId: String,
+        platformSlug: String,
         romPath: String?
     ): String? {
         val packageName = when (emulatorId) {
@@ -416,7 +416,7 @@ class SaveSyncRepository @Inject constructor(
         }
 
         val raConfig = retroArchConfigParser.parse(packageName)
-        val coreName = SavePathRegistry.getRetroArchCore(platformId)
+        val coreName = SavePathRegistry.getRetroArchCore(platformSlug)
         val saveConfig = SavePathRegistry.getConfig(emulatorId) ?: return null
 
         return when {
@@ -431,7 +431,7 @@ class SaveSyncRepository @Inject constructor(
                 }
             }
             else -> {
-                val defaultPaths = SavePathRegistry.resolvePath(saveConfig, platformId)
+                val defaultPaths = SavePathRegistry.resolvePath(saveConfig, platformSlug)
                 defaultPaths.firstOrNull { File(it).exists() }
                     ?: defaultPaths.firstOrNull()
             }
@@ -556,7 +556,7 @@ class SaveSyncRepository @Inject constructor(
         val rommId = game.rommId ?: return@withContext SaveSyncResult.NotConfigured
 
         val localPath = syncEntity?.localSavePath
-            ?: discoverSavePath(emulatorId, game.title, game.platformId, game.localPath)
+            ?: discoverSavePath(emulatorId, game.title, game.platformSlug, game.localPath)
             ?: return@withContext SaveSyncResult.NoSaveFound
 
         val saveLocation = File(localPath)
@@ -710,11 +710,11 @@ class SaveSyncRepository @Inject constructor(
 
         val targetPath = if (isFolderBased) {
             syncEntity.localSavePath
-                ?: constructFolderSavePath(emulatorId, game.platformId, game.localPath)
+                ?: constructFolderSavePath(emulatorId, game.platformSlug, game.localPath)
         } else {
             syncEntity.localSavePath
-                ?: discoverSavePath(emulatorId, game.title, game.platformId, game.localPath)
-                ?: constructSavePathWithFileName(emulatorId, platformId = game.platformId, romPath = game.localPath, serverFileName = serverSave.fileName)
+                ?: discoverSavePath(emulatorId, game.title, game.platformSlug, game.localPath)
+                ?: constructSavePathWithFileName(emulatorId, platformSlug = game.platformSlug, romPath = game.localPath, serverFileName = serverSave.fileName)
         } ?: return@withContext SaveSyncResult.Error("Cannot determine save path")
 
         val targetFile = File(targetPath)
@@ -869,7 +869,7 @@ class SaveSyncRepository @Inject constructor(
 
     private fun constructFolderSavePath(
         emulatorId: String,
-        platformId: String,
+        platformSlug: String,
         romPath: String?
     ): String? {
         if (romPath == null) return null
@@ -878,13 +878,13 @@ class SaveSyncRepository @Inject constructor(
         if (!config.usesFolderBasedSaves) return null
 
         val romFile = File(romPath)
-        val titleId = titleIdExtractor.extractTitleId(romFile, platformId) ?: return null
+        val titleId = titleIdExtractor.extractTitleId(romFile, platformSlug) ?: return null
 
         val baseDir = config.defaultPaths.firstOrNull { File(it).exists() }
             ?: config.defaultPaths.firstOrNull()
             ?: return null
 
-        return when (platformId) {
+        return when (platformSlug) {
             "vita", "psvita" -> "$baseDir/$titleId"
             "switch" -> {
                 val userFolder = File(baseDir).listFiles()?.firstOrNull { it.isDirectory }

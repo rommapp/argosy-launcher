@@ -169,7 +169,7 @@ class PlaySessionTracker @Inject constructor(
             val savePath = saveSyncRepository.get().discoverSavePath(
                 emulatorId,
                 game.title,
-                game.platformId,
+                game.platformSlug,
                 game.localPath,
                 game.titleId,
                 session.coreName

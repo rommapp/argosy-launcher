@@ -71,6 +71,7 @@ data class PlatformEmulatorConfig(
 
 data class EmulatorPickerInfo(
     val platformId: String,
+    val platformSlug: String,
     val platformName: String,
     val installedEmulators: List<InstalledEmulator>,
     val downloadableEmulators: List<EmulatorDef>,
@@ -79,6 +80,7 @@ data class EmulatorPickerInfo(
 
 data class CorePickerInfo(
     val platformId: String,
+    val platformSlug: String,
     val platformName: String,
     val availableCores: List<RetroArchCore>,
     val selectedCoreId: String?

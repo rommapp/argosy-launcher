@@ -48,6 +48,7 @@ class EmulatorSettingsDelegate @Inject constructor(
                 showEmulatorPicker = true,
                 emulatorPickerInfo = EmulatorPickerInfo(
                     platformId = config.platform.id,
+                    platformSlug = config.platform.slug,
                     platformName = config.platform.name,
                     installedEmulators = config.availableEmulators,
                     downloadableEmulators = config.downloadableEmulators,
@@ -100,7 +101,7 @@ class EmulatorSettingsDelegate @Inject constructor(
     fun handleEmulatorPickerItemTap(
         index: Int,
         scope: CoroutineScope,
-        onSetEmulator: suspend (String, InstalledEmulator?) -> Unit,
+        onSetEmulator: suspend (String, String, InstalledEmulator?) -> Unit,
         onLoadSettings: suspend () -> Unit
     ) {
         val state = _state.value
@@ -120,7 +121,7 @@ class EmulatorSettingsDelegate @Inject constructor(
 
     fun confirmEmulatorPickerSelection(
         scope: CoroutineScope,
-        onSetEmulator: suspend (String, InstalledEmulator?) -> Unit,
+        onSetEmulator: suspend (String, String, InstalledEmulator?) -> Unit,
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
@@ -132,13 +133,13 @@ class EmulatorSettingsDelegate @Inject constructor(
             if (hasInstalled) {
                 when {
                     index == 0 -> {
-                        onSetEmulator(info.platformId, null)
+                        onSetEmulator(info.platformId, info.platformSlug, null)
                         dismissEmulatorPicker()
                         onLoadSettings()
                     }
                     index <= info.installedEmulators.size -> {
                         val emulator = info.installedEmulators[index - 1]
-                        onSetEmulator(info.platformId, emulator)
+                        onSetEmulator(info.platformId, info.platformSlug, emulator)
                         dismissEmulatorPicker()
                         onLoadSettings()
                     }
@@ -176,11 +177,12 @@ class EmulatorSettingsDelegate @Inject constructor(
     fun setPlatformEmulator(
         scope: CoroutineScope,
         platformId: String,
+        platformSlug: String,
         emulator: InstalledEmulator?,
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
-            configureEmulatorUseCase.setForPlatform(platformId, emulator)
+            configureEmulatorUseCase.setForPlatform(platformId, platformSlug, emulator)
             onLoadSettings()
         }
     }
@@ -193,9 +195,9 @@ class EmulatorSettingsDelegate @Inject constructor(
             val platforms = _state.value.platforms
             for (config in platforms) {
                 if (!config.isUserConfigured && config.availableEmulators.isNotEmpty()) {
-                    val preferred = emulatorDetector.getPreferredEmulator(config.platform.id)
+                    val preferred = emulatorDetector.getPreferredEmulator(config.platform.slug)
                     if (preferred != null) {
-                        configureEmulatorUseCase.setForPlatform(config.platform.id, preferred)
+                        configureEmulatorUseCase.setForPlatform(config.platform.id, config.platform.slug, preferred)
                     }
                 }
             }

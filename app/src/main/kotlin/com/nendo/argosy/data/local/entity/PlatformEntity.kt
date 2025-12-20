@@ -8,6 +8,7 @@ import java.time.Instant
 data class PlatformEntity(
     @PrimaryKey
     val id: String,
+    val slug: String = "",
     val name: String,
     val shortName: String,
     val sortOrder: Int = 0,

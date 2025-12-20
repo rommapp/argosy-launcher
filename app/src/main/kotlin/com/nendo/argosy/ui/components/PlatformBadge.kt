@@ -93,14 +93,14 @@ private class CurvedEarShape(
 
 @Composable
 fun PlatformBadge(
-    platformId: String,
+    platformSlug: String,
     cardWidthDp: Dp,
     isFocused: Boolean,
     modifier: Modifier = Modifier
 ) {
     val boxArtStyle = LocalBoxArtStyle.current
-    val platform = PlatformDefinitions.getById(platformId)
-    val shortName = platform?.shortName ?: platformId.uppercase().take(6)
+    val platform = PlatformDefinitions.getById(platformSlug)
+    val shortName = platform?.shortName ?: platformSlug.uppercase().take(6)
 
     val scale = (cardWidthDp / BASE_WIDTH_DP).coerceIn(0.5f, 2f)
     val cornerRadius = boxArtStyle.cornerRadiusDp * scale

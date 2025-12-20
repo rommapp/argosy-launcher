@@ -46,9 +46,9 @@ class SaveSyncDownloadObserver @Inject constructor(
             return
         }
 
-        val emulatorId = emulatorResolver.getEmulatorIdForGame(event.gameId, game.platformId)
+        val emulatorId = emulatorResolver.getEmulatorIdForGame(event.gameId, game.platformId, game.platformSlug)
         if (emulatorId == null) {
-            Logger.debug(TAG, "handleDownloadCompletion: no emulator for platform ${game.platformId}")
+            Logger.debug(TAG, "handleDownloadCompletion: no emulator for platform ${game.platformSlug}")
             return
         }
 

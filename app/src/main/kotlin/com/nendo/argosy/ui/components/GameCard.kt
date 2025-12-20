@@ -190,7 +190,7 @@ fun GameCard(
                 else -> Alignment.TopStart
             }
             PlatformBadge(
-                platformId = game.platformId,
+                platformSlug = game.platformSlug,
                 cardWidthDp = maxWidth,
                 isFocused = isFocused,
                 modifier = Modifier.align(badgeAlignment)

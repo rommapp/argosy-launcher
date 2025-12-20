@@ -238,7 +238,7 @@ class RomMRepository @Inject constructor(
             }
 
             val enabledPlatforms = platforms.filter { platform ->
-                val local = platformDao.getById(platform.slug)
+                val local = platformDao.getById(platform.id.toString())
                 local?.syncEnabled != false
             }
 
@@ -266,10 +266,12 @@ class RomMRepository @Inject constructor(
 
             gamesDeleted += cleanupInvalidExtensionGames()
             gamesDeleted += cleanupDuplicateGames()
+            cleanupLegacyPlatforms(platforms)
 
             platforms.forEach { platform ->
-                val count = gameDao.countByPlatform(platform.slug)
-                platformDao.updateGameCount(platform.slug, count)
+                val platformId = platform.id.toString()
+                val count = gameDao.countByPlatform(platformId)
+                platformDao.updateGameCount(platformId, count)
             }
 
             if (filters.deleteOrphans) {
@@ -288,14 +290,17 @@ class RomMRepository @Inject constructor(
     }
 
     private suspend fun syncPlatform(remote: RomMPlatform) {
-        val existing = platformDao.getById(remote.slug)
+        val platformId = remote.id.toString()
+        val existing = platformDao.getById(platformId)
+            ?: platformDao.getBySlug(remote.slug)
         val platformDef = PlatformDefinitions.getById(remote.slug)
 
         val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
         val normalizedName = platformDef?.name
             ?: PlatformDefinitions.normalizeDisplayName(remote.name)
         val entity = PlatformEntity(
-            id = remote.slug,
+            id = platformId,
+            slug = remote.slug,
             name = normalizedName,
             shortName = platformDef?.shortName ?: normalizedName,
             romExtensions = platformDef?.extensions?.joinToString(",") ?: "",
@@ -316,11 +321,11 @@ class RomMRepository @Inject constructor(
 
         // Queue logo for caching with black background removal
         if (logoUrl != null && logoUrl.startsWith("http")) {
-            imageCacheManager.queuePlatformLogoCache(remote.slug, logoUrl)
+            imageCacheManager.queuePlatformLogoCache(platformId, logoUrl)
         }
     }
 
-    private suspend fun syncRom(rom: RomMRom, platformSlug: String): Pair<Boolean, GameEntity> {
+    private suspend fun syncRom(rom: RomMRom, platformId: String, platformSlug: String): Pair<Boolean, GameEntity> {
         val existing = gameDao.getByRommId(rom.id)
 
         val screenshotUrls = rom.screenshotUrls.ifEmpty {
@@ -349,7 +354,8 @@ class RomMRepository @Inject constructor(
 
         val game = GameEntity(
             id = existing?.id ?: 0,
-            platformId = platformSlug,
+            platformId = platformId,
+            platformSlug = platformSlug,
             title = rom.name,
             sortTitle = RomMUtils.createSortTitle(rom.name),
             localPath = existing?.localPath,
@@ -454,7 +460,7 @@ class RomMRepository @Inject constructor(
                             seenRommIds.add(rom.id)
                             if (hasRA) romsWithRA.add(rom.id)
                             try {
-                                syncRom(rom, platform.slug)
+                                syncRom(rom, platform.id.toString(), platform.slug)
                                 updated++
                             } catch (_: Exception) {}
                         }
@@ -467,7 +473,7 @@ class RomMRepository @Inject constructor(
                 if (hasRA) romsWithRA.add(rom.id)
 
                 try {
-                    val (isNew, _) = syncRom(rom, platform.slug)
+                    val (isNew, _) = syncRom(rom, platform.id.toString(), platform.slug)
                     if (isNew) added++ else updated++
 
                     if (rom.hasDiscSiblings && rom.id !in processedDiscIds) {
@@ -608,7 +614,7 @@ class RomMRepository @Inject constructor(
             val extension = localPath.substringAfterLast('.', "").lowercase()
             if (extension.isEmpty()) continue
 
-            val platformDef = PlatformDefinitions.getById(game.platformId) ?: continue
+            val platformDef = PlatformDefinitions.getById(game.platformSlug) ?: continue
             if (platformDef.extensions.isEmpty()) continue
 
             if (extension !in platformDef.extensions) {
@@ -680,6 +686,24 @@ class RomMRepository @Inject constructor(
         }
 
         return deleted
+    }
+
+    private suspend fun cleanupLegacyPlatforms(remotePlatforms: List<RomMPlatform>) {
+        for (remote in remotePlatforms) {
+            val numericId = remote.id.toString()
+            val slug = remote.slug
+
+            if (numericId == slug) continue
+
+            val numericPlatform = platformDao.getById(numericId)
+            val legacyPlatform = platformDao.getById(slug)
+
+            if (numericPlatform != null && legacyPlatform != null) {
+                gameDao.migratePlatform(slug, numericId)
+                platformDao.deleteById(slug)
+                Logger.info(TAG, "Migrated games and removed legacy platform: $slug -> $numericId")
+            }
+        }
     }
 
     private suspend fun deleteOrphanedGames(seenRommIds: Set<Long>): Int {
@@ -888,13 +912,16 @@ class RomMRepository @Inject constructor(
             if (response.isSuccessful) {
                 val platforms = response.body() ?: emptyList()
                 val entities = platforms.map { remote ->
-                    val existing = platformDao.getById(remote.slug)
+                    val platformId = remote.id.toString()
+                    val existing = platformDao.getById(platformId)
+                        ?: platformDao.getBySlug(remote.slug)
                     val platformDef = PlatformDefinitions.getById(remote.slug)
                     val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
                     val normalizedName = platformDef?.name
                         ?: PlatformDefinitions.normalizeDisplayName(remote.name)
                     PlatformEntity(
-                        id = remote.slug,
+                        id = platformId,
+                        slug = remote.slug,
                         name = normalizedName,
                         shortName = platformDef?.shortName ?: normalizedName,
                         romExtensions = platformDef?.extensions?.joinToString(",") ?: "",
@@ -908,8 +935,7 @@ class RomMRepository @Inject constructor(
                     )
                 }
                 entities.forEach { platformDao.insert(it) }
-                val uniqueEntities = entities.distinctBy { it.id }
-                RomMResult.Success(uniqueEntities.sortedBy { it.sortOrder })
+                RomMResult.Success(entities.sortedBy { it.sortOrder })
             } else {
                 RomMResult.Error("Failed to fetch platforms", response.code())
             }

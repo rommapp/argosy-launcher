@@ -26,6 +26,7 @@ fun GameEntity.toGameDetailUi(
         id = id,
         title = title,
         platformId = platformId,
+        platformSlug = platformSlug,
         platformName = platformName,
         coverPath = coverPath,
         backgroundPath = effectiveBackground,

@@ -3,6 +3,13 @@ package com.nendo.argosy.domain.model
 object Changelog {
     private val entries = listOf(
         ChangelogEntry(
+            version = "0.9.16",
+            highlights = listOf(
+                "Fixed crash for users with platform versions"
+            ),
+            requiredActions = listOf(RequiredAction.ResyncLibrary)
+        ),
+        ChangelogEntry(
             version = "0.9.15",
             highlights = listOf(
                 "Bidirectional favorites sync with RomM",

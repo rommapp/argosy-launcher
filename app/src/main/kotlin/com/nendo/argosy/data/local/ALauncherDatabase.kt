@@ -16,8 +16,10 @@ import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
+import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
@@ -41,9 +43,10 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         EmulatorSaveConfigEntity::class,
         GameDiscEntity::class,
         AchievementEntity::class,
-        SaveCacheEntity::class
+        SaveCacheEntity::class,
+        OrphanedFileEntity::class
     ],
-    version = 27,
+    version = 28,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -59,6 +62,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun emulatorSaveConfigDao(): EmulatorSaveConfigDao
     abstract fun achievementDao(): AchievementDao
     abstract fun saveCacheDao(): SaveCacheDao
+    abstract fun orphanedFileDao(): OrphanedFileDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -392,6 +396,19 @@ abstract class ALauncherDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN platformSlug TEXT NOT NULL DEFAULT ''")
                 db.execSQL("UPDATE games SET platformSlug = platformId")
+            }
+        }
+
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS orphaned_files (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        path TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_orphaned_files_path ON orphaned_files(path)")
             }
         }
     }

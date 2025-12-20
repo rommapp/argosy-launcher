@@ -1,12 +1,14 @@
 package com.nendo.argosy.domain.usecase.game
 
-import android.util.Log
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,7 +24,8 @@ class DeleteGameUseCase @Inject constructor(
     private val downloadQueueDao: DownloadQueueDao,
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncDao: SaveSyncDao,
-    private val pendingSaveSyncDao: PendingSaveSyncDao
+    private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val orphanedFileDao: OrphanedFileDao
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -38,16 +41,18 @@ class DeleteGameUseCase @Inject constructor(
         pendingSaveSyncDao.deleteByGame(gameId)
         gameDao.updateActiveSaveChannel(gameId, null)
         gameDao.updateActiveSaveTimestamp(gameId, null)
-        Log.d(TAG, "Deleted local file and all save data for game $gameId")
+        Logger.debug(TAG, "Deleted local file and all save data for game $gameId")
 
         scope.launch {
             try {
                 val file = File(path)
-                if (file.exists()) {
-                    file.delete()
+                if (file.exists() && !file.delete()) {
+                    Logger.warn(TAG, "Failed to delete file $path, adding to orphan index")
+                    orphanedFileDao.insert(OrphanedFileEntity(path = path))
                 }
-            } catch (_: Exception) {
-                // DB already updated, orphaned file is acceptable
+            } catch (e: Exception) {
+                Logger.warn(TAG, "Error deleting file $path: ${e.message}")
+                orphanedFileDao.insert(OrphanedFileEntity(path = path))
             }
         }
 

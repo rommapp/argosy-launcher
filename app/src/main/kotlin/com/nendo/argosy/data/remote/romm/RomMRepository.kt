@@ -4,8 +4,10 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
@@ -51,6 +53,7 @@ class RomMRepository @Inject constructor(
     private val gameDiscDao: GameDiscDao,
     private val platformDao: PlatformDao,
     private val pendingSyncDao: PendingSyncDao,
+    private val orphanedFileDao: OrphanedFileDao,
     private val imageCacheManager: ImageCacheManager,
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>
 ) {
@@ -490,7 +493,8 @@ class RomMRepository @Inject constructor(
                             platformSlug = platform.slug
                         ))
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Logger.warn(TAG, "syncPlatformRoms: failed to sync ROM ${rom.id} (${rom.name}): ${e.message}")
                 }
             }
 
@@ -581,18 +585,25 @@ class RomMRepository @Inject constructor(
             val romData = try {
                 val response = api.getRom(rommId)
                 if (response.isSuccessful) response.body() else null
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Logger.warn(TAG, "consolidateMultiDiscGroup: failed to fetch ROM $rommId: ${e.message}")
                 null
+            }
+
+            // Skip creating new disc entries without proper data - no disc better than broken record
+            if (romData == null && existingDisc == null) {
+                Logger.warn(TAG, "consolidateMultiDiscGroup: skipping disc $rommId - no data available")
+                continue
             }
 
             discsToInsert.add(GameDiscEntity(
                 id = existingDisc?.id ?: 0,
                 gameId = primaryGame.id,
-                discNumber = romData?.discNumber ?: (discsToInsert.size + existingDiscs.size + 1),
+                discNumber = romData?.discNumber ?: existingDisc?.discNumber ?: (discsToInsert.size + existingDiscs.size + 1),
                 rommId = rommId,
-                fileName = romData?.fileName ?: "Disc",
+                fileName = romData?.fileName ?: existingDisc?.fileName ?: "Disc",
                 localPath = localPath,
-                fileSize = romData?.fileSize ?: 0
+                fileSize = romData?.fileSize ?: existingDisc?.fileSize ?: 0
             ))
         }
 
@@ -618,10 +629,7 @@ class RomMRepository @Inject constructor(
             if (platformDef.extensions.isEmpty()) continue
 
             if (extension !in platformDef.extensions) {
-                try {
-                    val file = java.io.File(localPath)
-                    if (file.exists()) file.delete()
-                } catch (_: Exception) {}
+                safeDeleteFile(localPath)
                 gameDao.delete(game.id)
                 deleted++
             }
@@ -648,12 +656,7 @@ class RomMRepository @Inject constructor(
             )
 
             for (game in sorted.drop(1)) {
-                game.localPath?.let { path ->
-                    try {
-                        val file = java.io.File(path)
-                        if (file.exists()) file.delete()
-                    } catch (_: Exception) {}
-                }
+                game.localPath?.let { safeDeleteFile(it) }
                 gameDao.delete(game.id)
                 deletedIds.add(game.id)
                 deleted++
@@ -674,12 +677,7 @@ class RomMRepository @Inject constructor(
             )
 
             for (game in sorted.drop(1)) {
-                game.localPath?.let { path ->
-                    try {
-                        val file = java.io.File(path)
-                        if (file.exists()) file.delete()
-                    } catch (_: Exception) {}
-                }
+                game.localPath?.let { safeDeleteFile(it) }
                 gameDao.delete(game.id)
                 deleted++
             }
@@ -729,13 +727,7 @@ class RomMRepository @Inject constructor(
             if (game.platformId in disabledPlatforms) continue
             val rommId = game.rommId ?: continue
             if (rommId !in seenRommIds) {
-                game.localPath?.let { path ->
-                    try {
-                        val file = java.io.File(path)
-                        if (file.exists()) file.delete()
-                    } catch (_: Exception) {
-                    }
-                }
+                game.localPath?.let { safeDeleteFile(it) }
                 gameDao.delete(game.id)
                 deleted++
             }
@@ -1110,7 +1102,7 @@ class RomMRepository @Inject constructor(
                             pendingSyncDao.delete(item.id)
                             synced++
                         }
-                        userPreferencesRepository.setLastFavoritesSyncTime(parseTimestamp(result.updatedAt))
+                        parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
                     }
                 }
             } catch (e: Exception) {
@@ -1139,12 +1131,13 @@ class RomMRepository @Inject constructor(
         return synced
     }
 
-    private fun parseTimestamp(timestamp: String?): Instant {
-        if (timestamp.isNullOrBlank()) return Instant.now()
+    private fun parseTimestamp(timestamp: String?): Instant? {
+        if (timestamp.isNullOrBlank()) return null
         return try {
             OffsetDateTime.parse(timestamp).toInstant()
-        } catch (_: Exception) {
-            Instant.now()
+        } catch (e: Exception) {
+            Logger.warn(TAG, "parseTimestamp: failed to parse '$timestamp': ${e.message}")
+            null
         }
     }
 
@@ -1212,7 +1205,7 @@ class RomMRepository @Inject constructor(
                     if (mergedIds.isNotEmpty()) {
                         gameDao.setFavoritesByRommIds(mergedIds)
                     }
-                    userPreferencesRepository.setLastFavoritesSyncTime(parseTimestamp(result.updatedAt))
+                    parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
                     userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
                     return RomMResult.Success(Unit)
                 }
@@ -1241,7 +1234,7 @@ class RomMRepository @Inject constructor(
                     } else {
                         gameDao.clearFavoritesNotInRommIds(emptyList())
                     }
-                    userPreferencesRepository.setLastFavoritesSyncTime(parseTimestamp(result.updatedAt))
+                    parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
                     userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
                     return RomMResult.Success(Unit)
                 }
@@ -1252,7 +1245,7 @@ class RomMRepository @Inject constructor(
                 } else {
                     gameDao.clearFavoritesNotInRommIds(emptyList())
                 }
-                userPreferencesRepository.setLastFavoritesSyncTime(parseTimestamp(collection.updatedAt))
+                parseTimestamp(collection.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
                 userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
             }
 
@@ -1292,7 +1285,7 @@ class RomMRepository @Inject constructor(
 
             val result = updateFavoritesCollection(collection.id, currentIds.toList())
             if (result != null) {
-                userPreferencesRepository.setLastFavoritesSyncTime(parseTimestamp(result.updatedAt))
+                parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
                 RomMResult.Success(Unit)
             } else {
                 val value = if (isFavorite) 1 else 0
@@ -1330,8 +1323,8 @@ class RomMRepository @Inject constructor(
 
             userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
 
-            if (lastSync == null) {
-                Logger.info(TAG, "refreshFavoritesIfNeeded: first sync, delegating to syncFavorites")
+            if (lastSync == null || remoteUpdatedAt == null) {
+                Logger.info(TAG, "refreshFavoritesIfNeeded: no comparison possible (lastSync=$lastSync, remoteUpdatedAt=$remoteUpdatedAt), delegating to syncFavorites")
                 return syncFavorites()
             }
 
@@ -1354,6 +1347,19 @@ class RomMRepository @Inject constructor(
         } catch (e: Exception) {
             Logger.info(TAG, "refreshFavoritesIfNeeded: failed: ${e.message}")
             RomMResult.Error(e.message ?: "Failed to refresh favorites")
+        }
+    }
+
+    private suspend fun safeDeleteFile(path: String) {
+        try {
+            val file = java.io.File(path)
+            if (file.exists() && !file.delete()) {
+                Logger.warn(TAG, "safeDeleteFile: failed to delete $path, adding to orphan index")
+                orphanedFileDao.insert(OrphanedFileEntity(path = path))
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "safeDeleteFile: error deleting $path: ${e.message}")
+            orphanedFileDao.insert(OrphanedFileEntity(path = path))
         }
     }
 }

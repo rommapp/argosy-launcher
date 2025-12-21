@@ -73,6 +73,7 @@ import com.nendo.argosy.ui.theme.Motion
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalConfiguration
+import android.util.Log
 import kotlinx.coroutines.launch
 
 @Composable
@@ -116,9 +117,10 @@ fun AppsScreen(
         if (uiState.apps.isNotEmpty()) {
             val cols = uiState.columnsCount
             val focusedRow = uiState.focusedIndex / cols
+            val targetIndex = (focusedRow * cols).coerceIn(0, uiState.apps.lastIndex)
             isProgrammaticScroll = true
             scope.launch {
-                gridState.animateScrollToItem(focusedRow * cols)
+                gridState.animateScrollToItem(targetIndex)
                 isProgrammaticScroll = false
             }
         }
@@ -400,10 +402,12 @@ private fun ContextMenuItem(
     }
 }
 
+private const val TAG = "AppsScreen"
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AppCard(
-    icon: Drawable,
+    icon: Drawable?,
     label: String,
     isFocused: Boolean,
     showFocus: Boolean = true,
@@ -444,14 +448,37 @@ private fun AppCard(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val bitmap = remember(icon) {
-            icon.toBitmap(128, 128).asImageBitmap()
+            try {
+                icon?.toBitmap(128, 128)?.asImageBitmap()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to convert icon for $label: ${e.message}")
+                null
+            }
         }
 
-        Image(
-            bitmap = bitmap,
-            contentDescription = label,
-            modifier = Modifier.size(64.dp)
-        )
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = label,
+                modifier = Modifier.size(64.dp)
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(8.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label.take(1).uppercase(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 

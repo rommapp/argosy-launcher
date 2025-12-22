@@ -55,6 +55,7 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.DiscPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.EmulatorPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.MissingDiscModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.SteamLauncherPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.MoreOptionsModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.PermissionRequiredModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
@@ -90,6 +91,7 @@ fun GameDetailScreen(
                         viewModel.showLaunchError("Failed to launch: ${e.message}")
                     }
                 }
+                is LaunchEvent.NavigateBack -> onBack()
             }
         }
     }
@@ -248,7 +250,8 @@ fun GameDetailScreen(
                 currentSnapState = snapStates.getOrElse(currentSnapIndex) { SnapState.TOP },
                 onDescriptionPositioned = { descriptionTopY = it },
                 onScreenshotPositioned = { screenshotTopY = it },
-                onAchievementPositioned = { achievementTopY = it }
+                onAchievementPositioned = { achievementTopY = it },
+                onBack = onBack
             )
         }
     }
@@ -265,7 +268,8 @@ private fun GameDetailContent(
     currentSnapState: SnapState,
     onDescriptionPositioned: (Int) -> Unit,
     onScreenshotPositioned: (Int) -> Unit,
-    onAchievementPositioned: (Int) -> Unit
+    onAchievementPositioned: (Int) -> Unit,
+    onBack: () -> Unit
 ) {
     val showAnyOverlay = uiState.showMoreOptions || uiState.showEmulatorPicker || uiState.showCorePicker ||
         uiState.showRatingPicker || uiState.showDiscPicker || uiState.showMissingDiscPrompt || uiState.isSyncing ||
@@ -399,7 +403,7 @@ private fun GameDetailContent(
             }
         }
 
-        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel)
+        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack)
     }
 }
 
@@ -407,7 +411,8 @@ private fun GameDetailContent(
 private fun GameDetailModals(
     game: GameDetailUi,
     uiState: GameDetailUiState,
-    viewModel: GameDetailViewModel
+    viewModel: GameDetailViewModel,
+    onBack: () -> Unit
 ) {
     AnimatedVisibility(
         visible = uiState.showMoreOptions,
@@ -418,6 +423,7 @@ private fun GameDetailModals(
             game = game,
             focusIndex = uiState.moreOptionsFocusIndex,
             isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
+            onOptionSelect = { index -> viewModel.selectOptionAtIndex(index, onBack) },
             onDismiss = viewModel::toggleMoreOptions
         )
     }
@@ -433,6 +439,20 @@ private fun GameDetailModals(
             focusIndex = uiState.emulatorPickerFocusIndex,
             onSelectEmulator = viewModel::selectEmulator,
             onDismiss = viewModel::dismissEmulatorPicker
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.showSteamLauncherPicker,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        SteamLauncherPickerModal(
+            availableLaunchers = uiState.availableSteamLaunchers,
+            currentLauncherName = game.steamLauncherName,
+            focusIndex = uiState.steamLauncherPickerFocusIndex,
+            onSelectLauncher = viewModel::selectSteamLauncher,
+            onDismiss = viewModel::dismissSteamLauncherPicker
         )
     }
 

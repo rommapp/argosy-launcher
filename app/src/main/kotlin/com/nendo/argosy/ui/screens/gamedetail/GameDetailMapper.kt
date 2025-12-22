@@ -11,7 +11,8 @@ fun GameEntity.toGameDetailUi(
     isRetroArch: Boolean = false,
     selectedCoreName: String? = null,
     achievements: List<AchievementUi> = emptyList(),
-    canManageSaves: Boolean = false
+    canManageSaves: Boolean = false,
+    steamLauncherName: String? = null
 ): GameDetailUi {
     val remoteUrls = screenshotPaths?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
     val cachedPaths = cachedScreenshotPaths?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
@@ -53,7 +54,9 @@ fun GameEntity.toGameDetailUi(
         lastPlayedDiscId = lastPlayedDiscId,
         isRetroArchEmulator = isRetroArch,
         selectedCoreName = selectedCoreName,
-        canManageSaves = canManageSaves
+        canManageSaves = canManageSaves,
+        isSteamGame = source == GameSource.STEAM,
+        steamLauncherName = steamLauncherName
     )
 }
 

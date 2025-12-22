@@ -71,9 +71,13 @@ class SteamRepository @Inject constructor(
 
             val existing = gameDao.getBySteamAppId(steamAppId)
             if (existing != null) {
+                if (!existing.launcherSetManually && existing.steamLauncher != launcherPackage) {
+                    Log.d(TAG, "Updating launcher for ${existing.title} to $launcherPackage")
+                    gameDao.updateSteamLauncher(existing.id, launcherPackage, false)
+                }
                 Log.d(TAG, "Game already exists: ${existing.title}")
                 updatePlatformGameCount()
-                return@withContext SteamResult.Success(existing)
+                return@withContext SteamResult.Success(gameDao.getBySteamAppId(steamAppId)!!)
             }
 
             Log.d(TAG, "Fetching Steam app details for $steamAppId")
@@ -289,7 +293,7 @@ class SteamRepository @Inject constructor(
                     id = STEAM_PLATFORM_ID,
                     name = "Steam",
                     shortName = "Steam",
-                    sortOrder = 130,
+                    sortOrder = 10,
                     isVisible = true,
                     romExtensions = "",
                     gameCount = 0

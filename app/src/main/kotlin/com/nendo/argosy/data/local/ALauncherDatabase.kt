@@ -46,7 +46,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         SaveCacheEntity::class,
         OrphanedFileEntity::class
     ],
-    version = 29,
+    version = 31,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -425,6 +425,18 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     WHERE completion > 0
                 """)
                 db.execSQL("ALTER TABLE pending_sync ADD COLUMN stringValue TEXT")
+            }
+        }
+
+        val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN launcherSetManually INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("UPDATE platforms SET sortOrder = 10 WHERE id = 'steam'")
             }
         }
     }

@@ -327,4 +327,7 @@ interface GameDao {
 
     @Query("UPDATE games SET platformId = :newPlatformId WHERE platformId = :oldPlatformId")
     suspend fun migratePlatform(oldPlatformId: String, newPlatformId: String)
+
+    @Query("UPDATE games SET steamLauncher = :launcher, launcherSetManually = :setManually WHERE id = :gameId")
+    suspend fun updateSteamLauncher(gameId: Long, launcher: String?, setManually: Boolean)
 }

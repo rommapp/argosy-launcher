@@ -26,6 +26,7 @@ fun MoreOptionsModal(
     game: GameDetailUi,
     focusIndex: Int,
     isDownloaded: Boolean,
+    onOptionSelect: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val isRommGame = game.isRommGame
@@ -33,56 +34,82 @@ fun MoreOptionsModal(
 
     Modal(title = "MORE OPTIONS", onDismiss = onDismiss) {
         if (game.canManageSaves) {
+            val idx = currentIndex++
             OptionItem(
                 icon = Icons.Default.Save,
                 label = "Manage Cached Saves",
-                isFocused = focusIndex == currentIndex++
+                isFocused = focusIndex == idx,
+                onClick = { onOptionSelect(idx) }
             )
         }
         if (isRommGame) {
+            val rateIdx = currentIndex++
             OptionItem(
                 icon = Icons.Default.Star,
                 label = "Rate Game",
                 value = if (game.userRating > 0) "${game.userRating}/10" else "Not rated",
-                isFocused = focusIndex == currentIndex++
+                isFocused = focusIndex == rateIdx,
+                onClick = { onOptionSelect(rateIdx) }
             )
+            val diffIdx = currentIndex++
             OptionItem(
                 icon = Icons.Default.Whatshot,
                 label = "Set Difficulty",
                 value = if (game.userDifficulty > 0) "${game.userDifficulty}/10" else "Not set",
-                isFocused = focusIndex == currentIndex++
+                isFocused = focusIndex == diffIdx,
+                onClick = { onOptionSelect(diffIdx) }
             )
+            val statusIdx = currentIndex++
             OptionItem(
                 icon = Icons.Default.CheckCircle,
                 label = "Set Status",
                 value = CompletionStatus.fromApiValue(game.status)?.label ?: "Not set",
-                isFocused = focusIndex == currentIndex++
+                isFocused = focusIndex == statusIdx,
+                onClick = { onOptionSelect(statusIdx) }
             )
         }
-        OptionItem(
-            label = "Change Emulator",
-            value = game.emulatorName ?: "Default",
-            isFocused = focusIndex == currentIndex++
-        )
-        if (game.isRetroArchEmulator) {
+        if (game.isSteamGame) {
+            val idx = currentIndex++
+            OptionItem(
+                label = "Change Launcher",
+                value = game.steamLauncherName ?: "Auto",
+                isFocused = focusIndex == idx,
+                onClick = { onOptionSelect(idx) }
+            )
+        } else {
+            val idx = currentIndex++
+            OptionItem(
+                label = "Change Emulator",
+                value = game.emulatorName ?: "Default",
+                isFocused = focusIndex == idx,
+                onClick = { onOptionSelect(idx) }
+            )
+        }
+        if (game.isRetroArchEmulator && !game.isSteamGame) {
+            val idx = currentIndex++
             OptionItem(
                 label = "Change Core",
                 value = game.selectedCoreName ?: "Default",
-                isFocused = focusIndex == currentIndex++
+                isFocused = focusIndex == idx,
+                onClick = { onOptionSelect(idx) }
             )
         }
         if (game.isMultiDisc) {
+            val idx = currentIndex++
             OptionItem(
                 icon = Icons.Default.Album,
                 label = "Select Disc",
-                isFocused = focusIndex == currentIndex++
+                isFocused = focusIndex == idx,
+                onClick = { onOptionSelect(idx) }
             )
         }
         if (isRommGame) {
+            val idx = currentIndex++
             OptionItem(
                 icon = Icons.Default.Refresh,
                 label = "Refresh Game Data",
-                isFocused = focusIndex == currentIndex++
+                isFocused = focusIndex == idx,
+                onClick = { onOptionSelect(idx) }
             )
         }
 
@@ -94,18 +121,22 @@ fun MoreOptionsModal(
         )
 
         if (isDownloaded) {
+            val idx = currentIndex++
             OptionItem(
                 icon = Icons.Default.DeleteOutline,
                 label = "Delete Download",
-                isFocused = focusIndex == currentIndex++,
-                isDangerous = true
+                isFocused = focusIndex == idx,
+                isDangerous = true,
+                onClick = { onOptionSelect(idx) }
             )
         }
+        val hideIdx = currentIndex
         OptionItem(
             icon = Icons.Default.VisibilityOff,
             label = "Hide",
-            isFocused = focusIndex == currentIndex,
-            isDangerous = true
+            isFocused = focusIndex == hideIdx,
+            isDangerous = true,
+            onClick = { onOptionSelect(hideIdx) }
         )
     }
 }

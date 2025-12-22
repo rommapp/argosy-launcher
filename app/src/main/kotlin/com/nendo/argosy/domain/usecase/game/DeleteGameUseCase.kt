@@ -6,8 +6,11 @@ import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
+import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.repository.SteamRepository
+import com.nendo.argosy.data.repository.SteamResult
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,12 +28,18 @@ class DeleteGameUseCase @Inject constructor(
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncDao: SaveSyncDao,
     private val pendingSaveSyncDao: PendingSaveSyncDao,
-    private val orphanedFileDao: OrphanedFileDao
+    private val orphanedFileDao: OrphanedFileDao,
+    private val steamRepository: SteamRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     suspend operator fun invoke(gameId: Long): Boolean {
         val game = gameDao.getById(gameId) ?: return false
+
+        if (game.source == GameSource.STEAM) {
+            return deleteSteamGame(game.steamAppId)
+        }
+
         val path = game.localPath ?: return false
 
         gameRepository.clearLocalPath(gameId)
@@ -57,5 +66,23 @@ class DeleteGameUseCase @Inject constructor(
         }
 
         return true
+    }
+
+    private suspend fun deleteSteamGame(steamAppId: Long?): Boolean {
+        if (steamAppId == null) {
+            Logger.warn(TAG, "Cannot delete Steam game without steamAppId")
+            return false
+        }
+        val result = steamRepository.removeGame(steamAppId)
+        return when (result) {
+            is SteamResult.Success -> {
+                Logger.debug(TAG, "Deleted Steam game $steamAppId")
+                true
+            }
+            is SteamResult.Error -> {
+                Logger.warn(TAG, "Failed to delete Steam game: ${result.message}")
+                false
+            }
+        }
     }
 }

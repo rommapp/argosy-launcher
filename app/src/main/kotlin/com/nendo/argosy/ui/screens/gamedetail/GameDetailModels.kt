@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.gamedetail
 import android.content.Intent
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
+import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.common.savechannel.SaveChannelState
@@ -62,11 +63,14 @@ data class GameDetailUi(
     val lastPlayedDiscId: Long? = null,
     val isRetroArchEmulator: Boolean = false,
     val selectedCoreName: String? = null,
-    val canManageSaves: Boolean = false
+    val canManageSaves: Boolean = false,
+    val isSteamGame: Boolean = false,
+    val steamLauncherName: String? = null
 )
 
 sealed class LaunchEvent {
     data class Launch(val intent: Intent) : LaunchEvent()
+    data object NavigateBack : LaunchEvent()
 }
 
 enum class GameDownloadStatus {
@@ -95,6 +99,9 @@ data class GameDetailUiState(
     val availableCores: List<RetroArchCore> = emptyList(),
     val corePickerFocusIndex: Int = 0,
     val selectedCoreId: String? = null,
+    val showSteamLauncherPicker: Boolean = false,
+    val availableSteamLaunchers: List<SteamLauncher> = emptyList(),
+    val steamLauncherPickerFocusIndex: Int = 0,
     val siblingGameIds: List<Long> = emptyList(),
     val currentGameIndex: Int = -1,
     val showRatingPicker: Boolean = false,

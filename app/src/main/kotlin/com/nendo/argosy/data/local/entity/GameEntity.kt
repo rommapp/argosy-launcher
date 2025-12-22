@@ -43,6 +43,7 @@ data class GameEntity(
     val igdbId: Long?,
     val steamAppId: Long? = null,
     val steamLauncher: String? = null,
+    val launcherSetManually: Boolean = false,
     val source: GameSource,
 
     val coverPath: String? = null,

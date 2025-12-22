@@ -384,7 +384,7 @@ object PlatformDefinitions {
         // =====================================================================
         // STREAMING / LAUNCHER (950-999)
         // =====================================================================
-        PlatformDef("steam", "Steam", "Steam", emptySet(), 950),
+        PlatformDef("steam", "Steam", "Steam", emptySet(), 10),
         PlatformDef("android", "Android", "Android", setOf("apk", "xapk"), 960),
         PlatformDef("ios", "iOS", "iOS", emptySet(), 965)
     )

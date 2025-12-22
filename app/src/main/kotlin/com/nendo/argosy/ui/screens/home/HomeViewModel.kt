@@ -622,6 +622,10 @@ class HomeViewModel @Inject constructor(
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
         invalidateRecentGamesCache()
 
+        viewModelScope.launch {
+            refreshCurrentRowInternal()
+        }
+
         if (romMRepository.isConnected()) {
             viewModelScope.launch {
                 romMRepository.refreshFavoritesIfNeeded()

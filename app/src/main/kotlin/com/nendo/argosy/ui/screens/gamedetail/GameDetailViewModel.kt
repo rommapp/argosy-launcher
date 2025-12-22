@@ -13,6 +13,7 @@ import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.model.GameSource
@@ -197,10 +198,14 @@ class GameDetailViewModel @Inject constructor(
             } else null
 
             val isSteamGame = game.source == GameSource.STEAM
+            val steamLauncherName = if (isSteamGame) {
+                game.steamLauncher?.let { SteamLaunchers.getByPackage(it)?.displayName } ?: "Auto"
+            } else null
             val fileExists = gameRepository.checkGameFileExists(gameId)
 
             val canPlay = if (isSteamGame) {
                 val launcher = game.steamLauncher?.let { SteamLaunchers.getByPackage(it) }
+                    ?: SteamLaunchers.getPreferred(context)
                 launcher?.isInstalled(context) == true
             } else if (game.isMultiDisc) {
                 val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
@@ -265,7 +270,8 @@ class GameDetailViewModel @Inject constructor(
                         isRetroArch = isRetroArch,
                         selectedCoreName = selectedCoreName,
                         achievements = cachedAchievements,
-                        canManageSaves = canManageSaves
+                        canManageSaves = canManageSaves,
+                        steamLauncherName = steamLauncherName
                     ),
                     isLoading = false,
                     downloadStatus = downloadStatus,
@@ -613,16 +619,22 @@ class GameDetailViewModel @Inject constructor(
             val canManageSaves = it.game?.canManageSaves == true
             val isRetroArch = it.game?.isRetroArchEmulator == true
             val isMultiDisc = it.game?.isMultiDisc == true
-            var optionCount = 2  // Base: Emulator + Hide
+            val isSteamGame = it.game?.isSteamGame == true
+            var optionCount = 2  // Base: Emulator/Launcher + Hide
             if (canManageSaves) optionCount++  // Manage Cached Saves
             if (isRommGame) optionCount += 4  // Rate + Difficulty + Completion + Refresh
-            if (isRetroArch) optionCount++  // Change Core
+            if (isRetroArch && !isSteamGame) optionCount++  // Change Core (not for Steam)
             if (isMultiDisc) optionCount++  // Select Disc
             if (isDownloaded) optionCount++  // Delete
             val maxIndex = optionCount - 1
             val newIndex = (it.moreOptionsFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(moreOptionsFocusIndex = newIndex)
         }
+    }
+
+    fun selectOptionAtIndex(index: Int, onBack: () -> Unit) {
+        _uiState.update { it.copy(moreOptionsFocusIndex = index) }
+        confirmOptionSelection(onBack)
     }
 
     fun confirmOptionSelection(onBack: () -> Unit) {
@@ -632,6 +644,7 @@ class GameDetailViewModel @Inject constructor(
         val canManageSaves = state.game?.canManageSaves == true
         val isRetroArch = state.game?.isRetroArchEmulator == true
         val isMultiDisc = state.game?.isMultiDisc == true
+        val isSteamGame = state.game?.isSteamGame == true
         val index = state.moreOptionsFocusIndex
 
         var currentIdx = 0
@@ -639,8 +652,8 @@ class GameDetailViewModel @Inject constructor(
         val rateIdx = if (isRommGame) currentIdx++ else -1
         val difficultyIdx = if (isRommGame) currentIdx++ else -1
         val completionIdx = if (isRommGame) currentIdx++ else -1
-        val emulatorIdx = currentIdx++
-        val coreIdx = if (isRetroArch) currentIdx++ else -1
+        val emulatorOrLauncherIdx = currentIdx++
+        val coreIdx = if (isRetroArch && !isSteamGame) currentIdx++ else -1
         val discIdx = if (isMultiDisc) currentIdx++ else -1
         val refreshIdx = if (isRommGame) currentIdx++ else -1
         val deleteIdx = if (isDownloaded) currentIdx++ else -1
@@ -651,7 +664,7 @@ class GameDetailViewModel @Inject constructor(
             rateIdx -> showRatingPicker(RatingType.OPINION)
             difficultyIdx -> showRatingPicker(RatingType.DIFFICULTY)
             completionIdx -> showStatusPicker()
-            emulatorIdx -> showEmulatorPicker()
+            emulatorOrLauncherIdx -> if (isSteamGame) showSteamLauncherPicker() else showEmulatorPicker()
             coreIdx -> showCorePicker()
             discIdx -> showDiscPicker()
             refreshIdx -> refreshGameData()
@@ -708,6 +721,59 @@ class GameDetailViewModel @Inject constructor(
         } else {
             val emulator = state.availableEmulators.getOrNull(index - 1)
             selectEmulator(emulator)
+        }
+    }
+
+    fun showSteamLauncherPicker() {
+        val game = _uiState.value.game ?: return
+        if (!game.isSteamGame) return
+
+        val available = SteamLaunchers.getInstalled(context)
+        _uiState.update {
+            it.copy(
+                showMoreOptions = false,
+                showSteamLauncherPicker = true,
+                availableSteamLaunchers = available,
+                steamLauncherPickerFocusIndex = 0
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissSteamLauncherPicker() {
+        _uiState.update { it.copy(showSteamLauncherPicker = false) }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveSteamLauncherPickerFocus(delta: Int) {
+        _uiState.update { state ->
+            val maxIndex = state.availableSteamLaunchers.size
+            val newIndex = (state.steamLauncherPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            state.copy(steamLauncherPickerFocusIndex = newIndex)
+        }
+    }
+
+    fun selectSteamLauncher(launcher: SteamLauncher?) {
+        viewModelScope.launch {
+            val gameId = currentGameId
+            if (launcher == null) {
+                gameDao.updateSteamLauncher(gameId, null, false)
+            } else {
+                gameDao.updateSteamLauncher(gameId, launcher.packageName, true)
+            }
+            _uiState.update { it.copy(showSteamLauncherPicker = false) }
+            loadGame(gameId)
+        }
+    }
+
+    fun confirmSteamLauncherSelection() {
+        val state = _uiState.value
+        val index = state.steamLauncherPickerFocusIndex
+        if (index == 0) {
+            selectSteamLauncher(null)
+        } else {
+            val launcher = state.availableSteamLaunchers.getOrNull(index - 1)
+            selectSteamLauncher(launcher)
         }
     }
 
@@ -1077,10 +1143,16 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private fun deleteLocalFile() {
+        val isSteamGame = _uiState.value.game?.isSteamGame == true
         viewModelScope.launch {
             gameActions.deleteLocalFile(currentGameId)
-            notificationManager.showSuccess("Download deleted")
-            loadGame(currentGameId)
+            if (isSteamGame) {
+                notificationManager.showSuccess("Game removed")
+                _launchEvents.emit(LaunchEvent.NavigateBack)
+            } else {
+                notificationManager.showSuccess("Download deleted")
+                loadGame(currentGameId)
+            }
         }
     }
 
@@ -1140,6 +1212,10 @@ class GameDetailViewModel @Inject constructor(
                     moveEmulatorPickerFocus(-1)
                     InputResult.HANDLED
                 }
+                state.showSteamLauncherPicker -> {
+                    moveSteamLauncherPickerFocus(-1)
+                    InputResult.HANDLED
+                }
                 state.showMoreOptions -> {
                     moveOptionsFocus(-1)
                     InputResult.HANDLED
@@ -1178,6 +1254,10 @@ class GameDetailViewModel @Inject constructor(
                 }
                 state.showEmulatorPicker -> {
                     moveEmulatorPickerFocus(1)
+                    InputResult.HANDLED
+                }
+                state.showSteamLauncherPicker -> {
+                    moveSteamLauncherPickerFocus(1)
                     InputResult.HANDLED
                 }
                 state.showMoreOptions -> {
@@ -1283,6 +1363,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showCorePicker -> confirmCoreSelection()
                 state.showDiscPicker -> confirmDiscSelection()
                 state.showEmulatorPicker -> confirmEmulatorSelection()
+                state.showSteamLauncherPicker -> confirmSteamLauncherSelection()
                 state.showMoreOptions -> confirmOptionSelection(onBack)
                 else -> primaryAction()
             }
@@ -1304,6 +1385,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showCorePicker -> dismissCorePicker()
                 state.showDiscPicker -> dismissDiscPicker()
                 state.showEmulatorPicker -> dismissEmulatorPicker()
+                state.showSteamLauncherPicker -> dismissSteamLauncherPicker()
                 state.showMoreOptions -> toggleMoreOptions()
                 else -> onBack()
             }
@@ -1361,6 +1443,10 @@ class GameDetailViewModel @Inject constructor(
                 dismissEmulatorPicker()
                 return InputResult.UNHANDLED
             }
+            if (state.showSteamLauncherPicker) {
+                dismissSteamLauncherPicker()
+                return InputResult.UNHANDLED
+            }
             return InputResult.UNHANDLED
         }
 
@@ -1390,8 +1476,9 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
 
             val anyModalOpen = state.showMoreOptions || state.showEmulatorPicker ||
-                state.showCorePicker || state.showRatingPicker || state.showStatusPicker ||
-                state.showDiscPicker || state.showMissingDiscPrompt || saveState.isVisible
+                state.showSteamLauncherPicker || state.showCorePicker || state.showRatingPicker ||
+                state.showStatusPicker || state.showDiscPicker || state.showMissingDiscPrompt ||
+                saveState.isVisible
 
             if (anyModalOpen) {
                 dismissAllModals()
@@ -1408,6 +1495,7 @@ class GameDetailViewModel @Inject constructor(
             it.copy(
                 showMoreOptions = false,
                 showEmulatorPicker = false,
+                showSteamLauncherPicker = false,
                 showCorePicker = false,
                 showRatingPicker = false,
                 showStatusPicker = false,

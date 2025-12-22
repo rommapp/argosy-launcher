@@ -15,19 +15,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URL
 import java.security.MessageDigest
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 
 private const val TAG = "ImageCacheManager"
 
@@ -83,40 +76,6 @@ class ImageCacheManager @Inject constructor(
 ) {
     private val cacheDir: File by lazy {
         File(context.cacheDir, "images").also { it.mkdirs() }
-    }
-
-    private val httpClient: OkHttpClient by lazy {
-        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        })
-
-        val sslContext = SSLContext.getInstance("TLS").apply {
-            init(null, trustAllCerts, SecureRandom())
-        }
-
-        OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .hostnameVerifier { hostname, _ -> isAllowedImageHost(hostname) }
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .followRedirects(true)
-            .build()
-    }
-
-    private fun isAllowedImageHost(hostname: String): Boolean {
-        val allowedHosts = listOf(
-            "images.launchbox-app.com",
-            "media.retroachievements.org",
-            "retroachievements.org",
-            "steamcdn-a.akamaihd.net",
-            "cdn.cloudflare.steamstatic.com",
-            "cdn.akamai.steamstatic.com",
-            "steamcommunity.com",
-            "store.steampowered.com"
-        )
-        return allowedHosts.any { hostname.endsWith(it) }
     }
 
     private val logoQueue = Channel<PlatformLogoCacheRequest>(Channel.UNLIMITED)
@@ -221,54 +180,46 @@ class ImageCacheManager @Inject constructor(
     }
 
     private fun downloadAndResize(url: String, maxWidth: Int): Bitmap? {
-        val request = Request.Builder().url(url).build()
-        val response = try {
-            httpClient.newCall(request).execute()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to download image: ${e.message}")
-            return null
-        }
+        return try {
+            val connection = URL(url).openConnection()
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 30_000
 
-        if (!response.isSuccessful) {
-            Log.e(TAG, "Image download failed with code: ${response.code}")
-            response.close()
-            return null
-        }
+            val inputStream = connection.getInputStream()
 
-        val tempFile = File.createTempFile("img_", ".tmp", cacheDir)
-        try {
-            response.body?.byteStream()?.use { inputStream ->
+            val tempFile = File.createTempFile("img_", ".tmp", cacheDir)
+            try {
                 tempFile.outputStream().use { out ->
                     inputStream.copyTo(out)
                 }
-            } ?: run {
-                response.close()
-                return null
+
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                BitmapFactory.decodeFile(tempFile.absolutePath, options)
+
+                val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxWidth)
+                options.inJustDecodeBounds = false
+                options.inSampleSize = sampleSize
+
+                val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath, options)
+                    ?: return null
+
+                if (bitmap.width > maxWidth) {
+                    val ratio = maxWidth.toFloat() / bitmap.width
+                    val newHeight = (bitmap.height * ratio).toInt()
+                    val scaled = Bitmap.createScaledBitmap(bitmap, maxWidth, newHeight, true)
+                    if (scaled != bitmap) bitmap.recycle()
+                    return scaled
+                }
+
+                bitmap
+            } finally {
+                tempFile.delete()
             }
-
-            val options = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-            }
-            BitmapFactory.decodeFile(tempFile.absolutePath, options)
-
-            val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxWidth)
-            options.inJustDecodeBounds = false
-            options.inSampleSize = sampleSize
-
-            val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath, options)
-                ?: return null
-
-            if (bitmap.width > maxWidth) {
-                val ratio = maxWidth.toFloat() / bitmap.width
-                val newHeight = (bitmap.height * ratio).toInt()
-                val scaled = Bitmap.createScaledBitmap(bitmap, maxWidth, newHeight, true)
-                if (scaled != bitmap) bitmap.recycle()
-                return scaled
-            }
-
-            return bitmap
-        } finally {
-            tempFile.delete()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download image from $url: ${e.javaClass.simpleName}: ${e.message}", e)
+            null
         }
     }
 
@@ -466,20 +417,14 @@ class ImageCacheManager @Inject constructor(
 
     private fun downloadBitmap(url: String): Bitmap? {
         return try {
-            val request = Request.Builder().url(url).build()
-            val response = httpClient.newCall(request).execute()
-
-            if (!response.isSuccessful) {
-                Log.e(TAG, "Bitmap download failed with code: ${response.code}")
-                response.close()
-                return null
-            }
-
-            response.body?.byteStream()?.use { inputStream ->
+            val connection = URL(url).openConnection()
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 30_000
+            connection.getInputStream().use { inputStream ->
                 BitmapFactory.decodeStream(inputStream)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to download bitmap: ${e.message}")
+            Log.e(TAG, "Failed to download bitmap from $url: ${e.javaClass.simpleName}: ${e.message}", e)
             null
         }
     }

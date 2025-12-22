@@ -120,7 +120,10 @@ data class GameDetailUiState(
     val isSyncing: Boolean = false,
     val saveChannel: SaveChannelState = SaveChannelState(),
     val saveStatusInfo: SaveStatusInfo? = null,
-    val showPermissionModal: Boolean = false
+    val showPermissionModal: Boolean = false,
+    val focusedScreenshotIndex: Int = 0,
+    val showScreenshotViewer: Boolean = false,
+    val viewerScreenshotIndex: Int = 0
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1

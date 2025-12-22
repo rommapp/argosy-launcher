@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.gamedetail.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
@@ -275,8 +278,12 @@ fun ScreenshotsSection(
     screenshots: List<ScreenshotPair>,
     listState: LazyListState,
     currentSnapState: SnapState,
+    focusedIndex: Int,
+    onScreenshotTap: (Int) -> Unit,
     onPositioned: (Int) -> Unit
 ) {
+    val showFocus = currentSnapState == SnapState.SCREENSHOTS
+
     Column(
         modifier = Modifier.onGloballyPositioned { coords ->
             onPositioned(coords.positionInParent().y.toInt())
@@ -319,16 +326,29 @@ fun ScreenshotsSection(
             }
         }
 
+        LaunchedEffect(focusedIndex, showFocus) {
+            if (showFocus && screenshots.isNotEmpty()) {
+                listState.animateScrollToItem(focusedIndex.coerceIn(0, screenshots.size - 1))
+            }
+        }
+
         LazyRow(
             state = listState,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(screenshots) { screenshot ->
+            itemsIndexed(screenshots) { index, screenshot ->
+                val isFocused = showFocus && index == focusedIndex
                 Box(
                     modifier = Modifier
                         .width(240.dp)
                         .height(135.dp)
                         .clip(RoundedCornerShape(8.dp))
+                        .then(
+                            if (isFocused)
+                                Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                            else Modifier
+                        )
+                        .clickable { onScreenshotTap(index) }
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     screenshot.cachedPath?.let { path ->

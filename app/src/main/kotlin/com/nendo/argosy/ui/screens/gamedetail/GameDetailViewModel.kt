@@ -1173,6 +1173,68 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    fun setFocusedScreenshotIndex(index: Int) {
+        _uiState.update { it.copy(focusedScreenshotIndex = index) }
+    }
+
+    fun moveScreenshotFocus(delta: Int) {
+        val screenshots = _uiState.value.game?.screenshots ?: return
+        if (screenshots.isEmpty()) return
+        _uiState.update { state ->
+            val newIndex = (state.focusedScreenshotIndex + delta).mod(screenshots.size)
+            state.copy(focusedScreenshotIndex = newIndex)
+        }
+    }
+
+    fun openScreenshotViewer(index: Int? = null) {
+        val screenshots = _uiState.value.game?.screenshots ?: return
+        if (screenshots.isEmpty()) return
+        val viewerIndex = index ?: _uiState.value.focusedScreenshotIndex
+        _uiState.update {
+            it.copy(
+                showScreenshotViewer = true,
+                viewerScreenshotIndex = viewerIndex.coerceIn(0, screenshots.size - 1)
+            )
+        }
+    }
+
+    fun closeScreenshotViewer() {
+        _uiState.update { state ->
+            state.copy(
+                showScreenshotViewer = false,
+                focusedScreenshotIndex = state.viewerScreenshotIndex
+            )
+        }
+    }
+
+    fun moveViewerIndex(delta: Int) {
+        val screenshots = _uiState.value.game?.screenshots ?: return
+        if (screenshots.isEmpty()) return
+        _uiState.update { state ->
+            val newIndex = (state.viewerScreenshotIndex + delta).mod(screenshots.size)
+            state.copy(viewerScreenshotIndex = newIndex)
+        }
+    }
+
+    fun setCurrentScreenshotAsBackground() {
+        val state = _uiState.value
+        val screenshots = state.game?.screenshots ?: return
+        if (screenshots.isEmpty()) return
+
+        val screenshot = screenshots.getOrNull(state.viewerScreenshotIndex) ?: return
+        val screenshotPath = screenshot.cachedPath ?: screenshot.remoteUrl
+
+        viewModelScope.launch {
+            val success = imageCacheManager.setScreenshotAsBackground(currentGameId, screenshotPath)
+            if (success) {
+                notificationManager.showSuccess("Background updated")
+                loadGame(currentGameId)
+            } else {
+                notificationManager.showError("Failed to set background")
+            }
+        }
+    }
+
     fun createInputHandler(
         onBack: () -> Unit,
         onSnapUp: () -> Boolean = { false },
@@ -1180,7 +1242,8 @@ class GameDetailViewModel @Inject constructor(
         onSectionLeft: () -> Unit = {},
         onSectionRight: () -> Unit = {},
         onPrevGame: () -> Unit = {},
-        onNextGame: () -> Unit = {}
+        onNextGame: () -> Unit = {},
+        isInScreenshotsSection: () -> Boolean = { false }
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
             val state = _uiState.value
@@ -1194,6 +1257,7 @@ class GameDetailViewModel @Inject constructor(
                     moveSaveCacheFocus(-1)
                     InputResult.HANDLED
                 }
+                state.showScreenshotViewer -> InputResult.UNHANDLED
                 state.showRatingPicker -> InputResult.UNHANDLED
                 state.showStatusPicker -> {
                     changeStatusValue(-1)
@@ -1238,6 +1302,7 @@ class GameDetailViewModel @Inject constructor(
                     moveSaveCacheFocus(1)
                     InputResult.HANDLED
                 }
+                state.showScreenshotViewer -> InputResult.UNHANDLED
                 state.showRatingPicker -> InputResult.UNHANDLED
                 state.showStatusPicker -> {
                     changeStatusValue(1)
@@ -1283,6 +1348,10 @@ class GameDetailViewModel @Inject constructor(
                     }
                     return InputResult.HANDLED
                 }
+                state.showScreenshotViewer -> {
+                    moveViewerIndex(-1)
+                    return InputResult.HANDLED
+                }
                 state.showRatingPicker -> {
                     changeRatingValue(-1)
                     return InputResult.HANDLED
@@ -1310,6 +1379,10 @@ class GameDetailViewModel @Inject constructor(
                     }
                     return InputResult.HANDLED
                 }
+                state.showScreenshotViewer -> {
+                    moveViewerIndex(1)
+                    return InputResult.HANDLED
+                }
                 state.showRatingPicker -> {
                     changeRatingValue(1)
                     return InputResult.HANDLED
@@ -1328,7 +1401,8 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
-                state.showRatingPicker || state.showStatusPicker || state.showMoreOptions || state.showEmulatorPicker ||
+                state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
+                state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt) {
                 return InputResult.UNHANDLED
             }
@@ -1340,7 +1414,8 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
-                state.showRatingPicker || state.showStatusPicker || state.showMoreOptions || state.showEmulatorPicker ||
+                state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
+                state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt) {
                 return InputResult.UNHANDLED
             }
@@ -1357,6 +1432,8 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showResetConfirmation -> confirmReset()
                 saveState.showRestoreConfirmation -> restoreSave(syncToServer = false)
                 saveState.isVisible -> confirmSaveCacheSelection()
+                state.showScreenshotViewer -> closeScreenshotViewer()
+                isInScreenshotsSection() && state.game?.screenshots?.isNotEmpty() == true -> openScreenshotViewer()
                 state.showRatingPicker -> confirmRating()
                 state.showStatusPicker -> confirmStatus()
                 state.showMissingDiscPrompt -> repairAndPlay()
@@ -1379,6 +1456,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showResetConfirmation -> dismissResetConfirmation()
                 saveState.showRestoreConfirmation -> dismissRestoreConfirmation()
                 saveState.isVisible -> dismissSaveCacheDialog()
+                state.showScreenshotViewer -> closeScreenshotViewer()
                 state.showRatingPicker -> dismissRatingPicker()
                 state.showStatusPicker -> dismissStatusPicker()
                 state.showMissingDiscPrompt -> dismissMissingDiscPrompt()
@@ -1468,6 +1546,10 @@ class GameDetailViewModel @Inject constructor(
                 saveChannelTertiaryAction()
                 return InputResult.HANDLED
             }
+            if (state.showScreenshotViewer) {
+                setCurrentScreenshotAsBackground()
+                return InputResult.HANDLED
+            }
             return InputResult.UNHANDLED
         }
 
@@ -1478,7 +1560,7 @@ class GameDetailViewModel @Inject constructor(
             val anyModalOpen = state.showMoreOptions || state.showEmulatorPicker ||
                 state.showSteamLauncherPicker || state.showCorePicker || state.showRatingPicker ||
                 state.showStatusPicker || state.showDiscPicker || state.showMissingDiscPrompt ||
-                saveState.isVisible
+                state.showScreenshotViewer || saveState.isVisible
 
             if (anyModalOpen) {
                 dismissAllModals()
@@ -1501,6 +1583,7 @@ class GameDetailViewModel @Inject constructor(
                 showStatusPicker = false,
                 showDiscPicker = false,
                 showMissingDiscPrompt = false,
+                showScreenshotViewer = false,
                 saveChannel = it.saveChannel.copy(
                     isVisible = false,
                     showRestoreConfirmation = false,

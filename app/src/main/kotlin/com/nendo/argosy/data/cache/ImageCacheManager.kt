@@ -619,4 +619,41 @@ class ImageCacheManager @Inject constructor(
             }
         }
     }
+
+    suspend fun setScreenshotAsBackground(gameId: Long, screenshotPath: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val sourceBitmap = if (screenshotPath.startsWith("/")) {
+                    BitmapFactory.decodeFile(screenshotPath)
+                } else {
+                    downloadBitmap(screenshotPath)
+                } ?: return@withContext false
+
+                val resizedBitmap = if (sourceBitmap.width > 640) {
+                    val ratio = 640f / sourceBitmap.width
+                    val newHeight = (sourceBitmap.height * ratio).toInt()
+                    val scaled = Bitmap.createScaledBitmap(sourceBitmap, 640, newHeight, true)
+                    if (scaled != sourceBitmap) sourceBitmap.recycle()
+                    scaled
+                } else {
+                    sourceBitmap
+                }
+
+                val fileName = "bg_custom_${gameId}_${System.currentTimeMillis()}.jpg"
+                val cachedFile = File(cacheDir, fileName)
+
+                FileOutputStream(cachedFile).use { out ->
+                    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                }
+                resizedBitmap.recycle()
+
+                gameDao.updateBackgroundPath(gameId, cachedFile.absolutePath)
+                Log.d(TAG, "Set screenshot as background for game $gameId: ${cachedFile.length() / 1024}KB")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set screenshot as background: ${e.message}", e)
+                false
+            }
+        }
+    }
 }

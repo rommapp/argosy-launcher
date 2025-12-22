@@ -48,6 +48,7 @@ import com.nendo.argosy.ui.screens.gamedetail.components.AchievementsSection
 import com.nendo.argosy.ui.screens.gamedetail.components.DescriptionSection
 import com.nendo.argosy.ui.screens.gamedetail.components.GameDetailSkeleton
 import com.nendo.argosy.ui.screens.gamedetail.components.GameHeader
+import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
 import com.nendo.argosy.ui.screens.gamedetail.components.SnapState
 import com.nendo.argosy.ui.screens.gamedetail.modals.CorePickerModal
@@ -173,11 +174,7 @@ fun GameDetailScreen(
                         SnapState.ACHIEVEMENTS -> SnapState.ACHIEVEMENTS
                     }
                     when (targetSection) {
-                        SnapState.SCREENSHOTS -> {
-                            val current = screenshotListState.firstVisibleItemIndex
-                            val target = if (current > 0) current - 1 else screenshotCount - 1
-                            screenshotListState.scrollToItem(target)
-                        }
+                        SnapState.SCREENSHOTS -> viewModel.moveScreenshotFocus(-1)
                         SnapState.ACHIEVEMENTS -> {
                             val current = achievementListState.firstVisibleItemIndex
                             val target = if (current > 0) current - 1 else achievementColumnCount - 1
@@ -200,12 +197,7 @@ fun GameDetailScreen(
                         SnapState.ACHIEVEMENTS -> SnapState.ACHIEVEMENTS
                     }
                     when (targetSection) {
-                        SnapState.SCREENSHOTS -> {
-                            val isAtEnd = !screenshotListState.canScrollForward
-                            val current = screenshotListState.firstVisibleItemIndex
-                            val target = if (isAtEnd) 0 else current + 1
-                            screenshotListState.scrollToItem(target)
-                        }
+                        SnapState.SCREENSHOTS -> viewModel.moveScreenshotFocus(1)
                         SnapState.ACHIEVEMENTS -> {
                             val isAtEnd = !achievementListState.canScrollForward
                             val current = achievementListState.firstVisibleItemIndex
@@ -217,7 +209,10 @@ fun GameDetailScreen(
                 }
             },
             onPrevGame = { viewModel.navigateToPreviousGame() },
-            onNextGame = { viewModel.navigateToNextGame() }
+            onNextGame = { viewModel.navigateToNextGame() },
+            isInScreenshotsSection = {
+                snapStates.getOrElse(currentSnapIndex) { SnapState.TOP } == SnapState.SCREENSHOTS
+            }
         )
     }
 
@@ -273,7 +268,7 @@ private fun GameDetailContent(
 ) {
     val showAnyOverlay = uiState.showMoreOptions || uiState.showEmulatorPicker || uiState.showCorePicker ||
         uiState.showRatingPicker || uiState.showDiscPicker || uiState.showMissingDiscPrompt || uiState.isSyncing ||
-        uiState.showSaveCacheDialog || uiState.showRenameDialog
+        uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -345,6 +340,8 @@ private fun GameDetailContent(
                             screenshots = game.screenshots,
                             listState = screenshotListState,
                             currentSnapState = currentSnapState,
+                            focusedIndex = uiState.focusedScreenshotIndex,
+                            onScreenshotTap = { index -> viewModel.openScreenshotViewer(index) },
                             onPositioned = onScreenshotPositioned
                         )
                         Spacer(modifier = Modifier.height(24.dp))
@@ -383,10 +380,12 @@ private fun GameDetailContent(
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
+                val isInScreenshots = currentSnapState == SnapState.SCREENSHOTS && game.screenshots.isNotEmpty()
                 FooterBar(
                     hints = listOf(
                         InputButton.LB_RB to "Prev/Next Game",
                         InputButton.SOUTH to when {
+                            isInScreenshots -> "View"
                             uiState.isSyncing -> "Syncing..."
                             uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
                             uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
@@ -539,4 +538,17 @@ private fun GameDetailModals(
         syncProgress = if (uiState.isSyncing) uiState.syncProgress else null,
         gameTitle = game.title
     )
+
+    AnimatedVisibility(
+        visible = uiState.showScreenshotViewer,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        ScreenshotViewerOverlay(
+            screenshots = game.screenshots,
+            currentIndex = uiState.viewerScreenshotIndex,
+            onNavigate = viewModel::moveViewerIndex,
+            onDismiss = viewModel::closeScreenshotViewer
+        )
+    }
 }

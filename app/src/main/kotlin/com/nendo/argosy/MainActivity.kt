@@ -20,6 +20,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.ui.ArgosyApp
+import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var preferencesRepository: UserPreferencesRepository
+
+    @Inject
+    lateinit var ambientAudioManager: AmbientAudioManager
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var hasResumedBefore = false
@@ -74,6 +78,9 @@ class MainActivity : ComponentActivity() {
                     enabled = prefs.fileLoggingEnabled,
                     level = prefs.fileLogLevel
                 )
+                ambientAudioManager.setEnabled(prefs.ambientAudioEnabled)
+                ambientAudioManager.setVolume(prefs.ambientAudioVolume)
+                ambientAudioManager.setAudioUri(prefs.ambientAudioUri)
             }
         }
 
@@ -111,8 +118,10 @@ class MainActivity : ComponentActivity() {
             hideSystemUI()
             window.decorView.requestFocus()
             launchRetryTracker.onFocusGained()
+            ambientAudioManager.fadeIn()
         } else {
             launchRetryTracker.onFocusLost()
+            ambientAudioManager.fadeOut()
         }
     }
 

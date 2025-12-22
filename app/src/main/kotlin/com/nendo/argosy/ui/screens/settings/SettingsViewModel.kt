@@ -34,6 +34,7 @@ import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.util.LogLevel
+import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.EmulatorSettingsDelegate
@@ -86,6 +87,7 @@ class SettingsViewModel @Inject constructor(
     val displayDelegate: DisplaySettingsDelegate,
     val controlsDelegate: ControlsSettingsDelegate,
     val soundsDelegate: SoundSettingsDelegate,
+    val ambientAudioDelegate: AmbientAudioSettingsDelegate,
     val emulatorDelegate: EmulatorSettingsDelegate,
     val serverDelegate: ServerSettingsDelegate,
     val storageDelegate: StorageSettingsDelegate,
@@ -109,6 +111,7 @@ class SettingsViewModel @Inject constructor(
 
     val openBackgroundPickerEvent: SharedFlow<Unit> = displayDelegate.openBackgroundPickerEvent
     val openCustomSoundPickerEvent: SharedFlow<SoundType> = soundsDelegate.openCustomSoundPickerEvent
+    val openAudioFilePickerEvent: SharedFlow<Unit> = ambientAudioDelegate.openAudioFilePickerEvent
     val launchPlatformFolderPicker: SharedFlow<String> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
 
@@ -132,6 +135,10 @@ class SettingsViewModel @Inject constructor(
 
         soundsDelegate.state.onEach { sounds ->
             _uiState.update { it.copy(sounds = sounds) }
+        }.launchIn(viewModelScope)
+
+        ambientAudioDelegate.state.onEach { ambientAudio ->
+            _uiState.update { it.copy(ambientAudio = ambientAudio) }
         }.launchIn(viewModelScope)
 
         emulatorDelegate.state.onEach { emulators ->
@@ -320,6 +327,27 @@ class SettingsViewModel @Inject constructor(
                 enabled = prefs.soundEnabled,
                 volume = prefs.soundVolume,
                 soundConfigs = prefs.soundConfigs
+            ))
+
+            val ambientFileName = prefs.ambientAudioUri?.let { uri ->
+                try {
+                    android.net.Uri.parse(uri).let { parsedUri ->
+                        context.contentResolver.query(parsedUri, null, null, null, null)?.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                                if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                            } else null
+                        }
+                    }
+                } catch (e: Exception) {
+                    uri.substringAfterLast("/").substringBefore("?")
+                }
+            }
+            ambientAudioDelegate.updateState(AmbientAudioState(
+                enabled = prefs.ambientAudioEnabled,
+                volume = prefs.ambientAudioVolume,
+                audioUri = prefs.ambientAudioUri,
+                audioFileName = ambientFileName
             ))
 
             val currentEmulatorState = emulatorDelegate.state.value
@@ -679,7 +707,13 @@ class SettingsViewModel @Inject constructor(
                     if (showIconPadding) 4 else 3
                 }
                 SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 5 else 4
-                SettingsSection.SOUNDS -> if (state.sounds.enabled) 1 + SoundType.entries.size else 0
+                SettingsSection.SOUNDS -> {
+                    // BGM first: toggle (0), volume (1), file (2) if enabled
+                    val bgmItemCount = if (state.ambientAudio.enabled) 3 else 1
+                    // UI Sounds after: toggle, volume, sound types if enabled
+                    val uiSoundsItemCount = if (state.sounds.enabled) 2 + SoundType.entries.size else 1
+                    bgmItemCount + uiSoundsItemCount - 1
+                }
                 SettingsSection.EMULATORS -> {
                     val platformCount = state.emulators.platforms.size
                     val autoAssignOffset = if (state.emulators.canAutoAssign) 1 else 0
@@ -883,6 +917,30 @@ class SettingsViewModel @Inject constructor(
 
     fun setCustomSoundFile(type: SoundType, filePath: String) {
         soundsDelegate.setCustomSoundFile(viewModelScope, type, filePath)
+    }
+
+    fun setAmbientAudioEnabled(enabled: Boolean) {
+        ambientAudioDelegate.setEnabled(viewModelScope, enabled)
+    }
+
+    fun setAmbientAudioVolume(volume: Int) {
+        ambientAudioDelegate.setVolume(viewModelScope, volume)
+    }
+
+    fun adjustAmbientAudioVolume(delta: Int) {
+        ambientAudioDelegate.adjustVolume(viewModelScope, delta)
+    }
+
+    fun openAudioFilePicker() {
+        ambientAudioDelegate.openFilePicker(viewModelScope)
+    }
+
+    fun setAmbientAudioUri(uri: String?) {
+        ambientAudioDelegate.setAudioUri(viewModelScope, uri)
+    }
+
+    fun clearAmbientAudioFile() {
+        ambientAudioDelegate.clearAudioFile(viewModelScope)
     }
 
     fun setSwapAB(enabled: Boolean) {
@@ -1492,13 +1550,24 @@ class SettingsViewModel @Inject constructor(
                 if (isToggle) InputResult.handled(SoundType.TOGGLE) else InputResult.HANDLED
             }
             SettingsSection.SOUNDS -> {
+                // BGM first: 0=toggle, 1=volume, 2=file (if enabled)
+                // UI Sounds after: uiSoundsToggleIndex=toggle, +1=volume, +2+=sound types
+                val bgmItemCount = if (state.ambientAudio.enabled) 3 else 1
+                val uiSoundsToggleIndex = bgmItemCount
                 when {
                     state.focusedIndex == 0 -> {
+                        setAmbientAudioEnabled(!state.ambientAudio.enabled)
+                        return InputResult.handled(SoundType.TOGGLE)
+                    }
+                    state.focusedIndex == 2 && state.ambientAudio.enabled -> {
+                        openAudioFilePicker()
+                    }
+                    state.focusedIndex == uiSoundsToggleIndex -> {
                         setSoundEnabled(!state.sounds.enabled)
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    state.focusedIndex >= 2 && state.sounds.enabled -> {
-                        val soundIndex = state.focusedIndex - 2
+                    state.focusedIndex >= uiSoundsToggleIndex + 2 && state.sounds.enabled -> {
+                        val soundIndex = state.focusedIndex - uiSoundsToggleIndex - 2
                         val soundType = SoundType.entries.getOrNull(soundIndex)
                         soundType?.let { showSoundPicker(it) }
                     }

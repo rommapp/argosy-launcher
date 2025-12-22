@@ -121,6 +121,22 @@ fun SettingsScreen(
         }
     }
 
+    val audioFilePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                // Ignore if permission can't be persisted
+            }
+            viewModel.setAmbientAudioUri(it.toString())
+        }
+    }
+
     val logFolderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
@@ -231,6 +247,12 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.openBackgroundPickerEvent.collect {
             backgroundPickerLauncher.launch(arrayOf("image/*"))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.openAudioFilePickerEvent.collect {
+            audioFilePickerLauncher.launch(arrayOf("audio/*"))
         }
     }
 

@@ -138,6 +138,13 @@ data class SoundState(
     }
 }
 
+data class AmbientAudioState(
+    val enabled: Boolean = false,
+    val volume: Int = 50,
+    val audioUri: String? = null,
+    val audioFileName: String? = null
+)
+
 data class EmulatorState(
     val platforms: List<PlatformEmulatorConfig> = emptyList(),
     val installedEmulators: List<InstalledEmulator> = emptyList(),
@@ -263,6 +270,7 @@ data class SettingsUiState(
     val display: DisplayState = DisplayState(),
     val controls: ControlsState = ControlsState(),
     val sounds: SoundState = SoundState(),
+    val ambientAudio: AmbientAudioState = AmbientAudioState(),
     val emulators: EmulatorState = EmulatorState(),
     val server: ServerState = ServerState(),
     val storage: StorageState = StorageState(),

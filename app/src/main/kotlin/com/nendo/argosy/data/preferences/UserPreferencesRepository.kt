@@ -87,6 +87,10 @@ class UserPreferencesRepository @Inject constructor(
         val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
         val LIBRARY_RECENT_SEARCHES = stringPreferencesKey("library_recent_searches")
         val ACCURATE_PLAY_TIME_ENABLED = booleanPreferencesKey("accurate_play_time_enabled")
+
+        val AMBIENT_AUDIO_ENABLED = booleanPreferencesKey("ambient_audio_enabled")
+        val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
+        val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -176,7 +180,10 @@ class UserPreferencesRepository @Inject constructor(
                 ?.split(",")
                 ?.filter { it.isNotBlank() }
                 ?: emptyList(),
-            accuratePlayTimeEnabled = prefs[Keys.ACCURATE_PLAY_TIME_ENABLED] ?: false
+            accuratePlayTimeEnabled = prefs[Keys.ACCURATE_PLAY_TIME_ENABLED] ?: false,
+            ambientAudioEnabled = prefs[Keys.AMBIENT_AUDIO_ENABLED] ?: false,
+            ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
+            ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI]
         )
     }
 
@@ -624,6 +631,25 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.ACCURATE_PLAY_TIME_ENABLED] = enabled
         }
     }
+
+    suspend fun setAmbientAudioEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.AMBIENT_AUDIO_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setAmbientAudioVolume(volume: Int) {
+        dataStore.edit { prefs ->
+            prefs[Keys.AMBIENT_AUDIO_VOLUME] = volume.coerceIn(0, 100)
+        }
+    }
+
+    suspend fun setAmbientAudioUri(uri: String?) {
+        dataStore.edit { prefs ->
+            if (uri != null) prefs[Keys.AMBIENT_AUDIO_URI] = uri
+            else prefs.remove(Keys.AMBIENT_AUDIO_URI)
+        }
+    }
 }
 
 data class UserPreferences(
@@ -680,7 +706,10 @@ data class UserPreferences(
     val lastPenaltyDecayWeek: String? = null,
     val lastSeenVersion: String? = null,
     val libraryRecentSearches: List<String> = emptyList(),
-    val accuratePlayTimeEnabled: Boolean = false
+    val accuratePlayTimeEnabled: Boolean = false,
+    val ambientAudioEnabled: Boolean = false,
+    val ambientAudioVolume: Int = 50,
+    val ambientAudioUri: String? = null
 )
 
 enum class ThemeMode {

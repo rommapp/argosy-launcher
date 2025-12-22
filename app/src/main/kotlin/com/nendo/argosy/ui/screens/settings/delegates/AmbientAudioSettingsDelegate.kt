@@ -56,7 +56,7 @@ class AmbientAudioSettingsDelegate @Inject constructor(
     }
 
     fun adjustVolume(scope: CoroutineScope, delta: Int) {
-        val volumeLevels = listOf(10, 25, 40, 60, 80)
+        val volumeLevels = listOf(2, 5, 10, 20, 35)
         val current = _state.value.volume
         val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
         val newIndex = (currentIndex + delta).coerceIn(0, volumeLevels.lastIndex)

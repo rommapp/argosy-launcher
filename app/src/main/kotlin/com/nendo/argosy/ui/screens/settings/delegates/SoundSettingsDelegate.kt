@@ -49,7 +49,7 @@ class SoundSettingsDelegate @Inject constructor(
     }
 
     fun adjustSoundVolume(scope: CoroutineScope, delta: Int) {
-        val volumeLevels = listOf(10, 25, 40, 60, 80)
+        val volumeLevels = listOf(50, 70, 85, 95, 100)
         val current = _state.value.volume
         val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
         val newIndex = (currentIndex + delta).coerceIn(0, volumeLevels.lastIndex)

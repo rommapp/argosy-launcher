@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
@@ -22,14 +21,12 @@ private const val TAG = "AmbientAudio"
 @Singleton
 class AmbientAudioManager @Inject constructor(
     @ApplicationContext private val context: Context
-) : AudioManager.OnAudioFocusChangeListener {
-
+) {
     private var mediaPlayer: MediaPlayer? = null
     private var currentUri: String? = null
     private var enabled = false
     private var targetVolume = 0.5f
     private var fadeAnimator: ValueAnimator? = null
-    private var hasAudioFocus = false
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -38,30 +35,8 @@ class AmbientAudioManager @Inject constructor(
         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
 
-    private val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-        .setAudioAttributes(audioAttributes)
-        .setOnAudioFocusChangeListener(this)
-        .setAcceptsDelayedFocusGain(false)
-        .build()
-
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
-
-    override fun onAudioFocusChange(focusChange: Int) {
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                Log.d(TAG, "Audio focus lost: $focusChange")
-                hasAudioFocus = false
-                pauseInternal()
-            }
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                Log.d(TAG, "Audio focus gained")
-                hasAudioFocus = true
-            }
-        }
-    }
 
     fun setEnabled(enabled: Boolean) {
         this.enabled = enabled
@@ -144,13 +119,6 @@ class AmbientAudioManager @Inject constructor(
 
         val player = mediaPlayer ?: return
 
-        val result = audioManager.requestAudioFocus(focusRequest)
-        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            Log.d(TAG, "Audio focus request denied: $result")
-            return
-        }
-        hasAudioFocus = true
-
         fadeAnimator?.cancel()
 
         try {
@@ -222,11 +190,6 @@ class AmbientAudioManager @Inject constructor(
         }
         mediaPlayer = null
         _isPlaying.value = false
-
-        if (hasAudioFocus) {
-            audioManager.abandonAudioFocusRequest(focusRequest)
-            hasAudioFocus = false
-        }
         Log.d(TAG, "stopped and released")
     }
 

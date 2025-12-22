@@ -151,9 +151,20 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
 
-        if (state.currentSection == SettingsSection.SOUNDS && state.sounds.enabled && state.focusedIndex == 1) {
-            viewModel.adjustSoundVolume(-1)
-            return InputResult.HANDLED
+        if (state.currentSection == SettingsSection.SOUNDS) {
+            val bgmVolumeIndex = 1
+            val uiSoundsToggleIndex = if (state.ambientAudio.enabled) 3 else 1
+            val uiSoundsVolumeIndex = uiSoundsToggleIndex + 1
+            when (state.focusedIndex) {
+                bgmVolumeIndex -> if (state.ambientAudio.enabled) {
+                    viewModel.adjustAmbientAudioVolume(-1)
+                    return InputResult.HANDLED
+                }
+                uiSoundsVolumeIndex -> if (state.sounds.enabled) {
+                    viewModel.adjustSoundVolume(-1)
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         if (state.currentSection == SettingsSection.SERVER) {
@@ -253,9 +264,20 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
 
-        if (state.currentSection == SettingsSection.SOUNDS && state.sounds.enabled && state.focusedIndex == 1) {
-            viewModel.adjustSoundVolume(1)
-            return InputResult.HANDLED
+        if (state.currentSection == SettingsSection.SOUNDS) {
+            val bgmVolumeIndex = 1
+            val uiSoundsToggleIndex = if (state.ambientAudio.enabled) 3 else 1
+            val uiSoundsVolumeIndex = uiSoundsToggleIndex + 1
+            when (state.focusedIndex) {
+                bgmVolumeIndex -> if (state.ambientAudio.enabled) {
+                    viewModel.adjustAmbientAudioVolume(1)
+                    return InputResult.HANDLED
+                }
+                uiSoundsVolumeIndex -> if (state.sounds.enabled) {
+                    viewModel.adjustSoundVolume(1)
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         if (state.currentSection == SettingsSection.SERVER) {

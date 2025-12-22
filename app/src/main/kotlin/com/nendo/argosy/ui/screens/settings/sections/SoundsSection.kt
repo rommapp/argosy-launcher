@@ -68,7 +68,7 @@ fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         }
         if (uiState.ambientAudio.enabled) {
             item {
-                val volumeLevels = listOf(10, 25, 40, 60, 80)
+                val volumeLevels = listOf(2, 5, 10, 20, 35)
                 val currentIndex = volumeLevels.indexOfFirst { it >= uiState.ambientAudio.volume }.takeIf { it >= 0 } ?: 0
                 val sliderValue = currentIndex + 1
                 SliderPreference(
@@ -113,7 +113,7 @@ fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         }
         if (uiState.sounds.enabled) {
             item {
-                val volumeLevels = listOf(10, 25, 40, 60, 80)
+                val volumeLevels = listOf(50, 70, 85, 95, 100)
                 val currentIndex = volumeLevels.indexOfFirst { it >= uiState.sounds.volume }.takeIf { it >= 0 } ?: 0
                 val sliderValue = currentIndex + 1
                 SliderPreference(

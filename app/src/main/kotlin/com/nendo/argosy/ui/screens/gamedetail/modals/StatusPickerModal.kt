@@ -28,12 +28,13 @@ fun StatusPickerModal(
     currentValue: String?,
     onDismiss: () -> Unit
 ) {
+    val effectiveSelection = selectedValue ?: CompletionStatus.entries.first().apiValue
+
     CenteredModal(
         title = "SET STATUS",
         width = 320.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.DPAD_VERTICAL to "Select",
             InputButton.SOUTH to "Confirm",
             InputButton.EAST to "Cancel"
         )
@@ -43,7 +44,7 @@ fun StatusPickerModal(
             modifier = Modifier.fillMaxWidth()
         ) {
             for (status in CompletionStatus.entries) {
-                val isSelected = status.apiValue == selectedValue
+                val isSelected = status.apiValue == effectiveSelection
                 val isCurrent = status.apiValue == currentValue
 
                 val borderModifier = if (isCurrent) {

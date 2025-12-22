@@ -1388,13 +1388,41 @@ class GameDetailViewModel @Inject constructor(
         override fun onSelect(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
-            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showResetConfirmation) {
-                showResetConfirmation()
+
+            val anyModalOpen = state.showMoreOptions || state.showEmulatorPicker ||
+                state.showCorePicker || state.showRatingPicker || state.showStatusPicker ||
+                state.showDiscPicker || state.showMissingDiscPrompt || saveState.isVisible
+
+            if (anyModalOpen) {
+                dismissAllModals()
                 return InputResult.HANDLED
             }
+
             toggleMoreOptions()
             return InputResult.HANDLED
         }
+    }
+
+    private fun dismissAllModals() {
+        _uiState.update {
+            it.copy(
+                showMoreOptions = false,
+                showEmulatorPicker = false,
+                showCorePicker = false,
+                showRatingPicker = false,
+                showStatusPicker = false,
+                showDiscPicker = false,
+                showMissingDiscPrompt = false,
+                saveChannel = it.saveChannel.copy(
+                    isVisible = false,
+                    showRestoreConfirmation = false,
+                    showRenameDialog = false,
+                    showDeleteConfirmation = false,
+                    showResetConfirmation = false
+                )
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
     }
 
     fun dismissPermissionModal() {

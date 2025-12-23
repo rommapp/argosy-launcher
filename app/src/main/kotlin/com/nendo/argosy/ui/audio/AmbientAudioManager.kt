@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
@@ -27,8 +26,6 @@ class AmbientAudioManager @Inject constructor(
     private var enabled = false
     private var targetVolume = 0.5f
     private var fadeAnimator: ValueAnimator? = null
-
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     private val audioAttributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_GAME)
@@ -105,11 +102,6 @@ class AmbientAudioManager @Inject constructor(
     fun fadeIn(durationMs: Long = 500) {
         if (!enabled || currentUri == null) {
             Log.d(TAG, "fadeIn skipped: enabled=$enabled, uri=$currentUri")
-            return
-        }
-
-        if (audioManager.isMusicActive) {
-            Log.d(TAG, "fadeIn skipped: other music is playing")
             return
         }
 

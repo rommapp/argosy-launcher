@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import dagger.Module
@@ -65,7 +66,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_28_29,
                 ALauncherDatabase.MIGRATION_29_30,
                 ALauncherDatabase.MIGRATION_30_31,
-                ALauncherDatabase.MIGRATION_31_32
+                ALauncherDatabase.MIGRATION_31_32,
+                ALauncherDatabase.MIGRATION_32_33
             )
             .build()
     }
@@ -114,4 +116,8 @@ object DatabaseModule {
     @Provides
     fun provideOrphanedFileDao(database: ALauncherDatabase): OrphanedFileDao =
         database.orphanedFileDao()
+
+    @Provides
+    fun provideAppCategoryDao(database: ALauncherDatabase): AppCategoryDao =
+        database.appCategoryDao()
 }

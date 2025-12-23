@@ -119,6 +119,9 @@ class GameLaunchDelegate @Inject constructor(
                     is LaunchResult.Error -> {
                         notificationManager.showError(result.message)
                     }
+                    is LaunchResult.NoAndroidApp -> {
+                        notificationManager.showError("Android app not installed: ${result.packageName}")
+                    }
                 }
             } finally {
                 syncMutex.unlock()

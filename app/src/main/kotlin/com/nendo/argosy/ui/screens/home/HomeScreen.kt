@@ -43,6 +43,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
@@ -386,7 +387,7 @@ fun HomeScreen(
                                 listState = listState,
                                 rowKey = uiState.currentRow.toString(),
                                 downloadIndicatorFor = uiState::downloadIndicatorFor,
-                                showPlatformBadge = uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam,
+                                showPlatformBadge = uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
                                 modifier = Modifier.align(Alignment.BottomStart)
@@ -409,17 +410,21 @@ fun HomeScreen(
                         hints = listOf(
                             InputButton.DPAD_HORIZONTAL to "Game",
                             InputButton.DPAD_VERTICAL to "Platform",
-                            InputButton.SOUTH to if (focusedGame.isDownloaded) "Play" else "Download",
+                            InputButton.SOUTH to when {
+                                focusedGame.needsInstall -> "Install"
+                                focusedGame.isDownloaded -> "Play"
+                                else -> "Download"
+                            },
                             InputButton.NORTH to if (focusedGame.isFavorite) "Unfavorite" else "Favorite",
                             InputButton.WEST to "Details"
                         ),
                         onHintClick = { button ->
                             when (button) {
                                 InputButton.SOUTH -> {
-                                    if (focusedGame.isDownloaded) {
-                                        viewModel.launchGame(focusedGame.id)
-                                    } else {
-                                        viewModel.queueDownload(focusedGame.id)
+                                    when {
+                                        focusedGame.needsInstall -> viewModel.installApk(focusedGame.id)
+                                        focusedGame.isDownloaded -> viewModel.launchGame(focusedGame.id)
+                                        else -> viewModel.queueDownload(focusedGame.id)
                                     }
                                 }
                                 InputButton.NORTH -> viewModel.toggleFavorite(focusedGame.id)
@@ -461,12 +466,12 @@ fun HomeScreen(
                     game = focusedGame,
                     focusIndex = uiState.gameMenuFocusIndex,
                     onDismiss = { viewModel.toggleGameMenu() },
-                    onPlayOrDownload = {
+                    onPrimaryAction = {
                         viewModel.toggleGameMenu()
-                        if (focusedGame.isDownloaded) {
-                            viewModel.launchGame(focusedGame.id)
-                        } else {
-                            viewModel.queueDownload(focusedGame.id)
+                        when {
+                            focusedGame.needsInstall -> viewModel.installApk(focusedGame.id)
+                            focusedGame.isDownloaded -> viewModel.launchGame(focusedGame.id)
+                            else -> viewModel.queueDownload(focusedGame.id)
                         }
                     },
                     onFavorite = { viewModel.toggleFavorite(focusedGame.id) },
@@ -905,7 +910,7 @@ private fun GameSelectOverlay(
     game: HomeGameUi,
     focusIndex: Int,
     onDismiss: () -> Unit,
-    onPlayOrDownload: () -> Unit,
+    onPrimaryAction: () -> Unit,
     onFavorite: () -> Unit,
     onDetails: () -> Unit,
     onRefresh: () -> Unit,
@@ -917,11 +922,22 @@ private fun GameSelectOverlay(
     val favoriteIdx = currentIndex++
     val detailsIdx = currentIndex++
     val refreshIdx = if (game.isRommGame) currentIndex++ else -1
-    val deleteIdx = if (game.isDownloaded) currentIndex++ else -1
+    val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
     val hideIdx = currentIndex
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
+    val primaryIcon = when {
+        game.needsInstall -> Icons.Default.InstallMobile
+        game.isDownloaded -> Icons.Default.PlayArrow
+        else -> Icons.Default.Download
+    }
+    val primaryLabel = when {
+        game.needsInstall -> "Install"
+        game.isDownloaded -> "Play"
+        else -> "Download"
+    }
 
     Box(
         modifier = Modifier
@@ -943,10 +959,10 @@ private fun GameSelectOverlay(
             Spacer(modifier = Modifier.height(16.dp))
 
             MenuOption(
-                icon = if (game.isDownloaded) Icons.Default.PlayArrow else Icons.Default.Download,
-                label = if (game.isDownloaded) "Play" else "Download",
+                icon = primaryIcon,
+                label = primaryLabel,
                 isFocused = focusIndex == playIdx,
-                onClick = onPlayOrDownload
+                onClick = onPrimaryAction
             )
             MenuOption(
                 icon = if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -974,7 +990,7 @@ private fun GameSelectOverlay(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            if (game.isDownloaded) {
+            if (game.isDownloaded || game.needsInstall) {
                 MenuOption(
                     icon = Icons.Default.DeleteOutline,
                     label = "Delete Download",

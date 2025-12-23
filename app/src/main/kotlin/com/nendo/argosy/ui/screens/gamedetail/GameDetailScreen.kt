@@ -388,6 +388,7 @@ private fun GameDetailContent(
                             isInScreenshots -> "View"
                             uiState.isSyncing -> "Syncing..."
                             uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
+                            uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> "Install"
                             uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
                             uiState.downloadStatus == GameDownloadStatus.QUEUED -> "Queued"
                             uiState.downloadStatus == GameDownloadStatus.WAITING_FOR_STORAGE -> "No Space"

@@ -65,7 +65,9 @@ data class GameDetailUi(
     val selectedCoreName: String? = null,
     val canManageSaves: Boolean = false,
     val isSteamGame: Boolean = false,
-    val steamLauncherName: String? = null
+    val steamLauncherName: String? = null,
+    val isAndroidApp: Boolean = false,
+    val packageName: String? = null
 )
 
 sealed class LaunchEvent {
@@ -79,7 +81,8 @@ enum class GameDownloadStatus {
     WAITING_FOR_STORAGE,
     DOWNLOADING,
     PAUSED,
-    DOWNLOADED
+    DOWNLOADED,
+    NEEDS_INSTALL
 }
 
 enum class RatingType { OPINION, DIFFICULTY }

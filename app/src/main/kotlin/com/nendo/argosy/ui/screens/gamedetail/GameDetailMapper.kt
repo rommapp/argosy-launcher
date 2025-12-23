@@ -56,7 +56,9 @@ fun GameEntity.toGameDetailUi(
         selectedCoreName = selectedCoreName,
         canManageSaves = canManageSaves,
         isSteamGame = source == GameSource.STEAM,
-        steamLauncherName = steamLauncherName
+        steamLauncherName = steamLauncherName,
+        isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
+        packageName = packageName
     )
 }
 

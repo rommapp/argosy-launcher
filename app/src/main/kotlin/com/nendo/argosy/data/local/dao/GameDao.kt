@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -169,6 +170,12 @@ interface GameDao {
 
     @Query("SELECT * FROM games WHERE source = :source")
     suspend fun getBySource(source: GameSource): List<GameEntity>
+
+    @Query("SELECT * FROM games WHERE packageName = :packageName")
+    suspend fun getByPackageName(packageName: String): GameEntity?
+
+    @Delete
+    suspend fun delete(game: GameEntity)
 
     @Query("UPDATE games SET localPath = NULL, source = 'ROMM_REMOTE' WHERE id = :gameId")
     suspend fun clearLocalPath(gameId: Long)

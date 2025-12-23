@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
@@ -244,6 +245,28 @@ private fun GameDataContent(
             }
         }
 
+        // === ANDROID ===
+        val androidBaseIndex = calculateAndroidBaseIndex(isConnected, saveSyncEnabled)
+        item {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            SectionHeader("ANDROID")
+        }
+        item {
+            val subtitle = when {
+                uiState.android.isScanning -> "Scanning... ${uiState.android.scanProgressPercent}%"
+                uiState.android.lastScanGamesAdded != null -> "${uiState.android.lastScanGamesAdded} games found"
+                else -> "Detect installed games"
+            }
+            ActionPreference(
+                icon = Icons.Default.PhoneAndroid,
+                title = "Scan for Android Games",
+                subtitle = subtitle,
+                isFocused = uiState.focusedIndex == androidBaseIndex,
+                isEnabled = !uiState.android.isScanning,
+                onClick = { viewModel.scanForAndroidGames() }
+            )
+        }
+
         // === STEAM ===
         item {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
@@ -392,19 +415,23 @@ private fun calculateMaxIndex(isConnected: Boolean, saveSyncEnabled: Boolean, la
     }
 }
 
-private fun calculateSteamBaseIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
+private fun calculateAndroidBaseIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
     return when {
-        isConnected && saveSyncEnabled -> 6  // Rom Manager(0), Sync Settings(1), Sync Library(2), Accurate Play Time(3), Save Cache(4), Sync Saves(5), Steam starts at 6
-        isConnected -> 4                      // Rom Manager(0), Sync Settings(1), Sync Library(2), Accurate Play Time(3), Steam starts at 4
-        else -> 1                             // Rom Manager(0), Steam starts at 1
+        isConnected && saveSyncEnabled -> 6  // Rom Manager(0), Sync Settings(1), Sync Library(2), Accurate Play Time(3), Save Cache(4), Sync Saves(5), Android at 6
+        isConnected -> 4                      // Rom Manager(0), Sync Settings(1), Sync Library(2), Accurate Play Time(3), Android at 4
+        else -> 1                             // Rom Manager(0), Android at 1
     }
+}
+
+private fun calculateSteamBaseIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
+    return calculateAndroidBaseIndex(isConnected, saveSyncEnabled) + 1 // Steam comes after Android
 }
 
 private fun calculateSteamHeaderScrollIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
     return when {
-        isConnected && saveSyncEnabled -> 10  // SERVER(0), RomM(1), LIBRARY(2), SyncSet(3), SyncLib(4), TRACKING(5), PlayTime(6), SAVES(7), Cache(8), SyncSaves(9), STEAM(10)
-        isConnected -> 7                       // SERVER(0), RomM(1), LIBRARY(2), SyncSet(3), SyncLib(4), TRACKING(5), PlayTime(6), STEAM(7)
-        else -> 2                              // SERVER(0), RomM(1), STEAM(2)
+        isConnected && saveSyncEnabled -> 12  // SERVER(0), RomM(1), LIBRARY(2), SyncSet(3), SyncLib(4), TRACKING(5), PlayTime(6), SAVES(7), Cache(8), SyncSaves(9), ANDROID(10), ScanAndroid(11), STEAM(12)
+        isConnected -> 9                       // SERVER(0), RomM(1), LIBRARY(2), SyncSet(3), SyncLib(4), TRACKING(5), PlayTime(6), ANDROID(7), ScanAndroid(8), STEAM(9)
+        else -> 4                              // SERVER(0), RomM(1), ANDROID(2), ScanAndroid(3), STEAM(4)
     }
 }
 
@@ -413,16 +440,24 @@ private fun calculateScrollIndex(
     isConnected: Boolean,
     saveSyncEnabled: Boolean
 ): Int {
+    val androidBaseIndex = calculateAndroidBaseIndex(isConnected, saveSyncEnabled)
+    val steamBaseIndex = calculateSteamBaseIndex(isConnected, saveSyncEnabled)
+
     return when {
         !isConnected -> {
-            if (focusedIndex == 0) 1 else focusedIndex + 2
+            when {
+                focusedIndex == 0 -> 1                      // Rom Manager (after SERVER header)
+                focusedIndex == androidBaseIndex -> 3       // Scan Android (after ANDROID header)
+                else -> focusedIndex + 4                    // Steam items (after STEAM header)
+            }
         }
         !saveSyncEnabled -> {
             when {
                 focusedIndex == 0 -> 1                      // Rom Manager (after SERVER header)
                 focusedIndex in 1..2 -> focusedIndex + 2    // Sync Settings, Sync Library (after LIBRARY header)
                 focusedIndex == 3 -> focusedIndex + 3       // Accurate Play Time (after TRACKING header)
-                else -> focusedIndex + 4                    // Steam items (after STEAM header)
+                focusedIndex == androidBaseIndex -> focusedIndex + 4  // Scan Android (after ANDROID header)
+                else -> focusedIndex + 5                    // Steam items (after STEAM header)
             }
         }
         else -> {
@@ -431,7 +466,8 @@ private fun calculateScrollIndex(
                 focusedIndex in 1..2 -> focusedIndex + 2    // Sync Settings, Sync Library
                 focusedIndex == 3 -> focusedIndex + 3       // Accurate Play Time (after TRACKING header)
                 focusedIndex in 4..5 -> focusedIndex + 4    // Save Cache, Sync Saves (after SAVES header)
-                else -> focusedIndex + 5                    // Steam items (after STEAM header)
+                focusedIndex == androidBaseIndex -> focusedIndex + 5  // Scan Android (after ANDROID header)
+                else -> focusedIndex + 6                    // Steam items (after STEAM header)
             }
         }
     }

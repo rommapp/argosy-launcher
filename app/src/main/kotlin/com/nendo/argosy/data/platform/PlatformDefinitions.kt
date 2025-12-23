@@ -382,11 +382,11 @@ object PlatformDefinitions {
         PlatformDef("lowresnx", "LowRes NX", "LowRes NX", setOf("nx", "zip", "7z"), 894),
 
         // =====================================================================
-        // STREAMING / LAUNCHER (950-999)
+        // STREAMING / LAUNCHER (1-9) - Before console platforms
         // =====================================================================
-        PlatformDef("steam", "Steam", "Steam", emptySet(), 10),
-        PlatformDef("android", "Android", "Android", setOf("apk", "xapk"), 960),
-        PlatformDef("ios", "iOS", "iOS", emptySet(), 965)
+        PlatformDef("android", "Android", "Android", setOf("apk", "xapk"), 1),
+        PlatformDef("steam", "Steam", "Steam", emptySet(), 2),
+        PlatformDef("ios", "iOS", "iOS", emptySet(), 3)
     )
 
     private val platformMap: Map<String, PlatformDef>

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
@@ -217,6 +218,11 @@ fun ActionButtons(
                     Icon(Icons.Default.Download, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("DOWNLOAD")
+                }
+                GameDownloadStatus.NEEDS_INSTALL -> {
+                    Icon(Icons.Default.InstallMobile, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("INSTALL")
                 }
                 GameDownloadStatus.QUEUED -> Text("QUEUED...")
                 GameDownloadStatus.WAITING_FOR_STORAGE -> Text("NO SPACE")

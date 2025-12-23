@@ -252,6 +252,14 @@ data class SteamSettingsState(
     val launcherActionIndex: Int = 0
 )
 
+data class AndroidSettingsState(
+    val isScanning: Boolean = false,
+    val scanProgressPercent: Int = 0,
+    val currentApp: String = "",
+    val gamesFound: Int = 0,
+    val lastScanGamesAdded: Int? = null
+)
+
 data class UpdateCheckState(
     val isChecking: Boolean = false,
     val hasChecked: Boolean = false,
@@ -277,6 +285,7 @@ data class SettingsUiState(
     val storage: StorageState = StorageState(),
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
+    val android: AndroidSettingsState = AndroidSettingsState(),
     val launchFolderPicker: Boolean = false,
     val showMigrationDialog: Boolean = false,
     val pendingStoragePath: String? = null,

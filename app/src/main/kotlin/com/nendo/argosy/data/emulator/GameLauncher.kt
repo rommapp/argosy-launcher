@@ -28,6 +28,7 @@ sealed class LaunchResult {
     data class NoEmulator(val platformId: String) : LaunchResult()
     data class NoRomFile(val gamePath: String?) : LaunchResult()
     data class NoSteamLauncher(val launcherPackage: String) : LaunchResult()
+    data class NoAndroidApp(val packageName: String) : LaunchResult()
     data class NoCore(val platformId: String) : LaunchResult()
     data class MissingDiscs(val missingDiscNumbers: List<Int>) : LaunchResult()
     data class Error(val message: String) : LaunchResult()
@@ -54,6 +55,10 @@ class GameLauncher @Inject constructor(
 
         if (game.source == GameSource.STEAM) {
             return launchSteamGame(game)
+        }
+
+        if (game.source == GameSource.ANDROID_APP || game.platformSlug == "android") {
+            return launchAndroidApp(game)
         }
 
         if (game.isMultiDisc) {
@@ -210,6 +215,27 @@ class GameLauncher @Inject constructor(
         gameDao.recordPlayStart(game.id, Instant.now())
 
         Logger.info(TAG, "Launching Steam: appId=$steamAppId via ${launcher.displayName}")
+        return LaunchResult.Success(intent)
+    }
+
+    private suspend fun launchAndroidApp(game: GameEntity): LaunchResult {
+        Logger.debug(TAG, "launchAndroidApp(): packageName=${game.packageName}")
+
+        val packageName = game.packageName
+            ?: return LaunchResult.Error("Android game missing package name").also {
+                Logger.warn(TAG, "launchAndroidApp() failed: missing packageName")
+            }
+
+        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+            ?: return LaunchResult.NoAndroidApp(packageName).also {
+                Logger.warn(TAG, "launchAndroidApp() failed: package not found or no launch intent")
+            }
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        gameDao.recordPlayStart(game.id, Instant.now())
+
+        Logger.info(TAG, "Launching Android app: $packageName")
         return LaunchResult.Success(intent)
     }
 

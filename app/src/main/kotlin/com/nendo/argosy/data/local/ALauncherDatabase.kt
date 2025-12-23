@@ -16,9 +16,11 @@ import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
+import com.nendo.argosy.data.local.entity.AppCategoryEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
@@ -44,9 +46,10 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         GameDiscEntity::class,
         AchievementEntity::class,
         SaveCacheEntity::class,
-        OrphanedFileEntity::class
+        OrphanedFileEntity::class,
+        AppCategoryEntity::class
     ],
-    version = 32,
+    version = 33,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -63,6 +66,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun achievementDao(): AchievementDao
     abstract fun saveCacheDao(): SaveCacheDao
     abstract fun orphanedFileDao(): OrphanedFileDao
+    abstract fun appCategoryDao(): AppCategoryDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -443,6 +447,30 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_31_32 = object : Migration(31, 32) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("UPDATE games SET platformSlug = 'steam' WHERE platformId = 'steam'")
+            }
+        }
+
+        val MIGRATION_32_33 = object : Migration(32, 33) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN packageName TEXT")
+                db.execSQL("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_games_packageName
+                    ON games(packageName)
+                """)
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS app_category_cache (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        packageName TEXT NOT NULL,
+                        category TEXT,
+                        isGame INTEGER NOT NULL,
+                        isManualOverride INTEGER NOT NULL DEFAULT 0,
+                        fetchedAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_app_category_cache_packageName
+                    ON app_category_cache(packageName)
+                """)
             }
         }
     }

@@ -1,9 +1,13 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.update.ApkInstallManager
+import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
@@ -89,7 +93,9 @@ class GameDetailViewModel @Inject constructor(
     private val checkSaveSyncPermissionUseCase: CheckSaveSyncPermissionUseCase,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val achievementUpdateBus: AchievementUpdateBus,
-    private val gameUpdateBus: GameUpdateBus
+    private val gameUpdateBus: GameUpdateBus,
+    private val playStoreService: PlayStoreService,
+    private val apkInstallManager: ApkInstallManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -198,29 +204,36 @@ class GameDetailViewModel @Inject constructor(
             } else null
 
             val isSteamGame = game.source == GameSource.STEAM
+            val isAndroidApp = game.source == GameSource.ANDROID_APP || game.platformSlug == "android"
             val steamLauncherName = if (isSteamGame) {
                 game.steamLauncher?.let { SteamLaunchers.getByPackage(it)?.displayName } ?: "Auto"
             } else null
             val fileExists = gameRepository.checkGameFileExists(gameId)
 
-            val canPlay = if (isSteamGame) {
-                val launcher = game.steamLauncher?.let { SteamLaunchers.getByPackage(it) }
-                    ?: SteamLaunchers.getPreferred(context)
-                launcher?.isInstalled(context) == true
-            } else if (game.isMultiDisc) {
-                val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
-                downloadedCount > 0 && emulatorDetector.hasAnyEmulator(game.platformSlug)
-            } else {
-                fileExists && emulatorDetector.hasAnyEmulator(game.platformSlug)
+            val canPlay = when {
+                game.source == GameSource.ANDROID_APP -> true
+                isAndroidApp -> game.packageName != null
+                isSteamGame -> {
+                    val launcher = game.steamLauncher?.let { SteamLaunchers.getByPackage(it) }
+                        ?: SteamLaunchers.getPreferred(context)
+                    launcher?.isInstalled(context) == true
+                }
+                game.isMultiDisc -> {
+                    val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
+                    downloadedCount > 0 && emulatorDetector.hasAnyEmulator(game.platformSlug)
+                }
+                else -> fileExists && emulatorDetector.hasAnyEmulator(game.platformSlug)
             }
 
-            val downloadStatus = if (isSteamGame || fileExists) {
-                GameDownloadStatus.DOWNLOADED
-            } else if (game.isMultiDisc) {
-                val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
-                if (downloadedCount > 0) GameDownloadStatus.DOWNLOADED else GameDownloadStatus.NOT_DOWNLOADED
-            } else {
-                GameDownloadStatus.NOT_DOWNLOADED
+            val downloadStatus = when {
+                game.source == GameSource.ANDROID_APP -> GameDownloadStatus.DOWNLOADED
+                isAndroidApp && fileExists && game.packageName == null -> GameDownloadStatus.NEEDS_INSTALL
+                isSteamGame || fileExists -> GameDownloadStatus.DOWNLOADED
+                game.isMultiDisc -> {
+                    val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)
+                    if (downloadedCount > 0) GameDownloadStatus.DOWNLOADED else GameDownloadStatus.NOT_DOWNLOADED
+                }
+                else -> GameDownloadStatus.NOT_DOWNLOADED
             }
 
             val discsUi = if (game.isMultiDisc) {
@@ -502,12 +515,22 @@ class GameDetailViewModel @Inject constructor(
         val state = _uiState.value
         when (state.downloadStatus) {
             GameDownloadStatus.DOWNLOADED -> playGame()
+            GameDownloadStatus.NEEDS_INSTALL -> installApk()
             GameDownloadStatus.NOT_DOWNLOADED -> downloadGame()
             GameDownloadStatus.QUEUED,
             GameDownloadStatus.WAITING_FOR_STORAGE,
             GameDownloadStatus.DOWNLOADING,
             GameDownloadStatus.PAUSED -> {
                 // Already in progress or paused
+            }
+        }
+    }
+
+    private fun installApk() {
+        viewModelScope.launch {
+            val success = apkInstallManager.installApkForGame(currentGameId)
+            if (!success) {
+                notificationManager.showError("Could not install APK")
             }
         }
     }
@@ -586,6 +609,9 @@ class GameDetailViewModel @Inject constructor(
                 is LaunchResult.Error -> {
                     notificationManager.showError(result.message)
                 }
+                is LaunchResult.NoAndroidApp -> {
+                    notificationManager.showError("Android app not installed: ${result.packageName}")
+                }
             }
         }
     }
@@ -616,16 +642,22 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update {
             val isDownloaded = it.downloadStatus == GameDownloadStatus.DOWNLOADED
             val isRommGame = it.game?.isRommGame == true
+            val isAndroidApp = it.game?.isAndroidApp == true
+            val canTrackProgress = isRommGame || isAndroidApp
             val canManageSaves = it.game?.canManageSaves == true
             val isRetroArch = it.game?.isRetroArchEmulator == true
             val isMultiDisc = it.game?.isMultiDisc == true
             val isSteamGame = it.game?.isSteamGame == true
-            var optionCount = 2  // Base: Emulator/Launcher + Hide
+            val isEmulatedGame = !isSteamGame && !isAndroidApp
+
+            var optionCount = 1  // Base: Hide (always present)
             if (canManageSaves) optionCount++  // Manage Cached Saves
-            if (isRommGame) optionCount += 4  // Rate + Difficulty + Completion + Refresh
-            if (isRetroArch && !isSteamGame) optionCount++  // Change Core (not for Steam)
+            if (canTrackProgress) optionCount += 4  // Rate + Difficulty + Completion + Refresh
+            if (isSteamGame || isEmulatedGame) optionCount++  // Emulator/Launcher (not for Android)
+            if (isRetroArch && isEmulatedGame) optionCount++  // Change Core (emulated only)
             if (isMultiDisc) optionCount++  // Select Disc
-            if (isDownloaded) optionCount++  // Delete
+            if (isDownloaded || isAndroidApp) optionCount++  // Delete/Uninstall
+
             val maxIndex = optionCount - 1
             val newIndex = (it.moreOptionsFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(moreOptionsFocusIndex = newIndex)
@@ -645,18 +677,21 @@ class GameDetailViewModel @Inject constructor(
         val isRetroArch = state.game?.isRetroArchEmulator == true
         val isMultiDisc = state.game?.isMultiDisc == true
         val isSteamGame = state.game?.isSteamGame == true
+        val isAndroidApp = state.game?.isAndroidApp == true
+        val canTrackProgress = isRommGame || isAndroidApp
+        val isEmulatedGame = !isSteamGame && !isAndroidApp
         val index = state.moreOptionsFocusIndex
 
         var currentIdx = 0
         val saveCacheIdx = if (canManageSaves) currentIdx++ else -1
-        val rateIdx = if (isRommGame) currentIdx++ else -1
-        val difficultyIdx = if (isRommGame) currentIdx++ else -1
-        val completionIdx = if (isRommGame) currentIdx++ else -1
-        val emulatorOrLauncherIdx = currentIdx++
-        val coreIdx = if (isRetroArch && !isSteamGame) currentIdx++ else -1
+        val rateIdx = if (canTrackProgress) currentIdx++ else -1
+        val difficultyIdx = if (canTrackProgress) currentIdx++ else -1
+        val completionIdx = if (canTrackProgress) currentIdx++ else -1
+        val emulatorOrLauncherIdx = if (isSteamGame || isEmulatedGame) currentIdx++ else -1
+        val coreIdx = if (isRetroArch && isEmulatedGame) currentIdx++ else -1
         val discIdx = if (isMultiDisc) currentIdx++ else -1
-        val refreshIdx = if (isRommGame) currentIdx++ else -1
-        val deleteIdx = if (isDownloaded) currentIdx++ else -1
+        val refreshIdx = if (canTrackProgress) currentIdx++ else -1
+        val deleteIdx = if (isDownloaded || isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
 
         when (index) {
@@ -667,8 +702,11 @@ class GameDetailViewModel @Inject constructor(
             emulatorOrLauncherIdx -> if (isSteamGame) showSteamLauncherPicker() else showEmulatorPicker()
             coreIdx -> showCorePicker()
             discIdx -> showDiscPicker()
-            refreshIdx -> refreshGameData()
-            deleteIdx -> { toggleMoreOptions(); deleteLocalFile() }
+            refreshIdx -> refreshAndroidOrRommData()
+            deleteIdx -> {
+                toggleMoreOptions()
+                if (isAndroidApp) uninstallAndroidApp() else deleteLocalFile()
+            }
             hideIdx -> { hideGame(); onBack() }
             else -> toggleMoreOptions()
         }
@@ -1142,6 +1180,56 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    private fun refreshAndroidOrRommData() {
+        val game = _uiState.value.game ?: return
+        if (game.isAndroidApp) {
+            refreshAndroidAppData()
+        } else {
+            refreshGameData()
+        }
+    }
+
+    private fun refreshAndroidAppData() {
+        val packageName = _uiState.value.game?.packageName ?: return
+        if (_uiState.value.isRefreshingGameData) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshingGameData = true, showMoreOptions = false) }
+            try {
+                val details = playStoreService.getAppDetails(packageName).getOrNull()
+                if (details != null) {
+                    val game = gameDao.getById(currentGameId)
+                    if (game != null) {
+                        val updated = game.copy(
+                            description = details.description ?: game.description,
+                            developer = details.developer ?: game.developer,
+                            genre = details.genre ?: game.genre,
+                            rating = details.ratingPercent ?: game.rating,
+                            screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }?.joinToString(",") ?: game.screenshotPaths,
+                            backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+                        )
+                        gameDao.update(updated)
+
+                        details.coverUrl?.let { url ->
+                            imageCacheManager.queueCoverCacheByGameId(url, currentGameId)
+                        }
+                        if (details.screenshotUrls.isNotEmpty()) {
+                            imageCacheManager.queueScreenshotCacheByGameId(currentGameId, details.screenshotUrls)
+                        }
+
+                        notificationManager.showSuccess("Game data refreshed")
+                        loadGame(currentGameId)
+                    }
+                } else {
+                    notificationManager.showError("Could not fetch app data")
+                }
+            } catch (e: Exception) {
+                notificationManager.showError("Failed to refresh: ${e.message}")
+            }
+            _uiState.update { it.copy(isRefreshingGameData = false) }
+        }
+    }
+
     private fun deleteLocalFile() {
         val isSteamGame = _uiState.value.game?.isSteamGame == true
         viewModelScope.launch {
@@ -1153,6 +1241,17 @@ class GameDetailViewModel @Inject constructor(
                 notificationManager.showSuccess("Download deleted")
                 loadGame(currentGameId)
             }
+        }
+    }
+
+    private fun uninstallAndroidApp() {
+        val packageName = _uiState.value.game?.packageName ?: return
+        val intent = Intent(Intent.ACTION_DELETE).apply {
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        viewModelScope.launch {
+            _launchEvents.emit(LaunchEvent.Launch(intent))
         }
     }
 

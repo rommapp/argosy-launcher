@@ -46,6 +46,13 @@ class RomScanner @Inject constructor(
     suspend fun initializePlatforms() {
         withContext(Dispatchers.IO) {
             platformDao.insertAll(PlatformDefinitions.toEntities())
+            syncPlatformSortOrders()
+        }
+    }
+
+    private suspend fun syncPlatformSortOrders() {
+        PlatformDefinitions.getAll().forEach { def ->
+            platformDao.updateSortOrder(def.id, def.sortOrder)
         }
     }
 

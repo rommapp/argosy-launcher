@@ -5,15 +5,24 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.sync.SaveSyncDownloadObserver
+import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.sync.SaveSyncWorker
 import com.nendo.argosy.data.update.UpdateCheckWorker
 import com.nendo.argosy.ui.coil.AppIconFetcher
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
 class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -21,11 +30,26 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var saveSyncDownloadObserver: SaveSyncDownloadObserver
 
+    @Inject
+    lateinit var platformDao: PlatformDao
+
+    @Inject
+    lateinit var apkInstallManager: ApkInstallManager
+
     override fun onCreate() {
         super.onCreate()
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
         saveSyncDownloadObserver.start()
+        syncPlatformSortOrders()
+    }
+
+    private fun syncPlatformSortOrders() {
+        appScope.launch {
+            PlatformDefinitions.getAll().forEach { def ->
+                platformDao.updateSortOrder(def.id, def.sortOrder)
+            }
+        }
     }
 
     override val workManagerConfiguration: Configuration

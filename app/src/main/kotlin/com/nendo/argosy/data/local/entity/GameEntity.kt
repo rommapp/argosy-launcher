@@ -24,6 +24,7 @@ import java.time.Instant
         Index("source"),
         Index(value = ["rommId"], unique = true),
         Index(value = ["steamAppId"], unique = true),
+        Index(value = ["packageName"], unique = true),
         Index("regions"),
         Index("gameModes"),
         Index("franchises")
@@ -43,6 +44,7 @@ data class GameEntity(
     val igdbId: Long?,
     val steamAppId: Long? = null,
     val steamLauncher: String? = null,
+    val packageName: String? = null,
     val launcherSetManually: Boolean = false,
     val source: GameSource,
 

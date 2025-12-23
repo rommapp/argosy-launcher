@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.ImageCacheProgress
+import com.nendo.argosy.data.scanner.AndroidGameScanner
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
@@ -92,7 +93,8 @@ class SettingsViewModel @Inject constructor(
     val serverDelegate: ServerSettingsDelegate,
     val storageDelegate: StorageSettingsDelegate,
     val syncDelegate: SyncSettingsDelegate,
-    val steamDelegate: SteamSettingsDelegate
+    val steamDelegate: SteamSettingsDelegate,
+    private val androidGameScanner: AndroidGameScanner
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -175,6 +177,20 @@ class SettingsViewModel @Inject constructor(
 
         steamDelegate.state.onEach { steam ->
             _uiState.update { it.copy(steam = steam) }
+        }.launchIn(viewModelScope)
+
+        androidGameScanner.progress.onEach { progress ->
+            _uiState.update {
+                it.copy(
+                    android = AndroidSettingsState(
+                        isScanning = progress.isScanning,
+                        scanProgressPercent = progress.progressPercent,
+                        currentApp = progress.currentApp,
+                        gamesFound = progress.gamesFound,
+                        lastScanGamesAdded = it.android.lastScanGamesAdded
+                    )
+                )
+            }
         }.launchIn(viewModelScope)
     }
 
@@ -555,10 +571,11 @@ class SettingsViewModel @Inject constructor(
             SettingsSection.SERVER -> {
                 val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                     state.server.connectionStatus == ConnectionStatus.OFFLINE
+                // Android is at: 6/4/1, Steam starts at: 7/5/2
                 val steamBaseIndex = when {
-                    isConnected && state.syncSettings.saveSyncEnabled -> 6
-                    isConnected -> 4
-                    else -> 1
+                    isConnected && state.syncSettings.saveSyncEnabled -> 7
+                    isConnected -> 5
+                    else -> 2
                 }
                 state.focusedIndex - steamBaseIndex
             }
@@ -569,6 +586,20 @@ class SettingsViewModel @Inject constructor(
 
     fun scanSteamLauncher(packageName: String) {
         steamDelegate.scanSteamLauncher(context, viewModelScope, packageName)
+    }
+
+    fun scanForAndroidGames() {
+        if (_uiState.value.android.isScanning) return
+        viewModelScope.launch {
+            val result = androidGameScanner.scan()
+            _uiState.update {
+                it.copy(
+                    android = it.android.copy(
+                        lastScanGamesAdded = result.totalGames
+                    )
+                )
+            }
+        }
     }
 
     fun refreshSteamMetadata() {
@@ -635,7 +666,8 @@ class SettingsViewModel @Inject constructor(
                 true
             }
             state.currentSection == SettingsSection.STEAM_SETTINGS -> {
-                val steamIndex = if (_uiState.value.syncSettings.saveSyncEnabled) 4 else 3
+                // Steam starts at index: 7 (with save sync) or 5 (without save sync)
+                val steamIndex = if (_uiState.value.syncSettings.saveSyncEnabled) 7 else 5
                 _uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = steamIndex) }
                 true
             }
@@ -684,10 +716,12 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.SERVER -> if (state.server.rommConfiguring) {
                     4
                 } else {
+                    // Android is at index: 6/4/1 (after save games/tracking/romm)
+                    // Steam starts at index: 7/5/2 (after Android)
                     val steamBaseIndex = when {
-                        isConnected && state.syncSettings.saveSyncEnabled -> 6
-                        isConnected -> 4
-                        else -> 1
+                        isConnected && state.syncSettings.saveSyncEnabled -> 7
+                        isConnected -> 5
+                        else -> 2
                     }
                     val launcherCount = state.steam.installedLaunchers.size
                     if (launcherCount > 0) steamBaseIndex + launcherCount else steamBaseIndex
@@ -1369,12 +1403,13 @@ class SettingsViewModel @Inject constructor(
                         4 -> cancelRommConfig()
                     }
                 } else {
-                    // Indices: 0=RomM, 1=SyncSettings, 2=SyncLibrary, 3=AccuratePlayTime, 4=SaveCache, 5=SyncSaves, 6+=Steam
-                    val steamBaseIndex = when {
+                    // Indices: 0=RomM, 1=SyncSettings, 2=SyncLibrary, 3=AccuratePlayTime, 4=SaveCache, 5=SyncSaves, 6=Android, 7+=Steam
+                    val androidBaseIndex = when {
                         isConnected && state.syncSettings.saveSyncEnabled -> 6
                         isConnected -> 4
                         else -> 1
                     }
+                    val steamBaseIndex = androidBaseIndex + 1
                     val launcherCount = state.steam.installedLaunchers.size
                     val refreshIndex = steamBaseIndex + launcherCount
                     when {
@@ -1392,6 +1427,7 @@ class SettingsViewModel @Inject constructor(
                         }
                         state.focusedIndex == 4 && isConnected && state.syncSettings.saveSyncEnabled -> cycleSaveCacheLimit()
                         state.focusedIndex == 5 && isConnected && state.syncSettings.saveSyncEnabled && isOnline -> runSaveSyncNow()
+                        state.focusedIndex == androidBaseIndex -> scanForAndroidGames()
                         state.focusedIndex >= steamBaseIndex && state.focusedIndex < refreshIndex -> {
                             if (state.steam.hasStoragePermission && !state.steam.isSyncing) {
                                 confirmLauncherAction()

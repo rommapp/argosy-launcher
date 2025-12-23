@@ -148,7 +148,7 @@ class PlaySessionTracker @Inject constructor(
         val sessionDuration = Duration.between(session.startTime, Instant.now())
         val finalScreenOnDuration = screenOnDuration
 
-        Log.d(TAG, "endSession: gameId=${session.gameId}, totalSession=${sessionDuration.toSeconds()}s, screenOnDuration=${finalScreenOnDuration.toSeconds()}s, lastElapsed=${elapsedSinceScreenOn.toSeconds()}s")
+        Log.d(TAG, "endSession: gameId=${session.gameId}, totalSession=${sessionDuration.toMillis() / 1000}s, screenOnDuration=${finalScreenOnDuration.toMillis() / 1000}s, lastElapsed=${elapsedSinceScreenOn.toMillis() / 1000}s")
 
         scope.launch {
             val prefs = preferencesRepository.userPreferences.first()
@@ -158,7 +158,7 @@ class PlaySessionTracker @Inject constructor(
             Log.d(TAG, "Time tracking check: enabled=${prefs.accuratePlayTimeEnabled}, hasPermission=$hasPermission, canTrack=$canTrackAccurately")
 
             if (canTrackAccurately) {
-                val seconds = finalScreenOnDuration.toSeconds()
+                val seconds = finalScreenOnDuration.toMillis() / 1000
                 val minutes = ((seconds + 30) / 60).toInt()
                 if (minutes > 0) {
                     gameDao.addPlayTime(session.gameId, minutes)

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadState
+import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -35,6 +36,7 @@ import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import android.content.Intent
+import android.net.Uri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -68,8 +70,10 @@ private const val ROW_TYPE_PLATFORM = "platform"
 private const val ROW_TYPE_CONTINUE = "continue"
 private const val ROW_TYPE_RECOMMENDATIONS = "recommendations"
 private const val ROW_TYPE_STEAM = "steam"
+private const val ROW_TYPE_ANDROID = "android"
 
 private const val STEAM_PLATFORM_ID = "steam"
+private const val ANDROID_PLATFORM_ID = "android"
 
 data class GameDownloadIndicator(
     val isDownloading: Boolean = false,
@@ -102,7 +106,10 @@ data class HomeGameUi(
     val userDifficulty: Int = 0,
     val achievementCount: Int = 0,
     val earnedAchievementCount: Int = 0,
-    val downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE
+    val downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
+    val isAndroidApp: Boolean = false,
+    val packageName: String? = null,
+    val needsInstall: Boolean = false
 )
 
 sealed class HomeRowItem {
@@ -128,6 +135,7 @@ sealed class HomeRow {
     data class Platform(val index: Int) : HomeRow()
     data object Continue : HomeRow()
     data object Recommendations : HomeRow()
+    data object Android : HomeRow()
     data object Steam : HomeRow()
 }
 
@@ -138,6 +146,7 @@ data class HomeUiState(
     val recentGames: List<HomeGameUi> = emptyList(),
     val favoriteGames: List<HomeGameUi> = emptyList(),
     val recommendedGames: List<HomeGameUi> = emptyList(),
+    val androidGames: List<HomeGameUi> = emptyList(),
     val steamGames: List<HomeGameUi> = emptyList(),
     val currentRow: HomeRow = HomeRow.Continue,
     val isLoading: Boolean = true,
@@ -158,6 +167,7 @@ data class HomeUiState(
             if (recentGames.isNotEmpty()) add(HomeRow.Continue)
             if (recommendedGames.isNotEmpty()) add(HomeRow.Recommendations)
             if (favoriteGames.isNotEmpty()) add(HomeRow.Favorites)
+            if (androidGames.isNotEmpty()) add(HomeRow.Android)
             if (steamGames.isNotEmpty()) add(HomeRow.Steam)
             platforms.forEachIndexed { index, _ -> add(HomeRow.Platform(index)) }
         }
@@ -186,6 +196,14 @@ data class HomeUiState(
                 if (recommendedGames.isEmpty()) emptyList()
                 else recommendedGames.map { HomeRowItem.Game(it) }
             }
+            HomeRow.Android -> {
+                if (androidGames.isEmpty()) emptyList()
+                else androidGames.map { HomeRowItem.Game(it) } + HomeRowItem.ViewAll(
+                    platformId = ANDROID_PLATFORM_ID,
+                    platformName = "Android",
+                    logoPath = null
+                )
+            }
             HomeRow.Steam -> {
                 if (steamGames.isEmpty()) emptyList()
                 else steamGames.map { HomeRowItem.Game(it) } + HomeRowItem.ViewAll(
@@ -208,6 +226,7 @@ data class HomeUiState(
             is HomeRow.Platform -> currentPlatform?.name ?: "Unknown"
             HomeRow.Continue -> "Continue Playing"
             HomeRow.Recommendations -> "Recommended For You"
+            HomeRow.Android -> "Android"
             HomeRow.Steam -> "Steam"
         }
 
@@ -244,7 +263,8 @@ class HomeViewModel @Inject constructor(
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
     private val achievementUpdateBus: AchievementUpdateBus,
-    private val generateRecommendationsUseCase: GenerateRecommendationsUseCase
+    private val generateRecommendationsUseCase: GenerateRecommendationsUseCase,
+    private val apkInstallManager: ApkInstallManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -383,6 +403,7 @@ class HomeViewModel @Inject constructor(
             ROW_TYPE_PLATFORM -> HomeRow.Platform(platformIndex)
             ROW_TYPE_CONTINUE -> HomeRow.Continue
             ROW_TYPE_RECOMMENDATIONS -> HomeRow.Recommendations
+            ROW_TYPE_ANDROID -> HomeRow.Android
             ROW_TYPE_STEAM -> HomeRow.Steam
             else -> HomeRow.Continue
         }
@@ -397,6 +418,7 @@ class HomeViewModel @Inject constructor(
             is HomeRow.Platform -> ROW_TYPE_PLATFORM to row.index
             HomeRow.Continue -> ROW_TYPE_CONTINUE to 0
             HomeRow.Recommendations -> ROW_TYPE_RECOMMENDATIONS to 0
+            HomeRow.Android -> ROW_TYPE_ANDROID to 0
             HomeRow.Steam -> ROW_TYPE_STEAM to 0
         }
         savedStateHandle[KEY_ROW_TYPE] = rowType
@@ -429,8 +451,9 @@ class HomeViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             val allPlatforms = platformDao.getPlatformsWithGames()
-            val platforms = allPlatforms.filter { it.id != STEAM_PLATFORM_ID }
+            val platforms = allPlatforms.filter { it.id != STEAM_PLATFORM_ID && it.id != ANDROID_PLATFORM_ID }
             val favorites = gameDao.getFavorites()
+            val androidGames = gameDao.getByPlatformSorted(ANDROID_PLATFORM_ID, limit = PLATFORM_GAMES_LIMIT)
             val steamGames = gameDao.getByPlatformSorted(STEAM_PLATFORM_ID, limit = PLATFORM_GAMES_LIMIT)
 
             val candidatePool = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
@@ -439,6 +462,7 @@ class HomeViewModel @Inject constructor(
                 if (validatedRecent.size >= RECENT_GAMES_LIMIT) break
                 val isPlayable = when {
                     game.source == GameSource.STEAM -> true
+                    game.source == GameSource.ANDROID_APP -> true
                     game.localPath != null -> File(game.localPath).exists()
                     else -> false
                 }
@@ -450,11 +474,13 @@ class HomeViewModel @Inject constructor(
 
             val platformUis = platforms.map { it.toUi() }
             val favoriteUis = favorites.map { it.toUi() }
+            val androidGameUis = androidGames.map { it.toUi() }
             val steamGameUis = steamGames.map { it.toUi() }
 
             val startRow = when {
                 validatedRecent.isNotEmpty() -> HomeRow.Continue
                 favoriteUis.isNotEmpty() -> HomeRow.Favorites
+                androidGameUis.isNotEmpty() -> HomeRow.Android
                 steamGameUis.isNotEmpty() -> HomeRow.Steam
                 platformUis.isNotEmpty() -> HomeRow.Platform(0)
                 else -> HomeRow.Continue
@@ -465,6 +491,7 @@ class HomeViewModel @Inject constructor(
                     platforms = platformUis,
                     recentGames = validatedRecent,
                     favoriteGames = favoriteUis,
+                    androidGames = androidGameUis,
                     steamGames = steamGameUis,
                     currentRow = startRow,
                     isLoading = false
@@ -538,6 +565,7 @@ class HomeViewModel @Inject constructor(
 
                 val isPlayable = when {
                     game.source == GameSource.STEAM -> true
+                    game.source == GameSource.ANDROID_APP -> true
                     game.localPath != null -> File(game.localPath).exists()
                     else -> false
                 }
@@ -621,17 +649,21 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun loadPlatforms() {
         val allPlatforms = platformDao.getPlatformsWithGames()
-        val platforms = allPlatforms.filter { it.id != STEAM_PLATFORM_ID }
+        val platforms = allPlatforms.filter { it.id != STEAM_PLATFORM_ID && it.id != ANDROID_PLATFORM_ID }
         val platformUis = platforms.map { it.toUi() }
+        val androidGames = gameDao.getByPlatformSorted(ANDROID_PLATFORM_ID, limit = PLATFORM_GAMES_LIMIT)
+        val androidGameUis = androidGames.map { it.toUi() }
         val steamGames = gameDao.getByPlatformSorted(STEAM_PLATFORM_ID, limit = PLATFORM_GAMES_LIMIT)
         val steamGameUis = steamGames.map { it.toUi() }
         _uiState.update { state ->
             val shouldSwitchRow = platforms.isNotEmpty() &&
                 state.currentRow == HomeRow.Continue &&
                 state.recentGames.isEmpty() &&
+                state.androidGames.isEmpty() &&
                 state.steamGames.isEmpty()
             state.copy(
                 platforms = platformUis,
+                androidGames = androidGameUis,
                 steamGames = steamGameUis,
                 currentRow = if (shouldSwitchRow) HomeRow.Platform(0) else state.currentRow,
                 isLoading = false
@@ -805,6 +837,7 @@ class HomeViewModel @Inject constructor(
                 HomeRow.Continue -> loadRecentGames()
                 HomeRow.Favorites -> loadFavorites()
                 HomeRow.Recommendations -> loadRecommendations()
+                HomeRow.Android -> { }
                 HomeRow.Steam -> { }
             }
         }
@@ -869,6 +902,7 @@ class HomeViewModel @Inject constructor(
                 val game = item.game
                 val indicator = state.downloadIndicatorFor(game.id)
                 when {
+                    game.needsInstall -> installApk(game.id)
                     game.isDownloaded -> launchGame(game.id)
                     indicator.isPaused || indicator.isQueued -> downloadManager.resumeDownload(game.id)
                     else -> queueDownload(game.id)
@@ -938,8 +972,9 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             val game = it.focusedGame
             val isDownloaded = game?.isDownloaded == true
+            val needsInstall = game?.needsInstall == true
             val isRommGame = game?.isRommGame == true
-            var maxIndex = if (isDownloaded) MENU_INDEX_MAX_DOWNLOADED else MENU_INDEX_MAX_REMOTE
+            var maxIndex = if (isDownloaded || needsInstall) MENU_INDEX_MAX_DOWNLOADED else MENU_INDEX_MAX_REMOTE
             if (isRommGame) maxIndex++
             val newIndex = (it.gameMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(gameMenuFocusIndex = newIndex)
@@ -952,19 +987,25 @@ class HomeViewModel @Inject constructor(
         val index = state.gameMenuFocusIndex
         val isRommGame = game.isRommGame
         val isDownloaded = game.isDownloaded
+        val needsInstall = game.needsInstall
+        val isAndroidApp = game.isAndroidApp
 
         var currentIdx = 0
         val playIdx = currentIdx++
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
         val refreshIdx = if (isRommGame) currentIdx++ else -1
-        val deleteIdx = if (isDownloaded) currentIdx++ else -1
+        val deleteIdx = if (isDownloaded || needsInstall || isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
 
         when (index) {
             playIdx -> {
                 toggleGameMenu()
-                if (isDownloaded) launchGame(game.id) else queueDownload(game.id)
+                when {
+                    needsInstall -> installApk(game.id)
+                    isDownloaded -> launchGame(game.id)
+                    else -> queueDownload(game.id)
+                }
             }
             favoriteIdx -> toggleFavorite(game.id)
             detailsIdx -> {
@@ -977,7 +1018,7 @@ class HomeViewModel @Inject constructor(
             refreshIdx -> refreshGameData(game.id)
             deleteIdx -> {
                 toggleGameMenu()
-                deleteLocalFile(game.id)
+                if (isAndroidApp) uninstallAndroidApp(game.packageName) else deleteLocalFile(game.id)
             }
             hideIdx -> {
                 toggleGameMenu()
@@ -1024,6 +1065,17 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun uninstallAndroidApp(packageName: String?) {
+        if (packageName == null) return
+        val intent = Intent(Intent.ACTION_DELETE).apply {
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        viewModelScope.launch {
+            _events.emit(HomeEvent.LaunchGame(intent))
+        }
+    }
+
     private suspend fun refreshCurrentRowInternal() {
         val state = _uiState.value
         val focusedGameId = state.focusedGame?.id
@@ -1057,6 +1109,7 @@ class HomeViewModel @Inject constructor(
                     if (validated.size >= RECENT_GAMES_LIMIT) break
                     val isPlayable = when {
                         game.source == GameSource.STEAM -> true
+                        game.source == GameSource.ANDROID_APP -> true
                         game.localPath != null -> File(game.localPath).exists()
                         else -> false
                     }
@@ -1105,6 +1158,22 @@ class HomeViewModel @Inject constructor(
             HomeRow.Recommendations -> {
                 loadRecommendations()
             }
+            HomeRow.Android -> {
+                val games = gameDao.getByPlatformSorted(ANDROID_PLATFORM_ID, limit = PLATFORM_GAMES_LIMIT)
+                val gameUis = games.map { it.toUi() }
+                val newIndex = if (focusedGameId != null) {
+                    gameUis.indexOfFirst { it.id == focusedGameId }
+                        .takeIf { it >= 0 } ?: state.focusedGameIndex.coerceAtMost(gameUis.lastIndex.coerceAtLeast(0))
+                } else state.focusedGameIndex
+
+                _uiState.update { s ->
+                    val newState = s.copy(androidGames = gameUis, focusedGameIndex = newIndex)
+                    if (s.currentRow == HomeRow.Android && gameUis.isEmpty()) {
+                        val newRow = newState.availableRows.firstOrNull() ?: HomeRow.Continue
+                        newState.copy(currentRow = newRow, focusedGameIndex = 0)
+                    } else newState
+                }
+            }
             HomeRow.Steam -> {
                 val games = gameDao.getByPlatformSorted(STEAM_PLATFORM_ID, limit = PLATFORM_GAMES_LIMIT)
                 val gameUis = games.map { it.toUi() }
@@ -1139,6 +1208,15 @@ class HomeViewModel @Inject constructor(
                     notificationManager.showSuccess("Downloading ${result.discCount} discs")
                 }
                 is DownloadResult.Error -> notificationManager.showError(result.message)
+            }
+        }
+    }
+
+    fun installApk(gameId: Long) {
+        viewModelScope.launch {
+            val success = apkInstallManager.installApkForGame(gameId)
+            if (!success) {
+                notificationManager.showError("Could not install APK")
             }
         }
     }
@@ -1194,13 +1272,16 @@ class HomeViewModel @Inject constructor(
             releaseYear = releaseYear,
             genre = genre,
             isFavorite = isFavorite,
-            isDownloaded = localPath != null || source == GameSource.STEAM,
+            isDownloaded = localPath != null || source == GameSource.STEAM || source == GameSource.ANDROID_APP,
             isRommGame = rommId != null,
             rating = rating,
             userRating = userRating,
             userDifficulty = userDifficulty,
             achievementCount = achievementCount,
-            earnedAchievementCount = earnedAchievementCount
+            earnedAchievementCount = earnedAchievementCount,
+            isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
+            packageName = packageName,
+            needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP
         )
     }
 
@@ -1249,6 +1330,7 @@ class HomeViewModel @Inject constructor(
                         val game = item.game
                         val indicator = _uiState.value.downloadIndicatorFor(game.id)
                         when {
+                            game.needsInstall -> installApk(game.id)
                             game.isDownloaded -> launchGame(game.id)
                             indicator.isPaused || indicator.isQueued -> resumeDownload(game.id)
                             else -> queueDownload(game.id)
@@ -1334,6 +1416,12 @@ class HomeViewModel @Inject constructor(
                     if (it.id == gameId) it.copy(achievementCount = total, earnedAchievementCount = earned) else it
                 },
                 recommendedGames = state.recommendedGames.map {
+                    if (it.id == gameId) it.copy(achievementCount = total, earnedAchievementCount = earned) else it
+                },
+                androidGames = state.androidGames.map {
+                    if (it.id == gameId) it.copy(achievementCount = total, earnedAchievementCount = earned) else it
+                },
+                steamGames = state.steamGames.map {
                     if (it.id == gameId) it.copy(achievementCount = total, earnedAchievementCount = earned) else it
                 },
                 platformItems = state.platformItems.map { item ->

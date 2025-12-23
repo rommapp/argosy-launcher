@@ -29,7 +29,8 @@ fun MoreOptionsModal(
     onOptionSelect: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val isRommGame = game.isRommGame
+    val canTrackProgress = game.isRommGame || game.isAndroidApp
+    val isEmulatedGame = !game.isSteamGame && !game.isAndroidApp
     var currentIndex = 0
 
     Modal(title = "MORE OPTIONS", onDismiss = onDismiss) {
@@ -42,7 +43,7 @@ fun MoreOptionsModal(
                 onClick = { onOptionSelect(idx) }
             )
         }
-        if (isRommGame) {
+        if (canTrackProgress) {
             val rateIdx = currentIndex++
             OptionItem(
                 icon = Icons.Default.Star,
@@ -76,7 +77,7 @@ fun MoreOptionsModal(
                 isFocused = focusIndex == idx,
                 onClick = { onOptionSelect(idx) }
             )
-        } else {
+        } else if (isEmulatedGame) {
             val idx = currentIndex++
             OptionItem(
                 label = "Change Emulator",
@@ -85,7 +86,7 @@ fun MoreOptionsModal(
                 onClick = { onOptionSelect(idx) }
             )
         }
-        if (game.isRetroArchEmulator && !game.isSteamGame) {
+        if (game.isRetroArchEmulator && isEmulatedGame) {
             val idx = currentIndex++
             OptionItem(
                 label = "Change Core",
@@ -103,7 +104,7 @@ fun MoreOptionsModal(
                 onClick = { onOptionSelect(idx) }
             )
         }
-        if (isRommGame) {
+        if (canTrackProgress) {
             val idx = currentIndex++
             OptionItem(
                 icon = Icons.Default.Refresh,
@@ -120,11 +121,11 @@ fun MoreOptionsModal(
             color = MaterialTheme.colorScheme.outlineVariant
         )
 
-        if (isDownloaded) {
+        if (isDownloaded || game.isAndroidApp) {
             val idx = currentIndex++
             OptionItem(
                 icon = Icons.Default.DeleteOutline,
-                label = "Delete Download",
+                label = if (game.isAndroidApp) "Uninstall" else "Delete Download",
                 isFocused = focusIndex == idx,
                 isDangerous = true,
                 onClick = { onOptionSelect(idx) }

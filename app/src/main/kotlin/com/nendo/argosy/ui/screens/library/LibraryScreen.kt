@@ -27,6 +27,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Folder
@@ -384,12 +385,12 @@ fun LibraryScreen(
                     game = game,
                     focusIndex = uiState.quickMenuFocusIndex,
                     onDismiss = { viewModel.toggleQuickMenu() },
-                    onPlayOrDownload = {
+                    onPrimaryAction = {
                         viewModel.toggleQuickMenu()
-                        if (game.isDownloaded) {
-                            viewModel.launchGame(game.id)
-                        } else {
-                            viewModel.downloadGame(game.id)
+                        when {
+                            game.needsInstall -> viewModel.installApk(game.id)
+                            game.isDownloaded -> viewModel.launchGame(game.id)
+                            else -> viewModel.downloadGame(game.id)
                         }
                     },
                     onFavorite = { viewModel.toggleFavorite(game.id) },
@@ -889,23 +890,35 @@ private fun QuickMenuOverlay(
     game: LibraryGameUi,
     focusIndex: Int,
     onDismiss: () -> Unit,
-    onPlayOrDownload: () -> Unit,
+    onPrimaryAction: () -> Unit,
     onFavorite: () -> Unit,
     onDetails: () -> Unit,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
     onHide: () -> Unit
 ) {
+    val canRefresh = game.isRommGame || game.isAndroidApp
     var currentIndex = 0
     val playIdx = currentIndex++
     val favoriteIdx = currentIndex++
     val detailsIdx = currentIndex++
-    val refreshIdx = if (game.isRommGame) currentIndex++ else -1
-    val deleteIdx = if (game.isDownloaded) currentIndex++ else -1
+    val refreshIdx = if (canRefresh) currentIndex++ else -1
+    val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
     val hideIdx = currentIndex
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
+    val primaryIcon = when {
+        game.needsInstall -> Icons.Default.InstallMobile
+        game.isDownloaded -> Icons.Default.PlayArrow
+        else -> Icons.Default.Download
+    }
+    val primaryLabel = when {
+        game.needsInstall -> "Install"
+        game.isDownloaded -> "Play"
+        else -> "Download"
+    }
 
     Box(
         modifier = Modifier
@@ -936,10 +949,10 @@ private fun QuickMenuOverlay(
             Spacer(modifier = Modifier.height(16.dp))
 
             QuickMenuItem(
-                icon = if (game.isDownloaded) Icons.Default.PlayArrow else Icons.Default.Download,
-                label = if (game.isDownloaded) "Play" else "Download",
+                icon = primaryIcon,
+                label = primaryLabel,
                 isFocused = focusIndex == playIdx,
-                onClick = onPlayOrDownload
+                onClick = onPrimaryAction
             )
             QuickMenuItem(
                 icon = if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -953,7 +966,7 @@ private fun QuickMenuOverlay(
                 isFocused = focusIndex == detailsIdx,
                 onClick = onDetails
             )
-            if (game.isRommGame) {
+            if (canRefresh) {
                 QuickMenuItem(
                     icon = Icons.Default.Refresh,
                     label = "Refresh Data",
@@ -967,10 +980,10 @@ private fun QuickMenuOverlay(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            if (game.isDownloaded) {
+            if (game.isDownloaded || game.needsInstall) {
                 QuickMenuItem(
                     icon = Icons.Default.DeleteOutline,
-                    label = "Delete Download",
+                    label = if (game.isAndroidApp && game.isDownloaded) "Uninstall" else "Delete Download",
                     isFocused = focusIndex == deleteIdx,
                     isDangerous = true,
                     onClick = onDelete

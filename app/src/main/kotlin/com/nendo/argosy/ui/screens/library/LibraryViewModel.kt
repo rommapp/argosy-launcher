@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.library
 
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -9,8 +10,11 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.remote.playstore.PlayStoreService
+import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
@@ -112,7 +116,9 @@ data class LibraryGameUi(
     val isFavorite: Boolean,
     val isDownloaded: Boolean,
     val isRommGame: Boolean,
-    val emulatorName: String?
+    val isAndroidApp: Boolean,
+    val emulatorName: String?,
+    val needsInstall: Boolean = false
 ) {
     val sourceIcon: ImageVector?
         get() = when (source) {
@@ -120,6 +126,7 @@ data class LibraryGameUi(
             GameSource.ROMM_SYNCED -> Icons.Default.CheckCircle
             GameSource.ROMM_REMOTE -> null
             GameSource.STEAM -> Icons.Default.Cloud
+            GameSource.ANDROID_APP -> null
         }
 }
 
@@ -239,7 +246,10 @@ class LibraryViewModel @Inject constructor(
     private val soundManager: SoundFeedbackManager,
     private val gameActions: GameActionsDelegate,
     private val gameLaunchDelegate: GameLaunchDelegate,
-    private val romMRepository: RomMRepository
+    private val romMRepository: RomMRepository,
+    private val playStoreService: PlayStoreService,
+    private val imageCacheManager: ImageCacheManager,
+    private val apkInstallManager: ApkInstallManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -643,9 +653,12 @@ class LibraryViewModel @Inject constructor(
         _uiState.update {
             val game = it.focusedGame
             val isDownloaded = game?.isDownloaded == true
+            val needsInstall = game?.needsInstall == true
             val isRommGame = game?.isRommGame == true
-            var maxIndex = if (isDownloaded) 4 else 3
-            if (isRommGame) maxIndex++
+            val isAndroidApp = game?.isAndroidApp == true
+            val canRefresh = isRommGame || isAndroidApp
+            var maxIndex = if (isDownloaded || needsInstall) 4 else 3
+            if (canRefresh) maxIndex++
             val newIndex = (it.quickMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(quickMenuFocusIndex = newIndex)
         }
@@ -655,19 +668,26 @@ class LibraryViewModel @Inject constructor(
         val game = _uiState.value.focusedGame ?: return InputResult.HANDLED
         val index = _uiState.value.quickMenuFocusIndex
         val isRommGame = game.isRommGame
+        val isAndroidApp = game.isAndroidApp
+        val canRefresh = isRommGame || isAndroidApp
         val isDownloaded = game.isDownloaded
+        val needsInstall = game.needsInstall
 
         var currentIdx = 0
         val playIdx = currentIdx++
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
-        val refreshIdx = if (isRommGame) currentIdx++ else -1
-        val deleteIdx = if (isDownloaded) currentIdx++ else -1
+        val refreshIdx = if (canRefresh) currentIdx++ else -1
+        val deleteIdx = if (isDownloaded || needsInstall) currentIdx++ else -1
         val hideIdx = currentIdx
 
         return when (index) {
             playIdx -> {
-                if (isDownloaded) launchGame(game.id) else downloadGame(game.id)
+                when {
+                    needsInstall -> installApk(game.id)
+                    isDownloaded -> launchGame(game.id)
+                    else -> downloadGame(game.id)
+                }
                 toggleQuickMenu()
                 InputResult.HANDLED
             }
@@ -683,11 +703,11 @@ class LibraryViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             refreshIdx -> {
-                refreshGameData(game.id)
+                if (isAndroidApp) refreshAndroidGameData(game.id) else refreshGameData(game.id)
                 InputResult.HANDLED
             }
             deleteIdx -> {
-                deleteLocalFile(game.id)
+                if (isAndroidApp) uninstallAndroidApp(game.id) else deleteLocalFile(game.id)
                 toggleQuickMenu()
                 InputResult.HANDLED
             }
@@ -728,6 +748,56 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    fun refreshAndroidGameData(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val packageName = game.packageName ?: return@launch
+
+            try {
+                val details = playStoreService.getAppDetails(packageName).getOrNull()
+                if (details != null) {
+                    val updated = game.copy(
+                        description = details.description ?: game.description,
+                        developer = details.developer ?: game.developer,
+                        genre = details.genre ?: game.genre,
+                        rating = details.ratingPercent ?: game.rating,
+                        screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }?.joinToString(",") ?: game.screenshotPaths,
+                        backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+                    )
+                    gameDao.update(updated)
+
+                    details.coverUrl?.let { url ->
+                        imageCacheManager.queueCoverCacheByGameId(url, gameId)
+                    }
+                    if (details.screenshotUrls.isNotEmpty()) {
+                        imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+                    }
+
+                    notificationManager.showSuccess("Game data refreshed")
+                    loadGames()
+                } else {
+                    notificationManager.showError("Could not fetch app data")
+                }
+            } catch (e: Exception) {
+                notificationManager.showError("Failed to refresh: ${e.message}")
+            }
+            toggleQuickMenu()
+        }
+    }
+
+    fun uninstallAndroidApp(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val packageName = game.packageName ?: return@launch
+
+            val intent = Intent(Intent.ACTION_DELETE).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            _events.emit(LibraryEvent.LaunchGame(intent))
+        }
+    }
+
     fun launchGame(gameId: Long) {
         gameLaunchDelegate.launchGame(viewModelScope, gameId) { intent ->
             viewModelScope.launch { _events.emit(LibraryEvent.LaunchGame(intent)) }
@@ -742,6 +812,15 @@ class LibraryViewModel @Inject constructor(
                     notificationManager.showSuccess("Downloading ${result.discCount} discs")
                 }
                 is DownloadResult.Error -> notificationManager.showError(result.message)
+            }
+        }
+    }
+
+    fun installApk(gameId: Long) {
+        viewModelScope.launch {
+            val success = apkInstallManager.installApkForGame(gameId)
+            if (!success) {
+                notificationManager.showError("Could not install APK")
             }
         }
     }
@@ -768,9 +847,11 @@ class LibraryViewModel @Inject constructor(
         coverPath = coverPath,
         source = source,
         isFavorite = isFavorite,
-        isDownloaded = localPath != null || source == GameSource.STEAM,
+        isDownloaded = localPath != null || source == GameSource.STEAM || source == GameSource.ANDROID_APP,
         isRommGame = rommId != null,
-        emulatorName = null
+        isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
+        emulatorName = null,
+        needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP
     )
 
     fun enterTouchMode() {

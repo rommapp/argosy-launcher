@@ -1,9 +1,13 @@
 package com.nendo.argosy.data.cache
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.util.Log
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -64,6 +68,11 @@ data class AchievementBadgeCacheRequest(
     val achievementId: Long,
     val badgeUrl: String,
     val badgeUrlLock: String?
+)
+
+data class AppIconCacheRequest(
+    val gameId: Long,
+    val packageName: String
 )
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -283,6 +292,44 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
+    fun queueScreenshotCacheByGameId(gameId: Long, screenshotUrls: List<String>) {
+        scope.launch {
+            val cachedPaths = mutableListOf<String>()
+
+            screenshotUrls.forEachIndexed { index, url ->
+                val fileName = "ss_g${gameId}_${index}_${url.md5Hash()}.jpg"
+                val cachedFile = File(cacheDir, fileName)
+
+                if (cachedFile.exists()) {
+                    cachedPaths.add(cachedFile.absolutePath)
+                    return@forEachIndexed
+                }
+
+                val bitmap = downloadAndResize(url, 480) ?: return@forEachIndexed
+
+                FileOutputStream(cachedFile).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 75, out)
+                }
+                bitmap.recycle()
+
+                Log.d(TAG, "Cached screenshot $index for gameId $gameId: ${cachedFile.length() / 1024}KB")
+                cachedPaths.add(cachedFile.absolutePath)
+            }
+
+            if (cachedPaths.isNotEmpty()) {
+                gameDao.updateCachedScreenshotPaths(gameId, cachedPaths.joinToString(","))
+
+                if (cachedPaths.isNotEmpty()) {
+                    val game = gameDao.getById(gameId)
+                    if (game != null && (game.backgroundPath == null || !game.backgroundPath.startsWith("/"))) {
+                        gameDao.updateBackgroundPath(gameId, cachedPaths.first())
+                        Log.d(TAG, "Set first screenshot as background for gameId $gameId")
+                    }
+                }
+            }
+        }
+    }
+
     private fun startScreenshotProcessingIfNeeded() {
         if (isProcessingScreenshots) return
         isProcessingScreenshots = true
@@ -473,6 +520,28 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
+    fun queueCoverCacheByGameId(url: String, gameId: Long) {
+        scope.launch {
+            val fileName = "cover_g${gameId}_${url.md5Hash()}.jpg"
+            val cachedFile = File(cacheDir, fileName)
+
+            if (cachedFile.exists()) {
+                gameDao.updateCoverPath(gameId, cachedFile.absolutePath)
+                return@launch
+            }
+
+            val bitmap = downloadAndResize(url, 400) ?: return@launch
+
+            FileOutputStream(cachedFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
+            }
+            bitmap.recycle()
+
+            Log.d(TAG, "Cached cover for gameId $gameId: ${cachedFile.length() / 1024}KB")
+            gameDao.updateCoverPath(gameId, cachedFile.absolutePath)
+        }
+    }
+
     private fun startCoverProcessingIfNeeded() {
         if (isProcessingCovers) return
         isProcessingCovers = true
@@ -654,6 +723,113 @@ class ImageCacheManager @Inject constructor(
                 Log.e(TAG, "Failed to set screenshot as background: ${e.message}", e)
                 false
             }
+        }
+    }
+
+    private val appIconQueue = Channel<AppIconCacheRequest>(Channel.UNLIMITED)
+    private var isProcessingAppIcons = false
+    private val packageManager: PackageManager by lazy { context.packageManager }
+
+    fun queueAppIconCache(gameId: Long, packageName: String) {
+        scope.launch {
+            appIconQueue.send(AppIconCacheRequest(gameId, packageName))
+            startAppIconProcessingIfNeeded()
+        }
+    }
+
+    private fun startAppIconProcessingIfNeeded() {
+        if (isProcessingAppIcons) return
+        isProcessingAppIcons = true
+
+        scope.launch {
+            Log.d(TAG, "Starting app icon cache processing")
+
+            for (request in appIconQueue) {
+                try {
+                    processAppIconRequest(request)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to process app icon for ${request.packageName}: ${e.message}")
+                }
+
+                if (appIconQueue.isEmpty) break
+            }
+            isProcessingAppIcons = false
+        }
+    }
+
+    private suspend fun processAppIconRequest(request: AppIconCacheRequest) {
+        val fileName = "appicon_${request.packageName.hashCode()}.png"
+        val cachedFile = File(cacheDir, fileName)
+
+        if (cachedFile.exists()) {
+            gameDao.updateCoverPath(request.gameId, cachedFile.absolutePath)
+            return
+        }
+
+        val icon = try {
+            val appInfo = packageManager.getApplicationInfo(request.packageName, 0)
+            packageManager.getApplicationIcon(appInfo)
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.w(TAG, "Package not found: ${request.packageName}")
+            return
+        }
+
+        val bitmap = drawableToBitmap(icon, 256)
+
+        withContext(Dispatchers.IO) {
+            FileOutputStream(cachedFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+        }
+        bitmap.recycle()
+
+        Log.d(TAG, "Cached app icon for ${request.packageName}: ${cachedFile.length() / 1024}KB")
+        gameDao.updateCoverPath(request.gameId, cachedFile.absolutePath)
+    }
+
+    private fun drawableToBitmap(drawable: Drawable, size: Int): Bitmap {
+        if (drawable is BitmapDrawable && drawable.bitmap != null) {
+            val original = drawable.bitmap
+            return if (original.width != size || original.height != size) {
+                Bitmap.createScaledBitmap(original, size, size, true)
+            } else {
+                original.copy(Bitmap.Config.ARGB_8888, false)
+            }
+        }
+
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, size, size)
+        drawable.draw(canvas)
+        return bitmap
+    }
+
+    suspend fun cacheAppIconSync(packageName: String): String? {
+        return withContext(Dispatchers.IO) {
+            val fileName = "appicon_${packageName.hashCode()}.png"
+            val cachedFile = File(cacheDir, fileName)
+
+            if (cachedFile.exists()) {
+                return@withContext cachedFile.absolutePath
+            }
+
+            val icon = try {
+                val appInfo = packageManager.getApplicationInfo(packageName, 0)
+                packageManager.getApplicationIcon(appInfo)
+            } catch (e: PackageManager.NameNotFoundException) {
+                Log.w(TAG, "Package not found: $packageName")
+                return@withContext null
+            }
+
+            val bitmap = drawableToBitmap(icon, 256)
+
+            FileOutputStream(cachedFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            bitmap.recycle()
+
+            Log.d(TAG, "Cached app icon for $packageName: ${cachedFile.length() / 1024}KB")
+            cachedFile.absolutePath
         }
     }
 }

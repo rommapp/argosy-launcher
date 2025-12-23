@@ -132,7 +132,8 @@ class AndroidGameScanner @Inject constructor(
         val cacheExpired = cached == null ||
             !cached.isManualOverride && now - cached.fetchedAt >= PlayStoreService.CACHE_TTL_MS
         val existingNeedsMetadata = existing != null && existing.description == null
-        val needsFetch = cacheExpired || existingNeedsMetadata
+        val isNewGame = existing == null
+        val needsFetch = cacheExpired || existingNeedsMetadata || isNewGame
 
         val details: PlayStoreAppDetails? = if (needsFetch) {
             playStoreService.getAppDetails(app.packageName).getOrNull()
@@ -250,6 +251,40 @@ class AndroidGameScanner @Inject constructor(
         }
 
         updatePlatformGameCount()
+    }
+
+    suspend fun refreshAllMetadata(): Int = withContext(Dispatchers.IO) {
+        val androidGames = gameDao.getBySource(GameSource.ANDROID_APP)
+        var refreshedCount = 0
+
+        Log.d(TAG, "Refreshing metadata for ${androidGames.size} Android games")
+
+        for (game in androidGames) {
+            val packageName = game.packageName ?: continue
+            try {
+                val details = playStoreService.getAppDetails(packageName).getOrNull()
+                if (details != null) {
+                    val updated = game.copy(
+                        description = details.description ?: game.description,
+                        developer = details.developer ?: game.developer,
+                        genre = details.genre ?: game.genre,
+                        rating = details.ratingPercent ?: game.rating,
+                        screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
+                            ?.joinToString(",") ?: game.screenshotPaths,
+                        backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+                    )
+                    gameDao.update(updated)
+                    queueImageCaching(game.id, details)
+                    refreshedCount++
+                    Log.d(TAG, "Refreshed metadata for: ${game.title}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to refresh ${game.title}", e)
+            }
+        }
+
+        Log.d(TAG, "Refreshed $refreshedCount Android games")
+        refreshedCount
     }
 
     suspend fun removeEmulatorApps(): Int = withContext(Dispatchers.IO) {

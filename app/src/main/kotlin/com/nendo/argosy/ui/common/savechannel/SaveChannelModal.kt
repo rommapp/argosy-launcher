@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
+import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
@@ -133,6 +135,7 @@ fun SaveChannelModal(
             TabBar(
                 selectedTab = state.selectedTab,
                 hasSaveSlots = state.hasSaveSlots,
+                hasStates = state.hasStates,
                 onTabSelect = onTabSelect
             )
 
@@ -146,6 +149,44 @@ fun SaveChannelModal(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
+                }
+            } else if (state.selectedTab == SaveTab.STATES) {
+                if (state.statesEntries.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(itemHeight * 2),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No save states",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .heightIn(max = itemHeight * maxVisibleItems)
+                            .clip(RoundedCornerShape(8.dp))
+                    ) {
+                        items(
+                            count = state.statesEntries.size,
+                            key = { index ->
+                                val entry = state.statesEntries[index]
+                                "state-${entry.slotNumber}-${entry.localCacheId ?: "empty"}"
+                            }
+                        ) { index ->
+                            val entry = state.statesEntries[index]
+                            StateSlotRow(
+                                entry = entry,
+                                isFocused = state.focusIndex == index,
+                                onClick = { onEntryClick(index) },
+                                onLongClick = { onEntryLongClick(index) }
+                            )
+                        }
+                    }
                 }
             } else if (entries.isEmpty()) {
                 Box(
@@ -214,6 +255,15 @@ fun SaveChannelModal(
         if (state.showResetConfirmation) {
             ResetConfirmationOverlay()
         }
+
+        if (state.showVersionMismatchDialog && state.versionMismatchState != null) {
+            VersionMismatchOverlay(
+                savedCoreId = state.versionMismatchState.coreId,
+                savedVersion = state.versionMismatchState.coreVersion,
+                currentCoreId = state.currentCoreId,
+                currentVersion = state.currentCoreVersion
+            )
+        }
     }
 }
 
@@ -240,6 +290,7 @@ private fun ActiveSaveIndicator(activeChannel: String?) {
 private fun TabBar(
     selectedTab: SaveTab,
     hasSaveSlots: Boolean,
+    hasStates: Boolean,
     onTabSelect: (SaveTab) -> Unit
 ) {
     Row(
@@ -257,6 +308,12 @@ private fun TabBar(
             isSelected = selectedTab == SaveTab.TIMELINE,
             isEnabled = true,
             onClick = { onTabSelect(SaveTab.TIMELINE) }
+        )
+        TabButton(
+            label = "States",
+            isSelected = selectedTab == SaveTab.STATES,
+            isEnabled = hasStates,
+            onClick = { onTabSelect(SaveTab.STATES) }
         )
     }
 }
@@ -327,6 +384,12 @@ private fun buildFooterHints(state: SaveChannelState): List<Pair<InputButton, St
                 hints.add(InputButton.NORTH to "Lock")
             }
             hints.add(InputButton.SELECT to "Reset")
+        }
+        SaveTab.STATES -> {
+            val focusedState = state.focusedStateEntry
+            if (focusedState != null && focusedState.localCacheId != null) {
+                hints.add(InputButton.SOUTH to "Restore")
+            }
         }
     }
 
@@ -562,6 +625,187 @@ private fun ResetConfirmationOverlay() {
             text = "This will delete your local save file. Your saved slots and server saves will not be affected.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun StateSlotRow(
+    entry: UnifiedStateEntry,
+    isFocused: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
+    val isEmpty = entry.localCacheId == null
+    val dateFormatter = remember {
+        java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
+            .withZone(java.time.ZoneId.systemDefault())
+    }
+    val formattedDate = remember(entry.timestamp) {
+        if (isEmpty) "--" else dateFormatter.format(entry.timestamp)
+    }
+    val formattedSize = remember(entry.size) {
+        if (isEmpty) "" else when {
+            entry.size < 1024 -> "${entry.size} B"
+            entry.size < 1024 * 1024 -> "${entry.size / 1024} KB"
+            else -> String.format(java.util.Locale.US, "%.1f MB", entry.size / (1024.0 * 1024.0))
+        }
+    }
+
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+    val contentColor = if (isFocused) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else if (isEmpty) {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    val slotLabel = if (entry.slotNumber == -1) "Auto" else "Slot ${entry.slotNumber}"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(backgroundColor)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        when (entry.versionStatus) {
+            UnifiedStateEntry.VersionStatus.MISMATCH -> {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Version mismatch",
+                    tint = LocalLauncherTheme.current.semanticColors.warning,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            else -> {
+                Spacer(modifier = Modifier.width(20.dp))
+            }
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = slotLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (entry.coreId != null) {
+                    Text(
+                        text = entry.coreId,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor.copy(alpha = 0.7f)
+                )
+                if (formattedSize.isNotEmpty()) {
+                    Text(
+                        text = formattedSize,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = contentColor.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+
+        if (!isEmpty) {
+            val sourceText = when (entry.source) {
+                UnifiedStateEntry.Source.LOCAL -> "Local"
+                UnifiedStateEntry.Source.SERVER -> "Server"
+                UnifiedStateEntry.Source.BOTH -> "Synced"
+            }
+            Text(
+                text = "[$sourceText]",
+                style = MaterialTheme.typography.bodySmall,
+                color = when (entry.source) {
+                    UnifiedStateEntry.Source.LOCAL -> LocalLauncherTheme.current.semanticColors.warning
+                    UnifiedStateEntry.Source.SERVER -> MaterialTheme.colorScheme.secondary
+                    UnifiedStateEntry.Source.BOTH -> MaterialTheme.colorScheme.primary
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun VersionMismatchOverlay(
+    savedCoreId: String?,
+    savedVersion: String?,
+    currentCoreId: String?,
+    currentVersion: String?
+) {
+    NestedModal(
+        title = "CORE VERSION MISMATCH",
+        footerHints = listOf(
+            InputButton.SOUTH to "Load Anyway",
+            InputButton.EAST to "Cancel"
+        )
+    ) {
+        Text(
+            text = "This state was saved with:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Text(
+            text = "${savedCoreId ?: "Unknown"} ${savedVersion ?: ""}".trim(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Current core version:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Text(
+            text = "${currentCoreId ?: "Unknown"} ${currentVersion ?: ""}".trim(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Loading may cause crashes or corruption.",
+            style = MaterialTheme.typography.bodySmall,
+            color = LocalLauncherTheme.current.semanticColors.warning,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )

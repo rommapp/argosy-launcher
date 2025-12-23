@@ -61,6 +61,7 @@ class UserPreferencesRepository @Inject constructor(
         val BETA_UPDATES_ENABLED = booleanPreferencesKey("beta_updates_enabled")
         val SAVE_SYNC_ENABLED = booleanPreferencesKey("save_sync_enabled")
         val EXPERIMENTAL_FOLDER_SAVE_SYNC = booleanPreferencesKey("experimental_folder_save_sync")
+        val STATE_CACHE_ENABLED = booleanPreferencesKey("state_cache_enabled")
         val SAVE_CACHE_LIMIT = intPreferencesKey("save_cache_limit")
 
         val BACKGROUND_BLUR = intPreferencesKey("background_blur")
@@ -157,6 +158,7 @@ class UserPreferencesRepository @Inject constructor(
             betaUpdatesEnabled = prefs[Keys.BETA_UPDATES_ENABLED] ?: false,
             saveSyncEnabled = prefs[Keys.SAVE_SYNC_ENABLED] ?: false,
             experimentalFolderSaveSync = prefs[Keys.EXPERIMENTAL_FOLDER_SAVE_SYNC] ?: false,
+            stateCacheEnabled = prefs[Keys.STATE_CACHE_ENABLED] ?: true,
             saveCacheLimit = prefs[Keys.SAVE_CACHE_LIMIT] ?: 10,
             fileLoggingEnabled = prefs[Keys.FILE_LOGGING_ENABLED] ?: false,
             fileLoggingPath = prefs[Keys.FILE_LOGGING_PATH],
@@ -684,6 +686,7 @@ data class UserPreferences(
     val betaUpdatesEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,
     val experimentalFolderSaveSync: Boolean = false,
+    val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val backgroundBlur: Int = 0,
     val backgroundSaturation: Int = 100,

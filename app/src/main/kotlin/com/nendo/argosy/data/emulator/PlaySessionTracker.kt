@@ -14,6 +14,8 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.domain.usecase.save.SyncSaveOnSessionEndUseCase
+import com.nendo.argosy.domain.usecase.state.StateSyncResult
+import com.nendo.argosy.domain.usecase.state.SyncStatesOnSessionEndUseCase
 import com.nendo.argosy.ui.screens.common.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +52,7 @@ class PlaySessionTracker @Inject constructor(
     private val application: Application,
     private val gameDao: GameDao,
     private val syncSaveOnSessionEndUseCase: dagger.Lazy<SyncSaveOnSessionEndUseCase>,
+    private val syncStatesOnSessionEndUseCase: dagger.Lazy<SyncStatesOnSessionEndUseCase>,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val saveSyncRepository: dagger.Lazy<SaveSyncRepository>,
     private val romMRepository: dagger.Lazy<RomMRepository>,
@@ -221,6 +224,25 @@ class PlaySessionTracker @Inject constructor(
                 }
                 is SyncSaveOnSessionEndUseCase.Result.Error -> {
                     Log.e(TAG, "Save sync error: ${result.message}")
+                }
+            }
+
+            val stateResult = syncStatesOnSessionEndUseCase.get()(
+                session.gameId,
+                session.emulatorPackage
+            )
+            when (stateResult) {
+                is StateSyncResult.Cached -> {
+                    Log.d(TAG, "Cached ${stateResult.count} states for game ${session.gameId}")
+                }
+                is StateSyncResult.NoStatesFound -> {
+                    Log.d(TAG, "No states found for game ${session.gameId}")
+                }
+                is StateSyncResult.NotConfigured -> {
+                    Log.d(TAG, "State caching not configured for game ${session.gameId}")
+                }
+                is StateSyncResult.Error -> {
+                    Log.e(TAG, "State sync error: ${stateResult.message}")
                 }
             }
         }

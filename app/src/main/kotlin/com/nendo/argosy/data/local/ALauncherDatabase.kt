@@ -19,10 +19,12 @@ import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.AppCategoryEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
+import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
@@ -46,10 +48,11 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         GameDiscEntity::class,
         AchievementEntity::class,
         SaveCacheEntity::class,
+        StateCacheEntity::class,
         OrphanedFileEntity::class,
         AppCategoryEntity::class
     ],
-    version = 33,
+    version = 34,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -65,6 +68,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun emulatorSaveConfigDao(): EmulatorSaveConfigDao
     abstract fun achievementDao(): AchievementDao
     abstract fun saveCacheDao(): SaveCacheDao
+    abstract fun stateCacheDao(): StateCacheDao
     abstract fun orphanedFileDao(): OrphanedFileDao
     abstract fun appCategoryDao(): AppCategoryDao
 
@@ -470,6 +474,33 @@ abstract class ALauncherDatabase : RoomDatabase() {
                 db.execSQL("""
                     CREATE UNIQUE INDEX IF NOT EXISTS index_app_category_cache_packageName
                     ON app_category_cache(packageName)
+                """)
+            }
+        }
+
+        val MIGRATION_33_34 = object : Migration(33, 34) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS state_cache (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        emulatorId TEXT NOT NULL,
+                        slotNumber INTEGER NOT NULL,
+                        channelName TEXT,
+                        cachedAt INTEGER NOT NULL,
+                        stateSize INTEGER NOT NULL,
+                        cachePath TEXT NOT NULL,
+                        coreId TEXT,
+                        coreVersion TEXT,
+                        isLocked INTEGER NOT NULL DEFAULT 0,
+                        note TEXT
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_state_cache_gameId ON state_cache(gameId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_state_cache_cachedAt ON state_cache(cachedAt)")
+                db.execSQL("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_state_cache_game_emu_slot_channel
+                    ON state_cache(gameId, emulatorId, slotNumber, channelName)
                 """)
             }
         }

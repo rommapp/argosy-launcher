@@ -3,8 +3,12 @@ package com.nendo.argosy.ui.common.savechannel
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
+import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
+import com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase
+import com.nendo.argosy.domain.usecase.state.RestoreStateResult
+import com.nendo.argosy.domain.usecase.state.RestoreStateUseCase
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.notification.NotificationManager
@@ -21,7 +25,9 @@ import javax.inject.Inject
 
 class SaveChannelDelegate @Inject constructor(
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
+    private val getUnifiedStatesUseCase: GetUnifiedStatesUseCase,
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
+    private val restoreStateUseCase: RestoreStateUseCase,
     private val saveCacheManager: SaveCacheManager,
     private val gameDao: GameDao,
     private val notificationManager: NotificationManager,
@@ -32,7 +38,15 @@ class SaveChannelDelegate @Inject constructor(
 
     private var currentGameId: Long = 0
 
-    fun show(scope: CoroutineScope, gameId: Long, activeChannel: String?, savePath: String? = null) {
+    fun show(
+        scope: CoroutineScope,
+        gameId: Long,
+        activeChannel: String?,
+        savePath: String? = null,
+        emulatorId: String? = null,
+        currentCoreId: String? = null,
+        currentCoreVersion: String? = null
+    ) {
         currentGameId = gameId
         _state.update {
             it.copy(
@@ -40,7 +54,10 @@ class SaveChannelDelegate @Inject constructor(
                 isLoading = true,
                 focusIndex = 0,
                 activeChannel = activeChannel,
-                savePath = savePath
+                savePath = savePath,
+                emulatorId = emulatorId,
+                currentCoreId = currentCoreId,
+                currentCoreVersion = currentCoreVersion
             )
         }
         soundManager.play(SoundType.OPEN_MODAL)
@@ -51,12 +68,21 @@ class SaveChannelDelegate @Inject constructor(
             val slots = entries.filter { it.isLocked }.sortedBy { it.channelName?.lowercase() }
             val timeline = buildTimeline(entries, activeChannel, activeSaveTimestamp)
 
+            val states = getUnifiedStatesUseCase(
+                gameId = gameId,
+                emulatorId = emulatorId,
+                channelName = activeChannel,
+                currentCoreId = currentCoreId,
+                currentCoreVersion = currentCoreVersion
+            )
+
             val initialTab = determineInitialTab(slots.isNotEmpty(), activeChannel)
 
             _state.update {
                 it.copy(
                     slotsEntries = slots,
                     timelineEntries = timeline,
+                    statesEntries = states,
                     selectedTab = initialTab,
                     focusIndex = 0,
                     activeSaveTimestamp = activeSaveTimestamp,
@@ -108,15 +134,16 @@ class SaveChannelDelegate @Inject constructor(
     fun switchTab(tab: SaveTab) {
         val state = _state.value
         if (tab == SaveTab.SLOTS && !state.hasSaveSlots) return
+        if (tab == SaveTab.STATES && !state.hasStates) return
         if (tab == state.selectedTab) return
 
-        val newEntries = if (tab == SaveTab.SLOTS) state.slotsEntries else state.timelineEntries
         var newFocusIndex = 0
 
-        if (tab == SaveTab.TIMELINE && state.activeChannel == null &&
-            newEntries.isNotEmpty() && newEntries.first().isLatest
-        ) {
-            newFocusIndex = if (newEntries.size > 1) 1 else 0
+        if (tab == SaveTab.TIMELINE) {
+            val newEntries = state.timelineEntries
+            if (state.activeChannel == null && newEntries.isNotEmpty() && newEntries.first().isLatest) {
+                newFocusIndex = if (newEntries.size > 1) 1 else 0
+            }
         }
 
         _state.update {
@@ -130,12 +157,12 @@ class SaveChannelDelegate @Inject constructor(
 
     fun moveFocus(delta: Int) {
         _state.update { state ->
-            val entries = state.currentTabEntries
-            if (entries.isEmpty()) return@update state
+            val size = state.currentTabSize
+            if (size == 0) return@update state
 
             var newIndex = state.focusIndex + delta
 
-            val maxIndex = (entries.size - 1).coerceAtLeast(0)
+            val maxIndex = (size - 1).coerceAtLeast(0)
             newIndex = newIndex.coerceIn(0, maxIndex)
 
             if (newIndex != state.focusIndex) {
@@ -147,10 +174,10 @@ class SaveChannelDelegate @Inject constructor(
 
     fun setFocusIndex(index: Int) {
         _state.update { state ->
-            val entries = state.currentTabEntries
-            if (entries.isEmpty()) return@update state
+            val size = state.currentTabSize
+            if (size == 0) return@update state
 
-            val maxIndex = (entries.size - 1).coerceAtLeast(0)
+            val maxIndex = (size - 1).coerceAtLeast(0)
             val newIndex = index.coerceIn(0, maxIndex)
 
             state.copy(focusIndex = newIndex)
@@ -163,6 +190,7 @@ class SaveChannelDelegate @Inject constructor(
         when (state.selectedTab) {
             SaveTab.TIMELINE -> showCreateChannelDialog()
             SaveTab.SLOTS -> showRenameChannelDialog()
+            SaveTab.STATES -> { /* No long-press action for states */ }
         }
     }
 
@@ -173,34 +201,53 @@ class SaveChannelDelegate @Inject constructor(
         onRestored: () -> Unit = {}
     ) {
         val state = _state.value
-        val entry = state.focusedEntry ?: return
 
-        if (state.selectedTab == SaveTab.SLOTS) {
-            scope.launch {
-                val channelName = entry.channelName ?: return@launch
-                gameDao.updateActiveSaveChannel(currentGameId, channelName)
-                gameDao.updateActiveSaveTimestamp(currentGameId, null)
-                _state.update { it.copy(activeChannel = channelName, activeSaveTimestamp = null) }
-                onSaveStatusChanged(SaveStatusEvent(channelName = channelName, timestamp = null))
+        when (state.selectedTab) {
+            SaveTab.SLOTS -> {
+                val entry = state.focusedEntry ?: return
+                scope.launch {
+                    val channelName = entry.channelName ?: return@launch
+                    gameDao.updateActiveSaveChannel(currentGameId, channelName)
+                    gameDao.updateActiveSaveTimestamp(currentGameId, null)
+                    _state.update { it.copy(activeChannel = channelName, activeSaveTimestamp = null) }
+                    onSaveStatusChanged(SaveStatusEvent(channelName = channelName, timestamp = null))
 
-                when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, false)) {
-                    is RestoreCachedSaveUseCase.Result.Restored,
-                    is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                        notificationManager.showSuccess("Using save slot: $channelName")
-                        _state.update { it.copy(isVisible = false) }
-                        onRestored()
-                    }
-                    is RestoreCachedSaveUseCase.Result.Error -> {
-                        notificationManager.showError(result.message)
+                    when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, false)) {
+                        is RestoreCachedSaveUseCase.Result.Restored,
+                        is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
+                            notificationManager.showSuccess("Using save slot: $channelName")
+                            _state.update { it.copy(isVisible = false) }
+                            onRestored()
+                        }
+                        is RestoreCachedSaveUseCase.Result.Error -> {
+                            notificationManager.showError(result.message)
+                        }
                     }
                 }
             }
-        } else {
-            _state.update {
-                it.copy(
-                    showRestoreConfirmation = true,
-                    restoreSelectedEntry = entry
-                )
+            SaveTab.TIMELINE -> {
+                val entry = state.focusedEntry ?: return
+                _state.update {
+                    it.copy(
+                        showRestoreConfirmation = true,
+                        restoreSelectedEntry = entry
+                    )
+                }
+            }
+            SaveTab.STATES -> {
+                val stateEntry = state.focusedStateEntry ?: return
+                if (stateEntry.localCacheId == null) return
+
+                if (stateEntry.versionStatus == UnifiedStateEntry.VersionStatus.MISMATCH) {
+                    _state.update {
+                        it.copy(
+                            showVersionMismatchDialog = true,
+                            versionMismatchState = stateEntry
+                        )
+                    }
+                } else {
+                    restoreState(scope, stateEntry, forceRestore = false)
+                }
             }
         }
     }
@@ -414,6 +461,7 @@ class SaveChannelDelegate @Inject constructor(
         when (state.selectedTab) {
             SaveTab.SLOTS -> showDeleteConfirmation()
             SaveTab.TIMELINE -> showCreateChannelDialog()
+            SaveTab.STATES -> { /* No secondary action for states */ }
         }
     }
 
@@ -448,6 +496,80 @@ class SaveChannelDelegate @Inject constructor(
             }
             onSaveStatusChanged(SaveStatusEvent(channelName = null, timestamp = null))
             notificationManager.showSuccess("Reset to latest save")
+        }
+    }
+
+    fun dismissVersionMismatch() {
+        _state.update {
+            it.copy(
+                showVersionMismatchDialog = false,
+                versionMismatchState = null
+            )
+        }
+    }
+
+    fun confirmVersionMismatch(scope: CoroutineScope) {
+        val stateEntry = _state.value.versionMismatchState ?: return
+        _state.update {
+            it.copy(
+                showVersionMismatchDialog = false,
+                versionMismatchState = null
+            )
+        }
+        restoreState(scope, stateEntry, forceRestore = true)
+    }
+
+    private fun restoreState(
+        scope: CoroutineScope,
+        stateEntry: UnifiedStateEntry,
+        forceRestore: Boolean
+    ) {
+        val state = _state.value
+        val cacheId = stateEntry.localCacheId ?: return
+        val emulatorId = state.emulatorId ?: return
+
+        scope.launch {
+            val game = gameDao.getById(currentGameId)
+            val romPath = game?.localPath
+            if (romPath == null) {
+                notificationManager.showError("Game has no local path")
+                return@launch
+            }
+
+            val result = restoreStateUseCase(
+                cacheId = cacheId,
+                emulatorId = emulatorId,
+                platformId = game.platformSlug,
+                romPath = romPath,
+                currentCoreId = state.currentCoreId,
+                currentCoreVersion = state.currentCoreVersion,
+                forceRestore = forceRestore
+            )
+
+            when (result) {
+                is RestoreStateResult.Success -> {
+                    val slotLabel = if (stateEntry.slotNumber == -1) "auto state" else "state slot ${stateEntry.slotNumber}"
+                    notificationManager.showSuccess("Restored $slotLabel")
+                    _state.update { it.copy(isVisible = false) }
+                }
+                is RestoreStateResult.VersionMismatch -> {
+                    _state.update {
+                        it.copy(
+                            showVersionMismatchDialog = true,
+                            versionMismatchState = stateEntry
+                        )
+                    }
+                }
+                is RestoreStateResult.Error -> {
+                    notificationManager.showError(result.message)
+                }
+                is RestoreStateResult.NotFound -> {
+                    notificationManager.showError("State not found in cache")
+                }
+                is RestoreStateResult.NoConfig -> {
+                    notificationManager.showError("No state configuration for this emulator")
+                }
+            }
         }
     }
 

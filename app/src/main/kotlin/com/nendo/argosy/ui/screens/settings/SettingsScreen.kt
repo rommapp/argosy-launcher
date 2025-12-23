@@ -45,6 +45,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.filebrowser.FileBrowserMode
+import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
@@ -90,21 +92,6 @@ fun SettingsScreen(
         }
     }
 
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            val filePath = getFilePathFromUri(context, it)
-            if (filePath != null) {
-                viewModel.setStoragePath(filePath)
-            }
-        }
-    }
-
     val backgroundPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -137,56 +124,8 @@ fun SettingsScreen(
         }
     }
 
-    val logFolderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            val filePath = getFilePathFromUri(context, it)
-            if (filePath != null) {
-                viewModel.setFileLoggingPath(filePath)
-            }
-        }
-    }
-
-    var pendingPlatformId by remember { mutableStateOf<String?>(null) }
-    val platformFolderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        val platformId = pendingPlatformId
-        if (uri != null && platformId != null) {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            val filePath = getFilePathFromUri(context, uri)
-            if (filePath != null) {
-                viewModel.setPlatformPath(platformId, filePath)
-            }
-        }
-        pendingPlatformId = null
-    }
-
-    var pendingSavePathEmulatorId by remember { mutableStateOf<String?>(null) }
-    val savePathFolderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        val emulatorId = pendingSavePathEmulatorId
-        if (uri != null && emulatorId != null) {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            val filePath = getFilePathFromUri(context, uri)
-            if (filePath != null) {
-                viewModel.setEmulatorSavePath(emulatorId, filePath)
-            }
-        }
-        pendingSavePathEmulatorId = null
-    }
+    var showFileBrowser by remember { mutableStateOf(false) }
+    var fileBrowserCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
 
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onBack) {
@@ -209,14 +148,16 @@ fun SettingsScreen(
 
     LaunchedEffect(uiState.launchFolderPicker) {
         if (uiState.launchFolderPicker) {
-            folderPickerLauncher.launch(null)
+            fileBrowserCallback = { path -> viewModel.setStoragePath(path) }
+            showFileBrowser = true
             viewModel.clearFolderPickerFlag()
         }
     }
 
     LaunchedEffect(Unit) {
         viewModel.openLogFolderPickerEvent.collect {
-            logFolderPickerLauncher.launch(null)
+            fileBrowserCallback = { path -> viewModel.setFileLoggingPath(path) }
+            showFileBrowser = true
         }
     }
 
@@ -258,16 +199,16 @@ fun SettingsScreen(
 
     LaunchedEffect(Unit) {
         viewModel.launchPlatformFolderPicker.collect { platformId ->
-            pendingPlatformId = platformId
-            platformFolderPickerLauncher.launch(null)
+            fileBrowserCallback = { path -> viewModel.setPlatformPath(platformId, path) }
+            showFileBrowser = true
         }
     }
 
     LaunchedEffect(Unit) {
         viewModel.launchSavePathPicker.collect {
             uiState.emulators.savePathModalInfo?.emulatorId?.let { emulatorId ->
-                pendingSavePathEmulatorId = emulatorId
-                savePathFolderPickerLauncher.launch(null)
+                fileBrowserCallback = { path -> viewModel.setEmulatorSavePath(emulatorId, path) }
+                showFileBrowser = true
             }
         }
     }
@@ -336,8 +277,8 @@ fun SettingsScreen(
                         viewModel = viewModel,
                         onLaunchSavePathPicker = {
                             uiState.emulators.savePathModalInfo?.emulatorId?.let { emulatorId ->
-                                pendingSavePathEmulatorId = emulatorId
-                                savePathFolderPickerLauncher.launch(null)
+                                fileBrowserCallback = { path -> viewModel.setEmulatorSavePath(emulatorId, path) }
+                                showFileBrowser = true
                             }
                         }
                     )
@@ -460,6 +401,21 @@ fun SettingsScreen(
                 TextButton(onClick = { viewModel.cancelPurgePlatform() }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    if (showFileBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FOLDER_SELECTION,
+            onPathSelected = { path ->
+                showFileBrowser = false
+                fileBrowserCallback?.invoke(path)
+                fileBrowserCallback = null
+            },
+            onDismiss = {
+                showFileBrowser = false
+                fileBrowserCallback = null
             }
         )
     }

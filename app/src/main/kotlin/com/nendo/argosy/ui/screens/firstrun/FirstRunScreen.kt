@@ -6,8 +6,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -51,7 +49,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -69,6 +69,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.filebrowser.FileBrowserMode
+import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Dimens
 
@@ -80,21 +82,6 @@ fun FirstRunScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            val filePath = getFilePathFromUri(context, it)
-            if (filePath != null) {
-                viewModel.setStoragePath(filePath)
-            }
-        }
-    }
-
     val requestPermission = {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
@@ -105,6 +92,8 @@ fun FirstRunScreen(
     }
 
     val chooseFolder = { viewModel.openFolderPicker() }
+
+    var showFileBrowser by remember { mutableStateOf(false) }
 
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onComplete) {
@@ -131,7 +120,7 @@ fun FirstRunScreen(
 
     LaunchedEffect(uiState.launchFolderPicker) {
         if (uiState.launchFolderPicker) {
-            folderPickerLauncher.launch(null)
+            showFileBrowser = true
             viewModel.clearFolderPickerFlag()
         }
     }
@@ -211,6 +200,19 @@ fun FirstRunScreen(
                 )
             }
         }
+    }
+
+    if (showFileBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FOLDER_SELECTION,
+            onPathSelected = { path ->
+                showFileBrowser = false
+                viewModel.setStoragePath(path)
+            },
+            onDismiss = {
+                showFileBrowser = false
+            }
+        )
     }
 }
 
@@ -832,28 +834,5 @@ private fun FocusableOutlinedButton(
         )
     ) {
         Text(text)
-    }
-}
-
-@Suppress("UNUSED_PARAMETER")
-private fun getFilePathFromUri(context: Context, uri: Uri): String? {
-    val rawPath = uri.path ?: return null
-    val path = Uri.decode(rawPath)
-
-    val treePath = path.substringAfter("/tree/", "")
-    if (treePath.isEmpty()) return null
-
-    return when {
-        treePath.startsWith("primary:") -> {
-            val relativePath = treePath.removePrefix("primary:")
-            "${Environment.getExternalStorageDirectory().absolutePath}/$relativePath"
-        }
-        treePath.contains(":") -> {
-            val parts = treePath.split(":", limit = 2)
-            if (parts.size == 2) {
-                "/storage/${parts[0]}/${parts[1]}"
-            } else null
-        }
-        else -> null
     }
 }

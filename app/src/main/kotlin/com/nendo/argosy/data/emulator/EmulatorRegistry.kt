@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import android.content.Intent
+import com.nendo.argosy.data.platform.PlatformDefinitions
 
 data class EmulatorDef(
     val id: String,
@@ -445,8 +446,10 @@ object EmulatorRegistry {
 
     fun getByPackage(packageName: String): EmulatorDef? = packageMap[packageName]
 
-    fun getForPlatform(platformId: String): List<EmulatorDef> =
-        emulators.filter { platformId in it.supportedPlatforms }
+    fun getForPlatform(platformId: String): List<EmulatorDef> {
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        return emulators.filter { canonical in it.supportedPlatforms }
+    }
 
     fun getRecommendedEmulators(): Map<String, List<String>> = mapOf(
         "psx" to listOf("duckstation", "retroarch", "retroarch_64"),
@@ -489,7 +492,10 @@ object EmulatorRegistry {
         "wonderswancolor" to listOf("retroarch", "retroarch_64")
     )
 
-    fun getPreferredCore(platformId: String): String? = preferredCores[platformId]
+    fun getPreferredCore(platformId: String): String? {
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        return preferredCores[canonical]
+    }
 
     private val preferredCores = mapOf(
         "nes" to "fceumm",
@@ -706,11 +712,15 @@ object EmulatorRegistry {
         )
     )
 
-    fun getCoresForPlatform(platformId: String): List<RetroArchCore> =
-        platformCores[platformId] ?: emptyList()
+    fun getCoresForPlatform(platformId: String): List<RetroArchCore> {
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        return platformCores[canonical] ?: emptyList()
+    }
 
-    fun getDefaultCore(platformId: String): RetroArchCore? =
-        platformCores[platformId]?.firstOrNull()
+    fun getDefaultCore(platformId: String): RetroArchCore? {
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        return platformCores[canonical]?.firstOrNull()
+    }
 
     private val emulatorFamilies = listOf(
         EmulatorFamily(

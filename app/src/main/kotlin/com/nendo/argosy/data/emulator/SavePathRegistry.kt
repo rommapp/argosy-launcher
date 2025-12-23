@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.emulator
 
+import com.nendo.argosy.data.platform.PlatformDefinitions
+
 data class SavePathConfig(
     val emulatorId: String,
     val defaultPaths: List<String>,
@@ -367,7 +369,10 @@ object SavePathRegistry {
         return true
     }
 
-    fun getRetroArchCore(platformId: String): String? = EmulatorRegistry.getRetroArchCorePatterns()[platformId]?.firstOrNull()
+    fun getRetroArchCore(platformId: String): String? {
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        return EmulatorRegistry.getRetroArchCorePatterns()[canonical]?.firstOrNull()
+    }
 
     fun resolvePath(
         config: SavePathConfig,
@@ -375,7 +380,8 @@ object SavePathRegistry {
     ): List<String> {
         if (!config.usesCore) return config.defaultPaths
 
-        val core = getRetroArchCore(platformId) ?: return config.defaultPaths
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        val core = getRetroArchCore(canonical) ?: return config.defaultPaths
         val withCore = config.defaultPaths.map { path ->
             path.replace("{core}", core)
         }

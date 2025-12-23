@@ -299,8 +299,12 @@ class RomMRepository @Inject constructor(
         val platformDef = PlatformDefinitions.getById(remote.slug)
 
         val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
-        val normalizedName = platformDef?.name
-            ?: PlatformDefinitions.normalizeDisplayName(remote.name)
+        val isAlias = PlatformDefinitions.isAlias(remote.slug)
+        val normalizedName = if (isAlias) {
+            PlatformDefinitions.normalizeDisplayName(remote.name)
+        } else {
+            platformDef?.name ?: PlatformDefinitions.normalizeDisplayName(remote.name)
+        }
         val entity = PlatformEntity(
             id = platformId,
             slug = remote.slug,
@@ -944,8 +948,12 @@ class RomMRepository @Inject constructor(
                         ?: platformDao.getBySlug(remote.slug)
                     val platformDef = PlatformDefinitions.getById(remote.slug)
                     val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
-                    val normalizedName = platformDef?.name
-                        ?: PlatformDefinitions.normalizeDisplayName(remote.name)
+                    val isAlias = PlatformDefinitions.isAlias(remote.slug)
+                    val normalizedName = if (isAlias) {
+                        PlatformDefinitions.normalizeDisplayName(remote.name)
+                    } else {
+                        platformDef?.name ?: PlatformDefinitions.normalizeDisplayName(remote.name)
+                    }
                     PlatformEntity(
                         id = platformId,
                         slug = remote.slug,

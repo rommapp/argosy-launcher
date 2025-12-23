@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.util.Log
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -98,14 +99,16 @@ class EmulatorDetector @Inject constructor(
     }
 
     fun getInstalledForPlatform(platformId: String): List<InstalledEmulator> {
-        return _installedEmulators.value.filter { platformId in it.def.supportedPlatforms }
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        return _installedEmulators.value.filter { canonical in it.def.supportedPlatforms }
     }
 
     fun getPreferredEmulator(platformId: String): InstalledEmulator? {
-        val installed = getInstalledForPlatform(platformId)
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        val installed = getInstalledForPlatform(canonical)
         if (installed.isEmpty()) return null
 
-        val recommended = EmulatorRegistry.getRecommendedEmulators()[platformId]
+        val recommended = EmulatorRegistry.getRecommendedEmulators()[canonical]
         if (recommended != null) {
             for (emulatorId in recommended) {
                 val match = installed.find { it.def.id == emulatorId }
@@ -119,7 +122,8 @@ class EmulatorDetector @Inject constructor(
     }
 
     fun hasAnyEmulator(platformId: String): Boolean {
-        return _installedEmulators.value.any { platformId in it.def.supportedPlatforms }
+        val canonical = PlatformDefinitions.getCanonicalId(platformId)
+        return _installedEmulators.value.any { canonical in it.def.supportedPlatforms }
     }
 
     fun getByPackage(packageName: String): EmulatorDef? {

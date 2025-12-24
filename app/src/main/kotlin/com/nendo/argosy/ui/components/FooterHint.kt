@@ -33,6 +33,12 @@ data class FooterStyleConfig(
 
 val LocalFooterStyle = staticCompositionLocalOf { FooterStyleConfig() }
 
+data class FooterHintItem(
+    val button: InputButton,
+    val action: String,
+    val enabled: Boolean = true
+)
+
 enum class InputButton {
     SOUTH, EAST, WEST, NORTH,
     DPAD, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, DPAD_HORIZONTAL, DPAD_VERTICAL,
@@ -90,19 +96,21 @@ private fun InputButton.isDpadButton(): Boolean = when (this) {
 fun FooterHint(
     button: InputButton,
     action: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val footerStyle = LocalFooterStyle.current
+    val disabledAlpha = 0.38f
     val iconColor = if (footerStyle.useAccentColor) {
         MaterialTheme.colorScheme.surface
     } else {
         MaterialTheme.colorScheme.primary
-    }
+    }.let { if (enabled) it else it.copy(alpha = disabledAlpha) }
     val textColor = if (footerStyle.useAccentColor) {
         MaterialTheme.colorScheme.surface
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    }.let { if (enabled) it else it.copy(alpha = disabledAlpha) }
 
     Row(
         modifier = modifier,
@@ -217,12 +225,66 @@ fun FooterBar(
 }
 
 @Composable
+fun FooterBarWithState(
+    hints: List<FooterHintItem>,
+    modifier: Modifier = Modifier,
+    onHintClick: ((InputButton) -> Unit)? = null,
+    trailingContent: @Composable (() -> Unit)? = null
+) {
+    val footerStyle = LocalFooterStyle.current
+    val backgroundColor = if (footerStyle.useAccentColor) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val dpadHints = hints.filter { it.button.category() == HintCategory.DPAD }
+    val bumperHints = hints.filter { it.button.category() == HintCategory.BUMPER }
+    val shoulderHints = hints.filter { it.button.category() == HintCategory.SHOULDER_MENU }
+    val faceHints = hints.filter { it.button.category() == HintCategory.FACE }
+        .sortedBy { it.button.faceButtonPriority() }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(backgroundColor)
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm + Dimens.spacingXs),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)) {
+            dpadHints.forEach { hint ->
+                TappableFooterHint(hint.button, hint.action, onHintClick, hint.enabled)
+            }
+            bumperHints.forEach { hint ->
+                TappableFooterHint(hint.button, hint.action, onHintClick, hint.enabled)
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            shoulderHints.forEach { hint ->
+                TappableFooterHint(hint.button, hint.action, onHintClick, hint.enabled)
+            }
+            faceHints.forEach { hint ->
+                TappableFooterHint(hint.button, hint.action, onHintClick, hint.enabled)
+            }
+            trailingContent?.invoke()
+        }
+    }
+}
+
+@Composable
 private fun TappableFooterHint(
     button: InputButton,
     action: String,
-    onHintClick: ((InputButton) -> Unit)?
+    onHintClick: ((InputButton) -> Unit)?,
+    enabled: Boolean = true
 ) {
-    val clickModifier = if (onHintClick != null) {
+    val clickModifier = if (onHintClick != null && enabled) {
         Modifier.clickable(
             onClick = { onHintClick(button) },
             indication = null,
@@ -235,7 +297,8 @@ private fun TappableFooterHint(
     FooterHint(
         button = button,
         action = action,
-        modifier = clickModifier.padding(vertical = Dimens.spacingXs)
+        modifier = clickModifier.padding(vertical = Dimens.spacingXs),
+        enabled = enabled
     )
 }
 

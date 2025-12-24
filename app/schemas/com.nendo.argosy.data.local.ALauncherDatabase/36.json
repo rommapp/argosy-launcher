@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 34,
-    "identityHash": "a0bb1c690792373060672557430bd269",
+    "version": 36,
+    "identityHash": "b7fc661ec46957857b145e126d7afede",
     "entities": [
       {
         "tableName": "platforms",
@@ -1322,7 +1322,7 @@
       },
       {
         "tableName": "state_cache",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `gameId` INTEGER NOT NULL, `emulatorId` TEXT NOT NULL, `slotNumber` INTEGER NOT NULL, `channelName` TEXT, `cachedAt` INTEGER NOT NULL, `stateSize` INTEGER NOT NULL, `cachePath` TEXT NOT NULL, `screenshotPath` TEXT, `coreId` TEXT, `coreVersion` TEXT, `isLocked` INTEGER NOT NULL, `note` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `gameId` INTEGER NOT NULL, `platformSlug` TEXT NOT NULL, `emulatorId` TEXT NOT NULL, `slotNumber` INTEGER NOT NULL, `channelName` TEXT, `cachedAt` INTEGER NOT NULL, `stateSize` INTEGER NOT NULL, `cachePath` TEXT NOT NULL, `screenshotPath` TEXT, `coreId` TEXT, `coreVersion` TEXT, `isLocked` INTEGER NOT NULL, `note` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -1334,6 +1334,12 @@
             "fieldPath": "gameId",
             "columnName": "gameId",
             "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "platformSlug",
+            "columnName": "platformSlug",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -1549,7 +1555,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a0bb1c690792373060672557430bd269')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b7fc661ec46957857b145e126d7afede')"
     ]
   }
 }

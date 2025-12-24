@@ -113,6 +113,7 @@ class GetUnifiedStatesUseCase @Inject constructor(
             channelName = channelName,
             coreId = cache.coreId,
             coreVersion = cache.coreVersion,
+            screenshotPath = stateCacheManager.getScreenshotPath(cache),
             source = UnifiedStateEntry.Source.LOCAL,
             isActive = false,
             isLocked = cache.isLocked,

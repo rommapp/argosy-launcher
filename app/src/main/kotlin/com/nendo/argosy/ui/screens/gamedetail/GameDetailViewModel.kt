@@ -1079,9 +1079,17 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showMoreOptions = false) }
         viewModelScope.launch {
             val game = gameDao.getById(currentGameId) ?: return@launch
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
+            val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(currentGameId, game.platformId, game.platformSlug)
+            val emulatorId = emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
             val savePath = emulatorId?.let { computeEffectiveSavePath(it, game.platformSlug) }
-            saveChannelDelegate.show(viewModelScope, currentGameId, _uiState.value.saveChannel.activeChannel, savePath)
+            saveChannelDelegate.show(
+                scope = viewModelScope,
+                gameId = currentGameId,
+                activeChannel = _uiState.value.saveChannel.activeChannel,
+                savePath = savePath,
+                emulatorId = emulatorId,
+                emulatorPackage = emulatorPackage
+            )
         }
     }
 
@@ -1480,8 +1488,16 @@ class GameDetailViewModel @Inject constructor(
                     return InputResult.UNHANDLED
                 }
                 saveState.isVisible -> {
-                    if (saveState.selectedTab == com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE && saveState.hasSaveSlots) {
-                        switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS)
+                    when (saveState.selectedTab) {
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.STATES -> {
+                            switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE)
+                        }
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE -> {
+                            if (saveState.hasSaveSlots) {
+                                switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS)
+                            }
+                        }
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS -> {}
                     }
                     return InputResult.HANDLED
                 }
@@ -1511,8 +1527,16 @@ class GameDetailViewModel @Inject constructor(
                     return InputResult.UNHANDLED
                 }
                 saveState.isVisible -> {
-                    if (saveState.selectedTab == com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS) {
-                        switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE)
+                    when (saveState.selectedTab) {
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS -> {
+                            switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE)
+                        }
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE -> {
+                            if (saveState.hasStates) {
+                                switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.STATES)
+                            }
+                        }
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.STATES -> {}
                     }
                     return InputResult.HANDLED
                 }

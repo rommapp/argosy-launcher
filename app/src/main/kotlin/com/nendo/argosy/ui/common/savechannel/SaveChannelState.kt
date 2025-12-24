@@ -17,6 +17,7 @@ data class SaveChannelState(
     val activeSaveTimestamp: Long? = null,
     val savePath: String? = null,
     val emulatorId: String? = null,
+    val emulatorPackage: String? = null,
     val currentCoreId: String? = null,
     val currentCoreVersion: String? = null,
     val showRestoreConfirmation: Boolean = false,
@@ -28,7 +29,11 @@ data class SaveChannelState(
     val deleteSelectedEntry: UnifiedSaveEntry? = null,
     val showResetConfirmation: Boolean = false,
     val showVersionMismatchDialog: Boolean = false,
-    val versionMismatchState: UnifiedStateEntry? = null
+    val versionMismatchState: UnifiedStateEntry? = null,
+    val showStateDeleteConfirmation: Boolean = false,
+    val stateDeleteTarget: UnifiedStateEntry? = null,
+    val showStateReplaceAutoConfirmation: Boolean = false,
+    val stateReplaceAutoTarget: UnifiedStateEntry? = null
 ) {
     val hasSaveSlots: Boolean get() = slotsEntries.isNotEmpty()
     val hasStates: Boolean get() = statesEntries.isNotEmpty()
@@ -61,4 +66,12 @@ data class SaveChannelState(
 
     val canRenameChannel: Boolean
         get() = selectedTab == SaveTab.SLOTS && focusedEntry?.isChannel == true
+
+    val canDeleteState: Boolean
+        get() = selectedTab == SaveTab.STATES && focusedStateEntry?.localCacheId != null
+
+    val canReplaceAutoWithSlot: Boolean
+        get() = selectedTab == SaveTab.STATES &&
+            focusedStateEntry?.localCacheId != null &&
+            focusedStateEntry?.slotNumber?.let { it >= 0 } == true
 }

@@ -75,6 +75,13 @@ interface StateCacheDao {
 
     @Query("""
         DELETE FROM state_cache
+        WHERE gameId = :gameId
+        AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
+    """)
+    suspend fun deleteByChannel(gameId: Long, channelName: String?)
+
+    @Query("""
+        DELETE FROM state_cache
         WHERE id IN (
             SELECT id FROM state_cache
             WHERE gameId = :gameId AND isLocked = 0

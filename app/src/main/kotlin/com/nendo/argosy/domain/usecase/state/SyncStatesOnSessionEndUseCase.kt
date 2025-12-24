@@ -73,7 +73,9 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
             gameId = gameId,
             emulatorId = emulatorId,
             romPath = romPath,
-            platformId = game.platformSlug
+            platformId = game.platformSlug,
+            emulatorPackage = emulatorPackage,
+            coreName = coreId
         )
 
         if (discoveredStates.isEmpty()) {
@@ -92,12 +94,20 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
                 channelName = channelName
             )
 
+            val screenshotFile = File("${state.file.absolutePath}.png")
+            val screenshotMissing = existingCache?.screenshotPath == null && screenshotFile.exists()
+
+            val isNewer = existingCache != null && state.lastModified.isAfter(existingCache.cachedAt)
+            Log.d(TAG, "Slot ${state.slotNumber}: fileModified=${state.lastModified}, cachedAt=${existingCache?.cachedAt}, isNewer=$isNewer, screenshotMissing=$screenshotMissing")
+
             val shouldCache = existingCache == null ||
-                state.lastModified.isAfter(existingCache.cachedAt)
+                state.lastModified.isAfter(existingCache.cachedAt) ||
+                screenshotMissing
 
             if (shouldCache) {
                 val cacheId = stateCacheManager.cacheState(
                     gameId = gameId,
+                    platformSlug = game.platformSlug,
                     emulatorId = emulatorId,
                     slotNumber = state.slotNumber,
                     statePath = state.file.absolutePath,

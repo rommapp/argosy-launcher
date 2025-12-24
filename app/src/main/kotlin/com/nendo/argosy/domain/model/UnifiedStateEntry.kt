@@ -13,6 +13,7 @@ data class UnifiedStateEntry(
     val channelName: String? = null,
     val coreId: String? = null,
     val coreVersion: String? = null,
+    val screenshotPath: String? = null,
     val source: Source,
     val isActive: Boolean = false,
     val isLocked: Boolean = false,

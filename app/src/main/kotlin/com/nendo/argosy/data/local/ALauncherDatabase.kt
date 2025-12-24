@@ -52,7 +52,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         OrphanedFileEntity::class,
         AppCategoryEntity::class
     ],
-    version = 34,
+    version = 36,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -502,6 +502,19 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     CREATE UNIQUE INDEX IF NOT EXISTS index_state_cache_game_emu_slot_channel
                     ON state_cache(gameId, emulatorId, slotNumber, channelName)
                 """)
+            }
+        }
+
+        val MIGRATION_34_35 = object : Migration(34, 35) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE state_cache ADD COLUMN screenshotPath TEXT")
+            }
+        }
+
+        val MIGRATION_35_36 = object : Migration(35, 36) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE state_cache ADD COLUMN platformSlug TEXT NOT NULL DEFAULT ''")
+                db.execSQL("DELETE FROM state_cache")
             }
         }
     }

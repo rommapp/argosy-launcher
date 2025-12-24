@@ -14,6 +14,13 @@ data class RetroArchSaveConfig(
     val sortByCore: Boolean
 )
 
+data class RetroArchStateConfig(
+    val savestateDirectory: String?,
+    val savestatesInContentDir: Boolean,
+    val sortByContentDirectory: Boolean,
+    val sortByCore: Boolean
+)
+
 @Singleton
 class RetroArchConfigParser @Inject constructor() {
 
@@ -123,6 +130,79 @@ class RetroArchConfigParser @Inject constructor() {
         paths.add(path)
 
         Log.d(TAG, "resolveSavePaths: $path (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
+        return paths
+    }
+
+    fun parseStateConfig(packageName: String): RetroArchStateConfig? {
+        val configFile = findConfigFile(packageName)
+        if (configFile == null) {
+            Log.d(TAG, "No retroarch.cfg found for $packageName")
+            return null
+        }
+
+        return parseStateConfigFromFile(configFile)
+    }
+
+    private fun parseStateConfigFromFile(file: File): RetroArchStateConfig {
+        val config = mutableMapOf<String, String>()
+
+        try {
+            file.useLines { lines ->
+                lines.forEach { line ->
+                    val trimmed = line.trim()
+                    if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
+                        val (key, value) = trimmed.split("=", limit = 2)
+                        config[key.trim()] = value.trim().removeSurrounding("\"")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse config file", e)
+        }
+
+        val savestateDirectory = config["savestate_directory"]?.takeIf {
+            it != "default" && it.isNotBlank()
+        }
+        val savestatesInContentDir = config["savestates_in_content_dir"] == "true"
+        val sortByCore = config["sort_savestates_enable"] == "true"
+        val sortByContentDir = config["sort_savestates_by_content_enable"] == "true"
+
+        return RetroArchStateConfig(
+            savestateDirectory = savestateDirectory,
+            savestatesInContentDir = savestatesInContentDir,
+            sortByContentDirectory = sortByContentDir,
+            sortByCore = sortByCore
+        )
+    }
+
+    fun resolveStatePaths(
+        packageName: String,
+        coreName: String?,
+        contentDirectory: String? = null
+    ): List<String> {
+        val config = parseStateConfig(packageName)
+        val paths = mutableListOf<String>()
+
+        if (config?.savestatesInContentDir == true && contentDirectory != null) {
+            paths.add(contentDirectory)
+            return paths
+        }
+
+        val baseDir = config?.savestateDirectory
+            ?: "/storage/emulated/0/RetroArch/states"
+
+        val sortByCore = config?.sortByCore == true
+
+        val path = buildString {
+            append(baseDir)
+            if (sortByCore && coreName != null) {
+                append("/").append(coreName)
+            }
+        }
+
+        paths.add(path)
+
+        Log.d(TAG, "resolveStatePaths: $path (sortByCore=$sortByCore)")
         return paths
     }
 }

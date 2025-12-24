@@ -43,10 +43,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.model.UnifiedStateEntry
-import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.components.FooterBarWithState
+import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -74,10 +77,11 @@ fun SaveChannelModal(
         focusRequester.requestFocus()
     }
 
-    LaunchedEffect(state.focusIndex, state.selectedTab, entries.size) {
-        if (entries.isNotEmpty()) {
+    val activeEntries = if (state.selectedTab == SaveTab.STATES) state.statesEntries else entries
+    LaunchedEffect(state.focusIndex, state.selectedTab, activeEntries.size) {
+        if (activeEntries.isNotEmpty()) {
             val centerOffset = maxVisibleItems / 2
-            val maxScrollIndex = (entries.size - maxVisibleItems).coerceAtLeast(0)
+            val maxScrollIndex = (activeEntries.size - maxVisibleItems).coerceAtLeast(0)
             val targetScrollIndex = (state.focusIndex - centerOffset).coerceIn(0, maxScrollIndex)
             listState.animateScrollToItem(targetScrollIndex)
         }
@@ -233,7 +237,7 @@ fun SaveChannelModal(
             Spacer(modifier = Modifier.height(16.dp))
 
             val hints = buildFooterHints(state)
-            FooterBar(hints = hints)
+            FooterBarWithState(hints = hints)
         }
 
         if (state.showRestoreConfirmation && state.restoreSelectedEntry != null) {
@@ -262,6 +266,18 @@ fun SaveChannelModal(
                 savedVersion = state.versionMismatchState.coreVersion,
                 currentCoreId = state.currentCoreId,
                 currentVersion = state.currentCoreVersion
+            )
+        }
+
+        if (state.showStateDeleteConfirmation && state.stateDeleteTarget != null) {
+            StateDeleteConfirmationOverlay(
+                slotNumber = state.stateDeleteTarget.slotNumber
+            )
+        }
+
+        if (state.showStateReplaceAutoConfirmation && state.stateReplaceAutoTarget != null) {
+            StateReplaceAutoConfirmationOverlay(
+                slotNumber = state.stateReplaceAutoTarget.slotNumber
             )
         }
     }
@@ -365,30 +381,35 @@ private fun formatTruncatedPath(path: String, maxSegments: Int = 3): String {
     }
 }
 
-private fun buildFooterHints(state: SaveChannelState): List<Pair<InputButton, String>> {
-    val hints = mutableListOf<Pair<InputButton, String>>()
+private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
+    val hints = mutableListOf<FooterHintItem>()
 
     when (state.selectedTab) {
         SaveTab.SLOTS -> {
-            hints.add(InputButton.SOUTH to "Activate")
+            hints.add(FooterHintItem(InputButton.SOUTH, "Activate"))
             if (state.canDeleteChannel) {
-                hints.add(InputButton.NORTH to "Delete")
+                hints.add(FooterHintItem(InputButton.NORTH, "Delete"))
             }
             if (state.canRenameChannel) {
-                hints.add(InputButton.WEST to "Rename")
+                hints.add(FooterHintItem(InputButton.WEST, "Rename"))
             }
         }
         SaveTab.TIMELINE -> {
-            hints.add(InputButton.SOUTH to "Restore")
+            hints.add(FooterHintItem(InputButton.SOUTH, "Restore"))
             if (state.canCreateChannel) {
-                hints.add(InputButton.NORTH to "Lock")
+                hints.add(FooterHintItem(InputButton.NORTH, "Lock"))
             }
-            hints.add(InputButton.SELECT to "Reset")
+            hints.add(FooterHintItem(InputButton.SELECT, "Reset"))
         }
         SaveTab.STATES -> {
             val focusedState = state.focusedStateEntry
-            if (focusedState != null && focusedState.localCacheId != null) {
-                hints.add(InputButton.SOUTH to "Restore")
+            val canRestore = focusedState != null && focusedState.localCacheId != null
+            hints.add(FooterHintItem(InputButton.SOUTH, "Restore", enabled = canRestore))
+            if (state.canDeleteState) {
+                hints.add(FooterHintItem(InputButton.NORTH, "Delete"))
+            }
+            if (state.canReplaceAutoWithSlot) {
+                hints.add(FooterHintItem(InputButton.WEST, "Set as Auto"))
             }
         }
     }
@@ -640,6 +661,9 @@ private fun StateSlotRow(
     onLongClick: () -> Unit
 ) {
     val isEmpty = entry.localCacheId == null
+    val hasScreenshot = entry.screenshotPath != null
+    val rowHeight = if (hasScreenshot) 72.dp else 56.dp
+
     val dateFormatter = remember {
         java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
             .withZone(java.time.ZoneId.systemDefault())
@@ -673,7 +697,7 @@ private fun StateSlotRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(rowHeight)
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
             .combinedClickable(
@@ -682,10 +706,26 @@ private fun StateSlotRow(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             )
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        if (hasScreenshot) {
+            AsyncImage(
+                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                    .data(java.io.File(entry.screenshotPath!!))
+                    .memoryCacheKey(entry.screenshotPath)
+                    .diskCacheKey(entry.screenshotPath)
+                    .build(),
+                contentDescription = "State screenshot",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(width = 80.dp, height = 56.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+        }
+
         when (entry.versionStatus) {
             UnifiedStateEntry.VersionStatus.MISMATCH -> {
                 Icon(
@@ -696,7 +736,9 @@ private fun StateSlotRow(
                 )
             }
             else -> {
-                Spacer(modifier = Modifier.width(20.dp))
+                if (!hasScreenshot) {
+                    Spacer(modifier = Modifier.width(20.dp))
+                }
             }
         }
 
@@ -806,6 +848,59 @@ fun VersionMismatchOverlay(
             text = "Loading may cause crashes or corruption.",
             style = MaterialTheme.typography.bodySmall,
             color = LocalLauncherTheme.current.semanticColors.warning,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+}
+
+@Composable
+private fun StateDeleteConfirmationOverlay(slotNumber: Int) {
+    val slotLabel = if (slotNumber == -1) "auto state" else "slot $slotNumber"
+    NestedModal(
+        title = "DELETE STATE",
+        footerHints = listOf(
+            InputButton.SOUTH to "Delete",
+            InputButton.EAST to "Cancel"
+        )
+    ) {
+        Text(
+            text = "Delete $slotLabel?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Text(
+            text = "This will remove it from the cache.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+}
+
+@Composable
+private fun StateReplaceAutoConfirmationOverlay(slotNumber: Int) {
+    NestedModal(
+        title = "REPLACE AUTO STATE",
+        footerHints = listOf(
+            InputButton.SOUTH to "Replace",
+            InputButton.EAST to "Cancel"
+        )
+    ) {
+        Text(
+            text = "Replace auto state with slot $slotNumber?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Text(
+            text = "The current auto state will be overwritten.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )

@@ -2,11 +2,13 @@ package com.nendo.argosy.ui.common.savechannel
 
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
 import com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase
+import com.nendo.argosy.domain.usecase.state.RestoreCachedStatesUseCase
 import com.nendo.argosy.domain.usecase.state.RestoreStateResult
 import com.nendo.argosy.domain.usecase.state.RestoreStateUseCase
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -28,7 +30,9 @@ class SaveChannelDelegate @Inject constructor(
     private val getUnifiedStatesUseCase: GetUnifiedStatesUseCase,
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
     private val restoreStateUseCase: RestoreStateUseCase,
+    private val restoreCachedStatesUseCase: RestoreCachedStatesUseCase,
     private val saveCacheManager: SaveCacheManager,
+    private val stateCacheManager: StateCacheManager,
     private val gameDao: GameDao,
     private val notificationManager: NotificationManager,
     private val soundManager: SoundFeedbackManager
@@ -44,6 +48,7 @@ class SaveChannelDelegate @Inject constructor(
         activeChannel: String?,
         savePath: String? = null,
         emulatorId: String? = null,
+        emulatorPackage: String? = null,
         currentCoreId: String? = null,
         currentCoreVersion: String? = null
     ) {
@@ -56,6 +61,7 @@ class SaveChannelDelegate @Inject constructor(
                 activeChannel = activeChannel,
                 savePath = savePath,
                 emulatorId = emulatorId,
+                emulatorPackage = emulatorPackage,
                 currentCoreId = currentCoreId,
                 currentCoreVersion = currentCoreVersion
             )
@@ -205,6 +211,7 @@ class SaveChannelDelegate @Inject constructor(
         when (state.selectedTab) {
             SaveTab.SLOTS -> {
                 val entry = state.focusedEntry ?: return
+                val emulatorPackage = state.emulatorPackage
                 scope.launch {
                     val channelName = entry.channelName ?: return@launch
                     gameDao.updateActiveSaveChannel(currentGameId, channelName)
@@ -215,6 +222,9 @@ class SaveChannelDelegate @Inject constructor(
                     when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, false)) {
                         is RestoreCachedSaveUseCase.Result.Restored,
                         is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
+                            if (emulatorPackage != null) {
+                                restoreCachedStatesUseCase(currentGameId, channelName, emulatorPackage)
+                            }
                             notificationManager.showSuccess("Using save slot: $channelName")
                             _state.update { it.copy(isVisible = false) }
                             onRestored()
@@ -456,21 +466,25 @@ class SaveChannelDelegate @Inject constructor(
     @Suppress("UNUSED_PARAMETER")
     fun secondaryAction(scope: CoroutineScope, onSaveStatusChanged: (SaveStatusEvent) -> Unit) {
         val state = _state.value
-        if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation || state.showResetConfirmation) return
+        if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation ||
+            state.showResetConfirmation || state.showStateDeleteConfirmation || state.showStateReplaceAutoConfirmation) return
 
         when (state.selectedTab) {
             SaveTab.SLOTS -> showDeleteConfirmation()
             SaveTab.TIMELINE -> showCreateChannelDialog()
-            SaveTab.STATES -> { /* No secondary action for states */ }
+            SaveTab.STATES -> showStateDeleteConfirmation()
         }
     }
 
     fun tertiaryAction() {
         val state = _state.value
-        if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation || state.showResetConfirmation) return
+        if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation ||
+            state.showResetConfirmation || state.showStateDeleteConfirmation || state.showStateReplaceAutoConfirmation) return
 
-        if (state.selectedTab == SaveTab.SLOTS) {
-            showRenameChannelDialog()
+        when (state.selectedTab) {
+            SaveTab.SLOTS -> showRenameChannelDialog()
+            SaveTab.STATES -> showStateReplaceAutoConfirmation()
+            else -> {}
         }
     }
 
@@ -585,5 +599,162 @@ class SaveChannelDelegate @Inject constructor(
                 timelineEntries = timeline
             )
         }
+    }
+
+    fun showStateDeleteConfirmation() {
+        val state = _state.value
+        if (state.selectedTab != SaveTab.STATES) return
+        val entry = state.focusedStateEntry ?: return
+        if (entry.localCacheId == null) return
+
+        _state.update {
+            it.copy(
+                showStateDeleteConfirmation = true,
+                stateDeleteTarget = entry
+            )
+        }
+    }
+
+    fun dismissStateDeleteConfirmation() {
+        _state.update {
+            it.copy(
+                showStateDeleteConfirmation = false,
+                stateDeleteTarget = null
+            )
+        }
+    }
+
+    fun confirmDeleteState(scope: CoroutineScope) {
+        val state = _state.value
+        val entry = state.stateDeleteTarget ?: return
+        val cacheId = entry.localCacheId ?: return
+
+        scope.launch {
+            stateCacheManager.deleteState(cacheId)
+            refreshStates()
+            _state.update {
+                it.copy(
+                    showStateDeleteConfirmation = false,
+                    stateDeleteTarget = null,
+                    focusIndex = it.focusIndex.coerceAtMost((it.statesEntries.size - 2).coerceAtLeast(0))
+                )
+            }
+            val slotLabel = if (entry.slotNumber == -1) "auto state" else "state slot ${entry.slotNumber}"
+            notificationManager.showSuccess("Deleted $slotLabel")
+        }
+    }
+
+    fun showStateReplaceAutoConfirmation() {
+        val state = _state.value
+        if (state.selectedTab != SaveTab.STATES) return
+        val entry = state.focusedStateEntry ?: return
+        if (entry.localCacheId == null || entry.slotNumber < 0) return
+
+        _state.update {
+            it.copy(
+                showStateReplaceAutoConfirmation = true,
+                stateReplaceAutoTarget = entry
+            )
+        }
+    }
+
+    fun dismissStateReplaceAutoConfirmation() {
+        _state.update {
+            it.copy(
+                showStateReplaceAutoConfirmation = false,
+                stateReplaceAutoTarget = null
+            )
+        }
+    }
+
+    fun confirmReplaceAutoWithSlot(scope: CoroutineScope) {
+        val state = _state.value
+        val sourceEntry = state.stateReplaceAutoTarget ?: return
+        val sourceCacheId = sourceEntry.localCacheId ?: return
+
+        scope.launch {
+            val sourceCache = stateCacheManager.getStateById(sourceCacheId)
+            if (sourceCache == null) {
+                notificationManager.showError("Source state not found")
+                return@launch
+            }
+
+            val sourceFile = stateCacheManager.getCacheFile(sourceCache)
+            if (sourceFile == null) {
+                notificationManager.showError("Source state file not found")
+                return@launch
+            }
+
+            val autoState = state.statesEntries.find { it.slotNumber == -1 }
+            if (autoState?.localCacheId != null) {
+                stateCacheManager.deleteState(autoState.localCacheId)
+            }
+
+            val autoFileName = sourceFile.name.replace(
+                Regex("\\.state\\d+$"),
+                ".state.auto"
+            ).let { name ->
+                if (!name.endsWith(".state.auto")) {
+                    name.replace(".state", ".state.auto")
+                } else name
+            }
+
+            val channelDir = stateCacheManager.getChannelDir(
+                currentGameId,
+                sourceCache.platformSlug,
+                sourceCache.channelName
+            )
+            val autoFile = java.io.File(channelDir, autoFileName)
+            sourceFile.copyTo(autoFile, overwrite = true)
+
+            val screenshotFile = stateCacheManager.getScreenshotFile(sourceCache)
+            if (screenshotFile != null) {
+                val autoScreenshot = java.io.File(channelDir, "$autoFileName.png")
+                screenshotFile.copyTo(autoScreenshot, overwrite = true)
+            }
+
+            val autoCachePath = "${sourceCache.platformSlug}/${currentGameId}/${sourceCache.channelName ?: "default"}/$autoFileName"
+            val autoScreenshotPath = if (screenshotFile != null) "$autoCachePath.png" else null
+
+            val autoEntity = sourceCache.copy(
+                id = 0,
+                slotNumber = -1,
+                cachePath = autoCachePath,
+                screenshotPath = autoScreenshotPath,
+                cachedAt = java.time.Instant.now()
+            )
+            stateCacheManager.cacheState(
+                gameId = autoEntity.gameId,
+                platformSlug = autoEntity.platformSlug,
+                emulatorId = autoEntity.emulatorId,
+                slotNumber = -1,
+                statePath = autoFile.absolutePath,
+                coreId = autoEntity.coreId,
+                coreVersion = autoEntity.coreVersion,
+                channelName = autoEntity.channelName,
+                isLocked = autoEntity.isLocked
+            )
+
+            refreshStates()
+            _state.update {
+                it.copy(
+                    showStateReplaceAutoConfirmation = false,
+                    stateReplaceAutoTarget = null
+                )
+            }
+            notificationManager.showSuccess("Replaced auto state with slot ${sourceEntry.slotNumber}")
+        }
+    }
+
+    private suspend fun refreshStates() {
+        val state = _state.value
+        val states = getUnifiedStatesUseCase(
+            gameId = currentGameId,
+            emulatorId = state.emulatorId,
+            channelName = state.activeChannel,
+            currentCoreId = state.currentCoreId,
+            currentCoreVersion = state.currentCoreVersion
+        )
+        _state.update { it.copy(statesEntries = states) }
     }
 }

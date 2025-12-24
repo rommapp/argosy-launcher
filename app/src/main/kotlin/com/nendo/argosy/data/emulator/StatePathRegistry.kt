@@ -13,18 +13,17 @@ sealed class StateSlotPattern {
         val autoSlotSuffix: String? = null
     ) : StateSlotPattern() {
         override fun parseSlotNumber(fileName: String, baseName: String): Int? {
-            val name = File(fileName).nameWithoutExtension
-            if (!name.startsWith(baseName, ignoreCase = true)) return null
+            if (!fileName.startsWith(baseName, ignoreCase = true)) return null
 
-            val ext = File(fileName).extension
-            if (!ext.startsWith(extension, ignoreCase = true)) return null
+            val suffix = fileName.substring(baseName.length)
 
             return when {
-                ext.equals(extension, ignoreCase = true) -> 0
-                ext.matches(Regex("$extension\\d+", RegexOption.IGNORE_CASE)) -> {
-                    ext.removePrefix(extension).toIntOrNull()
+                suffix.equals(".$extension", ignoreCase = true) -> 0
+                suffix.matches(Regex("\\.$extension(\\d+)", RegexOption.IGNORE_CASE)) -> {
+                    Regex("\\.$extension(\\d+)", RegexOption.IGNORE_CASE)
+                        .find(suffix)?.groupValues?.get(1)?.toIntOrNull()
                 }
-                autoSlotSuffix != null && ext.equals("$extension.$autoSlotSuffix", ignoreCase = true) -> -1
+                autoSlotSuffix != null && suffix.equals(".$extension.$autoSlotSuffix", ignoreCase = true) -> -1
                 else -> null
             }
         }
@@ -92,7 +91,10 @@ object StatePathRegistry {
             defaultPaths = listOf(
                 "/storage/emulated/0/RetroArch/states/{core}",
                 "/storage/emulated/0/Android/data/com.retroarch/files/states/{core}",
-                "/data/data/com.retroarch/states/{core}"
+                "/data/data/com.retroarch/states/{core}",
+                "/storage/emulated/0/RetroArch/states",
+                "/storage/emulated/0/Android/data/com.retroarch/files/states",
+                "/data/data/com.retroarch/states"
             ),
             slotPattern = StateSlotPattern.SuffixNumber(
                 extension = "state",

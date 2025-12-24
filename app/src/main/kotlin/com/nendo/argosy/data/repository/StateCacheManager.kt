@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import android.content.Context
 import android.util.Log
 import com.nendo.argosy.data.emulator.CoreVersionExtractor
+import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.StatePathConfig
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.VersionValidationResult
@@ -32,7 +33,8 @@ class StateCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val stateCacheDao: StateCacheDao,
     private val preferencesRepository: UserPreferencesRepository,
-    private val coreVersionExtractor: CoreVersionExtractor
+    private val coreVersionExtractor: CoreVersionExtractor,
+    private val retroArchConfigParser: RetroArchConfigParser
 ) {
     private val TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
         .withZone(ZoneId.systemDefault())
@@ -45,12 +47,39 @@ class StateCacheManager @Inject constructor(
     private val cacheBaseDir: File
         get() = File(context.filesDir, "state_cache")
 
+    @Volatile
+    private var legacyCacheCleared = false
+
+    private fun clearLegacyCacheIfNeeded() {
+        if (legacyCacheCleared) return
+        synchronized(this) {
+            if (legacyCacheCleared) return
+            if (!cacheBaseDir.exists()) {
+                legacyCacheCleared = true
+                return
+            }
+            val subdirs = cacheBaseDir.listFiles { file -> file.isDirectory } ?: emptyArray()
+            for (subdir in subdirs) {
+                if (subdir.name.toLongOrNull() != null) {
+                    Log.d(TAG, "Clearing legacy cache directory: ${subdir.name}")
+                    subdir.deleteRecursively()
+                }
+            }
+            legacyCacheCleared = true
+        }
+    }
+
     suspend fun discoverStatesForGame(
         gameId: Long,
         emulatorId: String,
         romPath: String,
-        platformId: String
+        platformId: String,
+        emulatorPackage: String? = null,
+        coreName: String? = null
     ): List<DiscoveredState> = withContext(Dispatchers.IO) {
+        Log.d(TAG, "discoverStatesForGame: gameId=$gameId, emulatorId=$emulatorId, platformId=$platformId")
+        Log.d(TAG, "romPath=$romPath")
+
         val config = StatePathRegistry.getConfig(emulatorId)
         if (config == null) {
             Log.d(TAG, "No state config for emulator: $emulatorId")
@@ -59,13 +88,27 @@ class StateCacheManager @Inject constructor(
 
         val romFile = File(romPath)
         val romBaseName = romFile.nameWithoutExtension
+        Log.d(TAG, "romBaseName=$romBaseName")
 
-        val statePaths = StatePathRegistry.resolvePath(config, platformId)
+        val statePaths = if (emulatorId.startsWith("retroarch") && emulatorPackage != null) {
+            val contentDir = romFile.parentFile?.absolutePath
+            retroArchConfigParser.resolveStatePaths(emulatorPackage, coreName, contentDir)
+        } else {
+            StatePathRegistry.resolvePath(config, platformId)
+        }
+        Log.d(TAG, "Searching ${statePaths.size} paths: $statePaths")
+
         val discovered = mutableListOf<DiscoveredState>()
 
         for (statePath in statePaths) {
             val stateDir = File(statePath)
+            Log.d(TAG, "Checking dir: $statePath exists=${stateDir.exists()} isDir=${stateDir.isDirectory}")
+            if (stateDir.exists() && stateDir.isDirectory) {
+                val files = stateDir.listFiles()?.map { it.name } ?: emptyList()
+                Log.d(TAG, "Files in $statePath: $files")
+            }
             val states = StatePathRegistry.discoverStates(stateDir, romBaseName, config.slotPattern)
+            Log.d(TAG, "Found ${states.size} matching states in $statePath")
             for ((file, slotNumber) in states) {
                 discovered.add(
                     DiscoveredState(
@@ -84,6 +127,7 @@ class StateCacheManager @Inject constructor(
 
     suspend fun cacheState(
         gameId: Long,
+        platformSlug: String,
         emulatorId: String,
         slotNumber: Int,
         statePath: String,
@@ -92,6 +136,8 @@ class StateCacheManager @Inject constructor(
         channelName: String? = null,
         isLocked: Boolean = false
     ): Long? = withContext(Dispatchers.IO) {
+        clearLegacyCacheIfNeeded()
+
         val stateFile = File(statePath)
         if (!stateFile.exists()) {
             Log.w(TAG, "State file does not exist: $statePath")
@@ -99,25 +145,39 @@ class StateCacheManager @Inject constructor(
         }
 
         val now = Instant.now()
-        val timestamp = TIMESTAMP_FORMAT.format(now)
-        val gameDir = File(cacheBaseDir, "$gameId/slot$slotNumber/$timestamp")
+        val channelDir = getChannelDir(gameId, platformSlug, channelName)
 
         try {
-            gameDir.mkdirs()
+            channelDir.mkdirs()
 
-            val cachedFile = File(gameDir, stateFile.name)
+            val cachedFile = File(channelDir, stateFile.name)
             stateFile.copyTo(cachedFile, overwrite = true)
-            val cachePath = "$gameId/slot$slotNumber/$timestamp/${stateFile.name}"
+            val channelDirName = channelName ?: "default"
+            val cachePath = "$platformSlug/$gameId/$channelDirName/${stateFile.name}"
             val stateSize = cachedFile.length()
+
+            var screenshotCachePath: String? = null
+            val screenshotFile = File("$statePath.png")
+            Log.d(TAG, "Looking for screenshot at: ${screenshotFile.absolutePath} exists=${screenshotFile.exists()}")
+            if (screenshotFile.exists()) {
+                val cachedScreenshot = File(channelDir, screenshotFile.name)
+                screenshotFile.copyTo(cachedScreenshot, overwrite = true)
+                screenshotCachePath = "$platformSlug/$gameId/$channelDirName/${screenshotFile.name}"
+                Log.d(TAG, "Cached screenshot at $screenshotCachePath")
+            } else {
+                Log.d(TAG, "No screenshot found for state: $statePath")
+            }
 
             val entity = StateCacheEntity(
                 gameId = gameId,
+                platformSlug = platformSlug,
                 emulatorId = emulatorId,
                 slotNumber = slotNumber,
                 channelName = channelName,
                 cachedAt = now,
                 stateSize = stateSize,
                 cachePath = cachePath,
+                screenshotPath = screenshotCachePath,
                 coreId = coreId,
                 coreVersion = coreVersion,
                 isLocked = isLocked,
@@ -131,7 +191,7 @@ class StateCacheManager @Inject constructor(
             id
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache state", e)
-            gameDir.deleteRecursively()
+            channelDir.deleteRecursively()
             null
         }
     }
@@ -232,6 +292,11 @@ class StateCacheManager @Inject constructor(
     suspend fun getStateById(cacheId: Long): StateCacheEntity? =
         stateCacheDao.getById(cacheId)
 
+    fun getScreenshotPath(entity: StateCacheEntity): String? {
+        val relativePath = entity.screenshotPath ?: return null
+        return File(cacheBaseDir, relativePath).absolutePath
+    }
+
     suspend fun pruneOldCaches(gameId: Long) = withContext(Dispatchers.IO) {
         val prefs = preferencesRepository.userPreferences.first()
         val limit = prefs.saveCacheLimit
@@ -280,5 +345,46 @@ class StateCacheManager @Inject constructor(
         val baseDir = paths.firstOrNull { File(it).exists() } ?: paths.firstOrNull() ?: return null
         val fileName = config.slotPattern.buildFileName(romBaseName, slotNumber)
         return "$baseDir/$fileName"
+    }
+
+    fun getChannelDir(gameId: Long, platformSlug: String, channelName: String?): File {
+        val channelDirName = channelName ?: "default"
+        return File(cacheBaseDir, "$platformSlug/$gameId/$channelDirName")
+    }
+
+    fun getCacheFile(entity: StateCacheEntity): File? {
+        val file = File(cacheBaseDir, entity.cachePath)
+        return if (file.exists()) file else null
+    }
+
+    fun getScreenshotFile(entity: StateCacheEntity): File? {
+        val relativePath = entity.screenshotPath ?: return null
+        val file = File(cacheBaseDir, relativePath)
+        return if (file.exists()) file else null
+    }
+
+    suspend fun deleteStatesForChannel(gameId: Long, channelName: String?) = withContext(Dispatchers.IO) {
+        val states = if (channelName != null) {
+            stateCacheDao.getByChannel(gameId, channelName)
+        } else {
+            stateCacheDao.getDefaultChannel(gameId)
+        }
+
+        for (state in states) {
+            val cacheFile = File(cacheBaseDir, state.cachePath)
+            cacheFile.delete()
+            state.screenshotPath?.let { File(cacheBaseDir, it).delete() }
+        }
+
+        stateCacheDao.deleteByChannel(gameId, channelName)
+        Log.d(TAG, "Deleted ${states.size} states for game $gameId channel ${channelName ?: "default"}")
+    }
+
+    suspend fun clearAllCache() = withContext(Dispatchers.IO) {
+        if (cacheBaseDir.exists()) {
+            cacheBaseDir.deleteRecursively()
+            cacheBaseDir.mkdirs()
+        }
+        Log.d(TAG, "Cleared all state cache")
     }
 }

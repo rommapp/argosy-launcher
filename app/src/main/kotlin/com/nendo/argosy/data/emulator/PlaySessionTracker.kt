@@ -227,6 +227,9 @@ class PlaySessionTracker @Inject constructor(
                 }
             }
 
+        }
+
+        scope.launch {
             val stateResult = syncStatesOnSessionEndUseCase.get()(
                 session.gameId,
                 session.emulatorPackage

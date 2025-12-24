@@ -749,7 +749,7 @@ class SettingsViewModel @Inject constructor(
                     val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
                     if (showIconPadding) 4 else 3
                 }
-                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 5 else 4
+                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 4 else 3
                 SettingsSection.SOUNDS -> {
                     // BGM first: toggle (0), volume (1), file (2) if enabled
                     val bgmItemCount = if (state.ambientAudio.enabled) 3 else 1

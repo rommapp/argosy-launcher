@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +33,8 @@ fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
+        modifier = Modifier.fillMaxSize().padding(horizontal = Dimens.spacingMd),
+        contentPadding = PaddingValues(top = Dimens.spacingMd, bottom = Dimens.spacingXxl),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         item {

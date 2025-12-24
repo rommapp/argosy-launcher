@@ -15,6 +15,7 @@ private const val TOTAL_RECOMMENDATIONS = 16
 private const val UNDOWNLOADED_TARGET = 12
 private const val NEW_PENALTY = 0.9f
 private const val DECAY_AMOUNT = 0.1f
+private const val FAVORITE_PENALTY = 0.5f
 
 class GenerateRecommendationsUseCase @Inject constructor(
     private val gameDao: GameDao,
@@ -176,7 +177,8 @@ class GenerateRecommendationsUseCase @Inject constructor(
         val boostedScore = baseScore * (1.0 + playTimeBoost)
 
         val penalty = penalties[game.id] ?: 0f
-        val penaltyMultiplier = 1.0 - penalty
+        val favoritePenalty = if (game.isFavorite) FAVORITE_PENALTY else 0f
+        val penaltyMultiplier = 1.0 - penalty - favoritePenalty
 
         return boostedScore * penaltyMultiplier
     }

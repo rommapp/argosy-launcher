@@ -514,6 +514,11 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_35_36 = object : Migration(35, 36) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE state_cache ADD COLUMN platformSlug TEXT NOT NULL DEFAULT ''")
+                db.execSQL("DROP INDEX IF EXISTS index_state_cache_game_emu_slot_channel")
+                db.execSQL("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_state_cache_game_emu_slot_channel_core
+                    ON state_cache(gameId, emulatorId, slotNumber, channelName, coreId)
+                """)
                 db.execSQL("DELETE FROM state_cache")
             }
         }

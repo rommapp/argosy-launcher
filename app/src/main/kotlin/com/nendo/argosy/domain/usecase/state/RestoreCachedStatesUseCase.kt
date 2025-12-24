@@ -31,7 +31,8 @@ class RestoreCachedStatesUseCase @Inject constructor(
     suspend operator fun invoke(
         gameId: Long,
         channelName: String?,
-        emulatorPackage: String
+        emulatorPackage: String,
+        coreId: String? = null
     ): RestoreCachedStatesResult {
         val game = gameDao.getById(gameId)
         if (game == null) {
@@ -58,14 +59,14 @@ class RestoreCachedStatesUseCase @Inject constructor(
             return RestoreCachedStatesResult.NotConfigured
         }
 
-        val coreId = coreVersionExtractor.getCoreIdForEmulator(emulatorId, game.platformSlug)
+        val effectiveCoreId = coreId ?: coreVersionExtractor.getCoreIdForEmulator(emulatorId, game.platformSlug)
 
         val romFile = File(romPath)
         val romBaseName = romFile.nameWithoutExtension
         val contentDir = romFile.parentFile?.absolutePath
 
         val statePaths = if (emulatorId.startsWith("retroarch")) {
-            retroArchConfigParser.resolveStatePaths(emulatorPackage, coreId, contentDir)
+            retroArchConfigParser.resolveStatePaths(emulatorPackage, effectiveCoreId, contentDir)
         } else {
             StatePathRegistry.resolvePath(config, game.platformSlug)
         }
@@ -79,14 +80,10 @@ class RestoreCachedStatesUseCase @Inject constructor(
             return RestoreCachedStatesResult.Error("Could not determine state directory")
         }
 
-        val cachedStates = if (channelName != null) {
-            stateCacheDao.getByChannel(gameId, channelName)
-        } else {
-            stateCacheDao.getDefaultChannel(gameId)
-        }
+        val cachedStates = stateCacheDao.getByChannelAndCore(gameId, channelName, effectiveCoreId)
 
         if (cachedStates.isEmpty()) {
-            Log.d(TAG, "No cached states for channel ${channelName ?: "default"}")
+            Log.d(TAG, "No cached states for channel ${channelName ?: "default"} core ${effectiveCoreId ?: "unknown"}")
         }
 
         try {
@@ -127,7 +124,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
                 Log.d(TAG, "Restored state slot ${state.slotNumber} to ${targetFile.absolutePath}")
             }
 
-            Log.d(TAG, "Restored $restoredCount states for channel ${channelName ?: "default"}")
+            Log.d(TAG, "Restored $restoredCount states for channel ${channelName ?: "default"} core ${effectiveCoreId ?: "unknown"}")
             return RestoreCachedStatesResult.Success(restoredCount)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to restore states", e)

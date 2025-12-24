@@ -11,8 +11,9 @@ import java.time.Instant
         Index("gameId"),
         Index("cachedAt"),
         Index(
-            value = ["gameId", "emulatorId", "slotNumber", "channelName"],
-            unique = true
+            value = ["gameId", "emulatorId", "slotNumber", "channelName", "coreId"],
+            unique = true,
+            name = "index_state_cache_game_emu_slot_channel_core"
         )
     ]
 )

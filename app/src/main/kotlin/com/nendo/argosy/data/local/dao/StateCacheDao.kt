@@ -46,6 +46,23 @@ interface StateCacheDao {
     """)
     suspend fun getDefaultChannel(gameId: Long): List<StateCacheEntity>
 
+    @Query("""
+        SELECT * FROM state_cache
+        WHERE gameId = :gameId
+        AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
+        AND (coreId = :coreId OR (coreId IS NULL AND :coreId IS NULL))
+        ORDER BY slotNumber ASC
+    """)
+    suspend fun getByChannelAndCore(gameId: Long, channelName: String?, coreId: String?): List<StateCacheEntity>
+
+    @Query("""
+        DELETE FROM state_cache
+        WHERE gameId = :gameId
+        AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
+        AND (coreId = :coreId OR (coreId IS NULL AND :coreId IS NULL))
+    """)
+    suspend fun deleteByChannelAndCore(gameId: Long, channelName: String?, coreId: String?)
+
     @Query("SELECT COUNT(*) FROM state_cache WHERE gameId = :gameId")
     suspend fun countByGame(gameId: Long): Int
 

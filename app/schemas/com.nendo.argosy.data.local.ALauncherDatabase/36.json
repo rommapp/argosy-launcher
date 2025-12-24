@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 36,
-    "identityHash": "b7fc661ec46957857b145e126d7afede",
+    "identityHash": "b1c1d3e34a36223eb2369bd66fa19701",
     "entities": [
       {
         "tableName": "platforms",
@@ -1435,16 +1435,17 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_state_cache_cachedAt` ON `${TABLE_NAME}` (`cachedAt`)"
           },
           {
-            "name": "index_state_cache_gameId_emulatorId_slotNumber_channelName",
+            "name": "index_state_cache_game_emu_slot_channel_core",
             "unique": true,
             "columnNames": [
               "gameId",
               "emulatorId",
               "slotNumber",
-              "channelName"
+              "channelName",
+              "coreId"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_state_cache_gameId_emulatorId_slotNumber_channelName` ON `${TABLE_NAME}` (`gameId`, `emulatorId`, `slotNumber`, `channelName`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_state_cache_game_emu_slot_channel_core` ON `${TABLE_NAME}` (`gameId`, `emulatorId`, `slotNumber`, `channelName`, `coreId`)"
           }
         ],
         "foreignKeys": []
@@ -1555,7 +1556,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b7fc661ec46957857b145e126d7afede')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b1c1d3e34a36223eb2369bd66fa19701')"
     ]
   }
 }

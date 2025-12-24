@@ -145,24 +145,25 @@ class StateCacheManager @Inject constructor(
         }
 
         val now = Instant.now()
-        val channelDir = getChannelDir(gameId, platformSlug, channelName)
+        val coreDir = getCoreDir(gameId, platformSlug, channelName, coreId)
 
         try {
-            channelDir.mkdirs()
+            coreDir.mkdirs()
 
-            val cachedFile = File(channelDir, stateFile.name)
+            val cachedFile = File(coreDir, stateFile.name)
             stateFile.copyTo(cachedFile, overwrite = true)
             val channelDirName = channelName ?: "default"
-            val cachePath = "$platformSlug/$gameId/$channelDirName/${stateFile.name}"
+            val coreDirName = coreId ?: "unknown"
+            val cachePath = "$platformSlug/$gameId/$channelDirName/$coreDirName/${stateFile.name}"
             val stateSize = cachedFile.length()
 
             var screenshotCachePath: String? = null
             val screenshotFile = File("$statePath.png")
             Log.d(TAG, "Looking for screenshot at: ${screenshotFile.absolutePath} exists=${screenshotFile.exists()}")
             if (screenshotFile.exists()) {
-                val cachedScreenshot = File(channelDir, screenshotFile.name)
+                val cachedScreenshot = File(coreDir, screenshotFile.name)
                 screenshotFile.copyTo(cachedScreenshot, overwrite = true)
-                screenshotCachePath = "$platformSlug/$gameId/$channelDirName/${screenshotFile.name}"
+                screenshotCachePath = "$platformSlug/$gameId/$channelDirName/$coreDirName/${screenshotFile.name}"
                 Log.d(TAG, "Cached screenshot at $screenshotCachePath")
             } else {
                 Log.d(TAG, "No screenshot found for state: $statePath")
@@ -191,7 +192,7 @@ class StateCacheManager @Inject constructor(
             id
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache state", e)
-            channelDir.deleteRecursively()
+            coreDir.deleteRecursively()
             null
         }
     }
@@ -352,6 +353,12 @@ class StateCacheManager @Inject constructor(
         return File(cacheBaseDir, "$platformSlug/$gameId/$channelDirName")
     }
 
+    fun getCoreDir(gameId: Long, platformSlug: String, channelName: String?, coreId: String?): File {
+        val channelDirName = channelName ?: "default"
+        val coreDirName = coreId ?: "unknown"
+        return File(cacheBaseDir, "$platformSlug/$gameId/$channelDirName/$coreDirName")
+    }
+
     fun getCacheFile(entity: StateCacheEntity): File? {
         val file = File(cacheBaseDir, entity.cachePath)
         return if (file.exists()) file else null
@@ -379,6 +386,22 @@ class StateCacheManager @Inject constructor(
         stateCacheDao.deleteByChannel(gameId, channelName)
         Log.d(TAG, "Deleted ${states.size} states for game $gameId channel ${channelName ?: "default"}")
     }
+
+    suspend fun deleteStatesForChannelAndCore(gameId: Long, channelName: String?, coreId: String?) = withContext(Dispatchers.IO) {
+        val states = stateCacheDao.getByChannelAndCore(gameId, channelName, coreId)
+
+        for (state in states) {
+            val cacheFile = File(cacheBaseDir, state.cachePath)
+            cacheFile.delete()
+            state.screenshotPath?.let { File(cacheBaseDir, it).delete() }
+        }
+
+        stateCacheDao.deleteByChannelAndCore(gameId, channelName, coreId)
+        Log.d(TAG, "Deleted ${states.size} states for game $gameId channel ${channelName ?: "default"} core ${coreId ?: "unknown"}")
+    }
+
+    suspend fun getStatesForChannelAndCore(gameId: Long, channelName: String?, coreId: String?): List<StateCacheEntity> =
+        stateCacheDao.getByChannelAndCore(gameId, channelName, coreId)
 
     suspend fun clearAllCache() = withContext(Dispatchers.IO) {
         if (cacheBaseDir.exists()) {

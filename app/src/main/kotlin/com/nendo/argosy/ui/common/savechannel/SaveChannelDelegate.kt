@@ -219,12 +219,19 @@ class SaveChannelDelegate @Inject constructor(
                     _state.update { it.copy(activeChannel = channelName, activeSaveTimestamp = null) }
                     onSaveStatusChanged(SaveStatusEvent(channelName = channelName, timestamp = null))
 
+                    if (emulatorPackage != null) {
+                        val stateResult = restoreCachedStatesUseCase(
+                            gameId = currentGameId,
+                            channelName = channelName,
+                            emulatorPackage = emulatorPackage,
+                            coreId = state.currentCoreId
+                        )
+                        android.util.Log.d("SaveChannelDelegate", "State restore result: $stateResult")
+                    }
+
                     when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, false)) {
                         is RestoreCachedSaveUseCase.Result.Restored,
                         is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                            if (emulatorPackage != null) {
-                                restoreCachedStatesUseCase(currentGameId, channelName, emulatorPackage)
-                            }
                             notificationManager.showSuccess("Using save slot: $channelName")
                             _state.update { it.copy(isVisible = false) }
                             onRestored()
@@ -278,11 +285,23 @@ class SaveChannelDelegate @Inject constructor(
         onSaveStatusChanged: (SaveStatusEvent) -> Unit,
         onRestored: () -> Unit = {}
     ) {
-        val entry = _state.value.restoreSelectedEntry ?: return
+        val state = _state.value
+        val entry = state.restoreSelectedEntry ?: return
         val targetChannel = entry.channelName
         val targetTimestamp = entry.timestamp.toEpochMilli()
+        val emulatorPackage = state.emulatorPackage
 
         scope.launch {
+            if (emulatorPackage != null) {
+                val stateResult = restoreCachedStatesUseCase(
+                    gameId = currentGameId,
+                    channelName = targetChannel,
+                    emulatorPackage = emulatorPackage,
+                    coreId = state.currentCoreId
+                )
+                android.util.Log.d("SaveChannelDelegate", "Timeline state restore result: $stateResult")
+            }
+
             gameDao.updateActiveSaveTimestamp(currentGameId, targetTimestamp)
             _state.update {
                 it.copy(
@@ -699,21 +718,24 @@ class SaveChannelDelegate @Inject constructor(
                 } else name
             }
 
-            val channelDir = stateCacheManager.getChannelDir(
+            val coreDir = stateCacheManager.getCoreDir(
                 currentGameId,
                 sourceCache.platformSlug,
-                sourceCache.channelName
+                sourceCache.channelName,
+                sourceCache.coreId
             )
-            val autoFile = java.io.File(channelDir, autoFileName)
+            val autoFile = java.io.File(coreDir, autoFileName)
             sourceFile.copyTo(autoFile, overwrite = true)
 
             val screenshotFile = stateCacheManager.getScreenshotFile(sourceCache)
             if (screenshotFile != null) {
-                val autoScreenshot = java.io.File(channelDir, "$autoFileName.png")
+                val autoScreenshot = java.io.File(coreDir, "$autoFileName.png")
                 screenshotFile.copyTo(autoScreenshot, overwrite = true)
             }
 
-            val autoCachePath = "${sourceCache.platformSlug}/${currentGameId}/${sourceCache.channelName ?: "default"}/$autoFileName"
+            val channelDirName = sourceCache.channelName ?: "default"
+            val coreDirName = sourceCache.coreId ?: "unknown"
+            val autoCachePath = "${sourceCache.platformSlug}/${currentGameId}/$channelDirName/$coreDirName/$autoFileName"
             val autoScreenshotPath = if (screenshotFile != null) "$autoCachePath.png" else null
 
             val autoEntity = sourceCache.copy(

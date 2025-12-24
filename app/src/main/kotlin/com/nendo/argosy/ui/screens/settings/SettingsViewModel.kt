@@ -39,6 +39,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelega
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.EmulatorSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.PermissionsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ServerSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SoundSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
@@ -94,6 +95,7 @@ class SettingsViewModel @Inject constructor(
     val storageDelegate: StorageSettingsDelegate,
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
+    val permissionsDelegate: PermissionsSettingsDelegate,
     private val androidGameScanner: AndroidGameScanner
 ) : ViewModel() {
 
@@ -191,6 +193,10 @@ class SettingsViewModel @Inject constructor(
                     )
                 )
             }
+        }.launchIn(viewModelScope)
+
+        permissionsDelegate.state.onEach { permissions ->
+            _uiState.update { it.copy(permissions = permissions) }
         }.launchIn(viewModelScope)
     }
 
@@ -413,6 +419,8 @@ class SettingsViewModel @Inject constructor(
             }
 
             soundManager.setVolume(prefs.soundVolume)
+
+            permissionsDelegate.refreshPermissions()
         }
     }
 
@@ -544,6 +552,7 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsSection.SYNC_SETTINGS -> syncDelegate.loadLibrarySettings(viewModelScope)
             SettingsSection.STEAM_SETTINGS -> steamDelegate.loadSteamSettings(context, viewModelScope)
+            SettingsSection.PERMISSIONS -> permissionsDelegate.refreshPermissions()
             else -> {}
         }
     }
@@ -712,7 +721,7 @@ class SettingsViewModel @Inject constructor(
             val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                 state.server.connectionStatus == ConnectionStatus.OFFLINE
             val maxIndex = when (state.currentSection) {
-                SettingsSection.MAIN -> 6
+                SettingsSection.MAIN -> 7
                 SettingsSection.SERVER -> if (state.server.rommConfiguring) {
                     4
                 } else {
@@ -753,6 +762,7 @@ class SettingsViewModel @Inject constructor(
                     val autoAssignOffset = if (state.emulators.canAutoAssign) 1 else 0
                     (platformCount + autoAssignOffset - 1).coerceAtLeast(0)
                 }
+                SettingsSection.PERMISSIONS -> 1
                 SettingsSection.ABOUT -> if (state.fileLoggingPath != null) 4 else 3
             }
             val newIndex = if (state.currentSection == SettingsSection.SERVER && state.server.rommConfiguring) {
@@ -1007,6 +1017,14 @@ class SettingsViewModel @Inject constructor(
 
     fun openUsageStatsSettings() {
         controlsDelegate.openUsageStatsSettings()
+    }
+
+    fun openStorageSettings() {
+        permissionsDelegate.openStorageSettings()
+    }
+
+    fun refreshPermissions() {
+        permissionsDelegate.refreshPermissions()
     }
 
     private fun handlePlayTimeToggle(controls: ControlsState) {
@@ -1386,7 +1404,8 @@ class SettingsViewModel @Inject constructor(
                     3 -> SettingsSection.CONTROLS
                     4 -> SettingsSection.SOUNDS
                     5 -> SettingsSection.EMULATORS
-                    6 -> SettingsSection.ABOUT
+                    6 -> SettingsSection.PERMISSIONS
+                    7 -> SettingsSection.ABOUT
                     else -> null
                 }
                 section?.let { navigateToSection(it) }
@@ -1620,6 +1639,13 @@ class SettingsViewModel @Inject constructor(
                     if (config != null) {
                         showEmulatorPicker(config)
                     }
+                }
+                InputResult.HANDLED
+            }
+            SettingsSection.PERMISSIONS -> {
+                when (state.focusedIndex) {
+                    0 -> openStorageSettings()
+                    1 -> openUsageStatsSettings()
                 }
                 InputResult.HANDLED
             }

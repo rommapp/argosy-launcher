@@ -7,7 +7,8 @@ class FirstRunInputHandler(
     private val viewModel: FirstRunViewModel,
     private val onComplete: () -> Unit,
     private val onRequestPermission: () -> Unit,
-    private val onChooseFolder: () -> Unit
+    private val onChooseFolder: () -> Unit,
+    private val onRequestUsageStats: () -> Unit
 ) : InputHandler {
 
     override fun onUp(): InputResult {
@@ -33,7 +34,7 @@ class FirstRunInputHandler(
             onComplete()
             return InputResult.HANDLED
         }
-        viewModel.handleConfirm(onRequestPermission, onChooseFolder)
+        viewModel.handleConfirm(onRequestPermission, onChooseFolder, onRequestUsageStats)
         return InputResult.HANDLED
     }
 

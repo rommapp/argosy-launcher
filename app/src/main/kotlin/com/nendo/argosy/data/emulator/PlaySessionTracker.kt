@@ -262,6 +262,21 @@ class PlaySessionTracker @Inject constructor(
         return Duration.between(session.startTime, Instant.now())
     }
 
+    fun canResumeSession(gameId: Long): Boolean {
+        val session = _activeSession.value
+        if (session == null) {
+            Log.d(TAG, "canResumeSession($gameId): no active session")
+            return false
+        }
+        if (session.gameId != gameId) {
+            Log.d(TAG, "canResumeSession($gameId): gameId mismatch (active=${session.gameId})")
+            return false
+        }
+        val inForeground = permissionHelper.isPackageInForeground(application, session.emulatorPackage, withinMs = 300_000)
+        Log.d(TAG, "canResumeSession($gameId): emulator=${session.emulatorPackage}, inForeground=$inForeground")
+        return inForeground
+    }
+
     private suspend fun cacheCurrentSave(session: ActiveSession) {
         try {
             val game = gameDao.getById(session.gameId) ?: return

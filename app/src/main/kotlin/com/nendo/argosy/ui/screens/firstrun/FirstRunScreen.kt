@@ -91,6 +91,13 @@ fun FirstRunScreen(
         }
     }
 
+    val requestUsageStats = {
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(intent)
+    }
+
     val chooseFolder = { viewModel.openFolderPicker() }
 
     var showFileBrowser by remember { mutableStateOf(false) }
@@ -100,7 +107,8 @@ fun FirstRunScreen(
         viewModel.createInputHandler(
             onComplete = onComplete,
             onRequestPermission = requestPermission,
-            onChooseFolder = chooseFolder
+            onChooseFolder = chooseFolder,
+            onRequestUsageStats = requestUsageStats
         )
     }
 
@@ -127,6 +135,7 @@ fun FirstRunScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.checkStoragePermission()
+        viewModel.checkUsageStatsPermission()
     }
 
     Box(
@@ -180,6 +189,12 @@ fun FirstRunScreen(
                     focusedIndex = uiState.focusedIndex,
                     onEnable = { viewModel.enableSaveSync() },
                     onSkip = { viewModel.skipSaveSync() }
+                )
+                FirstRunStep.USAGE_STATS -> UsageStatsStep(
+                    hasPermission = uiState.hasUsageStatsPermission,
+                    isFocused = uiState.focusedIndex == 0,
+                    onRequestPermission = requestUsageStats,
+                    onContinue = { viewModel.proceedFromUsageStats() }
                 )
                 FirstRunStep.PLATFORM_SELECT -> PlatformSelectStep(
                     platforms = uiState.platforms,
@@ -280,7 +295,7 @@ private fun RommLoginStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(32.dp)
     ) {
-        StepHeader(step = 1, title = "Rom Manager Login", totalSteps = 3)
+        StepHeader(step = 1, title = "Rom Manager Login", totalSteps = 4)
         Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
@@ -422,7 +437,7 @@ private fun RomPathStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(32.dp)
     ) {
-        StepHeader(step = 2, title = "Storage Access", totalSteps = 3)
+        StepHeader(step = 2, title = "Storage Access", totalSteps = 4)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Grant storage access to download and manage your game files.",
@@ -558,7 +573,7 @@ private fun SaveSyncStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(32.dp)
     ) {
-        StepHeader(step = 3, title = "Save Data Sync", totalSteps = 3)
+        StepHeader(step = 3, title = "Save Data Sync", totalSteps = 4)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Sync your game saves with your RomM server to continue playing across multiple devices.",
@@ -592,6 +607,89 @@ private fun SaveSyncStep(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+private fun UsageStatsStep(
+    hasPermission: Boolean,
+    isFocused: Boolean,
+    onRequestPermission: () -> Unit,
+    onContinue: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(32.dp)
+    ) {
+        StepHeader(step = 4, title = "Usage Access", totalSteps = 4)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "This permission allows Argosy to detect when you're playing a game, enabling accurate play time tracking and seamless game resumption.",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = if (hasPermission) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.errorContainer
+                }
+            ),
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Icon(
+                    if (hasPermission) Icons.Default.CheckCircle else Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = if (hasPermission) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    }
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = if (hasPermission) "Usage access granted" else "Usage access required",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (hasPermission) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        if (!hasPermission) {
+            FocusableButton(
+                text = "Grant Usage Access",
+                isFocused = isFocused,
+                icon = Icons.Default.Lock,
+                onClick = onRequestPermission
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Find Argosy in the list and enable access.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            FocusableButton(
+                text = "Continue",
+                isFocused = isFocused,
+                onClick = onContinue
+            )
+        }
     }
 }
 
@@ -763,7 +861,7 @@ private fun CompleteStep(
 }
 
 @Composable
-private fun StepHeader(step: Int, title: String, totalSteps: Int = 3) {
+private fun StepHeader(step: Int, title: String, totalSteps: Int = 4) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "SETUP $step/$totalSteps",

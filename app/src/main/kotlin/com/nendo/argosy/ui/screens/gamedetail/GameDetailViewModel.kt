@@ -539,6 +539,44 @@ class GameDetailViewModel @Inject constructor(
         if (_uiState.value.isSyncing) return
 
         viewModelScope.launch {
+            val canResume = playSessionTracker.canResumeSession(currentGameId)
+            if (canResume) {
+                val game = _uiState.value.game ?: return@launch
+                when (val result = launchGameUseCase(currentGameId, discId, forResume = true)) {
+                    is LaunchResult.Success -> {
+                        soundManager.play(SoundType.LAUNCH_GAME)
+                        _launchEvents.emit(LaunchEvent.Launch(result.intent))
+                    }
+                    is LaunchResult.NoEmulator -> {
+                        notificationManager.showError("No emulator installed for ${game.platformName}")
+                    }
+                    is LaunchResult.NoRomFile -> {
+                        notificationManager.showError("ROM file not found. Download required.")
+                    }
+                    is LaunchResult.NoSteamLauncher -> {
+                        notificationManager.showError("Steam launcher not installed")
+                    }
+                    is LaunchResult.NoCore -> {
+                        notificationManager.showError("No compatible RetroArch core installed for ${result.platformId}")
+                    }
+                    is LaunchResult.MissingDiscs -> {
+                        _uiState.update {
+                            it.copy(
+                                showMissingDiscPrompt = true,
+                                missingDiscNumbers = result.missingDiscNumbers
+                            )
+                        }
+                    }
+                    is LaunchResult.Error -> {
+                        notificationManager.showError(result.message)
+                    }
+                    is LaunchResult.NoAndroidApp -> {
+                        notificationManager.showError("Android app not installed: ${result.packageName}")
+                    }
+                }
+                return@launch
+            }
+
             val permissionResult = checkSaveSyncPermissionUseCase()
             if (permissionResult is CheckSaveSyncPermissionUseCase.Result.MissingPermission) {
                 _uiState.update { it.copy(showPermissionModal = true) }

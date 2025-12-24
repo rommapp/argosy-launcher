@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.runtime.Composable
@@ -31,7 +32,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..6) {
+        if (uiState.focusedIndex in 0..7) {
             val viewportHeight = listState.layoutInfo.viewportSize.height
             val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
             val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
@@ -120,11 +121,25 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             )
         }
         item {
+            val permissionStatus = if (uiState.permissions.allGranted) {
+                "All granted"
+            } else {
+                "${uiState.permissions.grantedCount}/${uiState.permissions.totalCount} granted"
+            }
+            NavigationPreference(
+                icon = Icons.Default.Security,
+                title = "Permissions",
+                subtitle = permissionStatus,
+                isFocused = uiState.focusedIndex == 6,
+                onClick = { viewModel.navigateToSection(SettingsSection.PERMISSIONS) }
+            )
+        }
+        item {
             NavigationPreference(
                 icon = Icons.Default.Info,
                 title = "About",
                 subtitle = "Version ${uiState.appVersion}",
-                isFocused = uiState.focusedIndex == 6,
+                isFocused = uiState.focusedIndex == 7,
                 onClick = { viewModel.navigateToSection(SettingsSection.ABOUT) }
             )
         }

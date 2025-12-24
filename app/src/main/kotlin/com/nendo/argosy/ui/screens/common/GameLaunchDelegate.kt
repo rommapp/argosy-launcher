@@ -59,6 +59,39 @@ class GameLaunchDelegate @Inject constructor(
 
         scope.launch {
             try {
+                val canResume = playSessionTracker.canResumeSession(gameId)
+                if (canResume) {
+                    when (val result = launchGameUseCase(gameId, discId, forResume = true)) {
+                        is LaunchResult.Success -> {
+                            soundManager.play(SoundType.LAUNCH_GAME)
+                            onLaunch(result.intent)
+                        }
+                        is LaunchResult.NoEmulator -> {
+                            notificationManager.showError("No emulator installed for this platform")
+                        }
+                        is LaunchResult.NoRomFile -> {
+                            notificationManager.showError("ROM file not found")
+                        }
+                        is LaunchResult.NoSteamLauncher -> {
+                            notificationManager.showError("Steam launcher not installed")
+                        }
+                        is LaunchResult.NoCore -> {
+                            notificationManager.showError("No compatible RetroArch core installed for ${result.platformId}")
+                        }
+                        is LaunchResult.MissingDiscs -> {
+                            val discText = result.missingDiscNumbers.joinToString(", ")
+                            notificationManager.showError("Missing discs: $discText. View game details to repair.")
+                        }
+                        is LaunchResult.Error -> {
+                            notificationManager.showError(result.message)
+                        }
+                        is LaunchResult.NoAndroidApp -> {
+                            notificationManager.showError("Android app not installed: ${result.packageName}")
+                        }
+                    }
+                    return@launch
+                }
+
                 val game = gameDao.getById(gameId) ?: return@launch
                 val gameTitle = game.title
 
@@ -134,6 +167,13 @@ class GameLaunchDelegate @Inject constructor(
         onSyncComplete: () -> Unit = {}
     ) {
         val session = playSessionTracker.activeSession.value ?: return
+
+        if (playSessionTracker.canResumeSession(session.gameId)) {
+            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: skipping, emulator still running")
+            return
+        }
+
+        android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: proceeding with session end for gameId=${session.gameId}")
         if (!syncMutex.tryLock()) return
 
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)

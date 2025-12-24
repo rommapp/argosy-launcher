@@ -43,8 +43,8 @@ class GameLauncher @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager
 ) {
-    suspend fun launch(gameId: Long, discId: Long? = null): LaunchResult {
-        Logger.debug(TAG, "launch() called: gameId=$gameId, discId=$discId")
+    suspend fun launch(gameId: Long, discId: Long? = null, forResume: Boolean = false): LaunchResult {
+        Logger.debug(TAG, "launch() called: gameId=$gameId, discId=$discId, forResume=$forResume")
 
         val game = gameDao.getById(gameId)
             ?: return LaunchResult.Error("Game not found").also {
@@ -62,7 +62,7 @@ class GameLauncher @Inject constructor(
         }
 
         if (game.isMultiDisc) {
-            return launchMultiDiscGame(game, discId)
+            return launchMultiDiscGame(game, discId, forResume)
         }
 
         val romPath = game.localPath
@@ -84,7 +84,7 @@ class GameLauncher @Inject constructor(
 
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName} (${emulator.packageName})")
 
-        val intent = buildIntent(emulator, romFile, game)
+        val intent = buildIntent(emulator, romFile, game, forResume)
             ?: return if (emulator.launchConfig is LaunchConfig.RetroArch) {
                 LaunchResult.NoCore(game.platformId).also {
                     Logger.warn(TAG, "launch() failed: no RetroArch core for platform=${game.platformId}")
@@ -95,14 +95,16 @@ class GameLauncher @Inject constructor(
                 }
             }
 
-        gameDao.recordPlayStart(gameId, Instant.now())
+        if (!forResume) {
+            gameDao.recordPlayStart(gameId, Instant.now())
+        }
 
         Logger.info(TAG, "Launching ${romFile.name} with ${emulator.displayName}")
         return LaunchResult.Success(intent)
     }
 
-    private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?): LaunchResult {
-        Logger.debug(TAG, "launchMultiDiscGame(): discCount query for gameId=${game.id}")
+    private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?, forResume: Boolean): LaunchResult {
+        Logger.debug(TAG, "launchMultiDiscGame(): discCount query for gameId=${game.id}, forResume=$forResume")
 
         val discs = gameDiscDao.getDiscsForGame(game.id)
         if (discs.isEmpty()) {
@@ -168,7 +170,7 @@ class GameLauncher @Inject constructor(
             File(targetDisc.localPath!!)
         }
 
-        val intent = buildIntent(emulator, launchFile, game)
+        val intent = buildIntent(emulator, launchFile, game, forResume)
             ?: return if (emulator.launchConfig is LaunchConfig.RetroArch) {
                 LaunchResult.NoCore(game.platformId).also {
                     Logger.warn(TAG, "launchMultiDiscGame() failed: no core for platform=${game.platformId}")
@@ -179,7 +181,9 @@ class GameLauncher @Inject constructor(
                 }
             }
 
-        gameDao.recordPlayStart(game.id, Instant.now())
+        if (!forResume) {
+            gameDao.recordPlayStart(game.id, Instant.now())
+        }
 
         Logger.info(TAG, "Launching multi-disc: ${launchFile.name} with ${emulator.displayName}")
         return LaunchResult.Success(intent)
@@ -257,23 +261,23 @@ class GameLauncher @Inject constructor(
         return emulatorDetector.getPreferredEmulator(game.platformSlug)?.def
     }
 
-    private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity): Intent? {
+    private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity, forResume: Boolean): Intent? {
         val configType = emulator.launchConfig::class.simpleName
-        Logger.debug(TAG, "buildIntent: emulator=${emulator.displayName}, config=$configType, rom=${romFile.name}")
+        Logger.debug(TAG, "buildIntent: emulator=${emulator.displayName}, config=$configType, rom=${romFile.name}, forResume=$forResume")
 
         return when (val config = emulator.launchConfig) {
-            is LaunchConfig.FileUri -> buildFileUriIntent(emulator, romFile)
-            is LaunchConfig.FilePathExtra -> buildFilePathIntent(emulator, romFile, config)
-            is LaunchConfig.RetroArch -> buildRetroArchIntent(emulator, romFile, game, config)
-            is LaunchConfig.Custom -> buildCustomIntent(emulator, romFile, game.platformSlug, config)
-            is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config)
-            is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config)
+            is LaunchConfig.FileUri -> buildFileUriIntent(emulator, romFile, forResume)
+            is LaunchConfig.FilePathExtra -> buildFilePathIntent(emulator, romFile, config, forResume)
+            is LaunchConfig.RetroArch -> buildRetroArchIntent(emulator, romFile, game, config, forResume)
+            is LaunchConfig.Custom -> buildCustomIntent(emulator, romFile, game.platformSlug, config, forResume)
+            is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config, forResume)
+            is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config, forResume)
         }.also { intent ->
             Logger.debug(TAG, "Intent built: ${LogSanitizer.describeIntent(intent)}")
         }
     }
 
-    private fun buildFileUriIntent(emulator: EmulatorDef, romFile: File): Intent {
+    private fun buildFileUriIntent(emulator: EmulatorDef, romFile: File, forResume: Boolean): Intent {
         val uri = getFileUri(romFile)
 
         return Intent(emulator.launchAction).apply {
@@ -281,22 +285,30 @@ class GameLauncher @Inject constructor(
             setPackage(emulator.packageName)
             addCategory(Intent.CATEGORY_DEFAULT)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            if (forResume) {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            } else {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            }
         }
     }
 
     private fun buildFilePathIntent(
         emulator: EmulatorDef,
         romFile: File,
-        config: LaunchConfig.FilePathExtra
+        config: LaunchConfig.FilePathExtra,
+        forResume: Boolean
     ): Intent {
         return Intent(emulator.launchAction).apply {
             setPackage(emulator.packageName)
             config.extraKeys.forEach { key ->
                 putExtra(key, romFile.absolutePath)
             }
-            // Clear existing task to ensure new ROM loads instead of resuming previous game
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            if (forResume) {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            } else {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            }
         }
     }
 
@@ -304,14 +316,15 @@ class GameLauncher @Inject constructor(
         emulator: EmulatorDef,
         romFile: File,
         game: GameEntity,
-        config: LaunchConfig.RetroArch
+        config: LaunchConfig.RetroArch,
+        forResume: Boolean
     ): Intent? {
         val retroArchPackage = emulator.packageName
         val dataDir = "/data/data/$retroArchPackage"
         val externalDir = "/storage/emulated/0/Android/data/$retroArchPackage/files"
         val configPath = "$externalDir/retroarch.cfg"
 
-        Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}")
+        Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}, forResume=$forResume")
 
         val corePath = getCorePath(game, retroArchPackage)
         if (corePath == null) {
@@ -376,7 +389,8 @@ class GameLauncher @Inject constructor(
         emulator: EmulatorDef,
         romFile: File,
         platformSlug: String,
-        config: LaunchConfig.Custom
+        config: LaunchConfig.Custom,
+        forResume: Boolean
     ): Intent {
         return Intent(emulator.launchAction).apply {
             if (config.activityClass != null) {
@@ -420,18 +434,23 @@ class GameLauncher @Inject constructor(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                Intent.FLAG_ACTIVITY_CLEAR_TOP
-            )
+            if (forResume) {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            } else {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP
+                )
+            }
         }
     }
 
     private fun buildCustomSchemeIntent(
         emulator: EmulatorDef,
         romFile: File,
-        config: LaunchConfig.CustomScheme
+        config: LaunchConfig.CustomScheme,
+        forResume: Boolean
     ): Intent {
         val uri = Uri.Builder()
             .scheme(config.scheme)
@@ -442,18 +461,23 @@ class GameLauncher @Inject constructor(
         return Intent(emulator.launchAction).apply {
             data = uri
             setPackage(emulator.packageName)
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                Intent.FLAG_ACTIVITY_CLEAR_TOP
-            )
+            if (forResume) {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            } else {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP
+                )
+            }
         }
     }
 
     private fun buildVita3KIntent(
         emulator: EmulatorDef,
         romFile: File,
-        config: LaunchConfig.Vita3K
+        config: LaunchConfig.Vita3K,
+        forResume: Boolean
     ): Intent {
         val titleId = extractVitaTitleId(romFile)
 
@@ -467,10 +491,14 @@ class GameLauncher @Inject constructor(
                 Logger.debug(TAG, "Vita3K: no titleId in ${romFile.name}, opening emulator only")
             }
 
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                Intent.FLAG_ACTIVITY_CLEAR_TASK
-            )
+            if (forResume) {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            } else {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+                )
+            }
         }
     }
 

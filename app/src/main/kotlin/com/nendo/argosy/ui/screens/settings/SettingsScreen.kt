@@ -59,6 +59,7 @@ import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
 import com.nendo.argosy.ui.screens.settings.sections.GameDataSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
+import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
 import com.nendo.argosy.ui.screens.settings.sections.SoundsSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
@@ -217,6 +218,7 @@ fun SettingsScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.checkStoragePermission()
+                viewModel.refreshPermissions()
                 if (viewModel.uiState.value.currentSection == SettingsSection.EMULATORS) {
                     viewModel.refreshEmulators()
                 }
@@ -255,6 +257,7 @@ fun SettingsScreen(
                     SettingsSection.CONTROLS -> "CONTROLS"
                     SettingsSection.SOUNDS -> "SOUNDS"
                     SettingsSection.EMULATORS -> "EMULATORS"
+                    SettingsSection.PERMISSIONS -> "PERMISSIONS"
                     SettingsSection.ABOUT -> "ABOUT"
                 }
             )
@@ -282,6 +285,7 @@ fun SettingsScreen(
                             }
                         }
                     )
+                    SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                 }
             }

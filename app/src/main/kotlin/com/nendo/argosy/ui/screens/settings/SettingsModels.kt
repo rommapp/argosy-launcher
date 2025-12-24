@@ -33,6 +33,7 @@ enum class SettingsSection {
     CONTROLS,
     SOUNDS,
     EMULATORS,
+    PERMISSIONS,
     ABOUT
 }
 
@@ -272,6 +273,15 @@ data class UpdateCheckState(
     val readyToInstall: Boolean = false
 )
 
+data class PermissionsState(
+    val hasStorageAccess: Boolean = false,
+    val hasUsageStats: Boolean = false
+) {
+    val allGranted: Boolean get() = hasStorageAccess && hasUsageStats
+    val grantedCount: Int get() = listOf(hasStorageAccess, hasUsageStats).count { it }
+    val totalCount: Int get() = 2
+}
+
 data class SettingsUiState(
     val currentSection: SettingsSection = SettingsSection.MAIN,
     val focusedIndex: Int = 0,
@@ -286,6 +296,7 @@ data class SettingsUiState(
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
     val android: AndroidSettingsState = AndroidSettingsState(),
+    val permissions: PermissionsState = PermissionsState(),
     val launchFolderPicker: Boolean = false,
     val showMigrationDialog: Boolean = false,
     val pendingStoragePath: String? = null,

@@ -1,6 +1,7 @@
 package com.nendo.argosy.util
 
 import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.os.Process
@@ -26,5 +27,20 @@ class PermissionHelper @Inject constructor() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)
+    }
+
+    fun isPackageInForeground(context: Context, packageName: String, withinMs: Long = 5000): Boolean {
+        if (!hasUsageStatsPermission(context)) {
+            android.util.Log.d("PermissionHelper", "isPackageInForeground: no usage stats permission")
+            return false
+        }
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - withinMs
+        val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_BEST, startTime, endTime)
+        val match = stats.find { it.packageName == packageName }
+        val result = match != null && match.lastTimeUsed >= startTime
+        android.util.Log.d("PermissionHelper", "isPackageInForeground($packageName): found=${match != null}, lastUsed=${match?.lastTimeUsed}, startTime=$startTime, result=$result")
+        return result
     }
 }

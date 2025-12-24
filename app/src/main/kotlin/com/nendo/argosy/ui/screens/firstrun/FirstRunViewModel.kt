@@ -4,11 +4,13 @@ import android.os.Build
 import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.app.Application
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +26,7 @@ enum class FirstRunStep {
     ROMM_SUCCESS,
     ROM_PATH,
     SAVE_SYNC,
+    USAGE_STATS,
     PLATFORM_SELECT,
     COMPLETE
 }
@@ -43,6 +46,7 @@ data class FirstRunUiState(
     val launchFolderPicker: Boolean = false,
     val saveSyncEnabled: Boolean = false,
     val hasStoragePermission: Boolean = false,
+    val hasUsageStatsPermission: Boolean = false,
     val rommFocusField: Int? = null,
     val platforms: List<PlatformEntity> = emptyList(),
     val platformButtonFocus: Int = 1
@@ -50,9 +54,11 @@ data class FirstRunUiState(
 
 @HiltViewModel
 class FirstRunViewModel @Inject constructor(
+    private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
-    private val platformDao: PlatformDao
+    private val platformDao: PlatformDao,
+    private val permissionHelper: PermissionHelper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FirstRunUiState())
@@ -65,7 +71,8 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.ROMM_LOGIN -> FirstRunStep.ROMM_SUCCESS
                 FirstRunStep.ROMM_SUCCESS -> FirstRunStep.ROM_PATH
                 FirstRunStep.ROM_PATH -> FirstRunStep.SAVE_SYNC
-                FirstRunStep.SAVE_SYNC -> {
+                FirstRunStep.SAVE_SYNC -> FirstRunStep.USAGE_STATS
+                FirstRunStep.USAGE_STATS -> {
                     if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
                     else FirstRunStep.COMPLETE
                 }
@@ -87,10 +94,11 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.ROMM_SUCCESS -> FirstRunStep.ROMM_LOGIN
                 FirstRunStep.ROM_PATH -> FirstRunStep.ROMM_SUCCESS
                 FirstRunStep.SAVE_SYNC -> FirstRunStep.ROM_PATH
-                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.SAVE_SYNC
+                FirstRunStep.USAGE_STATS -> FirstRunStep.SAVE_SYNC
+                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.USAGE_STATS
                 FirstRunStep.COMPLETE -> {
                     if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
-                    else FirstRunStep.SAVE_SYNC
+                    else FirstRunStep.USAGE_STATS
                 }
             }
             state.copy(currentStep = prevStep, focusedIndex = 0)
@@ -147,6 +155,7 @@ class FirstRunViewModel @Inject constructor(
                 }
             }
             FirstRunStep.SAVE_SYNC -> 1
+            FirstRunStep.USAGE_STATS -> 0
             FirstRunStep.PLATFORM_SELECT -> state.platforms.size
             FirstRunStep.COMPLETE -> 0
         }
@@ -281,6 +290,17 @@ class FirstRunViewModel @Inject constructor(
         nextStep()
     }
 
+    fun checkUsageStatsPermission() {
+        val hasPermission = permissionHelper.hasUsageStatsPermission(application)
+        _uiState.update { it.copy(hasUsageStatsPermission = hasPermission) }
+    }
+
+    fun proceedFromUsageStats() {
+        if (_uiState.value.hasUsageStatsPermission) {
+            nextStep()
+        }
+    }
+
     fun completeSetup() {
         val state = _uiState.value
         if (!state.hasStoragePermission || !state.folderSelected) return
@@ -309,7 +329,8 @@ class FirstRunViewModel @Inject constructor(
 
     fun handleConfirm(
         onRequestPermission: () -> Unit,
-        onChooseFolder: () -> Unit
+        onChooseFolder: () -> Unit,
+        onRequestUsageStats: () -> Unit
     ) {
         val state = _uiState.value
         when (state.currentStep) {
@@ -335,6 +356,13 @@ class FirstRunViewModel @Inject constructor(
             FirstRunStep.SAVE_SYNC -> {
                 if (state.focusedIndex == 0) enableSaveSync() else skipSaveSync()
             }
+            FirstRunStep.USAGE_STATS -> {
+                if (!state.hasUsageStatsPermission) {
+                    onRequestUsageStats()
+                } else {
+                    proceedFromUsageStats()
+                }
+            }
             FirstRunStep.PLATFORM_SELECT -> {
                 if (state.focusedIndex >= state.platforms.size) {
                     if (state.platformButtonFocus == 0) toggleAllPlatforms()
@@ -355,6 +383,7 @@ class FirstRunViewModel @Inject constructor(
     fun createInputHandler(
         onComplete: () -> Unit,
         onRequestPermission: () -> Unit,
-        onChooseFolder: () -> Unit
-    ) = FirstRunInputHandler(this, onComplete, onRequestPermission, onChooseFolder)
+        onChooseFolder: () -> Unit,
+        onRequestUsageStats: () -> Unit
+    ) = FirstRunInputHandler(this, onComplete, onRequestPermission, onChooseFolder, onRequestUsageStats)
 }

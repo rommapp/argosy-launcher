@@ -661,19 +661,12 @@ class LibraryViewModel @Inject constructor(
 
     fun moveQuickMenuFocus(delta: Int) {
         _uiState.update {
-            val game = it.focusedGame
-            val maxIndex = if (game == null) {
-                0
-            } else {
-                val isDownloaded = game.isDownloaded
-                val needsInstall = game.needsInstall
-                val isRommGame = game.isRommGame
-                val isAndroidApp = game.isAndroidApp
-                val canRefresh = isRommGame || isAndroidApp
-                var idx = if (isDownloaded || needsInstall) 4 else 3
-                if (canRefresh) idx++
-                idx
-            }
+            val game = it.focusedGame ?: return@update it
+            val canRefresh = game.isRommGame || game.isAndroidApp
+            val hasDelete = game.isDownloaded || game.needsInstall
+            var maxIndex = 4
+            if (canRefresh) maxIndex++
+            if (hasDelete) maxIndex++
             val newIndex = (it.quickMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(quickMenuFocusIndex = newIndex)
         }
@@ -693,6 +686,7 @@ class LibraryViewModel @Inject constructor(
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
         val refreshIdx = if (canRefresh) currentIdx++ else -1
+        val resyncPlatformIdx = currentIdx++
         val deleteIdx = if (isDownloaded || needsInstall) currentIdx++ else -1
         val hideIdx = currentIdx
 
@@ -719,6 +713,11 @@ class LibraryViewModel @Inject constructor(
             }
             refreshIdx -> {
                 if (isAndroidApp) refreshAndroidGameData(game.id) else refreshGameData(game.id)
+                InputResult.HANDLED
+            }
+            resyncPlatformIdx -> {
+                syncCurrentPlatform()
+                toggleQuickMenu()
                 InputResult.HANDLED
             }
             deleteIdx -> {

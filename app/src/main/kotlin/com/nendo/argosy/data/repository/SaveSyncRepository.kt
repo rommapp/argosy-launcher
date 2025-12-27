@@ -331,7 +331,7 @@ class SaveSyncRepository @Inject constructor(
             .trim()
     }
 
-    fun constructSavePath(
+    suspend fun constructSavePath(
         emulatorId: String,
         gameTitle: String,
         platformId: String,
@@ -343,10 +343,18 @@ class SaveSyncRepository @Inject constructor(
             return constructRetroArchSavePath(emulatorId, gameTitle, platformId, romPath)
         }
 
-        val resolvedPaths = SavePathRegistry.resolvePath(config, platformId)
-        val baseDir = resolvedPaths.firstOrNull { File(it).exists() }
-            ?: resolvedPaths.firstOrNull()
-            ?: return null
+        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
+        val baseDir = if (userConfig?.isUserOverride == true) {
+            val userPath = userConfig.savePathPattern
+            val userDir = File(userPath)
+            if (userDir.exists() || userDir.mkdirs()) userPath else null
+        } else {
+            null
+        } ?: run {
+            val resolvedPaths = SavePathRegistry.resolvePath(config, platformId)
+            resolvedPaths.firstOrNull { File(it).exists() }
+                ?: resolvedPaths.firstOrNull()
+        } ?: return null
 
         val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
         val sanitizedName = sanitizeFileName(gameTitle)
@@ -427,7 +435,7 @@ class SaveSyncRepository @Inject constructor(
         return result
     }
 
-    fun constructSavePathWithFileName(
+    suspend fun constructSavePathWithFileName(
         emulatorId: String,
         platformSlug: String,
         romPath: String?,
@@ -437,12 +445,21 @@ class SaveSyncRepository @Inject constructor(
         return "$baseDir/$serverFileName"
     }
 
-    private fun getSaveDirectory(
+    private suspend fun getSaveDirectory(
         emulatorId: String,
         platformSlug: String,
         romPath: String?
     ): String? {
         val config = SavePathRegistry.getConfig(emulatorId) ?: return null
+
+        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
+        if (userConfig?.isUserOverride == true) {
+            val userPath = userConfig.savePathPattern
+            val userDir = File(userPath)
+            if (userDir.exists() || userDir.mkdirs()) {
+                return userPath
+            }
+        }
 
         if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
             return getRetroArchSaveDirectory(emulatorId, platformSlug, romPath)

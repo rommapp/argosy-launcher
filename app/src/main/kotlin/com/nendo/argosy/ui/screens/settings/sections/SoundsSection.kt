@@ -87,7 +87,7 @@ fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 BackgroundMusicFileItem(
                     fileName = uiState.ambientAudio.audioFileName,
                     isFocused = uiState.focusedIndex == 2,
-                    onClick = { viewModel.openAudioFilePicker() }
+                    onClick = { viewModel.openAudioFileBrowser() }
                 )
             }
         }

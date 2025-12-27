@@ -29,6 +29,9 @@ class AmbientAudioSettingsDelegate @Inject constructor(
     private val _openAudioFilePickerEvent = MutableSharedFlow<Unit>()
     val openAudioFilePickerEvent: SharedFlow<Unit> = _openAudioFilePickerEvent.asSharedFlow()
 
+    private val _openAudioFileBrowserEvent = MutableSharedFlow<Unit>()
+    val openAudioFileBrowserEvent: SharedFlow<Unit> = _openAudioFileBrowserEvent.asSharedFlow()
+
     fun updateState(newState: AmbientAudioState) {
         _state.value = newState
     }
@@ -72,6 +75,12 @@ class AmbientAudioSettingsDelegate @Inject constructor(
         }
     }
 
+    fun openFileBrowser(scope: CoroutineScope) {
+        scope.launch {
+            _openAudioFileBrowserEvent.emit(Unit)
+        }
+    }
+
     fun setAudioUri(scope: CoroutineScope, uri: String?) {
         scope.launch {
             preferencesRepository.setAmbientAudioUri(uri)
@@ -90,7 +99,24 @@ class AmbientAudioSettingsDelegate @Inject constructor(
         setAudioUri(scope, null)
     }
 
+    fun setAudioFilePath(scope: CoroutineScope, path: String?) {
+        scope.launch {
+            preferencesRepository.setAmbientAudioUri(path)
+            ambientAudioManager.setAudioUri(path)
+
+            val fileName = path?.substringAfterLast("/")
+            _state.update { it.copy(audioUri = path, audioFileName = fileName) }
+
+            if (_state.value.enabled && path != null) {
+                ambientAudioManager.fadeIn()
+            }
+        }
+    }
+
     private fun extractFileName(uriString: String): String? {
+        if (uriString.startsWith("/")) {
+            return uriString.substringAfterLast("/")
+        }
         return try {
             val uri = Uri.parse(uriString)
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->

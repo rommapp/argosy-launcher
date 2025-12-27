@@ -83,8 +83,38 @@ class ImageCacheManager @Inject constructor(
     private val platformDao: PlatformDao,
     private val achievementDao: AchievementDao
 ) {
-    private val cacheDir: File by lazy {
+    private val defaultCacheDir: File by lazy {
         File(context.cacheDir, "images").also { it.mkdirs() }
+    }
+
+    private var customCacheBasePath: String? = null
+
+    private val cacheDir: File
+        get() {
+            val custom = customCacheBasePath
+            return if (custom != null) {
+                File(custom, CACHE_SUBFOLDER).also { it.mkdirs() }
+            } else {
+                defaultCacheDir
+            }
+        }
+
+    fun setCustomCachePath(path: String?) {
+        customCacheBasePath = path
+        if (path != null) {
+            File(path, CACHE_SUBFOLDER).mkdirs()
+        }
+        Log.d(TAG, "Custom cache base path set to: $path")
+    }
+
+    fun getCustomCachePath(): String? = customCacheBasePath
+
+    fun getDefaultCachePath(): String = defaultCacheDir.absolutePath
+
+    fun getCurrentCachePath(): String = cacheDir.absolutePath
+
+    companion object {
+        private const val CACHE_SUBFOLDER = "argosy_images"
     }
 
     private val logoQueue = Channel<PlatformLogoCacheRequest>(Channel.UNLIMITED)
@@ -265,6 +295,120 @@ class ImageCacheManager @Inject constructor(
 
     fun getCacheSize(): Long {
         return cacheDir.listFiles()?.sumOf { it.length() } ?: 0L
+    }
+
+    fun getCacheSizeForBasePath(basePath: String): Long {
+        val dir = if (basePath == defaultCacheDir.absolutePath) {
+            File(basePath)
+        } else {
+            File(basePath, CACHE_SUBFOLDER)
+        }
+        return dir.listFiles()?.sumOf { it.length() } ?: 0L
+    }
+
+    fun getCacheFileCount(): Int {
+        return cacheDir.listFiles()?.size ?: 0
+    }
+
+    fun getCacheFileCountForBasePath(basePath: String): Int {
+        val dir = if (basePath == defaultCacheDir.absolutePath) {
+            File(basePath)
+        } else {
+            File(basePath, CACHE_SUBFOLDER)
+        }
+        return dir.listFiles()?.size ?: 0
+    }
+
+    suspend fun migrateCache(
+        fromBasePath: String,
+        toBasePath: String,
+        onProgress: (Int, Int) -> Unit = { _, _ -> }
+    ): Boolean = withContext(Dispatchers.IO) {
+        val sourceDir = if (fromBasePath == defaultCacheDir.absolutePath) {
+            File(fromBasePath)
+        } else {
+            File(fromBasePath, CACHE_SUBFOLDER)
+        }
+        val destDir = if (toBasePath == defaultCacheDir.absolutePath) {
+            File(toBasePath).also { it.mkdirs() }
+        } else {
+            File(toBasePath, CACHE_SUBFOLDER).also { it.mkdirs() }
+        }
+
+        if (!sourceDir.exists() || !sourceDir.isDirectory) {
+            Log.w(TAG, "Source directory does not exist: ${sourceDir.absolutePath}")
+            return@withContext false
+        }
+
+        val files = sourceDir.listFiles() ?: return@withContext false
+        val total = files.size
+        var copied = 0
+        var failed = 0
+
+        Log.d(TAG, "Starting cache migration: $total files from ${sourceDir.absolutePath} to ${destDir.absolutePath}")
+
+        files.forEach { sourceFile ->
+            try {
+                val destFile = File(destDir, sourceFile.name)
+                sourceFile.copyTo(destFile, overwrite = true)
+                copied++
+                onProgress(copied, total)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to copy ${sourceFile.name}: ${e.message}")
+                failed++
+            }
+        }
+
+        Log.d(TAG, "Cache migration complete: $copied copied, $failed failed")
+
+        if (failed == 0) {
+            files.forEach { it.delete() }
+            Log.d(TAG, "Source files deleted after successful migration")
+            updateDatabasePaths(sourceDir.absolutePath, destDir.absolutePath)
+        }
+
+        failed == 0
+    }
+
+    private suspend fun updateDatabasePaths(oldBasePath: String, newBasePath: String) {
+        val games = gameDao.getAllGames()
+        var updated = 0
+
+        games.forEach { game ->
+            var changed = false
+            var newCoverPath = game.coverPath
+            var newBackgroundPath = game.backgroundPath
+            var newCachedScreenshotPaths = game.cachedScreenshotPaths
+
+            if (game.coverPath?.startsWith(oldBasePath) == true) {
+                newCoverPath = game.coverPath.replace(oldBasePath, newBasePath)
+                changed = true
+            }
+            if (game.backgroundPath?.startsWith(oldBasePath) == true) {
+                newBackgroundPath = game.backgroundPath.replace(oldBasePath, newBasePath)
+                changed = true
+            }
+            if (game.cachedScreenshotPaths?.contains(oldBasePath) == true) {
+                newCachedScreenshotPaths = game.cachedScreenshotPaths.replace(oldBasePath, newBasePath)
+                changed = true
+            }
+
+            if (changed) {
+                gameDao.updateImagePaths(game.id, newCoverPath, newBackgroundPath, newCachedScreenshotPaths)
+                updated++
+            }
+        }
+
+        val platforms = platformDao.getAllPlatforms()
+        platforms.forEach { platform ->
+            if (platform.logoPath?.startsWith(oldBasePath) == true) {
+                val newLogoPath = platform.logoPath.replace(oldBasePath, newBasePath)
+                platformDao.updateLogoPath(platform.id, newLogoPath)
+                updated++
+            }
+        }
+
+        Log.d(TAG, "Updated $updated database paths from $oldBasePath to $newBasePath")
     }
 
     fun getPendingCount(): Int = queue.isEmpty.let { if (it) 0 else -1 }

@@ -116,8 +116,10 @@ class SettingsViewModel @Inject constructor(
     val openBackgroundPickerEvent: SharedFlow<Unit> = displayDelegate.openBackgroundPickerEvent
     val openCustomSoundPickerEvent: SharedFlow<SoundType> = soundsDelegate.openCustomSoundPickerEvent
     val openAudioFilePickerEvent: SharedFlow<Unit> = ambientAudioDelegate.openAudioFilePickerEvent
+    val openAudioFileBrowserEvent: SharedFlow<Unit> = ambientAudioDelegate.openAudioFileBrowserEvent
     val launchPlatformFolderPicker: SharedFlow<String> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
+    val openImageCachePickerEvent: SharedFlow<Unit> = syncDelegate.openImageCachePickerEvent
 
     private val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
     val openLogFolderPickerEvent: SharedFlow<Unit> = _openLogFolderPickerEvent.asSharedFlow()
@@ -406,7 +408,9 @@ class SettingsViewModel @Inject constructor(
                 saveSyncEnabled = prefs.saveSyncEnabled,
                 experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
                 saveCacheLimit = prefs.saveCacheLimit,
-                pendingUploadsCount = pendingSaveSyncDao.getCount()
+                pendingUploadsCount = pendingSaveSyncDao.getCount(),
+                imageCachePath = prefs.imageCachePath,
+                defaultImageCachePath = imageCacheManager.getDefaultCachePath()
             ))
 
             _uiState.update {
@@ -735,7 +739,7 @@ class SettingsViewModel @Inject constructor(
                     val launcherCount = state.steam.installedLaunchers.size
                     if (launcherCount > 0) steamBaseIndex + launcherCount else steamBaseIndex
                 }
-                SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 3 else 2
+                SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 4 else 3
                 SettingsSection.SYNC_FILTERS -> 6
                 SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
                 SettingsSection.STORAGE -> {
@@ -979,8 +983,16 @@ class SettingsViewModel @Inject constructor(
         ambientAudioDelegate.openFilePicker(viewModelScope)
     }
 
+    fun openAudioFileBrowser() {
+        ambientAudioDelegate.openFileBrowser(viewModelScope)
+    }
+
     fun setAmbientAudioUri(uri: String?) {
         ambientAudioDelegate.setAudioUri(viewModelScope, uri)
+    }
+
+    fun setAmbientAudioFilePath(path: String?) {
+        ambientAudioDelegate.setAudioFilePath(viewModelScope, path)
     }
 
     fun clearAmbientAudioFile() {
@@ -1109,6 +1121,23 @@ class SettingsViewModel @Inject constructor(
 
     fun runSaveSyncNow() {
         syncDelegate.runSaveSyncNow(viewModelScope)
+    }
+
+    fun openImageCachePicker() {
+        syncDelegate.openImageCachePicker(viewModelScope)
+    }
+
+    fun moveImageCacheActionFocus(delta: Int) {
+        syncDelegate.moveImageCacheActionFocus(delta)
+    }
+
+    fun setImageCachePath(path: String) {
+        syncDelegate.onImageCachePathSelected(viewModelScope, path)
+    }
+
+
+    fun resetImageCacheToDefault() {
+        syncDelegate.resetImageCacheToDefault(viewModelScope)
     }
 
     fun cycleMaxConcurrentDownloads() {
@@ -1479,6 +1508,16 @@ class SettingsViewModel @Inject constructor(
                     0 -> navigateToSection(SettingsSection.SYNC_FILTERS)
                     1 -> { toggleSyncScreenshots(); return InputResult.handled(SoundType.TOGGLE) }
                     2 -> {
+                        if (!state.syncSettings.isImageCacheMigrating) {
+                            val actionIndex = state.syncSettings.imageCacheActionIndex
+                            if (actionIndex == 0) {
+                                openImageCachePicker()
+                            } else {
+                                resetImageCacheToDefault()
+                            }
+                        }
+                    }
+                    3 -> {
                         if (state.syncSettings.saveSyncEnabled) {
                             toggleSaveSync()
                             return InputResult.handled(SoundType.TOGGLE)
@@ -1486,7 +1525,7 @@ class SettingsViewModel @Inject constructor(
                             enableSaveSync()
                         }
                     }
-                    3 -> {
+                    4 -> {
                         if (state.syncSettings.saveSyncEnabled) {
                             toggleExperimentalFolderSaveSync()
                             return InputResult.handled(SoundType.TOGGLE)

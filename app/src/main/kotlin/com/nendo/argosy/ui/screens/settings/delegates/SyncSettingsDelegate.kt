@@ -36,6 +36,10 @@ class SyncSettingsDelegate @Inject constructor(
     private val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
 
+    private val _openImageCachePickerEvent = MutableSharedFlow<Unit>()
+    val openImageCachePickerEvent: SharedFlow<Unit> = _openImageCachePickerEvent.asSharedFlow()
+
+
     private var isSyncing = false
 
     fun updateState(newState: SyncSettingsState) {
@@ -54,9 +58,12 @@ class SyncSettingsDelegate @Inject constructor(
                     experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
                     saveCacheLimit = prefs.saveCacheLimit,
                     hasStoragePermission = hasPermission,
-                    pendingUploadsCount = pendingCount
+                    pendingUploadsCount = pendingCount,
+                    imageCachePath = prefs.imageCachePath,
+                    defaultImageCachePath = imageCacheManager.getDefaultCachePath()
                 )
             }
+            imageCacheManager.setCustomCachePath(prefs.imageCachePath)
         }
     }
 
@@ -258,6 +265,77 @@ class SyncSettingsDelegate @Inject constructor(
             } finally {
                 isSyncing = false
                 _state.update { it.copy(isSyncing = false) }
+            }
+        }
+    }
+
+    fun openImageCachePicker(scope: CoroutineScope) {
+        scope.launch {
+            _openImageCachePickerEvent.emit(Unit)
+        }
+    }
+
+    fun moveImageCacheActionFocus(delta: Int) {
+        val hasCustomPath = _state.value.imageCachePath != null
+        val maxIndex = if (hasCustomPath) 1 else 0
+        val current = _state.value.imageCacheActionIndex
+        val newIndex = (current + delta).coerceIn(0, maxIndex)
+        _state.update { it.copy(imageCacheActionIndex = newIndex) }
+    }
+
+    fun onImageCachePathSelected(scope: CoroutineScope, newPath: String) {
+        scope.launch {
+            val currentPath = _state.value.imageCachePath ?: imageCacheManager.getDefaultCachePath()
+
+            // Update state and preferences immediately
+            preferencesRepository.setImageCachePath(newPath)
+            imageCacheManager.setCustomCachePath(newPath)
+            _state.update { it.copy(imageCachePath = newPath) }
+
+            // Migrate in background if there are existing files
+            val hasExistingFiles = imageCacheManager.getCacheFileCountForBasePath(currentPath) > 0
+            if (hasExistingFiles) {
+                _state.update { it.copy(isImageCacheMigrating = true) }
+                notificationManager.show("Moving cached images...")
+                try {
+                    val success = imageCacheManager.migrateCache(currentPath, newPath)
+                    if (success) {
+                        notificationManager.show("Images moved successfully")
+                    } else {
+                        notificationManager.showError("Failed to move some images")
+                    }
+                } finally {
+                    _state.update { it.copy(isImageCacheMigrating = false) }
+                }
+            }
+        }
+    }
+
+    fun resetImageCacheToDefault(scope: CoroutineScope) {
+        scope.launch {
+            val currentPath = _state.value.imageCachePath ?: return@launch
+            val defaultPath = imageCacheManager.getDefaultCachePath()
+
+            // Update state and preferences immediately
+            preferencesRepository.setImageCachePath(null)
+            imageCacheManager.setCustomCachePath(null)
+            _state.update { it.copy(imageCachePath = null, imageCacheActionIndex = 0) }
+
+            // Migrate in background if there are existing files
+            val hasExistingFiles = imageCacheManager.getCacheFileCountForBasePath(currentPath) > 0
+            if (hasExistingFiles) {
+                _state.update { it.copy(isImageCacheMigrating = true) }
+                notificationManager.show("Moving cached images...")
+                try {
+                    val success = imageCacheManager.migrateCache(currentPath, defaultPath)
+                    if (success) {
+                        notificationManager.show("Images moved successfully")
+                    } else {
+                        notificationManager.showError("Failed to move some images")
+                    }
+                } finally {
+                    _state.update { it.copy(isImageCacheMigrating = false) }
+                }
             }
         }
     }

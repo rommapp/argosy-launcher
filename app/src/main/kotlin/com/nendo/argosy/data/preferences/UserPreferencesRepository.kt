@@ -92,6 +92,7 @@ class UserPreferencesRepository @Inject constructor(
         val AMBIENT_AUDIO_ENABLED = booleanPreferencesKey("ambient_audio_enabled")
         val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
         val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
+        val IMAGE_CACHE_PATH = stringPreferencesKey("image_cache_path")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -185,7 +186,8 @@ class UserPreferencesRepository @Inject constructor(
             accuratePlayTimeEnabled = prefs[Keys.ACCURATE_PLAY_TIME_ENABLED] ?: false,
             ambientAudioEnabled = prefs[Keys.AMBIENT_AUDIO_ENABLED] ?: false,
             ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
-            ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI]
+            ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
+            imageCachePath = prefs[Keys.IMAGE_CACHE_PATH]
         )
     }
 
@@ -652,6 +654,13 @@ class UserPreferencesRepository @Inject constructor(
             else prefs.remove(Keys.AMBIENT_AUDIO_URI)
         }
     }
+
+    suspend fun setImageCachePath(path: String?) {
+        dataStore.edit { prefs ->
+            if (path != null) prefs[Keys.IMAGE_CACHE_PATH] = path
+            else prefs.remove(Keys.IMAGE_CACHE_PATH)
+        }
+    }
 }
 
 data class UserPreferences(
@@ -712,7 +721,8 @@ data class UserPreferences(
     val accuratePlayTimeEnabled: Boolean = false,
     val ambientAudioEnabled: Boolean = false,
     val ambientAudioVolume: Int = 50,
-    val ambientAudioUri: String? = null
+    val ambientAudioUri: String? = null,
+    val imageCachePath: String? = null
 )
 
 enum class ThemeMode {

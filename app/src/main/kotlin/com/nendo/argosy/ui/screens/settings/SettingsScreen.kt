@@ -47,6 +47,7 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
+import com.nendo.argosy.ui.filebrowser.FileFilter
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
@@ -195,6 +196,14 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.openAudioFilePickerEvent.collect {
             audioFilePickerLauncher.launch(arrayOf("audio/*"))
+        }
+    }
+
+    var showAudioFileBrowser by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.openAudioFileBrowserEvent.collect {
+            showAudioFileBrowser = true
         }
     }
 
@@ -423,6 +432,42 @@ fun SettingsScreen(
             }
         )
     }
+
+    if (showAudioFileBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FILE_SELECTION,
+            fileFilter = FileFilter.AUDIO,
+            onPathSelected = { path ->
+                showAudioFileBrowser = false
+                viewModel.setAmbientAudioFilePath(path)
+            },
+            onDismiss = {
+                showAudioFileBrowser = false
+            }
+        )
+    }
+
+    var showImageCacheBrowser by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.openImageCachePickerEvent.collect {
+            showImageCacheBrowser = true
+        }
+    }
+
+    if (showImageCacheBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FOLDER_SELECTION,
+            onPathSelected = { path ->
+                showImageCacheBrowser = false
+                viewModel.setImageCachePath(path)
+            },
+            onDismiss = {
+                showImageCacheBrowser = false
+            }
+        )
+    }
+
 }
 
 @Composable

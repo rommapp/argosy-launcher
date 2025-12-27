@@ -578,3 +578,124 @@ fun colorIntToHue(colorInt: Int): Float {
     ColorUtils.colorToHSL(colorInt, hsl)
     return hsl[0]
 }
+
+@Composable
+fun ImageCachePreference(
+    title: String,
+    displayPath: String,
+    hasCustomPath: Boolean,
+    isFocused: Boolean,
+    actionIndex: Int,
+    isMigrating: Boolean = false,
+    onChange: () -> Unit,
+    onReset: () -> Unit
+) {
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val contentColor = if (isFocused) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val secondaryColor = if (isFocused) {
+        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.55f)
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+    }
+    val disabledAlpha = 0.5f
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.settingsItemMinHeight)
+            .clip(preferenceShape)
+            .background(backgroundColor, preferenceShape)
+            .padding(Dimens.spacingMd),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = contentColor
+            )
+            Text(
+                text = if (isMigrating) "Moving images..." else displayPath,
+                style = MaterialTheme.typography.bodySmall,
+                color = secondaryColor
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val changeSelected = isFocused && actionIndex == 0 && !isMigrating
+            val changeBgColor = when {
+                isMigrating -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = disabledAlpha)
+                changeSelected -> MaterialTheme.colorScheme.primary
+                isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
+            val changeTextColor = when {
+                isMigrating -> contentColor.copy(alpha = disabledAlpha)
+                changeSelected -> MaterialTheme.colorScheme.onPrimary
+                else -> contentColor
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Dimens.radiusSm))
+                    .background(changeBgColor)
+                    .clickable(
+                        enabled = !isMigrating,
+                        onClick = onChange,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
+                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
+            ) {
+                Text(
+                    text = "Change",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = changeTextColor
+                )
+            }
+
+            if (hasCustomPath) {
+                val resetSelected = isFocused && actionIndex == 1 && !isMigrating
+                val resetBgColor = when {
+                    isMigrating -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = disabledAlpha)
+                    resetSelected -> MaterialTheme.colorScheme.primary
+                    isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }
+                val resetTextColor = when {
+                    isMigrating -> contentColor.copy(alpha = disabledAlpha)
+                    resetSelected -> MaterialTheme.colorScheme.onPrimary
+                    else -> contentColor
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Dimens.radiusSm))
+                        .background(resetBgColor)
+                        .clickable(
+                            enabled = !isMigrating,
+                            onClick = onReset,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                        .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
+                ) {
+                    Text(
+                        text = "Reset",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = resetTextColor
+                    )
+                }
+            }
+        }
+    }
+}

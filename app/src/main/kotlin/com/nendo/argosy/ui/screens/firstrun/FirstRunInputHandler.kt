@@ -8,6 +8,7 @@ class FirstRunInputHandler(
     private val onComplete: () -> Unit,
     private val onRequestPermission: () -> Unit,
     private val onChooseFolder: () -> Unit,
+    private val onChooseImageCacheFolder: () -> Unit,
     private val onRequestUsageStats: () -> Unit
 ) : InputHandler {
 
@@ -34,7 +35,7 @@ class FirstRunInputHandler(
             onComplete()
             return InputResult.HANDLED
         }
-        viewModel.handleConfirm(onRequestPermission, onChooseFolder, onRequestUsageStats)
+        viewModel.handleConfirm(onRequestPermission, onChooseFolder, onChooseImageCacheFolder, onRequestUsageStats)
         return InputResult.HANDLED
     }
 

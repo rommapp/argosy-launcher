@@ -337,4 +337,10 @@ interface GameDao {
 
     @Query("UPDATE games SET steamLauncher = :launcher, launcherSetManually = :setManually WHERE id = :gameId")
     suspend fun updateSteamLauncher(gameId: Long, launcher: String?, setManually: Boolean)
+
+    @Query("SELECT * FROM games")
+    suspend fun getAllGames(): List<GameEntity>
+
+    @Query("UPDATE games SET coverPath = :coverPath, backgroundPath = :backgroundPath, cachedScreenshotPaths = :cachedScreenshotPaths WHERE id = :gameId")
+    suspend fun updateImagePaths(gameId: Long, coverPath: String?, backgroundPath: String?, cachedScreenshotPaths: String?)
 }

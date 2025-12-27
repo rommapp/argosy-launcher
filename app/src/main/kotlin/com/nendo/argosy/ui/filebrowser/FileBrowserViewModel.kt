@@ -120,6 +120,7 @@ class FileBrowserViewModel @Inject constructor(
 
         val entries = mutableListOf<FileEntry>()
         val isVolumeRoot = _state.value.volumes.any { it.path == path }
+        val fileFilter = _state.value.fileFilter
 
         if (!isVolumeRoot && dir.parent != null) {
             entries.add(
@@ -143,6 +144,7 @@ class FileBrowserViewModel @Inject constructor(
 
         val sortedFiles = children
             .filter { it.isFile }
+            .filter { fileFilter?.matches(it.name) ?: true }
             .sortedBy { it.name.lowercase() }
             .map { it.toFileEntry() }
 
@@ -231,5 +233,12 @@ class FileBrowserViewModel @Inject constructor(
 
     fun setMode(mode: FileBrowserMode) {
         _state.update { it.copy(mode = mode) }
+    }
+
+    fun setFileFilter(filter: FileFilter?) {
+        _state.update { it.copy(fileFilter = filter) }
+        if (_state.value.currentPath.isNotEmpty()) {
+            navigate(_state.value.currentPath)
+        }
     }
 }

@@ -99,8 +99,10 @@ fun FirstRunScreen(
     }
 
     val chooseFolder = { viewModel.openFolderPicker() }
+    val chooseImageCacheFolder = { viewModel.openImageCachePicker() }
 
     var showFileBrowser by remember { mutableStateOf(false) }
+    var showImageCacheBrowser by remember { mutableStateOf(false) }
 
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onComplete) {
@@ -108,6 +110,7 @@ fun FirstRunScreen(
             onComplete = onComplete,
             onRequestPermission = requestPermission,
             onChooseFolder = chooseFolder,
+            onChooseImageCacheFolder = chooseImageCacheFolder,
             onRequestUsageStats = requestUsageStats
         )
     }
@@ -130,6 +133,13 @@ fun FirstRunScreen(
         if (uiState.launchFolderPicker) {
             showFileBrowser = true
             viewModel.clearFolderPickerFlag()
+        }
+    }
+
+    LaunchedEffect(uiState.launchImageCachePicker) {
+        if (uiState.launchImageCachePicker) {
+            showImageCacheBrowser = true
+            viewModel.clearImageCachePickerFlag()
         }
     }
 
@@ -185,6 +195,14 @@ fun FirstRunScreen(
                     onChooseFolder = chooseFolder,
                     onContinue = { viewModel.proceedFromRomPath() }
                 )
+                FirstRunStep.IMAGE_CACHE -> ImageCacheStep(
+                    currentPath = uiState.imageCachePath,
+                    folderSelected = uiState.imageCacheFolderSelected,
+                    focusedIndex = uiState.focusedIndex,
+                    onChooseFolder = chooseImageCacheFolder,
+                    onContinue = { viewModel.proceedFromImageCache() },
+                    onSkip = { viewModel.skipImageCachePath() }
+                )
                 FirstRunStep.SAVE_SYNC -> SaveSyncStep(
                     focusedIndex = uiState.focusedIndex,
                     onEnable = { viewModel.enableSaveSync() },
@@ -226,6 +244,19 @@ fun FirstRunScreen(
             },
             onDismiss = {
                 showFileBrowser = false
+            }
+        )
+    }
+
+    if (showImageCacheBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FOLDER_SELECTION,
+            onPathSelected = { path ->
+                showImageCacheBrowser = false
+                viewModel.setImageCachePath(path)
+            },
+            onDismiss = {
+                showImageCacheBrowser = false
             }
         )
     }
@@ -560,6 +591,100 @@ private fun RomPathStep(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun ImageCacheStep(
+    currentPath: String?,
+    folderSelected: Boolean,
+    focusedIndex: Int,
+    onChooseFolder: () -> Unit,
+    onContinue: () -> Unit,
+    onSkip: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(32.dp)
+    ) {
+        Text(
+            text = "OPTIONAL",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Image Cache Location",
+            style = MaterialTheme.typography.headlineSmall
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "By default, game artwork is stored in the app's internal cache. If your device has limited storage, you can choose an external location.",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        if (folderSelected && currentPath != null) {
+            val displayPath = "${currentPath.substringAfterLast("/")}/argosy_images"
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                modifier = Modifier.fillMaxWidth(0.8f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = displayPath,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            FocusableButton(
+                text = "Continue",
+                isFocused = focusedIndex == 0,
+                onClick = onContinue
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            FocusableOutlinedButton(
+                text = "Choose Different Folder",
+                isFocused = focusedIndex == 1,
+                onClick = onChooseFolder
+            )
+        } else {
+            FocusableButton(
+                text = "Choose External Folder",
+                isFocused = focusedIndex == 0,
+                icon = Icons.Default.Folder,
+                onClick = onChooseFolder
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            FocusableOutlinedButton(
+                text = "Use Default (Internal)",
+                isFocused = focusedIndex == 1,
+                onClick = onSkip
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Images will be stored in an 'argosy_images' subfolder.",
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

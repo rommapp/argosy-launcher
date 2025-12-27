@@ -25,6 +25,7 @@ import com.nendo.argosy.data.cache.ImageCacheProgress
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.ui.components.ActionPreference
+import com.nendo.argosy.ui.components.ImageCachePreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsSection
@@ -41,7 +42,8 @@ fun SyncSettingsSection(
     imageCacheProgress: ImageCacheProgress
 ) {
     val listState = rememberLazyListState()
-    val maxIndex = if (uiState.syncSettings.saveSyncEnabled) 3 else 2
+    val saveSyncItemCount = if (uiState.syncSettings.saveSyncEnabled) 2 else 1
+    val maxIndex = 1 + saveSyncItemCount + 1
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex in 0..maxIndex) {
@@ -83,19 +85,42 @@ fun SyncSettingsSection(
             )
         }
         item {
+            val cachePath = uiState.syncSettings.imageCachePath
+            val displayPath = if (cachePath != null) {
+                "${cachePath.substringAfterLast("/")}/argosy_images"
+            } else {
+                "Internal (default)"
+            }
+            ImageCachePreference(
+                title = "Image Cache Location",
+                displayPath = displayPath,
+                hasCustomPath = cachePath != null,
+                isFocused = uiState.focusedIndex == 2,
+                actionIndex = uiState.syncSettings.imageCacheActionIndex,
+                isMigrating = uiState.syncSettings.isImageCacheMigrating,
+                onChange = { viewModel.openImageCachePicker() },
+                onReset = { viewModel.resetImageCacheToDefault() }
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+            SectionHeader("SAVES")
+        }
+        item {
             if (uiState.syncSettings.saveSyncEnabled) {
                 SwitchPreference(
                     title = "Save Sync",
                     subtitle = "Sync game saves with server",
                     isEnabled = true,
-                    isFocused = uiState.focusedIndex == 2,
+                    isFocused = uiState.focusedIndex == 3,
                     onToggle = { viewModel.toggleSaveSync() }
                 )
             } else {
                 ActionPreference(
                     title = "Enable Save Sync",
                     subtitle = "Sync game saves with server",
-                    isFocused = uiState.focusedIndex == 2,
+                    isFocused = uiState.focusedIndex == 3,
                     onClick = { viewModel.enableSaveSync() }
                 )
             }
@@ -106,7 +131,7 @@ fun SyncSettingsSection(
                     title = "Experimental Folder Saves",
                     subtitle = "Sync folder-based saves (3DS, Switch, PSP, Vita)",
                     isEnabled = uiState.syncSettings.experimentalFolderSaveSync,
-                    isFocused = uiState.focusedIndex == 3,
+                    isFocused = uiState.focusedIndex == 4,
                     onToggle = { viewModel.toggleExperimentalFolderSaveSync() }
                 )
             }

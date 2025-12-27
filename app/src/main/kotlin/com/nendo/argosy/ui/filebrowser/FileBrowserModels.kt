@@ -37,6 +37,23 @@ enum class FileBrowserMode {
     FILE_SELECTION
 }
 
+data class FileFilter(
+    val extensions: Set<String> = emptySet(),
+    val mimeTypes: Set<String> = emptySet()
+) {
+    fun matches(fileName: String): Boolean {
+        if (extensions.isEmpty()) return true
+        val ext = fileName.substringAfterLast('.', "").lowercase()
+        return extensions.contains(ext)
+    }
+
+    companion object {
+        val AUDIO = FileFilter(
+            extensions = setOf("mp3", "ogg", "wav", "flac", "m4a", "aac", "opus", "wma")
+        )
+    }
+}
+
 data class FileBrowserState(
     val volumes: List<StorageVolume> = emptyList(),
     val currentPath: String = "",
@@ -45,6 +62,7 @@ data class FileBrowserState(
     val volumeFocusIndex: Int = 0,
     val fileFocusIndex: Int = 0,
     val mode: FileBrowserMode = FileBrowserMode.FOLDER_SELECTION,
+    val fileFilter: FileFilter? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
     val hasPermission: Boolean = true

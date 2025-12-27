@@ -25,6 +25,7 @@ enum class FirstRunStep {
     ROMM_LOGIN,
     ROMM_SUCCESS,
     ROM_PATH,
+    IMAGE_CACHE,
     SAVE_SYNC,
     USAGE_STATS,
     PLATFORM_SELECT,
@@ -44,6 +45,9 @@ data class FirstRunUiState(
     val romStoragePath: String? = null,
     val folderSelected: Boolean = false,
     val launchFolderPicker: Boolean = false,
+    val imageCachePath: String? = null,
+    val imageCacheFolderSelected: Boolean = false,
+    val launchImageCachePicker: Boolean = false,
     val saveSyncEnabled: Boolean = false,
     val hasStoragePermission: Boolean = false,
     val hasUsageStatsPermission: Boolean = false,
@@ -70,7 +74,8 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.WELCOME -> FirstRunStep.ROMM_LOGIN
                 FirstRunStep.ROMM_LOGIN -> FirstRunStep.ROMM_SUCCESS
                 FirstRunStep.ROMM_SUCCESS -> FirstRunStep.ROM_PATH
-                FirstRunStep.ROM_PATH -> FirstRunStep.SAVE_SYNC
+                FirstRunStep.ROM_PATH -> FirstRunStep.IMAGE_CACHE
+                FirstRunStep.IMAGE_CACHE -> FirstRunStep.SAVE_SYNC
                 FirstRunStep.SAVE_SYNC -> FirstRunStep.USAGE_STATS
                 FirstRunStep.USAGE_STATS -> {
                     if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
@@ -93,7 +98,8 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.ROMM_LOGIN -> FirstRunStep.WELCOME
                 FirstRunStep.ROMM_SUCCESS -> FirstRunStep.ROMM_LOGIN
                 FirstRunStep.ROM_PATH -> FirstRunStep.ROMM_SUCCESS
-                FirstRunStep.SAVE_SYNC -> FirstRunStep.ROM_PATH
+                FirstRunStep.IMAGE_CACHE -> FirstRunStep.ROM_PATH
+                FirstRunStep.SAVE_SYNC -> FirstRunStep.IMAGE_CACHE
                 FirstRunStep.USAGE_STATS -> FirstRunStep.SAVE_SYNC
                 FirstRunStep.PLATFORM_SELECT -> FirstRunStep.USAGE_STATS
                 FirstRunStep.COMPLETE -> {
@@ -154,6 +160,7 @@ class FirstRunViewModel @Inject constructor(
                     else -> 0
                 }
             }
+            FirstRunStep.IMAGE_CACHE -> if (state.imageCacheFolderSelected) 1 else 0
             FirstRunStep.SAVE_SYNC -> 1
             FirstRunStep.USAGE_STATS -> 0
             FirstRunStep.PLATFORM_SELECT -> state.platforms.size
@@ -280,6 +287,32 @@ class FirstRunViewModel @Inject constructor(
         }
     }
 
+    fun openImageCachePicker() {
+        _uiState.update { it.copy(launchImageCachePicker = true) }
+    }
+
+    fun clearImageCachePickerFlag() {
+        _uiState.update { it.copy(launchImageCachePicker = false) }
+    }
+
+    fun setImageCachePath(path: String) {
+        _uiState.update {
+            it.copy(
+                imageCachePath = path,
+                imageCacheFolderSelected = true
+            )
+        }
+    }
+
+    fun skipImageCachePath() {
+        _uiState.update { it.copy(imageCacheFolderSelected = false, imageCachePath = null) }
+        nextStep()
+    }
+
+    fun proceedFromImageCache() {
+        nextStep()
+    }
+
     fun enableSaveSync() {
         _uiState.update { it.copy(saveSyncEnabled = true) }
         nextStep()
@@ -309,6 +342,11 @@ class FirstRunViewModel @Inject constructor(
             state.romStoragePath?.let { path ->
                 preferencesRepository.setRomStoragePath(path)
             }
+            if (state.imageCacheFolderSelected) {
+                state.imageCachePath?.let { path ->
+                    preferencesRepository.setImageCachePath(path)
+                }
+            }
             preferencesRepository.setSaveSyncEnabled(state.saveSyncEnabled)
             preferencesRepository.setFirstRunComplete()
         }
@@ -330,6 +368,7 @@ class FirstRunViewModel @Inject constructor(
     fun handleConfirm(
         onRequestPermission: () -> Unit,
         onChooseFolder: () -> Unit,
+        onChooseImageCacheFolder: () -> Unit,
         onRequestUsageStats: () -> Unit
     ) {
         val state = _uiState.value
@@ -351,6 +390,15 @@ class FirstRunViewModel @Inject constructor(
                     else onChooseFolder()
                 } else {
                     onChooseFolder()
+                }
+            }
+            FirstRunStep.IMAGE_CACHE -> {
+                if (state.imageCacheFolderSelected) {
+                    if (state.focusedIndex == 0) proceedFromImageCache()
+                    else onChooseImageCacheFolder()
+                } else {
+                    if (state.focusedIndex == 0) onChooseImageCacheFolder()
+                    else skipImageCachePath()
                 }
             }
             FirstRunStep.SAVE_SYNC -> {
@@ -384,6 +432,7 @@ class FirstRunViewModel @Inject constructor(
         onComplete: () -> Unit,
         onRequestPermission: () -> Unit,
         onChooseFolder: () -> Unit,
+        onChooseImageCacheFolder: () -> Unit,
         onRequestUsageStats: () -> Unit
-    ) = FirstRunInputHandler(this, onComplete, onRequestPermission, onChooseFolder, onRequestUsageStats)
+    ) = FirstRunInputHandler(this, onComplete, onRequestPermission, onChooseFolder, onChooseImageCacheFolder, onRequestUsageStats)
 }

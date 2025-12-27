@@ -72,7 +72,11 @@ class AmbientAudioManager @Inject constructor(
         try {
             mediaPlayer = MediaPlayer().apply {
                 setAudioAttributes(audioAttributes)
-                setDataSource(context, Uri.parse(uri))
+                if (uri.startsWith("/")) {
+                    setDataSource(uri)
+                } else {
+                    setDataSource(context, Uri.parse(uri))
+                }
                 isLooping = true
                 setVolume(0f, 0f)
                 setOnPreparedListener {
@@ -92,8 +96,12 @@ class AmbientAudioManager @Inject constructor(
 
     private fun validateUri(uri: String): Boolean {
         return try {
-            context.contentResolver.openInputStream(Uri.parse(uri))?.close()
-            true
+            if (uri.startsWith("/")) {
+                java.io.File(uri).canRead()
+            } else {
+                context.contentResolver.openInputStream(Uri.parse(uri))?.close()
+                true
+            }
         } catch (e: Exception) {
             Log.w(TAG, "URI validation failed: ${e.message}")
             false

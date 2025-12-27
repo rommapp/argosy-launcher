@@ -55,6 +55,7 @@ import com.nendo.argosy.ui.theme.Dimens
 @Composable
 fun FileBrowserScreen(
     mode: FileBrowserMode = FileBrowserMode.FOLDER_SELECTION,
+    fileFilter: FileFilter? = null,
     onPathSelected: (String) -> Unit,
     onDismiss: () -> Unit,
     viewModel: FileBrowserViewModel = hiltViewModel()
@@ -62,8 +63,9 @@ fun FileBrowserScreen(
     val state by viewModel.state.collectAsState()
     val inputDispatcher = LocalInputDispatcher.current
 
-    LaunchedEffect(mode) {
+    LaunchedEffect(mode, fileFilter) {
         viewModel.setMode(mode)
+        viewModel.setFileFilter(fileFilter)
     }
 
     val inputHandler = remember(onDismiss) {

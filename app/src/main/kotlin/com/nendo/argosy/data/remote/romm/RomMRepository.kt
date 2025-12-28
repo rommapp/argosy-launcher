@@ -219,13 +219,28 @@ class RomMRepository @Inject constructor(
     private suspend fun doSyncPlatform(platformId: String): SyncResult {
         val currentApi = api ?: return SyncResult(0, 0, 0, 0, listOf("Not connected"))
 
+        val localPlatform = platformDao.getById(platformId)
+            ?: platformDao.getBySlug(platformId)
+            ?: return SyncResult(0, 0, 0, 0, listOf("Platform not found locally"))
+
         val prefs = userPreferencesRepository.preferences.first()
         val filters = prefs.syncFilters
 
         _syncProgress.value = SyncProgress(isSyncing = true, platformsTotal = 1)
 
         try {
-            val platformResponse = currentApi.getPlatform(platformId.toLong())
+            val rommPlatformId = platformId.toLongOrNull()
+            val platformResponse = if (rommPlatformId != null) {
+                currentApi.getPlatform(rommPlatformId)
+            } else {
+                val platformsResponse = currentApi.getPlatforms()
+                if (!platformsResponse.isSuccessful) {
+                    return SyncResult(0, 0, 0, 0, listOf("Failed to fetch platforms: ${platformsResponse.code()}"))
+                }
+                val rommPlatform = platformsResponse.body()?.find { it.slug == localPlatform.slug }
+                    ?: return SyncResult(0, 0, 0, 0, listOf("Platform '${localPlatform.slug}' not found on RomM server"))
+                currentApi.getPlatform(rommPlatform.id)
+            }
             if (!platformResponse.isSuccessful) {
                 return SyncResult(0, 0, 0, 0, listOf("Failed to fetch platform: ${platformResponse.code()}"))
             }
@@ -235,6 +250,7 @@ class RomMRepository @Inject constructor(
 
             syncPlatformMetadata(platform)
 
+            val rommId = platform.id.toString()
             _syncProgress.value = _syncProgress.value.copy(currentPlatform = platform.name)
 
             val result = syncPlatformRoms(currentApi, platform, filters)
@@ -243,11 +259,11 @@ class RomMRepository @Inject constructor(
 
             var gamesDeleted = 0
             if (filters.deleteOrphans) {
-                gamesDeleted = deleteOrphanedGamesForPlatform(platformId, result.seenIds)
+                gamesDeleted = deleteOrphanedGamesForPlatform(rommId, result.seenIds)
             }
 
-            val count = gameDao.countByPlatform(platformId)
-            platformDao.updateGameCount(platformId, count)
+            val count = gameDao.countByPlatform(rommId)
+            platformDao.updateGameCount(rommId, count)
 
             return SyncResult(1, result.added, result.updated, gamesDeleted, result.error?.let { listOf(it) } ?: emptyList())
         } catch (e: Exception) {
@@ -375,8 +391,9 @@ class RomMRepository @Inject constructor(
 
     private suspend fun syncPlatformMetadata(remote: RomMPlatform) {
         val platformId = remote.id.toString()
-        val existing = platformDao.getById(platformId)
-            ?: platformDao.getBySlug(remote.slug)
+        val existingById = platformDao.getById(platformId)
+        val existingBySlug = if (existingById == null) platformDao.getBySlug(remote.slug) else null
+        val existing = existingById ?: existingBySlug
         val platformDef = PlatformDefinitions.getById(remote.slug)
 
         val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
@@ -401,13 +418,21 @@ class RomMRepository @Inject constructor(
             customRomPath = existing?.customRomPath
         )
 
-        if (existing == null) {
-            platformDao.insert(entity)
-        } else {
-            platformDao.update(entity)
+        when {
+            existing == null -> {
+                platformDao.insert(entity)
+            }
+            existingBySlug != null && existingBySlug.id != platformId -> {
+                gameDao.migratePlatform(existingBySlug.id, platformId)
+                platformDao.deleteById(existingBySlug.id)
+                platformDao.insert(entity)
+                Logger.info(TAG, "Migrated platform ${existingBySlug.id} -> $platformId")
+            }
+            else -> {
+                platformDao.update(entity)
+            }
         }
 
-        // Queue logo for caching with black background removal
         if (logoUrl != null && logoUrl.startsWith("http")) {
             imageCacheManager.queuePlatformLogoCache(platformId, logoUrl)
         }

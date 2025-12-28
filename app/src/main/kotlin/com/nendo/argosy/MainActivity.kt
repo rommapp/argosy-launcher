@@ -25,6 +25,7 @@ import com.nendo.argosy.ui.input.GamepadInputHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -58,10 +59,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         hideSystemUI()
-        imageCacheManager.resumePendingCache()
-        imageCacheManager.resumePendingCoverCache()
-        imageCacheManager.resumePendingLogoCache()
-        imageCacheManager.resumePendingBadgeCache()
+
+        activityScope.launch {
+            val prefs = preferencesRepository.preferences.first()
+            imageCacheManager.setCustomCachePath(prefs.imageCachePath)
+            imageCacheManager.resumePendingCache()
+            imageCacheManager.resumePendingCoverCache()
+            imageCacheManager.resumePendingLogoCache()
+            imageCacheManager.resumePendingBadgeCache()
+        }
 
         activityScope.launch {
             launchRetryTracker.retryEvents.collect { intent ->

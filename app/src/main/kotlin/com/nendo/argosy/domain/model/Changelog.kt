@@ -3,13 +3,14 @@ package com.nendo.argosy.domain.model
 object Changelog {
     private val entries = listOf(
         ChangelogEntry(
-            version = "0.9.24",
+            version = "0.9.25",
             highlights = listOf(
                 "Internal database migration for platform IDs",
                 "Improved type safety and performance",
                 "Fixed input debouncing when navigating settings sections",
                 "Fixed emulator download links for Switch emulators",
-                "Images now auto-repair when cached files are missing"
+                "Images now auto-repair when cached files are missing",
+                "Screenshots load faster in game detail view"
             ),
             requiredActions = listOf(RequiredAction.ResyncLibrary)
         ),

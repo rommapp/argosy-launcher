@@ -6,7 +6,10 @@ object Changelog {
             version = "0.9.24",
             highlights = listOf(
                 "Internal database migration for platform IDs",
-                "Improved type safety and performance"
+                "Improved type safety and performance",
+                "Fixed input debouncing when navigating settings sections",
+                "Fixed emulator download links for Switch emulators",
+                "Images now auto-repair when cached files are missing"
             ),
             requiredActions = listOf(RequiredAction.ResyncLibrary)
         ),

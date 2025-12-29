@@ -113,6 +113,11 @@ class GameDetailViewModel @Inject constructor(
 
     private var backgroundRepairPending = false
 
+    override fun onCleared() {
+        super.onCleared()
+        imageCacheManager.resumeBackgroundCaching()
+    }
+
     fun repairBackgroundImage(gameId: Long, failedPath: String) {
         if (backgroundRepairPending) return
         backgroundRepairPending = true
@@ -196,6 +201,7 @@ class GameDetailViewModel @Inject constructor(
     fun loadGame(gameId: Long) {
         currentGameId = gameId
         pageLoadTime = System.currentTimeMillis()
+        imageCacheManager.pauseBackgroundCaching()
         viewModelScope.launch {
             val game = gameDao.getById(gameId) ?: return@launch
             val platform = platformDao.getById(game.platformId)

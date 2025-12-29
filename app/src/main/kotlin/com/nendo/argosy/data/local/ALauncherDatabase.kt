@@ -528,20 +528,11 @@ abstract class ALauncherDatabase : RoomDatabase() {
                 db.execSQL("PRAGMA foreign_keys=OFF")
 
                 db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS platforms_new (
-                        id INTEGER PRIMARY KEY NOT NULL,
-                        name TEXT NOT NULL,
-                        slug TEXT NOT NULL,
-                        shortName TEXT,
-                        logoPath TEXT,
-                        sortOrder INTEGER NOT NULL DEFAULT 999,
-                        syncEnabled INTEGER NOT NULL DEFAULT 1,
-                        customRomPath TEXT
-                    )
+                    CREATE TABLE IF NOT EXISTS `platforms_new` (`id` INTEGER NOT NULL, `slug` TEXT NOT NULL, `name` TEXT NOT NULL, `shortName` TEXT NOT NULL, `sortOrder` INTEGER NOT NULL, `isVisible` INTEGER NOT NULL, `logoPath` TEXT, `romExtensions` TEXT NOT NULL, `lastScanned` INTEGER, `gameCount` INTEGER NOT NULL, `syncEnabled` INTEGER NOT NULL, `customRomPath` TEXT, PRIMARY KEY(`id`))
                 """)
 
                 db.execSQL("""
-                    INSERT INTO platforms_new (id, name, slug, shortName, logoPath, sortOrder, syncEnabled, customRomPath)
+                    INSERT INTO platforms_new (id, slug, name, shortName, sortOrder, isVisible, logoPath, romExtensions, lastScanned, gameCount, syncEnabled, customRomPath)
                     SELECT
                         CASE
                             WHEN id = 'android' THEN -1
@@ -549,109 +540,61 @@ abstract class ALauncherDatabase : RoomDatabase() {
                             WHEN id = 'ios' THEN -3
                             ELSE CAST(id AS INTEGER)
                         END,
-                        name, slug, shortName, logoPath, sortOrder, syncEnabled, customRomPath
+                        slug, name, shortName, sortOrder, isVisible, logoPath, romExtensions, lastScanned, gameCount, syncEnabled, customRomPath
                     FROM platforms
                 """)
 
                 db.execSQL("DROP TABLE platforms")
                 db.execSQL("ALTER TABLE platforms_new RENAME TO platforms")
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_platforms_slug ON platforms(slug)")
 
                 db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS games_new (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        title TEXT NOT NULL,
-                        sortTitle TEXT NOT NULL,
-                        platformId INTEGER NOT NULL,
-                        platformSlug TEXT NOT NULL DEFAULT '',
-                        localPath TEXT,
-                        fileSize INTEGER NOT NULL,
-                        coverPath TEXT,
-                        backgroundPath TEXT,
-                        summary TEXT,
-                        releaseYear INTEGER,
-                        developer TEXT,
-                        publisher TEXT,
-                        genre TEXT,
-                        rating REAL,
-                        isFavorite INTEGER NOT NULL DEFAULT 0,
-                        lastPlayed INTEGER,
-                        playCount INTEGER NOT NULL DEFAULT 0,
-                        playTimeMinutes INTEGER NOT NULL DEFAULT 0,
-                        rommId INTEGER,
-                        igdbId INTEGER,
-                        cachedScreenshotPaths TEXT,
-                        regions TEXT,
-                        languages TEXT,
-                        gameModes TEXT,
-                        franchises TEXT,
-                        completion INTEGER NOT NULL DEFAULT 0,
-                        backlogged INTEGER NOT NULL DEFAULT 0,
-                        nowPlaying INTEGER NOT NULL DEFAULT 0,
-                        steamAppId INTEGER,
-                        steamLauncher TEXT,
-                        isMultiDisc INTEGER NOT NULL DEFAULT 0,
-                        lastPlayedDiscId INTEGER,
-                        achievementCount INTEGER NOT NULL DEFAULT 0,
-                        earnedAchievementCount INTEGER NOT NULL DEFAULT 0,
-                        m3uPath TEXT,
-                        activeSaveChannel TEXT,
-                        activeSaveTimestamp INTEGER,
-                        titleId TEXT,
-                        status TEXT,
-                        launcherSetManually INTEGER NOT NULL DEFAULT 0,
-                        packageName TEXT
-                    )
+                    CREATE TABLE IF NOT EXISTS `games_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `platformId` INTEGER NOT NULL, `platformSlug` TEXT NOT NULL, `title` TEXT NOT NULL, `sortTitle` TEXT NOT NULL, `localPath` TEXT, `rommId` INTEGER, `igdbId` INTEGER, `steamAppId` INTEGER, `steamLauncher` TEXT, `packageName` TEXT, `launcherSetManually` INTEGER NOT NULL, `source` TEXT NOT NULL, `coverPath` TEXT, `backgroundPath` TEXT, `screenshotPaths` TEXT, `cachedScreenshotPaths` TEXT, `developer` TEXT, `publisher` TEXT, `releaseYear` INTEGER, `genre` TEXT, `description` TEXT, `players` TEXT, `rating` REAL, `regions` TEXT, `languages` TEXT, `gameModes` TEXT, `franchises` TEXT, `userRating` INTEGER NOT NULL, `userDifficulty` INTEGER NOT NULL, `completion` INTEGER NOT NULL, `status` TEXT, `backlogged` INTEGER NOT NULL, `nowPlaying` INTEGER NOT NULL, `isFavorite` INTEGER NOT NULL, `isHidden` INTEGER NOT NULL, `playCount` INTEGER NOT NULL, `playTimeMinutes` INTEGER NOT NULL, `lastPlayed` INTEGER, `addedAt` INTEGER NOT NULL, `isMultiDisc` INTEGER NOT NULL, `lastPlayedDiscId` INTEGER, `m3uPath` TEXT, `achievementCount` INTEGER NOT NULL, `earnedAchievementCount` INTEGER NOT NULL, `activeSaveChannel` TEXT, `activeSaveTimestamp` INTEGER, `titleId` TEXT, FOREIGN KEY(`platformId`) REFERENCES `platforms`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)
                 """)
 
                 db.execSQL("""
                     INSERT INTO games_new (
-                        id, title, sortTitle, platformId, platformSlug, localPath, fileSize, coverPath,
-                        backgroundPath, summary, releaseYear, developer, publisher, genre, rating,
-                        isFavorite, lastPlayed, playCount, playTimeMinutes, rommId, igdbId,
-                        cachedScreenshotPaths, regions, languages, gameModes, franchises, completion,
-                        backlogged, nowPlaying, steamAppId, steamLauncher, isMultiDisc, lastPlayedDiscId,
-                        achievementCount, earnedAchievementCount, m3uPath, activeSaveChannel,
-                        activeSaveTimestamp, titleId, status, launcherSetManually, packageName
+                        id, platformId, platformSlug, title, sortTitle, localPath, rommId, igdbId,
+                        steamAppId, steamLauncher, packageName, launcherSetManually, source, coverPath,
+                        backgroundPath, screenshotPaths, cachedScreenshotPaths, developer, publisher,
+                        releaseYear, genre, description, players, rating, regions, languages, gameModes,
+                        franchises, userRating, userDifficulty, completion, status, backlogged, nowPlaying,
+                        isFavorite, isHidden, playCount, playTimeMinutes, lastPlayed, addedAt, isMultiDisc,
+                        lastPlayedDiscId, m3uPath, achievementCount, earnedAchievementCount,
+                        activeSaveChannel, activeSaveTimestamp, titleId
                     )
                     SELECT
-                        id, title, sortTitle,
+                        id,
                         CASE
                             WHEN platformId = 'android' THEN -1
                             WHEN platformId = 'steam' THEN -2
                             WHEN platformId = 'ios' THEN -3
                             ELSE CAST(platformId AS INTEGER)
                         END,
-                        platformSlug, localPath, fileSize, coverPath, backgroundPath, summary,
-                        releaseYear, developer, publisher, genre, rating, isFavorite, lastPlayed,
-                        playCount, playTimeMinutes, rommId, igdbId, cachedScreenshotPaths, regions,
-                        languages, gameModes, franchises, completion, backlogged, nowPlaying,
-                        steamAppId, steamLauncher, isMultiDisc, lastPlayedDiscId, achievementCount,
-                        earnedAchievementCount, m3uPath, activeSaveChannel, activeSaveTimestamp,
-                        titleId, status, launcherSetManually, packageName
+                        platformSlug, title, sortTitle, localPath, rommId, igdbId, steamAppId, steamLauncher,
+                        packageName, launcherSetManually, source, coverPath, backgroundPath, screenshotPaths,
+                        cachedScreenshotPaths, developer, publisher, releaseYear, genre, description, players,
+                        rating, regions, languages, gameModes, franchises, userRating, userDifficulty,
+                        completion, status, backlogged, nowPlaying, isFavorite, isHidden, playCount,
+                        playTimeMinutes, lastPlayed, addedAt, isMultiDisc, lastPlayedDiscId, m3uPath,
+                        achievementCount, earnedAchievementCount, activeSaveChannel, activeSaveTimestamp, titleId
                     FROM games
                 """)
 
                 db.execSQL("DROP TABLE games")
                 db.execSQL("ALTER TABLE games_new RENAME TO games")
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_games_platformId ON games(platformId)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_games_sortTitle ON games(sortTitle)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_games_isFavorite ON games(isFavorite)")
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_games_rommId ON games(rommId) WHERE rommId IS NOT NULL")
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_games_steamAppId ON games(steamAppId) WHERE steamAppId IS NOT NULL")
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_games_packageName ON games(packageName)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_platformId` ON `games` (`platformId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_title` ON `games` (`title`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_lastPlayed` ON `games` (`lastPlayed`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_source` ON `games` (`source`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_rommId` ON `games` (`rommId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_steamAppId` ON `games` (`steamAppId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_packageName` ON `games` (`packageName`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_regions` ON `games` (`regions`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_gameModes` ON `games` (`gameModes`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_franchises` ON `games` (`franchises`)")
 
                 db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS emulator_configs_new (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        platformId INTEGER,
-                        gameId INTEGER,
-                        packageName TEXT,
-                        displayName TEXT,
-                        coreName TEXT,
-                        isDefault INTEGER NOT NULL DEFAULT 0,
-                        FOREIGN KEY (gameId) REFERENCES games(id) ON DELETE CASCADE
-                    )
+                    CREATE TABLE IF NOT EXISTS `emulator_configs_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `platformId` INTEGER, `gameId` INTEGER, `packageName` TEXT, `displayName` TEXT, `coreName` TEXT, `isDefault` INTEGER NOT NULL, FOREIGN KEY(`platformId`) REFERENCES `platforms`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`gameId`) REFERENCES `games`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)
                 """)
 
                 db.execSQL("""
@@ -671,8 +614,8 @@ abstract class ALauncherDatabase : RoomDatabase() {
 
                 db.execSQL("DROP TABLE emulator_configs")
                 db.execSQL("ALTER TABLE emulator_configs_new RENAME TO emulator_configs")
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_emulator_configs_platformId ON emulator_configs(platformId)")
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_emulator_configs_gameId ON emulator_configs(gameId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_emulator_configs_platformId` ON `emulator_configs` (`platformId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_emulator_configs_gameId` ON `emulator_configs` (`gameId`)")
 
                 db.execSQL("PRAGMA foreign_keys=ON")
             }

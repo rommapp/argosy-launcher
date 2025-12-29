@@ -133,6 +133,18 @@ class ImageCacheManager @Inject constructor(
     private val _screenshotProgress = kotlinx.coroutines.flow.MutableStateFlow(ImageCacheProgress())
     val screenshotProgress: kotlinx.coroutines.flow.StateFlow<ImageCacheProgress> = _screenshotProgress
 
+    private var isPaused = false
+
+    fun pauseBackgroundCaching() {
+        isPaused = true
+        Log.d(TAG, "Background caching paused")
+    }
+
+    fun resumeBackgroundCaching() {
+        isPaused = false
+        Log.d(TAG, "Background caching resumed")
+    }
+
     fun queueBackgroundCache(url: String, rommId: Long, gameTitle: String = "") {
         scope.launch {
             queue.send(ImageCacheRequest(url, rommId, ImageType.BACKGROUND, gameTitle, isSteam = false))
@@ -156,6 +168,9 @@ class ImageCacheManager @Inject constructor(
             updateProgressFromDb(isProcessing = true)
 
             for (request in queue) {
+                while (isPaused) {
+                    kotlinx.coroutines.delay(500)
+                }
                 try {
                     _progress.value = _progress.value.copy(
                         currentGameTitle = request.gameTitle,
@@ -483,6 +498,9 @@ class ImageCacheManager @Inject constructor(
             updateScreenshotProgressFromDb(isProcessing = true)
 
             for (request in screenshotQueue) {
+                while (isPaused) {
+                    kotlinx.coroutines.delay(500)
+                }
                 try {
                     _screenshotProgress.value = _screenshotProgress.value.copy(
                         currentGameTitle = request.gameTitle,
@@ -572,6 +590,9 @@ class ImageCacheManager @Inject constructor(
             Log.d(TAG, "Starting platform logo cache processing")
 
             for (request in logoQueue) {
+                while (isPaused) {
+                    kotlinx.coroutines.delay(500)
+                }
                 try {
                     processLogoRequest(request)
                 } catch (e: Exception) {
@@ -694,6 +715,9 @@ class ImageCacheManager @Inject constructor(
             Log.d(TAG, "Starting cover image cache processing")
 
             for (request in coverQueue) {
+                while (isPaused) {
+                    kotlinx.coroutines.delay(500)
+                }
                 try {
                     _progress.value = _progress.value.copy(
                         currentGameTitle = request.gameTitle,
@@ -768,6 +792,9 @@ class ImageCacheManager @Inject constructor(
             Log.d(TAG, "Starting achievement badge cache processing")
 
             for (request in badgeQueue) {
+                while (isPaused) {
+                    kotlinx.coroutines.delay(500)
+                }
                 try {
                     processBadgeRequest(request)
                 } catch (e: Exception) {
@@ -889,6 +916,9 @@ class ImageCacheManager @Inject constructor(
             Log.d(TAG, "Starting app icon cache processing")
 
             for (request in appIconQueue) {
+                while (isPaused) {
+                    kotlinx.coroutines.delay(500)
+                }
                 try {
                     processAppIconRequest(request)
                 } catch (e: Exception) {

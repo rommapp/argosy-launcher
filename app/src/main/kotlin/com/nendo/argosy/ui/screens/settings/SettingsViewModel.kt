@@ -45,6 +45,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.SoundSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
+import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -96,7 +97,8 @@ class SettingsViewModel @Inject constructor(
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
-    private val androidGameScanner: AndroidGameScanner
+    private val androidGameScanner: AndroidGameScanner,
+    private val modalResetSignal: ModalResetSignal
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -127,7 +129,23 @@ class SettingsViewModel @Inject constructor(
     init {
         observeDelegateStates()
         observeDelegateEvents()
+        observeModalResetSignal()
         loadSettings()
+    }
+
+    private fun observeModalResetSignal() {
+        modalResetSignal.signal.onEach {
+            dismissAllModals()
+        }.launchIn(viewModelScope)
+    }
+
+    private fun dismissAllModals() {
+        emulatorDelegate.dismissEmulatorPicker()
+        emulatorDelegate.dismissSavePathModal()
+        storageDelegate.closePlatformSettingsModal()
+        soundsDelegate.dismissSoundPicker()
+        syncDelegate.dismissRegionPicker()
+        steamDelegate.dismissAddSteamGameDialog()
     }
 
     private fun observeDelegateStates() {

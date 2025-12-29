@@ -36,6 +36,8 @@ import com.nendo.argosy.ui.notification.NotificationHost
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.launch
 
 @Composable
@@ -62,6 +64,11 @@ fun ArgosyApp(
             hapticManager = viewModel.hapticManager,
             soundManager = viewModel.soundManager
         )
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        inputDispatcher.resetToMainView()
+        viewModel.resetAllModals()
     }
 
     val startDestination = when {

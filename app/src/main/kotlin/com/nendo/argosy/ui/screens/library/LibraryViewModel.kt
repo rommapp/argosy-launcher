@@ -37,7 +37,10 @@ import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
+import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -254,7 +257,8 @@ class LibraryViewModel @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val apkInstallManager: ApkInstallManager,
     private val syncPlatformUseCase: SyncPlatformUseCase,
-    private val repairImageCacheUseCase: RepairImageCacheUseCase
+    private val repairImageCacheUseCase: RepairImageCacheUseCase,
+    private val modalResetSignal: ModalResetSignal
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -287,10 +291,23 @@ class LibraryViewModel @Inject constructor(
     }
 
     init {
+        modalResetSignal.signal.onEach {
+            resetMenus()
+        }.launchIn(viewModelScope)
+
         loadPlatforms()
         loadFilterOptions()
         observeGridDensity()
         observeSyncOverlay()
+    }
+
+    private fun resetMenus() {
+        _uiState.update {
+            it.copy(
+                showFilterMenu = false,
+                showQuickMenu = false
+            )
+        }
     }
 
     private fun observeSyncOverlay() {

@@ -59,7 +59,8 @@ class ArgosyViewModel @Inject constructor(
     downloadNotificationObserver: DownloadNotificationObserver,
     private val gameRepository: GameRepository,
     private val romMRepository: RomMRepository,
-    private val downloadManager: DownloadManager
+    private val downloadManager: DownloadManager,
+    private val modalResetSignal: ModalResetSignal
 ) : ViewModel() {
 
     init {
@@ -168,6 +169,15 @@ class ArgosyViewModel @Inject constructor(
 
     fun setDrawerOpen(open: Boolean) {
         _isDrawerOpen.value = open
+    }
+
+    fun closeDrawer() {
+        _isDrawerOpen.value = false
+    }
+
+    fun resetAllModals() {
+        _isDrawerOpen.value = false
+        modalResetSignal.emit()
     }
 
     fun initDrawerFocus(currentRoute: String?, parentRoute: String? = null) {

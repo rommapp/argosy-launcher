@@ -53,7 +53,10 @@ import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameUpdateBus
+import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -96,7 +99,8 @@ class GameDetailViewModel @Inject constructor(
     private val gameUpdateBus: GameUpdateBus,
     private val playStoreService: PlayStoreService,
     private val apkInstallManager: ApkInstallManager,
-    private val repairImageCacheUseCase: RepairImageCacheUseCase
+    private val repairImageCacheUseCase: RepairImageCacheUseCase,
+    private val modalResetSignal: ModalResetSignal
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -132,6 +136,10 @@ class GameDetailViewModel @Inject constructor(
     }
 
     init {
+        modalResetSignal.signal.onEach {
+            resetAllModals()
+        }.launchIn(viewModelScope)
+
         viewModelScope.launch {
             emulatorDetector.detectEmulators()
         }
@@ -1756,6 +1764,11 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private fun dismissAllModals() {
+        resetAllModals()
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    private fun resetAllModals() {
         _uiState.update {
             it.copy(
                 showMoreOptions = false,
@@ -1767,6 +1780,7 @@ class GameDetailViewModel @Inject constructor(
                 showDiscPicker = false,
                 showMissingDiscPrompt = false,
                 showScreenshotViewer = false,
+                showPermissionModal = false,
                 saveChannel = it.saveChannel.copy(
                     isVisible = false,
                     showRestoreConfirmation = false,
@@ -1776,7 +1790,6 @@ class GameDetailViewModel @Inject constructor(
                 )
             )
         }
-        soundManager.play(SoundType.CLOSE_MODAL)
     }
 
     fun dismissPermissionModal() {

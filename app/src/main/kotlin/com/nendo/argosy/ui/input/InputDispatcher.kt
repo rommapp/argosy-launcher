@@ -28,8 +28,13 @@ class InputDispatcher(
         modalStack.removeLastOrNull()
     }
 
-    private fun clearModals() {
+    fun clearModals() {
         modalStack.clear()
+    }
+
+    fun resetToMainView() {
+        modalStack.clear()
+        drawerHandler = null
     }
 
     fun subscribeDrawer(handler: InputHandler) {

@@ -37,6 +37,7 @@ import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
+import com.nendo.argosy.ui.ModalResetSignal
 import android.content.Intent
 import android.net.Uri
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,6 +49,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.nendo.argosy.data.platform.LocalPlatformIds
@@ -276,7 +279,8 @@ class HomeViewModel @Inject constructor(
     private val achievementUpdateBus: AchievementUpdateBus,
     private val generateRecommendationsUseCase: GenerateRecommendationsUseCase,
     private val apkInstallManager: ApkInstallManager,
-    private val repairImageCacheUseCase: RepairImageCacheUseCase
+    private val repairImageCacheUseCase: RepairImageCacheUseCase,
+    private val modalResetSignal: ModalResetSignal
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -294,12 +298,20 @@ class HomeViewModel @Inject constructor(
     private val recentGamesCache = AtomicReference(RecentGamesCache(null, 0L))
 
     init {
+        modalResetSignal.signal.onEach {
+            resetMenus()
+        }.launchIn(viewModelScope)
+
         loadData()
         initializeRomM()
         observeBackgroundSettings()
         observeSyncOverlay()
         observePlatformChanges()
         observeAchievementUpdates()
+    }
+
+    private fun resetMenus() {
+        _uiState.update { it.copy(showGameMenu = false) }
     }
 
     private fun observeAchievementUpdates() {

@@ -19,6 +19,8 @@ import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.HueSliderPreference
 import com.nendo.argosy.ui.components.NavigationPreference
+import com.nendo.argosy.ui.components.SliderPreference
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.components.colorIntToHue
 import com.nendo.argosy.ui.components.hueToColorInt
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -30,7 +32,8 @@ import com.nendo.argosy.ui.theme.Motion
 fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val currentHue = uiState.display.primaryColor?.let { colorIntToHue(it) }
-    val maxIndex = 5
+    val storage = uiState.storage
+    val maxIndex = 8
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex in 0..maxIndex) {
@@ -124,6 +127,37 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 },
                 isFocused = uiState.focusedIndex == 5,
                 onClick = { viewModel.cycleDefaultView() }
+            )
+        }
+        item {
+            DisplaySectionHeader("Screen Safety")
+        }
+        item {
+            SwitchPreference(
+                title = "Screen Dimmer",
+                subtitle = "Dims screen after inactivity to prevent burn-in",
+                isEnabled = storage.screenDimmerEnabled,
+                isFocused = uiState.focusedIndex == 6,
+                onToggle = { viewModel.toggleScreenDimmer() }
+            )
+        }
+        item {
+            CyclePreference(
+                title = "Dim After",
+                value = "${storage.screenDimmerTimeoutMinutes} min",
+                isFocused = uiState.focusedIndex == 7,
+                onClick = { viewModel.cycleScreenDimmerTimeout() }
+            )
+        }
+        item {
+            SliderPreference(
+                title = "Dim Level",
+                value = storage.screenDimmerLevel,
+                minValue = 40,
+                maxValue = 70,
+                isFocused = uiState.focusedIndex == 8,
+                step = 10,
+                onClick = { viewModel.cycleScreenDimmerLevel() }
             )
         }
     }

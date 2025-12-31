@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.sync.SaveSyncDownloadObserver
 import com.nendo.argosy.data.update.ApkInstallManager
+import com.nendo.argosy.data.download.DownloadServiceController
 import com.nendo.argosy.data.sync.SaveSyncWorker
 import com.nendo.argosy.data.update.UpdateCheckWorker
 import com.nendo.argosy.ui.coil.AppIconFetcher
@@ -36,11 +37,15 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var apkInstallManager: ApkInstallManager
 
+    @Inject
+    lateinit var downloadServiceController: DownloadServiceController
+
     override fun onCreate() {
         super.onCreate()
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
         saveSyncDownloadObserver.start()
+        downloadServiceController.start()
         syncPlatformSortOrders()
     }
 

@@ -94,6 +94,10 @@ class UserPreferencesRepository @Inject constructor(
         val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
         val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
         val IMAGE_CACHE_PATH = stringPreferencesKey("image_cache_path")
+
+        val SCREEN_DIMMER_ENABLED = booleanPreferencesKey("screen_dimmer_enabled")
+        val SCREEN_DIMMER_TIMEOUT_MINUTES = intPreferencesKey("screen_dimmer_timeout_minutes")
+        val SCREEN_DIMMER_LEVEL = intPreferencesKey("screen_dimmer_level")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -189,7 +193,10 @@ class UserPreferencesRepository @Inject constructor(
             ambientAudioEnabled = prefs[Keys.AMBIENT_AUDIO_ENABLED] ?: false,
             ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
             ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
-            imageCachePath = prefs[Keys.IMAGE_CACHE_PATH]
+            imageCachePath = prefs[Keys.IMAGE_CACHE_PATH],
+            screenDimmerEnabled = prefs[Keys.SCREEN_DIMMER_ENABLED] ?: true,
+            screenDimmerTimeoutMinutes = prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] ?: 2,
+            screenDimmerLevel = prefs[Keys.SCREEN_DIMMER_LEVEL] ?: 50
         )
     }
 
@@ -669,6 +676,24 @@ class UserPreferencesRepository @Inject constructor(
             else prefs.remove(Keys.IMAGE_CACHE_PATH)
         }
     }
+
+    suspend fun setScreenDimmerEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SCREEN_DIMMER_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setScreenDimmerTimeoutMinutes(minutes: Int) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] = minutes.coerceIn(1, 5)
+        }
+    }
+
+    suspend fun setScreenDimmerLevel(level: Int) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SCREEN_DIMMER_LEVEL] = level.coerceIn(40, 70)
+        }
+    }
 }
 
 data class UserPreferences(
@@ -731,7 +756,10 @@ data class UserPreferences(
     val ambientAudioEnabled: Boolean = false,
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
-    val imageCachePath: String? = null
+    val imageCachePath: String? = null,
+    val screenDimmerEnabled: Boolean = true,
+    val screenDimmerTimeoutMinutes: Int = 2,
+    val screenDimmerLevel: Int = 50
 )
 
 enum class ThemeMode(val displayName: String) {

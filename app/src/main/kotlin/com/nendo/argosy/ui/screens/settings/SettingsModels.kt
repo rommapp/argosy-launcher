@@ -215,7 +215,10 @@ data class StorageState(
     val platformSettingsModalId: Long? = null,
     val platformSettingsFocusIndex: Int = 0,
     val platformSettingsButtonIndex: Int = 0,
-    val platformsExpanded: Boolean = false
+    val platformsExpanded: Boolean = false,
+    val screenDimmerEnabled: Boolean = true,
+    val screenDimmerTimeoutMinutes: Int = 2,
+    val screenDimmerLevel: Int = 30
 ) {
     val customPlatformCount: Int get() = platformConfigs.count { it.customRomPath != null }
 }
@@ -307,11 +310,12 @@ data class UpdateCheckState(
 
 data class PermissionsState(
     val hasStorageAccess: Boolean = false,
-    val hasUsageStats: Boolean = false
+    val hasUsageStats: Boolean = false,
+    val hasNotificationPermission: Boolean = false
 ) {
-    val allGranted: Boolean get() = hasStorageAccess && hasUsageStats
-    val grantedCount: Int get() = listOf(hasStorageAccess, hasUsageStats).count { it }
-    val totalCount: Int get() = 2
+    val allGranted: Boolean get() = hasStorageAccess && hasUsageStats && hasNotificationPermission
+    val grantedCount: Int get() = listOf(hasStorageAccess, hasUsageStats, hasNotificationPermission).count { it }
+    val totalCount: Int get() = 3
 }
 
 data class SettingsUiState(

@@ -181,13 +181,12 @@ private data class FocusMapping(
 ) {
     fun focusToScrollIndex(focusIndex: Int): Int {
         return when {
-            focusIndex == maxDownloadsIndex -> 1  // After DOWNLOADS header
+            focusIndex == maxDownloadsIndex -> 1
             focusIndex == thresholdIndex -> 2
-            focusIndex == globalRomPathIndex -> 5  // After FILE LOCATIONS header + spacer
+            focusIndex == globalRomPathIndex -> 5
             focusIndex == imageCacheIndex -> 6
-            focusIndex == platformsExpandIndex -> 9  // After PLATFORM STORAGE header + spacer
+            focusIndex == platformsExpandIndex -> 9
             focusIndex > platformsExpandIndex -> {
-                // Expanded platform item
                 10 + (focusIndex - platformsExpandIndex - 1)
             }
             else -> focusIndex

@@ -426,7 +426,10 @@ class SettingsViewModel @Inject constructor(
                 downloadedGamesCount = downloadedCount,
                 maxConcurrentDownloads = prefs.maxConcurrentDownloads,
                 instantDownloadThresholdMb = prefs.instantDownloadThresholdMb,
-                availableSpace = availableSpace
+                availableSpace = availableSpace,
+                screenDimmerEnabled = prefs.screenDimmerEnabled,
+                screenDimmerTimeoutMinutes = prefs.screenDimmerTimeoutMinutes,
+                screenDimmerLevel = prefs.screenDimmerLevel
             ))
             storageDelegate.checkAllFilesAccess()
             val platformEmulatorInfoMap = platformConfigs.associate { config ->
@@ -820,12 +823,12 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 4 else 3
                 SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
                 SettingsSection.STORAGE -> {
-                    // Base focusable items: Max Downloads(0), Threshold(1), Global ROM(2), Image Cache(3), Platforms Expand(4)
+                    // Base items: Max Downloads(0), Threshold(1), Global ROM(2), Image Cache(3), Platforms Expand(4)
                     val baseItemCount = 5
                     val expandedPlatforms = if (state.storage.platformsExpanded) state.storage.platformConfigs.size else 0
                     (baseItemCount + expandedPlatforms - 1).coerceAtLeast(baseItemCount - 1)
                 }
-                SettingsSection.DISPLAY -> 5
+                SettingsSection.DISPLAY -> 8
                 SettingsSection.HOME_SCREEN -> if (state.display.useGameBackground) 4 else 5
                 SettingsSection.BOX_ART -> {
                     val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
@@ -844,7 +847,7 @@ class SettingsViewModel @Inject constructor(
                     val autoAssignOffset = if (state.emulators.canAutoAssign) 1 else 0
                     (platformCount + autoAssignOffset - 1).coerceAtLeast(0)
                 }
-                SettingsSection.PERMISSIONS -> 1
+                SettingsSection.PERMISSIONS -> 2
                 SettingsSection.ABOUT -> if (state.fileLoggingPath != null) 4 else 3
             }
             val newIndex = if (state.currentSection == SettingsSection.SERVER && state.server.rommConfiguring) {
@@ -1113,6 +1116,10 @@ class SettingsViewModel @Inject constructor(
         permissionsDelegate.openStorageSettings()
     }
 
+    fun openNotificationSettings() {
+        permissionsDelegate.openNotificationSettings()
+    }
+
     fun refreshPermissions() {
         permissionsDelegate.refreshPermissions()
     }
@@ -1246,6 +1253,26 @@ class SettingsViewModel @Inject constructor(
 
     fun cycleInstantDownloadThreshold() {
         storageDelegate.cycleInstantDownloadThreshold(viewModelScope)
+    }
+
+    fun toggleScreenDimmer() {
+        storageDelegate.toggleScreenDimmer(viewModelScope)
+    }
+
+    fun cycleScreenDimmerTimeout() {
+        storageDelegate.cycleScreenDimmerTimeout(viewModelScope)
+    }
+
+    fun adjustScreenDimmerTimeout(delta: Int) {
+        storageDelegate.adjustScreenDimmerTimeout(viewModelScope, delta)
+    }
+
+    fun cycleScreenDimmerLevel() {
+        storageDelegate.cycleScreenDimmerLevel(viewModelScope)
+    }
+
+    fun adjustScreenDimmerLevel(delta: Int) {
+        storageDelegate.adjustScreenDimmerLevel(viewModelScope, delta)
     }
 
     fun openFolderPicker() {
@@ -1784,6 +1811,9 @@ class SettingsViewModel @Inject constructor(
                     3 -> navigateToBoxArt()
                     4 -> navigateToHomeScreen()
                     5 -> cycleDefaultView()
+                    6 -> toggleScreenDimmer()
+                    7 -> cycleScreenDimmerTimeout()
+                    8 -> cycleScreenDimmerLevel()
                 }
                 InputResult.HANDLED
             }
@@ -1885,6 +1915,7 @@ class SettingsViewModel @Inject constructor(
                 when (state.focusedIndex) {
                     0 -> openStorageSettings()
                     1 -> openUsageStatsSettings()
+                    2 -> openNotificationSettings()
                 }
                 InputResult.HANDLED
             }

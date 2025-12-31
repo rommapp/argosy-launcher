@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +41,7 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..1) {
+        if (uiState.focusedIndex in 0..2) {
             val viewportHeight = listState.layoutInfo.viewportSize.height
             val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
             val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
@@ -82,6 +83,17 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isGranted = uiState.permissions.hasUsageStats,
                 isFocused = uiState.focusedIndex == 1,
                 onClick = { viewModel.openUsageStatsSettings() }
+            )
+        }
+
+        item {
+            PermissionCard(
+                icon = Icons.Default.Notifications,
+                title = "Notifications",
+                description = "Shows download progress when downloading games in the background.",
+                isGranted = uiState.permissions.hasNotificationPermission,
+                isFocused = uiState.focusedIndex == 2,
+                onClick = { viewModel.openNotificationSettings() }
             )
         }
 

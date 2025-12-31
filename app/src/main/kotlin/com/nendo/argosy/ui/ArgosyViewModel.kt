@@ -3,6 +3,7 @@ package com.nendo.argosy.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -53,6 +54,12 @@ data class QuickSettingsUiState(
     val ambientAudioEnabled: Boolean = false
 )
 
+data class ScreenDimmerPreferences(
+    val enabled: Boolean = true,
+    val timeoutMinutes: Int = 2,
+    val level: Int = 30
+)
+
 data class DrawerItem(
     val route: String,
     val label: String
@@ -69,7 +76,8 @@ class ArgosyViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val romMRepository: RomMRepository,
     private val downloadManager: DownloadManager,
-    private val modalResetSignal: ModalResetSignal
+    private val modalResetSignal: ModalResetSignal,
+    private val playSessionTracker: PlaySessionTracker
 ) : ViewModel() {
 
     init {
@@ -270,6 +278,28 @@ class ArgosyViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = QuickSettingsUiState()
+        )
+
+    val screenDimmerPreferences: StateFlow<ScreenDimmerPreferences> = preferencesRepository.userPreferences
+        .map { prefs ->
+            ScreenDimmerPreferences(
+                enabled = prefs.screenDimmerEnabled,
+                timeoutMinutes = prefs.screenDimmerTimeoutMinutes,
+                level = prefs.screenDimmerLevel
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ScreenDimmerPreferences()
+        )
+
+    val isEmulatorRunning: StateFlow<Boolean> = playSessionTracker.activeSession
+        .map { it != null }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
         )
 
     fun setQuickSettingsOpen(open: Boolean) {

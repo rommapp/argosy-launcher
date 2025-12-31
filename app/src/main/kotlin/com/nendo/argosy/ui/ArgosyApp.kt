@@ -25,6 +25,8 @@ import androidx.navigation.compose.rememberNavController
 import com.nendo.argosy.ui.components.MainDrawer
 import com.nendo.argosy.ui.components.QuickSettingsPanel
 import com.nendo.argosy.ui.components.QuickSettingsState
+import com.nendo.argosy.ui.components.ScreenDimmerOverlay
+import com.nendo.argosy.ui.components.rememberScreenDimmerState
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
@@ -57,6 +59,9 @@ fun ArgosyApp(
     val isQuickSettingsOpen by viewModel.isQuickSettingsOpen.collectAsState()
     val quickSettingsFocusIndex by viewModel.quickSettingsFocusIndex.collectAsState()
     val quickSettingsUiState by viewModel.quickSettingsState.collectAsState()
+    val screenDimmerPrefs by viewModel.screenDimmerPreferences.collectAsState()
+    val isEmulatorRunning by viewModel.isEmulatorRunning.collectAsState()
+    val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
 
     // Drawer state - confirmStateChange handles swipe gestures synchronously
@@ -182,6 +187,7 @@ fun ArgosyApp(
     // Collect gamepad events (Menu/L3 toggles drawer, R3 toggles quick settings if unhandled)
     LaunchedEffect(Unit) {
         viewModel.gamepadInputHandler.eventFlow().collect { event ->
+            screenDimmerState.recordActivity()
             val result = inputDispatcher.dispatch(event)
             if (!result.handled) {
                 when (event) {
@@ -214,9 +220,16 @@ fun ArgosyApp(
     ) {
         val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
         val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
+        val dimmerEnabled = screenDimmerPrefs.enabled && !isEmulatorRunning && !uiState.isFirstRun
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            ModalNavigationDrawer(
+        ScreenDimmerOverlay(
+            enabled = dimmerEnabled,
+            timeoutMs = screenDimmerPrefs.timeoutMinutes * 60_000L,
+            dimLevel = screenDimmerPrefs.level / 100f,
+            dimmerState = screenDimmerState
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                ModalNavigationDrawer(
                 drawerState = drawerState,
                 gesturesEnabled = !uiState.isFirstRun,
                 scrimColor = scrimColor,
@@ -281,6 +294,7 @@ fun ArgosyApp(
                 onAmbientToggle = { viewModel.toggleAmbientAudio() },
                 onDismiss = closeQuickSettings
             )
+            }
         }
     }
 }

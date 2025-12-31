@@ -129,6 +129,8 @@ class SettingsInputHandler(
         if (state.currentSection == SettingsSection.DISPLAY) {
             when (state.focusedIndex) {
                 1 -> { viewModel.adjustHue(-HUE_STEP); return InputResult.HANDLED }
+                7 -> { viewModel.adjustScreenDimmerTimeout(-1); return InputResult.HANDLED }
+                8 -> { viewModel.adjustScreenDimmerLevel(-1); return InputResult.HANDLED }
             }
         }
 
@@ -258,6 +260,8 @@ class SettingsInputHandler(
         if (state.currentSection == SettingsSection.DISPLAY) {
             when (state.focusedIndex) {
                 1 -> { viewModel.adjustHue(HUE_STEP); return InputResult.HANDLED }
+                7 -> { viewModel.adjustScreenDimmerTimeout(1); return InputResult.HANDLED }
+                8 -> { viewModel.adjustScreenDimmerLevel(1); return InputResult.HANDLED }
             }
         }
 

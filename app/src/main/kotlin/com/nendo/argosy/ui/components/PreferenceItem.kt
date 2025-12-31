@@ -173,6 +173,7 @@ fun SliderPreference(
     minValue: Int,
     maxValue: Int,
     isFocused: Boolean,
+    step: Int = 1,
     onClick: (() -> Unit)? = null
 ) {
     Row(
@@ -189,7 +190,7 @@ fun SliderPreference(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            for (i in minValue..maxValue) {
+            for (i in minValue..maxValue step step) {
                 val isSelected = i <= value
                 val dotColor = when {
                     isFocused && isSelected -> MaterialTheme.colorScheme.onPrimaryContainer

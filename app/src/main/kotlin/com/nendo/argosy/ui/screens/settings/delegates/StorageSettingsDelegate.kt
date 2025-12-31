@@ -567,4 +567,55 @@ class StorageSettingsDelegate @Inject constructor(
             state.copy(platformSettingsButtonIndex = newIndex)
         }
     }
+
+    fun toggleScreenDimmer(scope: CoroutineScope) {
+        scope.launch {
+            val current = _state.value.screenDimmerEnabled
+            val next = !current
+            preferencesRepository.setScreenDimmerEnabled(next)
+            _state.update { it.copy(screenDimmerEnabled = next) }
+        }
+    }
+
+    fun cycleScreenDimmerTimeout(scope: CoroutineScope) {
+        scope.launch {
+            val current = _state.value.screenDimmerTimeoutMinutes
+            val next = if (current >= 5) 1 else current + 1
+            preferencesRepository.setScreenDimmerTimeoutMinutes(next)
+            _state.update { it.copy(screenDimmerTimeoutMinutes = next) }
+        }
+    }
+
+    fun cycleScreenDimmerLevel(scope: CoroutineScope) {
+        scope.launch {
+            val levels = listOf(40, 50, 60, 70)
+            val current = _state.value.screenDimmerLevel
+            val currentIndex = levels.indexOf(current).coerceAtLeast(0)
+            val next = levels[(currentIndex + 1) % levels.size]
+            preferencesRepository.setScreenDimmerLevel(next)
+            _state.update { it.copy(screenDimmerLevel = next) }
+        }
+    }
+
+    fun adjustScreenDimmerTimeout(scope: CoroutineScope, delta: Int) {
+        scope.launch {
+            val current = _state.value.screenDimmerTimeoutMinutes
+            val next = (current + delta).coerceIn(1, 5)
+            if (next != current) {
+                preferencesRepository.setScreenDimmerTimeoutMinutes(next)
+                _state.update { it.copy(screenDimmerTimeoutMinutes = next) }
+            }
+        }
+    }
+
+    fun adjustScreenDimmerLevel(scope: CoroutineScope, delta: Int) {
+        scope.launch {
+            val current = _state.value.screenDimmerLevel
+            val next = (current + delta * 10).coerceIn(40, 70)
+            if (next != current) {
+                preferencesRepository.setScreenDimmerLevel(next)
+                _state.update { it.copy(screenDimmerLevel = next) }
+            }
+        }
+    }
 }

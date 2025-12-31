@@ -52,7 +52,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         OrphanedFileEntity::class,
         AppCategoryEntity::class
     ],
-    version = 38,
+    version = 39,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -624,6 +624,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_37_38 = object : Migration(37, 38) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE emulator_configs ADD COLUMN preferredExtension TEXT")
+            }
+        }
+
+        val MIGRATION_38_39 = object : Migration(38, 39) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE game_discs ADD COLUMN parentRommId INTEGER")
             }
         }
     }

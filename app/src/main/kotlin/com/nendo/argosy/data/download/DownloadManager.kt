@@ -729,31 +729,15 @@ class DownloadManager @Inject constructor(
         }
 
         return when {
-            ZipExtractor.isNswPlatform(platformSlug) && isZip -> {
-                val extracted = ZipExtractor.extractForNsw(
+            isZip -> {
+                // Unified extraction for all platforms: preserves subfolders, generates M3U if multi-disc
+                val extracted = ZipExtractor.extractFolderRom(
                     zipFilePath = targetFile,
                     gameTitle = gameTitle,
                     platformDir = platformDir,
                     onProgress = onExtractionProgress
                 )
-                val resultPath = extracted.gameFile?.absolutePath ?: extracted.gameFolder.absolutePath
-                if (File(resultPath).exists()) {
-                    targetFile.delete()
-                    resultPath
-                } else {
-                    throw java.io.IOException("Extraction failed: $resultPath does not exist")
-                }
-            }
-            ZipExtractor.isMultiDiscPlatform(platformSlug) && isZip -> {
-                val extracted = ZipExtractor.extractMultiDisc(
-                    zipFile = targetFile,
-                    gameTitle = gameTitle,
-                    platformDir = platformDir,
-                    onProgress = onExtractionProgress
-                )
-                val resultPath = extracted.m3uFile?.absolutePath
-                    ?: extracted.discFiles.firstOrNull()?.absolutePath
-                    ?: extracted.gameFolder.absolutePath
+                val resultPath = extracted.launchPath
                 if (File(resultPath).exists()) {
                     targetFile.delete()
                     resultPath

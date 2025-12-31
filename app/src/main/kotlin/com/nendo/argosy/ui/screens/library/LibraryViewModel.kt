@@ -16,6 +16,7 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.GridDensity
@@ -433,12 +434,12 @@ class LibraryViewModel @Inject constructor(
         gamesJob = viewModelScope.launch {
             val baseFlow = if (platformIndex >= 0) {
                 val platformId = state.platforms[platformIndex].id
-                gameDao.observeByPlatform(platformId)
+                gameDao.observeByPlatformList(platformId)
             } else {
                 when (filters.source) {
-                    SourceFilter.ALL -> gameDao.observeAll()
-                    SourceFilter.PLAYABLE -> gameDao.observePlayable()
-                    SourceFilter.FAVORITES -> gameDao.observeFavorites()
+                    SourceFilter.ALL -> gameDao.observeAllList()
+                    SourceFilter.PLAYABLE -> gameDao.observePlayableList()
+                    SourceFilter.FAVORITES -> gameDao.observeFavoritesList()
                 }
             }
 
@@ -904,6 +905,21 @@ class LibraryViewModel @Inject constructor(
         source = source,
         isFavorite = isFavorite,
         isDownloaded = localPath != null || source == GameSource.STEAM || source == GameSource.ANDROID_APP,
+        isRommGame = rommId != null,
+        isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
+        emulatorName = null,
+        needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP
+    )
+
+    private fun GameListItem.toUi() = LibraryGameUi(
+        id = id,
+        title = title,
+        platformId = platformId,
+        platformSlug = platformSlug,
+        coverPath = coverPath,
+        source = source,
+        isFavorite = isFavorite,
+        isDownloaded = isDownloaded || source == GameSource.STEAM || source == GameSource.ANDROID_APP,
         isRommGame = rommId != null,
         isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
         emulatorName = null,

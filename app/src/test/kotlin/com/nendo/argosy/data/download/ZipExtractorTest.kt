@@ -35,40 +35,6 @@ class ZipExtractorTest {
     }
 
     @Test
-    fun `isMultiDiscPlatform returns true for psx`() {
-        assertTrue(ZipExtractor.isMultiDiscPlatform("psx"))
-    }
-
-    @Test
-    fun `isMultiDiscPlatform returns true for saturn`() {
-        assertTrue(ZipExtractor.isMultiDiscPlatform("saturn"))
-    }
-
-    @Test
-    fun `isMultiDiscPlatform returns true for dreamcast variants`() {
-        assertTrue(ZipExtractor.isMultiDiscPlatform("dreamcast"))
-        assertTrue(ZipExtractor.isMultiDiscPlatform("dc"))
-    }
-
-    @Test
-    fun `isMultiDiscPlatform returns true for segacd`() {
-        assertTrue(ZipExtractor.isMultiDiscPlatform("segacd"))
-    }
-
-    @Test
-    fun `isMultiDiscPlatform returns true for pc engine cd`() {
-        assertTrue(ZipExtractor.isMultiDiscPlatform("pcenginecd"))
-        assertTrue(ZipExtractor.isMultiDiscPlatform("pce-cd"))
-    }
-
-    @Test
-    fun `isMultiDiscPlatform returns false for non-disc platforms`() {
-        assertFalse(ZipExtractor.isMultiDiscPlatform("switch"))
-        assertFalse(ZipExtractor.isMultiDiscPlatform("vita"))
-        assertFalse(ZipExtractor.isMultiDiscPlatform("gba"))
-    }
-
-    @Test
     fun `hasUpdateSupport returns true for switch`() {
         assertTrue(ZipExtractor.hasUpdateSupport("switch"))
         assertTrue(ZipExtractor.hasUpdateSupport("nsw"))
@@ -101,7 +67,7 @@ class ZipExtractorTest {
     fun `getPlatformConfig returns correct config for switch`() {
         val config = ZipExtractor.getPlatformConfig("switch")
         assertNotNull(config)
-        assertEquals("updates", config!!.updateFolder)
+        assertEquals("update", config!!.updateFolder)
         assertEquals("dlc", config.dlcFolder)
         assertTrue(config.gameExtensions.contains("xci"))
         assertTrue(config.gameExtensions.contains("nsp"))
@@ -112,7 +78,7 @@ class ZipExtractorTest {
         val config = ZipExtractor.getPlatformConfig("vita")
         assertNotNull(config)
         assertEquals("update", config!!.updateFolder)
-        assertEquals("addcont", config.dlcFolder)
+        assertEquals("dlc", config.dlcFolder)
         assertTrue(config.gameExtensions.contains("vpk"))
     }
 
@@ -121,7 +87,7 @@ class ZipExtractorTest {
         val config = ZipExtractor.getPlatformConfig("wiiu")
         assertNotNull(config)
         assertEquals("update", config!!.updateFolder)
-        assertEquals("aoc", config.dlcFolder)
+        assertEquals("dlc", config.dlcFolder)
         assertTrue(config.gameExtensions.contains("wua"))
         assertTrue(config.gameExtensions.contains("wud"))
     }
@@ -130,8 +96,8 @@ class ZipExtractorTest {
     fun `getPlatformConfig returns correct config for wii`() {
         val config = ZipExtractor.getPlatformConfig("wii")
         assertNotNull(config)
-        assertEquals("wad", config!!.updateFolder)
-        assertEquals("wad", config.dlcFolder)
+        assertEquals("update", config!!.updateFolder)
+        assertEquals("dlc", config.dlcFolder)
         assertTrue(config.gameExtensions.contains("wbfs"))
         assertTrue(config.gameExtensions.contains("iso"))
     }

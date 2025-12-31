@@ -49,4 +49,10 @@ interface GameDiscDao {
 
     @Query("DELETE FROM game_discs WHERE gameId = :gameId")
     suspend fun deleteByGameId(gameId: Long)
+
+    @Query("DELETE FROM game_discs WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM game_discs WHERE gameId = :gameId AND rommId NOT IN (:validRommIds)")
+    suspend fun deleteInvalidDiscs(gameId: Long, validRommIds: List<Long>)
 }

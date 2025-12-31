@@ -454,6 +454,23 @@ class RomMRepository @Inject constructor(
             else -> null
         }
 
+        // Determine if game should be multi-disc
+        // For sibling-based multi-disc: hasDiscSiblings is true and NOT isFolderMultiDisc
+        // For folder-based: download as single ROM, detect multi-disc after extraction
+        val isSiblingBasedMultiDisc = rom.hasDiscSiblings && !rom.isFolderMultiDisc
+        val shouldBeMultiDisc = isSiblingBasedMultiDisc
+
+        // If game was multi-disc but RomM no longer returns siblings, reset it
+        // But preserve isMultiDisc if game was detected as multi-disc from extraction
+        if (existing?.isMultiDisc == true && !shouldBeMultiDisc && !rom.isFolderMultiDisc) {
+            // Only reset if it was sibling-based (had disc entries with no parentRommId)
+            val existingDiscs = gameDiscDao.getDiscsForGame(existing.id)
+            val wasSiblingBased = existingDiscs.any { it.parentRommId == null }
+            if (wasSiblingBased) {
+                gameDiscDao.deleteByGameId(existing.id)
+            }
+        }
+
         val game = GameEntity(
             id = existing?.id ?: 0,
             platformId = platformId,
@@ -486,6 +503,14 @@ class RomMRepository @Inject constructor(
             nowPlaying = rom.romUser?.nowPlaying ?: existing?.nowPlaying ?: false,
             isFavorite = existing?.isFavorite ?: false,
             isHidden = existing?.isHidden ?: false,
+            // For folder-based: reset to false (extraction will set it if needed)
+            // For sibling-based: preserve existing value (consolidation sets it)
+            // Only preserve isMultiDisc if game was downloaded (has localPath)
+            isMultiDisc = when {
+                rom.isFolderMultiDisc -> existing?.isMultiDisc == true && existing.localPath != null
+                shouldBeMultiDisc -> existing?.isMultiDisc ?: false
+                else -> false
+            },
             playCount = existing?.playCount ?: 0,
             playTimeMinutes = existing?.playTimeMinutes ?: 0,
             lastPlayed = existing?.lastPlayed,
@@ -581,7 +606,10 @@ class RomMRepository @Inject constructor(
                     val (isNew, _) = syncRom(rom, platform.id, platform.slug)
                     if (isNew) added++ else updated++
 
-                    if (rom.hasDiscSiblings && rom.id !in processedDiscIds) {
+                    // Only add sibling-based multi-disc to consolidation groups
+                    // Folder-based multi-disc downloads as single ZIP, handled by extraction
+                    val isSiblingBasedMultiDisc = rom.hasDiscSiblings && !rom.isFolderMultiDisc
+                    if (isSiblingBasedMultiDisc && rom.id !in processedDiscIds) {
                         val discSiblings = rom.siblings?.filter { it.isDiscVariant } ?: emptyList()
                         val siblingIds = discSiblings.map { it.id }
 
@@ -639,6 +667,8 @@ class RomMRepository @Inject constructor(
         val redundantGames = existingGames.filter { it.id != primaryGame.id }
 
         if (primaryGame.isMultiDisc && redundantGames.isEmpty()) {
+            // Still clean up any invalid disc entries before returning
+            gameDiscDao.deleteInvalidDiscs(primaryGame.id, allRommIds)
             return
         }
 
@@ -712,6 +742,9 @@ class RomMRepository @Inject constructor(
         if (discsToInsert.isNotEmpty()) {
             gameDiscDao.insertAll(discsToInsert)
         }
+
+        // Remove any disc entries that don't belong to this multi-disc group
+        gameDiscDao.deleteInvalidDiscs(primaryGame.id, allRommIds)
 
         for (redundantGame in redundantGames) {
             gameDao.delete(redundantGame.id)

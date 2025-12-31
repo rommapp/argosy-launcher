@@ -48,7 +48,9 @@ data class RomMRom(
     @Json(name = "rom_user") val romUser: RomMRomUser? = null,
 
     @Json(name = "tags") val tags: List<String>? = null,
-    @Json(name = "siblings") val siblings: List<RomMSibling>? = null
+    @Json(name = "siblings") val siblings: List<RomMSibling>? = null,
+    @Json(name = "multi") val multi: Boolean = false,
+    @Json(name = "files") val files: List<RomMRomFile>? = null
 ) {
     val genres: List<String>? get() = metadatum?.genres
     val companies: List<String>? get() = metadatum?.companies
@@ -73,10 +75,13 @@ data class RomMRom(
     val isDiscVariant: Boolean
         get() = discNumber != null
 
+    val isFolderMultiDisc: Boolean
+        get() = multi && files?.any { it.isDiscVariant } == true
+
     val hasDiscSiblings: Boolean
-        get() = isDiscVariant && siblings?.any { sibling ->
+        get() = isFolderMultiDisc || (isDiscVariant && siblings?.any { sibling ->
             sibling.fileNameNoExt.contains(DISC_TAG_REGEX)
-        } == true
+        } == true)
 
     companion object {
         private val DISC_TAG_REGEX = Regex("Disc \\d+", RegexOption.IGNORE_CASE)
@@ -94,6 +99,30 @@ data class RomMSibling(
     val discNumber: Int?
         get() = DISC_NUMBER_REGEX.find(
             DISC_TAG_REGEX.find(fileNameNoExt)?.value ?: ""
+        )?.value?.toIntOrNull()
+
+    val isDiscVariant: Boolean
+        get() = discNumber != null
+
+    companion object {
+        private val DISC_TAG_REGEX = Regex("\\(Disc \\d+\\)", RegexOption.IGNORE_CASE)
+        private val DISC_NUMBER_REGEX = Regex("\\d+")
+    }
+}
+
+@JsonClass(generateAdapter = true)
+data class RomMRomFile(
+    @Json(name = "id") val id: Long,
+    @Json(name = "rom_id") val romId: Long,
+    @Json(name = "file_name") val fileName: String,
+    @Json(name = "file_path") val filePath: String,
+    @Json(name = "file_size_bytes") val fileSizeBytes: Long,
+    @Json(name = "full_path") val fullPath: String,
+    @Json(name = "category") val category: String? = null
+) {
+    val discNumber: Int?
+        get() = DISC_NUMBER_REGEX.find(
+            DISC_TAG_REGEX.find(fileName)?.value ?: ""
         )?.value?.toIntOrNull()
 
     val isDiscVariant: Boolean

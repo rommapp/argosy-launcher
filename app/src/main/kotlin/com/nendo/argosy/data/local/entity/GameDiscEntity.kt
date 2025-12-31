@@ -28,5 +28,6 @@ data class GameDiscEntity(
     val rommId: Long,
     val fileName: String,
     val localPath: String?,
-    val fileSize: Long
+    val fileSize: Long,
+    val parentRommId: Long? = null
 )

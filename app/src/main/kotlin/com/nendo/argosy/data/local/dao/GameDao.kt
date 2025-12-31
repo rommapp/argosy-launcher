@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.model.GameSource
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -71,6 +72,27 @@ interface GameDao {
 
     @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
     fun observeFavorites(): Flow<List<GameEntity>>
+
+    // Lightweight list projections (avoid CursorWindow overflow)
+    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
+    fun observeAllList(): Flow<List<GameListItem>>
+
+    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE platformId = :platformId AND isHidden = 0 ORDER BY sortTitle ASC")
+    fun observeByPlatformList(platformId: Long): Flow<List<GameListItem>>
+
+    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE source = :source AND isHidden = 0 ORDER BY sortTitle ASC")
+    fun observeBySourceList(source: GameSource): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games
+        WHERE isHidden = 0
+        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM')
+        ORDER BY sortTitle ASC
+    """)
+    fun observePlayableList(): Flow<List<GameListItem>>
+
+    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
+    fun observeFavoritesList(): Flow<List<GameListItem>>
 
     @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
     suspend fun getFavorites(): List<GameEntity>

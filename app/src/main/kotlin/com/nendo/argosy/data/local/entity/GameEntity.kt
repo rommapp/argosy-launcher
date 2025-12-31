@@ -92,3 +92,27 @@ data class GameEntity(
 
     val titleId: String? = null
 )
+
+data class GameListItem(
+    val id: Long,
+    val platformId: Long,
+    val platformSlug: String,
+    val title: String,
+    val sortTitle: String,
+    val localPath: String?,
+    val source: GameSource,
+    val coverPath: String?,
+    val isFavorite: Boolean,
+    val isHidden: Boolean,
+    val isMultiDisc: Boolean,
+    val rommId: Long?,
+    val steamAppId: Long?,
+    val packageName: String?,
+    val playCount: Int,
+    val playTimeMinutes: Int,
+    val lastPlayed: Instant?,
+    val genre: String?,
+    val gameModes: String?
+) {
+    val isDownloaded: Boolean get() = localPath != null
+}

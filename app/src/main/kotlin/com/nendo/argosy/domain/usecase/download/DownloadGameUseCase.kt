@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.usecase.download
 
+import android.util.Log
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -9,6 +10,8 @@ import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import javax.inject.Inject
+
+private const val TAG = "DownloadGameUseCase"
 
 sealed class DownloadResult {
     data object Queued : DownloadResult()
@@ -51,9 +54,14 @@ class DownloadGameUseCase @Inject constructor(
             }
         }
 
+        Log.d(TAG, "invoke: game=${game.title}, id=$gameId, rommId=$rommId, isMultiDisc=${game.isMultiDisc}, localPath=${game.localPath}")
+
         if (game.isMultiDisc) {
+            Log.d(TAG, "invoke: taking multi-disc download path")
             return downloadMultiDiscGame(gameId, game.title, game.coverPath, game.platformSlug)
         }
+
+        Log.d(TAG, "invoke: taking single ROM download path")
 
         return when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
@@ -91,7 +99,9 @@ class DownloadGameUseCase @Inject constructor(
         platformSlug: String
     ): DownloadResult {
         val discs = gameDiscDao.getDiscsForGame(gameId)
+        Log.d(TAG, "downloadMultiDiscGame: gameId=$gameId, title=$gameTitle, discs.size=${discs.size}")
         if (discs.isEmpty()) {
+            Log.w(TAG, "downloadMultiDiscGame: no discs found!")
             return DownloadResult.Error("No discs found for multi-disc game")
         }
 

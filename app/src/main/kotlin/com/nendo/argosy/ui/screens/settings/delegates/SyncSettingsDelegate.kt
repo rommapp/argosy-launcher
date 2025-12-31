@@ -75,6 +75,35 @@ class SyncSettingsDelegate @Inject constructor(
         }
     }
 
+    fun showSyncFiltersModal() {
+        _state.update { it.copy(showSyncFiltersModal = true, syncFiltersModalFocusIndex = 0) }
+    }
+
+    fun dismissSyncFiltersModal() {
+        _state.update { it.copy(showSyncFiltersModal = false, syncFiltersModalFocusIndex = 0) }
+    }
+
+    fun moveSyncFiltersModalFocus(delta: Int) {
+        _state.update { state ->
+            val maxIndex = 6
+            val newIndex = (state.syncFiltersModalFocusIndex + delta).coerceIn(0, maxIndex)
+            state.copy(syncFiltersModalFocusIndex = newIndex)
+        }
+    }
+
+    fun confirmSyncFiltersModalSelection(scope: CoroutineScope) {
+        val state = _state.value
+        when (state.syncFiltersModalFocusIndex) {
+            0 -> showRegionPicker()
+            1 -> toggleRegionMode(scope)
+            2 -> setExcludeBeta(scope, !state.syncFilters.excludeBeta)
+            3 -> setExcludePrototype(scope, !state.syncFilters.excludePrototype)
+            4 -> setExcludeDemo(scope, !state.syncFilters.excludeDemo)
+            5 -> setExcludeHack(scope, !state.syncFilters.excludeHack)
+            6 -> setDeleteOrphans(scope, !state.syncFilters.deleteOrphans)
+        }
+    }
+
     fun showRegionPicker() {
         _state.update { it.copy(showRegionPicker = true, regionPickerFocusIndex = 0) }
     }

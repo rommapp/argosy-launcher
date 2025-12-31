@@ -25,7 +25,6 @@ enum class SettingsSection {
     MAIN,
     SERVER,
     SYNC_SETTINGS,
-    SYNC_FILTERS,
     STEAM_SETTINGS,
     STORAGE,
     DISPLAY,
@@ -61,6 +60,8 @@ data class PlatformEmulatorConfig(
     val downloadableEmulators: List<EmulatorDef> = emptyList(),
     val availableCores: List<RetroArchCore> = emptyList(),
     val effectiveEmulatorIsRetroArch: Boolean = false,
+    val effectiveEmulatorId: String? = null,
+    val effectiveEmulatorPackage: String? = null,
     val effectiveEmulatorName: String? = null,
     val effectiveSavePath: String? = null,
     val isUserSavePathOverride: Boolean = false,
@@ -181,7 +182,23 @@ data class PlatformStorageConfig(
     val syncEnabled: Boolean,
     val customRomPath: String?,
     val effectivePath: String,
-    val isExpanded: Boolean = false
+    val isExpanded: Boolean = false,
+    val emulatorId: String? = null,
+    val emulatorName: String? = null,
+    val effectiveSavePath: String? = null,
+    val customSavePath: String? = null,
+    val isUserSavePathOverride: Boolean = false,
+    val effectiveStatePath: String? = null,
+    val customStatePath: String? = null,
+    val isUserStatePathOverride: Boolean = false,
+    val supportsStatePath: Boolean = false
+)
+
+data class EmulatorSavePathInfo(
+    val emulatorId: String,
+    val emulatorName: String,
+    val savePath: String?,
+    val isCustom: Boolean
 )
 
 data class StorageState(
@@ -196,8 +213,12 @@ data class StorageState(
     val showPurgePlatformConfirm: Long? = null,
     val showMigratePlatformConfirm: PlatformMigrationInfo? = null,
     val platformSettingsModalId: Long? = null,
-    val platformSettingsFocusIndex: Int = 0
-)
+    val platformSettingsFocusIndex: Int = 0,
+    val platformSettingsButtonIndex: Int = 0,
+    val platformsExpanded: Boolean = false
+) {
+    val customPlatformCount: Int get() = platformConfigs.count { it.customRomPath != null }
+}
 
 data class PlatformMigrationInfo(
     val platformId: Long,
@@ -225,6 +246,8 @@ data class ServerState(
 
 data class SyncSettingsState(
     val syncFilters: SyncFilterPreferences = SyncFilterPreferences(),
+    val showSyncFiltersModal: Boolean = false,
+    val syncFiltersModalFocusIndex: Int = 0,
     val showRegionPicker: Boolean = false,
     val regionPickerFocusIndex: Int = 0,
     val totalGames: Int = 0,

@@ -148,6 +148,8 @@ class InputDispatcher(
             GamepadEvent.PrevSection -> handler.onPrevSection()
             GamepadEvent.NextSection -> handler.onNextSection()
             GamepadEvent.Select -> handler.onSelect()
+            GamepadEvent.LeftStickClick -> handler.onLeftStickClick()
+            GamepadEvent.RightStickClick -> handler.onRightStickClick()
         }
     }
 }

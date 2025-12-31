@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,20 +20,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.cache.ImageCacheProgress
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.ImageCachePreference
-import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
-import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
+import com.nendo.argosy.ui.screens.settings.components.SyncFiltersModal
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 
@@ -45,6 +48,12 @@ fun SyncSettingsSection(
     val saveSyncItemCount = if (uiState.syncSettings.saveSyncEnabled) 2 else 1
     val maxIndex = 1 + saveSyncItemCount + 1
 
+    val modalBlur by animateDpAsState(
+        targetValue = if (uiState.syncSettings.showSyncFiltersModal) Motion.blurRadiusModal else 0.dp,
+        animationSpec = Motion.focusSpringDp,
+        label = "syncFiltersModalBlur"
+    )
+
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex in 0..maxIndex) {
             val viewportHeight = listState.layoutInfo.viewportSize.height
@@ -55,21 +64,22 @@ fun SyncSettingsSection(
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        item {
-            val filtersSubtitle = buildFiltersSubtitle(uiState.syncSettings.syncFilters)
-            NavigationPreference(
-                icon = Icons.Default.Tune,
-                title = "Metadata Filters",
-                subtitle = filtersSubtitle,
-                isFocused = uiState.focusedIndex == 0,
-                onClick = { viewModel.navigateToSection(SettingsSection.SYNC_FILTERS) }
-            )
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            item {
+                val filtersSubtitle = buildFiltersSubtitle(uiState.syncSettings.syncFilters)
+                ActionPreference(
+                    icon = Icons.Default.Tune,
+                    title = "Metadata Filters",
+                    subtitle = filtersSubtitle,
+                    isFocused = uiState.focusedIndex == 0,
+                    onClick = { viewModel.showSyncFiltersModal() }
+                )
+            }
 
         item {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -142,6 +152,26 @@ fun SyncSettingsSection(
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
                 ImageCacheProgressItem(imageCacheProgress)
             }
+        }
+        }
+
+        if (uiState.syncSettings.showSyncFiltersModal) {
+            SyncFiltersModal(
+                syncFilters = uiState.syncSettings.syncFilters,
+                focusIndex = uiState.syncSettings.syncFiltersModalFocusIndex,
+                showRegionPicker = uiState.syncSettings.showRegionPicker,
+                regionPickerFocusIndex = uiState.syncSettings.regionPickerFocusIndex,
+                onToggleRegion = { viewModel.toggleRegion(it) },
+                onToggleRegionMode = { viewModel.toggleRegionMode() },
+                onToggleExcludeBeta = { viewModel.setExcludeBeta(it) },
+                onToggleExcludePrototype = { viewModel.setExcludePrototype(it) },
+                onToggleExcludeDemo = { viewModel.setExcludeDemo(it) },
+                onToggleExcludeHack = { viewModel.setExcludeHack(it) },
+                onToggleDeleteOrphans = { viewModel.setDeleteOrphans(it) },
+                onShowRegionPicker = { viewModel.showRegionPicker() },
+                onDismissRegionPicker = { viewModel.dismissRegionPicker() },
+                onDismiss = { viewModel.dismissSyncFiltersModal() }
+            )
         }
     }
 }

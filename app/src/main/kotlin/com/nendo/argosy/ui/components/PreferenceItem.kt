@@ -135,18 +135,28 @@ fun CyclePreference(
     title: String,
     value: String,
     isFocused: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    subtitle: String? = null
 ) {
     Row(
         modifier = preferenceModifier(isFocused, onClick = onClick),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = preferenceContentColor(isFocused)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = preferenceContentColor(isFocused)
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = preferenceContentColor(isFocused).copy(alpha = 0.6f)
+                )
+            }
+        }
         Text(
             text = "< $value >",
             style = MaterialTheme.typography.bodyMedium,

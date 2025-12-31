@@ -25,6 +25,8 @@ sealed interface GamepadEvent {
     data object NextSection : GamepadEvent
     data object Menu : GamepadEvent
     data object Select : GamepadEvent
+    data object LeftStickClick : GamepadEvent
+    data object RightStickClick : GamepadEvent
 }
 
 @Singleton
@@ -90,6 +92,9 @@ class GamepadInputHandler @Inject constructor(
 
         KeyEvent.KEYCODE_BUTTON_START -> if (swapStartSelect) GamepadEvent.Select else GamepadEvent.Menu
         KeyEvent.KEYCODE_BUTTON_SELECT -> if (swapStartSelect) GamepadEvent.Menu else GamepadEvent.Select
+
+        KeyEvent.KEYCODE_BUTTON_THUMBL -> GamepadEvent.LeftStickClick
+        KeyEvent.KEYCODE_BUTTON_THUMBR -> GamepadEvent.RightStickClick
 
         else -> null
     }

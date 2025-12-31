@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.preferences.DefaultView
+import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.GameRepository
@@ -11,6 +12,7 @@ import com.nendo.argosy.ui.input.ControllerDetector
 import com.nendo.argosy.ui.input.DetectedIconLayout
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.HapticFeedbackManager
+import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -44,6 +46,13 @@ data class DrawerState(
     val downloadCount: Int = 0
 )
 
+data class QuickSettingsUiState(
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val soundEnabled: Boolean = false,
+    val hapticEnabled: Boolean = true,
+    val ambientAudioEnabled: Boolean = false
+)
+
 data class DrawerItem(
     val route: String,
     val label: String
@@ -51,7 +60,7 @@ data class DrawerItem(
 
 @HiltViewModel
 class ArgosyViewModel @Inject constructor(
-    preferencesRepository: UserPreferencesRepository,
+    private val preferencesRepository: UserPreferencesRepository,
     val gamepadInputHandler: GamepadInputHandler,
     val hapticManager: HapticFeedbackManager,
     val soundManager: SoundFeedbackManager,
@@ -177,6 +186,7 @@ class ArgosyViewModel @Inject constructor(
 
     fun resetAllModals() {
         _isDrawerOpen.value = false
+        _isQuickSettingsOpen.value = false
         modalResetSignal.emit()
     }
 
@@ -237,6 +247,120 @@ class ArgosyViewModel @Inject constructor(
                 downloadManager.retryFailedDownloads()
             }
             downloadManager.recheckStorageAndResume()
+        }
+    }
+
+    // Quick Settings
+    private val _isQuickSettingsOpen = MutableStateFlow(false)
+    val isQuickSettingsOpen: StateFlow<Boolean> = _isQuickSettingsOpen.asStateFlow()
+
+    private val _quickSettingsFocusIndex = MutableStateFlow(0)
+    val quickSettingsFocusIndex: StateFlow<Int> = _quickSettingsFocusIndex.asStateFlow()
+
+    val quickSettingsState: StateFlow<QuickSettingsUiState> = preferencesRepository.userPreferences
+        .map { prefs ->
+            QuickSettingsUiState(
+                themeMode = prefs.themeMode,
+                soundEnabled = prefs.soundEnabled,
+                hapticEnabled = prefs.hapticEnabled,
+                ambientAudioEnabled = prefs.ambientAudioEnabled
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = QuickSettingsUiState()
+        )
+
+    fun setQuickSettingsOpen(open: Boolean) {
+        _isQuickSettingsOpen.value = open
+        if (open) {
+            _quickSettingsFocusIndex.value = 0
+        }
+    }
+
+    fun cycleTheme() {
+        viewModelScope.launch {
+            val current = quickSettingsState.value.themeMode
+            val next = when (current) {
+                ThemeMode.SYSTEM -> ThemeMode.LIGHT
+                ThemeMode.LIGHT -> ThemeMode.DARK
+                ThemeMode.DARK -> ThemeMode.SYSTEM
+            }
+            preferencesRepository.setThemeMode(next)
+        }
+    }
+
+    fun toggleSound() {
+        val current = quickSettingsState.value.soundEnabled
+        val newState = !current
+        soundManager.setEnabled(newState)
+        viewModelScope.launch {
+            preferencesRepository.setSoundEnabled(newState)
+        }
+    }
+
+    fun toggleHaptic() {
+        val current = quickSettingsState.value.hapticEnabled
+        val newState = !current
+        hapticManager.setEnabled(newState)
+        if (newState) {
+            hapticManager.vibrate(HapticPattern.SELECTION)
+        }
+        viewModelScope.launch {
+            preferencesRepository.setHapticEnabled(newState)
+        }
+    }
+
+    fun toggleAmbientAudio() {
+        viewModelScope.launch {
+            val current = quickSettingsState.value.ambientAudioEnabled
+            preferencesRepository.setAmbientAudioEnabled(!current)
+        }
+    }
+
+    fun createQuickSettingsInputHandler(
+        onDismiss: () -> Unit
+    ): InputHandler = object : InputHandler {
+        override fun onUp(): InputResult {
+            return if (_quickSettingsFocusIndex.value > 0) {
+                _quickSettingsFocusIndex.update { it - 1 }
+                InputResult.HANDLED
+            } else {
+                InputResult.UNHANDLED
+            }
+        }
+
+        override fun onDown(): InputResult {
+            return if (_quickSettingsFocusIndex.value < 3) {
+                _quickSettingsFocusIndex.update { it + 1 }
+                InputResult.HANDLED
+            } else {
+                InputResult.UNHANDLED
+            }
+        }
+
+        override fun onLeft(): InputResult = InputResult.UNHANDLED
+        override fun onRight(): InputResult = InputResult.UNHANDLED
+
+        override fun onConfirm(): InputResult {
+            when (_quickSettingsFocusIndex.value) {
+                0 -> cycleTheme()
+                1 -> toggleHaptic()
+                2 -> toggleSound()
+                3 -> toggleAmbientAudio()
+            }
+            return InputResult.HANDLED
+        }
+
+        override fun onBack(): InputResult {
+            onDismiss()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+
+        override fun onRightStickClick(): InputResult {
+            onDismiss()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
         }
     }
 }

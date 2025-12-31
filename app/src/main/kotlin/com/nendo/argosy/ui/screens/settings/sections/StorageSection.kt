@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +16,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
-import com.nendo.argosy.ui.components.InfoPreference
+import com.nendo.argosy.ui.components.ExpandablePreference
+import com.nendo.argosy.ui.components.ExpandedChildItem
+import com.nendo.argosy.ui.components.InfoDisplay
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.screens.settings.PlatformStorageConfig
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -40,29 +41,29 @@ import com.nendo.argosy.ui.theme.Motion
 @Composable
 fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
-    val showPermissionRow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-    val baseItemCount = if (showPermissionRow) 5 else 4
+    val storage = uiState.storage
+    val syncSettings = uiState.syncSettings
 
-    val downloadedText = if (uiState.storage.downloadedGamesCount > 0) {
-        val sizeText = formatFileSize(uiState.storage.downloadedGamesSize)
-        "${uiState.storage.downloadedGamesCount} games ($sizeText)"
+    val downloadedText = if (storage.downloadedGamesCount > 0) {
+        val sizeText = formatFileSize(storage.downloadedGamesSize)
+        "${storage.downloadedGamesCount} games ($sizeText)"
     } else {
         "No games downloaded"
     }
 
-    val totalItems = baseItemCount + uiState.storage.platformConfigs.size
+    val focusMapping = buildFocusMapping(
+        platformsExpanded = storage.platformsExpanded,
+        platformCount = storage.platformConfigs.size
+    )
+
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0 until totalItems) {
+        val scrollIndex = focusMapping.focusToScrollIndex(uiState.focusedIndex)
+        if (scrollIndex >= 0) {
             val viewportHeight = listState.layoutInfo.viewportSize.height
             val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
             val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
             val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            val lazyColumnIndex = if (uiState.focusedIndex >= baseItemCount && uiState.storage.platformConfigs.isNotEmpty()) {
-                uiState.focusedIndex + 2
-            } else {
-                uiState.focusedIndex
-            }
-            listState.animateScrollToItem(lazyColumnIndex, -centerOffset + paddingBuffer)
+            listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
         }
     }
 
@@ -71,75 +72,151 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        if (showPermissionRow) {
-            item {
-                val hasAccess = uiState.storage.hasAllFilesAccess
-                ActionPreference(
-                    icon = Icons.Default.Security,
-                    title = "All Files Access",
-                    subtitle = if (hasAccess) "Permission granted" else "Required for extracting archives",
-                    isFocused = uiState.focusedIndex == 0,
-                    trailingText = if (hasAccess) "Enabled" else "Disabled",
-                    onClick = { if (!hasAccess) viewModel.requestStoragePermission() }
-                )
-            }
-        }
+        // DOWNLOADS header
+        item { SectionHeader("DOWNLOADS") }
+
         item {
-            val availableText = "${formatFileSize(uiState.storage.availableSpace)} free"
-            val focusOffset = if (showPermissionRow) 1 else 0
-            ActionPreference(
-                icon = Icons.Default.Folder,
-                title = "Download Location",
-                subtitle = formatStoragePath(uiState.storage.romStoragePath),
-                isFocused = uiState.focusedIndex == focusOffset,
-                trailingText = availableText,
-                onClick = { viewModel.openFolderPicker() }
-            )
-        }
-        item {
-            val focusOffset = if (showPermissionRow) 2 else 1
             SliderPreference(
                 title = "Max Active Downloads",
-                value = uiState.storage.maxConcurrentDownloads,
+                value = storage.maxConcurrentDownloads,
                 minValue = 1,
                 maxValue = 5,
-                isFocused = uiState.focusedIndex == focusOffset,
+                isFocused = uiState.focusedIndex == focusMapping.maxDownloadsIndex,
                 onClick = { viewModel.cycleMaxConcurrentDownloads() }
             )
         }
+
         item {
-            val focusOffset = if (showPermissionRow) 3 else 2
             CyclePreference(
                 title = "Instant Download Threshold",
-                value = "${uiState.storage.instantDownloadThresholdMb} MB",
-                isFocused = uiState.focusedIndex == focusOffset,
-                onClick = { viewModel.cycleInstantDownloadThreshold() }
+                value = "${storage.instantDownloadThresholdMb} MB",
+                isFocused = uiState.focusedIndex == focusMapping.thresholdIndex,
+                onClick = { viewModel.cycleInstantDownloadThreshold() },
+                subtitle = "Files under this size download immediately"
             )
         }
+
         item {
-            val focusOffset = if (showPermissionRow) 4 else 3
-            InfoPreference(
+            InfoDisplay(
                 title = "Downloaded",
                 value = downloadedText,
-                isFocused = uiState.focusedIndex == focusOffset,
                 icon = Icons.Default.Storage
             )
         }
 
-        if (uiState.storage.platformConfigs.isNotEmpty()) {
-            item { Spacer(modifier = Modifier.height(Dimens.spacingMd)) }
-            item { SectionHeader("PLATFORM STORAGE") }
+        // FILE LOCATIONS header
+        item { Spacer(modifier = Modifier.height(Dimens.spacingMd)) }
+        item { SectionHeader("FILE LOCATIONS") }
 
-            itemsIndexed(uiState.storage.platformConfigs) { index, config ->
-                val focusOffset = baseItemCount + index
+        item {
+            val availableText = "${formatFileSize(storage.availableSpace)} free"
+            ActionPreference(
+                icon = Icons.Default.Folder,
+                title = "Global ROM Path",
+                subtitle = formatStoragePath(storage.romStoragePath),
+                isFocused = uiState.focusedIndex == focusMapping.globalRomPathIndex,
+                trailingText = availableText,
+                onClick = { viewModel.openFolderPicker() }
+            )
+        }
+
+        item {
+            val cachePath = syncSettings.imageCachePath
+            val displayPath = if (cachePath != null) {
+                "${cachePath.substringAfterLast("/")}/argosy_images"
+            } else {
+                "Internal (default)"
+            }
+            ActionPreference(
+                icon = Icons.Default.Image,
+                title = "Image Cache",
+                subtitle = displayPath,
+                isFocused = uiState.focusedIndex == focusMapping.imageCacheIndex,
+                onClick = { viewModel.openImageCachePicker() }
+            )
+        }
+
+        // PLATFORM STORAGE header
+        item { Spacer(modifier = Modifier.height(Dimens.spacingMd)) }
+        item { SectionHeader("PLATFORM STORAGE") }
+
+        item {
+            val customCount = storage.customPlatformCount
+            val subtitle = if (customCount > 0) {
+                "$customCount customized"
+            } else {
+                "All using global path"
+            }
+            ExpandablePreference(
+                title = "Platform Overrides",
+                subtitle = subtitle,
+                isExpanded = storage.platformsExpanded,
+                isFocused = uiState.focusedIndex == focusMapping.platformsExpandIndex,
+                onToggle = { viewModel.togglePlatformsExpanded() }
+            )
+        }
+
+        if (storage.platformsExpanded) {
+            itemsIndexed(storage.platformConfigs) { index, config ->
+                val focusIndex = focusMapping.platformsExpandIndex + 1 + index
                 PlatformStorageItem(
                     config = config,
-                    isFocused = uiState.focusedIndex == focusOffset,
+                    isFocused = uiState.focusedIndex == focusIndex,
                     onClick = { viewModel.openPlatformSettingsModal(config.platformId) }
                 )
             }
         }
+
     }
+}
+
+private data class FocusMapping(
+    val maxDownloadsIndex: Int = 0,
+    val thresholdIndex: Int = 1,
+    val globalRomPathIndex: Int = 2,
+    val imageCacheIndex: Int = 3,
+    val platformsExpandIndex: Int = 4,
+    val platformCount: Int = 0,
+    val maxIndex: Int = 4
+) {
+    fun focusToScrollIndex(focusIndex: Int): Int {
+        return when {
+            focusIndex == maxDownloadsIndex -> 1  // After DOWNLOADS header
+            focusIndex == thresholdIndex -> 2
+            focusIndex == globalRomPathIndex -> 5  // After FILE LOCATIONS header + spacer
+            focusIndex == imageCacheIndex -> 6
+            focusIndex == platformsExpandIndex -> 9  // After PLATFORM STORAGE header + spacer
+            focusIndex > platformsExpandIndex -> {
+                // Expanded platform item
+                10 + (focusIndex - platformsExpandIndex - 1)
+            }
+            else -> focusIndex
+        }
+    }
+}
+
+private fun buildFocusMapping(
+    platformsExpanded: Boolean,
+    platformCount: Int
+): FocusMapping {
+    val maxDownloadsIndex = 0
+    val thresholdIndex = 1
+    val globalRomPathIndex = 2
+    val imageCacheIndex = 3
+    val platformsExpandIndex = 4
+
+    val expandedPlatformItems = if (platformsExpanded) platformCount else 0
+    val maxIndex = platformsExpandIndex + expandedPlatformItems
+
+    return FocusMapping(
+        maxDownloadsIndex = maxDownloadsIndex,
+        thresholdIndex = thresholdIndex,
+        globalRomPathIndex = globalRomPathIndex,
+        imageCacheIndex = imageCacheIndex,
+        platformsExpandIndex = platformsExpandIndex,
+        platformCount = expandedPlatformItems,
+        maxIndex = maxIndex
+    )
 }
 
 @Composable
@@ -148,66 +225,23 @@ private fun PlatformStorageItem(
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    val contentColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-    val secondaryColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.55f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
     val pathDisplay = if (config.customRomPath != null) {
         formatStoragePath(config.customRomPath)
     } else {
         "(auto)"
     }
-
-    val gameCountText = if (config.downloadedCount > 0) {
-        "${config.downloadedCount}/${config.gameCount} installed"
+    val valueText = if (config.downloadedCount > 0) {
+        "${config.downloadedCount}/${config.gameCount}  •  $pathDisplay"
     } else {
-        "${config.gameCount} games"
+        "${config.gameCount} games  •  $pathDisplay"
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Dimens.radiusLg))
-            .background(backgroundColor, RoundedCornerShape(Dimens.radiusLg))
-            .clickable(onClick = onClick)
-            .padding(Dimens.spacingMd),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = config.platformName,
-                style = MaterialTheme.typography.titleMedium,
-                color = contentColor
-            )
-            Text(
-                text = "$gameCountText  •  $pathDisplay",
-                style = MaterialTheme.typography.bodySmall,
-                color = secondaryColor
-            )
-        }
-        Text(
-            text = if (config.syncEnabled) "ON" else "OFF",
-            style = MaterialTheme.typography.labelMedium,
-            color = if (config.syncEnabled) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                secondaryColor
-            }
-        )
-    }
+    ExpandedChildItem(
+        title = config.platformName,
+        value = valueText,
+        isFocused = isFocused,
+        onClick = onClick
+    )
 }
 
 internal fun formatFileSize(bytes: Long): String {

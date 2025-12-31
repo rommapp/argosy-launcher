@@ -34,6 +34,10 @@ class SettingsInputHandler(
             viewModel.moveRegionPickerFocus(-1)
             return InputResult.HANDLED
         }
+        if (state.syncSettings.showSyncFiltersModal) {
+            viewModel.moveSyncFiltersModalFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) {
             viewModel.moveEmulatorPickerFocus(-1)
             return InputResult.HANDLED
@@ -75,6 +79,10 @@ class SettingsInputHandler(
             viewModel.moveRegionPickerFocus(1)
             return InputResult.HANDLED
         }
+        if (state.syncSettings.showSyncFiltersModal) {
+            viewModel.moveSyncFiltersModalFocus(1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) {
             viewModel.moveEmulatorPickerFocus(1)
             return InputResult.HANDLED
@@ -104,9 +112,16 @@ class SettingsInputHandler(
             viewModel.moveSavePathModalButtonFocus(1) // Left goes to Reset (higher index, left side)
             return InputResult.HANDLED
         }
-        if (state.storage.platformSettingsModalId != null ||
-            state.sounds.showSoundPicker ||
+        if (state.storage.platformSettingsModalId != null) {
+            val focusIdx = state.storage.platformSettingsFocusIndex
+            if (focusIdx in 1..3) {
+                viewModel.movePlatformSettingsButtonFocus(1) // Left goes to Reset
+            }
+            return InputResult.HANDLED
+        }
+        if (state.sounds.showSoundPicker ||
             state.syncSettings.showRegionPicker ||
+            state.syncSettings.showSyncFiltersModal ||
             state.emulators.showEmulatorPicker) {
             return InputResult.HANDLED
         }
@@ -139,8 +154,8 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.STORAGE) {
-            val sliderIndex = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) 2 else 1
-            if (state.focusedIndex == sliderIndex) {
+            // Max Downloads slider is always at index 0 in the new layout
+            if (state.focusedIndex == 0) {
                 viewModel.adjustMaxConcurrentDownloads(-1)
                 return InputResult.HANDLED
             }
@@ -226,9 +241,16 @@ class SettingsInputHandler(
             viewModel.moveSavePathModalButtonFocus(-1) // Right goes to Change (lower index, right side)
             return InputResult.HANDLED
         }
-        if (state.storage.platformSettingsModalId != null ||
-            state.sounds.showSoundPicker ||
+        if (state.storage.platformSettingsModalId != null) {
+            val focusIdx = state.storage.platformSettingsFocusIndex
+            if (focusIdx in 1..3) {
+                viewModel.movePlatformSettingsButtonFocus(-1) // Right goes to Change
+            }
+            return InputResult.HANDLED
+        }
+        if (state.sounds.showSoundPicker ||
             state.syncSettings.showRegionPicker ||
+            state.syncSettings.showSyncFiltersModal ||
             state.emulators.showEmulatorPicker) {
             return InputResult.HANDLED
         }
@@ -261,8 +283,8 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.STORAGE) {
-            val sliderIndex = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) 2 else 1
-            if (state.focusedIndex == sliderIndex) {
+            // Max Downloads slider is always at index 0 in the new layout
+            if (state.focusedIndex == 0) {
                 viewModel.adjustMaxConcurrentDownloads(1)
                 return InputResult.HANDLED
             }
@@ -358,6 +380,11 @@ class SettingsInputHandler(
             return InputResult.handled(SoundType.TOGGLE)
         }
 
+        if (state.syncSettings.showSyncFiltersModal) {
+            viewModel.confirmSyncFiltersModalSelection()
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+
         if (state.emulators.showEmulatorPicker) {
             viewModel.confirmEmulatorPickerSelection()
             return InputResult.HANDLED
@@ -404,12 +431,19 @@ class SettingsInputHandler(
         // Modal priority - block context menu in modals
         if (state.emulators.showSavePathModal ||
             state.storage.platformSettingsModalId != null ||
+            state.syncSettings.showSyncFiltersModal ||
+            state.syncSettings.showRegionPicker ||
             state.emulators.showEmulatorPicker) {
             return InputResult.HANDLED
         }
 
         if (state.sounds.showSoundPicker) {
             viewModel.previewSoundPickerSelection()
+            return InputResult.HANDLED
+        }
+
+        if (state.currentSection == SettingsSection.SYNC_SETTINGS) {
+            viewModel.showSyncFiltersModal()
             return InputResult.HANDLED
         }
 
@@ -433,6 +467,10 @@ class SettingsInputHandler(
             viewModel.cyclePrevPreviewRatio()
             return InputResult.HANDLED
         }
+        if (state.currentSection == SettingsSection.STORAGE) {
+            viewModel.jumpToStoragePrevSection()
+            return InputResult.HANDLED
+        }
         return InputResult.UNHANDLED
     }
 
@@ -442,6 +480,14 @@ class SettingsInputHandler(
             viewModel.cycleNextPreviewRatio()
             return InputResult.HANDLED
         }
+        if (state.currentSection == SettingsSection.STORAGE) {
+            viewModel.jumpToStorageNextSection()
+            return InputResult.HANDLED
+        }
         return InputResult.UNHANDLED
     }
+
+    override fun onLeftStickClick(): InputResult = InputResult.UNHANDLED
+
+    override fun onRightStickClick(): InputResult = InputResult.UNHANDLED
 }

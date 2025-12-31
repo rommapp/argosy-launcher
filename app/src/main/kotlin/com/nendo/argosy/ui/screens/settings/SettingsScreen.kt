@@ -64,7 +64,6 @@ import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
 import com.nendo.argosy.ui.screens.settings.sections.SoundsSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
-import com.nendo.argosy.ui.screens.settings.sections.SyncFiltersSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.formatFileSize
 import com.nendo.argosy.ui.theme.Motion
@@ -227,6 +226,32 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.launchPlatformSavePathPicker.collect { platformId ->
+            fileBrowserCallback = { path -> viewModel.setPlatformSavePath(platformId, path) }
+            showFileBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.resetPlatformSavePathEvent.collect { platformId ->
+            viewModel.resetPlatformSavePath(platformId)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.launchPlatformStatePathPicker.collect { platformId ->
+            fileBrowserCallback = { path -> viewModel.setPlatformStatePath(platformId, path) }
+            showFileBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.resetPlatformStatePathEvent.collect { platformId ->
+            viewModel.resetPlatformStatePath(platformId)
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -261,7 +286,6 @@ fun SettingsScreen(
                     SettingsSection.MAIN -> "SETTINGS"
                     SettingsSection.SERVER -> "GAME DATA"
                     SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
-                    SettingsSection.SYNC_FILTERS -> "METADATA FILTERS"
                     SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
                     SettingsSection.STORAGE -> "STORAGE"
                     SettingsSection.DISPLAY -> "DISPLAY"
@@ -280,7 +304,6 @@ fun SettingsScreen(
                     SettingsSection.MAIN -> MainSettingsSection(uiState, viewModel)
                     SettingsSection.SERVER -> GameDataSection(uiState, viewModel)
                     SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
-                    SettingsSection.SYNC_FILTERS -> SyncFiltersSection(uiState, viewModel)
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
                     SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
                     SettingsSection.DISPLAY -> DisplaySection(uiState, viewModel)
@@ -334,11 +357,16 @@ fun SettingsScreen(
                     PlatformSettingsModal(
                         config = config,
                         focusIndex = uiState.storage.platformSettingsFocusIndex,
+                        buttonFocusIndex = uiState.storage.platformSettingsButtonIndex,
                         onDismiss = { viewModel.closePlatformSettingsModal() },
                         onToggleSync = { viewModel.togglePlatformSync(platformId, !config.syncEnabled) },
-                        onChangePath = { viewModel.openPlatformFolderPicker(platformId) },
+                        onChangeRomPath = { viewModel.openPlatformFolderPicker(platformId) },
+                        onResetRomPath = { viewModel.resetPlatformToGlobal(platformId) },
+                        onChangeSavePath = { viewModel.openPlatformSavePathPicker(platformId) },
+                        onResetSavePath = { viewModel.resetPlatformSavePath(platformId) },
+                        onChangeStatePath = { },
+                        onResetStatePath = { },
                         onResync = { viewModel.syncPlatform(platformId, config.platformName) },
-                        onResetPath = { viewModel.resetPlatformToGlobal(platformId) },
                         onPurge = { viewModel.requestPurgePlatform(platformId) }
                     )
                 }

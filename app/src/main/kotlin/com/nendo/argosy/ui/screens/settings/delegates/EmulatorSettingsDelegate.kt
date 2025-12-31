@@ -10,6 +10,7 @@ import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
+import com.nendo.argosy.ui.screens.settings.EmulatorSavePathInfo
 import com.nendo.argosy.ui.screens.settings.EmulatorState
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.SavePathModalInfo
@@ -331,5 +332,22 @@ class EmulatorSettingsDelegate @Inject constructor(
 
     suspend fun getPreferredExtension(platformId: Long): String? {
         return emulatorConfigDao.getPreferredExtension(platformId)?.ifEmpty { null }
+    }
+
+    suspend fun getAllEmulatorSavePaths(): List<EmulatorSavePathInfo> {
+        val saveConfigs = emulatorSaveConfigDao.getAll()
+        val installedEmulators = state.value.installedEmulators
+
+        return saveConfigs.mapNotNull { config ->
+            val emulator = installedEmulators.find { it.def.id == config.emulatorId }
+            val emulatorName = emulator?.def?.displayName ?: return@mapNotNull null
+
+            EmulatorSavePathInfo(
+                emulatorId = config.emulatorId,
+                emulatorName = emulatorName,
+                savePath = config.savePathPattern,
+                isCustom = config.isUserOverride
+            )
+        }
     }
 }

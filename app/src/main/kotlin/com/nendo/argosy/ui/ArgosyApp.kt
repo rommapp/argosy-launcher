@@ -23,6 +23,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.nendo.argosy.ui.components.MainDrawer
+import com.nendo.argosy.ui.components.QuickSettingsPanel
+import com.nendo.argosy.ui.components.QuickSettingsState
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
@@ -52,6 +54,9 @@ fun ArgosyApp(
     val drawerFocusIndex by viewModel.drawerFocusIndex.collectAsState()
     val drawerUiState by viewModel.drawerUiState.collectAsState()
     val isDrawerOpen by viewModel.isDrawerOpen.collectAsState()
+    val isQuickSettingsOpen by viewModel.isQuickSettingsOpen.collectAsState()
+    val quickSettingsFocusIndex by viewModel.quickSettingsFocusIndex.collectAsState()
+    val quickSettingsUiState by viewModel.quickSettingsState.collectAsState()
     val scope = rememberCoroutineScope()
 
     // Drawer state - confirmStateChange handles swipe gestures synchronously
@@ -119,6 +124,31 @@ fun ArgosyApp(
         }
     }
 
+    // Quick settings input handler
+    val quickSettingsInputHandler = remember {
+        viewModel.createQuickSettingsInputHandler(
+            onDismiss = {
+                inputDispatcher.unsubscribeDrawer()
+                viewModel.setQuickSettingsOpen(false)
+            }
+        )
+    }
+
+    val openQuickSettings = remember(quickSettingsInputHandler) {
+        {
+            inputDispatcher.subscribeDrawer(quickSettingsInputHandler)
+            viewModel.setQuickSettingsOpen(true)
+            viewModel.soundManager.play(SoundType.OPEN_MODAL)
+        }
+    }
+
+    val closeQuickSettings = remember {
+        {
+            inputDispatcher.unsubscribeDrawer()
+            viewModel.setQuickSettingsOpen(false)
+        }
+    }
+
     // Block input during route transitions and sync route to dispatcher
     LaunchedEffect(currentRoute) {
         if (currentRoute != null) {
@@ -149,12 +179,30 @@ fun ArgosyApp(
         inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
     }
 
-    // Collect gamepad events (Menu opens drawer if unhandled)
+    // Collect gamepad events (Menu/L3 toggles drawer, R3 toggles quick settings if unhandled)
     LaunchedEffect(Unit) {
         viewModel.gamepadInputHandler.eventFlow().collect { event ->
             val result = inputDispatcher.dispatch(event)
-            if (!result.handled && event == GamepadEvent.Menu) {
-                openDrawer()
+            if (!result.handled) {
+                when (event) {
+                    GamepadEvent.Menu, GamepadEvent.LeftStickClick -> {
+                        if (isDrawerOpen) {
+                            closeDrawer()
+                        } else {
+                            if (isQuickSettingsOpen) closeQuickSettings()
+                            openDrawer()
+                        }
+                    }
+                    GamepadEvent.RightStickClick -> {
+                        if (isQuickSettingsOpen) {
+                            closeQuickSettings()
+                        } else {
+                            if (isDrawerOpen) closeDrawer()
+                            openQuickSettings()
+                        }
+                    }
+                    else -> {}
+                }
             }
         }
     }
@@ -215,6 +263,23 @@ fun ArgosyApp(
             NotificationHost(
                 manager = viewModel.notificationManager,
                 modifier = Modifier.align(Alignment.BottomCenter)
+            )
+
+            // Quick Settings Panel (right-side drawer)
+            QuickSettingsPanel(
+                isVisible = isQuickSettingsOpen,
+                state = QuickSettingsState(
+                    themeMode = quickSettingsUiState.themeMode,
+                    soundEnabled = quickSettingsUiState.soundEnabled,
+                    hapticEnabled = quickSettingsUiState.hapticEnabled,
+                    ambientAudioEnabled = quickSettingsUiState.ambientAudioEnabled
+                ),
+                focusedIndex = quickSettingsFocusIndex,
+                onThemeCycle = { viewModel.cycleTheme() },
+                onSoundToggle = { viewModel.toggleSound() },
+                onHapticToggle = { viewModel.toggleHaptic() },
+                onAmbientToggle = { viewModel.toggleAmbientAudio() },
+                onDismiss = closeQuickSettings
             )
         }
     }

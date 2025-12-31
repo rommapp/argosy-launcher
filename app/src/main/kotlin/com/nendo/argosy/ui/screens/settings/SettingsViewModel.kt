@@ -121,6 +121,10 @@ class SettingsViewModel @Inject constructor(
     val openAudioFileBrowserEvent: SharedFlow<Unit> = ambientAudioDelegate.openAudioFileBrowserEvent
     val launchPlatformFolderPicker: SharedFlow<Long> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
+    val launchPlatformSavePathPicker: SharedFlow<Long> = storageDelegate.launchSavePathPicker
+    val resetPlatformSavePathEvent: SharedFlow<Long> = storageDelegate.resetSavePathEvent
+    val launchPlatformStatePathPicker: SharedFlow<Long> = storageDelegate.launchStatePathPicker
+    val resetPlatformStatePathEvent: SharedFlow<Long> = storageDelegate.resetStatePathEvent
     val openImageCachePickerEvent: SharedFlow<Unit> = syncDelegate.openImageCachePickerEvent
 
     private val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
@@ -317,6 +321,8 @@ class SettingsViewModel @Inject constructor(
                     downloadableEmulators = downloadable,
                     availableCores = availableCores,
                     effectiveEmulatorIsRetroArch = isRetroArch,
+                    effectiveEmulatorId = emulatorId,
+                    effectiveEmulatorPackage = effectiveEmulatorDef?.packageName,
                     effectiveEmulatorName = effectiveEmulatorDef?.displayName,
                     effectiveSavePath = effectiveSavePath,
                     isUserSavePathOverride = isUserSavePathOverride,
@@ -423,6 +429,26 @@ class SettingsViewModel @Inject constructor(
                 availableSpace = availableSpace
             ))
             storageDelegate.checkAllFilesAccess()
+            val platformEmulatorInfoMap = platformConfigs.associate { config ->
+                val statePath = if (config.effectiveEmulatorIsRetroArch) {
+                    config.effectiveEmulatorPackage?.let { pkg ->
+                        retroArchConfigParser.resolveStatePaths(
+                            packageName = pkg,
+                            coreName = config.selectedCore
+                        ).firstOrNull()
+                    }
+                } else null
+
+                config.platform.id to StorageSettingsDelegate.PlatformEmulatorInfo(
+                    supportsStatePath = config.effectiveEmulatorIsRetroArch,
+                    emulatorId = config.effectiveEmulatorId,
+                    effectiveSavePath = config.effectiveSavePath,
+                    isUserSavePathOverride = config.isUserSavePathOverride,
+                    effectiveStatePath = statePath,
+                    isUserStatePathOverride = false
+                )
+            }
+            storageDelegate.setPendingEmulatorInfo(platformEmulatorInfoMap)
             storageDelegate.loadPlatformConfigs(viewModelScope)
 
             syncDelegate.updateState(SyncSettingsState(
@@ -714,16 +740,16 @@ class SettingsViewModel @Inject constructor(
                 dismissRegionPicker()
                 true
             }
+            state.syncSettings.showSyncFiltersModal -> {
+                dismissSyncFiltersModal()
+                true
+            }
             state.emulators.showEmulatorPicker -> {
                 dismissEmulatorPicker()
                 true
             }
             state.server.rommConfiguring -> {
                 cancelRommConfig()
-                true
-            }
-            state.currentSection == SettingsSection.SYNC_FILTERS -> {
-                _uiState.update { it.copy(currentSection = SettingsSection.SYNC_SETTINGS, focusedIndex = 0) }
                 true
             }
             state.currentSection == SettingsSection.SYNC_SETTINGS -> {
@@ -792,12 +818,12 @@ class SettingsViewModel @Inject constructor(
                     if (launcherCount > 0) steamBaseIndex + launcherCount else steamBaseIndex
                 }
                 SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 4 else 3
-                SettingsSection.SYNC_FILTERS -> 6
                 SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
                 SettingsSection.STORAGE -> {
-                    val baseItemCount = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) 5 else 4
-                    val platformCount = state.storage.platformConfigs.size
-                    (baseItemCount + platformCount - 1).coerceAtLeast(baseItemCount - 1)
+                    // Base focusable items: Max Downloads(0), Threshold(1), Global ROM(2), Image Cache(3), Platforms Expand(4)
+                    val baseItemCount = 5
+                    val expandedPlatforms = if (state.storage.platformsExpanded) state.storage.platformConfigs.size else 0
+                    (baseItemCount + expandedPlatforms - 1).coerceAtLeast(baseItemCount - 1)
                 }
                 SettingsSection.DISPLAY -> 5
                 SettingsSection.HOME_SCREEN -> if (state.display.useGameBackground) 4 else 5
@@ -1100,6 +1126,24 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun showSyncFiltersModal() {
+        syncDelegate.showSyncFiltersModal()
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissSyncFiltersModal() {
+        syncDelegate.dismissSyncFiltersModal()
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveSyncFiltersModalFocus(delta: Int) {
+        syncDelegate.moveSyncFiltersModalFocus(delta)
+    }
+
+    fun confirmSyncFiltersModalSelection() {
+        syncDelegate.confirmSyncFiltersModalSelection(viewModelScope)
+    }
+
     fun showRegionPicker() {
         syncDelegate.showRegionPicker()
         soundManager.play(SoundType.OPEN_MODAL)
@@ -1248,6 +1292,108 @@ class SettingsViewModel @Inject constructor(
         storageDelegate.syncPlatform(viewModelScope, platformId, platformName)
     }
 
+    fun openPlatformSavePathPicker(platformId: Long) {
+        storageDelegate.emitSavePathPicker(viewModelScope, platformId)
+    }
+
+    fun setPlatformSavePath(platformId: Long, basePath: String) {
+        val storageConfig = _uiState.value.storage.platformConfigs.find { it.platformId == platformId }
+        val emulatorId = storageConfig?.emulatorId ?: return
+        val evaluatedPath = computeEvaluatedSavePath(platformId, basePath)
+        emulatorDelegate.setEmulatorSavePath(viewModelScope, emulatorId, basePath) {
+            storageDelegate.updatePlatformSavePath(platformId, evaluatedPath, true)
+        }
+    }
+
+    fun resetPlatformSavePath(platformId: Long) {
+        val storageConfig = _uiState.value.storage.platformConfigs.find { it.platformId == platformId }
+        val emulatorId = storageConfig?.emulatorId ?: return
+        emulatorDelegate.resetEmulatorSavePath(viewModelScope, emulatorId) {
+            val defaultPath = computeEvaluatedSavePath(platformId, null)
+            storageDelegate.updatePlatformSavePath(platformId, defaultPath, false)
+        }
+    }
+
+    fun setPlatformStatePath(platformId: Long, basePath: String) {
+        val evaluatedPath = computeEvaluatedStatePath(platformId, basePath)
+        storageDelegate.updatePlatformStatePath(platformId, evaluatedPath, true)
+    }
+
+    fun resetPlatformStatePath(platformId: Long) {
+        val defaultPath = computeEvaluatedStatePath(platformId, null)
+        storageDelegate.updatePlatformStatePath(platformId, defaultPath, false)
+    }
+
+    private fun computeEvaluatedSavePath(platformId: Long, basePathOverride: String?): String? {
+        val emulatorConfig = emulatorDelegate.state.value.platforms.find { it.platform.id == platformId }
+            ?: return basePathOverride
+        if (!emulatorConfig.effectiveEmulatorIsRetroArch) return basePathOverride
+
+        val packageName = emulatorConfig.effectiveEmulatorPackage ?: return basePathOverride
+        val systemName = emulatorConfig.platform.slug
+        val coreName = emulatorConfig.selectedCore
+
+        return retroArchConfigParser.resolveSavePaths(
+            packageName = packageName,
+            systemName = systemName,
+            coreName = coreName,
+            basePathOverride = basePathOverride
+        ).firstOrNull()
+    }
+
+    private fun computeEvaluatedStatePath(platformId: Long, basePathOverride: String?): String? {
+        val emulatorConfig = emulatorDelegate.state.value.platforms.find { it.platform.id == platformId }
+            ?: return basePathOverride
+        if (!emulatorConfig.effectiveEmulatorIsRetroArch) return basePathOverride
+
+        val packageName = emulatorConfig.effectiveEmulatorPackage ?: return basePathOverride
+        val coreName = emulatorConfig.selectedCore
+
+        return retroArchConfigParser.resolveStatePaths(
+            packageName = packageName,
+            coreName = coreName,
+            basePathOverride = basePathOverride
+        ).firstOrNull()
+    }
+
+    fun togglePlatformsExpanded() {
+        storageDelegate.togglePlatformsExpanded()
+    }
+
+    fun jumpToStorageNextSection() {
+        val state = _uiState.value
+        val storage = state.storage
+        val expandedPlatforms = if (storage.platformsExpanded) storage.platformConfigs.size else 0
+        val sectionStarts = listOf(
+            0,  // DOWNLOADS
+            2,  // FILE LOCATIONS
+            4,  // PLATFORM STORAGE
+            5 + expandedPlatforms  // SAVE DATA
+        )
+        val currentSection = sectionStarts.lastOrNull { it <= state.focusedIndex } ?: 0
+        val nextSectionStart = sectionStarts.firstOrNull { it > currentSection } ?: sectionStarts.last()
+        _uiState.update { it.copy(focusedIndex = nextSectionStart) }
+    }
+
+    fun jumpToStoragePrevSection() {
+        val state = _uiState.value
+        val storage = state.storage
+        val expandedPlatforms = if (storage.platformsExpanded) storage.platformConfigs.size else 0
+        val sectionStarts = listOf(
+            0,  // DOWNLOADS
+            2,  // FILE LOCATIONS
+            4,  // PLATFORM STORAGE
+            5 + expandedPlatforms  // SAVE DATA
+        )
+        val currentSectionIdx = sectionStarts.indexOfLast { it <= state.focusedIndex }.coerceAtLeast(0)
+        val prevSectionStart = if (state.focusedIndex == sectionStarts[currentSectionIdx] && currentSectionIdx > 0) {
+            sectionStarts[currentSectionIdx - 1]
+        } else {
+            sectionStarts[currentSectionIdx]
+        }
+        _uiState.update { it.copy(focusedIndex = prevSectionStart) }
+    }
+
     fun requestPurgePlatform(platformId: Long) {
         storageDelegate.requestPurgePlatform(platformId)
     }
@@ -1282,6 +1428,10 @@ class SettingsViewModel @Inject constructor(
 
     fun movePlatformSettingsFocus(delta: Int) {
         storageDelegate.movePlatformSettingsFocus(delta)
+    }
+
+    fun movePlatformSettingsButtonFocus(delta: Int) {
+        storageDelegate.movePlatformSettingsButtonFocus(delta)
     }
 
     fun selectPlatformSettingsOption() {
@@ -1565,7 +1715,7 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsSection.SYNC_SETTINGS -> {
                 when (state.focusedIndex) {
-                    0 -> navigateToSection(SettingsSection.SYNC_FILTERS)
+                    0 -> showSyncFiltersModal()
                     1 -> { toggleSyncScreenshots(); return InputResult.handled(SoundType.TOGGLE) }
                     2 -> {
                         if (!state.syncSettings.isImageCacheMigrating) {
@@ -1594,33 +1744,21 @@ class SettingsViewModel @Inject constructor(
                 }
                 InputResult.HANDLED
             }
-            SettingsSection.SYNC_FILTERS -> {
-                when (state.focusedIndex) {
-                    0 -> showRegionPicker()
-                    1 -> toggleRegionMode()
-                    2 -> { setExcludeBeta(!state.syncSettings.syncFilters.excludeBeta); return InputResult.handled(SoundType.TOGGLE) }
-                    3 -> { setExcludePrototype(!state.syncSettings.syncFilters.excludePrototype); return InputResult.handled(SoundType.TOGGLE) }
-                    4 -> { setExcludeDemo(!state.syncSettings.syncFilters.excludeDemo); return InputResult.handled(SoundType.TOGGLE) }
-                    5 -> { setExcludeHack(!state.syncSettings.syncFilters.excludeHack); return InputResult.handled(SoundType.TOGGLE) }
-                    6 -> { setDeleteOrphans(!state.syncSettings.syncFilters.deleteOrphans); return InputResult.handled(SoundType.TOGGLE) }
-                }
-                InputResult.HANDLED
-            }
             SettingsSection.STORAGE -> {
-                val hasPermissionRow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-                val baseItemCount = if (hasPermissionRow) 5 else 4
-                val folderPickerIndex = if (hasPermissionRow) 1 else 0
-                val sliderIndex = if (hasPermissionRow) 2 else 1
-                val thresholdIndex = if (hasPermissionRow) 3 else 2
-                when {
-                    state.focusedIndex == 0 && hasPermissionRow && !state.storage.hasAllFilesAccess -> requestStoragePermission()
-                    state.focusedIndex == folderPickerIndex -> openFolderPicker()
-                    state.focusedIndex == sliderIndex -> cycleMaxConcurrentDownloads()
-                    state.focusedIndex == thresholdIndex -> cycleInstantDownloadThreshold()
-                    state.focusedIndex >= baseItemCount -> {
-                        val platformIndex = state.focusedIndex - baseItemCount
-                        val config = state.storage.platformConfigs.getOrNull(platformIndex)
-                        config?.let { openPlatformSettingsModal(it.platformId) }
+                val platformsExpandIndex = 4
+
+                when (state.focusedIndex) {
+                    0 -> cycleMaxConcurrentDownloads()
+                    1 -> cycleInstantDownloadThreshold()
+                    2 -> openFolderPicker()
+                    3 -> openImageCachePicker()
+                    platformsExpandIndex -> togglePlatformsExpanded()
+                    else -> {
+                        if (state.focusedIndex > platformsExpandIndex) {
+                            val platformIndex = state.focusedIndex - platformsExpandIndex - 1
+                            val config = state.storage.platformConfigs.getOrNull(platformIndex)
+                            config?.let { openPlatformSettingsModal(it.platformId) }
+                        }
                     }
                 }
                 InputResult.HANDLED

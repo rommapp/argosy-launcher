@@ -178,17 +178,19 @@ class RetroArchConfigParser @Inject constructor() {
     fun resolveStatePaths(
         packageName: String,
         coreName: String?,
-        contentDirectory: String? = null
+        contentDirectory: String? = null,
+        basePathOverride: String? = null
     ): List<String> {
         val config = parseStateConfig(packageName)
         val paths = mutableListOf<String>()
 
-        if (config?.savestatesInContentDir == true && contentDirectory != null) {
+        if (basePathOverride == null && config?.savestatesInContentDir == true && contentDirectory != null) {
             paths.add(contentDirectory)
             return paths
         }
 
-        val baseDir = config?.savestateDirectory
+        val baseDir = basePathOverride
+            ?: config?.savestateDirectory
             ?: "/storage/emulated/0/RetroArch/states"
 
         val sortByCore = config?.sortByCore == true

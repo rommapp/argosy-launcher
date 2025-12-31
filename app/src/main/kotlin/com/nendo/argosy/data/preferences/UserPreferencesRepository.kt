@@ -734,8 +734,10 @@ data class UserPreferences(
     val imageCachePath: String? = null
 )
 
-enum class ThemeMode {
-    LIGHT, DARK, SYSTEM;
+enum class ThemeMode(val displayName: String) {
+    LIGHT("Light"),
+    DARK("Dark"),
+    SYSTEM("System");
 
     companion object {
         fun fromString(value: String?): ThemeMode =

@@ -28,4 +28,6 @@ interface InputHandler {
     fun onPrevSection(): InputResult = InputResult.UNHANDLED
     fun onNextSection(): InputResult = InputResult.UNHANDLED
     fun onSelect(): InputResult = InputResult.UNHANDLED
+    fun onLeftStickClick(): InputResult = InputResult.UNHANDLED
+    fun onRightStickClick(): InputResult = InputResult.UNHANDLED
 }

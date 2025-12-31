@@ -10,6 +10,7 @@ import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
 import com.nendo.argosy.domain.usecase.PurgePlatformUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
+import com.nendo.argosy.ui.screens.settings.EmulatorSavePathInfo
 import com.nendo.argosy.ui.screens.settings.PlatformMigrationInfo
 import com.nendo.argosy.ui.screens.settings.PlatformStorageConfig
 import com.nendo.argosy.ui.screens.settings.StorageState
@@ -40,6 +41,18 @@ class StorageSettingsDelegate @Inject constructor(
 
     private val _launchFolderPicker = MutableStateFlow(false)
     val launchFolderPicker: StateFlow<Boolean> = _launchFolderPicker.asStateFlow()
+
+    private val _launchSavePathPicker = MutableSharedFlow<Long>()
+    val launchSavePathPicker: SharedFlow<Long> = _launchSavePathPicker.asSharedFlow()
+
+    private val _resetSavePathEvent = MutableSharedFlow<Long>()
+    val resetSavePathEvent: SharedFlow<Long> = _resetSavePathEvent.asSharedFlow()
+
+    private val _launchStatePathPicker = MutableSharedFlow<Long>()
+    val launchStatePathPicker: SharedFlow<Long> = _launchStatePathPicker.asSharedFlow()
+
+    private val _resetStatePathEvent = MutableSharedFlow<Long>()
+    val resetStatePathEvent: SharedFlow<Long> = _resetStatePathEvent.asSharedFlow()
 
     private val _showMigrationDialog = MutableStateFlow(false)
     val showMigrationDialog: StateFlow<Boolean> = _showMigrationDialog.asStateFlow()
@@ -192,14 +205,18 @@ class StorageSettingsDelegate @Inject constructor(
 
     private var pendingPlatformId: Long? = null
 
+    private var pendingEmulatorInfo: Map<Long, PlatformEmulatorInfo>? = null
+
     fun loadPlatformConfigs(scope: CoroutineScope) {
         scope.launch {
             val globalPath = _state.value.romStoragePath
             val platforms = platformDao.observeConfigurablePlatforms().first()
+            val emulatorInfo = pendingEmulatorInfo
 
             val configs = platforms.map { platform ->
                 val effectivePath = platform.customRomPath ?: "$globalPath/${platform.slug}"
                 val downloadedCount = gameDao.countDownloadedByPlatform(platform.id)
+                val info = emulatorInfo?.get(platform.id)
                 PlatformStorageConfig(
                     platformId = platform.id,
                     platformName = platform.name,
@@ -207,11 +224,53 @@ class StorageSettingsDelegate @Inject constructor(
                     downloadedCount = downloadedCount,
                     syncEnabled = platform.syncEnabled,
                     customRomPath = platform.customRomPath,
-                    effectivePath = effectivePath
+                    effectivePath = effectivePath,
+                    supportsStatePath = info?.supportsStatePath ?: false,
+                    emulatorId = info?.emulatorId,
+                    effectiveSavePath = info?.effectiveSavePath,
+                    isUserSavePathOverride = info?.isUserSavePathOverride ?: false,
+                    effectiveStatePath = info?.effectiveStatePath,
+                    isUserStatePathOverride = info?.isUserStatePathOverride ?: false
                 )
             }
 
             _state.update { it.copy(platformConfigs = configs) }
+        }
+    }
+
+    fun setPendingEmulatorInfo(infoMap: Map<Long, PlatformEmulatorInfo>) {
+        pendingEmulatorInfo = infoMap
+    }
+
+    fun updatePlatformSavePath(platformId: Long, savePath: String?, isUserOverride: Boolean) {
+        _state.update { current ->
+            current.copy(
+                platformConfigs = current.platformConfigs.map { config ->
+                    if (config.platformId == platformId) {
+                        config.copy(
+                            effectiveSavePath = savePath,
+                            isUserSavePathOverride = isUserOverride
+                        )
+                    } else config
+                },
+                platformSettingsButtonIndex = if (!isUserOverride) 0 else current.platformSettingsButtonIndex
+            )
+        }
+    }
+
+    fun updatePlatformStatePath(platformId: Long, statePath: String?, isUserOverride: Boolean) {
+        _state.update { current ->
+            current.copy(
+                platformConfigs = current.platformConfigs.map { config ->
+                    if (config.platformId == platformId) {
+                        config.copy(
+                            effectiveStatePath = statePath,
+                            isUserStatePathOverride = isUserOverride
+                        )
+                    } else config
+                },
+                platformSettingsButtonIndex = if (!isUserOverride) 0 else current.platformSettingsButtonIndex
+            )
         }
     }
 
@@ -377,11 +436,11 @@ class StorageSettingsDelegate @Inject constructor(
     }
 
     fun movePlatformSettingsFocus(delta: Int) {
-        val config = getCurrentModalConfig() ?: return
-        val maxIndex = if (config.customRomPath != null) 4 else 3
-        _state.update {
-            val newIndex = (it.platformSettingsFocusIndex + delta).coerceIn(0, maxIndex)
-            it.copy(platformSettingsFocusIndex = newIndex)
+        _state.update { state ->
+            val config = state.platformConfigs.find { it.platformId == state.platformSettingsModalId }
+            val maxIndex = if (config?.supportsStatePath == true) 5 else 4
+            val newIndex = (state.platformSettingsFocusIndex + delta).coerceIn(0, maxIndex)
+            state.copy(platformSettingsFocusIndex = newIndex, platformSettingsButtonIndex = 0)
         }
     }
 
@@ -389,36 +448,68 @@ class StorageSettingsDelegate @Inject constructor(
         val platformId = _state.value.platformSettingsModalId ?: return
         val config = getCurrentModalConfig() ?: return
         val focusIndex = _state.value.platformSettingsFocusIndex
+        val buttonIndex = _state.value.platformSettingsButtonIndex
 
-        val hasCustomPath = config.customRomPath != null
+        val resyncIndex = if (config.supportsStatePath) 4 else 3
+        val purgeIndex = if (config.supportsStatePath) 5 else 4
+
         when (focusIndex) {
-            0 -> {
-                togglePlatformSync(scope, platformId, !config.syncEnabled)
-            }
+            0 -> togglePlatformSync(scope, platformId, !config.syncEnabled)
             1 -> {
-                closePlatformSettingsModal()
-                openPlatformFolderPicker(scope, platformId)
+                if (buttonIndex == 0) {
+                    openPlatformFolderPicker(scope, platformId)
+                } else if (buttonIndex == 1 && config.customRomPath != null) {
+                    resetPlatformToGlobal(scope, platformId)
+                }
             }
             2 -> {
+                if (buttonIndex == 0) {
+                    openPlatformSavePathPicker(scope, platformId)
+                } else if (buttonIndex == 1 && config.isUserSavePathOverride) {
+                    resetPlatformSavePath(scope, platformId)
+                }
+            }
+            3 -> {
+                if (config.supportsStatePath) {
+                    if (buttonIndex == 0) {
+                        openPlatformStatePathPicker(scope, platformId)
+                    } else if (buttonIndex == 1 && config.isUserStatePathOverride) {
+                        resetPlatformStatePath(scope, platformId)
+                    }
+                } else {
+                    closePlatformSettingsModal()
+                    syncPlatform(scope, platformId, config.platformName)
+                }
+            }
+            resyncIndex -> {
                 closePlatformSettingsModal()
                 syncPlatform(scope, platformId, config.platformName)
             }
-            3 -> {
-                if (hasCustomPath) {
-                    closePlatformSettingsModal()
-                    resetPlatformToGlobal(scope, platformId)
-                } else {
-                    closePlatformSettingsModal()
-                    requestPurgePlatform(platformId)
-                }
-            }
-            4 -> {
-                if (hasCustomPath) {
-                    closePlatformSettingsModal()
-                    requestPurgePlatform(platformId)
-                }
+            purgeIndex -> {
+                closePlatformSettingsModal()
+                requestPurgePlatform(platformId)
             }
         }
+    }
+
+    private fun openPlatformSavePathPicker(scope: CoroutineScope, platformId: Long) {
+        scope.launch { _launchSavePathPicker.emit(platformId) }
+    }
+
+    fun emitSavePathPicker(scope: CoroutineScope, platformId: Long) {
+        scope.launch { _launchSavePathPicker.emit(platformId) }
+    }
+
+    private fun resetPlatformSavePath(scope: CoroutineScope, platformId: Long) {
+        scope.launch { _resetSavePathEvent.emit(platformId) }
+    }
+
+    private fun openPlatformStatePathPicker(scope: CoroutineScope, platformId: Long) {
+        scope.launch { _launchStatePathPicker.emit(platformId) }
+    }
+
+    private fun resetPlatformStatePath(scope: CoroutineScope, platformId: Long) {
+        scope.launch { _resetStatePathEvent.emit(platformId) }
     }
 
     private fun getCurrentModalConfig(): PlatformStorageConfig? {
@@ -431,6 +522,49 @@ class StorageSettingsDelegate @Inject constructor(
             syncPlatformUseCase(platformId, platformName)
             loadPlatformConfigs(scope)
             refreshCollectionStats(scope)
+        }
+    }
+
+    fun togglePlatformsExpanded() {
+        _state.update { it.copy(platformsExpanded = !it.platformsExpanded) }
+    }
+
+    data class PlatformEmulatorInfo(
+        val supportsStatePath: Boolean,
+        val emulatorId: String?,
+        val effectiveSavePath: String? = null,
+        val isUserSavePathOverride: Boolean = false,
+        val effectiveStatePath: String? = null,
+        val isUserStatePathOverride: Boolean = false
+    )
+
+    fun updatePlatformEmulatorInfo(platformInfoMap: Map<Long, PlatformEmulatorInfo>) {
+        _state.update { current ->
+            current.copy(
+                platformConfigs = current.platformConfigs.map { config ->
+                    val info = platformInfoMap[config.platformId]
+                    config.copy(
+                        supportsStatePath = info?.supportsStatePath ?: false,
+                        emulatorId = info?.emulatorId
+                    )
+                }
+            )
+        }
+    }
+
+    fun movePlatformSettingsButtonFocus(delta: Int) {
+        _state.update { state ->
+            val config = state.platformConfigs.find { it.platformId == state.platformSettingsModalId }
+            val focusIndex = state.platformSettingsFocusIndex
+            val hasReset = when {
+                focusIndex == 1 -> config?.customRomPath != null
+                focusIndex == 2 -> config?.isUserSavePathOverride == true
+                focusIndex == 3 && config?.supportsStatePath == true -> config.isUserStatePathOverride
+                else -> false
+            }
+            val maxIndex = if (hasReset) 1 else 0
+            val newIndex = (state.platformSettingsButtonIndex + delta).coerceIn(0, maxIndex)
+            state.copy(platformSettingsButtonIndex = newIndex)
         }
     }
 }

@@ -411,6 +411,87 @@ class ZipExtractorTest {
         assertTrue(result.launchPath.endsWith(".nsp"))
     }
 
+    @Test
+    fun `shouldExtractZip returns false for single file at root`() {
+        val zipFile = File(tempDir, "mame_rom.zip")
+        createTestZip(zipFile, mapOf("game.bin" to "arcade rom content"))
+
+        assertFalse(ZipExtractor.shouldExtractZip(zipFile))
+    }
+
+    @Test
+    fun `shouldExtractZip returns true for multiple files at root`() {
+        val zipFile = File(tempDir, "multi_disc.zip")
+        createTestZip(zipFile, mapOf(
+            "game.cue" to "cue file",
+            "game.bin" to "bin file"
+        ))
+
+        assertTrue(ZipExtractor.shouldExtractZip(zipFile))
+    }
+
+    @Test
+    fun `shouldExtractZip returns true for file in subfolder`() {
+        val zipFile = File(tempDir, "nsw_game.zip")
+        createTestZip(zipFile, mapOf("update/patch.nsp" to "update content"))
+
+        assertTrue(ZipExtractor.shouldExtractZip(zipFile))
+    }
+
+    @Test
+    fun `shouldExtractZip returns true for mixed root and subfolder files`() {
+        val zipFile = File(tempDir, "nsw_complete.zip")
+        createTestZip(zipFile, mapOf(
+            "game.xci" to "main game",
+            "update/update_v1.nsp" to "update",
+            "dlc/bonus.nsp" to "dlc"
+        ))
+
+        assertTrue(ZipExtractor.shouldExtractZip(zipFile))
+    }
+
+    @Test
+    fun `shouldExtractZip returns false for non-zip file`() {
+        val textFile = File(tempDir, "not_a_zip.txt").apply { writeText("plain text") }
+
+        assertFalse(ZipExtractor.shouldExtractZip(textFile))
+    }
+
+    @Test
+    fun `shouldExtractZip returns false for non-existent file`() {
+        val fakeFile = File(tempDir, "does_not_exist.zip")
+
+        assertFalse(ZipExtractor.shouldExtractZip(fakeFile))
+    }
+
+    @Test
+    fun `shouldExtractZip returns false for empty zip`() {
+        val zipFile = File(tempDir, "empty.zip")
+        createTestZip(zipFile, emptyMap())
+
+        assertFalse(ZipExtractor.shouldExtractZip(zipFile))
+    }
+
+    @Test
+    fun `shouldExtractZip handles MAME style single rom correctly`() {
+        val zipFile = File(tempDir, "pacman.zip")
+        createTestZip(zipFile, mapOf("pacman.rom" to "arcade rom data"))
+
+        assertFalse(ZipExtractor.shouldExtractZip(zipFile))
+    }
+
+    @Test
+    fun `shouldExtractZip handles multi-disc PSX game correctly`() {
+        val zipFile = File(tempDir, "ff7.zip")
+        createTestZip(zipFile, mapOf(
+            "Final Fantasy VII (Disc 1).chd" to "disc1",
+            "Final Fantasy VII (Disc 2).chd" to "disc2",
+            "Final Fantasy VII (Disc 3).chd" to "disc3"
+        ))
+
+        assertTrue(ZipExtractor.shouldExtractZip(zipFile))
+    }
+
     private fun createTestZip(zipFile: File, entries: Map<String, String>) {
         ZipOutputStream(zipFile.outputStream()).use { zos ->
             for ((name, content) in entries) {

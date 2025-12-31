@@ -157,6 +157,7 @@ fun DownloadsScreen(
                 itemsIndexed(activeItems) { index, download ->
                     DownloadItem(
                         download = download,
+                        isInActiveList = true,
                         isFocused = index == uiState.focusedIndex,
                         availableStorage = state.availableStorageBytes
                     )
@@ -168,6 +169,7 @@ fun DownloadsScreen(
                 itemsIndexed(queuedItems) { index, download ->
                     DownloadItem(
                         download = download,
+                        isInActiveList = false,
                         isFocused = (activeItems.size + index) == uiState.focusedIndex,
                         availableStorage = state.availableStorageBytes
                     )
@@ -215,6 +217,7 @@ private fun SectionHeader(title: String) {
 @Composable
 private fun DownloadItem(
     download: DownloadProgress,
+    isInActiveList: Boolean,
     isFocused: Boolean,
     availableStorage: Long
 ) {
@@ -224,40 +227,38 @@ private fun DownloadItem(
         MaterialTheme.colorScheme.surfaceVariant
     }
 
-    val (statusIcon, statusText, statusColor) = when (download.state) {
-        DownloadState.DOWNLOADING -> Triple(
-            Icons.Default.Download,
-            "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}",
-            MaterialTheme.colorScheme.primary
-        )
-        DownloadState.EXTRACTING -> Triple(
+    val isActiveDownload = isInActiveList && download.state != DownloadState.PAUSED
+    val isExtracting = download.state == DownloadState.EXTRACTING
+
+    val (statusIcon, statusText, statusColor) = when {
+        isExtracting -> Triple(
             Icons.Default.Download,
             "Extracting...",
             MaterialTheme.colorScheme.tertiary
         )
-        DownloadState.PAUSED -> Triple(
+        isActiveDownload -> Triple(
+            Icons.Default.Download,
+            "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}",
+            MaterialTheme.colorScheme.primary
+        )
+        download.state == DownloadState.PAUSED -> Triple(
             Icons.Default.Pause,
-            "Paused - ${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}",
+            "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}",
             MaterialTheme.colorScheme.onSurfaceVariant
         )
-        DownloadState.WAITING_FOR_STORAGE -> Triple(
+        download.state == DownloadState.WAITING_FOR_STORAGE -> Triple(
             Icons.Default.Warning,
-            "Waiting for storage - Need ${formatBytes(download.totalBytes - download.bytesDownloaded)}, Available ${formatBytes(availableStorage)}",
+            "Need ${formatBytes(download.totalBytes - download.bytesDownloaded)}, Available ${formatBytes(availableStorage)}",
             MaterialTheme.colorScheme.error
         )
-        DownloadState.FAILED -> Triple(
+        download.state == DownloadState.FAILED -> Triple(
             Icons.Default.Error,
             download.errorReason ?: "Download failed",
             MaterialTheme.colorScheme.error
         )
-        DownloadState.QUEUED -> Triple(
-            Icons.Default.Schedule,
-            "Queued",
-            MaterialTheme.colorScheme.onSurfaceVariant
-        )
         else -> Triple(
             Icons.Default.Schedule,
-            "Queued",
+            if (download.totalBytes > 0) "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}" else "Queued",
             MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -296,16 +297,27 @@ private fun DownloadItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                if (download.state == DownloadState.DOWNLOADING) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { download.progressPercent },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else if (download.state == DownloadState.EXTRACTING) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    ShimmerProgressBar()
+                when {
+                    isExtracting -> {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ShimmerProgressBar()
+                    }
+                    isActiveDownload -> {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { download.progressPercent },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    download.totalBytes > 0 -> {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { download.progressPercent },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))

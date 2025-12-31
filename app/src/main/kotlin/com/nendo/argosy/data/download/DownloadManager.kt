@@ -722,15 +722,15 @@ class DownloadManager @Inject constructor(
         progressId: Long = 0,
         onExtractionProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)? = null
     ): String {
-        val isZip = ZipExtractor.isZipFile(targetFile)
+        val shouldExtract = ZipExtractor.shouldExtractZip(targetFile)
 
-        if (isZip && onExtractionProgress != null) {
+        if (shouldExtract && onExtractionProgress != null) {
             onExtractionProgress(0L, targetFile.length())
         }
 
         return when {
-            isZip -> {
-                // Unified extraction for all platforms: preserves subfolders, generates M3U if multi-disc
+            shouldExtract -> {
+                // Extract zips with multiple files or folder structure
                 val extracted = ZipExtractor.extractFolderRom(
                     zipFilePath = targetFile,
                     gameTitle = gameTitle,

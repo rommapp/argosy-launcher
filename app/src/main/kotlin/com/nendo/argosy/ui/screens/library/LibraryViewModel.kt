@@ -616,7 +616,9 @@ class LibraryViewModel @Inject constructor(
 
     fun moveFilterOptionFocus(delta: Int) {
         _uiState.update { state ->
-            val maxIndex = state.currentCategoryOptions.size - 1
+            val options = state.currentCategoryOptions
+            if (options.isEmpty()) return@update state
+            val maxIndex = options.size - 1
             val newIndex = (state.filterOptionIndex + delta).coerceIn(0, maxIndex)
             state.copy(filterOptionIndex = newIndex)
         }

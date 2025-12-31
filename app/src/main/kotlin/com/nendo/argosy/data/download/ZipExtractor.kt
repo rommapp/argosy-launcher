@@ -93,6 +93,21 @@ object ZipExtractor {
         }
     }
 
+    fun shouldExtractZip(zipFile: File): Boolean {
+        if (!isZipFile(zipFile)) return false
+        return try {
+            ZipFile(zipFile).use { zip ->
+                val entries = zip.entries().toList().filter { !it.isDirectory }
+                val hasMultipleFiles = entries.size > 1
+                val hasFolderStructure = entries.any { it.name.contains("/") || it.name.contains("\\") }
+                hasMultipleFiles || hasFolderStructure
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to inspect zip: ${e.message}")
+            false
+        }
+    }
+
     private fun generateM3uFile(gameFolder: File, gameTitle: String, discFiles: List<File>): File {
         val m3uFile = File(gameFolder, "$gameTitle.m3u")
         val sortedDiscs = discFiles

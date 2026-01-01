@@ -3,19 +3,20 @@ package com.nendo.argosy.di
 import android.content.Context
 import androidx.room.Room
 import com.nendo.argosy.data.local.ALauncherDatabase
+import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
+import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
-import com.nendo.argosy.data.local.dao.SaveSyncDao
-import com.nendo.argosy.data.local.dao.AchievementDao
-import com.nendo.argosy.data.local.dao.AppCategoryDao
-import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import dagger.Module
 import dagger.Provides
@@ -74,7 +75,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_35_36,
                 ALauncherDatabase.MIGRATION_36_37,
                 ALauncherDatabase.MIGRATION_37_38,
-                ALauncherDatabase.MIGRATION_38_39
+                ALauncherDatabase.MIGRATION_38_39,
+                ALauncherDatabase.MIGRATION_39_40
             )
             .build()
     }
@@ -131,4 +133,8 @@ object DatabaseModule {
     @Provides
     fun provideAppCategoryDao(database: ALauncherDatabase): AppCategoryDao =
         database.appCategoryDao()
+
+    @Provides
+    fun provideFirmwareDao(database: ALauncherDatabase): FirmwareDao =
+        database.firmwareDao()
 }

@@ -232,6 +232,20 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
 
+        if (state.currentSection == SettingsSection.BIOS) {
+            when (state.focusedIndex) {
+                0 -> {
+                    viewModel.moveBiosActionFocus(-1)
+                    return InputResult.HANDLED
+                }
+                else -> {
+                    if (state.focusedIndex >= 2 && viewModel.moveBiosPlatformSubFocus(-1)) {
+                        return InputResult.HANDLED
+                    }
+                }
+            }
+        }
+
         return InputResult.UNHANDLED
     }
 
@@ -361,6 +375,20 @@ class SettingsInputHandler(
         if (state.currentSection == SettingsSection.SYNC_SETTINGS && state.focusedIndex == 2) {
             viewModel.moveImageCacheActionFocus(1)
             return InputResult.HANDLED
+        }
+
+        if (state.currentSection == SettingsSection.BIOS) {
+            when (state.focusedIndex) {
+                0 -> {
+                    viewModel.moveBiosActionFocus(1)
+                    return InputResult.HANDLED
+                }
+                else -> {
+                    if (state.focusedIndex >= 2 && viewModel.moveBiosPlatformSubFocus(1)) {
+                        return InputResult.HANDLED
+                    }
+                }
+            }
         }
 
         return InputResult.UNHANDLED

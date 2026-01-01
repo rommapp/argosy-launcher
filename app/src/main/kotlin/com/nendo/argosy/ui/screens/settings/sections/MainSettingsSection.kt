@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
@@ -33,7 +34,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
 
     // 1:1 mapping - focus index equals LazyColumn item index
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..7) {
+        if (uiState.focusedIndex in 0..8) {
             listState.scrollToItemIfNeeded(uiState.focusedIndex)
         }
     }
@@ -118,6 +119,16 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             )
         }
         item {
+            val biosStatus = uiState.bios.summaryText
+            NavigationPreference(
+                icon = Icons.Default.Memory,
+                title = "BIOS Files",
+                subtitle = biosStatus,
+                isFocused = uiState.focusedIndex == 6,
+                onClick = { viewModel.navigateToSection(SettingsSection.BIOS) }
+            )
+        }
+        item {
             val permissionStatus = if (uiState.permissions.allGranted) {
                 "All granted"
             } else {
@@ -127,7 +138,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 icon = Icons.Default.Security,
                 title = "Permissions",
                 subtitle = permissionStatus,
-                isFocused = uiState.focusedIndex == 6,
+                isFocused = uiState.focusedIndex == 7,
                 onClick = { viewModel.navigateToSection(SettingsSection.PERMISSIONS) }
             )
         }
@@ -136,7 +147,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 icon = Icons.Default.Info,
                 title = "About",
                 subtitle = "Version ${uiState.appVersion}",
-                isFocused = uiState.focusedIndex == 7,
+                isFocused = uiState.focusedIndex == 8,
                 onClick = { viewModel.navigateToSection(SettingsSection.ABOUT) }
             )
         }

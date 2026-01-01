@@ -53,6 +53,7 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
 import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
+import com.nendo.argosy.ui.screens.settings.sections.BiosSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.DisplaySection
@@ -294,6 +295,7 @@ fun SettingsScreen(
                     SettingsSection.CONTROLS -> "CONTROLS"
                     SettingsSection.SOUNDS -> "SOUNDS"
                     SettingsSection.EMULATORS -> "EMULATORS"
+                    SettingsSection.BIOS -> "BIOS FILES"
                     SettingsSection.PERMISSIONS -> "PERMISSIONS"
                     SettingsSection.ABOUT -> "ABOUT"
                 }
@@ -321,6 +323,7 @@ fun SettingsScreen(
                             }
                         }
                     )
+                    SettingsSection.BIOS -> BiosSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                 }
@@ -501,6 +504,26 @@ fun SettingsScreen(
         )
     }
 
+    var showBiosFolderBrowser by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.launchBiosFolderPicker.collect {
+            showBiosFolderBrowser = true
+        }
+    }
+
+    if (showBiosFolderBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FOLDER_SELECTION,
+            onPathSelected = { path ->
+                showBiosFolderBrowser = false
+                viewModel.onBiosFolderSelected(path)
+            },
+            onDismiss = {
+                showBiosFolderBrowser = false
+            }
+        )
+    }
 }
 
 @Composable

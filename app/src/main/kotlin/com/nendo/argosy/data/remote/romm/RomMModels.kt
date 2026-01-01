@@ -4,6 +4,18 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
+data class RomMFirmware(
+    @Json(name = "id") val id: Long,
+    @Json(name = "file_name") val fileName: String,
+    @Json(name = "file_path") val filePath: String,
+    @Json(name = "full_path") val fullPath: String,
+    @Json(name = "file_size_bytes") val fileSizeBytes: Long,
+    @Json(name = "md5_hash") val md5Hash: String?,
+    @Json(name = "sha1_hash") val sha1Hash: String?,
+    @Json(name = "missing_from_fs") val missingFromFs: Boolean = false
+)
+
+@JsonClass(generateAdapter = true)
 data class RomMPlatform(
     @Json(name = "id") val id: Long,
     @Json(name = "slug") val slug: String,
@@ -11,7 +23,8 @@ data class RomMPlatform(
     @Json(name = "fs_slug") val fsSlug: String?,
     @Json(name = "rom_count") val romCount: Int,
     @Json(name = "display_name") val displayName: String? = null,
-    @Json(name = "url_logo") val logoUrl: String? = null
+    @Json(name = "url_logo") val logoUrl: String? = null,
+    @Json(name = "firmware") val firmware: List<RomMFirmware>? = null
 )
 
 @JsonClass(generateAdapter = true)

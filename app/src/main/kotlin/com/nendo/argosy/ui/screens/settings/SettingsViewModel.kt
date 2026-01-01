@@ -36,6 +36,7 @@ import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.BiosSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.EmulatorSettingsDelegate
@@ -97,6 +98,7 @@ class SettingsViewModel @Inject constructor(
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
+    val biosDelegate: BiosSettingsDelegate,
     private val androidGameScanner: AndroidGameScanner,
     private val modalResetSignal: ModalResetSignal
 ) : ViewModel() {
@@ -126,6 +128,7 @@ class SettingsViewModel @Inject constructor(
     val launchPlatformStatePathPicker: SharedFlow<Long> = storageDelegate.launchStatePathPicker
     val resetPlatformStatePathEvent: SharedFlow<Long> = storageDelegate.resetStatePathEvent
     val openImageCachePickerEvent: SharedFlow<Unit> = syncDelegate.openImageCachePickerEvent
+    val launchBiosFolderPicker: SharedFlow<Unit> = biosDelegate.launchFolderPicker
 
     private val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
     val openLogFolderPickerEvent: SharedFlow<Unit> = _openLogFolderPickerEvent.asSharedFlow()
@@ -221,6 +224,10 @@ class SettingsViewModel @Inject constructor(
 
         permissionsDelegate.state.onEach { permissions ->
             _uiState.update { it.copy(permissions = permissions) }
+        }.launchIn(viewModelScope)
+
+        biosDelegate.state.onEach { bios ->
+            _uiState.update { it.copy(bios = bios) }
         }.launchIn(viewModelScope)
     }
 
@@ -478,6 +485,7 @@ class SettingsViewModel @Inject constructor(
             soundManager.setVolume(prefs.soundVolume)
 
             permissionsDelegate.refreshPermissions()
+            biosDelegate.init(viewModelScope)
         }
     }
 
@@ -751,6 +759,10 @@ class SettingsViewModel @Inject constructor(
                 dismissEmulatorPicker()
                 true
             }
+            state.bios.showDistributeResultModal -> {
+                dismissDistributeResultModal()
+                true
+            }
             state.server.rommConfiguring -> {
                 cancelRommConfig()
                 true
@@ -806,7 +818,7 @@ class SettingsViewModel @Inject constructor(
             val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                 state.server.connectionStatus == ConnectionStatus.OFFLINE
             val maxIndex = when (state.currentSection) {
-                SettingsSection.MAIN -> 7
+                SettingsSection.MAIN -> 8
                 SettingsSection.SERVER -> if (state.server.rommConfiguring) {
                     4
                 } else {
@@ -847,6 +859,15 @@ class SettingsViewModel @Inject constructor(
                     val autoAssignOffset = if (state.emulators.canAutoAssign) 1 else 0
                     (platformCount + autoAssignOffset - 1).coerceAtLeast(0)
                 }
+                SettingsSection.BIOS -> {
+                    // Summary card (0), Directory (1), platforms start at 2
+                    val bios = state.bios
+                    val platformCount = bios.platformGroups.size
+                    val expandedItems = if (bios.expandedPlatformIndex >= 0) {
+                        bios.platformGroups.getOrNull(bios.expandedPlatformIndex)?.firmwareItems?.size ?: 0
+                    } else 0
+                    (1 + platformCount + expandedItems).coerceAtLeast(1)
+                }
                 SettingsSection.PERMISSIONS -> 2
                 SettingsSection.ABOUT -> if (state.fileLoggingPath != null) 4 else 3
             }
@@ -865,6 +886,9 @@ class SettingsViewModel @Inject constructor(
         }
         if (_uiState.value.currentSection == SettingsSection.EMULATORS) {
             emulatorDelegate.resetPlatformSubFocus()
+        }
+        if (_uiState.value.currentSection == SettingsSection.BIOS) {
+            biosDelegate.resetPlatformSubFocus()
         }
     }
 
@@ -1122,26 +1146,6 @@ class SettingsViewModel @Inject constructor(
 
     fun refreshPermissions() {
         permissionsDelegate.refreshPermissions()
-    }
-
-    fun setTrustUserCertificates(enabled: Boolean) {
-        permissionsDelegate.setTrustUserCertificates(enabled)
-    }
-
-    fun setTrustUserCertificatesAndRestart(enabled: Boolean) {
-        permissionsDelegate.setTrustUserCertificatesAndRestart(enabled)
-    }
-
-    fun toggleTrustUserCertificates() {
-        permissionsDelegate.toggleTrustUserCertificates()
-    }
-
-    fun dismissRestartDialog() {
-        permissionsDelegate.dismissRestartDialog()
-    }
-
-    fun restartApp() {
-        permissionsDelegate.restartApp()
     }
 
     private fun handlePlayTimeToggle(controls: ControlsState) {
@@ -1690,8 +1694,9 @@ class SettingsViewModel @Inject constructor(
                     3 -> SettingsSection.CONTROLS
                     4 -> SettingsSection.SOUNDS
                     5 -> SettingsSection.EMULATORS
-                    6 -> SettingsSection.PERMISSIONS
-                    7 -> SettingsSection.ABOUT
+                    6 -> SettingsSection.BIOS
+                    7 -> SettingsSection.PERMISSIONS
+                    8 -> SettingsSection.ABOUT
                     else -> null
                 }
                 section?.let { navigateToSection(it) }
@@ -1931,6 +1936,42 @@ class SettingsViewModel @Inject constructor(
                 }
                 InputResult.HANDLED
             }
+            SettingsSection.BIOS -> {
+                when (state.focusedIndex) {
+                    0 -> {
+                        val actionIndex = state.bios.actionIndex
+                        if (actionIndex == 0 && state.bios.missingFiles > 0) {
+                            downloadAllBios()
+                        } else if (actionIndex == 1 && state.bios.downloadedFiles > 0) {
+                            distributeAllBios()
+                        }
+                    }
+                    1 -> openBiosFolderPicker()
+                    else -> {
+                        val bios = state.bios
+                        val focusMapping = buildBiosFocusMapping(bios.platformGroups, bios.expandedPlatformIndex)
+                        val (platformIndex, isChildItem) = focusMapping.getPlatformAndChildInfo(state.focusedIndex)
+
+                        if (platformIndex >= 0 && platformIndex < bios.platformGroups.size) {
+                            val group = bios.platformGroups[platformIndex]
+                            if (isChildItem) {
+                                val childIndex = focusMapping.getChildIndex(state.focusedIndex, platformIndex)
+                                val firmware = group.firmwareItems.getOrNull(childIndex)
+                                if (firmware != null && !firmware.isDownloaded) {
+                                    downloadSingleBios(firmware.rommId)
+                                }
+                            } else {
+                                if (bios.platformSubFocusIndex == 1 && !group.isComplete) {
+                                    downloadBiosForPlatform(group.platformSlug)
+                                } else {
+                                    toggleBiosPlatformExpanded(platformIndex)
+                                }
+                            }
+                        }
+                    }
+                }
+                InputResult.HANDLED
+            }
             SettingsSection.PERMISSIONS -> {
                 when (state.focusedIndex) {
                     0 -> openStorageSettings()
@@ -1968,6 +2009,105 @@ class SettingsViewModel @Inject constructor(
                 }
                 InputResult.HANDLED
             }
+        }
+    }
+
+    fun downloadAllBios() {
+        biosDelegate.downloadAllBios(viewModelScope)
+    }
+
+    fun distributeAllBios() {
+        biosDelegate.distributeAllBios(viewModelScope)
+    }
+
+    fun openBiosFolderPicker() {
+        biosDelegate.openFolderPicker(viewModelScope)
+    }
+
+    fun toggleBiosPlatformExpanded(index: Int) {
+        biosDelegate.togglePlatformExpanded(index)
+    }
+
+    fun downloadBiosForPlatform(platformSlug: String) {
+        biosDelegate.downloadBiosForPlatform(platformSlug, viewModelScope)
+    }
+
+    fun downloadSingleBios(rommId: Long) {
+        biosDelegate.downloadSingleBios(rommId, viewModelScope)
+    }
+
+    fun onBiosFolderSelected(path: String) {
+        biosDelegate.onBiosFolderSelected(path, viewModelScope)
+    }
+
+    fun moveBiosActionFocus(delta: Int) {
+        biosDelegate.moveActionFocus(delta)
+    }
+
+    fun moveBiosPlatformSubFocus(delta: Int): Boolean {
+        val state = _uiState.value
+        val focusIndex = state.focusedIndex
+        if (focusIndex < 2) return false
+
+        val bios = state.bios
+        val focusMapping = buildBiosFocusMapping(bios.platformGroups, bios.expandedPlatformIndex)
+        val (platformIndex, isChildItem) = focusMapping.getPlatformAndChildInfo(focusIndex)
+
+        if (isChildItem || platformIndex < 0 || platformIndex >= bios.platformGroups.size) return false
+
+        val group = bios.platformGroups[platformIndex]
+        return biosDelegate.movePlatformSubFocus(delta, !group.isComplete)
+    }
+
+    fun resetBiosPlatformSubFocus() {
+        biosDelegate.resetPlatformSubFocus()
+    }
+
+    fun dismissDistributeResultModal() {
+        biosDelegate.dismissDistributeResultModal()
+    }
+
+    private fun buildBiosFocusMapping(
+        platformGroups: List<BiosPlatformGroup>,
+        expandedIndex: Int
+    ): BiosFocusMappingHelper = BiosFocusMappingHelper(platformGroups, expandedIndex)
+
+    private class BiosFocusMappingHelper(
+        private val platformGroups: List<BiosPlatformGroup>,
+        private val expandedIndex: Int
+    ) {
+        fun getPlatformAndChildInfo(focusIndex: Int): Pair<Int, Boolean> {
+            if (focusIndex < 2) return -1 to false
+
+            var currentFocus = 2
+            for ((index, group) in platformGroups.withIndex()) {
+                if (currentFocus == focusIndex) return index to false
+                currentFocus++
+
+                if (index == expandedIndex) {
+                    for (i in group.firmwareItems.indices) {
+                        if (currentFocus == focusIndex) return index to true
+                        currentFocus++
+                    }
+                }
+            }
+            return -1 to false
+        }
+
+        fun getChildIndex(focusIndex: Int, platformIndex: Int): Int {
+            if (platformIndex != expandedIndex) return -1
+
+            var currentFocus = 2
+            for ((index, group) in platformGroups.withIndex()) {
+                currentFocus++
+                if (index == expandedIndex) {
+                    for (i in group.firmwareItems.indices) {
+                        if (currentFocus == focusIndex) return i
+                        currentFocus++
+                    }
+                }
+            }
+            return -1
         }
     }
 

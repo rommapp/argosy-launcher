@@ -137,4 +137,11 @@ interface RomMApi {
     suspend fun downloadRaw(
         @retrofit2.http.Url url: String
     ): Response<ResponseBody>
+
+    @Streaming
+    @GET("api/firmware/{id}/content/{fileName}")
+    suspend fun downloadFirmware(
+        @Path("id") firmwareId: Long,
+        @Path("fileName", encoded = true) fileName: String
+    ): Response<ResponseBody>
 }

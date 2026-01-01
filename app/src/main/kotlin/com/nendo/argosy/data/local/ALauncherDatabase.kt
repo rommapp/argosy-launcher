@@ -6,34 +6,36 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.nendo.argosy.data.local.converter.Converters
+import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
+import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
-import com.nendo.argosy.data.local.dao.SaveSyncDao
-import com.nendo.argosy.data.local.dao.AchievementDao
-import com.nendo.argosy.data.local.dao.AppCategoryDao
-import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.AppCategoryEntity
-import com.nendo.argosy.data.local.entity.OrphanedFileEntity
-import com.nendo.argosy.data.local.entity.SaveCacheEntity
-import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
+import com.nendo.argosy.data.local.entity.FirmwareEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.PendingSaveSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.local.entity.StateCacheEntity
 
 @Database(
     entities = [
@@ -50,9 +52,10 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
         SaveCacheEntity::class,
         StateCacheEntity::class,
         OrphanedFileEntity::class,
-        AppCategoryEntity::class
+        AppCategoryEntity::class,
+        FirmwareEntity::class
     ],
-    version = 39,
+    version = 40,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -71,6 +74,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun stateCacheDao(): StateCacheDao
     abstract fun orphanedFileDao(): OrphanedFileDao
     abstract fun appCategoryDao(): AppCategoryDao
+    abstract fun firmwareDao(): FirmwareDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -630,6 +634,31 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_38_39 = object : Migration(38, 39) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE game_discs ADD COLUMN parentRommId INTEGER")
+            }
+        }
+
+        val MIGRATION_39_40 = object : Migration(39, 40) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS firmware (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        platformId INTEGER NOT NULL,
+                        platformSlug TEXT NOT NULL,
+                        rommId INTEGER NOT NULL,
+                        fileName TEXT NOT NULL,
+                        filePath TEXT NOT NULL,
+                        fileSizeBytes INTEGER NOT NULL,
+                        md5Hash TEXT,
+                        sha1Hash TEXT,
+                        localPath TEXT,
+                        downloadedAt INTEGER,
+                        lastVerifiedAt INTEGER,
+                        FOREIGN KEY (platformId) REFERENCES platforms(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_firmware_platformId_fileName ON firmware(platformId, fileName)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_firmware_platformSlug ON firmware(platformSlug)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_firmware_rommId ON firmware(rommId)")
             }
         }
     }

@@ -27,6 +27,7 @@ enum class SettingsSection {
     SYNC_SETTINGS,
     STEAM_SETTINGS,
     STORAGE,
+    BIOS,
     DISPLAY,
     BOX_ART,
     HOME_SCREEN,
@@ -311,13 +312,69 @@ data class UpdateCheckState(
 data class PermissionsState(
     val hasStorageAccess: Boolean = false,
     val hasUsageStats: Boolean = false,
-    val hasNotificationPermission: Boolean = false,
-    val trustUserCertificates: Boolean = false,
-    val showRestartDialog: Boolean = false
+    val hasNotificationPermission: Boolean = false
 ) {
     val allGranted: Boolean get() = hasStorageAccess && hasUsageStats && hasNotificationPermission
     val grantedCount: Int get() = listOf(hasStorageAccess, hasUsageStats, hasNotificationPermission).count { it }
     val totalCount: Int get() = 3
+}
+
+data class BiosFirmwareItem(
+    val id: Long,
+    val rommId: Long,
+    val platformSlug: String,
+    val fileName: String,
+    val fileSizeBytes: Long,
+    val isDownloaded: Boolean,
+    val localPath: String? = null
+)
+
+data class BiosPlatformGroup(
+    val platformSlug: String,
+    val platformName: String,
+    val totalFiles: Int,
+    val downloadedFiles: Int,
+    val firmwareItems: List<BiosFirmwareItem>,
+    val isExpanded: Boolean = false
+) {
+    val isComplete: Boolean get() = downloadedFiles == totalFiles
+    val statusText: String get() = "$downloadedFiles / $totalFiles"
+}
+
+data class DistributeResultItem(
+    val emulatorId: String,
+    val emulatorName: String,
+    val platformResults: List<PlatformDistributeResult>
+)
+
+data class PlatformDistributeResult(
+    val platformSlug: String,
+    val platformName: String,
+    val filesCopied: Int
+)
+
+data class BiosState(
+    val platformGroups: List<BiosPlatformGroup> = emptyList(),
+    val totalFiles: Int = 0,
+    val downloadedFiles: Int = 0,
+    val isDownloading: Boolean = false,
+    val downloadingFileName: String? = null,
+    val downloadProgress: Float = 0f,
+    val isDistributing: Boolean = false,
+    val showDistributeResultModal: Boolean = false,
+    val distributeResults: List<DistributeResultItem> = emptyList(),
+    val customBiosPath: String? = null,
+    val expandedPlatformIndex: Int = -1,
+    val platformSubFocusIndex: Int = 0,
+    val actionIndex: Int = 0
+) {
+    val missingFiles: Int get() = totalFiles - downloadedFiles
+    val isComplete: Boolean get() = totalFiles > 0 && downloadedFiles == totalFiles
+    val summaryText: String get() = when {
+        totalFiles == 0 -> "No BIOS files found"
+        isComplete -> "All $totalFiles files downloaded"
+        else -> "$downloadedFiles of $totalFiles downloaded"
+    }
 }
 
 data class SettingsUiState(
@@ -334,6 +391,7 @@ data class SettingsUiState(
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
     val android: AndroidSettingsState = AndroidSettingsState(),
+    val bios: BiosState = BiosState(),
     val permissions: PermissionsState = PermissionsState(),
     val launchFolderPicker: Boolean = false,
     val showMigrationDialog: Boolean = false,

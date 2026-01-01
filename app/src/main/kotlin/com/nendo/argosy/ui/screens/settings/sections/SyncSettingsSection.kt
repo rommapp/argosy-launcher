@@ -19,7 +19,9 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -53,6 +55,18 @@ fun SyncSettingsSection(
         label = "syncFiltersModalBlur"
     )
 
+    // Map focus index to LazyColumn item index
+    LaunchedEffect(uiState.focusedIndex, uiState.syncSettings.saveSyncEnabled) {
+        val scrollIndex = when (uiState.focusedIndex) {
+            0 -> 0  // Metadata Filters
+            1 -> 2  // Cache Screenshots (after spacer/header)
+            2 -> 3  // Image Cache Location
+            3 -> 5  // Save Sync toggle (after spacer/header)
+            4 -> if (uiState.syncSettings.saveSyncEnabled) 6 else return@LaunchedEffect  // Folder Saves
+            else -> return@LaunchedEffect
+        }
+        listState.scrollToItemIfNeeded(scrollIndex)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(

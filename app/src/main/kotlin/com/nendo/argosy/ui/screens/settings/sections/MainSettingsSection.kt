@@ -15,7 +15,9 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
 import com.nendo.argosy.ui.screens.settings.SettingsSection
@@ -29,6 +31,12 @@ import java.time.format.DateTimeFormatter
 fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
 
+    // 1:1 mapping - focus index equals LazyColumn item index
+    LaunchedEffect(uiState.focusedIndex) {
+        if (uiState.focusedIndex in 0..7) {
+            listState.scrollToItemIfNeeded(uiState.focusedIndex)
+        }
+    }
 
     LazyColumn(
         state = listState,

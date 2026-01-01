@@ -39,6 +39,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -66,6 +67,18 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
     val maxIndex = 2 + uiState.steam.installedLaunchers.size
 
+    // Map focus index to LazyColumn item index
+    LaunchedEffect(uiState.focusedIndex) {
+        // Items: 0=storage permission, 1-N=launchers, N+1=refresh, N+2=description
+        val scrollIndex = when {
+            uiState.focusedIndex == 0 -> 0  // Storage permission
+            uiState.steam.installedLaunchers.isEmpty() && uiState.focusedIndex == 1 -> 1  // "No launchers" info
+            uiState.focusedIndex <= uiState.steam.installedLaunchers.size -> uiState.focusedIndex  // Launcher items
+            uiState.focusedIndex == uiState.steam.installedLaunchers.size + 1 -> uiState.steam.installedLaunchers.size + 1  // Refresh
+            else -> return@LaunchedEffect
+        }
+        listState.scrollToItemIfNeeded(scrollIndex)
+    }
 
     LazyColumn(
         state = listState,

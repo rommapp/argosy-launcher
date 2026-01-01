@@ -10,7 +10,9 @@ import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -24,6 +26,32 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
     val maxIndex = if (display.useGameBackground) 4 else 5
 
+    // Map focus index to LazyColumn item index (dynamic based on useGameBackground)
+    LaunchedEffect(uiState.focusedIndex, display.useGameBackground) {
+        val scrollIndex = if (display.useGameBackground) {
+            // Without custom image: header(0), artwork(1), blur(2), sat(3), opacity(4), header(5), footer(6)
+            when (uiState.focusedIndex) {
+                0 -> 1  // Game Artwork
+                1 -> 2  // Blur
+                2 -> 3  // Saturation
+                3 -> 4  // Opacity
+                4 -> 6  // Accent Footer (after "Footer" header)
+                else -> return@LaunchedEffect
+            }
+        } else {
+            // With custom image: header(0), artwork(1), custom(2), blur(3), sat(4), opacity(5), header(6), footer(7)
+            when (uiState.focusedIndex) {
+                0 -> 1  // Game Artwork
+                1 -> 2  // Custom Image
+                2 -> 3  // Blur
+                3 -> 4  // Saturation
+                4 -> 5  // Opacity
+                5 -> 7  // Accent Footer (after "Footer" header)
+                else -> return@LaunchedEffect
+            }
+        }
+        listState.scrollToItemIfNeeded(scrollIndex)
+    }
 
     LazyColumn(
         state = listState,

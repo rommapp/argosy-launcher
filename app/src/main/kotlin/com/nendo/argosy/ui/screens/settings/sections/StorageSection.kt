@@ -179,11 +179,12 @@ private data class FocusMapping(
         return when {
             focusIndex == maxDownloadsIndex -> 1
             focusIndex == thresholdIndex -> 2
-            focusIndex == globalRomPathIndex -> 5
-            focusIndex == imageCacheIndex -> 6
-            focusIndex == platformsExpandIndex -> 9
+            focusIndex == globalRomPathIndex -> 6
+            focusIndex == imageCacheIndex -> 7
+            focusIndex == platformsExpandIndex -> 10
             focusIndex > platformsExpandIndex -> {
-                10 + (focusIndex - platformsExpandIndex - 1)
+                // Platform items start at scroll index 11
+                11 + (focusIndex - platformsExpandIndex - 1)
             }
             else -> focusIndex
         }

@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -19,6 +21,20 @@ fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val maxIndex = if (uiState.controls.hapticEnabled) 4 else 3
 
+    // Map focus index to LazyColumn item index (dynamic based on haptic state)
+    LaunchedEffect(uiState.focusedIndex, uiState.controls.hapticEnabled) {
+        val scrollIndex = if (uiState.controls.hapticEnabled) {
+            // With haptic: 0=haptic, 1=intensity, 2=swapAB, 3=swapXY, 4=swapStartSelect
+            uiState.focusedIndex
+        } else {
+            // Without haptic: 0=haptic, 1=swapAB, 2=swapXY, 3=swapStartSelect
+            // Item indices: 0=haptic, 1=swapAB, 2=swapXY, 3=swapStartSelect
+            uiState.focusedIndex
+        }
+        if (scrollIndex in 0..maxIndex) {
+            listState.scrollToItemIfNeeded(scrollIndex)
+        }
+    }
 
     LazyColumn(
         state = listState,

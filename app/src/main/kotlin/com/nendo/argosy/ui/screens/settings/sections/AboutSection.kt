@@ -11,7 +11,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import androidx.compose.ui.platform.LocalContext
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
@@ -33,6 +35,18 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     if (uiState.fileLoggingPath != null) debugItemCount++
     val maxIndex = 2 + debugItemCount
 
+    // Map focus index to LazyColumn item index
+    LaunchedEffect(uiState.focusedIndex) {
+        val scrollIndex = when (uiState.focusedIndex) {
+            0 -> 0  // Version
+            1 -> 1  // Check for Updates
+            2 -> 2  // Beta Updates
+            3 -> 5  // File Logging (after spacer + header)
+            4 -> 6  // Log Level (if shown)
+            else -> return@LaunchedEffect
+        }
+        listState.scrollToItemIfNeeded(scrollIndex)
+    }
 
     LazyColumn(
         state = listState,

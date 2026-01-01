@@ -25,7 +25,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -56,6 +58,14 @@ fun EmulatorsSection(
         label = "emulatorPickerBlur"
     )
 
+    // Map focus index to LazyColumn item index (accounting for optional auto-assign)
+    LaunchedEffect(uiState.focusedIndex, uiState.emulators.canAutoAssign) {
+        // focusOffset shifts everything if auto-assign is shown
+        val scrollIndex = uiState.focusedIndex
+        if (scrollIndex in 0..maxIndex) {
+            listState.scrollToItemIfNeeded(scrollIndex)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(

@@ -16,7 +16,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -46,6 +48,18 @@ fun BoxArtSection(
     val showIconPadding = display.systemIconPosition != SystemIconPosition.OFF
     val maxIndex = if (showIconPadding) 4 else 3
 
+    // Map focus index to LazyColumn item index (accounting for headers)
+    LaunchedEffect(uiState.focusedIndex) {
+        val scrollIndex = when (uiState.focusedIndex) {
+            0 -> 1  // Corner Radius
+            1 -> 2  // Border Thickness
+            2 -> 3  // Glow Effect
+            3 -> 5  // Position (after "System Icon" header)
+            4 -> 6  // Padding (conditional)
+            else -> return@LaunchedEffect
+        }
+        listState.scrollToItemIfNeeded(scrollIndex)
+    }
 
     Row(
         modifier = Modifier

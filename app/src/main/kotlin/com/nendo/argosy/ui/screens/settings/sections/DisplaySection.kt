@@ -11,7 +11,9 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
@@ -33,6 +35,22 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val storage = uiState.storage
     val maxIndex = 8
 
+    // Map focus index to LazyColumn item index (accounting for headers)
+    LaunchedEffect(uiState.focusedIndex) {
+        val scrollIndex = when (uiState.focusedIndex) {
+            0 -> 1   // Theme
+            1 -> 2   // Accent Color
+            2 -> 3   // Grid Density
+            3 -> 4   // Box Art
+            4 -> 5   // Home Screen
+            5 -> 7   // Default View (after "Default" header)
+            6 -> 9   // Screen Dimmer (after "Screen Safety" header)
+            7 -> 10  // Dim After
+            8 -> 11  // Dim Level
+            else -> return@LaunchedEffect
+        }
+        listState.scrollToItemIfNeeded(scrollIndex)
+    }
 
     LazyColumn(
         state = listState,

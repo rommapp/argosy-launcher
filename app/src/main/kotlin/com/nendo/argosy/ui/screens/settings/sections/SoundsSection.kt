@@ -18,7 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import com.nendo.argosy.ui.common.scrollToItemIfNeeded
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.nendo.argosy.ui.components.SliderPreference
@@ -39,6 +41,24 @@ fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val uiSoundsItemCount = if (uiState.sounds.enabled) 2 + soundTypes.size else 1
     val maxIndex = bgmItemCount + uiSoundsItemCount - 1
 
+    // Map focus index to LazyColumn item index (very dynamic based on enabled states)
+    LaunchedEffect(uiState.focusedIndex, uiState.ambientAudio.enabled, uiState.sounds.enabled) {
+        // Calculate item index based on current state
+        val scrollIndex = when {
+            uiState.focusedIndex == 0 -> 0  // Background Music toggle
+            uiState.ambientAudio.enabled && uiState.focusedIndex == 1 -> 1  // Volume
+            uiState.ambientAudio.enabled && uiState.focusedIndex == 2 -> 2  // Music File
+            uiState.focusedIndex == uiSoundsToggleIndex -> bgmItemCount + 1  // UI Sounds toggle (after spacer/header)
+            uiState.sounds.enabled && uiState.focusedIndex == uiSoundsToggleIndex + 1 -> bgmItemCount + 2  // UI Volume
+            uiState.sounds.enabled && uiState.focusedIndex >= uiSoundsToggleIndex + 2 -> {
+                // Sound type items (after customize header)
+                val soundIndex = uiState.focusedIndex - uiSoundsToggleIndex - 2
+                bgmItemCount + 4 + soundIndex  // +4 for spacer/header, toggle, volume, customize header
+            }
+            else -> return@LaunchedEffect
+        }
+        listState.scrollToItemIfNeeded(scrollIndex)
+    }
 
     LazyColumn(
         state = listState,

@@ -3,6 +3,16 @@ package com.nendo.argosy.domain.model
 object Changelog {
     private val entries = listOf(
         ChangelogEntry(
+            version = "0.11.0",
+            highlights = listOf(
+                "BIOS management: download and auto-distribute to emulators",
+                "3DO platform support for RetroArch (Opera core)",
+                "Fixed disc-based game launching (broken m3u handling)",
+                "RetroArch BIOS files auto-renamed to expected filenames"
+            ),
+            requiredActions = listOf(RequiredAction.ReloginRomM, RequiredAction.ResyncLibrary)
+        ),
+        ChangelogEntry(
             version = "0.10.0",
             highlights = listOf(
                 "Folder-based ROM downloads with updates and DLC support",

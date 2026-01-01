@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.nendo.argosy.ui.common.scrollToFocusedItem
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.ExpandablePreference
@@ -36,7 +37,6 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -59,11 +59,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     LaunchedEffect(uiState.focusedIndex) {
         val scrollIndex = focusMapping.focusToScrollIndex(uiState.focusedIndex)
         if (scrollIndex >= 0) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
+            listState.scrollToFocusedItem(scrollIndex)
         }
     }
 

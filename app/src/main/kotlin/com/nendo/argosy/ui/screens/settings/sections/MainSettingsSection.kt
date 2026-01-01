@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
@@ -23,7 +22,6 @@ import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -31,15 +29,6 @@ import java.time.format.DateTimeFormatter
 fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..7) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-        }
-    }
 
     LazyColumn(
         state = listState,

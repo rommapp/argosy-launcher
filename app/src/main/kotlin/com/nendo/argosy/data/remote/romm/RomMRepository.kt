@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -146,7 +147,8 @@ class RomMRepository @Inject constructor(
         accessToken = token
 
         return try {
-            val newApi = createApi(normalizedUrl, token)
+            val trustUserCerts = userPreferencesRepository.preferences.first().trustUserCertificates
+            val newApi = createApi(normalizedUrl, token, trustUserCerts)
             val response = newApi.heartbeat()
 
             if (response.isSuccessful) {
@@ -179,7 +181,8 @@ class RomMRepository @Inject constructor(
                     ?: return RomMResult.Error("No token received")
 
                 accessToken = token
-                api = createApi(baseUrl, token)
+                val trustUserCerts = userPreferencesRepository.preferences.first().trustUserCertificates
+                api = createApi(baseUrl, token, trustUserCerts)
                 saveSyncRepository.get().setApi(api)
 
                 userPreferencesRepository.setRomMCredentials(baseUrl, token, username)
@@ -1115,7 +1118,7 @@ class RomMRepository @Inject constructor(
         _connectionState.value = ConnectionState.Disconnected
     }
 
-    private fun createApi(baseUrl: String, token: String?): RomMApi {
+    private fun createApi(baseUrl: String, token: String?, trustUserCerts: Boolean): RomMApi {
         val moshi = Moshi.Builder().build()
 
         val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -1141,6 +1144,7 @@ class RomMRepository @Inject constructor(
             .writeTimeout(60, TimeUnit.SECONDS)
             .connectionPool(okhttp3.ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
             .dns(okhttp3.Dns.SYSTEM)
+            .withUserCertTrust(trustUserCerts)
             .build()
 
         return Retrofit.Builder()

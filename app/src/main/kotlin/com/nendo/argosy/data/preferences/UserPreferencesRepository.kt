@@ -98,6 +98,8 @@ class UserPreferencesRepository @Inject constructor(
         val SCREEN_DIMMER_ENABLED = booleanPreferencesKey("screen_dimmer_enabled")
         val SCREEN_DIMMER_TIMEOUT_MINUTES = intPreferencesKey("screen_dimmer_timeout_minutes")
         val SCREEN_DIMMER_LEVEL = intPreferencesKey("screen_dimmer_level")
+
+        val TRUST_USER_CERTIFICATES = booleanPreferencesKey("trust_user_certificates")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -196,7 +198,8 @@ class UserPreferencesRepository @Inject constructor(
             imageCachePath = prefs[Keys.IMAGE_CACHE_PATH],
             screenDimmerEnabled = prefs[Keys.SCREEN_DIMMER_ENABLED] ?: true,
             screenDimmerTimeoutMinutes = prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] ?: 2,
-            screenDimmerLevel = prefs[Keys.SCREEN_DIMMER_LEVEL] ?: 50
+            screenDimmerLevel = prefs[Keys.SCREEN_DIMMER_LEVEL] ?: 50,
+            trustUserCertificates = prefs[Keys.TRUST_USER_CERTIFICATES] ?: false
         )
     }
 
@@ -694,6 +697,12 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.SCREEN_DIMMER_LEVEL] = level.coerceIn(40, 70)
         }
     }
+
+    suspend fun setTrustUserCertificates(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.TRUST_USER_CERTIFICATES] = enabled
+        }
+    }
 }
 
 data class UserPreferences(
@@ -759,7 +768,8 @@ data class UserPreferences(
     val imageCachePath: String? = null,
     val screenDimmerEnabled: Boolean = true,
     val screenDimmerTimeoutMinutes: Int = 2,
-    val screenDimmerLevel: Int = 50
+    val screenDimmerLevel: Int = 50,
+    val trustUserCertificates: Boolean = false
 )
 
 enum class ThemeMode(val displayName: String) {

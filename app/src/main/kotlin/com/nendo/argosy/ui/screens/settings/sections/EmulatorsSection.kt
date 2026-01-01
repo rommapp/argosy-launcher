@@ -25,7 +25,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +48,7 @@ fun EmulatorsSection(
 ) {
     val listState = rememberLazyListState()
     val focusOffset = if (uiState.emulators.canAutoAssign) 1 else 0
+    val maxIndex = uiState.emulators.platforms.size + focusOffset - 1
 
     val modalBlur by animateDpAsState(
         targetValue = if (uiState.emulators.showEmulatorPicker || uiState.emulators.showSavePathModal) Motion.blurRadiusModal else 0.dp,
@@ -56,16 +56,6 @@ fun EmulatorsSection(
         label = "emulatorPickerBlur"
     )
 
-    LaunchedEffect(uiState.focusedIndex) {
-        val totalItems = uiState.emulators.platforms.size + focusOffset
-        if (totalItems > 0 && uiState.focusedIndex in 0 until totalItems) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(

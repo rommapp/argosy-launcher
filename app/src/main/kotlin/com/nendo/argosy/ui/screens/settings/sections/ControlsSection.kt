@@ -7,29 +7,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val maxIndex = if (uiState.controls.hapticEnabled) 4 else 3
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-        }
-    }
 
     LazyColumn(
         state = listState,

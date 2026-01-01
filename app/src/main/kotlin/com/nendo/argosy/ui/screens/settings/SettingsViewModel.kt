@@ -847,7 +847,7 @@ class SettingsViewModel @Inject constructor(
                     val autoAssignOffset = if (state.emulators.canAutoAssign) 1 else 0
                     (platformCount + autoAssignOffset - 1).coerceAtLeast(0)
                 }
-                SettingsSection.PERMISSIONS -> 2
+                SettingsSection.PERMISSIONS -> 3
                 SettingsSection.ABOUT -> if (state.fileLoggingPath != null) 4 else 3
             }
             val newIndex = if (state.currentSection == SettingsSection.SERVER && state.server.rommConfiguring) {
@@ -1122,6 +1122,26 @@ class SettingsViewModel @Inject constructor(
 
     fun refreshPermissions() {
         permissionsDelegate.refreshPermissions()
+    }
+
+    fun setTrustUserCertificates(enabled: Boolean) {
+        permissionsDelegate.setTrustUserCertificates(enabled)
+    }
+
+    fun setTrustUserCertificatesAndRestart(enabled: Boolean) {
+        permissionsDelegate.setTrustUserCertificatesAndRestart(enabled)
+    }
+
+    fun toggleTrustUserCertificates() {
+        permissionsDelegate.toggleTrustUserCertificates()
+    }
+
+    fun dismissRestartDialog() {
+        permissionsDelegate.dismissRestartDialog()
+    }
+
+    fun restartApp() {
+        permissionsDelegate.restartApp()
     }
 
     private fun handlePlayTimeToggle(controls: ControlsState) {
@@ -1916,6 +1936,10 @@ class SettingsViewModel @Inject constructor(
                     0 -> openStorageSettings()
                     1 -> openUsageStatsSettings()
                     2 -> openNotificationSettings()
+                    3 -> {
+                        toggleTrustUserCertificates()
+                        return InputResult.handled(SoundType.TOGGLE)
+                    }
                 }
                 InputResult.HANDLED
             }

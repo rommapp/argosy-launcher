@@ -62,6 +62,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadState
+import com.nendo.argosy.ui.common.scrollToFocusedItem
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.components.FooterBar
@@ -98,7 +99,7 @@ fun DownloadsScreen(
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.allItems.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.focusedIndex)
+            listState.scrollToFocusedItem(uiState.focusedIndex)
         }
     }
 

@@ -50,8 +50,8 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.RomMConfigForm
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SteamLauncherPreference
+import com.nendo.argosy.ui.common.scrollToFocusedItem
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -104,10 +104,6 @@ private fun GameDataContent(
                 isConnected = isConnected,
                 saveSyncEnabled = saveSyncEnabled
             )
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
 
             val isInSteamSection = uiState.focusedIndex >= steamBaseIndex
             if (isInSteamSection) {
@@ -123,7 +119,7 @@ private fun GameDataContent(
                     listState.animateScrollToItem(scrollTarget, 0)
                 }
             } else {
-                listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
+                listState.scrollToFocusedItem(scrollIndex)
             }
         }
     }

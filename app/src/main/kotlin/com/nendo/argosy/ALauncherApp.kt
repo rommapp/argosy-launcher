@@ -7,6 +7,8 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import com.nendo.argosy.data.sync.SaveSyncDownloadObserver
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.download.DownloadServiceController
@@ -17,7 +19,10 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -39,6 +44,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     @Inject
     lateinit var downloadServiceController: DownloadServiceController
+
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -65,7 +73,16 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             .build()
 
     override fun newImageLoader(): ImageLoader {
+        val trustUserCerts = runBlocking {
+            userPreferencesRepository.preferences.first().trustUserCertificates
+        }
+
+        val okHttpClient = OkHttpClient.Builder()
+            .withUserCertTrust(trustUserCerts)
+            .build()
+
         return ImageLoader.Builder(this)
+            .okHttpClient(okHttpClient)
             .components {
                 add(AppIconFetcher.Factory(packageManager))
             }

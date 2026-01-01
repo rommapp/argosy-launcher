@@ -51,7 +51,6 @@ import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -67,15 +66,6 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
     val maxIndex = 2 + uiState.steam.installedLaunchers.size
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-        }
-    }
 
     LazyColumn(
         state = listState,

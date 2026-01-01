@@ -11,7 +11,6 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
@@ -26,7 +25,6 @@ import com.nendo.argosy.ui.components.hueToColorInt
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -35,15 +33,6 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val storage = uiState.storage
     val maxIndex = 8
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-        }
-    }
 
     LazyColumn(
         state = listState,

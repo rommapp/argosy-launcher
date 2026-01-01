@@ -311,7 +311,9 @@ data class UpdateCheckState(
 data class PermissionsState(
     val hasStorageAccess: Boolean = false,
     val hasUsageStats: Boolean = false,
-    val hasNotificationPermission: Boolean = false
+    val hasNotificationPermission: Boolean = false,
+    val trustUserCertificates: Boolean = false,
+    val showRestartDialog: Boolean = false
 ) {
     val allGranted: Boolean get() = hasStorageAccess && hasUsageStats && hasNotificationPermission
     val grantedCount: Int get() = listOf(hasStorageAccess, hasUsageStats, hasNotificationPermission).count { it }

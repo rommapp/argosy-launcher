@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
+import com.nendo.argosy.ui.common.scrollToFocusedItem
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Dimens
 
@@ -830,7 +831,7 @@ private fun PlatformSelectStep(
 
     LaunchedEffect(focusedIndex) {
         if (platforms.isNotEmpty() && focusedIndex in platforms.indices) {
-            listState.animateScrollToItem(focusedIndex)
+            listState.scrollToFocusedItem(focusedIndex)
         }
     }
 

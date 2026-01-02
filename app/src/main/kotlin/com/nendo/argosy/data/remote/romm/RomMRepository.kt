@@ -1576,16 +1576,48 @@ class RomMRepository @Inject constructor(
         }
 
         return try {
+            val localCollections = collectionDao.getAllCollections()
+
+            // Push local-only collections to remote first
+            for (local in localCollections) {
+                if (local.rommId == null && local.isUserCreated && local.name.lowercase() != "favorites") {
+                    try {
+                        val createResponse = currentApi.createCollection(
+                            isFavorite = false,
+                            collection = RomMCollectionCreate(name = local.name, description = local.description)
+                        )
+                        if (createResponse.isSuccessful) {
+                            val remoteCollection = createResponse.body()
+                            if (remoteCollection != null) {
+                                collectionDao.updateCollection(local.copy(rommId = remoteCollection.id))
+                                val gameIds = collectionDao.getGameIdsInCollection(local.id)
+                                if (gameIds.isNotEmpty()) {
+                                    val romIds = gameIds.mapNotNull { gameDao.getById(it)?.rommId }
+                                    if (romIds.isNotEmpty()) {
+                                        val jsonArray = romIds.joinToString(",", "[", "]")
+                                        val requestBody = jsonArray.toRequestBody("application/json".toMediaType())
+                                        currentApi.updateCollection(remoteCollection.id, requestBody)
+                                    }
+                                }
+                                Logger.info(TAG, "syncCollections: pushed local collection '${local.name}' to remote")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Logger.warn(TAG, "syncCollections: failed to push local collection '${local.name}': ${e.message}")
+                    }
+                }
+            }
+
             val response = currentApi.getCollections(isFavorite = false)
             if (!response.isSuccessful) {
                 return RomMResult.Error("Failed to fetch collections: ${response.code()}")
             }
 
             val remoteCollections = response.body() ?: emptyList()
-            val localCollections = collectionDao.getAllCollections()
+            val updatedLocalCollections = collectionDao.getAllCollections()
 
             val remoteByRommId = remoteCollections.associateBy { it.id }
-            val localByRommId = localCollections.filter { it.rommId != null }.associateBy { it.rommId }
+            val localByRommId = updatedLocalCollections.filter { it.rommId != null }.associateBy { it.rommId }
 
             for (remote in remoteCollections) {
                 val existing = localByRommId[remote.id]
@@ -1612,7 +1644,7 @@ class RomMRepository @Inject constructor(
                 syncCollectionGames(collectionId, remote.romIds)
             }
 
-            for (local in localCollections) {
+            for (local in updatedLocalCollections) {
                 if (local.rommId != null && !remoteByRommId.containsKey(local.rommId)) {
                     collectionDao.deleteCollection(local)
                 }

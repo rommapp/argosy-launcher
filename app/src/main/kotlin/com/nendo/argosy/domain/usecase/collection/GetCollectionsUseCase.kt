@@ -22,19 +22,21 @@ class GetCollectionsUseCase @Inject constructor(
 ) {
     operator fun invoke(): Flow<List<CollectionWithCount>> {
         return collectionDao.observeAllCollections().map { collections ->
-            collections.map { collection ->
-                val count = collectionDao.getGameCountInCollection(collection.id)
-                val covers = collectionDao.getCollectionCoverPaths(collection.id)
-                CollectionWithCount(
-                    id = collection.id,
-                    name = collection.name,
-                    description = collection.description,
-                    gameCount = count,
-                    coverPaths = covers,
-                    isUserCreated = collection.isUserCreated,
-                    rommId = collection.rommId
-                )
-            }
+            collections
+                .filter { it.name.isNotBlank() && it.name.lowercase() != "favorites" }
+                .map { collection ->
+                    val count = collectionDao.getGameCountInCollection(collection.id)
+                    val covers = collectionDao.getCollectionCoverPaths(collection.id)
+                    CollectionWithCount(
+                        id = collection.id,
+                        name = collection.name,
+                        description = collection.description,
+                        gameCount = count,
+                        coverPaths = covers,
+                        isUserCreated = collection.isUserCreated,
+                        rommId = collection.rommId
+                    )
+                }
         }
     }
 }

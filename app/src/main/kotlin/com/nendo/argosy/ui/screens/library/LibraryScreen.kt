@@ -26,15 +26,16 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -70,9 +71,12 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.GridDensity
+import com.nendo.argosy.ui.components.AddToCollectionModal
+import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SyncOverlay
+import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
@@ -232,7 +236,7 @@ fun LibraryScreen(
         }
     }
 
-    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.syncOverlayState != null
+    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -400,6 +404,10 @@ fun LibraryScreen(
                         viewModel.toggleQuickMenu()
                         onGameSelect(game.id)
                     },
+                    onAddToCollection = {
+                        viewModel.toggleQuickMenu()
+                        viewModel.showAddToCollectionModal(game.id)
+                    },
                     onRefresh = { viewModel.refreshGameData(game.id) },
                     onResyncPlatform = {
                         viewModel.toggleQuickMenu()
@@ -415,6 +423,33 @@ fun LibraryScreen(
                     }
                 )
             }
+        }
+
+        AnimatedVisibility(
+            visible = uiState.showAddToCollectionModal,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            AddToCollectionModal(
+                collections = uiState.collections.map { collection ->
+                    CollectionItem(
+                        id = collection.id,
+                        name = collection.name,
+                        isInCollection = collection.isInCollection
+                    )
+                },
+                focusIndex = uiState.collectionModalFocusIndex,
+                onToggleCollection = { viewModel.toggleGameInCollection(it) },
+                onCreate = { viewModel.showCreateCollectionFromModal() },
+                onDismiss = { viewModel.dismissAddToCollectionModal() }
+            )
+        }
+
+        if (uiState.showCreateCollectionDialog) {
+            CreateCollectionDialog(
+                onDismiss = { viewModel.hideCreateCollectionDialog() },
+                onCreate = { name -> viewModel.createCollectionFromModal(name) }
+            )
         }
 
         SyncOverlay(
@@ -903,6 +938,7 @@ private fun QuickMenuOverlay(
     onPrimaryAction: () -> Unit,
     onFavorite: () -> Unit,
     onDetails: () -> Unit,
+    onAddToCollection: () -> Unit,
     onRefresh: () -> Unit,
     onResyncPlatform: () -> Unit,
     onDelete: () -> Unit,
@@ -913,6 +949,7 @@ private fun QuickMenuOverlay(
     val playIdx = currentIndex++
     val favoriteIdx = currentIndex++
     val detailsIdx = currentIndex++
+    val addToCollectionIdx = currentIndex++
     val refreshIdx = if (canRefresh) currentIndex++ else -1
     val resyncPlatformIdx = currentIndex++
     val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
@@ -977,6 +1014,12 @@ private fun QuickMenuOverlay(
                 label = "Details",
                 isFocused = focusIndex == detailsIdx,
                 onClick = onDetails
+            )
+            QuickMenuItem(
+                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                label = "Add to Collection",
+                isFocused = focusIndex == addToCollectionIdx,
+                onClick = onAddToCollection
             )
             if (canRefresh) {
                 QuickMenuItem(

@@ -100,22 +100,16 @@ class QuickMenuInputHandler(
         val state = viewModel.uiState.value
         if (!state.isVisible) return InputResult.UNHANDLED
 
-        if (state.contentFocused && state.selectedOrb == QuickMenuOrb.RANDOM) {
-            viewModel.rerollRandom()
-            return InputResult.HANDLED
-        }
-        return InputResult.UNHANDLED
+        viewModel.moveOrbLeft()
+        return InputResult.HANDLED
     }
 
     override fun onNextSection(): InputResult {
         val state = viewModel.uiState.value
         if (!state.isVisible) return InputResult.UNHANDLED
 
-        if (state.contentFocused && state.selectedOrb == QuickMenuOrb.RANDOM) {
-            viewModel.rerollRandom()
-            return InputResult.HANDLED
-        }
-        return InputResult.UNHANDLED
+        viewModel.moveOrbRight()
+        return InputResult.HANDLED
     }
 
     override fun onMenu(): InputResult {

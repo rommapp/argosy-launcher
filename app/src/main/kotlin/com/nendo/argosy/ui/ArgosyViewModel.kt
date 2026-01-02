@@ -92,11 +92,18 @@ class ArgosyViewModel @Inject constructor(
             val ready = gameRepository.awaitStorageReady(timeoutMs = 10_000L)
             if (ready) {
                 validateAndRecoverDownloads()
+                syncCollectionsOnStartup()
             } else {
                 android.util.Log.w("ArgosyViewModel", "Storage not ready after timeout, scheduling retry")
                 kotlinx.coroutines.delay(30_000L)
                 scheduleDownloadValidation()
             }
+        }
+    }
+
+    private suspend fun syncCollectionsOnStartup() {
+        if (romMRepository.isConnected()) {
+            romMRepository.syncCollections()
         }
     }
 

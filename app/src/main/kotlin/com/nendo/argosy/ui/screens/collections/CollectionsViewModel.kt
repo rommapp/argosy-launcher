@@ -67,17 +67,29 @@ class CollectionsViewModel @Inject constructor(
     private val _showDeleteDialog = MutableStateFlow(false)
     private val _editingCollection = MutableStateFlow<CollectionWithCount?>(null)
     private val _isRefreshing = MutableStateFlow(false)
+    private var lastRefreshTime = 0L
 
     init {
-        refreshCollections()
+        refreshCollections(force = true)
     }
 
-    fun refreshCollections() {
+    fun refreshCollections(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastRefreshTime < REFRESH_DEBOUNCE_MS) {
+            return
+        }
+        if (_isRefreshing.value) return
+
+        lastRefreshTime = now
         viewModelScope.launch {
             _isRefreshing.value = true
             romMRepository.syncCollections()
             _isRefreshing.value = false
         }
+    }
+
+    companion object {
+        private const val REFRESH_DEBOUNCE_MS = 30_000L
     }
 
     val uiState: StateFlow<CollectionsUiState> = combine(

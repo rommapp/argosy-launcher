@@ -107,7 +107,7 @@ fun CollectionsScreen(
 
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
-        onRefresh = { viewModel.refreshCollections() },
+        onRefresh = { viewModel.refreshCollections(force = true) },
         modifier = Modifier.fillMaxSize()
     ) {
         LazyColumn(
@@ -178,7 +178,6 @@ fun CollectionsScreen(
 
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             val baseHints = listOf(
-                InputButton.DPAD to "Navigate",
                 InputButton.SOUTH to "Select",
                 InputButton.NORTH to "New",
                 InputButton.EAST to "Back"
@@ -191,8 +190,7 @@ fun CollectionsScreen(
             } else {
                 emptyList()
             }
-            val refreshHint = listOf(InputButton.RB to "Refresh")
-            FooterBar(hints = baseHints + contextHints + refreshHint)
+            FooterBar(hints = baseHints + contextHints)
         }
     }
 

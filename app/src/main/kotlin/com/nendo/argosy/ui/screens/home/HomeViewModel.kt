@@ -7,6 +7,7 @@ import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.update.ApkInstallManager
+import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -37,6 +38,7 @@ import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
+import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.ModalResetSignal
 import android.content.Intent
 import android.net.Uri
@@ -74,8 +76,8 @@ private val EXCLUDED_RECOMMENDATION_STATUSES = setOf(
 private const val RECENT_GAMES_LIMIT = 10
 private const val RECENT_GAMES_CANDIDATE_POOL = 40
 private const val AUTO_SYNC_DAYS = 7L
-private const val MENU_INDEX_MAX_DOWNLOADED = 4
-private const val MENU_INDEX_MAX_REMOTE = 3
+private const val MENU_INDEX_MAX_DOWNLOADED = 5
+private const val MENU_INDEX_MAX_REMOTE = 4
 
 private const val KEY_ROW_TYPE = "home_row_type"
 private const val KEY_PLATFORM_INDEX = "home_platform_index"
@@ -167,6 +169,11 @@ data class HomeUiState(
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
     val gameMenuFocusIndex: Int = 0,
+    val showAddToCollectionModal: Boolean = false,
+    val collectionGameId: Long? = null,
+    val collections: List<CollectionItemUi> = emptyList(),
+    val collectionModalFocusIndex: Int = 0,
+    val showCreateCollectionDialog: Boolean = false,
     val downloadIndicators: Map<Long, GameDownloadIndicator> = emptyMap(),
     val repairedCoverPaths: Map<Long, String> = emptyMap(),
     val backgroundBlur: Int = 0,
@@ -267,6 +274,7 @@ class HomeViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val platformDao: PlatformDao,
     private val gameDao: GameDao,
+    private val collectionDao: CollectionDao,
     private val romMRepository: RomMRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val notificationManager: NotificationManager,
@@ -1058,6 +1066,7 @@ class HomeViewModel @Inject constructor(
         val playIdx = currentIdx++
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
+        val addToCollectionIdx = currentIdx++
         val refreshIdx = if (isRommGame) currentIdx++ else -1
         val deleteIdx = if (isDownloaded || needsInstall || isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
@@ -1078,6 +1087,10 @@ class HomeViewModel @Inject constructor(
                     state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game.id }
                 )
                 onGameSelect(game.id)
+            }
+            addToCollectionIdx -> {
+                toggleGameMenu()
+                showAddToCollectionModal(game.id)
             }
             refreshIdx -> refreshGameData(game.id)
             deleteIdx -> {
@@ -1102,6 +1115,139 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             gameActions.hideGame(gameId)
             refreshCurrentRowInternal()
+        }
+    }
+
+    fun showAddToCollectionModal(gameId: Long) {
+        viewModelScope.launch {
+            val allCollections = collectionDao.getAllCollections()
+                .filter { it.name.isNotBlank() }
+            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+
+            val collectionItems = allCollections.map { collection ->
+                CollectionItemUi(
+                    id = collection.id,
+                    name = collection.name,
+                    isInCollection = gameCollectionIds.contains(collection.id)
+                )
+            }
+
+            _uiState.update {
+                it.copy(
+                    showAddToCollectionModal = true,
+                    collectionGameId = gameId,
+                    collections = collectionItems,
+                    collectionModalFocusIndex = 0
+                )
+            }
+            soundManager.play(SoundType.OPEN_MODAL)
+        }
+    }
+
+    fun dismissAddToCollectionModal() {
+        _uiState.update {
+            it.copy(
+                showAddToCollectionModal = false,
+                showCreateCollectionDialog = false
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveCollectionFocusUp() {
+        _uiState.update {
+            val minIndex = 0
+            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex - 1).coerceAtLeast(minIndex))
+        }
+    }
+
+    fun moveCollectionFocusDown() {
+        _uiState.update {
+            val maxIndex = it.collections.size
+            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex + 1).coerceAtMost(maxIndex))
+        }
+    }
+
+    fun confirmCollectionSelection() {
+        val state = _uiState.value
+        val gameId = state.collectionGameId ?: return
+        val index = state.collectionModalFocusIndex
+
+        if (index == state.collections.size) {
+            showCreateCollectionFromModal()
+            return
+        }
+
+        val collection = state.collections.getOrNull(index) ?: return
+        toggleGameInCollection(collection.id)
+    }
+
+    fun toggleGameInCollection(collectionId: Long) {
+        val state = _uiState.value
+        val gameId = state.collectionGameId ?: return
+
+        viewModelScope.launch {
+            val isInCollection = state.collections.find { it.id == collectionId }?.isInCollection ?: false
+            if (isInCollection) {
+                collectionDao.removeGameFromCollection(collectionId, gameId)
+                romMRepository.removeGameFromCollectionWithSync(gameId, collectionId)
+            } else {
+                collectionDao.addGameToCollection(
+                    com.nendo.argosy.data.local.entity.CollectionGameEntity(
+                        collectionId = collectionId,
+                        gameId = gameId
+                    )
+                )
+                romMRepository.addGameToCollectionWithSync(gameId, collectionId)
+            }
+
+            val updatedCollections = state.collections.map {
+                if (it.id == collectionId) it.copy(isInCollection = !isInCollection) else it
+            }
+            _uiState.update { it.copy(collections = updatedCollections) }
+        }
+    }
+
+    fun showCreateCollectionFromModal() {
+        _uiState.update { it.copy(showCreateCollectionDialog = true) }
+    }
+
+    fun hideCreateCollectionDialog() {
+        _uiState.update { it.copy(showCreateCollectionDialog = false) }
+    }
+
+    fun createCollectionFromModal(name: String) {
+        val gameId = _uiState.value.collectionGameId ?: return
+        viewModelScope.launch {
+            val collectionId = collectionDao.insertCollection(
+                com.nendo.argosy.data.local.entity.CollectionEntity(name = name)
+            )
+            collectionDao.addGameToCollection(
+                com.nendo.argosy.data.local.entity.CollectionGameEntity(
+                    collectionId = collectionId,
+                    gameId = gameId
+                )
+            )
+            romMRepository.createCollectionWithSync(name)
+
+            val allCollections = collectionDao.getAllCollections()
+                .filter { it.name.isNotBlank() }
+            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+
+            val collectionItems = allCollections.map { collection ->
+                CollectionItemUi(
+                    id = collection.id,
+                    name = collection.name,
+                    isInCollection = gameCollectionIds.contains(collection.id)
+                )
+            }
+
+            _uiState.update {
+                it.copy(
+                    showCreateCollectionDialog = false,
+                    collections = collectionItems
+                )
+            }
         }
     }
 
@@ -1378,61 +1524,89 @@ class HomeViewModel @Inject constructor(
         onDrawerToggle: () -> Unit
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
-            return if (_uiState.value.showGameMenu) {
-                moveGameMenuFocus(-1)
-                InputResult.HANDLED
-            } else {
-                previousRow()
-                InputResult.handled(SoundType.SECTION_CHANGE)
+            val state = _uiState.value
+            return when {
+                state.showAddToCollectionModal -> {
+                    moveCollectionFocusUp()
+                    InputResult.HANDLED
+                }
+                state.showGameMenu -> {
+                    moveGameMenuFocus(-1)
+                    InputResult.HANDLED
+                }
+                else -> {
+                    previousRow()
+                    InputResult.handled(SoundType.SECTION_CHANGE)
+                }
             }
         }
 
         override fun onDown(): InputResult {
-            return if (_uiState.value.showGameMenu) {
-                moveGameMenuFocus(1)
-                InputResult.HANDLED
-            } else {
-                nextRow()
-                InputResult.handled(SoundType.SECTION_CHANGE)
+            val state = _uiState.value
+            return when {
+                state.showAddToCollectionModal -> {
+                    moveCollectionFocusDown()
+                    InputResult.HANDLED
+                }
+                state.showGameMenu -> {
+                    moveGameMenuFocus(1)
+                    InputResult.HANDLED
+                }
+                else -> {
+                    nextRow()
+                    InputResult.handled(SoundType.SECTION_CHANGE)
+                }
             }
         }
 
         override fun onLeft(): InputResult {
-            if (_uiState.value.showGameMenu) return InputResult.HANDLED
+            if (_uiState.value.showAddToCollectionModal || _uiState.value.showGameMenu) return InputResult.HANDLED
             return if (previousGame()) InputResult.HANDLED else InputResult.UNHANDLED
         }
 
         override fun onRight(): InputResult {
-            if (_uiState.value.showGameMenu) return InputResult.HANDLED
+            if (_uiState.value.showAddToCollectionModal || _uiState.value.showGameMenu) return InputResult.HANDLED
             return if (nextGame()) InputResult.HANDLED else InputResult.UNHANDLED
         }
 
         override fun onConfirm(): InputResult {
-            if (_uiState.value.showGameMenu) {
-                confirmGameMenuSelection(onGameSelect)
-            } else {
-                when (val item = _uiState.value.focusedItem) {
-                    is HomeRowItem.Game -> {
-                        val game = item.game
-                        val indicator = _uiState.value.downloadIndicatorFor(game.id)
-                        when {
-                            game.needsInstall -> installApk(game.id)
-                            game.isDownloaded -> launchGame(game.id)
-                            indicator.isPaused || indicator.isQueued -> resumeDownload(game.id)
-                            else -> queueDownload(game.id)
+            val state = _uiState.value
+            when {
+                state.showAddToCollectionModal -> {
+                    confirmCollectionSelection()
+                }
+                state.showGameMenu -> {
+                    confirmGameMenuSelection(onGameSelect)
+                }
+                else -> {
+                    when (val item = state.focusedItem) {
+                        is HomeRowItem.Game -> {
+                            val game = item.game
+                            val indicator = state.downloadIndicatorFor(game.id)
+                            when {
+                                game.needsInstall -> installApk(game.id)
+                                game.isDownloaded -> launchGame(game.id)
+                                indicator.isPaused || indicator.isQueued -> resumeDownload(game.id)
+                                else -> queueDownload(game.id)
+                            }
                         }
+                        is HomeRowItem.ViewAll -> {
+                            navigateToLibrary(item.platformId, item.sourceFilter)
+                        }
+                        null -> { }
                     }
-                    is HomeRowItem.ViewAll -> {
-                        navigateToLibrary(item.platformId, item.sourceFilter)
-                    }
-                    null -> { }
                 }
             }
             return InputResult.HANDLED
         }
 
         override fun onBack(): InputResult {
-            if (_uiState.value.showGameMenu) {
+            val state = _uiState.value
+            if (state.showAddToCollectionModal) {
+                dismissAddToCollectionModal()
+                return InputResult.HANDLED
+            }
+            if (state.showGameMenu) {
                 toggleGameMenu()
                 return InputResult.HANDLED
             }
@@ -1450,7 +1624,12 @@ class HomeViewModel @Inject constructor(
         }
 
         override fun onMenu(): InputResult {
-            if (_uiState.value.showGameMenu) {
+            val state = _uiState.value
+            if (state.showAddToCollectionModal) {
+                dismissAddToCollectionModal()
+                return InputResult.UNHANDLED
+            }
+            if (state.showGameMenu) {
                 toggleGameMenu()
                 return InputResult.UNHANDLED
             }
@@ -1459,6 +1638,7 @@ class HomeViewModel @Inject constructor(
         }
 
         override fun onSelect(): InputResult {
+            if (_uiState.value.showAddToCollectionModal) return InputResult.HANDLED
             if (_uiState.value.focusedGame != null) {
                 toggleGameMenu()
             }

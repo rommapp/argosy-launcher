@@ -875,16 +875,21 @@ class GameDetailViewModel @Inject constructor(
 
     fun showEmulatorPicker() {
         val game = _uiState.value.game ?: return
-        val available = emulatorDetector.getInstalledForPlatform(game.platformSlug)
-        _uiState.update {
-            it.copy(
-                showMoreOptions = false,
-                showEmulatorPicker = true,
-                availableEmulators = available,
-                emulatorPickerFocusIndex = 0
-            )
+        viewModelScope.launch {
+            if (emulatorDetector.installedEmulators.value.isEmpty()) {
+                emulatorDetector.detectEmulators()
+            }
+            val available = emulatorDetector.getInstalledForPlatform(game.platformSlug)
+            _uiState.update {
+                it.copy(
+                    showMoreOptions = false,
+                    showEmulatorPicker = true,
+                    availableEmulators = available,
+                    emulatorPickerFocusIndex = 0
+                )
+            }
+            soundManager.play(SoundType.OPEN_MODAL)
         }
-        soundManager.play(SoundType.OPEN_MODAL)
     }
 
     fun dismissEmulatorPicker() {

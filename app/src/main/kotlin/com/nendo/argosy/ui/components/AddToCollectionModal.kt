@@ -43,41 +43,37 @@ fun AddToCollectionModal(
     onCreate: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val createOptionOffset = if (showCreateOption) 1 else 0
+    val filteredCollections = collections.filter { it.name.isNotBlank() }
 
     Modal(
         title = "ADD TO COLLECTION",
-        onDismiss = onDismiss,
-        footerHints = listOf(
-            InputButton.SOUTH to "Toggle",
-            InputButton.EAST to "Close"
-        )
+        onDismiss = onDismiss
     ) {
         LazyColumn {
-            if (showCreateOption) {
-                item(key = "create") {
-                    CreateCollectionRow(
-                        isFocused = focusIndex == 0,
-                        onClick = onCreate
-                    )
-                }
-            }
-
-            itemsIndexed(collections, key = { _, c -> c.id }) { index, collection ->
+            itemsIndexed(filteredCollections, key = { _, c -> c.id }) { index, collection ->
                 CollectionCheckRow(
                     collection = collection,
-                    isFocused = focusIndex == index + createOptionOffset,
+                    isFocused = focusIndex == index,
                     onClick = { onToggleCollection(collection.id) }
                 )
             }
 
-            if (collections.isEmpty() && !showCreateOption) {
+            if (filteredCollections.isEmpty() && !showCreateOption) {
                 item {
                     Text(
                         text = "No collections yet",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = Dimens.spacingMd)
+                    )
+                }
+            }
+
+            if (showCreateOption) {
+                item(key = "create") {
+                    CreateCollectionRow(
+                        isFocused = focusIndex == filteredCollections.size,
+                        onClick = onCreate
                     )
                 }
             }

@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -331,7 +333,23 @@ private fun GameList(
     onGameSelect: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(focusedIndex) {
+        if (games.isNotEmpty() && focusedIndex in games.indices) {
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val viewportHeight = listState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size } / visibleItems.size
+            } else 80
+
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            listState.animateScrollToItem(focusedIndex, -targetOffset)
+        }
+    }
+
     LazyColumn(
+        state = listState,
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {

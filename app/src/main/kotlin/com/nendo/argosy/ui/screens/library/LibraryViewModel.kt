@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
@@ -37,6 +38,7 @@ import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
+import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -157,7 +159,12 @@ data class LibraryUiState(
     val hasSelectedGame: Boolean = false,
     val screenWidthDp: Int = 0,
     val recentSearches: List<String> = emptyList(),
-    val repairedCoverPaths: Map<Long, String> = emptyMap()
+    val repairedCoverPaths: Map<Long, String> = emptyMap(),
+    val showAddToCollectionModal: Boolean = false,
+    val collectionGameId: Long? = null,
+    val collections: List<CollectionItemUi> = emptyList(),
+    val collectionModalFocusIndex: Int = 0,
+    val showCreateCollectionDialog: Boolean = false
 ) {
     val columnsCount: Int
         get() {
@@ -247,6 +254,7 @@ sealed class LibraryEvent {
 class LibraryViewModel @Inject constructor(
     private val platformDao: PlatformDao,
     private val gameDao: GameDao,
+    private val collectionDao: CollectionDao,
     private val gameNavigationContext: GameNavigationContext,
     private val notificationManager: NotificationManager,
     private val preferencesRepository: UserPreferencesRepository,
@@ -306,7 +314,9 @@ class LibraryViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showFilterMenu = false,
-                showQuickMenu = false
+                showQuickMenu = false,
+                showAddToCollectionModal = false,
+                showCreateCollectionDialog = false
             )
         }
     }
@@ -706,7 +716,7 @@ class LibraryViewModel @Inject constructor(
             val game = it.focusedGame ?: return@update it
             val canRefresh = game.isRommGame || game.isAndroidApp
             val hasDelete = game.isDownloaded || game.needsInstall
-            var maxIndex = 4
+            var maxIndex = 5
             if (canRefresh) maxIndex++
             if (hasDelete) maxIndex++
             val newIndex = (it.quickMenuFocusIndex + delta).coerceIn(0, maxIndex)
@@ -727,6 +737,7 @@ class LibraryViewModel @Inject constructor(
         val playIdx = currentIdx++
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
+        val addToCollectionIdx = currentIdx++
         val refreshIdx = if (canRefresh) currentIdx++ else -1
         val resyncPlatformIdx = currentIdx++
         val deleteIdx = if (isDownloaded || needsInstall) currentIdx++ else -1
@@ -751,6 +762,11 @@ class LibraryViewModel @Inject constructor(
                 gameNavigationContext.setContext(_uiState.value.games.map { it.id })
                 onGameSelect(game.id)
                 toggleQuickMenu()
+                InputResult.HANDLED
+            }
+            addToCollectionIdx -> {
+                toggleQuickMenu()
+                showAddToCollectionModal(game.id)
                 InputResult.HANDLED
             }
             refreshIdx -> {
@@ -891,6 +907,139 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    fun showAddToCollectionModal(gameId: Long) {
+        viewModelScope.launch {
+            val allCollections = collectionDao.getAllCollections()
+                .filter { it.name.isNotBlank() }
+            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+
+            val collectionItems = allCollections.map { collection ->
+                CollectionItemUi(
+                    id = collection.id,
+                    name = collection.name,
+                    isInCollection = gameCollectionIds.contains(collection.id)
+                )
+            }
+
+            _uiState.update {
+                it.copy(
+                    showAddToCollectionModal = true,
+                    collectionGameId = gameId,
+                    collections = collectionItems,
+                    collectionModalFocusIndex = 0
+                )
+            }
+            soundManager.play(SoundType.OPEN_MODAL)
+        }
+    }
+
+    fun dismissAddToCollectionModal() {
+        _uiState.update {
+            it.copy(
+                showAddToCollectionModal = false,
+                showCreateCollectionDialog = false
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveCollectionFocusUp() {
+        _uiState.update {
+            val minIndex = 0
+            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex - 1).coerceAtLeast(minIndex))
+        }
+    }
+
+    fun moveCollectionFocusDown() {
+        _uiState.update {
+            val maxIndex = it.collections.size
+            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex + 1).coerceAtMost(maxIndex))
+        }
+    }
+
+    fun confirmCollectionSelection() {
+        val state = _uiState.value
+        val gameId = state.collectionGameId ?: return
+        val index = state.collectionModalFocusIndex
+
+        if (index == state.collections.size) {
+            showCreateCollectionFromModal()
+            return
+        }
+
+        val collection = state.collections.getOrNull(index) ?: return
+        toggleGameInCollection(collection.id)
+    }
+
+    fun toggleGameInCollection(collectionId: Long) {
+        val state = _uiState.value
+        val gameId = state.collectionGameId ?: return
+
+        viewModelScope.launch {
+            val isInCollection = state.collections.find { it.id == collectionId }?.isInCollection ?: false
+            if (isInCollection) {
+                collectionDao.removeGameFromCollection(collectionId, gameId)
+                romMRepository.removeGameFromCollectionWithSync(gameId, collectionId)
+            } else {
+                collectionDao.addGameToCollection(
+                    com.nendo.argosy.data.local.entity.CollectionGameEntity(
+                        collectionId = collectionId,
+                        gameId = gameId
+                    )
+                )
+                romMRepository.addGameToCollectionWithSync(gameId, collectionId)
+            }
+
+            val updatedCollections = state.collections.map {
+                if (it.id == collectionId) it.copy(isInCollection = !isInCollection) else it
+            }
+            _uiState.update { it.copy(collections = updatedCollections) }
+        }
+    }
+
+    fun showCreateCollectionFromModal() {
+        _uiState.update { it.copy(showCreateCollectionDialog = true) }
+    }
+
+    fun hideCreateCollectionDialog() {
+        _uiState.update { it.copy(showCreateCollectionDialog = false) }
+    }
+
+    fun createCollectionFromModal(name: String) {
+        val gameId = _uiState.value.collectionGameId ?: return
+        viewModelScope.launch {
+            val collectionId = collectionDao.insertCollection(
+                com.nendo.argosy.data.local.entity.CollectionEntity(name = name)
+            )
+            collectionDao.addGameToCollection(
+                com.nendo.argosy.data.local.entity.CollectionGameEntity(
+                    collectionId = collectionId,
+                    gameId = gameId
+                )
+            )
+            romMRepository.createCollectionWithSync(name)
+
+            val allCollections = collectionDao.getAllCollections()
+                .filter { it.name.isNotBlank() }
+            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+
+            val collectionItems = allCollections.map { collection ->
+                CollectionItemUi(
+                    id = collection.id,
+                    name = collection.name,
+                    isInCollection = gameCollectionIds.contains(collection.id)
+                )
+            }
+
+            _uiState.update {
+                it.copy(
+                    collections = collectionItems,
+                    showCreateCollectionDialog = false
+                )
+            }
+        }
+    }
+
     private fun PlatformEntity.toUi() = HomePlatformUi(
         id = id,
         name = name,
@@ -988,6 +1137,7 @@ class LibraryViewModel @Inject constructor(
         override fun onUp(): InputResult {
             val state = _uiState.value
             return when {
+                state.showAddToCollectionModal -> { moveCollectionFocusUp(); InputResult.HANDLED }
                 state.showFilterMenu -> { moveFilterOptionFocus(-1); InputResult.HANDLED }
                 state.showQuickMenu -> { moveQuickMenuFocus(-1); InputResult.HANDLED }
                 else -> if (moveFocus(FocusMove.UP)) InputResult.HANDLED else InputResult.UNHANDLED
@@ -997,6 +1147,7 @@ class LibraryViewModel @Inject constructor(
         override fun onDown(): InputResult {
             val state = _uiState.value
             return when {
+                state.showAddToCollectionModal -> { moveCollectionFocusDown(); InputResult.HANDLED }
                 state.showFilterMenu -> { moveFilterOptionFocus(1); InputResult.HANDLED }
                 state.showQuickMenu -> { moveQuickMenuFocus(1); InputResult.HANDLED }
                 else -> if (moveFocus(FocusMove.DOWN)) InputResult.HANDLED else InputResult.UNHANDLED
@@ -1006,6 +1157,7 @@ class LibraryViewModel @Inject constructor(
         override fun onLeft(): InputResult {
             val state = _uiState.value
             return when {
+                state.showAddToCollectionModal -> InputResult.HANDLED
                 state.showFilterMenu -> { moveFilterCategoryFocus(-1); InputResult.HANDLED }
                 state.showQuickMenu -> InputResult.HANDLED
                 else -> if (moveFocus(FocusMove.LEFT)) InputResult.HANDLED else InputResult.UNHANDLED
@@ -1015,6 +1167,7 @@ class LibraryViewModel @Inject constructor(
         override fun onRight(): InputResult {
             val state = _uiState.value
             return when {
+                state.showAddToCollectionModal -> InputResult.HANDLED
                 state.showFilterMenu -> { moveFilterCategoryFocus(1); InputResult.HANDLED }
                 state.showQuickMenu -> InputResult.HANDLED
                 else -> if (moveFocus(FocusMove.RIGHT)) InputResult.HANDLED else InputResult.UNHANDLED
@@ -1024,6 +1177,10 @@ class LibraryViewModel @Inject constructor(
         override fun onConfirm(): InputResult {
             val state = _uiState.value
             return when {
+                state.showAddToCollectionModal -> {
+                    confirmCollectionSelection()
+                    InputResult.HANDLED
+                }
                 state.showFilterMenu -> {
                     confirmFilterSelection()
                     InputResult.HANDLED
@@ -1039,6 +1196,10 @@ class LibraryViewModel @Inject constructor(
         override fun onBack(): InputResult {
             val state = _uiState.value
             return when {
+                state.showAddToCollectionModal -> {
+                    dismissAddToCollectionModal()
+                    InputResult.HANDLED
+                }
                 state.showFilterMenu -> {
                     if (state.currentFilterCategory == FilterCategory.SEARCH &&
                         state.activeFilters.searchQuery.isNotEmpty()) {
@@ -1060,6 +1221,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         override fun onMenu(): InputResult {
+            if (_uiState.value.showAddToCollectionModal) return InputResult.HANDLED
             if (_uiState.value.showQuickMenu) {
                 toggleQuickMenu()
                 return InputResult.UNHANDLED
@@ -1074,12 +1236,13 @@ class LibraryViewModel @Inject constructor(
 
         override fun onSecondaryAction(): InputResult {
             val game = _uiState.value.focusedGame ?: return InputResult.UNHANDLED
-            if (_uiState.value.showQuickMenu || _uiState.value.showFilterMenu) return InputResult.UNHANDLED
+            if (_uiState.value.showAddToCollectionModal || _uiState.value.showQuickMenu || _uiState.value.showFilterMenu) return InputResult.UNHANDLED
             toggleFavorite(game.id)
             return InputResult.HANDLED
         }
 
         override fun onContextMenu(): InputResult {
+            if (_uiState.value.showAddToCollectionModal) return InputResult.HANDLED
             if (_uiState.value.showQuickMenu) return InputResult.HANDLED
             if (_uiState.value.showFilterMenu) {
                 clearCurrentCategoryFilters()
@@ -1090,6 +1253,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         override fun onSelect(): InputResult {
+            if (_uiState.value.showAddToCollectionModal) return InputResult.HANDLED
             if (_uiState.value.focusedGame != null) {
                 toggleQuickMenu()
             }
@@ -1099,6 +1263,7 @@ class LibraryViewModel @Inject constructor(
         override fun onPrevSection(): InputResult {
             val state = _uiState.value
             when {
+                state.showAddToCollectionModal -> return InputResult.HANDLED
                 state.showFilterMenu -> moveFilterOptionFocus(-5)
                 state.showQuickMenu -> return InputResult.HANDLED
                 else -> previousPlatform()
@@ -1109,6 +1274,7 @@ class LibraryViewModel @Inject constructor(
         override fun onNextSection(): InputResult {
             val state = _uiState.value
             when {
+                state.showAddToCollectionModal -> return InputResult.HANDLED
                 state.showFilterMenu -> moveFilterOptionFocus(5)
                 state.showQuickMenu -> return InputResult.HANDLED
                 else -> nextPlatform()

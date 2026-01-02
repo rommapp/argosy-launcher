@@ -42,18 +42,19 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.InstallMobile
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -92,8 +93,11 @@ import coil.size.Size
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.domain.model.RequiredAction
+import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.ChangelogModal
+import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterHint
+import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
@@ -481,6 +485,10 @@ fun HomeScreen(
                         viewModel.toggleGameMenu()
                         onGameSelect(focusedGame.id)
                     },
+                    onAddToCollection = {
+                        viewModel.toggleGameMenu()
+                        viewModel.showAddToCollectionModal(focusedGame.id)
+                    },
                     onRefresh = { viewModel.refreshGameData(focusedGame.id) },
                     onDelete = {
                         viewModel.toggleGameMenu()
@@ -492,6 +500,32 @@ fun HomeScreen(
                     }
                 )
             }
+        }
+
+        AnimatedVisibility(
+            visible = uiState.showAddToCollectionModal,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            AddToCollectionModal(
+                collections = uiState.collections.map { c ->
+                    CollectionItem(c.id, c.name, c.isInCollection)
+                },
+                focusIndex = uiState.collectionModalFocusIndex,
+                showCreateOption = true,
+                onToggleCollection = viewModel::toggleGameInCollection,
+                onCreate = viewModel::showCreateCollectionFromModal,
+                onDismiss = viewModel::dismissAddToCollectionModal
+            )
+        }
+
+        if (uiState.showCreateCollectionDialog) {
+            CreateCollectionDialog(
+                onDismiss = viewModel::hideCreateCollectionDialog,
+                onCreate = { name ->
+                    viewModel.createCollectionFromModal(name)
+                }
+            )
         }
 
         SyncOverlay(
@@ -919,6 +953,7 @@ private fun GameSelectOverlay(
     onPrimaryAction: () -> Unit,
     onFavorite: () -> Unit,
     onDetails: () -> Unit,
+    onAddToCollection: () -> Unit,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
     onHide: () -> Unit
@@ -927,6 +962,7 @@ private fun GameSelectOverlay(
     val playIdx = currentIndex++
     val favoriteIdx = currentIndex++
     val detailsIdx = currentIndex++
+    val addToCollectionIdx = currentIndex++
     val refreshIdx = if (game.isRommGame) currentIndex++ else -1
     val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
     val hideIdx = currentIndex
@@ -981,6 +1017,12 @@ private fun GameSelectOverlay(
                 label = "Details",
                 isFocused = focusIndex == detailsIdx,
                 onClick = onDetails
+            )
+            MenuOption(
+                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                label = "Add to Collection",
+                isFocused = focusIndex == addToCollectionIdx,
+                onClick = onAddToCollection
             )
             if (game.isRommGame) {
                 MenuOption(

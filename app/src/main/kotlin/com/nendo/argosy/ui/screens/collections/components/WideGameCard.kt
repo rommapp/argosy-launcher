@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -119,20 +122,52 @@ fun WideGameCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    val metadataParts = buildList {
-                        developer?.let { add(it) }
-                        releaseYear?.let { add(it.toString()) }
-                        genre?.let { add(it) }
-                    }
-
-                    if (metadataParts.isNotEmpty()) {
-                        Text(
-                            text = metadataParts.joinToString(" | "),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    if (developer != null || releaseYear != null || genre != null) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            developer?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            if (developer != null && (releaseYear != null || genre != null)) {
+                                Text(
+                                    text = "|",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            releaseYear?.let {
+                                Text(
+                                    text = it.toString(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                    maxLines = 1
+                                )
+                            }
+                            if (releaseYear != null && genre != null) {
+                                Text(
+                                    text = "|",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            genre?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -157,7 +192,9 @@ private fun WideGameCardFooter(
     playTimeMinutes: Int
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -176,8 +213,9 @@ private fun WideGameCardFooter(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                .padding(horizontal = Dimens.spacingMd),
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
             verticalAlignment = Alignment.CenterVertically
         ) {

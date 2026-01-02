@@ -4,11 +4,14 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.entity.CollectionEntity
+import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -57,6 +60,7 @@ class RomMRepository @Inject constructor(
     private val pendingSyncDao: PendingSyncDao,
     private val orphanedFileDao: OrphanedFileDao,
     private val emulatorConfigDao: EmulatorConfigDao,
+    private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
@@ -1562,6 +1566,209 @@ class RomMRepository @Inject constructor(
         } catch (e: Exception) {
             Logger.warn(TAG, "safeDeleteFile: error deleting $path: ${e.message}")
             orphanedFileDao.insert(OrphanedFileEntity(path = path))
+        }
+    }
+
+    suspend fun syncCollections(): RomMResult<Unit> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        if (_connectionState.value !is ConnectionState.Connected) {
+            return RomMResult.Error("Not connected")
+        }
+
+        return try {
+            val response = currentApi.getCollections(isFavorite = false)
+            if (!response.isSuccessful) {
+                return RomMResult.Error("Failed to fetch collections: ${response.code()}")
+            }
+
+            val remoteCollections = response.body() ?: emptyList()
+            val localCollections = collectionDao.getAllCollections()
+
+            val remoteByRommId = remoteCollections.associateBy { it.id }
+            val localByRommId = localCollections.filter { it.rommId != null }.associateBy { it.rommId }
+
+            for (remote in remoteCollections) {
+                val existing = localByRommId[remote.id]
+                if (existing != null) {
+                    collectionDao.updateCollection(
+                        existing.copy(
+                            name = remote.name,
+                            description = remote.description,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    )
+                } else {
+                    collectionDao.insertCollection(
+                        CollectionEntity(
+                            rommId = remote.id,
+                            name = remote.name,
+                            description = remote.description,
+                            isUserCreated = false
+                        )
+                    )
+                }
+
+                val collectionId = collectionDao.getCollectionByRommId(remote.id)?.id ?: continue
+                syncCollectionGames(collectionId, remote.romIds)
+            }
+
+            for (local in localCollections) {
+                if (local.rommId != null && !remoteByRommId.containsKey(local.rommId)) {
+                    collectionDao.deleteCollection(local)
+                }
+            }
+
+            Logger.info(TAG, "syncCollections: synced ${remoteCollections.size} collections")
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            Logger.info(TAG, "syncCollections: failed: ${e.message}")
+            RomMResult.Error(e.message ?: "Failed to sync collections")
+        }
+    }
+
+    private suspend fun syncCollectionGames(collectionId: Long, remoteRomIds: List<Long>) {
+        val localGameIds = collectionDao.getGameIdsInCollection(collectionId).toSet()
+        val remoteGameIds = remoteRomIds.mapNotNull { rommId ->
+            gameDao.getByRommId(rommId)?.id
+        }.toSet()
+
+        for (gameId in remoteGameIds - localGameIds) {
+            collectionDao.addGameToCollection(
+                CollectionGameEntity(collectionId = collectionId, gameId = gameId)
+            )
+        }
+
+        for (gameId in localGameIds - remoteGameIds) {
+            collectionDao.removeGameFromCollection(collectionId, gameId)
+        }
+    }
+
+    suspend fun createCollectionWithSync(name: String, description: String? = null): RomMResult<Long> {
+        val entity = CollectionEntity(
+            name = name,
+            description = description,
+            isUserCreated = true
+        )
+        val localId = collectionDao.insertCollection(entity)
+
+        val currentApi = api
+        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
+            return RomMResult.Success(localId)
+        }
+
+        return try {
+            val response = currentApi.createCollection(
+                isFavorite = false,
+                collection = RomMCollectionCreate(name = name, description = description)
+            )
+            if (response.isSuccessful) {
+                val remoteCollection = response.body()
+                if (remoteCollection != null) {
+                    collectionDao.updateCollection(
+                        collectionDao.getCollectionById(localId)!!.copy(rommId = remoteCollection.id)
+                    )
+                }
+            }
+            RomMResult.Success(localId)
+        } catch (e: Exception) {
+            Logger.info(TAG, "createCollectionWithSync: remote sync failed: ${e.message}")
+            RomMResult.Success(localId)
+        }
+    }
+
+    suspend fun updateCollectionWithSync(collectionId: Long, name: String, description: String?): RomMResult<Unit> {
+        val collection = collectionDao.getCollectionById(collectionId)
+            ?: return RomMResult.Error("Collection not found")
+
+        collectionDao.updateCollection(
+            collection.copy(name = name, description = description, updatedAt = System.currentTimeMillis())
+        )
+
+        val currentApi = api
+        val rommId = collection.rommId
+        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+            return RomMResult.Success(Unit)
+        }
+
+        return try {
+            val gameIds = collectionDao.getGameIdsInCollection(collectionId)
+            val romIds = gameIds.mapNotNull { gameDao.getById(it)?.rommId }
+            val jsonArray = romIds.joinToString(",", "[", "]")
+            val requestBody = jsonArray.toRequestBody("application/json".toMediaType())
+            currentApi.updateCollection(rommId, requestBody)
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            Logger.info(TAG, "updateCollectionWithSync: remote sync failed: ${e.message}")
+            RomMResult.Success(Unit)
+        }
+    }
+
+    suspend fun deleteCollectionWithSync(collectionId: Long): RomMResult<Unit> {
+        val collection = collectionDao.getCollectionById(collectionId)
+            ?: return RomMResult.Error("Collection not found")
+
+        collectionDao.deleteCollectionById(collectionId)
+
+        val currentApi = api
+        val rommId = collection.rommId
+        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+            return RomMResult.Success(Unit)
+        }
+
+        return try {
+            currentApi.deleteCollection(rommId)
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            Logger.info(TAG, "deleteCollectionWithSync: remote delete failed: ${e.message}")
+            RomMResult.Success(Unit)
+        }
+    }
+
+    suspend fun addGameToCollectionWithSync(gameId: Long, collectionId: Long): RomMResult<Unit> {
+        collectionDao.addGameToCollection(
+            CollectionGameEntity(collectionId = collectionId, gameId = gameId)
+        )
+
+        val collection = collectionDao.getCollectionById(collectionId)
+        val currentApi = api
+        val rommId = collection?.rommId
+        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+            return RomMResult.Success(Unit)
+        }
+
+        return try {
+            val gameIds = collectionDao.getGameIdsInCollection(collectionId)
+            val romIds = gameIds.mapNotNull { gameDao.getById(it)?.rommId }
+            val jsonArray = romIds.joinToString(",", "[", "]")
+            val requestBody = jsonArray.toRequestBody("application/json".toMediaType())
+            currentApi.updateCollection(rommId, requestBody)
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            Logger.info(TAG, "addGameToCollectionWithSync: remote sync failed: ${e.message}")
+            RomMResult.Success(Unit)
+        }
+    }
+
+    suspend fun removeGameFromCollectionWithSync(gameId: Long, collectionId: Long): RomMResult<Unit> {
+        collectionDao.removeGameFromCollection(collectionId, gameId)
+
+        val collection = collectionDao.getCollectionById(collectionId)
+        val currentApi = api
+        val rommId = collection?.rommId
+        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+            return RomMResult.Success(Unit)
+        }
+
+        return try {
+            val gameIds = collectionDao.getGameIdsInCollection(collectionId)
+            val romIds = gameIds.mapNotNull { gameDao.getById(it)?.rommId }
+            val jsonArray = romIds.joinToString(",", "[", "]")
+            val requestBody = jsonArray.toRequestBody("application/json".toMediaType())
+            currentApi.updateCollection(rommId, requestBody)
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            Logger.info(TAG, "removeGameFromCollectionWithSync: remote sync failed: ${e.message}")
+            RomMResult.Success(Unit)
         }
     }
 }

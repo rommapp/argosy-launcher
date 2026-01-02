@@ -8,6 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.nendo.argosy.data.local.converter.Converters
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
+import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
@@ -23,6 +24,8 @@ import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.AppCategoryEntity
+import com.nendo.argosy.data.local.entity.CollectionEntity
+import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
@@ -53,9 +56,11 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         StateCacheEntity::class,
         OrphanedFileEntity::class,
         AppCategoryEntity::class,
-        FirmwareEntity::class
+        FirmwareEntity::class,
+        CollectionEntity::class,
+        CollectionGameEntity::class
     ],
-    version = 40,
+    version = 41,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -75,6 +80,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun orphanedFileDao(): OrphanedFileDao
     abstract fun appCategoryDao(): AppCategoryDao
     abstract fun firmwareDao(): FirmwareDao
+    abstract fun collectionDao(): CollectionDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -659,6 +665,37 @@ abstract class ALauncherDatabase : RoomDatabase() {
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_firmware_platformId_fileName ON firmware(platformId, fileName)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_firmware_platformSlug ON firmware(platformSlug)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_firmware_rommId ON firmware(rommId)")
+            }
+        }
+
+        val MIGRATION_40_41 = object : Migration(40, 41) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS collections (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        rommId INTEGER,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        isUserCreated INTEGER NOT NULL DEFAULT 1,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_collections_rommId ON collections(rommId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_collections_name ON collections(name)")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS collection_games (
+                        collectionId INTEGER NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        addedAt INTEGER NOT NULL,
+                        PRIMARY KEY (collectionId, gameId),
+                        FOREIGN KEY (collectionId) REFERENCES collections(id) ON DELETE CASCADE,
+                        FOREIGN KEY (gameId) REFERENCES games(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_collection_games_collectionId ON collection_games(collectionId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_collection_games_gameId ON collection_games(gameId)")
             }
         }
     }

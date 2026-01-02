@@ -5,6 +5,7 @@ import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
@@ -94,6 +95,11 @@ interface RomMApi {
         @Path("id") collectionId: Long,
         @Part("rom_ids") romIds: RequestBody
     ): Response<RomMCollection>
+
+    @DELETE("api/collections/{id}")
+    suspend fun deleteCollection(
+        @Path("id") collectionId: Long
+    ): Response<Unit>
 
     @GET("api/saves")
     suspend fun getSavesByRom(

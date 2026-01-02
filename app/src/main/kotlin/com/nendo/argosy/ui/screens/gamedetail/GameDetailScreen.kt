@@ -62,6 +62,9 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.PermissionRequiredModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
 import com.nendo.argosy.ui.common.savechannel.SaveChannelModal
+import com.nendo.argosy.ui.components.AddToCollectionModal
+import com.nendo.argosy.ui.components.CollectionItem
+import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.flow.collectLatest
@@ -578,6 +581,33 @@ private fun GameDetailModals(
             currentIndex = uiState.viewerScreenshotIndex,
             onNavigate = viewModel::moveViewerIndex,
             onDismiss = viewModel::closeScreenshotViewer
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.showAddToCollectionModal,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        AddToCollectionModal(
+            collections = uiState.collections.map { c ->
+                CollectionItem(c.id, c.name, c.isInCollection)
+            },
+            focusIndex = uiState.collectionModalFocusIndex,
+            showCreateOption = true,
+            onToggleCollection = viewModel::toggleGameInCollection,
+            onCreate = viewModel::showCreateCollectionFromModal,
+            onDismiss = viewModel::dismissAddToCollectionModal
+        )
+    }
+
+    if (uiState.showCreateCollectionDialog) {
+        CreateCollectionDialog(
+            onDismiss = viewModel::hideCreateCollectionDialog,
+            onCreate = { name ->
+                viewModel.createCollectionFromModal(name)
+                viewModel.hideCreateCollectionDialog()
+            }
         )
     }
 }

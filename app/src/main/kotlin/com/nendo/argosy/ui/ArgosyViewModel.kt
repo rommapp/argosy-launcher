@@ -172,6 +172,7 @@ class ArgosyViewModel @Inject constructor(
 
     val drawerItems = listOf(
         DrawerItem(Screen.Showcase.route, "Showcase"),
+        DrawerItem(Screen.Collections.route, "Collections"),
         DrawerItem(Screen.Library.route, "Library"),
         DrawerItem(Screen.Downloads.route, "Downloads"),
         DrawerItem(Screen.Apps.route, "Apps"),

@@ -103,7 +103,11 @@ class GameDetailViewModel @Inject constructor(
     private val apkInstallManager: ApkInstallManager,
     private val repairImageCacheUseCase: RepairImageCacheUseCase,
     private val modalResetSignal: ModalResetSignal,
-    private val gameLauncher: GameLauncher
+    private val gameLauncher: GameLauncher,
+    private val collectionDao: com.nendo.argosy.data.local.dao.CollectionDao,
+    private val addGameToCollectionUseCase: com.nendo.argosy.domain.usecase.collection.AddGameToCollectionUseCase,
+    private val removeGameFromCollectionUseCase: com.nendo.argosy.domain.usecase.collection.RemoveGameFromCollectionUseCase,
+    private val createCollectionUseCase: com.nendo.argosy.domain.usecase.collection.CreateCollectionUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -807,6 +811,7 @@ class GameDetailViewModel @Inject constructor(
             if (isRetroArch && isEmulatedGame) optionCount++  // Change Core (emulated only)
             if (isMultiDisc) optionCount++  // Select Disc
             if (hasUpdates) optionCount++  // Updates/DLC
+            optionCount++  // Add to Collection (always present)
             if (isDownloaded || isAndroidApp) optionCount++  // Delete/Uninstall
 
             val maxIndex = optionCount - 1
@@ -841,8 +846,10 @@ class GameDetailViewModel @Inject constructor(
         val completionIdx = if (canTrackProgress) currentIdx++ else -1
         val emulatorOrLauncherIdx = if (isSteamGame || isEmulatedGame) currentIdx++ else -1
         val coreIdx = if (isRetroArch && isEmulatedGame) currentIdx++ else -1
+        val discIdx = if (isMultiDisc) currentIdx++ else -1
         val updatesIdx = if (hasUpdates) currentIdx++ else -1
         val refreshIdx = if (canTrackProgress) currentIdx++ else -1
+        val addToCollectionIdx = currentIdx++
         val deleteIdx = if (isDownloaded || isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
 
@@ -853,8 +860,10 @@ class GameDetailViewModel @Inject constructor(
             completionIdx -> showStatusPicker()
             emulatorOrLauncherIdx -> if (isSteamGame) showSteamLauncherPicker() else showEmulatorPicker()
             coreIdx -> showCorePicker()
+            discIdx -> showDiscPicker()
             updatesIdx -> showUpdatesPicker()
             refreshIdx -> refreshAndroidOrRommData()
+            addToCollectionIdx -> showAddToCollectionModal()
             deleteIdx -> {
                 toggleMoreOptions()
                 if (isAndroidApp) uninstallAndroidApp() else deleteLocalFile()
@@ -912,6 +921,11 @@ class GameDetailViewModel @Inject constructor(
             val emulator = state.availableEmulators.getOrNull(index - 1)
             selectEmulator(emulator)
         }
+    }
+
+    fun showDiscPicker() {
+        toggleMoreOptions()
+        playGame()
     }
 
     fun showSteamLauncherPicker() {
@@ -1533,6 +1547,10 @@ class GameDetailViewModel @Inject constructor(
                     moveSteamLauncherPickerFocus(-1)
                     InputResult.HANDLED
                 }
+                state.showAddToCollectionModal -> {
+                    moveCollectionFocusUp()
+                    InputResult.HANDLED
+                }
                 state.showMoreOptions -> {
                     moveOptionsFocus(-1)
                     InputResult.HANDLED
@@ -1578,6 +1596,10 @@ class GameDetailViewModel @Inject constructor(
                     moveSteamLauncherPickerFocus(1)
                     InputResult.HANDLED
                 }
+                state.showAddToCollectionModal -> {
+                    moveCollectionFocusDown()
+                    InputResult.HANDLED
+                }
                 state.showMoreOptions -> {
                     moveOptionsFocus(1)
                     InputResult.HANDLED
@@ -1621,7 +1643,7 @@ class GameDetailViewModel @Inject constructor(
                     moveExtractionPromptFocus(-1)
                     return InputResult.HANDLED
                 }
-                state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
+                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
                     return InputResult.UNHANDLED
                 }
                 else -> {
@@ -1664,7 +1686,7 @@ class GameDetailViewModel @Inject constructor(
                     moveExtractionPromptFocus(1)
                     return InputResult.HANDLED
                 }
-                state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
+                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
                     return InputResult.UNHANDLED
                 }
                 else -> {
@@ -1679,7 +1701,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
-                state.showMoreOptions || state.showEmulatorPicker ||
+                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showMissingDiscPrompt ||
                 state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
@@ -1693,7 +1715,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
-                state.showMoreOptions || state.showEmulatorPicker ||
+                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showMissingDiscPrompt ||
                 state.showUpdatesPicker || state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
@@ -1721,6 +1743,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showUpdatesPicker -> { /* Informational only */ }
                 state.showEmulatorPicker -> confirmEmulatorSelection()
                 state.showSteamLauncherPicker -> confirmSteamLauncherSelection()
+                state.showAddToCollectionModal -> confirmCollectionSelection()
                 state.showMoreOptions -> confirmOptionSelection(onBack)
                 else -> primaryAction()
             }
@@ -1745,6 +1768,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showUpdatesPicker -> dismissUpdatesPicker()
                 state.showEmulatorPicker -> dismissEmulatorPicker()
                 state.showSteamLauncherPicker -> dismissSteamLauncherPicker()
+                state.showAddToCollectionModal -> dismissAddToCollectionModal()
                 state.showMoreOptions -> toggleMoreOptions()
                 else -> onBack()
             }
@@ -1804,6 +1828,10 @@ class GameDetailViewModel @Inject constructor(
             }
             if (state.showSteamLauncherPicker) {
                 dismissSteamLauncherPicker()
+                return InputResult.UNHANDLED
+            }
+            if (state.showAddToCollectionModal) {
+                dismissAddToCollectionModal()
                 return InputResult.UNHANDLED
             }
             return InputResult.UNHANDLED
@@ -1871,6 +1899,8 @@ class GameDetailViewModel @Inject constructor(
                 showMissingDiscPrompt = false,
                 showScreenshotViewer = false,
                 showPermissionModal = false,
+                showAddToCollectionModal = false,
+                showCreateCollectionDialog = false,
                 saveChannel = it.saveChannel.copy(
                     isVisible = false,
                     showRestoreConfirmation = false,
@@ -1900,6 +1930,124 @@ class GameDetailViewModel @Inject constructor(
             preferencesRepository.setSaveSyncEnabled(false)
             _uiState.update { it.copy(showPermissionModal = false) }
             playGame()
+        }
+    }
+
+    fun showAddToCollectionModal() {
+        viewModelScope.launch {
+            val gameId = currentGameId
+            if (gameId == 0L) return@launch
+
+            val allCollections = collectionDao.getAllCollections()
+            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+
+            val collectionItems = allCollections.map { collection ->
+                CollectionItemUi(
+                    id = collection.id,
+                    name = collection.name,
+                    isInCollection = collection.id in gameCollectionIds
+                )
+            }
+
+            _uiState.update {
+                it.copy(
+                    showMoreOptions = false,
+                    showAddToCollectionModal = true,
+                    collections = collectionItems,
+                    collectionModalFocusIndex = 0
+                )
+            }
+        }
+    }
+
+    fun dismissAddToCollectionModal() {
+        _uiState.update {
+            it.copy(
+                showAddToCollectionModal = false,
+                showCreateCollectionDialog = false
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveCollectionFocusUp() {
+        _uiState.update {
+            val minIndex = 0
+            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex - 1).coerceAtLeast(minIndex))
+        }
+    }
+
+    fun moveCollectionFocusDown() {
+        _uiState.update {
+            val maxIndex = it.collections.size
+            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex + 1).coerceAtMost(maxIndex))
+        }
+    }
+
+    fun confirmCollectionSelection() {
+        val state = _uiState.value
+        val focusIndex = state.collectionModalFocusIndex
+
+        if (focusIndex == 0) {
+            _uiState.update { it.copy(showCreateCollectionDialog = true) }
+            return
+        }
+
+        val collectionIndex = focusIndex - 1
+        val collection = state.collections.getOrNull(collectionIndex) ?: return
+        toggleGameInCollection(collection.id)
+    }
+
+    fun toggleGameInCollection(collectionId: Long) {
+        val gameId = currentGameId
+        if (gameId == 0L) return
+
+        viewModelScope.launch {
+            val collection = _uiState.value.collections.find { it.id == collectionId } ?: return@launch
+
+            if (collection.isInCollection) {
+                removeGameFromCollectionUseCase(collectionId, gameId)
+            } else {
+                addGameToCollectionUseCase(gameId, collectionId)
+            }
+
+            val updatedCollections = _uiState.value.collections.map {
+                if (it.id == collectionId) it.copy(isInCollection = !it.isInCollection) else it
+            }
+            _uiState.update { it.copy(collections = updatedCollections) }
+        }
+    }
+
+    fun showCreateCollectionFromModal() {
+        _uiState.update { it.copy(showCreateCollectionDialog = true) }
+    }
+
+    fun hideCreateCollectionDialog() {
+        _uiState.update { it.copy(showCreateCollectionDialog = false) }
+    }
+
+    fun createCollectionFromModal(name: String) {
+        viewModelScope.launch {
+            createCollectionUseCase(name)
+
+            val gameId = currentGameId
+            val allCollections = collectionDao.getAllCollections()
+            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+
+            val collectionItems = allCollections.map { collection ->
+                CollectionItemUi(
+                    id = collection.id,
+                    name = collection.name,
+                    isInCollection = collection.id in gameCollectionIds
+                )
+            }
+
+            _uiState.update {
+                it.copy(
+                    showCreateCollectionDialog = false,
+                    collections = collectionItems
+                )
+            }
         }
     }
 }

@@ -25,6 +25,12 @@ enum class UpdateFileType {
     UPDATE, DLC
 }
 
+data class CollectionItemUi(
+    val id: Long,
+    val name: String,
+    val isInCollection: Boolean
+)
+
 data class AchievementUi(
     val raId: Long,
     val title: String,
@@ -141,7 +147,11 @@ data class GameDetailUiState(
     val repairedBackgroundPath: String? = null,
     val showExtractionFailedPrompt: Boolean = false,
     val extractionFailedInfo: ExtractionFailedInfo? = null,
-    val extractionPromptFocusIndex: Int = 0
+    val extractionPromptFocusIndex: Int = 0,
+    val showAddToCollectionModal: Boolean = false,
+    val collections: List<CollectionItemUi> = emptyList(),
+    val collectionModalFocusIndex: Int = 0,
+    val showCreateCollectionDialog: Boolean = false
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1

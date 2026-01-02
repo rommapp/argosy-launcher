@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
+import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
@@ -76,7 +77,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_36_37,
                 ALauncherDatabase.MIGRATION_37_38,
                 ALauncherDatabase.MIGRATION_38_39,
-                ALauncherDatabase.MIGRATION_39_40
+                ALauncherDatabase.MIGRATION_39_40,
+                ALauncherDatabase.MIGRATION_40_41
             )
             .build()
     }
@@ -137,4 +139,8 @@ object DatabaseModule {
     @Provides
     fun provideFirmwareDao(database: ALauncherDatabase): FirmwareDao =
         database.firmwareDao()
+
+    @Provides
+    fun provideCollectionDao(database: ALauncherDatabase): CollectionDao =
+        database.collectionDao()
 }

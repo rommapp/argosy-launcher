@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
@@ -126,6 +127,14 @@ fun MoreOptionsModal(
                 onClick = { onOptionSelect(idx) }
             )
         }
+
+        val addToCollectionIdx = currentIndex++
+        OptionItem(
+            icon = Icons.Default.FolderSpecial,
+            label = "Add to Collection",
+            isFocused = focusIndex == addToCollectionIdx,
+            onClick = { onOptionSelect(addToCollectionIdx) }
+        )
 
         HorizontalDivider(
             modifier = Modifier

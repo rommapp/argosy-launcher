@@ -13,6 +13,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.screens.apps.AppsScreen
+import com.nendo.argosy.ui.screens.collections.CollectionDetailScreen
+import com.nendo.argosy.ui.screens.collections.CollectionsScreen
+import com.nendo.argosy.ui.screens.collections.VirtualBrowserScreen
+import com.nendo.argosy.ui.screens.collections.VirtualCategoryScreen
 import com.nendo.argosy.ui.screens.downloads.DownloadsScreen
 import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
@@ -103,6 +107,58 @@ fun NavGraph(
                 },
                 onNavigateToDefault = navigateToDefault,
                 onDrawerToggle = onDrawerToggle
+            )
+        }
+
+        composable(Screen.Collections.route) {
+            CollectionsScreen(
+                onBack = navigateToDefault,
+                onCollectionClick = { collectionId ->
+                    navController.navigate(Screen.CollectionDetail.createRoute(collectionId))
+                },
+                onVirtualBrowseClick = { type ->
+                    navController.navigate(Screen.VirtualBrowser.createRoute(type))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.CollectionDetail.route,
+            arguments = listOf(navArgument("collectionId") { type = NavType.LongType })
+        ) {
+            CollectionDetailScreen(
+                onBack = { navController.popBackStack() },
+                onGameClick = { gameId ->
+                    navController.navigate(Screen.GameDetail.createRoute(gameId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.VirtualBrowser.route,
+            arguments = listOf(navArgument("type") { type = NavType.StringType })
+        ) {
+            VirtualBrowserScreen(
+                onBack = { navController.popBackStack() },
+                onCategoryClick = { category ->
+                    val type = it.arguments?.getString("type") ?: "genres"
+                    navController.navigate(Screen.VirtualCategory.createRoute(type, category))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.VirtualCategory.route,
+            arguments = listOf(
+                navArgument("type") { type = NavType.StringType },
+                navArgument("category") { type = NavType.StringType }
+            )
+        ) {
+            VirtualCategoryScreen(
+                onBack = { navController.popBackStack() },
+                onGameClick = { gameId ->
+                    navController.navigate(Screen.GameDetail.createRoute(gameId))
+                }
             )
         }
 

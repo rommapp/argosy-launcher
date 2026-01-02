@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import android.content.Context
 import com.nendo.argosy.data.emulator.BiosPathRegistry
 import com.nendo.argosy.data.local.dao.FirmwareDao
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.FirmwareEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -204,12 +205,15 @@ class BiosRepository @Inject constructor(
         emulatorId: String
     ): Int = withContext(Dispatchers.IO) {
         val config = BiosPathRegistry.getEmulatorBiosPaths(emulatorId) ?: return@withContext 0
-        if (platformSlug !in config.supportedPlatforms) return@withContext 0
+        // Normalize slug to canonical form (e.g., "segacd" -> "scd")
+        val canonicalSlug = PlatformDefinitions.getCanonicalSlug(platformSlug)
+        if (canonicalSlug !in config.supportedPlatforms) return@withContext 0
 
         val downloaded = firmwareDao.getByPlatformSlug(platformSlug).filter { it.localPath != null }
         if (downloaded.isEmpty()) return@withContext 0
 
-        val isRetroArch = emulatorId.startsWith("retroarch")
+        // Emulators that require exact BIOS filenames (use MD5-based renaming)
+        val requiresExactFilenames = emulatorId.startsWith("retroarch") || emulatorId == "melonds"
 
         var copiedCount = 0
         for (targetPath in config.defaultPaths) {
@@ -223,8 +227,8 @@ class BiosRepository @Inject constructor(
                 val sourceFile = File(firmware.localPath!!)
                 if (!sourceFile.exists()) continue
 
-                // For RetroArch, use MD5-based filename mapping (cores are strict about names)
-                val targetFileName = if (isRetroArch) {
+                // Use MD5-based filename mapping for emulators with strict naming requirements
+                val targetFileName = if (requiresExactFilenames) {
                     val md5 = firmware.md5Hash ?: calculateMd5(sourceFile)
                     BiosPathRegistry.getRetroArchBiosName(md5) ?: firmware.fileName
                 } else {

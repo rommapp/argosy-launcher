@@ -53,6 +53,7 @@ object BiosPathRegistry {
 
         // Sega CD - Genesis Plus GX
         "2efd74e3232ff260e371b99f84024f7f" to "bios_CD_U.bin",
+        "854b9150240a198070150e4566ae1290" to "bios_CD_U.bin",
         "e66fa1dc5820d254611fdcdba0662372" to "bios_CD_E.bin",
         "278a9397d192149e84e820ac621a8edd" to "bios_CD_J.bin",
 
@@ -61,8 +62,16 @@ object BiosPathRegistry {
 
         // NDS - melonDS / DeSmuME
         "24f67bdea115a2c847c8813a628571b3" to "bios7.bin",
+        "df692a80a5b1bc90728bc3dfc76cd948" to "bios7.bin",
         "a392174eb3e572fed6447e956bde4b25" to "bios9.bin",
         "145eaef5bd3037cbc247c213bb3da1b3" to "firmware.bin",
+        "94bc5094607c5e6598d50472c52f27f2" to "firmware.bin",
+
+        // DSi - melonDS (DSi mode requires separate folder)
+        "559dae4ea78eb9d67702c56c1d791e81" to "bios7.bin",
+        "87b665fce118f76251271c3732532777" to "bios9.bin",
+        "74f23348012d7b3e1cc216c47192ffeb" to "firmware.bin",
+        "d71edf897ddd06bf335feeb68edeb272" to "nand.bin",
 
         // PC Engine CD - Beetle PCE
         "38179df8f4ac870017db21ebcbf53114" to "syscard3.pce",

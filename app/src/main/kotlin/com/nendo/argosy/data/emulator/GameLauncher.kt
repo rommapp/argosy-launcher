@@ -254,13 +254,28 @@ class GameLauncher @Inject constructor(
             emulatorDetector.detectEmulators()
         }
 
+        var installedPackages = emulatorDetector.installedEmulators.value
+            .map { it.def.packageName }
+            .toSet()
+
         val gameOverride = emulatorConfigDao.getByGameId(game.id)
-        if (gameOverride?.packageName != null) {
+        val platformDefault = emulatorConfigDao.getDefaultForPlatform(game.platformId)
+
+        // If configured emulator isn't in our cached list, re-detect in case it was just installed
+        val configuredPackage = gameOverride?.packageName ?: platformDefault?.packageName
+        if (configuredPackage != null && configuredPackage !in installedPackages) {
+            Logger.debug(TAG, "Configured emulator $configuredPackage not in cache, re-detecting...")
+            emulatorDetector.detectEmulators()
+            installedPackages = emulatorDetector.installedEmulators.value
+                .map { it.def.packageName }
+                .toSet()
+        }
+
+        if (gameOverride?.packageName != null && gameOverride.packageName in installedPackages) {
             return emulatorDetector.getByPackage(gameOverride.packageName)
         }
 
-        val platformDefault = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-        if (platformDefault?.packageName != null) {
+        if (platformDefault?.packageName != null && platformDefault.packageName in installedPackages) {
             return emulatorDetector.getByPackage(platformDefault.packageName)
         }
 
@@ -398,6 +413,8 @@ class GameLauncher @Inject constructor(
         config: LaunchConfig.Custom,
         forResume: Boolean
     ): Intent {
+        val usesIntentDataUri = shouldUseIntentDataUri(emulator)
+
         return Intent(emulator.launchAction).apply {
             if (config.activityClass != null) {
                 component = ComponentName(emulator.packageName, config.activityClass)
@@ -407,10 +424,11 @@ class GameLauncher @Inject constructor(
 
             addCategory(Intent.CATEGORY_DEFAULT)
 
-            if (emulator.launchAction == Intent.ACTION_VIEW) {
+            if (emulator.launchAction == Intent.ACTION_VIEW && usesIntentDataUri) {
                 val uri = getFileUri(romFile)
                 val mimeType = config.mimeTypeOverride ?: getMimeType(romFile)
                 setDataAndType(uri, mimeType)
+                clipData = android.content.ClipData.newRawUri(null, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
@@ -421,17 +439,20 @@ class GameLauncher @Inject constructor(
             }
 
             var hasFileUri = false
-            config.intentExtras.forEach { (key, extraValue) ->
-                val value = when (extraValue) {
-                    is ExtraValue.FilePath -> romFile.absolutePath
-                    is ExtraValue.FileUri -> {
-                        hasFileUri = true
-                        getFileUri(romFile).toString()
+            val shouldSkipExtras = emulator.launchAction == Intent.ACTION_VIEW && usesIntentDataUri
+            if (!shouldSkipExtras) {
+                config.intentExtras.forEach { (key, extraValue) ->
+                    val value = when (extraValue) {
+                        is ExtraValue.FilePath -> romFile.absolutePath
+                        is ExtraValue.FileUri -> {
+                            hasFileUri = true
+                            getFileUri(romFile).toString()
+                        }
+                        is ExtraValue.Platform -> platformSlug
+                        is ExtraValue.Literal -> extraValue.value
                     }
-                    is ExtraValue.Platform -> platformSlug
-                    is ExtraValue.Literal -> extraValue.value
+                    putExtra(key, value)
                 }
-                putExtra(key, value)
             }
 
             if (hasFileUri) {
@@ -450,6 +471,24 @@ class GameLauncher @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun shouldUseIntentDataUri(emulator: EmulatorDef): Boolean {
+        if (emulator.packageName != "me.magnum.melonds") return true
+
+        val installed = emulatorDetector.installedEmulators.value
+            .find { it.def.packageName == emulator.packageName }
+            ?: return true
+
+        // melonDS Nightly builds (Oct 2025+) support intent.data URI
+        // Beta 1.10.0 (versionCode 33) only supports PATH extra
+        val supportsIntentData = installed.versionCode > 33 ||
+            installed.versionName?.contains("nightly", ignoreCase = true) == true
+
+        Logger.debug(TAG, "melonDS version: ${installed.versionName} (${installed.versionCode}), " +
+            "supportsIntentData=$supportsIntentData")
+
+        return supportsIntentData
     }
 
     private fun buildCustomSchemeIntent(

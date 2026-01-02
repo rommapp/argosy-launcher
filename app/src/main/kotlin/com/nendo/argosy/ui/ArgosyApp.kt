@@ -37,6 +37,9 @@ import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.navigation.NavGraph
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.notification.NotificationHost
+import com.nendo.argosy.ui.quickmenu.QuickMenuInputHandler
+import com.nendo.argosy.ui.quickmenu.QuickMenuOverlay
+import com.nendo.argosy.ui.quickmenu.QuickMenuViewModel
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import androidx.compose.ui.graphics.Color
@@ -46,7 +49,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ArgosyApp(
-    viewModel: ArgosyViewModel = hiltViewModel()
+    viewModel: ArgosyViewModel = hiltViewModel(),
+    quickMenuViewModel: QuickMenuViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -61,6 +65,7 @@ fun ArgosyApp(
     val quickSettingsUiState by viewModel.quickSettingsState.collectAsState()
     val screenDimmerPrefs by viewModel.screenDimmerPreferences.collectAsState()
     val isEmulatorRunning by viewModel.isEmulatorRunning.collectAsState()
+    val quickMenuState by quickMenuViewModel.uiState.collectAsState()
     val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
 
@@ -154,6 +159,37 @@ fun ArgosyApp(
         }
     }
 
+    val closeQuickMenu = remember {
+        {
+            inputDispatcher.unsubscribeDrawer()
+            quickMenuViewModel.hide()
+        }
+    }
+
+    // Quick menu input handler
+    val quickMenuInputHandler = remember(quickMenuViewModel, navController, closeQuickMenu) {
+        QuickMenuInputHandler(
+            viewModel = quickMenuViewModel,
+            onGameSelect = { gameId ->
+                closeQuickMenu()
+                navController.navigate(Screen.GameDetail.createRoute(gameId)) {
+                    launchSingleTop = true
+                }
+            },
+            onDismiss = { closeQuickMenu() }
+        )
+    }
+
+    val openQuickMenu = remember(quickMenuInputHandler) {
+        {
+            if (isDrawerOpen) closeDrawer()
+            if (isQuickSettingsOpen) closeQuickSettings()
+            inputDispatcher.subscribeDrawer(quickMenuInputHandler)
+            quickMenuViewModel.show()
+            viewModel.soundManager.play(SoundType.OPEN_MODAL)
+        }
+    }
+
     // Block input during route transitions and sync route to dispatcher
     LaunchedEffect(currentRoute) {
         if (currentRoute != null) {
@@ -184,19 +220,29 @@ fun ArgosyApp(
         inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
     }
 
-    // Collect gamepad events (Menu/L3 toggles drawer, R3 toggles quick settings if unhandled)
+    // Collect gamepad events (Menu toggles drawer, L3 toggles quick menu, R3 toggles quick settings)
     LaunchedEffect(Unit) {
         viewModel.gamepadInputHandler.eventFlow().collect { event ->
             screenDimmerState.recordActivity()
             val result = inputDispatcher.dispatch(event)
             if (!result.handled) {
                 when (event) {
-                    GamepadEvent.Menu, GamepadEvent.LeftStickClick -> {
+                    GamepadEvent.Menu -> {
                         if (isDrawerOpen) {
                             closeDrawer()
                         } else {
                             if (isQuickSettingsOpen) closeQuickSettings()
+                            if (quickMenuState.isVisible) closeQuickMenu()
                             openDrawer()
+                        }
+                    }
+                    GamepadEvent.LeftStickClick -> {
+                        if (quickMenuState.isVisible) {
+                            closeQuickMenu()
+                        } else {
+                            if (isDrawerOpen) closeDrawer()
+                            if (isQuickSettingsOpen) closeQuickSettings()
+                            openQuickMenu()
                         }
                     }
                     GamepadEvent.RightStickClick -> {
@@ -204,6 +250,7 @@ fun ArgosyApp(
                             closeQuickSettings()
                         } else {
                             if (isDrawerOpen) closeDrawer()
+                            if (quickMenuState.isVisible) closeQuickMenu()
                             openQuickSettings()
                         }
                     }
@@ -262,7 +309,13 @@ fun ArgosyApp(
                         if (offset.isNaN()) 0f else (1f + offset / drawerWidthPx).coerceIn(0f, 1f)
                     }
                 }
-                val contentBlur = (drawerBlurProgress * Motion.blurRadiusDrawer.value).dp
+                val drawerBlur = (drawerBlurProgress * Motion.blurRadiusDrawer.value).dp
+                val quickMenuBlur by androidx.compose.animation.core.animateDpAsState(
+                    targetValue = if (quickMenuState.isVisible) Motion.blurRadiusDrawer else 0.dp,
+                    animationSpec = androidx.compose.animation.core.tween(200),
+                    label = "quickMenuBlur"
+                )
+                val contentBlur = maxOf(drawerBlur, quickMenuBlur)
 
                 NavGraph(
                     navController = navController,
@@ -276,6 +329,17 @@ fun ArgosyApp(
             NotificationHost(
                 manager = viewModel.notificationManager,
                 modifier = Modifier.align(Alignment.BottomCenter)
+            )
+
+            // Quick Menu Overlay (L3 triggered)
+            QuickMenuOverlay(
+                viewModel = quickMenuViewModel,
+                onGameSelect = { gameId ->
+                    closeQuickMenu()
+                    navController.navigate(Screen.GameDetail.createRoute(gameId)) {
+                        launchSingleTop = true
+                    }
+                }
             )
 
             // Quick Settings Panel (right-side drawer)

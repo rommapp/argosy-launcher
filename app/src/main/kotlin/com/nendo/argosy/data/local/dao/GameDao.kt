@@ -368,4 +368,26 @@ interface GameDao {
 
     @Query("UPDATE games SET coverPath = :coverPath, backgroundPath = :backgroundPath, cachedScreenshotPaths = :cachedScreenshotPaths WHERE id = :gameId")
     suspend fun updateImagePaths(gameId: Long, coverPath: String?, backgroundPath: String?, cachedScreenshotPaths: String?)
+
+    @Query("""
+        SELECT * FROM games
+        WHERE isHidden = 0
+        AND (status IS NULL OR status NOT IN ('retired', 'never_playing'))
+        ORDER BY RANDOM()
+        LIMIT 1
+    """)
+    suspend fun getRandomGame(): GameEntity?
+
+    @Query("""
+        SELECT * FROM games
+        WHERE title LIKE '%' || :query || '%'
+        AND isHidden = 0
+        ORDER BY
+            CASE WHEN title LIKE :query || '%' THEN 0 ELSE 1 END,
+            CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
+            rating DESC,
+            sortTitle ASC
+        LIMIT :limit
+    """)
+    fun searchForQuickMenu(query: String, limit: Int = 10): Flow<List<GameEntity>>
 }

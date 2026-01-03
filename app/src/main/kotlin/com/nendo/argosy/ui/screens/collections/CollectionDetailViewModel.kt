@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -43,8 +43,12 @@ data class CollectionDetailUiState(
     val games: List<CollectionGameUi> = emptyList(),
     val isLoading: Boolean = true,
     val focusedIndex: Int = 0,
+    val showOptionsModal: Boolean = false,
+    val optionsModalFocusIndex: Int = 0,
     val showEditDialog: Boolean = false,
-    val showDeleteDialog: Boolean = false
+    val showDeleteDialog: Boolean = false,
+    val showRemoveGameDialog: Boolean = false,
+    val gameToRemove: CollectionGameUi? = null
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
@@ -62,32 +66,46 @@ class CollectionDetailViewModel @Inject constructor(
 
     private val collectionId: Long = checkNotNull(savedStateHandle["collectionId"])
 
-    private val _focusedIndex = MutableStateFlow(0)
-    private val _showEditDialog = MutableStateFlow(false)
-    private val _showDeleteDialog = MutableStateFlow(false)
+    private data class ModalState(
+        val focusedIndex: Int = 0,
+        val showOptionsModal: Boolean = false,
+        val optionsModalFocusIndex: Int = 0,
+        val showEditDialog: Boolean = false,
+        val showDeleteDialog: Boolean = false,
+        val showRemoveGameDialog: Boolean = false,
+        val gameToRemove: CollectionGameUi? = null
+    )
 
-    val uiState: StateFlow<CollectionDetailUiState> = combine(
-        collectionDao.observeCollectionById(collectionId),
-        collectionDao.observeGamesInCollection(collectionId),
-        _focusedIndex,
-        _showEditDialog,
-        _showDeleteDialog
-    ) { collection, games, focusedIndex, showEditDialog, showDeleteDialog ->
-        val platformCache = mutableMapOf<Long, String>()
-        val gamesUi = games.map { game ->
-            val platformName = platformCache.getOrPut(game.platformId) {
-                platformDao.getById(game.platformId)?.shortName ?: "Unknown"
+    private val _modalState = MutableStateFlow(ModalState())
+    private val _refreshTrigger = MutableStateFlow(0)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val uiState: StateFlow<CollectionDetailUiState> = _refreshTrigger.flatMapLatest {
+        combine(
+            collectionDao.observeCollectionById(collectionId),
+            collectionDao.observeGamesInCollection(collectionId),
+            _modalState
+        ) { collection, games, modalState ->
+            val platformCache = mutableMapOf<Long, String>()
+            val gamesUi = games.map { game ->
+                val platformName = platformCache.getOrPut(game.platformId) {
+                    platformDao.getById(game.platformId)?.shortName ?: "Unknown"
+                }
+                game.toUi(platformName)
             }
-            game.toUi(platformName)
+            CollectionDetailUiState(
+                collection = collection,
+                games = gamesUi,
+                isLoading = false,
+                focusedIndex = modalState.focusedIndex.coerceIn(0, (gamesUi.size - 1).coerceAtLeast(0)),
+                showOptionsModal = modalState.showOptionsModal,
+                optionsModalFocusIndex = modalState.optionsModalFocusIndex,
+                showEditDialog = modalState.showEditDialog,
+                showDeleteDialog = modalState.showDeleteDialog,
+                showRemoveGameDialog = modalState.showRemoveGameDialog,
+                gameToRemove = modalState.gameToRemove
+            )
         }
-        CollectionDetailUiState(
-            collection = collection,
-            games = gamesUi,
-            isLoading = false,
-            focusedIndex = focusedIndex.coerceIn(0, (gamesUi.size - 1).coerceAtLeast(0)),
-            showEditDialog = showEditDialog,
-            showDeleteDialog = showDeleteDialog
-        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -111,34 +129,94 @@ class CollectionDetailViewModel @Inject constructor(
     )
 
     fun moveUp() {
-        val currentIndex = _focusedIndex.value
+        val currentIndex = _modalState.value.focusedIndex
         if (currentIndex > 0) {
-            _focusedIndex.value = currentIndex - 1
+            _modalState.value = _modalState.value.copy(focusedIndex = currentIndex - 1)
         }
     }
 
     fun moveDown() {
         val state = uiState.value
-        val currentIndex = _focusedIndex.value
+        val currentIndex = _modalState.value.focusedIndex
         if (currentIndex < state.games.size - 1) {
-            _focusedIndex.value = currentIndex + 1
+            _modalState.value = _modalState.value.copy(focusedIndex = currentIndex + 1)
+        }
+    }
+
+    fun showOptionsModal() {
+        _modalState.value = _modalState.value.copy(
+            showOptionsModal = true,
+            optionsModalFocusIndex = 0
+        )
+    }
+
+    fun hideOptionsModal() {
+        _modalState.value = _modalState.value.copy(showOptionsModal = false)
+    }
+
+    fun moveOptionsFocus(delta: Int) {
+        val maxIndex = 1
+        val currentIndex = _modalState.value.optionsModalFocusIndex
+        val newIndex = (currentIndex + delta).coerceIn(0, maxIndex)
+        _modalState.value = _modalState.value.copy(optionsModalFocusIndex = newIndex)
+    }
+
+    fun selectOptionAtIndex(index: Int) {
+        _modalState.value = _modalState.value.copy(optionsModalFocusIndex = index)
+        confirmOptionSelection()
+    }
+
+    fun confirmOptionSelection() {
+        when (_modalState.value.optionsModalFocusIndex) {
+            0 -> {
+                hideOptionsModal()
+                showEditDialog()
+            }
+            1 -> {
+                hideOptionsModal()
+                showDeleteDialog()
+            }
         }
     }
 
     fun showEditDialog() {
-        _showEditDialog.value = true
+        _modalState.value = _modalState.value.copy(showEditDialog = true)
     }
 
     fun hideEditDialog() {
-        _showEditDialog.value = false
+        _modalState.value = _modalState.value.copy(showEditDialog = false)
     }
 
     fun showDeleteDialog() {
-        _showDeleteDialog.value = true
+        _modalState.value = _modalState.value.copy(showDeleteDialog = true)
     }
 
     fun hideDeleteDialog() {
-        _showDeleteDialog.value = false
+        _modalState.value = _modalState.value.copy(showDeleteDialog = false)
+    }
+
+    fun showRemoveGameDialog() {
+        val game = uiState.value.focusedGame ?: return
+        _modalState.value = _modalState.value.copy(
+            gameToRemove = game,
+            showRemoveGameDialog = true
+        )
+    }
+
+    fun hideRemoveGameDialog() {
+        _modalState.value = _modalState.value.copy(
+            showRemoveGameDialog = false,
+            gameToRemove = null
+        )
+    }
+
+    fun confirmRemoveGame() {
+        val game = _modalState.value.gameToRemove ?: return
+        viewModelScope.launch {
+            removeGameFromCollectionUseCase(game.id, collectionId)
+            hideRemoveGameDialog()
+            _refreshTrigger.value++
+        }
     }
 
     fun updateCollectionName(name: String) {
@@ -158,7 +236,7 @@ class CollectionDetailViewModel @Inject constructor(
 
     fun removeGameFromCollection(gameId: Long) {
         viewModelScope.launch {
-            removeGameFromCollectionUseCase(collectionId, gameId)
+            removeGameFromCollectionUseCase(gameId, collectionId)
         }
     }
 
@@ -167,32 +245,70 @@ class CollectionDetailViewModel @Inject constructor(
         onGameClick: (Long) -> Unit
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
-            moveUp()
-            return InputResult.HANDLED
+            val state = uiState.value
+            when {
+                state.showOptionsModal -> {
+                    moveOptionsFocus(-1)
+                    return InputResult.HANDLED
+                }
+                else -> {
+                    moveUp()
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         override fun onDown(): InputResult {
-            moveDown()
-            return InputResult.HANDLED
+            val state = uiState.value
+            when {
+                state.showOptionsModal -> {
+                    moveOptionsFocus(1)
+                    return InputResult.HANDLED
+                }
+                else -> {
+                    moveDown()
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         override fun onConfirm(): InputResult {
-            uiState.value.focusedGame?.let { onGameClick(it.id) }
-            return InputResult.HANDLED
+            val state = uiState.value
+            when {
+                state.showOptionsModal -> {
+                    confirmOptionSelection()
+                    return InputResult.HANDLED
+                }
+                else -> {
+                    state.focusedGame?.let { onGameClick(it.id) }
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         override fun onBack(): InputResult {
-            onBack()
-            return InputResult.HANDLED
+            val state = uiState.value
+            when {
+                state.showOptionsModal -> {
+                    hideOptionsModal()
+                    return InputResult.HANDLED
+                }
+                else -> {
+                    onBack()
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         override fun onContextMenu(): InputResult {
-            showEditDialog()
+            if (uiState.value.focusedGame != null) {
+                showRemoveGameDialog()
+            }
             return InputResult.HANDLED
         }
 
-        override fun onSelect(): InputResult {
-            showDeleteDialog()
+        override fun onMenu(): InputResult {
+            showOptionsModal()
             return InputResult.HANDLED
         }
     }

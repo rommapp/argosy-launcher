@@ -74,8 +74,14 @@ fun VirtualCategoryScreen(
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.games.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.focusedIndex)
+        if (uiState.games.isNotEmpty() && uiState.focusedIndex in uiState.games.indices) {
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val viewportHeight = listState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size } / visibleItems.size
+            } else 120
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            listState.animateScrollToItem(uiState.focusedIndex, -targetOffset)
         }
     }
 

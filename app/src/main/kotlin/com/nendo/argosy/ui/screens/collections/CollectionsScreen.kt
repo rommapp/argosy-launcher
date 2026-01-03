@@ -83,6 +83,7 @@ fun CollectionsScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_COLLECTIONS)
+                viewModel.refreshLocal()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -101,7 +102,13 @@ fun CollectionsScreen(
             CollectionSection.BROWSE_BY -> uiState.collections.size + 2 + uiState.focusedIndex
         }
         if (targetIndex >= 0) {
-            listState.animateScrollToItem(targetIndex)
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val viewportHeight = listState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size } / visibleItems.size
+            } else 80
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            listState.animateScrollToItem(targetIndex, -targetOffset)
         }
     }
 
@@ -184,7 +191,7 @@ fun CollectionsScreen(
             )
             val contextHints = if (uiState.focusedSection == CollectionSection.MY_COLLECTIONS && uiState.focusedCollection != null) {
                 listOf(
-                    InputButton.WEST to "Edit",
+                    InputButton.WEST to "Rename",
                     InputButton.SELECT to "Delete"
                 )
             } else {

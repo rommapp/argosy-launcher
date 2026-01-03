@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.SearchCandidate
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.domain.usecase.quickmenu.GetTopUnplayedUseCase
+import com.nendo.argosy.ui.screens.common.LibrarySyncBus
+import com.nendo.argosy.util.FuzzySearch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -65,7 +68,8 @@ private const val LIST_LIMIT = 20
 class QuickMenuViewModel @Inject constructor(
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
-    private val getTopUnplayedUseCase: GetTopUnplayedUseCase
+    private val getTopUnplayedUseCase: GetTopUnplayedUseCase,
+    private val librarySyncBus: LibrarySyncBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickMenuUiState())
@@ -73,6 +77,15 @@ class QuickMenuViewModel @Inject constructor(
 
     private var searchJob: Job? = null
     private val platformCache = mutableMapOf<Long, String>()
+    private var searchCandidates: List<SearchCandidate>? = null
+
+    init {
+        viewModelScope.launch {
+            librarySyncBus.syncCompleted.collect {
+                invalidateSearchCache()
+            }
+        }
+    }
 
     fun show() {
         _uiState.update {
@@ -231,11 +244,25 @@ class QuickMenuViewModel @Inject constructor(
 
         searchJob = viewModelScope.launch {
             delay(300)
-            gameDao.searchForQuickMenu(query, 10).collect { games ->
-                val rows = games.map { it.toGameRowUi { formatRating(it.rating) } }
-                _uiState.update { it.copy(searchResults = rows, focusedContentIndex = 0) }
+            val candidates = searchCandidates ?: gameDao.getSearchCandidates().also {
+                searchCandidates = it
             }
+            val matched = FuzzySearch.search(query, candidates, limit = 10)
+            if (matched.isEmpty()) {
+                _uiState.update { it.copy(searchResults = emptyList(), focusedContentIndex = 0) }
+                return@launch
+            }
+            val matchedIds = matched.map { it.id }
+            val games = gameDao.getByIds(matchedIds)
+            val gamesById = games.associateBy { it.id }
+            val orderedGames = matchedIds.mapNotNull { gamesById[it] }
+            val rows = orderedGames.map { it.toGameRowUi { formatRating(it.rating) } }
+            _uiState.update { it.copy(searchResults = rows, focusedContentIndex = 0) }
         }
+    }
+
+    fun invalidateSearchCache() {
+        searchCandidates = null
     }
 
     private suspend fun GameEntity.toGameRowUi(metadataProvider: () -> String): GameRowUi {

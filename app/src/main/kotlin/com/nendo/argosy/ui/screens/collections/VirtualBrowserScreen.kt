@@ -79,8 +79,14 @@ fun VirtualBrowserScreen(
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.categories.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.focusedIndex)
+        if (uiState.categories.isNotEmpty() && uiState.focusedIndex in uiState.categories.indices) {
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val viewportHeight = listState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size } / visibleItems.size
+            } else 80
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            listState.animateScrollToItem(uiState.focusedIndex, -targetOffset)
         }
     }
 

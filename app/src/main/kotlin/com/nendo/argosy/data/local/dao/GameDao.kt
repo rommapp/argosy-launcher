@@ -390,4 +390,17 @@ interface GameDao {
         LIMIT :limit
     """)
     fun searchForQuickMenu(query: String, limit: Int = 10): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT id, title, rating FROM games
+        WHERE isHidden = 0
+        AND (status IS NULL OR status NOT IN ('retired', 'never_playing'))
+    """)
+    suspend fun getSearchCandidates(): List<SearchCandidate>
 }
+
+data class SearchCandidate(
+    val id: Long,
+    val title: String,
+    val rating: Float?
+)

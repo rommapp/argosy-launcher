@@ -40,8 +40,11 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.collections.components.WideGameCard
+import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOption
+import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionsModal
 import com.nendo.argosy.ui.screens.collections.dialogs.DeleteCollectionDialog
 import com.nendo.argosy.ui.screens.collections.dialogs.EditCollectionDialog
+import com.nendo.argosy.ui.screens.collections.dialogs.RemoveGameDialog
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable
@@ -76,8 +79,14 @@ fun CollectionDetailScreen(
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.games.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.focusedIndex)
+        if (uiState.games.isNotEmpty() && uiState.focusedIndex in uiState.games.indices) {
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val viewportHeight = listState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size } / visibleItems.size
+            } else 120
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            listState.animateScrollToItem(uiState.focusedIndex, -targetOffset)
         }
     }
 
@@ -142,17 +151,19 @@ fun CollectionDetailScreen(
             InputButton.SOUTH to "Open",
             InputButton.EAST to "Back"
         )
-        val actionHints = if (uiState.collection != null) {
-            listOf(
-                InputButton.WEST to "Edit",
-                InputButton.SELECT to "Delete"
-            )
+        val gameHints = if (uiState.focusedGame != null) {
+            listOf(InputButton.WEST to "Remove")
+        } else {
+            emptyList()
+        }
+        val optionsHint = if (uiState.collection != null) {
+            listOf(InputButton.START to "Options")
         } else {
             emptyList()
         }
         FooterBar(
             modifier = Modifier.align(Alignment.BottomCenter),
-            hints = baseHints + actionHints
+            hints = baseHints + gameHints + optionsHint
         )
     }
 
@@ -169,6 +180,35 @@ fun CollectionDetailScreen(
             collectionName = uiState.collection!!.name,
             onDismiss = { viewModel.hideDeleteDialog() },
             onConfirm = { viewModel.deleteCollection(onDeleted = onBack) }
+        )
+    }
+
+    if (uiState.showOptionsModal && uiState.collection != null) {
+        CollectionOptionsModal(
+            collectionName = uiState.collection!!.name,
+            focusIndex = uiState.optionsModalFocusIndex,
+            onOptionSelect = { option ->
+                when (option) {
+                    CollectionOption.RENAME -> {
+                        viewModel.hideOptionsModal()
+                        viewModel.showEditDialog()
+                    }
+                    CollectionOption.DELETE -> {
+                        viewModel.hideOptionsModal()
+                        viewModel.showDeleteDialog()
+                    }
+                }
+            },
+            onDismiss = { viewModel.hideOptionsModal() }
+        )
+    }
+
+    if (uiState.showRemoveGameDialog && uiState.gameToRemove != null) {
+        RemoveGameDialog(
+            gameTitle = uiState.gameToRemove!!.title,
+            collectionName = uiState.collection?.name ?: "",
+            onDismiss = { viewModel.hideRemoveGameDialog() },
+            onConfirm = { viewModel.confirmRemoveGame() }
         )
     }
 }

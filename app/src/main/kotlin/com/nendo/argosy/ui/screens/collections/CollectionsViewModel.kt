@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -67,6 +68,7 @@ class CollectionsViewModel @Inject constructor(
     private val _showDeleteDialog = MutableStateFlow(false)
     private val _editingCollection = MutableStateFlow<CollectionWithCount?>(null)
     private val _isRefreshing = MutableStateFlow(false)
+    private val _localRefreshTrigger = MutableStateFlow(0)
     private var lastRefreshTime = 0L
 
     init {
@@ -88,36 +90,43 @@ class CollectionsViewModel @Inject constructor(
         }
     }
 
+    fun refreshLocal() {
+        _localRefreshTrigger.value++
+    }
+
     companion object {
         private const val REFRESH_DEBOUNCE_MS = 30_000L
     }
 
-    val uiState: StateFlow<CollectionsUiState> = combine(
-        getCollectionsUseCase(),
-        getVirtualCollectionCategoriesUseCase.getGenres(),
-        getVirtualCollectionCategoriesUseCase.getGameModes(),
-        _focusedSection,
-        _focusedIndex,
-        _showCreateDialog,
-        _showEditDialog,
-        _showDeleteDialog,
-        _editingCollection,
-        _isRefreshing
-    ) { values ->
-        @Suppress("UNCHECKED_CAST")
-        CollectionsUiState(
-            collections = values[0] as List<CollectionWithCount>,
-            genres = values[1] as List<CategoryWithCount>,
-            gameModes = values[2] as List<CategoryWithCount>,
-            isLoading = false,
-            isRefreshing = values[9] as Boolean,
-            focusedSection = values[3] as CollectionSection,
-            focusedIndex = values[4] as Int,
-            showCreateDialog = values[5] as Boolean,
-            showEditDialog = values[6] as Boolean,
-            showDeleteDialog = values[7] as Boolean,
-            editingCollection = values[8] as CollectionWithCount?
-        )
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val uiState: StateFlow<CollectionsUiState> = _localRefreshTrigger.flatMapLatest {
+        combine(
+            getCollectionsUseCase(),
+            getVirtualCollectionCategoriesUseCase.getGenres(),
+            getVirtualCollectionCategoriesUseCase.getGameModes(),
+            _focusedSection,
+            _focusedIndex,
+            _showCreateDialog,
+            _showEditDialog,
+            _showDeleteDialog,
+            _editingCollection,
+            _isRefreshing
+        ) { values ->
+            @Suppress("UNCHECKED_CAST")
+            CollectionsUiState(
+                collections = values[0] as List<CollectionWithCount>,
+                genres = values[1] as List<CategoryWithCount>,
+                gameModes = values[2] as List<CategoryWithCount>,
+                isLoading = false,
+                isRefreshing = values[9] as Boolean,
+                focusedSection = values[3] as CollectionSection,
+                focusedIndex = values[4] as Int,
+                showCreateDialog = values[5] as Boolean,
+                showEditDialog = values[6] as Boolean,
+                showDeleteDialog = values[7] as Boolean,
+                editingCollection = values[8] as CollectionWithCount?
+            )
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),

@@ -1,10 +1,11 @@
 package com.nendo.argosy.domain.usecase.sync
 
 import com.nendo.argosy.data.remote.romm.RomMRepository
-import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.SyncResult
 import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.ui.screens.common.LibrarySyncBus
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.ui.notification.NotificationProgress
 import com.nendo.argosy.ui.notification.NotificationType
 import kotlinx.coroutines.NonCancellable
@@ -21,7 +22,8 @@ sealed class SyncLibraryResult {
 
 class SyncLibraryUseCase @Inject constructor(
     private val romMRepository: RomMRepository,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val librarySyncBus: LibrarySyncBus
 ) {
     suspend operator fun invoke(
         initializeFirst: Boolean = false,
@@ -104,6 +106,7 @@ class SyncLibraryUseCase @Inject constructor(
                             )
                         }
 
+                        librarySyncBus.emitSyncCompleted()
                         SyncLibraryResult.Success(result)
                     }
                 } catch (e: Exception) {

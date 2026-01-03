@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 fun OptionItem(
     label: String,
     icon: ImageVector? = null,
+    iconTint: Color? = null,
     value: String? = null,
     isFocused: Boolean = false,
     isDangerous: Boolean = false,
@@ -63,7 +64,7 @@ fun OptionItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = contentColor,
+                tint = iconTint ?: contentColor,
                 modifier = Modifier.width(20.dp)
             )
         }

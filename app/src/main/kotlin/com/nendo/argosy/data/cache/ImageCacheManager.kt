@@ -76,6 +76,11 @@ data class AppIconCacheRequest(
     val packageName: String
 )
 
+data class CacheValidationResult(
+    val deletedFiles: Int,
+    val clearedPaths: Int
+)
+
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @Singleton
 class ImageCacheManager @Inject constructor(
@@ -208,8 +213,13 @@ class ImageCacheManager @Inject constructor(
         val cachedFile = File(cacheDir, fileName)
 
         if (cachedFile.exists()) {
-            updateGameBackground(request.id, cachedFile.absolutePath, request.isSteam)
-            return
+            if (isValidImageFile(cachedFile)) {
+                updateGameBackground(request.id, cachedFile.absolutePath, request.isSteam)
+                return
+            } else {
+                cachedFile.delete()
+                Log.w(TAG, "Deleted invalid cached background: ${cachedFile.name}")
+            }
         }
 
         val bitmap = downloadAndResize(request.url, 640) ?: return
@@ -218,6 +228,12 @@ class ImageCacheManager @Inject constructor(
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
         }
         bitmap.recycle()
+
+        if (!isValidImageFile(cachedFile)) {
+            cachedFile.delete()
+            Log.w(TAG, "Deleted newly cached invalid background: ${cachedFile.name}")
+            return
+        }
 
         val idLabel = if (request.isSteam) "steamAppId" else "rommId"
         Log.d(TAG, "Cached background for $idLabel ${request.id}: ${cachedFile.length() / 1024}KB")
@@ -291,6 +307,13 @@ class ImageCacheManager @Inject constructor(
         val md = MessageDigest.getInstance("MD5")
         val digest = md.digest(toByteArray())
         return digest.joinToString("") { "%02x".format(it) }.take(12)
+    }
+
+    private fun isValidImageFile(file: File, minSizeBytes: Long = 1024): Boolean {
+        if (!file.exists() || file.length() < minSizeBytes) return false
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, options)
+        return options.outWidth > 0 && options.outHeight > 0
     }
 
     fun clearCache() {
@@ -465,8 +488,13 @@ class ImageCacheManager @Inject constructor(
                 val cachedFile = File(cacheDir, fileName)
 
                 if (cachedFile.exists()) {
-                    cachedPaths.add(cachedFile.absolutePath)
-                    return@forEachIndexed
+                    if (isValidImageFile(cachedFile)) {
+                        cachedPaths.add(cachedFile.absolutePath)
+                        return@forEachIndexed
+                    } else {
+                        cachedFile.delete()
+                        Log.w(TAG, "Deleted invalid cached screenshot: ${cachedFile.name}")
+                    }
                 }
 
                 val bitmap = downloadAndResize(url, 480) ?: return@forEachIndexed
@@ -476,6 +504,12 @@ class ImageCacheManager @Inject constructor(
                 }
                 bitmap.recycle()
 
+                if (!isValidImageFile(cachedFile)) {
+                    cachedFile.delete()
+                    Log.w(TAG, "Deleted newly cached invalid screenshot: ${cachedFile.name}")
+                    return@forEachIndexed
+                }
+
                 Log.d(TAG, "Cached screenshot $index for gameId $gameId: ${cachedFile.length() / 1024}KB")
                 cachedPaths.add(cachedFile.absolutePath)
             }
@@ -483,12 +517,10 @@ class ImageCacheManager @Inject constructor(
             if (cachedPaths.isNotEmpty()) {
                 gameDao.updateCachedScreenshotPaths(gameId, cachedPaths.joinToString(","))
 
-                if (cachedPaths.isNotEmpty()) {
-                    val game = gameDao.getById(gameId)
-                    if (game != null && (game.backgroundPath == null || !game.backgroundPath.startsWith("/"))) {
-                        gameDao.updateBackgroundPath(gameId, cachedPaths.first())
-                        Log.d(TAG, "Set first screenshot as background for gameId $gameId")
-                    }
+                val game = gameDao.getById(gameId)
+                if (game != null && (game.backgroundPath == null || !game.backgroundPath.startsWith("/"))) {
+                    gameDao.updateBackgroundPath(gameId, cachedPaths.first())
+                    Log.d(TAG, "Set first screenshot as background for gameId $gameId")
                 }
             }
         }
@@ -544,8 +576,13 @@ class ImageCacheManager @Inject constructor(
             val cachedFile = File(cacheDir, fileName)
 
             if (cachedFile.exists()) {
-                cachedPaths.add(cachedFile.absolutePath)
-                return@forEachIndexed
+                if (isValidImageFile(cachedFile)) {
+                    cachedPaths.add(cachedFile.absolutePath)
+                    return@forEachIndexed
+                } else {
+                    cachedFile.delete()
+                    Log.w(TAG, "Deleted invalid cached screenshot: ${cachedFile.name}")
+                }
             }
 
             val bitmap = downloadAndResize(url, 480) ?: return@forEachIndexed
@@ -554,6 +591,12 @@ class ImageCacheManager @Inject constructor(
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, out)
             }
             bitmap.recycle()
+
+            if (!isValidImageFile(cachedFile)) {
+                cachedFile.delete()
+                Log.w(TAG, "Deleted newly cached invalid screenshot: ${cachedFile.name}")
+                return@forEachIndexed
+            }
 
             Log.d(TAG, "Cached screenshot $index for rommId ${request.rommId}: ${cachedFile.length() / 1024}KB")
             cachedPaths.add(cachedFile.absolutePath)
@@ -615,8 +658,13 @@ class ImageCacheManager @Inject constructor(
         val cachedFile = File(cacheDir, fileName)
 
         if (cachedFile.exists()) {
-            platformDao.updateLogoPath(request.platformId, cachedFile.absolutePath)
-            return
+            if (isValidImageFile(cachedFile, minSizeBytes = 512)) {
+                platformDao.updateLogoPath(request.platformId, cachedFile.absolutePath)
+                return
+            } else {
+                cachedFile.delete()
+                Log.w(TAG, "Deleted invalid cached logo: ${cachedFile.name}")
+            }
         }
 
         val bitmap = downloadBitmap(request.logoUrl) ?: return
@@ -627,6 +675,12 @@ class ImageCacheManager @Inject constructor(
             transparentBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
         transparentBitmap.recycle()
+
+        if (!isValidImageFile(cachedFile, minSizeBytes = 512)) {
+            cachedFile.delete()
+            Log.w(TAG, "Deleted newly cached invalid logo: ${cachedFile.name}")
+            return
+        }
 
         Log.d(TAG, "Cached logo for platform ${request.platformId}: ${cachedFile.length() / 1024}KB")
         platformDao.updateLogoPath(request.platformId, cachedFile.absolutePath)
@@ -696,8 +750,13 @@ class ImageCacheManager @Inject constructor(
             val cachedFile = File(cacheDir, fileName)
 
             if (cachedFile.exists()) {
-                gameDao.updateCoverPath(gameId, cachedFile.absolutePath)
-                return@launch
+                if (isValidImageFile(cachedFile)) {
+                    gameDao.updateCoverPath(gameId, cachedFile.absolutePath)
+                    return@launch
+                } else {
+                    cachedFile.delete()
+                    Log.w(TAG, "Deleted invalid cached cover: ${cachedFile.name}")
+                }
             }
 
             val bitmap = downloadAndResize(url, 400) ?: return@launch
@@ -706,6 +765,12 @@ class ImageCacheManager @Inject constructor(
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
             }
             bitmap.recycle()
+
+            if (!isValidImageFile(cachedFile)) {
+                cachedFile.delete()
+                Log.w(TAG, "Deleted newly cached invalid cover: ${cachedFile.name}")
+                return@launch
+            }
 
             Log.d(TAG, "Cached cover for gameId $gameId: ${cachedFile.length() / 1024}KB")
             gameDao.updateCoverPath(gameId, cachedFile.absolutePath)
@@ -744,8 +809,13 @@ class ImageCacheManager @Inject constructor(
         val cachedFile = File(cacheDir, fileName)
 
         if (cachedFile.exists()) {
-            updateGameCover(request.id, cachedFile.absolutePath)
-            return
+            if (isValidImageFile(cachedFile)) {
+                updateGameCover(request.id, cachedFile.absolutePath)
+                return
+            } else {
+                cachedFile.delete()
+                Log.w(TAG, "Deleted invalid cached cover: ${cachedFile.name}")
+            }
         }
 
         val bitmap = downloadAndResize(request.url, 400) ?: return
@@ -754,6 +824,12 @@ class ImageCacheManager @Inject constructor(
             bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
         }
         bitmap.recycle()
+
+        if (!isValidImageFile(cachedFile)) {
+            cachedFile.delete()
+            Log.w(TAG, "Deleted newly cached invalid cover: ${cachedFile.name}")
+            return
+        }
 
         Log.d(TAG, "Cached cover for rommId ${request.id}: ${cachedFile.length() / 1024}KB")
         updateGameCover(request.id, cachedFile.absolutePath)
@@ -816,6 +892,15 @@ class ImageCacheManager @Inject constructor(
         val unlockedFileName = "badge_${request.achievementId}_${request.badgeUrl.md5Hash()}.png"
         val unlockedFile = File(cacheDir, unlockedFileName)
 
+        if (unlockedFile.exists()) {
+            if (isValidImageFile(unlockedFile, minSizeBytes = 512)) {
+                achievementDao.updateCachedBadgeUrl(request.achievementId, unlockedFile.absolutePath)
+            } else {
+                unlockedFile.delete()
+                Log.w(TAG, "Deleted invalid cached badge: ${unlockedFile.name}")
+            }
+        }
+
         if (!unlockedFile.exists()) {
             val bitmap = downloadBitmap(request.badgeUrl)
             if (bitmap != null) {
@@ -823,17 +908,29 @@ class ImageCacheManager @Inject constructor(
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                 }
                 bitmap.recycle()
-                Log.d(TAG, "Cached unlocked badge for achievement ${request.achievementId}")
-            }
-        }
 
-        if (unlockedFile.exists()) {
-            achievementDao.updateCachedBadgeUrl(request.achievementId, unlockedFile.absolutePath)
+                if (isValidImageFile(unlockedFile, minSizeBytes = 512)) {
+                    Log.d(TAG, "Cached unlocked badge for achievement ${request.achievementId}")
+                    achievementDao.updateCachedBadgeUrl(request.achievementId, unlockedFile.absolutePath)
+                } else {
+                    unlockedFile.delete()
+                    Log.w(TAG, "Deleted newly cached invalid badge: ${unlockedFile.name}")
+                }
+            }
         }
 
         if (request.badgeUrlLock != null) {
             val lockedFileName = "badge_lock_${request.achievementId}_${request.badgeUrlLock.md5Hash()}.png"
             val lockedFile = File(cacheDir, lockedFileName)
+
+            if (lockedFile.exists()) {
+                if (isValidImageFile(lockedFile, minSizeBytes = 512)) {
+                    achievementDao.updateCachedBadgeUrlLock(request.achievementId, lockedFile.absolutePath)
+                } else {
+                    lockedFile.delete()
+                    Log.w(TAG, "Deleted invalid cached locked badge: ${lockedFile.name}")
+                }
+            }
 
             if (!lockedFile.exists()) {
                 val bitmap = downloadBitmap(request.badgeUrlLock)
@@ -842,12 +939,15 @@ class ImageCacheManager @Inject constructor(
                         bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                     }
                     bitmap.recycle()
-                    Log.d(TAG, "Cached locked badge for achievement ${request.achievementId}")
-                }
-            }
 
-            if (lockedFile.exists()) {
-                achievementDao.updateCachedBadgeUrlLock(request.achievementId, lockedFile.absolutePath)
+                    if (isValidImageFile(lockedFile, minSizeBytes = 512)) {
+                        Log.d(TAG, "Cached locked badge for achievement ${request.achievementId}")
+                        achievementDao.updateCachedBadgeUrlLock(request.achievementId, lockedFile.absolutePath)
+                    } else {
+                        lockedFile.delete()
+                        Log.w(TAG, "Deleted newly cached invalid locked badge: ${lockedFile.name}")
+                    }
+                }
             }
         }
     }
@@ -941,8 +1041,13 @@ class ImageCacheManager @Inject constructor(
         val cachedFile = File(cacheDir, fileName)
 
         if (cachedFile.exists()) {
-            gameDao.updateCoverPath(request.gameId, cachedFile.absolutePath)
-            return
+            if (isValidImageFile(cachedFile, minSizeBytes = 512)) {
+                gameDao.updateCoverPath(request.gameId, cachedFile.absolutePath)
+                return
+            } else {
+                cachedFile.delete()
+                Log.w(TAG, "Deleted invalid cached app icon: ${cachedFile.name}")
+            }
         }
 
         val icon = try {
@@ -961,6 +1066,12 @@ class ImageCacheManager @Inject constructor(
             }
         }
         bitmap.recycle()
+
+        if (!isValidImageFile(cachedFile, minSizeBytes = 512)) {
+            cachedFile.delete()
+            Log.w(TAG, "Deleted newly cached invalid app icon: ${cachedFile.name}")
+            return
+        }
 
         Log.d(TAG, "Cached app icon for ${request.packageName}: ${cachedFile.length() / 1024}KB")
         gameDao.updateCoverPath(request.gameId, cachedFile.absolutePath)
@@ -989,7 +1100,12 @@ class ImageCacheManager @Inject constructor(
             val cachedFile = File(cacheDir, fileName)
 
             if (cachedFile.exists()) {
-                return@withContext cachedFile.absolutePath
+                if (isValidImageFile(cachedFile, minSizeBytes = 512)) {
+                    return@withContext cachedFile.absolutePath
+                } else {
+                    cachedFile.delete()
+                    Log.w(TAG, "Deleted invalid cached app icon: ${cachedFile.name}")
+                }
             }
 
             val icon = try {
@@ -1007,8 +1123,70 @@ class ImageCacheManager @Inject constructor(
             }
             bitmap.recycle()
 
+            if (!isValidImageFile(cachedFile, minSizeBytes = 512)) {
+                cachedFile.delete()
+                Log.w(TAG, "Deleted newly cached invalid app icon: ${cachedFile.name}")
+                return@withContext null
+            }
+
             Log.d(TAG, "Cached app icon for $packageName: ${cachedFile.length() / 1024}KB")
             cachedFile.absolutePath
         }
+    }
+
+    suspend fun validateAndCleanCache(): CacheValidationResult {
+        var deleted = 0
+        var cleared = 0
+
+        withContext(Dispatchers.IO) {
+            cacheDir.listFiles()?.forEach { file ->
+                if (!isValidImageFile(file, minSizeBytes = 512)) {
+                    file.delete()
+                    deleted++
+                    Log.w(TAG, "Validation deleted invalid file: ${file.name}")
+                }
+            }
+        }
+
+        val games = gameDao.getAllGames()
+        games.forEach { game ->
+            if (game.coverPath?.startsWith("/") == true && !File(game.coverPath).exists()) {
+                gameDao.clearCoverPath(game.id)
+                cleared++
+            }
+            if (game.backgroundPath?.startsWith("/") == true && !File(game.backgroundPath).exists()) {
+                gameDao.clearBackgroundPath(game.id)
+                cleared++
+            }
+            if (game.cachedScreenshotPaths != null) {
+                val paths = game.cachedScreenshotPaths.split(",")
+                val validPaths = paths.filter { path ->
+                    !path.startsWith("/") || File(path).exists()
+                }
+                if (validPaths.size != paths.size) {
+                    if (validPaths.isEmpty()) {
+                        gameDao.clearCachedScreenshotPaths(game.id)
+                    } else {
+                        gameDao.updateCachedScreenshotPaths(game.id, validPaths.joinToString(","))
+                    }
+                    cleared += paths.size - validPaths.size
+                }
+            }
+        }
+
+        val platforms = platformDao.getAllPlatforms()
+        platforms.forEach { platform ->
+            if (platform.logoPath?.startsWith("/") == true && !File(platform.logoPath).exists()) {
+                platformDao.clearLogoPath(platform.id)
+                cleared++
+            }
+        }
+
+        withContext(Dispatchers.Main) {
+            context.imageLoader.memoryCache?.clear()
+        }
+
+        Log.i(TAG, "Cache validation complete: $deleted files deleted, $cleared paths cleared")
+        return CacheValidationResult(deleted, cleared)
     }
 }

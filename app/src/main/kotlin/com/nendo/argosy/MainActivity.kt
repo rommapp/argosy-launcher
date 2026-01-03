@@ -31,6 +31,8 @@ import com.nendo.argosy.ui.theme.ALauncherTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+private const val TAG = "MainActivity"
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -63,6 +65,12 @@ class MainActivity : ComponentActivity() {
         activityScope.launch {
             val prefs = preferencesRepository.preferences.first()
             imageCacheManager.setCustomCachePath(prefs.imageCachePath)
+
+            val validationResult = imageCacheManager.validateAndCleanCache()
+            if (validationResult.deletedFiles > 0 || validationResult.clearedPaths > 0) {
+                Log.i(TAG, "Cache validation: ${validationResult.deletedFiles} files deleted, ${validationResult.clearedPaths} paths cleared")
+            }
+
             imageCacheManager.resumePendingCache()
             imageCacheManager.resumePendingCoverCache()
             imageCacheManager.resumePendingLogoCache()

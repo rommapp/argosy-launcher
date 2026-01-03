@@ -230,6 +230,9 @@ interface GameDao {
     @Query("UPDATE games SET backgroundPath = :path WHERE id = :gameId")
     suspend fun updateBackgroundPath(gameId: Long, path: String)
 
+    @Query("UPDATE games SET backgroundPath = NULL WHERE id = :gameId")
+    suspend fun clearBackgroundPath(gameId: Long)
+
     @Query("SELECT * FROM games WHERE backgroundPath LIKE 'http%' AND (rommId IS NOT NULL OR steamAppId IS NOT NULL)")
     suspend fun getGamesWithUncachedBackgrounds(): List<GameEntity>
 
@@ -241,6 +244,9 @@ interface GameDao {
 
     @Query("UPDATE games SET coverPath = :path WHERE id = :gameId")
     suspend fun updateCoverPath(gameId: Long, path: String)
+
+    @Query("UPDATE games SET coverPath = NULL WHERE id = :gameId")
+    suspend fun clearCoverPath(gameId: Long)
 
     @Query("SELECT * FROM games WHERE coverPath LIKE 'http%' AND rommId IS NOT NULL")
     suspend fun getGamesWithUncachedCovers(): List<GameEntity>
@@ -300,6 +306,9 @@ interface GameDao {
 
     @Query("UPDATE games SET cachedScreenshotPaths = :paths WHERE id = :gameId")
     suspend fun updateCachedScreenshotPaths(gameId: Long, paths: String)
+
+    @Query("UPDATE games SET cachedScreenshotPaths = NULL WHERE id = :gameId")
+    suspend fun clearCachedScreenshotPaths(gameId: Long)
 
     @Query("SELECT COUNT(*) FROM games WHERE screenshotPaths IS NOT NULL AND rommId IS NOT NULL")
     suspend fun countGamesWithScreenshots(): Int

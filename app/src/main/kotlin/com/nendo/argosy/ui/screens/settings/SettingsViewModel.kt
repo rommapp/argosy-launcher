@@ -835,8 +835,8 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.SYNC_SETTINGS -> if (state.syncSettings.saveSyncEnabled) 4 else 3
                 SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
                 SettingsSection.STORAGE -> {
-                    // Base items: Max Downloads(0), Threshold(1), Global ROM(2), Image Cache(3), Platforms Expand(4)
-                    val baseItemCount = 5
+                    // Base items: Max Downloads(0), Threshold(1), Global ROM(2), Image Cache(3), Validate Cache(4), Platforms Expand(5)
+                    val baseItemCount = 6
                     val expandedPlatforms = if (state.storage.platformsExpanded) state.storage.platformConfigs.size else 0
                     (baseItemCount + expandedPlatforms - 1).coerceAtLeast(baseItemCount - 1)
                 }
@@ -1267,6 +1267,18 @@ class SettingsViewModel @Inject constructor(
         syncDelegate.resetImageCacheToDefault(viewModelScope)
     }
 
+    fun validateImageCache() {
+        viewModelScope.launch {
+            val result = imageCacheManager.validateAndCleanCache()
+            val message = if (result.deletedFiles > 0 || result.clearedPaths > 0) {
+                "Cleaned ${result.deletedFiles} invalid files, ${result.clearedPaths} orphaned paths"
+            } else {
+                "Image cache is healthy"
+            }
+            notificationManager.show(message)
+        }
+    }
+
     fun cycleMaxConcurrentDownloads() {
         storageDelegate.cycleMaxConcurrentDownloads(viewModelScope)
     }
@@ -1418,8 +1430,8 @@ class SettingsViewModel @Inject constructor(
         val sectionStarts = listOf(
             0,  // DOWNLOADS
             2,  // FILE LOCATIONS
-            4,  // PLATFORM STORAGE
-            5 + expandedPlatforms  // SAVE DATA
+            5,  // PLATFORM STORAGE
+            6 + expandedPlatforms  // SAVE DATA
         )
         val currentSection = sectionStarts.lastOrNull { it <= state.focusedIndex } ?: 0
         val nextSectionStart = sectionStarts.firstOrNull { it > currentSection } ?: sectionStarts.last()
@@ -1433,8 +1445,8 @@ class SettingsViewModel @Inject constructor(
         val sectionStarts = listOf(
             0,  // DOWNLOADS
             2,  // FILE LOCATIONS
-            4,  // PLATFORM STORAGE
-            5 + expandedPlatforms  // SAVE DATA
+            5,  // PLATFORM STORAGE
+            6 + expandedPlatforms  // SAVE DATA
         )
         val currentSectionIdx = sectionStarts.indexOfLast { it <= state.focusedIndex }.coerceAtLeast(0)
         val prevSectionStart = if (state.focusedIndex == sectionStarts[currentSectionIdx] && currentSectionIdx > 0) {
@@ -1797,13 +1809,14 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.STORAGE -> {
-                val platformsExpandIndex = 4
+                val platformsExpandIndex = 5
 
                 when (state.focusedIndex) {
                     0 -> cycleMaxConcurrentDownloads()
                     1 -> cycleInstantDownloadThreshold()
                     2 -> openFolderPicker()
                     3 -> openImageCachePicker()
+                    4 -> validateImageCache()
                     platformsExpandIndex -> togglePlatformsExpanded()
                     else -> {
                         if (state.focusedIndex > platformsExpandIndex) {

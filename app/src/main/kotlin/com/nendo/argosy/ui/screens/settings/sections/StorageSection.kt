@@ -136,6 +136,15 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
         }
 
+        item {
+            ActionPreference(
+                title = "Validate Image Cache",
+                subtitle = "Remove invalid cached images",
+                isFocused = uiState.focusedIndex == focusMapping.validateCacheIndex,
+                onClick = { viewModel.validateImageCache() }
+            )
+        }
+
         // PLATFORM STORAGE header
         item { Spacer(modifier = Modifier.height(Dimens.spacingMd)) }
         item { SectionHeader("PLATFORM STORAGE") }
@@ -175,9 +184,10 @@ private data class FocusMapping(
     val thresholdIndex: Int = 1,
     val globalRomPathIndex: Int = 2,
     val imageCacheIndex: Int = 3,
-    val platformsExpandIndex: Int = 4,
+    val validateCacheIndex: Int = 4,
+    val platformsExpandIndex: Int = 5,
     val platformCount: Int = 0,
-    val maxIndex: Int = 4
+    val maxIndex: Int = 5
 ) {
     fun focusToScrollIndex(focusIndex: Int): Int {
         return when {
@@ -185,9 +195,10 @@ private data class FocusMapping(
             focusIndex == thresholdIndex -> 2
             focusIndex == globalRomPathIndex -> 5
             focusIndex == imageCacheIndex -> 6
-            focusIndex == platformsExpandIndex -> 9
+            focusIndex == validateCacheIndex -> 7
+            focusIndex == platformsExpandIndex -> 10
             focusIndex > platformsExpandIndex -> {
-                10 + (focusIndex - platformsExpandIndex - 1)
+                11 + (focusIndex - platformsExpandIndex - 1)
             }
             else -> focusIndex
         }
@@ -202,7 +213,8 @@ private fun buildFocusMapping(
     val thresholdIndex = 1
     val globalRomPathIndex = 2
     val imageCacheIndex = 3
-    val platformsExpandIndex = 4
+    val validateCacheIndex = 4
+    val platformsExpandIndex = 5
 
     val expandedPlatformItems = if (platformsExpanded) platformCount else 0
     val maxIndex = platformsExpandIndex + expandedPlatformItems
@@ -212,6 +224,7 @@ private fun buildFocusMapping(
         thresholdIndex = thresholdIndex,
         globalRomPathIndex = globalRomPathIndex,
         imageCacheIndex = imageCacheIndex,
+        validateCacheIndex = validateCacheIndex,
         platformsExpandIndex = platformsExpandIndex,
         platformCount = expandedPlatformItems,
         maxIndex = maxIndex

@@ -84,6 +84,7 @@ class RepairImageCacheUseCase @Inject constructor(
     fun isLocalPathValid(path: String?): Boolean {
         if (path == null) return false
         if (!path.startsWith("/")) return true
-        return File(path).exists()
+        val file = File(path)
+        return file.exists() && file.length() > 512
     }
 }

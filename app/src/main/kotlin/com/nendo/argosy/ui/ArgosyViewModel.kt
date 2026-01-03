@@ -80,11 +80,28 @@ class ArgosyViewModel @Inject constructor(
     private val playSessionTracker: PlaySessionTracker
 ) : ViewModel() {
 
+    private val _storageReady = MutableStateFlow(false)
+
     init {
         downloadNotificationObserver.observe(viewModelScope)
-        scheduleDownloadValidation()
+        awaitStorageAndContinue()
         observeFeedbackSettings(preferencesRepository)
         downloadManager.clearCompleted()
+    }
+
+    private fun awaitStorageAndContinue() {
+        viewModelScope.launch {
+            val ready = gameRepository.awaitStorageReady(timeoutMs = 10_000L)
+            _storageReady.value = true
+            if (ready) {
+                validateAndRecoverDownloads()
+                syncCollectionsOnStartup()
+            } else {
+                android.util.Log.w("ArgosyViewModel", "Storage not ready after timeout, scheduling retry")
+                kotlinx.coroutines.delay(30_000L)
+                scheduleDownloadValidation()
+            }
+        }
     }
 
     private fun scheduleDownloadValidation() {
@@ -133,17 +150,19 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<ArgosyUiState> = preferencesRepository.userPreferences
-        .map { prefs ->
-            val abIconsSwapped = computeABIconsSwapped(prefs.abIconLayout)
-            ArgosyUiState(
-                isFirstRun = !prefs.firstRunComplete,
-                isLoading = false,
-                abIconsSwapped = abIconsSwapped,
-                swapStartSelect = prefs.swapStartSelect,
-                defaultView = prefs.defaultView
-            )
-        }
+    val uiState: StateFlow<ArgosyUiState> = combine(
+        preferencesRepository.userPreferences,
+        _storageReady
+    ) { prefs, storageReady ->
+        val abIconsSwapped = computeABIconsSwapped(prefs.abIconLayout)
+        ArgosyUiState(
+            isFirstRun = !prefs.firstRunComplete,
+            isLoading = !storageReady,
+            abIconsSwapped = abIconsSwapped,
+            swapStartSelect = prefs.swapStartSelect,
+            defaultView = prefs.defaultView
+        )
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

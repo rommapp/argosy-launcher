@@ -90,14 +90,9 @@ fun ArgosyApp(
 
     val rootFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(Unit) {
-        rootFocusRequester.requestFocus()
-    }
-
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         inputDispatcher.resetToMainView()
         viewModel.resetAllModals()
-        rootFocusRequester.requestFocus()
     }
 
     val startDestination = when {
@@ -300,6 +295,14 @@ fun ArgosyApp(
                     .focusRequester(rootFocusRequester)
                     .focusable()
             ) {
+                LaunchedEffect(Unit) {
+                    rootFocusRequester.requestFocus()
+                }
+
+                LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                    rootFocusRequester.requestFocus()
+                }
+
                 ModalNavigationDrawer(
                 drawerState = drawerState,
                 gesturesEnabled = !uiState.isFirstRun,

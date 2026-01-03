@@ -33,6 +33,8 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.ui.notification.NotificationProgress
+import com.nendo.argosy.ui.notification.NotificationType
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
@@ -1267,15 +1269,42 @@ class SettingsViewModel @Inject constructor(
         syncDelegate.resetImageCacheToDefault(viewModelScope)
     }
 
+    private fun setValidatingCache(validating: Boolean) {
+        _uiState.update { it.copy(storage = it.storage.copy(isValidatingCache = validating)) }
+    }
+
     fun validateImageCache() {
+        if (_uiState.value.storage.isValidatingCache) return
+        setValidatingCache(true)
+
+        val key = "cache_validation"
         viewModelScope.launch {
-            val result = imageCacheManager.validateAndCleanCache()
-            val message = if (result.deletedFiles > 0 || result.clearedPaths > 0) {
-                "Cleaned ${result.deletedFiles} invalid files, ${result.clearedPaths} orphaned paths"
-            } else {
-                "Image cache is healthy"
+            try {
+                notificationManager.showPersistent(
+                    title = "Validating Image Cache",
+                    subtitle = "Starting...",
+                    key = key,
+                    progress = NotificationProgress(0, 100)
+                )
+
+                val result = imageCacheManager.validateAndCleanCache { phase, current, total ->
+                    val progress = if (total > 0) (current * 100) / total else 0
+                    notificationManager.updatePersistent(
+                        key = key,
+                        subtitle = phase,
+                        progress = NotificationProgress(progress, 100)
+                    )
+                }
+
+                val (message, type) = if (result.deletedFiles > 0 || result.clearedPaths > 0) {
+                    "Cleaned ${result.deletedFiles} files, cleared ${result.clearedPaths} paths" to NotificationType.SUCCESS
+                } else {
+                    "Image cache is healthy" to NotificationType.SUCCESS
+                }
+                notificationManager.completePersistent(key, message, type = type)
+            } finally {
+                setValidatingCache(false)
             }
-            notificationManager.show(message)
         }
     }
 

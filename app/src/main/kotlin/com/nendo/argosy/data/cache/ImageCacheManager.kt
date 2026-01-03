@@ -1134,22 +1134,34 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
-    suspend fun validateAndCleanCache(): CacheValidationResult {
+    suspend fun validateAndCleanCache(
+        onProgress: (suspend (phase: String, current: Int, total: Int) -> Unit)? = null
+    ): CacheValidationResult {
         var deleted = 0
         var cleared = 0
 
+        val files = withContext(Dispatchers.IO) { cacheDir.listFiles()?.toList() ?: emptyList() }
+        val totalFiles = files.size
+        onProgress?.invoke("Checking $totalFiles cached files...", 0, totalFiles)
+
         withContext(Dispatchers.IO) {
-            cacheDir.listFiles()?.forEach { file ->
+            files.forEachIndexed { index, file ->
                 if (!isValidImageFile(file, minSizeBytes = 512)) {
                     file.delete()
                     deleted++
                     Log.w(TAG, "Validation deleted invalid file: ${file.name}")
                 }
+                if (index % 50 == 0) {
+                    onProgress?.invoke("Checking cached files...", index, totalFiles)
+                }
             }
         }
 
         val games = gameDao.getAllGames()
-        games.forEach { game ->
+        val totalGames = games.size
+        onProgress?.invoke("Validating $totalGames game paths...", 0, totalGames)
+
+        games.forEachIndexed { index, game ->
             if (game.coverPath?.startsWith("/") == true && !File(game.coverPath).exists()) {
                 gameDao.clearCoverPath(game.id)
                 cleared++
@@ -1172,9 +1184,14 @@ class ImageCacheManager @Inject constructor(
                     cleared += paths.size - validPaths.size
                 }
             }
+            if (index % 100 == 0) {
+                onProgress?.invoke("Validating game paths...", index, totalGames)
+            }
         }
 
         val platforms = platformDao.getAllPlatforms()
+        onProgress?.invoke("Checking ${platforms.size} platform logos...", 0, platforms.size)
+
         platforms.forEach { platform ->
             if (platform.logoPath?.startsWith("/") == true && !File(platform.logoPath).exists()) {
                 platformDao.clearLogoPath(platform.id)

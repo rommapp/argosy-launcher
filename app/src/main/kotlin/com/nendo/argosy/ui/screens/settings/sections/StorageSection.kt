@@ -137,10 +137,12 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         }
 
         item {
+            val validating = storage.isValidatingCache
             ActionPreference(
                 title = "Validate Image Cache",
-                subtitle = "Remove invalid cached images",
+                subtitle = if (validating) "Validating..." else "Remove invalid cached images",
                 isFocused = uiState.focusedIndex == focusMapping.validateCacheIndex,
+                isEnabled = !validating,
                 onClick = { viewModel.validateImageCache() }
             )
         }

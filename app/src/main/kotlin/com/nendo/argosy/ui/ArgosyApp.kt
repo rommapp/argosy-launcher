@@ -17,9 +17,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,9 +88,12 @@ fun ArgosyApp(
         )
     }
 
+    val rootFocusRequester = remember { FocusRequester() }
+
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         inputDispatcher.resetToMainView()
         viewModel.resetAllModals()
+        try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
     }
 
     val startDestination = when {
@@ -284,7 +290,16 @@ fun ArgosyApp(
             dimLevel = screenDimmerPrefs.level / 100f,
             dimmerState = screenDimmerState
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .focusRequester(rootFocusRequester)
+                    .focusable()
+            ) {
+                LaunchedEffect(Unit) {
+                    rootFocusRequester.requestFocus()
+                }
+
                 ModalNavigationDrawer(
                 drawerState = drawerState,
                 gesturesEnabled = !uiState.isFirstRun,

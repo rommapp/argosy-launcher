@@ -219,7 +219,8 @@ data class StorageState(
     val platformsExpanded: Boolean = false,
     val screenDimmerEnabled: Boolean = true,
     val screenDimmerTimeoutMinutes: Int = 2,
-    val screenDimmerLevel: Int = 30
+    val screenDimmerLevel: Int = 30,
+    val isValidatingCache: Boolean = false
 ) {
     val customPlatformCount: Int get() = platformConfigs.count { it.customRomPath != null }
 }

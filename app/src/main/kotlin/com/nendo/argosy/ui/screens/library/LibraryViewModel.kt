@@ -968,7 +968,8 @@ class LibraryViewModel @Inject constructor(
 
     fun moveCollectionFocusDown() {
         _uiState.update {
-            val maxIndex = it.collections.size
+            val filtered = it.collections.filter { c -> c.name.isNotBlank() }
+            val maxIndex = filtered.size
             it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex + 1).coerceAtMost(maxIndex))
         }
     }
@@ -977,13 +978,14 @@ class LibraryViewModel @Inject constructor(
         val state = _uiState.value
         val gameId = state.collectionGameId ?: return
         val index = state.collectionModalFocusIndex
+        val filtered = state.collections.filter { it.name.isNotBlank() }
 
-        if (index == state.collections.size) {
+        if (index == filtered.size) {
             showCreateCollectionFromModal()
             return
         }
 
-        val collection = state.collections.getOrNull(index) ?: return
+        val collection = filtered.getOrNull(index) ?: return
         toggleGameInCollection(collection.id)
     }
 

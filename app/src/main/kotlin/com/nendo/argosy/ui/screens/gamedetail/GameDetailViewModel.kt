@@ -1984,22 +1984,23 @@ class GameDetailViewModel @Inject constructor(
 
     fun moveCollectionFocusDown() {
         _uiState.update {
-            val maxIndex = it.collections.size
+            val filtered = it.collections.filter { c -> c.name.isNotBlank() }
+            val maxIndex = filtered.size
             it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex + 1).coerceAtMost(maxIndex))
         }
     }
 
     fun confirmCollectionSelection() {
         val state = _uiState.value
-        val focusIndex = state.collectionModalFocusIndex
+        val index = state.collectionModalFocusIndex
+        val filtered = state.collections.filter { it.name.isNotBlank() }
 
-        if (focusIndex == 0) {
+        if (index == filtered.size) {
             _uiState.update { it.copy(showCreateCollectionDialog = true) }
             return
         }
 
-        val collectionIndex = focusIndex - 1
-        val collection = state.collections.getOrNull(collectionIndex) ?: return
+        val collection = filtered.getOrNull(index) ?: return
         toggleGameInCollection(collection.id)
     }
 

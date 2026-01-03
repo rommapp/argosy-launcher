@@ -443,9 +443,14 @@ class RomMRepository @Inject constructor(
             rom.screenshotPaths?.map { buildMediaUrl(it) } ?: emptyList()
         }
 
+        val contentChanged = existing != null && existing.title != rom.name
+        if (contentChanged) {
+            imageCacheManager.deleteGameImages(rom.id)
+        }
+
         val backgroundUrl = rom.backgroundUrls.firstOrNull()
         val cachedBackground = when {
-            existing?.backgroundPath?.startsWith("/") == true -> existing.backgroundPath
+            !contentChanged && existing?.backgroundPath?.startsWith("/") == true -> existing.backgroundPath
             backgroundUrl != null -> {
                 imageCacheManager.queueBackgroundCache(backgroundUrl, rom.id, rom.name)
                 backgroundUrl
@@ -455,7 +460,7 @@ class RomMRepository @Inject constructor(
 
         val coverUrl = rom.coverLarge?.let { buildMediaUrl(it) }
         val cachedCover = when {
-            existing?.coverPath?.startsWith("/") == true -> existing.coverPath
+            !contentChanged && existing?.coverPath?.startsWith("/") == true -> existing.coverPath
             coverUrl != null -> {
                 imageCacheManager.queueCoverCache(coverUrl, rom.id, rom.name)
                 coverUrl

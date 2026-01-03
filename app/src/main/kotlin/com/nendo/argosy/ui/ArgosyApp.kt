@@ -1,7 +1,10 @@
 package com.nendo.argosy.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
@@ -19,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -265,6 +269,11 @@ fun ArgosyApp(
         LocalABIconsSwapped provides uiState.abIconsSwapped,
         LocalSwapStartSelect provides uiState.swapStartSelect
     ) {
+        if (uiState.isLoading) {
+            AppSplashScreen()
+            return@CompositionLocalProvider
+        }
+
         val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
         val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
         val dimmerEnabled = screenDimmerPrefs.enabled && !isEmulatorRunning && !uiState.isFirstRun
@@ -359,6 +368,34 @@ fun ArgosyApp(
                 onDismiss = closeQuickSettings
             )
             }
+        }
+    }
+}
+
+@Composable
+private fun AppSplashScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(androidx.compose.material3.MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(24.dp)
+        ) {
+            androidx.compose.material3.Text(
+                text = "ARGOSY",
+                style = androidx.compose.material3.MaterialTheme.typography.headlineLarge,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+                letterSpacing = 8.sp
+            )
+            androidx.compose.material3.CircularProgressIndicator(
+                modifier = Modifier.size(32.dp),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+                trackColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
+                strokeWidth = 2.dp
+            )
         }
     }
 }

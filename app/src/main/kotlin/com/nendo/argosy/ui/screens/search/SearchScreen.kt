@@ -44,6 +44,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import java.io.File
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.components.FooterBar
@@ -235,8 +236,11 @@ private fun SearchResultItem(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val imageData = result.coverPath?.let { path ->
+            if (path.startsWith("/")) File(path) else path
+        }
         AsyncImage(
-            model = result.coverPath,
+            model = imageData,
             contentDescription = result.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

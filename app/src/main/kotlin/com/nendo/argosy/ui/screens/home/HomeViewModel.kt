@@ -1455,7 +1455,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = syncLibraryUseCase(initializeFirst = true)) {
                 is SyncLibraryResult.Error -> notificationManager.showError(result.message)
-                is SyncLibraryResult.Success -> { }
+                is SyncLibraryResult.Success -> refreshRecentGames()
             }
         }
     }

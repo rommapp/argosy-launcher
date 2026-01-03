@@ -4,6 +4,7 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.SyncResult
 import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.ui.screens.common.LibrarySyncBus
 import com.nendo.argosy.ui.notification.NotificationProgress
 import com.nendo.argosy.ui.notification.NotificationType
 import io.mockk.coEvery
@@ -22,13 +23,15 @@ class SyncLibraryUseCaseTest {
 
     private lateinit var romMRepository: RomMRepository
     private lateinit var notificationManager: NotificationManager
+    private lateinit var librarySyncBus: LibrarySyncBus
     private lateinit var useCase: SyncLibraryUseCase
 
     @Before
     fun setup() {
         romMRepository = mockk(relaxed = true)
         notificationManager = mockk(relaxed = true)
-        useCase = SyncLibraryUseCase(romMRepository, notificationManager)
+        librarySyncBus = mockk(relaxed = true)
+        useCase = SyncLibraryUseCase(romMRepository, notificationManager, librarySyncBus)
     }
 
     @Test

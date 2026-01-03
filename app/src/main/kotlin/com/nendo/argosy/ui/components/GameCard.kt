@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import java.io.File
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -158,8 +159,13 @@ fun GameCard(
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (effectiveCoverPath != null) {
+            val imageData = if (effectiveCoverPath.startsWith("/")) {
+                File(effectiveCoverPath)
+            } else {
+                effectiveCoverPath
+            }
             AsyncImage(
-                model = effectiveCoverPath,
+                model = imageData,
                 contentDescription = game.title,
                 contentScale = ContentScale.Crop,
                 colorFilter = ColorFilter.colorMatrix(saturationMatrix),

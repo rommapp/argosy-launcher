@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import java.io.File
 import com.nendo.argosy.domain.usecase.collection.CollectionWithCount
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -311,8 +312,11 @@ private fun CoverMosaic(
                 )
             }
             coverPaths.size == 1 -> {
+                val imageData = coverPaths[0].let { path ->
+                    if (path.startsWith("/")) File(path) else path
+                }
                 AsyncImage(
-                    model = coverPaths[0],
+                    model = imageData,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -323,8 +327,9 @@ private fun CoverMosaic(
                 Column(modifier = Modifier.fillMaxSize()) {
                     Row(modifier = Modifier.weight(1f)) {
                         displayed.getOrNull(0)?.let { path ->
+                            val imageData = if (path.startsWith("/")) File(path) else path
                             AsyncImage(
-                                model = path,
+                                model = imageData,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -333,8 +338,9 @@ private fun CoverMosaic(
                             )
                         }
                         displayed.getOrNull(1)?.let { path ->
+                            val imageData = if (path.startsWith("/")) File(path) else path
                             AsyncImage(
-                                model = path,
+                                model = imageData,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -346,8 +352,9 @@ private fun CoverMosaic(
                     if (displayed.size > 2) {
                         Row(modifier = Modifier.weight(1f)) {
                             displayed.getOrNull(2)?.let { path ->
+                                val imageData = if (path.startsWith("/")) File(path) else path
                                 AsyncImage(
-                                    model = path,
+                                    model = imageData,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
@@ -356,8 +363,9 @@ private fun CoverMosaic(
                                 )
                             }
                             displayed.getOrNull(3)?.let { path ->
+                                val imageData = if (path.startsWith("/")) File(path) else path
                                 AsyncImage(
-                                    model = path,
+                                    model = imageData,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier

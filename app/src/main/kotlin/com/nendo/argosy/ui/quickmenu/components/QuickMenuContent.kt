@@ -47,6 +47,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import java.io.File
 import com.nendo.argosy.ui.quickmenu.GameCardUi
 import com.nendo.argosy.ui.quickmenu.GameRowUi
 import com.nendo.argosy.ui.quickmenu.QuickMenuOrb
@@ -220,8 +221,11 @@ private fun RandomContent(
             .padding(Dimens.spacingLg),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)
     ) {
+        val imageData = game.coverPath?.let { path ->
+            if (path.startsWith("/")) File(path) else path
+        }
         AsyncImage(
-            model = game.coverPath,
+            model = imageData,
             contentDescription = game.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

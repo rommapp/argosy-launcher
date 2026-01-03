@@ -38,6 +38,10 @@ class GameActionsDelegate @Inject constructor(
         gameDao.updateHidden(gameId, true)
     }
 
+    suspend fun unhideGame(gameId: Long) {
+        gameDao.updateHidden(gameId, false)
+    }
+
     suspend fun deleteLocalFile(gameId: Long) {
         deleteGameUseCase(gameId)
     }

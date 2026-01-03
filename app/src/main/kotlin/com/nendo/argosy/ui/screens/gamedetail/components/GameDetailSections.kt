@@ -53,6 +53,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import java.io.File
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUiState
@@ -72,8 +73,11 @@ fun GameHeader(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(32.dp)
     ) {
+        val imageData = game.coverPath?.let { path ->
+            if (path.startsWith("/")) File(path) else path
+        }
         AsyncImage(
-            model = game.coverPath,
+            model = imageData,
             contentDescription = game.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

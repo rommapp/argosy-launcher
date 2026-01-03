@@ -85,6 +85,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
@@ -273,6 +274,16 @@ fun HomeScreen(
         uiState.customBackgroundPath
     }
 
+    AnimatedContent(
+        targetState = uiState.isLoading,
+        transitionSpec = {
+            fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+        },
+        label = "loading"
+    ) { isLoading ->
+        if (isLoading) {
+            SplashOverlay()
+        } else {
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
             AnimatedContent(
@@ -540,6 +551,36 @@ fun HomeScreen(
                 onAction = { action ->
                     onChangelogAction(viewModel.handleChangelogAction(action))
                 }
+            )
+        }
+    }
+        }
+    }
+}
+
+@Composable
+private fun SplashOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Text(
+                text = "ARGOSY",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                letterSpacing = 8.sp
+            )
+            CircularProgressIndicator(
+                modifier = Modifier.size(32.dp),
+                color = MaterialTheme.colorScheme.onBackground,
+                trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
+                strokeWidth = 2.dp
             )
         }
     }

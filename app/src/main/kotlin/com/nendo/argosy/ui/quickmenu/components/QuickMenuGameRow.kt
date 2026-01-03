@@ -29,6 +29,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import java.io.File
 import com.nendo.argosy.ui.quickmenu.GameRowUi
 import com.nendo.argosy.ui.quickmenu.MetadataType
 import com.nendo.argosy.ui.theme.Dimens
@@ -64,8 +65,11 @@ fun QuickMenuGameRow(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val imageData = game.coverPath?.let { path ->
+            if (path.startsWith("/")) File(path) else path
+        }
         AsyncImage(
-            model = game.coverPath,
+            model = imageData,
             contentDescription = game.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

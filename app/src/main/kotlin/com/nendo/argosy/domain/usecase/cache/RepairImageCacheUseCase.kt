@@ -16,6 +16,7 @@ class RepairImageCacheUseCase @Inject constructor(
         if (localPath == null) return null
         if (!localPath.startsWith("/")) return localPath
         if (File(localPath).exists()) return localPath
+        if (!romMRepository.isConnected()) return null
 
         val game = gameDao.getById(gameId) ?: return null
         val rommId = game.rommId ?: return null
@@ -36,6 +37,7 @@ class RepairImageCacheUseCase @Inject constructor(
         if (localPath == null) return null
         if (!localPath.startsWith("/")) return localPath
         if (File(localPath).exists()) return localPath
+        if (!romMRepository.isConnected()) return null
 
         val game = gameDao.getById(gameId) ?: return null
         val rommId = game.rommId ?: return null
@@ -59,6 +61,7 @@ class RepairImageCacheUseCase @Inject constructor(
             path.startsWith("/") && !File(path).exists()
         }
         if (!anyMissing) return cachedPaths
+        if (!romMRepository.isConnected()) return null
 
         val game = gameDao.getById(gameId) ?: return null
         val rommId = game.rommId ?: return null

@@ -598,7 +598,6 @@ private fun LibraryFooter(
 ) {
     FooterBar(
         hints = listOf(
-            InputButton.DPAD to "Navigate",
             InputButton.SOUTH to "Details",
             InputButton.NORTH to if (focusedGame?.isFavorite == true) "Unfavorite" else "Favorite",
             InputButton.WEST to "Filter",
@@ -868,13 +867,11 @@ private fun FilterMenuOverlay(
             FooterBar(
                 hints = if (isSearchCategory) {
                     listOf(
-                        InputButton.DPAD to "Navigate",
                         InputButton.WEST to "Clear",
                         InputButton.EAST to "Close"
                     )
                 } else {
                     listOf(
-                        InputButton.DPAD to "Navigate",
                         InputButton.WEST to "Reset",
                         InputButton.SOUTH to if (isMultiSelect) "Toggle" else "Select",
                         InputButton.EAST to "Close"
@@ -1051,9 +1048,9 @@ private fun QuickMenuOverlay(
                 )
             }
             QuickMenuItem(
-                label = "Hide",
+                label = if (game.isHidden) "Show" else "Hide",
                 isFocused = focusIndex == hideIdx,
-                isDangerous = true,
+                isDangerous = !game.isHidden,
                 onClick = onHide
             )
         }

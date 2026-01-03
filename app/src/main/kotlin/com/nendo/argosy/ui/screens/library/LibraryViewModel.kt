@@ -66,7 +66,8 @@ enum class FilterCategory(val label: String) {
 enum class SourceFilter(val label: String) {
     ALL("All Games"),
     PLAYABLE("Playable"),
-    FAVORITES("Favorites")
+    FAVORITES("Favorites"),
+    HIDDEN("Hidden")
 }
 
 data class ActiveFilters(
@@ -126,7 +127,8 @@ data class LibraryGameUi(
     val isRommGame: Boolean,
     val isAndroidApp: Boolean,
     val emulatorName: String?,
-    val needsInstall: Boolean = false
+    val needsInstall: Boolean = false,
+    val isHidden: Boolean = false
 ) {
     val sourceIcon: ImageVector?
         get() = when (source) {
@@ -442,7 +444,14 @@ class LibraryViewModel @Inject constructor(
 
         gamesJob?.cancel()
         gamesJob = viewModelScope.launch {
-            val baseFlow = if (platformIndex >= 0) {
+            val baseFlow = if (filters.source == SourceFilter.HIDDEN) {
+                if (platformIndex >= 0) {
+                    val platformId = state.platforms[platformIndex].id
+                    gameDao.observeHiddenByPlatformList(platformId)
+                } else {
+                    gameDao.observeHiddenList()
+                }
+            } else if (platformIndex >= 0) {
                 val platformId = state.platforms[platformIndex].id
                 gameDao.observeByPlatformList(platformId)
             } else {
@@ -450,6 +459,7 @@ class LibraryViewModel @Inject constructor(
                     SourceFilter.ALL -> gameDao.observeAllList()
                     SourceFilter.PLAYABLE -> gameDao.observePlayableList()
                     SourceFilter.FAVORITES -> gameDao.observeFavoritesList()
+                    SourceFilter.HIDDEN -> gameDao.observeHiddenList()
                 }
             }
 
@@ -784,7 +794,7 @@ class LibraryViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             hideIdx -> {
-                hideGame(game.id)
+                if (game.isHidden) unhideGame(game.id) else hideGame(game.id)
                 toggleQuickMenu()
                 InputResult.HANDLED
             }
@@ -795,6 +805,12 @@ class LibraryViewModel @Inject constructor(
     fun hideGame(gameId: Long) {
         viewModelScope.launch {
             gameActions.hideGame(gameId)
+        }
+    }
+
+    fun unhideGame(gameId: Long) {
+        viewModelScope.launch {
+            gameActions.unhideGame(gameId)
         }
     }
 
@@ -1059,7 +1075,8 @@ class LibraryViewModel @Inject constructor(
         isRommGame = rommId != null,
         isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
         emulatorName = null,
-        needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP
+        needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP,
+        isHidden = isHidden
     )
 
     private fun GameListItem.toUi() = LibraryGameUi(
@@ -1074,7 +1091,8 @@ class LibraryViewModel @Inject constructor(
         isRommGame = rommId != null,
         isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
         emulatorName = null,
-        needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP
+        needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP,
+        isHidden = isHidden
     )
 
     fun enterTouchMode() {

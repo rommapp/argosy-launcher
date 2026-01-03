@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import java.io.File
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 
@@ -102,8 +103,13 @@ fun WideGameCard(
                         .background(MaterialTheme.colorScheme.surface)
                 ) {
                     if (coverPath != null) {
+                        val imageData = if (coverPath.startsWith("/")) {
+                            File(coverPath)
+                        } else {
+                            coverPath
+                        }
                         AsyncImage(
-                            model = coverPath,
+                            model = imageData,
                             contentDescription = title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()

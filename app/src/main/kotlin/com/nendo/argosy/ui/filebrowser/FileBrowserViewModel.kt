@@ -241,4 +241,65 @@ class FileBrowserViewModel @Inject constructor(
             navigate(_state.value.currentPath)
         }
     }
+
+    fun showCreateFolderDialog() {
+        if (_state.value.currentPath.isEmpty()) return
+        _state.update {
+            it.copy(
+                showCreateFolderDialog = true,
+                newFolderName = "",
+                createFolderError = null
+            )
+        }
+    }
+
+    fun dismissCreateFolderDialog() {
+        _state.update {
+            it.copy(
+                showCreateFolderDialog = false,
+                newFolderName = "",
+                createFolderError = null
+            )
+        }
+    }
+
+    fun setNewFolderName(name: String) {
+        _state.update { it.copy(newFolderName = name, createFolderError = null) }
+    }
+
+    fun confirmCreateFolder() {
+        val state = _state.value
+        val folderName = state.newFolderName.trim()
+
+        if (folderName.isEmpty()) {
+            _state.update { it.copy(createFolderError = "Folder name cannot be empty") }
+            return
+        }
+
+        if (folderName.contains("/") || folderName.contains("\\")) {
+            _state.update { it.copy(createFolderError = "Invalid folder name") }
+            return
+        }
+
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                try {
+                    val newFolder = File(state.currentPath, folderName)
+                    if (newFolder.exists()) {
+                        _state.update { it.copy(createFolderError = "Folder already exists") }
+                        return@withContext false
+                    }
+                    newFolder.mkdir()
+                } catch (e: Exception) {
+                    _state.update { it.copy(createFolderError = e.message ?: "Failed to create folder") }
+                    false
+                }
+            }
+
+            if (success) {
+                dismissCreateFolderDialog()
+                navigate(state.currentPath)
+            }
+        }
+    }
 }

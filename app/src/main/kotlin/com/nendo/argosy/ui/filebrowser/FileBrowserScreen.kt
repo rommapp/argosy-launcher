@@ -29,10 +29,14 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -143,7 +147,18 @@ fun FileBrowserScreen(
                 mode = mode,
                 currentPath = state.currentPath,
                 onUseCurrentFolder = { viewModel.selectCurrentDirectory() },
+                onNewFolder = { viewModel.showCreateFolderDialog() },
                 onCancel = onDismiss
+            )
+        }
+
+        if (state.showCreateFolderDialog) {
+            CreateFolderDialog(
+                folderName = state.newFolderName,
+                error = state.createFolderError,
+                onFolderNameChange = { viewModel.setNewFolderName(it) },
+                onConfirm = { viewModel.confirmCreateFolder() },
+                onDismiss = { viewModel.dismissCreateFolderDialog() }
             )
         }
     }
@@ -508,6 +523,7 @@ private fun FileBrowserFooter(
     mode: FileBrowserMode,
     currentPath: String,
     onUseCurrentFolder: () -> Unit,
+    onNewFolder: () -> Unit,
     onCancel: () -> Unit
 ) {
     val selectHint = if (mode == FileBrowserMode.FILE_SELECTION) "Select File" else "Open"
@@ -516,6 +532,7 @@ private fun FileBrowserFooter(
         add(InputButton.SOUTH to selectHint)
         add(InputButton.EAST to "Back")
         if (mode == FileBrowserMode.FOLDER_SELECTION && currentPath.isNotEmpty()) {
+            add(InputButton.NORTH to "New Folder")
             add(InputButton.WEST to "Use Current Directory")
         }
     }
@@ -524,9 +541,56 @@ private fun FileBrowserFooter(
         hints = hints,
         onHintClick = { button ->
             when (button) {
+                InputButton.NORTH -> onNewFolder()
                 InputButton.WEST -> onUseCurrentFolder()
                 InputButton.EAST -> onCancel()
                 else -> {}
+            }
+        }
+    )
+}
+
+@Composable
+private fun CreateFolderDialog(
+    folderName: String,
+    error: String?,
+    onFolderNameChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New Folder") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+                OutlinedTextField(
+                    value = folderName,
+                    onValueChange = onFolderNameChange,
+                    label = { Text("Folder name") },
+                    singleLine = true,
+                    isError = error != null,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (error != null) {
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = folderName.isNotBlank()
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
     )

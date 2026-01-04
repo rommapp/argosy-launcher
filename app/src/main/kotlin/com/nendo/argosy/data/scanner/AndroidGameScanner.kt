@@ -137,9 +137,19 @@ class AndroidGameScanner @Inject constructor(
         val isNewGame = existing == null
         val needsFetch = cacheExpired || existingNeedsMetadata || isNewGame
 
-        val details: PlayStoreAppDetails? = if (needsFetch) {
+        var details: PlayStoreAppDetails? = if (needsFetch) {
             playStoreService.getAppDetails(app.packageName).getOrNull()
         } else null
+
+        val packageLookupFailed = needsFetch && (details == null || !details.isGame)
+        if (packageLookupFailed && cached?.isManualOverride != true) {
+            Log.d(TAG, "Package lookup failed for ${app.packageName}, trying title search: ${app.label}")
+            val titleMatch = playStoreService.findGameByTitle(app.label).getOrNull()
+            if (titleMatch != null) {
+                Log.d(TAG, "Found game by title search for ${app.label}")
+                details = titleMatch
+            }
+        }
 
         val isGame = when {
             cached != null && cached.isManualOverride -> cached.isGame

@@ -15,9 +15,13 @@ import javax.inject.Singleton
 
 private const val TAG = "PlayStoreService"
 private const val PLAY_STORE_URL = "https://play.google.com/store/apps/details"
+private const val PLAY_STORE_SEARCH_URL = "https://play.google.com/store/search"
 private const val THROTTLE_DELAY_MS = 500L
+private const val TITLE_SIMILARITY_THRESHOLD = 0.7
+private const val MAX_SEARCH_RESULTS_TO_CHECK = 5
 
 data class PlayStoreAppDetails(
+    val title: String?,
     val category: String?,
     val description: String?,
     val developer: String?,
@@ -81,6 +85,8 @@ class PlayStoreService @Inject constructor() {
     }
 
     private fun parseAppDetails(html: String): PlayStoreAppDetails {
+        val rawTitle = extractPattern(html, """<meta property="og:title" content="([^"]+)"""")
+        val title = rawTitle?.let { normalizeTitle(it) }
         val category = extractPattern(html, """"applicationCategory":"([^"]+)"""")
         val description = extractDescription(html)
         val developer = extractPattern(html, """"author":\{"@type":"Person","name":"([^"]+)"""")
@@ -93,6 +99,7 @@ class PlayStoreService @Inject constructor() {
         val screenshotUrls = extractScreenshots(html)
 
         return PlayStoreAppDetails(
+            title = title,
             category = category,
             description = description,
             developer = developer,
@@ -193,6 +200,130 @@ class PlayStoreService @Inject constructor() {
 
     fun isGameCategory(category: String?): Boolean {
         return category?.startsWith("GAME_", ignoreCase = true) == true
+    }
+
+    suspend fun findGameByTitle(appLabel: String): Result<PlayStoreAppDetails?> = withContext(Dispatchers.IO) {
+        try {
+            val packageIds = searchByTitle(appLabel)
+            if (packageIds.isEmpty()) {
+                Log.d(TAG, "No search results for title: $appLabel")
+                return@withContext Result.success(null)
+            }
+
+            Log.d(TAG, "Checking ${packageIds.size} results for title match: $appLabel")
+
+            for (packageId in packageIds.take(MAX_SEARCH_RESULTS_TO_CHECK)) {
+                val detailsResult = getAppDetails(packageId)
+                val details = detailsResult.getOrNull() ?: continue
+
+                val similarity = calculateTitleSimilarity(appLabel, details.title ?: "")
+
+                Log.d(TAG, "  $packageId: '${details.title}' similarity=${"%.2f".format(similarity)} isGame=${details.isGame}")
+
+                if (similarity >= TITLE_SIMILARITY_THRESHOLD && details.isGame) {
+                    Log.d(TAG, "Found matching game: $packageId for '$appLabel'")
+                    return@withContext Result.success(details)
+                }
+            }
+
+            Log.d(TAG, "No matching game found for title: $appLabel")
+            Result.success(null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to find game by title '$appLabel': ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    private suspend fun searchByTitle(title: String): List<String> {
+        throttleMutex.withLock {
+            val now = System.currentTimeMillis()
+            val elapsed = now - lastRequestTime
+            if (elapsed < THROTTLE_DELAY_MS) {
+                delay(THROTTLE_DELAY_MS - elapsed)
+            }
+            lastRequestTime = System.currentTimeMillis()
+        }
+
+        val encodedQuery = java.net.URLEncoder.encode(title, "UTF-8")
+        val url = "$PLAY_STORE_SEARCH_URL?q=$encodedQuery&c=apps&hl=en&gl=US"
+
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36")
+            .header("Accept-Language", "en-US,en;q=0.9")
+            .build()
+
+        return try {
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Log.w(TAG, "Play Store search failed: ${response.code}")
+                return emptyList()
+            }
+
+            val body = response.body?.string() ?: return emptyList()
+            val packagePattern = Regex("""/store/apps/details\?id=([a-zA-Z0-9._]+)""")
+            val matches = packagePattern.findAll(body)
+                .map { it.groupValues[1] }
+                .distinct()
+                .toList()
+
+            Log.d(TAG, "Search for '$title' found ${matches.size} packages")
+            matches
+        } catch (e: Exception) {
+            Log.e(TAG, "Search failed for '$title': ${e.message}")
+            emptyList()
+        }
+    }
+
+    private fun normalizeTitle(title: String): String {
+        val suffixes = listOf(
+            " - Apps on Google Play",
+            " - Google Play",
+            " on Google Play",
+            " - Android Apps on Google Play"
+        )
+        var normalized = title
+        for (suffix in suffixes) {
+            if (normalized.endsWith(suffix, ignoreCase = true)) {
+                normalized = normalized.dropLast(suffix.length)
+                break
+            }
+        }
+        return normalized.trim()
+    }
+
+    private fun calculateTitleSimilarity(a: String, b: String): Double {
+        val aNorm = a.lowercase().trim()
+        val bNorm = b.lowercase().trim()
+
+        if (aNorm == bNorm) return 1.0
+        if (aNorm.isEmpty() || bNorm.isEmpty()) return 0.0
+
+        val longer = if (aNorm.length > bNorm.length) aNorm else bNorm
+        val shorter = if (aNorm.length > bNorm.length) bNorm else aNorm
+
+        val editDistance = levenshteinDistance(longer, shorter)
+        return (longer.length - editDistance).toDouble() / longer.length
+    }
+
+    private fun levenshteinDistance(a: String, b: String): Int {
+        val dp = Array(a.length + 1) { IntArray(b.length + 1) }
+
+        for (i in 0..a.length) dp[i][0] = i
+        for (j in 0..b.length) dp[0][j] = j
+
+        for (i in 1..a.length) {
+            for (j in 1..b.length) {
+                val cost = if (a[i - 1] == b[j - 1]) 0 else 1
+                dp[i][j] = minOf(
+                    dp[i - 1][j] + 1,
+                    dp[i][j - 1] + 1,
+                    dp[i - 1][j - 1] + cost
+                )
+            }
+        }
+
+        return dp[a.length][b.length]
     }
 
     companion object {

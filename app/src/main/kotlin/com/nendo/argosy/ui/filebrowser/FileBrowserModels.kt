@@ -65,7 +65,10 @@ data class FileBrowserState(
     val fileFilter: FileFilter? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val hasPermission: Boolean = true
+    val hasPermission: Boolean = true,
+    val showCreateFolderDialog: Boolean = false,
+    val newFolderName: String = "",
+    val createFolderError: String? = null
 )
 
 fun File.toFileEntry(): FileEntry = FileEntry(

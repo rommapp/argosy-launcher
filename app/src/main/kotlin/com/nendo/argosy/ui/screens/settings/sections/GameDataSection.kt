@@ -20,7 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
@@ -40,7 +40,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
-import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
@@ -282,11 +281,39 @@ private fun GameDataContent(
 
         if (launcherCount == 0) {
             item {
-                InfoPreference(
-                    title = "No Steam Launchers",
-                    value = "Install GameHub Lite or GameNative",
+                ActionPreference(
+                    icon = Icons.AutoMirrored.Filled.OpenInNew,
+                    title = "GameHub",
+                    subtitle = "Play Store",
                     isFocused = uiState.focusedIndex == steamBaseIndex,
-                    icon = Icons.Default.Info
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.xiaoji.egggame"))
+                        context.startActivity(intent)
+                    }
+                )
+            }
+            item {
+                ActionPreference(
+                    icon = Icons.AutoMirrored.Filled.OpenInNew,
+                    title = "GameHub Lite",
+                    subtitle = "GitHub",
+                    isFocused = uiState.focusedIndex == steamBaseIndex + 1,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Producdevity/gamehub-lite"))
+                        context.startActivity(intent)
+                    }
+                )
+            }
+            item {
+                ActionPreference(
+                    icon = Icons.AutoMirrored.Filled.OpenInNew,
+                    title = "GameNative",
+                    subtitle = "GitHub",
+                    isFocused = uiState.focusedIndex == steamBaseIndex + 2,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/utkarshdalal/GameNative"))
+                        context.startActivity(intent)
+                    }
                 )
             }
         } else {
@@ -411,7 +438,7 @@ private fun calculateMaxIndex(isConnected: Boolean, saveSyncEnabled: Boolean, la
     return if (launcherCount > 0) {
         steamBaseIndex + launcherCount // launchers + refresh metadata
     } else {
-        steamBaseIndex // just the "no launchers" info
+        steamBaseIndex + 2 // 3 download links (indices 0, 1, 2)
     }
 }
 

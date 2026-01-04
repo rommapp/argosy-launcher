@@ -46,4 +46,9 @@ class FileBrowserInputHandler(
         viewModel.selectCurrentDirectory()
         return InputResult.HANDLED
     }
+
+    override fun onSecondaryAction(): InputResult {
+        viewModel.showCreateFolderDialog()
+        return InputResult.HANDLED
+    }
 }

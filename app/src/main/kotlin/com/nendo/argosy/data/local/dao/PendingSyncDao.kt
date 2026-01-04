@@ -24,4 +24,10 @@ interface PendingSyncDao {
 
     @Query("DELETE FROM pending_sync WHERE gameId = :gameId AND syncType = :type")
     suspend fun deleteByGameAndType(gameId: Long, type: String)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM pending_sync WHERE gameId = :gameId AND syncType = :type)")
+    suspend fun hasPendingSync(gameId: Long, type: String): Boolean
+
+    @Query("SELECT syncType FROM pending_sync WHERE gameId = :gameId")
+    suspend fun getPendingSyncTypes(gameId: Long): List<String>
 }

@@ -912,12 +912,14 @@ class RomMRepository @Inject constructor(
             val rom = response.body() ?: return RomMResult.Success(Unit)
             val romUser = rom.romUser ?: return RomMResult.Success(Unit)
 
+            val pendingSyncTypes = pendingSyncDao.getPendingSyncTypes(gameId).toSet()
+
             val updatedGame = game.copy(
-                userRating = romUser.rating,
-                userDifficulty = romUser.difficulty,
-                status = romUser.status,
-                backlogged = romUser.backlogged,
-                nowPlaying = romUser.nowPlaying
+                userRating = if ("RATING" in pendingSyncTypes) game.userRating else romUser.rating,
+                userDifficulty = if ("DIFFICULTY" in pendingSyncTypes) game.userDifficulty else romUser.difficulty,
+                status = if ("STATUS" in pendingSyncTypes) game.status else romUser.status,
+                backlogged = if ("BACKLOGGED" in pendingSyncTypes) game.backlogged else romUser.backlogged,
+                nowPlaying = if ("NOW_PLAYING" in pendingSyncTypes) game.nowPlaying else romUser.nowPlaying
             )
 
             if (updatedGame != game) {

@@ -98,6 +98,22 @@ enum class GameDownloadStatus {
 
 enum class RatingType { OPINION, DIFFICULTY }
 
+sealed class MoreOptionAction {
+    data object ManageSaves : MoreOptionAction()
+    data object RateGame : MoreOptionAction()
+    data object SetDifficulty : MoreOptionAction()
+    data object SetStatus : MoreOptionAction()
+    data object ChangeEmulator : MoreOptionAction()
+    data object ChangeSteamLauncher : MoreOptionAction()
+    data object ChangeCore : MoreOptionAction()
+    data object SelectDisc : MoreOptionAction()
+    data object UpdatesDlc : MoreOptionAction()
+    data object RefreshData : MoreOptionAction()
+    data object AddToCollection : MoreOptionAction()
+    data object Delete : MoreOptionAction()
+    data object ToggleHide : MoreOptionAction()
+}
+
 data class ExtractionFailedInfo(
     val gameId: Long,
     val fileName: String,

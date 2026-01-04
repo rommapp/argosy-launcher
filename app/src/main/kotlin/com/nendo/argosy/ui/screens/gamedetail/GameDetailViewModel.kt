@@ -802,7 +802,7 @@ class GameDetailViewModel @Inject constructor(
             val isMultiDisc = it.game?.isMultiDisc == true
             val isSteamGame = it.game?.isSteamGame == true
             val isEmulatedGame = !isSteamGame && !isAndroidApp
-            val hasUpdates = it.updateFiles.isNotEmpty()
+            val hasUpdates = it.updateFiles.isNotEmpty() || it.dlcFiles.isNotEmpty()
 
             var optionCount = 1  // Base: Hide (always present)
             if (canManageSaves) optionCount++  // Manage Cached Saves
@@ -820,9 +820,26 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun selectOptionAtIndex(index: Int, onBack: () -> Unit) {
-        _uiState.update { it.copy(moreOptionsFocusIndex = index) }
-        confirmOptionSelection(onBack)
+    fun handleMoreOptionAction(action: MoreOptionAction, onBack: () -> Unit) {
+        val isAndroidApp = _uiState.value.game?.isAndroidApp == true
+        when (action) {
+            MoreOptionAction.ManageSaves -> showSaveCacheDialog()
+            MoreOptionAction.RateGame -> showRatingPicker(RatingType.OPINION)
+            MoreOptionAction.SetDifficulty -> showRatingPicker(RatingType.DIFFICULTY)
+            MoreOptionAction.SetStatus -> showStatusPicker()
+            MoreOptionAction.ChangeEmulator -> showEmulatorPicker()
+            MoreOptionAction.ChangeSteamLauncher -> showSteamLauncherPicker()
+            MoreOptionAction.ChangeCore -> showCorePicker()
+            MoreOptionAction.SelectDisc -> showDiscPicker()
+            MoreOptionAction.UpdatesDlc -> showUpdatesPicker()
+            MoreOptionAction.RefreshData -> refreshAndroidOrRommData()
+            MoreOptionAction.AddToCollection -> showAddToCollectionModal()
+            MoreOptionAction.Delete -> {
+                toggleMoreOptions()
+                if (isAndroidApp) uninstallAndroidApp() else deleteLocalFile()
+            }
+            MoreOptionAction.ToggleHide -> { toggleHideGame(); onBack() }
+        }
     }
 
     fun confirmOptionSelection(onBack: () -> Unit) {
@@ -836,7 +853,7 @@ class GameDetailViewModel @Inject constructor(
         val isAndroidApp = state.game?.isAndroidApp == true
         val canTrackProgress = isRommGame || isAndroidApp
         val isEmulatedGame = !isSteamGame && !isAndroidApp
-        val hasUpdates = state.updateFiles.isNotEmpty()
+        val hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty()
         val index = state.moreOptionsFocusIndex
 
         var currentIdx = 0
@@ -853,24 +870,25 @@ class GameDetailViewModel @Inject constructor(
         val deleteIdx = if (isDownloaded || isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
 
-        when (index) {
-            saveCacheIdx -> showSaveCacheDialog()
-            rateIdx -> showRatingPicker(RatingType.OPINION)
-            difficultyIdx -> showRatingPicker(RatingType.DIFFICULTY)
-            completionIdx -> showStatusPicker()
-            emulatorOrLauncherIdx -> if (isSteamGame) showSteamLauncherPicker() else showEmulatorPicker()
-            coreIdx -> showCorePicker()
-            discIdx -> showDiscPicker()
-            updatesIdx -> showUpdatesPicker()
-            refreshIdx -> refreshAndroidOrRommData()
-            addToCollectionIdx -> showAddToCollectionModal()
-            deleteIdx -> {
+        val action = when (index) {
+            saveCacheIdx -> MoreOptionAction.ManageSaves
+            rateIdx -> MoreOptionAction.RateGame
+            difficultyIdx -> MoreOptionAction.SetDifficulty
+            completionIdx -> MoreOptionAction.SetStatus
+            emulatorOrLauncherIdx -> if (isSteamGame) MoreOptionAction.ChangeSteamLauncher else MoreOptionAction.ChangeEmulator
+            coreIdx -> MoreOptionAction.ChangeCore
+            discIdx -> MoreOptionAction.SelectDisc
+            updatesIdx -> MoreOptionAction.UpdatesDlc
+            refreshIdx -> MoreOptionAction.RefreshData
+            addToCollectionIdx -> MoreOptionAction.AddToCollection
+            deleteIdx -> MoreOptionAction.Delete
+            hideIdx -> MoreOptionAction.ToggleHide
+            else -> {
                 toggleMoreOptions()
-                if (isAndroidApp) uninstallAndroidApp() else deleteLocalFile()
+                return
             }
-            hideIdx -> { toggleHideGame(); onBack() }
-            else -> toggleMoreOptions()
         }
+        handleMoreOptionAction(action, onBack)
     }
 
     fun showEmulatorPicker() {
@@ -1042,7 +1060,8 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun showUpdatesPicker() {
-        if (_uiState.value.updateFiles.isEmpty()) return
+        val state = _uiState.value
+        if (state.updateFiles.isEmpty() && state.dlcFiles.isEmpty()) return
         _uiState.update {
             it.copy(
                 showMoreOptions = false,
@@ -1124,6 +1143,10 @@ class GameDetailViewModel @Inject constructor(
             val newValue = (state.ratingPickerValue + delta).coerceIn(0, 10)
             state.copy(ratingPickerValue = newValue)
         }
+    }
+
+    fun setRatingValue(value: Int) {
+        _uiState.update { it.copy(ratingPickerValue = value.coerceIn(0, 10)) }
     }
 
     fun confirmRating() {

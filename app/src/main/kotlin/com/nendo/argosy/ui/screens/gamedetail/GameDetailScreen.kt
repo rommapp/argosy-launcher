@@ -436,7 +436,7 @@ private fun GameDetailModals(
             focusIndex = uiState.moreOptionsFocusIndex,
             isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
             updateCount = uiState.updateFiles.size + uiState.dlcFiles.size,
-            onOptionSelect = { index -> viewModel.selectOptionAtIndex(index, onBack) },
+            onAction = { action -> viewModel.handleMoreOptionAction(action, onBack) },
             onDismiss = viewModel::toggleMoreOptions
         )
     }
@@ -503,6 +503,7 @@ private fun GameDetailModals(
         RatingPickerModal(
             type = uiState.ratingPickerType,
             value = uiState.ratingPickerValue,
+            onValueChange = viewModel::setRatingValue,
             onDismiss = viewModel::dismissRatingPicker
         )
     }

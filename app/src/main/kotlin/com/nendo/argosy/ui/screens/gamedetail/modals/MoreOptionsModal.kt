@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
+import com.nendo.argosy.ui.screens.gamedetail.MoreOptionAction
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 
 @Composable
@@ -30,7 +31,7 @@ fun MoreOptionsModal(
     focusIndex: Int,
     isDownloaded: Boolean,
     updateCount: Int = 0,
-    onOptionSelect: (Int) -> Unit,
+    onAction: (MoreOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
     val canTrackProgress = game.isRommGame || game.isAndroidApp
@@ -45,7 +46,7 @@ fun MoreOptionsModal(
                 icon = Icons.Default.Save,
                 label = "Manage Cached Saves",
                 isFocused = focusIndex == idx,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.ManageSaves) }
             )
         }
         if (canTrackProgress) {
@@ -55,7 +56,7 @@ fun MoreOptionsModal(
                 label = "Rate Game",
                 value = if (game.userRating > 0) "${game.userRating}/10" else "Not rated",
                 isFocused = focusIndex == rateIdx,
-                onClick = { onOptionSelect(rateIdx) }
+                onClick = { onAction(MoreOptionAction.RateGame) }
             )
             val diffIdx = currentIndex++
             OptionItem(
@@ -63,7 +64,7 @@ fun MoreOptionsModal(
                 label = "Set Difficulty",
                 value = if (game.userDifficulty > 0) "${game.userDifficulty}/10" else "Not set",
                 isFocused = focusIndex == diffIdx,
-                onClick = { onOptionSelect(diffIdx) }
+                onClick = { onAction(MoreOptionAction.SetDifficulty) }
             )
             val statusIdx = currentIndex++
             OptionItem(
@@ -71,7 +72,7 @@ fun MoreOptionsModal(
                 label = "Set Status",
                 value = CompletionStatus.fromApiValue(game.status)?.label ?: "Not set",
                 isFocused = focusIndex == statusIdx,
-                onClick = { onOptionSelect(statusIdx) }
+                onClick = { onAction(MoreOptionAction.SetStatus) }
             )
         }
         if (game.isSteamGame) {
@@ -80,7 +81,7 @@ fun MoreOptionsModal(
                 label = "Change Launcher",
                 value = game.steamLauncherName ?: "Auto",
                 isFocused = focusIndex == idx,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.ChangeSteamLauncher) }
             )
         } else if (isEmulatedGame) {
             val idx = currentIndex++
@@ -88,7 +89,7 @@ fun MoreOptionsModal(
                 label = "Change Emulator",
                 value = game.emulatorName ?: "Default",
                 isFocused = focusIndex == idx,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.ChangeEmulator) }
             )
         }
         if (game.isRetroArchEmulator && isEmulatedGame) {
@@ -97,7 +98,7 @@ fun MoreOptionsModal(
                 label = "Change Core",
                 value = game.selectedCoreName ?: "Default",
                 isFocused = focusIndex == idx,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.ChangeCore) }
             )
         }
         if (game.isMultiDisc) {
@@ -106,7 +107,7 @@ fun MoreOptionsModal(
                 icon = Icons.Default.Album,
                 label = "Select Disc",
                 isFocused = focusIndex == idx,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.SelectDisc) }
             )
         }
         if (hasUpdates) {
@@ -116,7 +117,7 @@ fun MoreOptionsModal(
                 label = "Updates/DLC",
                 value = "$updateCount",
                 isFocused = focusIndex == idx,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.UpdatesDlc) }
             )
         }
         if (canTrackProgress) {
@@ -125,7 +126,7 @@ fun MoreOptionsModal(
                 icon = Icons.Default.Refresh,
                 label = "Refresh Game Data",
                 isFocused = focusIndex == idx,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.RefreshData) }
             )
         }
 
@@ -134,7 +135,7 @@ fun MoreOptionsModal(
             icon = Icons.Default.FolderSpecial,
             label = "Add to Collection",
             isFocused = focusIndex == addToCollectionIdx,
-            onClick = { onOptionSelect(addToCollectionIdx) }
+            onClick = { onAction(MoreOptionAction.AddToCollection) }
         )
 
         HorizontalDivider(
@@ -151,7 +152,7 @@ fun MoreOptionsModal(
                 label = if (game.isAndroidApp) "Uninstall" else "Delete Download",
                 isFocused = focusIndex == idx,
                 isDangerous = true,
-                onClick = { onOptionSelect(idx) }
+                onClick = { onAction(MoreOptionAction.Delete) }
             )
         }
         val hideIdx = currentIndex
@@ -160,7 +161,7 @@ fun MoreOptionsModal(
             label = if (game.isHidden) "Show" else "Hide",
             isFocused = focusIndex == hideIdx,
             isDangerous = !game.isHidden,
-            onClick = { onOptionSelect(hideIdx) }
+            onClick = { onAction(MoreOptionAction.ToggleHide) }
         )
     }
 }

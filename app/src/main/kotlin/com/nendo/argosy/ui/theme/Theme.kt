@@ -63,7 +63,7 @@ private fun darken(color: Color, factor: Float = 0.6f): Color {
 }
 
 private fun createDarkColorScheme(
-    primary: Color = ALauncherColors.Indigo,
+    primary: Color = ALauncherColors.Cyan,
     secondary: Color = ALauncherColors.Teal,
     tertiary: Color = ALauncherColors.Green
 ) = darkColorScheme(
@@ -95,7 +95,7 @@ private fun createDarkColorScheme(
 )
 
 private fun createLightColorScheme(
-    primary: Color = ALauncherColors.IndigoDark,
+    primary: Color = ALauncherColors.CyanDark,
     secondary: Color = ALauncherColors.TealDark,
     tertiary: Color = ALauncherColors.GreenDark
 ) = lightColorScheme(

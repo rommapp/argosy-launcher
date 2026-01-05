@@ -157,6 +157,14 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("wiiu"),
             downloadUrl = "https://github.com/SSimco/Cemu/releases"
         ),
+        // NOTE: Dual-screen fork uses same package name as official Cemu - only one can be installed
+        EmulatorDef(
+            id = "cemu_dualscreen",
+            packageName = "info.cemu.cemu",
+            displayName = "Cemu (Dual Screen)",
+            supportedPlatforms = setOf("wiiu"),
+            downloadUrl = "https://github.com/SapphireRhodonite/Cemu/releases"
+        ),
         // NOTE: Original Citra is discontinued - use Azahar or Borked3DS instead
         EmulatorDef(
             id = "citra",
@@ -505,7 +513,7 @@ object EmulatorRegistry {
         "gc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "ngc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "wii" to listOf("dolphin", "dolphin_handheld"),
-        "wiiu" to listOf("cemu"),
+        "wiiu" to listOf("cemu", "cemu_dualscreen"),
         "switch" to listOf("citron", "sudachi", "ryujinx", "yuzu", "strato", "eden", "skyline"),
         "gba" to listOf("pizza_boy_gba", "retroarch", "retroarch_64"),
         "gb" to listOf("pizza_boy_gb", "retroarch", "retroarch_64"),

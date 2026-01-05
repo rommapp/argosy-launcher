@@ -7,6 +7,10 @@ object ALauncherColors {
     val IndigoLight = Color(0xFF8E99F3)
     val IndigoDark = Color(0xFF26418F)
 
+    val Cyan = Color(0xFF00ACC1)
+    val CyanLight = Color(0xFF5DDEF4)
+    val CyanDark = Color(0xFF007C91)
+
     val Teal = Color(0xFF26A69A)
     val TealLight = Color(0xFF64D8CB)
     val TealDark = Color(0xFF00766C)
@@ -27,7 +31,7 @@ object ALauncherColors {
     val OnSurfaceDark = Color(0xFFE1E1E1)
     val OnSurfaceLight = Color(0xFF1C1B1F)
 
-    val FocusGlow = Color(0x665C6BC0)
+    val FocusGlow = Color(0x6600ACC1)
 
     val StarGold = Color(0xFFFFD700)
     val DifficultyRed = Color(0xFFE53935)

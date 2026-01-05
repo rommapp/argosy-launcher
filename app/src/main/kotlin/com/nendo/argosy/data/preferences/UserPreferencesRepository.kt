@@ -957,7 +957,7 @@ enum class BoxArtInnerEffect {
 }
 
 enum class BoxArtInnerEffectThickness(val px: Float) {
-    THIN(3f), MEDIUM(8f), THICK(16f);
+    THIN(6f), MEDIUM(16f), THICK(24f);
 
     companion object {
         fun fromString(value: String?): BoxArtInnerEffectThickness =

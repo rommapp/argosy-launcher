@@ -378,48 +378,60 @@ fun GameCard(
                 )
                 when (innerEffect) {
                     BoxArtInnerEffect.GLASS -> {
+                        val glassLayers = listOf(
+                            Triple(24.dp, 0.00f to 0.24f, 1.0f),
+                            Triple(12.dp, 0.21f to 0.44f, 1.0f),
+                            Triple(6.dp, 0.41f to 0.60f, 1.0f),
+                            Triple(3.dp, 0.57f to 0.68f, 1.0f),
+                            Triple(1.5.dp, 0.65f to 0.76f, 0.85f),
+                            Triple(0.8.dp, 0.73f to 0.84f, 0.65f),
+                            Triple(0.4.dp, 0.81f to 0.92f, 0.45f),
+                            Triple(0.1.dp, 0.89f to 1.00f, 0.3f)
+                        )
+
+                        glassLayers.forEach { (blurAmount, range, alpha) ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { this.alpha = alpha }
+                                    .clip(
+                                        GlassRingShape(
+                                            outerCornerRadius = outerCornerRadiusPx,
+                                            frameWidth = frameWidthPx,
+                                            innerEffectWidth = innerEffectWidth,
+                                            startProgress = range.first,
+                                            endProgress = range.second,
+                                            badgePosition = if (includeBadge) boxArtStyle.systemIconPosition else SystemIconPosition.OFF,
+                                            badgeWidth = badgeWidthPx,
+                                            badgeHeight = badgeHeightPx,
+                                            badgeCornerRadius = scaledCornerRadiusPx,
+                                            oneDpPx = oneDpPx
+                                        )
+                                    )
+                            ) {
+                                AsyncImage(
+                                    model = imageData,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    colorFilter = glassColorFilter,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .blur(blurAmount)
+                                )
+                            }
+                        }
+
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(innerEffectShape)
-                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                                .drawWithContent {
-                                    drawContent()
-                                    drawIntoCanvas { canvas ->
-                                        val layerPaint = android.graphics.Paint().apply {
-                                            xfermode = android.graphics.PorterDuffXfermode(
-                                                android.graphics.PorterDuff.Mode.DST_IN
-                                            )
-                                        }
-                                        canvas.nativeCanvas.saveLayer(0f, 0f, size.width, size.height, layerPaint)
-                                        val blurRadius = innerEffectWidth / 2
-                                        val totalWidth = frameWidthPx + innerEffectWidth
-                                        val maskPaint = android.graphics.Paint().apply {
-                                            isAntiAlias = true
-                                            style = android.graphics.Paint.Style.STROKE
-                                            strokeWidth = totalWidth
-                                            color = android.graphics.Color.BLACK
-                                            maskFilter = android.graphics.BlurMaskFilter(
-                                                blurRadius,
-                                                android.graphics.BlurMaskFilter.Blur.NORMAL
-                                            )
-                                        }
-                                        val strokeInset = totalWidth / 2
-                                        val maskRadius = (outerCornerRadiusPx - strokeInset).coerceAtLeast(0f)
-                                        canvas.nativeCanvas.drawRoundRect(
-                                            strokeInset, strokeInset,
-                                            size.width - strokeInset, size.height - strokeInset,
-                                            maskRadius, maskRadius,
-                                            maskPaint
-                                        )
-                                        canvas.nativeCanvas.restore()
-                                    }
-                                    val depthWidth = innerEffectWidth * 0.5f
-                                    val depthLayers = 4
+                                .drawBehind {
+                                    val depthWidth = frameWidthPx * 1.5f
+                                    val depthLayers = 6
                                     val depthStrokeWidth = depthWidth / depthLayers
                                     for (i in 0 until depthLayers) {
                                         val progress = i.toFloat() / depthLayers
-                                        val alpha = (0.4f * (1f - progress)).coerceIn(0f, 1f)
+                                        val alpha = (0.35f * (1f - progress)).coerceIn(0f, 1f)
                                         val layerInset = frameWidthPx + (depthWidth * progress) + depthStrokeWidth / 2
                                         val layerRadius = (outerCornerRadiusPx - layerInset).coerceAtLeast(0f)
                                         drawRoundRect(
@@ -431,17 +443,7 @@ fun GameCard(
                                         )
                                     }
                                 }
-                        ) {
-                            AsyncImage(
-                                model = imageData,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                colorFilter = glassColorFilter,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .blur(16.dp)
-                            )
-                        }
+                        )
                     }
                     BoxArtInnerEffect.SHADOW -> {
                         Box(
@@ -571,47 +573,60 @@ fun GameCard(
             when (innerEffect) {
                 BoxArtInnerEffect.GLASS -> {
                     if (gradientImageData != null) {
+                        val glassLayers = listOf(
+                            Triple(24.dp, 0.00f to 0.24f, 1.0f),
+                            Triple(12.dp, 0.21f to 0.44f, 1.0f),
+                            Triple(6.dp, 0.41f to 0.60f, 1.0f),
+                            Triple(3.dp, 0.57f to 0.68f, 1.0f),
+                            Triple(1.5.dp, 0.65f to 0.76f, 0.85f),
+                            Triple(0.8.dp, 0.73f to 0.84f, 0.65f),
+                            Triple(0.4.dp, 0.81f to 0.92f, 0.45f),
+                            Triple(0.1.dp, 0.89f to 1.00f, 0.3f)
+                        )
+
+                        glassLayers.forEach { (blurAmount, range, alpha) ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { this.alpha = alpha }
+                                    .clip(
+                                        GlassRingShape(
+                                            outerCornerRadius = outerCornerRadiusPx,
+                                            frameWidth = frameWidthPx,
+                                            innerEffectWidth = innerEffectWidth,
+                                            startProgress = range.first,
+                                            endProgress = range.second,
+                                            badgePosition = badgePosition,
+                                            badgeWidth = badgeWidthPx,
+                                            badgeHeight = badgeHeightPx,
+                                            badgeCornerRadius = scaledCornerRadiusPx,
+                                            oneDpPx = oneDpPx
+                                        )
+                                    )
+                            ) {
+                                AsyncImage(
+                                    model = gradientImageData,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    colorFilter = ColorFilter.colorMatrix(saturationMatrix),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .blur(blurAmount)
+                                )
+                            }
+                        }
+
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                                .drawWithContent {
-                                    drawContent()
-                                    drawIntoCanvas { canvas ->
-                                        val layerPaint = android.graphics.Paint().apply {
-                                            xfermode = android.graphics.PorterDuffXfermode(
-                                                android.graphics.PorterDuff.Mode.DST_IN
-                                            )
-                                        }
-                                        canvas.nativeCanvas.saveLayer(0f, 0f, size.width, size.height, layerPaint)
-                                        val blurRadius = innerEffectWidth / 2
-                                        val totalWidth = frameWidthPx + innerEffectWidth
-                                        val maskPaint = android.graphics.Paint().apply {
-                                            isAntiAlias = true
-                                            style = android.graphics.Paint.Style.STROKE
-                                            strokeWidth = totalWidth
-                                            color = android.graphics.Color.BLACK
-                                            maskFilter = android.graphics.BlurMaskFilter(
-                                                blurRadius,
-                                                android.graphics.BlurMaskFilter.Blur.NORMAL
-                                            )
-                                        }
-                                        val strokeInset = totalWidth / 2
-                                        val maskRadius = (outerCornerRadiusPx - strokeInset).coerceAtLeast(0f)
-                                        canvas.nativeCanvas.drawRoundRect(
-                                            strokeInset, strokeInset,
-                                            size.width - strokeInset, size.height - strokeInset,
-                                            maskRadius, maskRadius,
-                                            maskPaint
-                                        )
-                                        canvas.nativeCanvas.restore()
-                                    }
-                                    val depthWidth = innerEffectWidth * 0.5f
-                                    val depthLayers = 4
+                                .clip(innerEffectShape)
+                                .drawBehind {
+                                    val depthWidth = frameWidthPx * 1.5f
+                                    val depthLayers = 6
                                     val depthStrokeWidth = depthWidth / depthLayers
                                     for (i in 0 until depthLayers) {
                                         val progress = i.toFloat() / depthLayers
-                                        val alpha = (0.4f * (1f - progress)).coerceIn(0f, 1f)
+                                        val alpha = (0.35f * (1f - progress)).coerceIn(0f, 1f)
                                         val layerInset = frameWidthPx + (depthWidth * progress) + depthStrokeWidth / 2
                                         val layerRadius = (outerCornerRadiusPx - layerInset).coerceAtLeast(0f)
                                         drawRoundRect(
@@ -623,17 +638,7 @@ fun GameCard(
                                         )
                                     }
                                 }
-                        ) {
-                            AsyncImage(
-                                model = gradientImageData,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                colorFilter = ColorFilter.colorMatrix(saturationMatrix),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .blur(16.dp)
-                            )
-                        }
+                        )
                     }
                 }
                 BoxArtInnerEffect.SHADOW -> {
@@ -1251,6 +1256,147 @@ private class InnerEffectShape(
                             bottomEarX,
                             bottomEarY + badgeCornerRadius * 2
                         ),
+                        270f, 90f, false
+                    )
+                    close()
+                }
+                path.op(path, bottomEar, PathOperation.Union)
+            }
+            else -> {}
+        }
+        return path
+    }
+}
+
+private class GlassRingShape(
+    private val outerCornerRadius: Float,
+    private val frameWidth: Float,
+    private val innerEffectWidth: Float,
+    private val startProgress: Float,
+    private val endProgress: Float,
+    private val badgePosition: SystemIconPosition = SystemIconPosition.OFF,
+    private val badgeWidth: Float = 0f,
+    private val badgeHeight: Float = 0f,
+    private val badgeCornerRadius: Float = 0f,
+    private val oneDpPx: Float = 0f
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val outerInset = frameWidth + (innerEffectWidth * startProgress)
+        val outerRadius = (outerCornerRadius - outerInset).coerceAtLeast(0f)
+        val outerPath = Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = outerInset,
+                    top = outerInset,
+                    right = size.width - outerInset,
+                    bottom = size.height - outerInset,
+                    cornerRadius = CornerRadius(outerRadius)
+                )
+            )
+        }
+
+        val innerInset = frameWidth + (innerEffectWidth * endProgress)
+        val innerRadius = (outerCornerRadius - innerInset).coerceAtLeast(0f)
+        val innerPath = Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = innerInset,
+                    top = innerInset,
+                    right = size.width - innerInset,
+                    bottom = size.height - innerInset,
+                    cornerRadius = CornerRadius(innerRadius)
+                )
+            )
+        }
+
+        var ringPath = Path().apply {
+            op(outerPath, innerPath, PathOperation.Difference)
+        }
+
+        if (badgePosition != SystemIconPosition.OFF) {
+            val badgePath = createBadgePath(size)
+            ringPath = Path().apply {
+                op(ringPath, badgePath, PathOperation.Difference)
+            }
+        }
+
+        return Outline.Generic(ringPath)
+    }
+
+    private fun createBadgePath(size: Size): Path {
+        val path = Path()
+        when (badgePosition) {
+            SystemIconPosition.TOP_LEFT -> {
+                path.addRoundRect(
+                    RoundRect(
+                        left = 0f,
+                        top = 0f,
+                        right = badgeWidth,
+                        bottom = badgeHeight,
+                        topLeftCornerRadius = CornerRadius(badgeCornerRadius),
+                        bottomRightCornerRadius = CornerRadius(badgeCornerRadius)
+                    )
+                )
+                val rightEarX = badgeWidth - oneDpPx
+                val rightEarY = frameWidth - oneDpPx
+                val rightEar = Path().apply {
+                    moveTo(rightEarX, rightEarY)
+                    lineTo(rightEarX + badgeCornerRadius, rightEarY)
+                    arcTo(
+                        Rect(rightEarX, rightEarY, rightEarX + badgeCornerRadius * 2, rightEarY + badgeCornerRadius * 2),
+                        270f, -90f, false
+                    )
+                    close()
+                }
+                path.op(path, rightEar, PathOperation.Union)
+                val bottomEarX = frameWidth - oneDpPx
+                val bottomEarY = badgeHeight - oneDpPx
+                val bottomEar = Path().apply {
+                    moveTo(bottomEarX, bottomEarY)
+                    lineTo(bottomEarX + badgeCornerRadius, bottomEarY)
+                    arcTo(
+                        Rect(bottomEarX, bottomEarY, bottomEarX + badgeCornerRadius * 2, bottomEarY + badgeCornerRadius * 2),
+                        270f, -90f, false
+                    )
+                    close()
+                }
+                path.op(path, bottomEar, PathOperation.Union)
+            }
+            SystemIconPosition.TOP_RIGHT -> {
+                val badgeLeft = size.width - badgeWidth
+                path.addRoundRect(
+                    RoundRect(
+                        left = badgeLeft,
+                        top = 0f,
+                        right = size.width,
+                        bottom = badgeHeight,
+                        topRightCornerRadius = CornerRadius(badgeCornerRadius),
+                        bottomLeftCornerRadius = CornerRadius(badgeCornerRadius)
+                    )
+                )
+                val leftEarX = badgeLeft + oneDpPx
+                val leftEarY = frameWidth - oneDpPx
+                val leftEar = Path().apply {
+                    moveTo(leftEarX, leftEarY)
+                    lineTo(leftEarX - badgeCornerRadius, leftEarY)
+                    arcTo(
+                        Rect(leftEarX - badgeCornerRadius * 2, leftEarY, leftEarX, leftEarY + badgeCornerRadius * 2),
+                        270f, 90f, false
+                    )
+                    close()
+                }
+                path.op(path, leftEar, PathOperation.Union)
+                val bottomEarX = size.width - frameWidth + oneDpPx
+                val bottomEarY = badgeHeight - oneDpPx
+                val bottomEar = Path().apply {
+                    moveTo(bottomEarX, bottomEarY)
+                    lineTo(bottomEarX - badgeCornerRadius, bottomEarY)
+                    arcTo(
+                        Rect(bottomEarX - badgeCornerRadius * 2, bottomEarY, bottomEarX, bottomEarY + badgeCornerRadius * 2),
                         270f, 90f, false
                     )
                     close()

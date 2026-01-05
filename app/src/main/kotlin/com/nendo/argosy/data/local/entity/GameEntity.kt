@@ -116,3 +116,9 @@ data class GameListItem(
 ) {
     val isDownloaded: Boolean get() = localPath != null
 }
+
+data class GameCategoryInfo(
+    val id: Long,
+    val genre: String?,
+    val gameModes: String?
+)

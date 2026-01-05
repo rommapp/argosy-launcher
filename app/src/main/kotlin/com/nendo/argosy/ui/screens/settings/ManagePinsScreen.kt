@@ -1,5 +1,8 @@
-package com.nendo.argosy.ui.screens.collections
+package com.nendo.argosy.ui.screens.settings
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,46 +37,41 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.domain.model.PinnedCollection
+import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
-import com.nendo.argosy.ui.screens.collections.components.WideGameCard
-import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOption
-import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionsModal
-import com.nendo.argosy.ui.screens.collections.dialogs.DeleteCollectionDialog
-import com.nendo.argosy.ui.screens.collections.dialogs.EditCollectionDialog
-import com.nendo.argosy.ui.screens.collections.dialogs.RemoveGameDialog
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable
-fun CollectionDetailScreen(
+fun ManagePinsScreen(
     onBack: () -> Unit,
-    onGameClick: (Long) -> Unit,
-    viewModel: CollectionDetailViewModel = hiltViewModel()
+    viewModel: ManagePinsViewModel = hiltViewModel()
 ) {
     val inputDispatcher = LocalInputDispatcher.current
-    val inputHandler = remember(onBack, onGameClick) {
-        viewModel.createInputHandler(
-            onBack = onBack,
-            onGameClick = onGameClick
-        )
+    val inputHandler = remember(onBack) {
+        viewModel.createInputHandler(onBack = onBack)
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, inputHandler) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_COLLECTION_DETAIL)
+                inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_MANAGE_PINS)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_COLLECTION_DETAIL)
+        inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_MANAGE_PINS)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
@@ -79,12 +81,12 @@ fun CollectionDetailScreen(
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.games.isNotEmpty() && uiState.focusedIndex in uiState.games.indices) {
+        if (uiState.pins.isNotEmpty() && uiState.focusedIndex in uiState.pins.indices) {
             val visibleItems = listState.layoutInfo.visibleItemsInfo
             val viewportHeight = listState.layoutInfo.viewportEndOffset
             val avgItemHeight = if (visibleItems.isNotEmpty()) {
                 visibleItems.sumOf { it.size } / visibleItems.size
-            } else 120
+            } else 80
             val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
             listState.animateScrollToItem(uiState.focusedIndex, -targetOffset)
         }
@@ -92,11 +94,7 @@ fun CollectionDetailScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            CollectionDetailHeader(
-                collectionName = uiState.collection?.name ?: "",
-                gameCount = uiState.games.size,
-                onBack = onBack
-            )
+            ManagePinsHeader(onBack = onBack)
 
             when {
                 uiState.isLoading -> {
@@ -111,8 +109,8 @@ fun CollectionDetailScreen(
                         )
                     }
                 }
-                uiState.games.isEmpty() -> {
-                    EmptyCollectionDetail()
+                uiState.pins.isEmpty() -> {
+                    EmptyPinsState()
                 }
                 else -> {
                     LazyColumn(
@@ -123,22 +121,14 @@ fun CollectionDetailScreen(
                             top = Dimens.spacingSm,
                             bottom = 80.dp
                         ),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+                        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                     ) {
-                        itemsIndexed(uiState.games, key = { _, g -> g.id }) { index, game ->
-                            WideGameCard(
-                                title = game.title,
-                                platformShortName = game.platformShortName,
-                                coverPath = game.coverPath,
-                                developer = game.developer,
-                                releaseYear = game.releaseYear,
-                                genre = game.genre,
-                                userRating = game.userRating,
-                                userDifficulty = game.userDifficulty,
-                                achievementCount = game.achievementCount,
-                                playTimeMinutes = game.playTimeMinutes,
+                        itemsIndexed(uiState.pins, key = { _, pin -> pin.id }) { index, pin ->
+                            PinRow(
+                                pin = pin,
                                 isFocused = uiState.focusedIndex == index,
-                                onClick = { onGameClick(game.id) }
+                                isBeingMoved = uiState.reorderingIndex == index,
+                                onClick = { viewModel.setFocusIndex(index) }
                             )
                         }
                     }
@@ -146,86 +136,30 @@ fun CollectionDetailScreen(
             }
         }
 
-        val baseHints = listOf(
-            InputButton.DPAD to "Navigate",
-            InputButton.SOUTH to "Open",
-            InputButton.EAST to "Back",
-            InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
-        )
-        val pinHint = if (uiState.collection != null) {
-            listOf(InputButton.NORTH to if (uiState.isPinned) "Unpin" else "Pin")
+        val hints = if (uiState.isReorderMode) {
+            listOf(
+                InputButton.DPAD_VERTICAL to "Move",
+                InputButton.SOUTH to "Done",
+                InputButton.EAST to "Cancel"
+            )
         } else {
-            emptyList()
+            listOf(
+                InputButton.DPAD to "Navigate",
+                InputButton.SOUTH to "Reorder",
+                InputButton.NORTH to "Unpin",
+                InputButton.EAST to "Back"
+            )
         }
-        val optionsHint = if (uiState.collection != null) {
-            listOf(InputButton.START to "Options")
-        } else {
-            emptyList()
-        }
+
         FooterBar(
             modifier = Modifier.align(Alignment.BottomCenter),
-            hints = baseHints + pinHint + optionsHint
-        )
-    }
-
-    if (uiState.showEditDialog && uiState.collection != null) {
-        EditCollectionDialog(
-            currentName = uiState.collection!!.name,
-            onDismiss = { viewModel.hideEditDialog() },
-            onSave = { name -> viewModel.updateCollectionName(name) }
-        )
-    }
-
-    if (uiState.showDeleteDialog && uiState.collection != null) {
-        DeleteCollectionDialog(
-            collectionName = uiState.collection!!.name,
-            onDismiss = { viewModel.hideDeleteDialog() },
-            onConfirm = { viewModel.deleteCollection(onDeleted = onBack) }
-        )
-    }
-
-    if (uiState.showOptionsModal && uiState.collection != null) {
-        CollectionOptionsModal(
-            collectionName = uiState.collection!!.name,
-            focusIndex = uiState.optionsModalFocusIndex,
-            onOptionSelect = { option ->
-                when (option) {
-                    CollectionOption.RENAME -> {
-                        viewModel.hideOptionsModal()
-                        viewModel.showEditDialog()
-                    }
-                    CollectionOption.DELETE -> {
-                        viewModel.hideOptionsModal()
-                        viewModel.showDeleteDialog()
-                    }
-                    CollectionOption.REMOVE_GAME -> {
-                        viewModel.hideOptionsModal()
-                        viewModel.showRemoveGameDialog()
-                    }
-                }
-            },
-            onDismiss = { viewModel.hideOptionsModal() },
-            showRemoveGame = uiState.focusedGame != null,
-            gameTitle = uiState.focusedGame?.title
-        )
-    }
-
-    if (uiState.showRemoveGameDialog && uiState.gameToRemove != null) {
-        RemoveGameDialog(
-            gameTitle = uiState.gameToRemove!!.title,
-            collectionName = uiState.collection?.name ?: "",
-            onDismiss = { viewModel.hideRemoveGameDialog() },
-            onConfirm = { viewModel.confirmRemoveGame() }
+            hints = hints
         )
     }
 }
 
 @Composable
-private fun CollectionDetailHeader(
-    collectionName: String,
-    gameCount: Int,
-    onBack: () -> Unit
-) {
+private fun ManagePinsHeader(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -242,43 +176,113 @@ private fun CollectionDetailHeader(
 
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
 
+        Text(
+            text = "Manage Pinned Collections",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun PinRow(
+    pin: PinnedCollection,
+    isFocused: Boolean,
+    isBeingMoved: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.02f else 1f,
+        label = "scale"
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (isBeingMoved) 0.7f else 1f,
+        label = "alpha"
+    )
+
+    val (icon, typeLabel) = when (pin) {
+        is PinnedCollection.Regular -> Icons.Default.Folder to "Collection"
+        is PinnedCollection.Virtual -> when (pin.type) {
+            CategoryType.GENRE -> Icons.Default.Category to "Genre"
+            CategoryType.GAME_MODE -> Icons.Default.Category to "Game Mode"
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+            }
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(
+                if (isFocused) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+            .clickable(onClick = onClick)
+            .padding(Dimens.spacingMd),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (isBeingMoved) {
+            Icon(
+                Icons.Default.DragHandle,
+                contentDescription = "Moving",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        } else {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = collectionName,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                text = pin.displayName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "$gameCount games",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "$typeLabel - ${pin.gameCount} games",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
 @Composable
-private fun EmptyCollectionDetail() {
+private fun EmptyPinsState() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
-                Icons.Default.Folder,
+                Icons.Default.PushPin,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.size(64.dp)
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = "No games in this collection",
+                text = "No pinned collections",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "Add games from the library or game details",
+                text = "Pin collections from the Collections screen",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )

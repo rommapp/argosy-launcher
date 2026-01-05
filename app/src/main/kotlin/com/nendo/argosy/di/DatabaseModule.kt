@@ -15,6 +15,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
+import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
@@ -78,7 +79,9 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_37_38,
                 ALauncherDatabase.MIGRATION_38_39,
                 ALauncherDatabase.MIGRATION_39_40,
-                ALauncherDatabase.MIGRATION_40_41
+                ALauncherDatabase.MIGRATION_40_41,
+                ALauncherDatabase.MIGRATION_41_42,
+                ALauncherDatabase.MIGRATION_42_43
             )
             .build()
     }
@@ -143,4 +146,8 @@ object DatabaseModule {
     @Provides
     fun provideCollectionDao(database: ALauncherDatabase): CollectionDao =
         database.collectionDao()
+
+    @Provides
+    fun providePinnedCollectionDao(database: ALauncherDatabase): PinnedCollectionDao =
+        database.pinnedCollectionDao()
 }

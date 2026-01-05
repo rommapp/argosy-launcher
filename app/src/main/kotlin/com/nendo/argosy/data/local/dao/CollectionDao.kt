@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
+import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -89,4 +90,46 @@ interface CollectionDao {
         LIMIT 4
     """)
     suspend fun getCollectionCoverPaths(collectionId: Long): List<String>
+
+    @Query("""
+        SELECT COUNT(*) FROM collection_games cg
+        INNER JOIN games g ON cg.gameId = g.id
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE cg.collectionId = :collectionId AND p.syncEnabled = 1
+    """)
+    fun observeLocalGameCountInCollection(collectionId: Long): Flow<Int>
+
+    @Query("""
+        SELECT g.coverPath FROM games g
+        INNER JOIN collection_games cg ON g.id = cg.gameId
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE cg.collectionId = :collectionId
+            AND g.coverPath IS NOT NULL
+            AND p.syncEnabled = 1
+        ORDER BY cg.addedAt DESC
+        LIMIT 4
+    """)
+    fun observeLocalCollectionCoverPaths(collectionId: Long): Flow<List<String>>
+
+    @Query("SELECT * FROM collections WHERE type = :type ORDER BY name ASC")
+    fun observeByType(type: CollectionType): Flow<List<CollectionEntity>>
+
+    @Query("SELECT * FROM collections WHERE type = :type ORDER BY name ASC")
+    suspend fun getAllByType(type: CollectionType): List<CollectionEntity>
+
+    @Query("SELECT COUNT(*) FROM collections WHERE type = :type")
+    suspend fun countByType(type: CollectionType): Int
+
+    @Query("SELECT * FROM collections WHERE type = :type AND name = :name LIMIT 1")
+    suspend fun getByTypeAndName(type: CollectionType, name: String): CollectionEntity?
+
+    @Query("""
+        SELECT g.* FROM games g
+        INNER JOIN collection_games cg ON g.id = cg.gameId
+        INNER JOIN collections c ON cg.collectionId = c.id
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE c.type = :type AND c.name = :name AND p.syncEnabled = 1
+        ORDER BY g.sortTitle ASC
+    """)
+    fun observeGamesByTypeAndName(type: CollectionType, name: String): Flow<List<GameEntity>>
 }

@@ -23,6 +23,7 @@ import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
+import com.nendo.argosy.ui.screens.settings.ManagePinsScreen
 import com.nendo.argosy.ui.screens.settings.SettingsScreen
 
 @Composable
@@ -217,6 +218,12 @@ fun NavGraph(
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
                 },
                 onBack = navigateToDefault
+            )
+        }
+
+        composable(Screen.ManagePins.route) {
+            ManagePinsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

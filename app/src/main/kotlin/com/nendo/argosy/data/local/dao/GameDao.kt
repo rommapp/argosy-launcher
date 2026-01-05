@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.nendo.argosy.data.local.entity.GameCategoryInfo
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.model.GameSource
@@ -96,6 +97,32 @@ interface GameDao {
 
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games ORDER BY sortTitle ASC")
     fun observeAllListIncludingHidden(): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT g.id, g.platformId, g.platformSlug, g.title, g.sortTitle, g.localPath, g.source, g.coverPath, g.isFavorite, g.isHidden, g.isMultiDisc, g.rommId, g.steamAppId, g.packageName, g.playCount, g.playTimeMinutes, g.lastPlayed, g.genre, g.gameModes
+        FROM games g
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE g.isHidden = 0 AND p.syncEnabled = 1
+        ORDER BY g.sortTitle ASC
+    """)
+    fun observeSyncEnabledGames(): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT g.*
+        FROM games g
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE g.isHidden = 0 AND p.syncEnabled = 1
+        ORDER BY g.sortTitle ASC
+    """)
+    fun observeSyncEnabledGamesFull(): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT g.id, g.genre, g.gameModes
+        FROM games g
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE g.isHidden = 0 AND p.syncEnabled = 1
+    """)
+    suspend fun getSyncEnabledGamesForCategories(): List<GameCategoryInfo>
 
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE platformId = :platformId ORDER BY sortTitle ASC")
     fun observeByPlatformListIncludingHidden(platformId: Long): Flow<List<GameListItem>>

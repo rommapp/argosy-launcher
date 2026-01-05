@@ -7,7 +7,11 @@ import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.domain.usecase.collection.IsPinnedUseCase
+import com.nendo.argosy.domain.usecase.collection.PinCollectionUseCase
+import com.nendo.argosy.domain.usecase.collection.RefreshAllCollectionsUseCase
 import com.nendo.argosy.domain.usecase.collection.RemoveGameFromCollectionUseCase
+import com.nendo.argosy.domain.usecase.collection.UnpinCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.UpdateCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.DeleteCollectionUseCase
 import com.nendo.argosy.ui.input.InputHandler
@@ -42,13 +46,15 @@ data class CollectionDetailUiState(
     val collection: CollectionEntity? = null,
     val games: List<CollectionGameUi> = emptyList(),
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val focusedIndex: Int = 0,
     val showOptionsModal: Boolean = false,
     val optionsModalFocusIndex: Int = 0,
     val showEditDialog: Boolean = false,
     val showDeleteDialog: Boolean = false,
     val showRemoveGameDialog: Boolean = false,
-    val gameToRemove: CollectionGameUi? = null
+    val gameToRemove: CollectionGameUi? = null,
+    val isPinned: Boolean = false
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
@@ -61,7 +67,11 @@ class CollectionDetailViewModel @Inject constructor(
     private val platformDao: PlatformDao,
     private val updateCollectionUseCase: UpdateCollectionUseCase,
     private val deleteCollectionUseCase: DeleteCollectionUseCase,
-    private val removeGameFromCollectionUseCase: RemoveGameFromCollectionUseCase
+    private val removeGameFromCollectionUseCase: RemoveGameFromCollectionUseCase,
+    private val isPinnedUseCase: IsPinnedUseCase,
+    private val pinCollectionUseCase: PinCollectionUseCase,
+    private val unpinCollectionUseCase: UnpinCollectionUseCase,
+    private val refreshAllCollectionsUseCase: RefreshAllCollectionsUseCase
 ) : ViewModel() {
 
     private val collectionId: Long = checkNotNull(savedStateHandle["collectionId"])
@@ -73,37 +83,55 @@ class CollectionDetailViewModel @Inject constructor(
         val showEditDialog: Boolean = false,
         val showDeleteDialog: Boolean = false,
         val showRemoveGameDialog: Boolean = false,
-        val gameToRemove: CollectionGameUi? = null
+        val gameToRemove: CollectionGameUi? = null,
+        val isPinned: Boolean = false,
+        val isRefreshing: Boolean = false
     )
 
     private val _modalState = MutableStateFlow(ModalState())
     private val _refreshTrigger = MutableStateFlow(0)
+    private var lastRefreshTime = 0L
+
+    companion object {
+        private const val REFRESH_DEBOUNCE_MS = 30_000L
+    }
+
+    init {
+        loadPinStatus()
+    }
+
+    private fun loadPinStatus() {
+        viewModelScope.launch {
+            val isPinned = isPinnedUseCase.isRegularPinned(collectionId)
+            _modalState.value = _modalState.value.copy(isPinned = isPinned)
+        }
+    }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<CollectionDetailUiState> = _refreshTrigger.flatMapLatest {
         combine(
             collectionDao.observeCollectionById(collectionId),
             collectionDao.observeGamesInCollection(collectionId),
+            platformDao.observeAllPlatforms(),
             _modalState
-        ) { collection, games, modalState ->
-            val platformCache = mutableMapOf<Long, String>()
+        ) { collection, games, platforms, modalState ->
+            val platformMap = platforms.associate { it.id to it.shortName }
             val gamesUi = games.map { game ->
-                val platformName = platformCache.getOrPut(game.platformId) {
-                    platformDao.getById(game.platformId)?.shortName ?: "Unknown"
-                }
-                game.toUi(platformName)
+                game.toUi(platformMap[game.platformId] ?: "Unknown")
             }
             CollectionDetailUiState(
                 collection = collection,
                 games = gamesUi,
                 isLoading = false,
+                isRefreshing = modalState.isRefreshing,
                 focusedIndex = modalState.focusedIndex.coerceIn(0, (gamesUi.size - 1).coerceAtLeast(0)),
                 showOptionsModal = modalState.showOptionsModal,
                 optionsModalFocusIndex = modalState.optionsModalFocusIndex,
                 showEditDialog = modalState.showEditDialog,
                 showDeleteDialog = modalState.showDeleteDialog,
                 showRemoveGameDialog = modalState.showRemoveGameDialog,
-                gameToRemove = modalState.gameToRemove
+                gameToRemove = modalState.gameToRemove,
+                isPinned = modalState.isPinned
             )
         }
     }.stateIn(
@@ -155,7 +183,8 @@ class CollectionDetailViewModel @Inject constructor(
     }
 
     fun moveOptionsFocus(delta: Int) {
-        val maxIndex = 1
+        val hasGame = uiState.value.focusedGame != null
+        val maxIndex = if (hasGame) 2 else 1
         val currentIndex = _modalState.value.optionsModalFocusIndex
         val newIndex = (currentIndex + delta).coerceIn(0, maxIndex)
         _modalState.value = _modalState.value.copy(optionsModalFocusIndex = newIndex)
@@ -175,6 +204,10 @@ class CollectionDetailViewModel @Inject constructor(
             1 -> {
                 hideOptionsModal()
                 showDeleteDialog()
+            }
+            2 -> {
+                hideOptionsModal()
+                showRemoveGameDialog()
             }
         }
     }
@@ -240,6 +273,32 @@ class CollectionDetailViewModel @Inject constructor(
         }
     }
 
+    fun togglePin() {
+        viewModelScope.launch {
+            val isPinned = _modalState.value.isPinned
+            if (isPinned) {
+                unpinCollectionUseCase.unpinRegular(collectionId)
+            } else {
+                pinCollectionUseCase.pinRegular(collectionId)
+            }
+            _modalState.value = _modalState.value.copy(isPinned = !isPinned)
+        }
+    }
+
+    fun refresh() {
+        val now = System.currentTimeMillis()
+        if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) return
+        if (_modalState.value.isRefreshing) return
+
+        lastRefreshTime = now
+        viewModelScope.launch {
+            _modalState.value = _modalState.value.copy(isRefreshing = true)
+            refreshAllCollectionsUseCase()
+            _modalState.value = _modalState.value.copy(isRefreshing = false)
+            _refreshTrigger.value++
+        }
+    }
+
     fun createInputHandler(
         onBack: () -> Unit,
         onGameClick: (Long) -> Unit
@@ -301,14 +360,19 @@ class CollectionDetailViewModel @Inject constructor(
         }
 
         override fun onContextMenu(): InputResult {
-            if (uiState.value.focusedGame != null) {
-                showRemoveGameDialog()
-            }
+            val state = uiState.value
+            if (state.showOptionsModal) return InputResult.HANDLED
+            refresh()
             return InputResult.HANDLED
         }
 
         override fun onMenu(): InputResult {
             showOptionsModal()
+            return InputResult.HANDLED
+        }
+
+        override fun onSecondaryAction(): InputResult {
+            togglePin()
             return InputResult.HANDLED
         }
     }

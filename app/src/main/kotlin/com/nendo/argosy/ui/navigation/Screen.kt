@@ -35,6 +35,7 @@ sealed class Screen(val route: String) {
         fun createRoute(gameId: Long) = "game/$gameId"
     }
     data object Search : Screen("search")
+    data object ManagePins : Screen("manage_pins")
 
     companion object {
         const val ROUTE_SHOWCASE = "showcase"
@@ -47,5 +48,6 @@ sealed class Screen(val route: String) {
         const val ROUTE_DOWNLOADS = "downloads"
         const val ROUTE_APPS = "apps"
         const val ROUTE_SEARCH = "search"
+        const val ROUTE_MANAGE_PINS = "manage_pins"
     }
 }

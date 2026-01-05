@@ -7,6 +7,10 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.domain.usecase.collection.GetGamesByCategoryUseCase
+import com.nendo.argosy.domain.usecase.collection.IsPinnedUseCase
+import com.nendo.argosy.domain.usecase.collection.PinCollectionUseCase
+import com.nendo.argosy.domain.usecase.collection.RefreshAllCollectionsUseCase
+import com.nendo.argosy.domain.usecase.collection.UnpinCollectionUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import javax.inject.Inject
 
@@ -23,7 +28,9 @@ data class VirtualCategoryUiState(
     val categoryName: String = "",
     val games: List<CollectionGameUi> = emptyList(),
     val isLoading: Boolean = true,
-    val focusedIndex: Int = 0
+    val isRefreshing: Boolean = false,
+    val focusedIndex: Int = 0,
+    val isPinned: Boolean = false
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
@@ -33,12 +40,23 @@ data class VirtualCategoryUiState(
 class VirtualCategoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getGamesByCategoryUseCase: GetGamesByCategoryUseCase,
-    private val platformDao: PlatformDao
+    private val platformDao: PlatformDao,
+    private val isPinnedUseCase: IsPinnedUseCase,
+    private val pinCollectionUseCase: PinCollectionUseCase,
+    private val unpinCollectionUseCase: UnpinCollectionUseCase,
+    private val refreshAllCollectionsUseCase: RefreshAllCollectionsUseCase
 ) : ViewModel() {
 
     private val type: String = checkNotNull(savedStateHandle["type"])
     private val category: String = URLDecoder.decode(checkNotNull(savedStateHandle["category"]), "UTF-8")
     private val _focusedIndex = MutableStateFlow(0)
+    private val _isPinned = MutableStateFlow(false)
+    private val _isRefreshing = MutableStateFlow(false)
+    private var lastRefreshTime = 0L
+
+    companion object {
+        private const val REFRESH_DEBOUNCE_MS = 30_000L
+    }
 
     private val categoryType = when (type) {
         "genres" -> CategoryType.GENRE
@@ -46,23 +64,36 @@ class VirtualCategoryViewModel @Inject constructor(
         else -> CategoryType.GENRE
     }
 
+    init {
+        loadPinStatus()
+    }
+
+    private fun loadPinStatus() {
+        viewModelScope.launch {
+            val isPinned = isPinnedUseCase.isVirtualPinned(categoryType, category)
+            _isPinned.value = isPinned
+        }
+    }
+
     val uiState: StateFlow<VirtualCategoryUiState> = combine(
         getGamesByCategoryUseCase(categoryType, category),
-        _focusedIndex
-    ) { games, focusedIndex ->
-        val platformCache = mutableMapOf<Long, String>()
+        platformDao.observeAllPlatforms(),
+        _focusedIndex,
+        _isPinned,
+        _isRefreshing
+    ) { games, platforms, focusedIndex, isPinned, isRefreshing ->
+        val platformMap = platforms.associate { it.id to it.shortName }
         val gamesUi = games.map { game ->
-            val platformName = platformCache.getOrPut(game.platformId) {
-                platformDao.getById(game.platformId)?.shortName ?: "Unknown"
-            }
-            game.toUi(platformName)
+            game.toUi(platformMap[game.platformId] ?: "Unknown")
         }
         VirtualCategoryUiState(
             type = type,
             categoryName = category,
             games = gamesUi,
             isLoading = false,
-            focusedIndex = focusedIndex.coerceIn(0, (gamesUi.size - 1).coerceAtLeast(0))
+            isRefreshing = isRefreshing,
+            focusedIndex = focusedIndex.coerceIn(0, (gamesUi.size - 1).coerceAtLeast(0)),
+            isPinned = isPinned
         )
     }.stateIn(
         scope = viewModelScope,
@@ -101,6 +132,31 @@ class VirtualCategoryViewModel @Inject constructor(
         }
     }
 
+    fun togglePin() {
+        viewModelScope.launch {
+            val isPinned = _isPinned.value
+            if (isPinned) {
+                unpinCollectionUseCase.unpinVirtual(categoryType, category)
+            } else {
+                pinCollectionUseCase.pinVirtual(categoryType, category)
+            }
+            _isPinned.value = !isPinned
+        }
+    }
+
+    fun refresh() {
+        val now = System.currentTimeMillis()
+        if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) return
+        if (_isRefreshing.value) return
+
+        lastRefreshTime = now
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            refreshAllCollectionsUseCase()
+            _isRefreshing.value = false
+        }
+    }
+
     fun createInputHandler(
         onBack: () -> Unit,
         onGameClick: (Long) -> Unit
@@ -122,6 +178,16 @@ class VirtualCategoryViewModel @Inject constructor(
 
         override fun onBack(): InputResult {
             onBack()
+            return InputResult.HANDLED
+        }
+
+        override fun onSecondaryAction(): InputResult {
+            togglePin()
+            return InputResult.HANDLED
+        }
+
+        override fun onContextMenu(): InputResult {
+            refresh()
             return InputResult.HANDLED
         }
     }

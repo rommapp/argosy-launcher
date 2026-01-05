@@ -390,8 +390,15 @@ fun HomeScreen(
                             LoadingState()
                         }
                         uiState.currentItems.isEmpty() -> {
+                            val pinId = when (val row = uiState.currentRow) {
+                                is HomeRow.PinnedRegular -> row.pinId
+                                is HomeRow.PinnedVirtual -> row.pinId
+                                else -> null
+                            }
                             EmptyState(
                                 isRommConfigured = uiState.isRommConfigured,
+                                currentRow = uiState.currentRow,
+                                isPinnedLoading = pinId != null && pinId in uiState.pinnedGamesLoading,
                                 onSync = { viewModel.syncFromRomm() }
                             )
                         }
@@ -955,33 +962,74 @@ private fun LoadingState() {
 @Composable
 private fun EmptyState(
     isRommConfigured: Boolean,
+    currentRow: HomeRow,
+    isPinnedLoading: Boolean,
     onSync: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "No games yet",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = if (isRommConfigured) {
-                "Sync your library to get started"
-            } else {
-                "Connect to a Rom Manager server in Settings to get started"
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        if (isRommConfigured) {
-            Spacer(modifier = Modifier.height(16.dp))
-            FooterHint(button = InputButton.SOUTH, action = "Sync Library")
+    val isPinnedRow = currentRow is HomeRow.PinnedRegular || currentRow is HomeRow.PinnedVirtual
+    val collectionName = when (currentRow) {
+        is HomeRow.PinnedRegular -> currentRow.name
+        is HomeRow.PinnedVirtual -> currentRow.name
+        else -> ""
+    }
+
+    when {
+        isPinnedRow && isPinnedLoading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                )
+            }
+        }
+        isPinnedRow -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No games in $collectionName",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        else -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "No games yet",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (isRommConfigured) {
+                        "Sync your library to get started"
+                    } else {
+                        "Connect to a Rom Manager server in Settings to get started"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                if (isRommConfigured) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    FooterHint(button = InputButton.SOUTH, action = "Sync Library")
+                }
+            }
         }
     }
 }

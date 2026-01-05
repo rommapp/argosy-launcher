@@ -19,8 +19,12 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.model.Changelog
 import com.nendo.argosy.domain.model.ChangelogEntry
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.model.RequiredAction
 import com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
+import com.nendo.argosy.domain.usecase.collection.CategoryType
+import com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
+import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.domain.usecase.recommendation.GenerateRecommendationsUseCase
@@ -89,6 +93,12 @@ private const val ROW_TYPE_CONTINUE = "continue"
 private const val ROW_TYPE_RECOMMENDATIONS = "recommendations"
 private const val ROW_TYPE_STEAM = "steam"
 private const val ROW_TYPE_ANDROID = "android"
+private const val ROW_TYPE_PINNED_REGULAR = "pinned_regular"
+private const val ROW_TYPE_PINNED_VIRTUAL = "pinned_virtual"
+
+private const val KEY_PINNED_COLLECTION_ID = "home_pinned_collection_id"
+private const val KEY_PINNED_TYPE = "home_pinned_type"
+private const val KEY_PINNED_NAME = "home_pinned_name"
 
 data class GameDownloadIndicator(
     val isDownloading: Boolean = false,
@@ -153,6 +163,8 @@ sealed class HomeRow {
     data object Recommendations : HomeRow()
     data object Android : HomeRow()
     data object Steam : HomeRow()
+    data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) : HomeRow()
+    data class PinnedVirtual(val pinId: Long, val type: CategoryType, val name: String) : HomeRow()
 }
 
 data class HomeUiState(
@@ -164,6 +176,9 @@ data class HomeUiState(
     val recommendedGames: List<HomeGameUi> = emptyList(),
     val androidGames: List<HomeGameUi> = emptyList(),
     val steamGames: List<HomeGameUi> = emptyList(),
+    val pinnedCollections: List<PinnedCollection> = emptyList(),
+    val pinnedGames: Map<Long, List<HomeGameUi>> = emptyMap(),
+    val pinnedGamesLoading: Set<Long> = emptySet(),
     val currentRow: HomeRow = HomeRow.Continue,
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
@@ -192,6 +207,16 @@ data class HomeUiState(
             if (androidGames.isNotEmpty()) add(HomeRow.Android)
             if (steamGames.isNotEmpty()) add(HomeRow.Steam)
             platforms.forEachIndexed { index, _ -> add(HomeRow.Platform(index)) }
+            pinnedCollections.sortedByDescending { it.displayOrder }.forEach { pinned ->
+                when (pinned) {
+                    is PinnedCollection.Regular -> add(
+                        HomeRow.PinnedRegular(pinned.id, pinned.collectionId, pinned.displayName)
+                    )
+                    is PinnedCollection.Virtual -> add(
+                        HomeRow.PinnedVirtual(pinned.id, pinned.type, pinned.categoryName)
+                    )
+                }
+            }
         }
 
     val currentPlatform: HomePlatformUi?
@@ -234,6 +259,12 @@ data class HomeUiState(
                     logoPath = null
                 )
             }
+            is HomeRow.PinnedRegular -> {
+                pinnedGames[currentRow.pinId]?.map { HomeRowItem.Game(it) } ?: emptyList()
+            }
+            is HomeRow.PinnedVirtual -> {
+                pinnedGames[currentRow.pinId]?.map { HomeRowItem.Game(it) } ?: emptyList()
+            }
         }
 
     val focusedItem: HomeRowItem?
@@ -250,6 +281,8 @@ data class HomeUiState(
             HomeRow.Recommendations -> "Recommended For You"
             HomeRow.Android -> "Android"
             HomeRow.Steam -> "Steam"
+            is HomeRow.PinnedRegular -> currentRow.name
+            is HomeRow.PinnedVirtual -> currentRow.name
         }
 
     fun downloadIndicatorFor(gameId: Long): GameDownloadIndicator =
@@ -289,7 +322,9 @@ class HomeViewModel @Inject constructor(
     private val generateRecommendationsUseCase: GenerateRecommendationsUseCase,
     private val apkInstallManager: ApkInstallManager,
     private val repairImageCacheUseCase: RepairImageCacheUseCase,
-    private val modalResetSignal: ModalResetSignal
+    private val modalResetSignal: ModalResetSignal,
+    private val getPinnedCollectionsUseCase: GetPinnedCollectionsUseCase,
+    private val getGamesForPinnedCollectionUseCase: GetGamesForPinnedCollectionUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -305,6 +340,7 @@ class HomeViewModel @Inject constructor(
     private val achievementPrefetchDebounceMs = 300L
 
     private val recentGamesCache = AtomicReference(RecentGamesCache(null, 0L))
+    private val _pinnedGamesLoading = MutableStateFlow<Set<Long>>(emptySet())
 
     init {
         modalResetSignal.signal.onEach {
@@ -317,6 +353,7 @@ class HomeViewModel @Inject constructor(
         observeSyncOverlay()
         observePlatformChanges()
         observeAchievementUpdates()
+        observePinnedCollections()
     }
 
     private fun resetMenus() {
@@ -329,6 +366,32 @@ class HomeViewModel @Inject constructor(
                 updateAchievementCountsInState(update.gameId, update.totalCount, update.earnedCount)
             }
         }
+    }
+
+    private fun observePinnedCollections() {
+        viewModelScope.launch {
+            getPinnedCollectionsUseCase().collect { pinnedList ->
+                val allPinIds = pinnedList.map { it.id }.toSet()
+                _pinnedGamesLoading.value = allPinIds
+                _uiState.update { it.copy(pinnedCollections = pinnedList, pinnedGamesLoading = allPinIds) }
+
+                pinnedList.forEach { pinned ->
+                    launch { prefetchGamesForPinnedCollection(pinned) }
+                }
+            }
+        }
+    }
+
+    private suspend fun prefetchGamesForPinnedCollection(pinned: PinnedCollection) {
+        val games = getGamesForPinnedCollectionUseCase(pinned).first()
+        val gameUis = games.map { it.toUi() }
+        _uiState.update { state ->
+            state.copy(
+                pinnedGames = state.pinnedGames + (pinned.id to gameUis),
+                pinnedGamesLoading = state.pinnedGamesLoading - pinned.id
+            )
+        }
+        _pinnedGamesLoading.update { it - pinned.id }
     }
 
     private fun observeSyncOverlay() {
@@ -438,6 +501,7 @@ class HomeViewModel @Inject constructor(
             ROW_TYPE_RECOMMENDATIONS -> HomeRow.Recommendations
             ROW_TYPE_ANDROID -> HomeRow.Android
             ROW_TYPE_STEAM -> HomeRow.Steam
+            ROW_TYPE_PINNED_REGULAR, ROW_TYPE_PINNED_VIRTUAL -> HomeRow.Continue
             else -> HomeRow.Continue
         }
 
@@ -453,6 +517,15 @@ class HomeViewModel @Inject constructor(
             HomeRow.Recommendations -> ROW_TYPE_RECOMMENDATIONS to 0
             HomeRow.Android -> ROW_TYPE_ANDROID to 0
             HomeRow.Steam -> ROW_TYPE_STEAM to 0
+            is HomeRow.PinnedRegular -> {
+                savedStateHandle[KEY_PINNED_COLLECTION_ID] = row.collectionId
+                ROW_TYPE_PINNED_REGULAR to 0
+            }
+            is HomeRow.PinnedVirtual -> {
+                savedStateHandle[KEY_PINNED_TYPE] = row.type.name
+                savedStateHandle[KEY_PINNED_NAME] = row.name
+                ROW_TYPE_PINNED_VIRTUAL to 0
+            }
         }
         savedStateHandle[KEY_ROW_TYPE] = rowType
         savedStateHandle[KEY_PLATFORM_INDEX] = platformIndex
@@ -861,6 +934,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private suspend fun loadGamesForPinnedCollection(pinId: Long) {
+        val pinned = _uiState.value.pinnedCollections.find { it.id == pinId } ?: return
+        val games = getGamesForPinnedCollectionUseCase(pinned).first()
+        val gameUis = games.map { it.toUi() }
+        _uiState.update { state ->
+            state.copy(
+                pinnedGames = state.pinnedGames + (pinId to gameUis),
+                pinnedGamesLoading = state.pinnedGamesLoading - pinId
+            )
+        }
+    }
+
     fun nextRow() {
         val state = _uiState.value
         val rows = state.availableRows
@@ -911,6 +996,8 @@ class HomeViewModel @Inject constructor(
                 HomeRow.Recommendations -> loadRecommendations()
                 HomeRow.Android -> { }
                 HomeRow.Steam -> { }
+                is HomeRow.PinnedRegular -> loadGamesForPinnedCollection(row.pinId)
+                is HomeRow.PinnedVirtual -> loadGamesForPinnedCollection(row.pinId)
             }
         }
     }
@@ -1401,6 +1488,14 @@ class HomeViewModel @Inject constructor(
                         newState.copy(currentRow = newRow, focusedGameIndex = 0)
                     } else newState
                 }
+            }
+            is HomeRow.PinnedRegular, is HomeRow.PinnedVirtual -> {
+                val pinId = when (val r = row) {
+                    is HomeRow.PinnedRegular -> r.pinId
+                    is HomeRow.PinnedVirtual -> r.pinId
+                    else -> return
+                }
+                loadGamesForPinnedCollection(pinId)
             }
         }
     }

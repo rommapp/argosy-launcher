@@ -12,6 +12,7 @@ import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
+import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -64,7 +65,8 @@ class RomMRepository @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
-    private val biosRepository: BiosRepository
+    private val biosRepository: BiosRepository,
+    private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>
 ) {
     private var api: RomMApi? = null
     private var baseUrl: String = ""
@@ -95,6 +97,22 @@ class RomMRepository @Inject constructor(
             Logger.info(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
             if (result is RomMResult.Success && prefs.rommToken != null) {
                 refreshRAProgressionOnStartup()
+            }
+        }
+        populateVirtualCollectionsIfNeeded()
+    }
+
+    private suspend fun populateVirtualCollectionsIfNeeded() {
+        val genreCount = collectionDao.countByType(CollectionType.GENRE)
+        val gameModeCount = collectionDao.countByType(CollectionType.GAME_MODE)
+
+        if (genreCount == 0 && gameModeCount == 0) {
+            val hasGenres = gameDao.getDistinctGenres().isNotEmpty()
+            val hasGameModes = gameDao.getDistinctGameModes().isNotEmpty()
+
+            if (hasGenres || hasGameModes) {
+                Logger.info(TAG, "Populating virtual collections for existing games")
+                syncVirtualCollectionsUseCase.get()()
             }
         }
     }
@@ -262,6 +280,8 @@ class RomMRepository @Inject constructor(
             val count = gameDao.countByPlatform(platform.id)
             platformDao.updateGameCount(platform.id, count)
 
+            syncVirtualCollectionsUseCase.get()()
+
             return SyncResult(1, result.added, result.updated, gamesDeleted, result.error?.let { listOf(it) } ?: emptyList())
         } catch (e: Exception) {
             return SyncResult(0, 0, 0, 0, listOf(e.message ?: "Platform sync failed"))
@@ -373,6 +393,8 @@ class RomMRepository @Inject constructor(
             }
 
             userPreferencesRepository.setLastRommSyncTime(Instant.now())
+
+            syncVirtualCollectionsUseCase.get()()
 
         } catch (e: Exception) {
             errors.add(e.message ?: "Sync failed")
@@ -1576,14 +1598,21 @@ class RomMRepository @Inject constructor(
         }
     }
 
-    suspend fun syncCollections(): RomMResult<Unit> {
-        val currentApi = api ?: return RomMResult.Error("Not connected")
+    suspend fun syncCollections(): RomMResult<Unit> = withContext(Dispatchers.IO) {
+        Logger.info(TAG, "syncCollections: starting")
+        val currentApi = api ?: run {
+            Logger.info(TAG, "syncCollections: not connected (no api)")
+            return@withContext RomMResult.Error("Not connected")
+        }
         if (_connectionState.value !is ConnectionState.Connected) {
-            return RomMResult.Error("Not connected")
+            Logger.info(TAG, "syncCollections: not connected (state=${_connectionState.value})")
+            return@withContext RomMResult.Error("Not connected")
         }
 
-        return try {
+        try {
+            Logger.info(TAG, "syncCollections: fetching local collections")
             val localCollections = collectionDao.getAllCollections()
+            Logger.info(TAG, "syncCollections: found ${localCollections.size} local collections")
 
             // Push local-only collections to remote first
             for (local in localCollections) {
@@ -1615,12 +1644,15 @@ class RomMRepository @Inject constructor(
                 }
             }
 
+            Logger.info(TAG, "syncCollections: fetching remote collections from API")
             val response = currentApi.getCollections(isFavorite = false)
+            Logger.info(TAG, "syncCollections: API response received, success=${response.isSuccessful}")
             if (!response.isSuccessful) {
-                return RomMResult.Error("Failed to fetch collections: ${response.code()}")
+                return@withContext RomMResult.Error("Failed to fetch collections: ${response.code()}")
             }
 
             val remoteCollections = response.body() ?: emptyList()
+            Logger.info(TAG, "syncCollections: received ${remoteCollections.size} remote collections")
             val updatedLocalCollections = collectionDao.getAllCollections()
 
             val remoteByRommId = remoteCollections.associateBy { it.id }

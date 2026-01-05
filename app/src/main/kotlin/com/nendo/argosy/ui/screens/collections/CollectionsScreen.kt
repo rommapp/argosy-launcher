@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Card
@@ -57,6 +58,7 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionsModal
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.screens.collections.dialogs.DeleteCollectionDialog
 import com.nendo.argosy.ui.screens.collections.dialogs.EditCollectionDialog
@@ -100,7 +102,7 @@ fun CollectionsScreen(
     LaunchedEffect(uiState.focusedSection, uiState.focusedIndex) {
         val targetIndex = when (uiState.focusedSection) {
             CollectionSection.MY_COLLECTIONS -> uiState.focusedIndex + 1
-            CollectionSection.BROWSE_BY -> uiState.collections.size + 2 + uiState.focusedIndex
+            CollectionSection.BROWSE_BY -> uiState.collections.size + 3 + uiState.focusedIndex
         }
         if (targetIndex >= 0) {
             val visibleItems = listState.layoutInfo.visibleItemsInfo
@@ -139,7 +141,8 @@ fun CollectionsScreen(
 
             if (uiState.collections.isEmpty()) {
                 item {
-                    EmptyCollectionsCard(
+                    NewCollectionRow(
+                        isFocused = uiState.isNewCollectionItemFocused,
                         onClick = { viewModel.showCreateDialog() }
                     )
                 }
@@ -148,7 +151,14 @@ fun CollectionsScreen(
                     CollectionRow(
                         collection = collection,
                         isFocused = uiState.focusedSection == CollectionSection.MY_COLLECTIONS && uiState.focusedIndex == index,
+                        isPinned = collection.id in uiState.pinnedCollectionIds,
                         onClick = { onCollectionClick(collection.id) }
+                    )
+                }
+                item(key = "new_collection") {
+                    NewCollectionRow(
+                        isFocused = uiState.isNewCollectionItemFocused,
+                        onClick = { viewModel.showCreateDialog() }
                     )
                 }
             }
@@ -186,14 +196,15 @@ fun CollectionsScreen(
 
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             val baseHints = listOf(
+                InputButton.DPAD to "Navigate",
                 InputButton.SOUTH to "Select",
-                InputButton.NORTH to "New",
-                InputButton.EAST to "Back"
+                InputButton.EAST to "Back",
+                InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
             )
             val contextHints = if (uiState.focusedSection == CollectionSection.MY_COLLECTIONS && uiState.focusedCollection != null) {
                 listOf(
-                    InputButton.WEST to "Rename",
-                    InputButton.SELECT to "Delete"
+                    InputButton.NORTH to if (uiState.isFocusedCollectionPinned) "Unpin" else "Pin",
+                    InputButton.START to "Options"
                 )
             } else {
                 emptyList()
@@ -203,18 +214,18 @@ fun CollectionsScreen(
     }
 
     if (uiState.showCreateDialog) {
-        CreateCollectionDialog(
-            onDismiss = { viewModel.hideCreateDialog() },
-            onCreate = { name -> viewModel.createCollection(name) }
-        )
-    }
-
-    if (uiState.showEditDialog && uiState.editingCollection != null) {
-        EditCollectionDialog(
-            currentName = uiState.editingCollection!!.name,
-            onDismiss = { viewModel.hideEditDialog() },
-            onSave = { name -> viewModel.updateCollection(uiState.editingCollection!!.id, name) }
-        )
+        if (uiState.editingCollection != null) {
+            EditCollectionDialog(
+                currentName = uiState.editingCollection!!.name,
+                onDismiss = { viewModel.hideCreateDialog() },
+                onSave = { name -> viewModel.updateCollection(uiState.editingCollection!!.id, name) }
+            )
+        } else {
+            CreateCollectionDialog(
+                onDismiss = { viewModel.hideCreateDialog() },
+                onCreate = { name -> viewModel.createCollection(name) }
+            )
+        }
     }
 
     if (uiState.showDeleteDialog && uiState.editingCollection != null) {
@@ -224,12 +235,22 @@ fun CollectionsScreen(
             onConfirm = { viewModel.deleteCollection(uiState.editingCollection!!.id) }
         )
     }
+
+    if (uiState.showOptionsModal && uiState.focusedCollection != null) {
+        CollectionOptionsModal(
+            collectionName = uiState.focusedCollection!!.name,
+            focusIndex = uiState.optionsFocusedIndex,
+            onOptionSelect = { viewModel.selectOption() },
+            onDismiss = { viewModel.hideOptionsModal() }
+        )
+    }
 }
 
 @Composable
 private fun CollectionRow(
     collection: CollectionWithCount,
     isFocused: Boolean,
+    isPinned: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -270,13 +291,25 @@ private fun CollectionRow(
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = collection.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = collection.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (isPinned) {
+                        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                        Icon(
+                            Icons.Default.PushPin,
+                            contentDescription = "Pinned",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${collection.gameCount} games",
@@ -382,36 +415,61 @@ private fun CoverMosaic(
 }
 
 @Composable
-private fun EmptyCollectionsCard(
+private fun NewCollectionRow(
+    isFocused: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val shape = RoundedCornerShape(12.dp)
+    val borderModifier = if (isFocused) {
+        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+    } else Modifier
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+            .then(borderModifier)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ),
+        shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = if (isFocused) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            }
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimens.spacingLg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .padding(Dimens.spacingMd),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+
             Text(
-                text = "Create your first collection",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "New Collection",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

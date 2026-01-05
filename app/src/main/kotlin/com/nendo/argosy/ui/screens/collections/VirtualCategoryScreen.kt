@@ -146,7 +146,9 @@ fun VirtualCategoryScreen(
             hints = listOf(
                 InputButton.DPAD to "Navigate",
                 InputButton.SOUTH to "Open",
-                InputButton.EAST to "Back"
+                InputButton.EAST to "Back",
+                InputButton.NORTH to if (uiState.isPinned) "Unpin" else "Pin",
+                InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
             )
         )
     }

@@ -18,6 +18,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
+import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
@@ -35,6 +36,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.PendingSaveSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
+import com.nendo.argosy.data.local.entity.PinnedCollectionEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
@@ -58,9 +60,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         AppCategoryEntity::class,
         FirmwareEntity::class,
         CollectionEntity::class,
-        CollectionGameEntity::class
+        CollectionGameEntity::class,
+        PinnedCollectionEntity::class
     ],
-    version = 41,
+    version = 43,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -81,6 +84,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun appCategoryDao(): AppCategoryDao
     abstract fun firmwareDao(): FirmwareDao
     abstract fun collectionDao(): CollectionDao
+    abstract fun pinnedCollectionDao(): PinnedCollectionDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -696,6 +700,29 @@ abstract class ALauncherDatabase : RoomDatabase() {
                 """)
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_collection_games_collectionId ON collection_games(collectionId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_collection_games_gameId ON collection_games(gameId)")
+            }
+        }
+
+        val MIGRATION_41_42 = object : Migration(41, 42) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS pinned_collections (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        collectionId INTEGER,
+                        virtualType TEXT,
+                        virtualName TEXT,
+                        displayOrder INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pinned_collections_displayOrder ON pinned_collections(displayOrder)")
+            }
+        }
+
+        val MIGRATION_42_43 = object : Migration(42, 43) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE collections ADD COLUMN type TEXT NOT NULL DEFAULT 'REGULAR'")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_collections_type ON collections(type)")
             }
         }
     }

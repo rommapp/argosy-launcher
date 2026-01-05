@@ -350,4 +350,5 @@ class EmulatorSettingsDelegate @Inject constructor(
             )
         }
     }
+
 }

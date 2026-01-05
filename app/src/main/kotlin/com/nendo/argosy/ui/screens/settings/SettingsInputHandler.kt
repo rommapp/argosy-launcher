@@ -41,7 +41,6 @@ class SettingsInputHandler(
             viewModel.moveEmulatorPickerFocus(-1)
             return InputResult.HANDLED
         }
-
         if (state.currentSection == SettingsSection.EMULATORS) {
             val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
             val platformIndex = state.focusedIndex - focusOffset
@@ -84,7 +83,6 @@ class SettingsInputHandler(
             viewModel.moveEmulatorPickerFocus(1)
             return InputResult.HANDLED
         }
-
         if (state.currentSection == SettingsSection.EMULATORS) {
             val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
             val platformIndex = state.focusedIndex - focusOffset

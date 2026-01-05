@@ -261,7 +261,6 @@ class SettingsViewModel @Inject constructor(
             val installedPackages = installedEmulators.map { it.def.packageName }.toSet()
 
             val platformConfigs = platforms
-                .filter { it.slug != "steam" }
                 .map { platform ->
                 val defaultConfig = emulatorConfigDao.getDefaultForPlatform(platform.id)
                 val available = installedEmulators.filter { platform.slug in it.def.supportedPlatforms }

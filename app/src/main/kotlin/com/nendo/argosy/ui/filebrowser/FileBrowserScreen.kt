@@ -528,12 +528,11 @@ private fun FileBrowserFooter(
 ) {
     val selectHint = if (mode == FileBrowserMode.FILE_SELECTION) "Select File" else "Open"
     val hints = buildList {
-        add(InputButton.DPAD to "Navigate")
         add(InputButton.SOUTH to selectHint)
         add(InputButton.EAST to "Back")
         if (mode == FileBrowserMode.FOLDER_SELECTION && currentPath.isNotEmpty()) {
             add(InputButton.NORTH to "New Folder")
-            add(InputButton.WEST to "Use Current Directory")
+            add(InputButton.WEST to "Use Current")
         }
     }
 

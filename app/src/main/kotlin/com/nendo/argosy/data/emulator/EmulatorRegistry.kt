@@ -453,6 +453,29 @@ object EmulatorRegistry {
             displayName = "Magic DosBox",
             supportedPlatforms = setOf("dos"),
             downloadUrl = "https://play.google.com/store/apps/details?id=bruenor.magicbox"
+        ),
+
+        // Steam launchers
+        EmulatorDef(
+            id = "gamehub",
+            packageName = "com.xiaoji.egggame",
+            displayName = "GameHub",
+            supportedPlatforms = setOf("steam"),
+            downloadUrl = "https://play.google.com/store/apps/details?id=com.xiaoji.egggame"
+        ),
+        EmulatorDef(
+            id = "gamehub_lite",
+            packageName = "com.antutu.ABenchMark",
+            displayName = "GameHub Lite",
+            supportedPlatforms = setOf("steam"),
+            downloadUrl = "https://github.com/AntGameHub/GameHub-Lite-Support/releases"
+        ),
+        EmulatorDef(
+            id = "gamenative",
+            packageName = "app.gamenative",
+            displayName = "GameNative",
+            supportedPlatforms = setOf("steam"),
+            downloadUrl = "https://github.com/utkarshdalal/GameNative/releases"
         )
     )
 
@@ -509,7 +532,8 @@ object EmulatorRegistry {
         "ngp" to listOf("retroarch", "retroarch_64"),
         "ngpc" to listOf("retroarch", "retroarch_64"),
         "wonderswan" to listOf("retroarch", "retroarch_64"),
-        "wonderswancolor" to listOf("retroarch", "retroarch_64")
+        "wonderswancolor" to listOf("retroarch", "retroarch_64"),
+        "steam" to listOf("gamehub", "gamehub_lite", "gamenative")
     )
 
     fun getPreferredCore(platformId: String): String? {

@@ -107,6 +107,8 @@ object ZipExtractor {
 
     fun shouldExtractZip(zipFile: File): Boolean {
         if (!isZipFile(zipFile)) return false
+        // APK files are ZIP archives but should be installed, not extracted
+        if (zipFile.extension.equals("apk", ignoreCase = true)) return false
         return try {
             ZipFile(zipFile).use { zip ->
                 val entries = zip.entries().toList().filter { !it.isDirectory }

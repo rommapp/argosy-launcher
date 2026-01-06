@@ -134,7 +134,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
-                intentExtras = mapOf("AutoStartFile" to ExtraValue.FilePath)
+                intentExtras = mapOf("AutoStartFile" to ExtraValue.FileUri)
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.dolphinemu.dolphinemu"
         ),
@@ -146,7 +146,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
-                intentExtras = mapOf("AutoStartFile" to ExtraValue.FilePath)
+                intentExtras = mapOf("AutoStartFile" to ExtraValue.FileUri)
             ),
             downloadUrl = "https://dolphin-emu.org/download/"
         ),
@@ -794,7 +794,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
-                intentExtras = mapOf("AutoStartFile" to ExtraValue.FilePath)
+                intentExtras = mapOf("AutoStartFile" to ExtraValue.FileUri)
             ),
             downloadUrl = "https://dolphin-emu.org/download/"
         ),

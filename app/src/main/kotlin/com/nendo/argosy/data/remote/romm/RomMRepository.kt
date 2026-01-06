@@ -436,11 +436,18 @@ class RomMRepository @Inject constructor(
                 platformDao.insert(entity)
             }
             existingBySlug != null && existingBySlug.id != platformId -> {
-                platformDao.insert(entity)
-                gameDao.migratePlatform(existingBySlug.id, platformId)
-                emulatorConfigDao.migratePlatform(existingBySlug.id, platformId)
-                platformDao.deleteById(existingBySlug.id)
-                Logger.info(TAG, "Migrated platform ${existingBySlug.id} -> $platformId")
+                val isSamePlatform = existingBySlug.name.equals(remote.name, ignoreCase = true) ||
+                    existingBySlug.name.equals(normalizedName, ignoreCase = true)
+                if (isSamePlatform) {
+                    platformDao.insert(entity)
+                    gameDao.migratePlatform(existingBySlug.id, platformId)
+                    emulatorConfigDao.migratePlatform(existingBySlug.id, platformId)
+                    platformDao.deleteById(existingBySlug.id)
+                    Logger.info(TAG, "Migrated platform ${existingBySlug.id} -> $platformId")
+                } else {
+                    platformDao.insert(entity)
+                    Logger.info(TAG, "Inserted separate platform $platformId (same slug as ${existingBySlug.id})")
+                }
             }
             else -> {
                 platformDao.update(entity)

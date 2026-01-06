@@ -118,10 +118,20 @@ class RetroArchConfigParser @Inject constructor() {
 
         if (config == null && coreName != null) {
             for (base in baseDirs) {
-                paths.add("$base/$coreName")
-                paths.add(base)
+                val baseDir = File(base)
+                val coreDir = File(base, coreName)
+
+                if (coreDir.exists() && coreDir.isDirectory) {
+                    paths.add(coreDir.absolutePath)
+                    Log.d(TAG, "resolveSavePaths: config missing, found core folder $coreName")
+                } else if (baseDir.exists() && hasCoreFolders(baseDir)) {
+                    paths.add(coreDir.absolutePath)
+                    Log.d(TAG, "resolveSavePaths: config missing, base has core folders, using $coreName")
+                } else {
+                    paths.add(base)
+                    Log.d(TAG, "resolveSavePaths: config missing, no core folders found, using flat")
+                }
             }
-            Log.d(TAG, "resolveSavePaths: config missing, trying ${paths.size} paths (with/without core)")
             return paths
         }
 
@@ -156,6 +166,22 @@ class RetroArchConfigParser @Inject constructor() {
             }
         }
         return alternatives
+    }
+
+    private fun hasCoreFolders(savesDir: File): Boolean {
+        val subdirs = savesDir.listFiles()?.filter { it.isDirectory } ?: return false
+        return subdirs.any { dir ->
+            KNOWN_CORE_NAMES.any { core -> dir.name.equals(core, ignoreCase = true) }
+        }
+    }
+
+    companion object {
+        private val KNOWN_CORE_NAMES = setOf(
+            "mGBA", "Gambatte", "Snes9x", "bsnes", "Genesis Plus GX", "PPSSPP",
+            "Mupen64Plus", "DeSmuME", "melonDS", "Beetle PSX", "PCSX ReARMed",
+            "FinalBurn Neo", "MAME", "Stella", "FCEUmm", "Nestopia", "VBA-M",
+            "Flycast", "Dolphin", "Citra", "PPSSPP", "Mednafen"
+        )
     }
 
     fun parseStateConfig(packageName: String): RetroArchStateConfig? {
@@ -222,10 +248,20 @@ class RetroArchConfigParser @Inject constructor() {
 
         if (config == null && coreName != null) {
             for (base in baseDirs) {
-                paths.add("$base/$coreName")
-                paths.add(base)
+                val statesDir = File(base)
+                val coreDir = File(base, coreName)
+
+                if (coreDir.exists() && coreDir.isDirectory) {
+                    paths.add(coreDir.absolutePath)
+                    Log.d(TAG, "resolveStatePaths: config missing, found core folder $coreName")
+                } else if (statesDir.exists() && hasCoreFolders(statesDir)) {
+                    paths.add(coreDir.absolutePath)
+                    Log.d(TAG, "resolveStatePaths: config missing, base has core folders, using $coreName")
+                } else {
+                    paths.add(base)
+                    Log.d(TAG, "resolveStatePaths: config missing, no core folders found, using flat")
+                }
             }
-            Log.d(TAG, "resolveStatePaths: config missing, trying ${paths.size} paths (with/without core)")
             return paths
         }
 

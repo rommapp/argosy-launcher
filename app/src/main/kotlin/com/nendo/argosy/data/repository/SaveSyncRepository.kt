@@ -339,6 +339,45 @@ class SaveSyncRepository @Inject constructor(
         return null
     }
 
+    private fun findActiveProfileFolder(basePath: String, platformSlug: String): String {
+        if (platformSlug != "switch") {
+            return basePath
+        }
+
+        val baseDir = File(basePath)
+        if (!baseDir.exists()) {
+            val defaultPath = "$basePath/0000000000000001/0000000000000001"
+            File(defaultPath).mkdirs()
+            return defaultPath
+        }
+
+        var mostRecentPath: String? = null
+        var mostRecentTime = 0L
+
+        baseDir.listFiles()?.forEach { userFolder ->
+            if (!userFolder.isDirectory) return@forEach
+            if (!isValidSwitchHexId(userFolder.name)) return@forEach
+
+            userFolder.listFiles()?.forEach { profileFolder ->
+                if (!profileFolder.isDirectory) return@forEach
+                if (!isValidSwitchHexId(profileFolder.name)) return@forEach
+
+                val modified = profileFolder.lastModified()
+                if (modified > mostRecentTime) {
+                    mostRecentTime = modified
+                    mostRecentPath = profileFolder.absolutePath
+                }
+            }
+        }
+
+        return mostRecentPath
+            ?: "$basePath/0000000000000001/0000000000000001".also { File(it).mkdirs() }
+    }
+
+    private fun isValidSwitchHexId(name: String): Boolean {
+        return name.length == 16 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
+    }
+
     private fun findSaveByRomName(
         basePath: String,
         romPath: String,
@@ -527,6 +566,22 @@ class SaveSyncRepository @Inject constructor(
         romPath: String?,
         serverFileName: String
     ): String? {
+        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
+        val isFolderBased = config?.usesFolderBasedSaves == true &&
+            serverFileName.endsWith(".zip", ignoreCase = true)
+        val isSwitchEmulator = emulatorId in SWITCH_EMULATOR_IDS
+
+        if (isFolderBased && isSwitchEmulator && config != null) {
+            val titleId = serverFileName.removeSuffix(".zip").removeSuffix(".ZIP")
+            if (isValidSwitchHexId(titleId)) {
+                val basePath = config.defaultPaths.firstOrNull { File(it).exists() }
+                    ?: config.defaultPaths.firstOrNull()
+                    ?: return null
+                val profileFolder = findActiveProfileFolder(basePath, platformSlug)
+                return "$profileFolder/$titleId"
+            }
+        }
+
         val baseDir = getSaveDirectory(emulatorId, platformSlug, romPath) ?: return null
         return "$baseDir/$serverFileName"
     }
@@ -879,28 +934,27 @@ class SaveSyncRepository @Inject constructor(
         val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
         val isFolderBased = config?.usesFolderBasedSaves == true &&
             serverSave.fileName.endsWith(".zip", ignoreCase = true)
+        val isSwitchEmulator = emulatorId in SWITCH_EMULATOR_IDS
 
         if (isFolderBased && !isFolderSaveSyncEnabled()) {
             return@withContext SaveSyncResult.NotConfigured
         }
 
-        val targetPath = if (isFolderBased) {
-            syncEntity.localSavePath
-                ?: constructFolderSavePath(emulatorId, game.platformSlug, game.localPath)
+        val preDownloadTargetPath = if (isFolderBased) {
+            if (isSwitchEmulator) {
+                syncEntity.localSavePath
+            } else {
+                syncEntity.localSavePath
+                    ?: constructFolderSavePath(emulatorId, game.platformSlug, game.localPath)
+            }
         } else {
             syncEntity.localSavePath
                 ?: discoverSavePath(emulatorId, game.title, game.platformSlug, game.localPath)
                 ?: constructSavePathWithFileName(emulatorId, platformSlug = game.platformSlug, romPath = game.localPath, serverFileName = serverSave.fileName)
-        } ?: return@withContext SaveSyncResult.Error("Cannot determine save path")
+        }
 
-        val targetFile = File(targetPath)
-        if (targetFile.exists() && !skipBackup) {
-            try {
-                saveCacheManager.get().cacheCurrentSave(gameId, emulatorId, targetPath)
-                Logger.debug(TAG, "Cached existing save before download for game $gameId")
-            } catch (e: Exception) {
-                Logger.warn(TAG, "Failed to cache existing save before download", e)
-            }
+        if (!isSwitchEmulator && !isFolderBased && preDownloadTargetPath == null) {
+            return@withContext SaveSyncResult.Error("Cannot determine save path")
         }
 
         var tempZipFile: File? = null
@@ -915,11 +969,32 @@ class SaveSyncRepository @Inject constructor(
                 return@withContext SaveSyncResult.Error("Download failed: ${response.code()}")
             }
 
+            val targetPath: String
+
             if (isFolderBased) {
                 tempZipFile = File(context.cacheDir, serverSave.fileName)
                 response.body()?.byteStream()?.use { input ->
                     tempZipFile.outputStream().use { output ->
                         input.copyTo(output)
+                    }
+                }
+
+                targetPath = if (isSwitchEmulator && config != null) {
+                    preDownloadTargetPath
+                        ?: resolveSwitchSaveTargetPath(tempZipFile, config)
+                        ?: return@withContext SaveSyncResult.Error("Cannot determine save path from ZIP")
+                } else {
+                    preDownloadTargetPath
+                        ?: return@withContext SaveSyncResult.Error("Cannot determine save path")
+                }
+
+                val existingTarget = File(targetPath)
+                if (existingTarget.exists() && !skipBackup) {
+                    try {
+                        saveCacheManager.get().cacheCurrentSave(gameId, emulatorId, targetPath)
+                        Logger.debug(TAG, "Cached existing save before download for game $gameId")
+                    } catch (e: Exception) {
+                        Logger.warn(TAG, "Failed to cache existing save before download", e)
                     }
                 }
 
@@ -930,6 +1005,17 @@ class SaveSyncRepository @Inject constructor(
                     return@withContext SaveSyncResult.Error("Failed to unzip save")
                 }
             } else {
+                targetPath = preDownloadTargetPath!!
+
+                val existingTarget = File(targetPath)
+                if (existingTarget.exists() && !skipBackup) {
+                    try {
+                        saveCacheManager.get().cacheCurrentSave(gameId, emulatorId, targetPath)
+                        Logger.debug(TAG, "Cached existing save before download for game $gameId")
+                    } catch (e: Exception) {
+                        Logger.warn(TAG, "Failed to cache existing save before download", e)
+                    }
+                }
                 val targetFile = File(targetPath)
                 targetFile.parentFile?.mkdirs()
 
@@ -997,6 +1083,7 @@ class SaveSyncRepository @Inject constructor(
         val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
         val isFolderBased = config?.usesFolderBasedSaves == true &&
             serverSave.fileName.endsWith(".zip", ignoreCase = true)
+        val isSwitchEmulator = emulatorId in SWITCH_EMULATOR_IDS
 
         var tempZipFile: File? = null
 
@@ -1017,7 +1104,13 @@ class SaveSyncRepository @Inject constructor(
                     }
                 }
 
-                val targetFolder = File(targetPath)
+                val resolvedTargetPath = if (isSwitchEmulator && config != null) {
+                    resolveSwitchSaveTargetPath(tempZipFile, config) ?: targetPath
+                } else {
+                    targetPath
+                }
+
+                val targetFolder = File(resolvedTargetPath)
                 targetFolder.mkdirs()
 
                 if (!saveArchiver.unzipSingleFolder(tempZipFile, targetFolder)) {
@@ -1043,6 +1136,24 @@ class SaveSyncRepository @Inject constructor(
         }
     }
 
+    private fun resolveSwitchSaveTargetPath(zipFile: File, config: SavePathConfig): String? {
+        val titleId = saveArchiver.peekRootFolderName(zipFile)
+        if (titleId == null || !isValidSwitchHexId(titleId)) {
+            Logger.debug(TAG, "resolveSwitchSaveTargetPath: invalid titleId from ZIP: $titleId")
+            return null
+        }
+
+        val basePath = config.defaultPaths.firstOrNull { File(it).exists() }
+            ?: config.defaultPaths.firstOrNull()
+            ?: return null
+
+        val profileFolder = findActiveProfileFolder(basePath, "switch")
+        val targetPath = "$profileFolder/$titleId"
+
+        Logger.debug(TAG, "resolveSwitchSaveTargetPath: resolved to $targetPath (titleId=$titleId)")
+        return targetPath
+    }
+
     private fun constructFolderSavePath(
         emulatorId: String,
         platformSlug: String,
@@ -1063,17 +1174,8 @@ class SaveSyncRepository @Inject constructor(
         return when (platformSlug) {
             "vita", "psvita" -> "$baseDir/$titleId"
             "switch" -> {
-                val userFolder = File(baseDir).listFiles()?.firstOrNull { it.isDirectory }
-                if (userFolder != null) {
-                    val profileFolder = userFolder.listFiles()?.firstOrNull { it.isDirectory }
-                    if (profileFolder != null) {
-                        "${profileFolder.absolutePath}/$titleId"
-                    } else {
-                        "${userFolder.absolutePath}/$titleId"
-                    }
-                } else {
-                    "$baseDir/0000000000000001/$titleId"
-                }
+                val profileFolder = findActiveProfileFolder(baseDir, platformSlug)
+                "$profileFolder/$titleId"
             }
             "3ds" -> {
                 val nintendo3dsDir = File(baseDir)
@@ -1375,5 +1477,8 @@ class SaveSyncRepository @Inject constructor(
 
     companion object {
         private val ROMM_TIMESTAMP_TAG = Regex("""^\[\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}(-\d+)?\]$""")
+        private val SWITCH_EMULATOR_IDS = setOf(
+            "yuzu", "ryujinx", "citron", "strato", "eden", "sudachi", "skyline"
+        )
     }
 }

@@ -80,12 +80,17 @@ class DownloadForegroundService : Service() {
 
                 val currentDownload = active.firstOrNull()
                 if (currentDownload != null) {
-                    val progressPercent = (currentDownload.progressPercent * 100).toInt()
+                    val isExtracting = currentDownload.state == DownloadState.EXTRACTING
                     val title = when (currentDownload.state) {
                         DownloadState.EXTRACTING -> "Extracting: ${currentDownload.displayTitle}"
                         else -> "Downloading: ${currentDownload.displayTitle}"
                     }
-                    updateNotification(title, progressPercent, 100)
+                    if (isExtracting) {
+                        updateNotification(title, 0, 0)
+                    } else {
+                        val progressPercent = (currentDownload.progressPercent * 100).toInt()
+                        updateNotification(title, progressPercent, 100)
+                    }
                 } else {
                     val nextQueued = queued.firstOrNull()
                     val message = nextQueued?.let { "Queued: ${it.displayTitle}" }

@@ -104,6 +104,23 @@ class SaveArchiver @Inject constructor() {
         }
     }
 
+    fun peekRootFolderName(zipFile: File): String? {
+        if (!zipFile.exists() || !zipFile.isFile) return null
+
+        return try {
+            ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+                val firstEntry = zis.nextEntry ?: return null
+                val entryName = firstEntry.name
+                entryName.substringBefore('/').takeIf {
+                    it.isNotEmpty() && entryName.contains('/')
+                }
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "Failed to peek ZIP root folder", e)
+            null
+        }
+    }
+
     fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean {
         if (!sourceZip.exists() || !sourceZip.isFile) {
             Logger.warn(TAG, "Source zip does not exist or is not a file: ${sourceZip.absolutePath}")

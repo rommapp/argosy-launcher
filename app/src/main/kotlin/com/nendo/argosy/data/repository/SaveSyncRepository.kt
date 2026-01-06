@@ -346,9 +346,8 @@ class SaveSyncRepository @Inject constructor(
 
         val baseDir = File(basePath)
         if (!baseDir.exists()) {
-            val defaultPath = "$basePath/0000000000000001/0000000000000001"
-            File(defaultPath).mkdirs()
-            return defaultPath
+            Logger.debug(TAG, "findActiveProfileFolder: baseDir doesn't exist, cannot determine profile")
+            return basePath
         }
 
         var mostRecentPath: String? = null
@@ -356,11 +355,11 @@ class SaveSyncRepository @Inject constructor(
 
         baseDir.listFiles()?.forEach { userFolder ->
             if (!userFolder.isDirectory) return@forEach
-            if (!isValidSwitchHexId(userFolder.name)) return@forEach
+            if (!isValidSwitchUserFolderId(userFolder.name)) return@forEach
 
             userFolder.listFiles()?.forEach { profileFolder ->
                 if (!profileFolder.isDirectory) return@forEach
-                if (!isValidSwitchHexId(profileFolder.name)) return@forEach
+                if (!isValidSwitchProfileFolderId(profileFolder.name)) return@forEach
 
                 val modified = profileFolder.lastModified()
                 if (modified > mostRecentTime) {
@@ -370,8 +369,22 @@ class SaveSyncRepository @Inject constructor(
             }
         }
 
-        return mostRecentPath
-            ?: "$basePath/0000000000000001/0000000000000001".also { File(it).mkdirs() }
+        if (mostRecentPath != null) {
+            Logger.debug(TAG, "findActiveProfileFolder: found active profile at $mostRecentPath")
+        } else {
+            Logger.debug(TAG, "findActiveProfileFolder: no valid profile folder found in $basePath")
+        }
+
+        return mostRecentPath ?: basePath
+    }
+
+    private fun isValidSwitchUserFolderId(name: String): Boolean {
+        return name.length == 16 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
+    }
+
+    private fun isValidSwitchProfileFolderId(name: String): Boolean {
+        return (name.length == 16 || name.length == 32) &&
+            name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
     }
 
     private fun isValidSwitchHexId(name: String): Boolean {

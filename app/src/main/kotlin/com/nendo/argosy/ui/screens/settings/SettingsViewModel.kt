@@ -139,8 +139,27 @@ class SettingsViewModel @Inject constructor(
         observeDelegateStates()
         observeDelegateEvents()
         observeModalResetSignal()
+        observeConnectionState()
         loadSettings()
         displayDelegate.loadPreviewGame(viewModelScope)
+    }
+
+    private fun observeConnectionState() {
+        romMRepository.connectionState.onEach { connectionState ->
+            val status = when (connectionState) {
+                is RomMRepository.ConnectionState.Connected -> ConnectionStatus.ONLINE
+                else -> {
+                    val prefs = preferencesRepository.userPreferences.first()
+                    if (prefs.rommBaseUrl.isNullOrBlank()) ConnectionStatus.NOT_CONFIGURED
+                    else ConnectionStatus.OFFLINE
+                }
+            }
+            val version = (connectionState as? RomMRepository.ConnectionState.Connected)?.version
+            serverDelegate.updateState(_uiState.value.server.copy(
+                connectionStatus = status,
+                rommVersion = version
+            ))
+        }.launchIn(viewModelScope)
     }
 
     private fun observeModalResetSignal() {

@@ -1,6 +1,6 @@
 package com.nendo.argosy.data.emulator
 
-import android.util.Log
+import com.nendo.argosy.util.Logger
 import java.io.File
 import java.util.zip.ZipFile
 import javax.inject.Inject
@@ -12,7 +12,8 @@ class TitleIdExtractor @Inject constructor() {
     private val TAG = "TitleIdExtractor"
 
     fun extractTitleId(romFile: File, platformId: String): String? {
-        return when (platformId) {
+        Logger.debug(TAG, "[SaveSync] DETECT | Extracting title ID from ROM | file=${romFile.name}, platform=$platformId")
+        val result = when (platformId) {
             "vita", "psvita" -> extractVitaTitleId(romFile)
             "psp" -> extractPSPTitleId(romFile)
             "switch" -> extractSwitchTitleId(romFile)
@@ -20,6 +21,8 @@ class TitleIdExtractor @Inject constructor() {
             "wiiu" -> extractWiiUTitleId(romFile)
             else -> null
         }
+        Logger.debug(TAG, "[SaveSync] DETECT | Title ID extraction result | file=${romFile.name}, platform=$platformId, titleId=$result")
+        return result
     }
 
     fun extractVitaTitleId(romFile: File): String? {
@@ -119,7 +122,7 @@ class TitleIdExtractor @Inject constructor() {
                     .firstOrNull()
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to read zip file for title ID: ${zipFile.name}", e)
+            Logger.warn(TAG, "[SaveSync] DETECT | Failed to read zip for title ID | file=${zipFile.name}", e)
             null
         }
     }

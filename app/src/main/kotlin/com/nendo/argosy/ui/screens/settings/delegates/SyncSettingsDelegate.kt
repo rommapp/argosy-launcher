@@ -4,6 +4,8 @@ import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -27,6 +29,7 @@ class SyncSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: SaveSyncRepository,
     private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val saveSyncDao: SaveSyncDao,
     private val imageCacheManager: ImageCacheManager,
     private val notificationManager: NotificationManager
 ) {
@@ -50,7 +53,9 @@ class SyncSettingsDelegate @Inject constructor(
         scope.launch {
             val prefs = preferencesRepository.preferences.first()
             val hasPermission = checkStoragePermission()
-            val pendingCount = pendingSaveSyncDao.getCount()
+            val pendingUploads = pendingSaveSyncDao.getCount()
+            val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
+            val totalPending = pendingUploads + pendingDownloads
             _state.update {
                 it.copy(
                     syncFilters = prefs.syncFilters,
@@ -58,7 +63,7 @@ class SyncSettingsDelegate @Inject constructor(
                     experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
                     saveCacheLimit = prefs.saveCacheLimit,
                     hasStoragePermission = hasPermission,
-                    pendingUploadsCount = pendingCount,
+                    pendingUploadsCount = totalPending,
                     imageCachePath = prefs.imageCachePath,
                     defaultImageCachePath = imageCacheManager.getDefaultCachePath()
                 )
@@ -279,8 +284,10 @@ class SyncSettingsDelegate @Inject constructor(
                 saveSyncRepository.checkForAllServerUpdates()
                 val uploaded = saveSyncRepository.processPendingUploads()
                 val downloaded = saveSyncRepository.downloadPendingServerSaves()
-                val pendingCount = pendingSaveSyncDao.getCount()
-                _state.update { it.copy(pendingUploadsCount = pendingCount) }
+                val pendingUploads = pendingSaveSyncDao.getCount()
+                val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
+                val totalPending = pendingUploads + pendingDownloads
+                _state.update { it.copy(pendingUploadsCount = totalPending) }
 
                 val message = when {
                     uploaded > 0 && downloaded > 0 -> "Uploaded $uploaded, downloaded $downloaded saves"
@@ -289,6 +296,8 @@ class SyncSettingsDelegate @Inject constructor(
                     else -> "Saves are up to date"
                 }
                 notificationManager.show(message)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 notificationManager.showError("Save sync failed: ${e.message}")
             } finally {

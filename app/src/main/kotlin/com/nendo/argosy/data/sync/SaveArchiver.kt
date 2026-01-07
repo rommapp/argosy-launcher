@@ -20,19 +20,24 @@ class SaveArchiver @Inject constructor() {
 
     fun zipFolder(sourceFolder: File, targetZip: File): Boolean {
         if (!sourceFolder.exists() || !sourceFolder.isDirectory) {
-            Logger.warn(TAG, "Source folder does not exist or is not a directory: ${sourceFolder.absolutePath}")
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | Source folder invalid | path=${sourceFolder.absolutePath}, exists=${sourceFolder.exists()}, isDir=${sourceFolder.isDirectory}")
             return false
         }
+
+        val fileCount = sourceFolder.walkTopDown().filter { it.isFile }.count()
+        val totalSize = sourceFolder.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Zipping folder | source=${sourceFolder.name}, files=$fileCount, size=${totalSize}bytes")
 
         return try {
             targetZip.parentFile?.mkdirs()
             ZipOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
                 zipFolderRecursive(sourceFolder, sourceFolder.name, zos)
             }
-            Logger.debug(TAG, "Successfully zipped ${sourceFolder.absolutePath} to ${targetZip.absolutePath}")
+            val ratio = if (totalSize > 0) (targetZip.length() * 100 / totalSize) else 100
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Zip complete | output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
             true
         } catch (e: Exception) {
-            Logger.error(TAG, "Failed to zip folder: ${sourceFolder.absolutePath}", e)
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Zip failed | source=${sourceFolder.absolutePath}", e)
             targetZip.delete()
             false
         }
@@ -105,30 +110,39 @@ class SaveArchiver @Inject constructor() {
     }
 
     fun peekRootFolderName(zipFile: File): String? {
-        if (!zipFile.exists() || !zipFile.isFile) return null
+        if (!zipFile.exists() || !zipFile.isFile) {
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | peekRootFolderName: file invalid | path=${zipFile.absolutePath}")
+            return null
+        }
 
         return try {
             ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
                 val firstEntry = zis.nextEntry ?: return null
                 val entryName = firstEntry.name
-                entryName.substringBefore('/').takeIf {
+                val rootFolder = entryName.substringBefore('/').takeIf {
                     it.isNotEmpty() && entryName.contains('/')
                 }
+                Logger.debug(TAG, "[SaveSync] ARCHIVE | peekRootFolderName | zip=${zipFile.name}, firstEntry=$entryName, rootFolder=$rootFolder")
+                rootFolder
             }
         } catch (e: Exception) {
-            Logger.error(TAG, "Failed to peek ZIP root folder", e)
+            Logger.error(TAG, "[SaveSync] ARCHIVE | peekRootFolderName failed | zip=${zipFile.name}", e)
             null
         }
     }
 
     fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean {
         if (!sourceZip.exists() || !sourceZip.isFile) {
-            Logger.warn(TAG, "Source zip does not exist or is not a file: ${sourceZip.absolutePath}")
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}, exists=${sourceZip.exists()}, isFile=${sourceZip.isFile}")
             return false
         }
 
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping | source=${sourceZip.name}, size=${sourceZip.length()}bytes, target=${targetFolder.absolutePath}")
+
         return try {
             targetFolder.mkdirs()
+            var fileCount = 0
+            var totalSize = 0L
             ZipInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
                 var entry: ZipEntry?
                 val buffer = ByteArray(BUFFER_SIZE)
@@ -157,7 +171,7 @@ class SaveArchiver @Inject constructor() {
                     val entryFile = File(targetFolder, relativePath)
 
                     if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
-                        Logger.error(TAG, "Zip path traversal detected: $entryName")
+                        Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
                         return false
                     }
 
@@ -165,20 +179,31 @@ class SaveArchiver @Inject constructor() {
                         entryFile.mkdirs()
                     } else {
                         entryFile.parentFile?.mkdirs()
-                        BufferedOutputStream(FileOutputStream(entryFile), BUFFER_SIZE).use { bos ->
-                            var count: Int
-                            while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
-                                bos.write(buffer, 0, count)
+                        FileOutputStream(entryFile).use { fos ->
+                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
+                                var count: Int
+                                while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
+                                    bos.write(buffer, 0, count)
+                                    totalSize += count
+                                }
+                                bos.flush()
+                            }
+                            try {
+                                fos.fd.sync()
+                            } catch (e: Exception) {
+                                Logger.debug(TAG, "[SaveSync] ARCHIVE | fsync not supported for ${entryFile.name}, relying on flush")
                             }
                         }
+                        fileCount++
                     }
                     zis.closeEntry()
                 }
+                Logger.debug(TAG, "[SaveSync] ARCHIVE | Detected root folder | rootFolder=$rootFolder")
             }
-            Logger.debug(TAG, "Successfully unzipped ${sourceZip.absolutePath} contents to ${targetFolder.absolutePath}")
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip complete | target=${targetFolder.name}, files=$fileCount, extractedSize=${totalSize}bytes")
             true
         } catch (e: Exception) {
-            Logger.error(TAG, "Failed to unzip file: ${sourceZip.absolutePath}", e)
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Unzip failed | source=${sourceZip.absolutePath}", e)
             false
         }
     }

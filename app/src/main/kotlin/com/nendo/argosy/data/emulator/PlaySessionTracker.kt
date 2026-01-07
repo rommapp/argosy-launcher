@@ -7,8 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
@@ -106,7 +106,7 @@ class PlaySessionTracker @Inject constructor(
         if (!isScreenOn) {
             isScreenOn = true
             lastScreenOnTime = Instant.now()
-            Log.d(TAG, "Screen ON - resuming active time tracking")
+            Logger.debug(TAG, "Screen ON - resuming active time tracking")
         }
     }
 
@@ -116,7 +116,7 @@ class PlaySessionTracker @Inject constructor(
             val elapsed = Duration.between(lastScreenOnTime, Instant.now())
             screenOnDuration = screenOnDuration.plus(elapsed)
             lastScreenOnTime = null
-            Log.d(TAG, "Screen OFF - paused after ${elapsed.toMinutes()} minutes active")
+            Logger.debug(TAG, "Screen OFF - paused after ${elapsed.toMinutes()} minutes active")
         }
     }
 
@@ -131,12 +131,12 @@ class PlaySessionTracker @Inject constructor(
             emulatorPackage = emulatorPackage,
             coreName = coreName
         )
-        Log.d(TAG, "Session started: gameId=$gameId, emulator=$emulatorPackage, screenOn=$isScreenOn")
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session started | emulator=$emulatorPackage, core=$coreName")
     }
 
     fun endSession() {
         val session = _activeSession.value ?: run {
-            Log.d(TAG, "endSession called but no active session")
+            Logger.debug(TAG, "[SaveSync] SESSION | endSession called but no active session")
             return
         }
         _activeSession.value = null
@@ -151,14 +151,14 @@ class PlaySessionTracker @Inject constructor(
         val sessionDuration = Duration.between(session.startTime, Instant.now())
         val finalScreenOnDuration = screenOnDuration
 
-        Log.d(TAG, "endSession: gameId=${session.gameId}, totalSession=${sessionDuration.toMillis() / 1000}s, screenOnDuration=${finalScreenOnDuration.toMillis() / 1000}s, lastElapsed=${elapsedSinceScreenOn.toMillis() / 1000}s")
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulator=${session.emulatorPackage}")
 
         scope.launch {
             val prefs = preferencesRepository.userPreferences.first()
             val hasPermission = permissionHelper.hasUsageStatsPermission(application)
             val canTrackAccurately = prefs.accuratePlayTimeEnabled && hasPermission
 
-            Log.d(TAG, "Time tracking check: enabled=${prefs.accuratePlayTimeEnabled}, hasPermission=$hasPermission, canTrack=$canTrackAccurately")
+            Logger.debug(TAG, "Time tracking check: enabled=${prefs.accuratePlayTimeEnabled}, hasPermission=$hasPermission, canTrack=$canTrackAccurately")
 
             if (canTrackAccurately) {
                 val seconds = finalScreenOnDuration.toMillis() / 1000
@@ -172,12 +172,12 @@ class PlaySessionTracker @Inject constructor(
                             playTimeMinutes = it.playTimeMinutes
                         ))
                     }
-                    Log.d(TAG, "Added $minutes minutes of active play time for game ${session.gameId} (${seconds}s)")
+                    Logger.debug(TAG, "Added $minutes minutes of active play time for game ${session.gameId} (${seconds}s)")
                 } else {
-                    Log.d(TAG, "Session too short to record: ${seconds}s")
+                    Logger.debug(TAG, "Session too short to record: ${seconds}s")
                 }
             } else {
-                Log.d(TAG, "Skipping play time recording - accurate tracking not enabled or permission missing")
+                Logger.debug(TAG, "Skipping play time recording - accurate tracking not enabled or permission missing")
             }
 
             if (sessionDuration.seconds >= MIN_PLAY_SECONDS_FOR_COMPLETION) {
@@ -188,7 +188,7 @@ class PlaySessionTracker @Inject constructor(
                         gameId = session.gameId,
                         status = "incomplete"
                     ))
-                    Log.d(TAG, "Marked game ${session.gameId} as Incomplete after ${sessionDuration.seconds}s session")
+                    Logger.debug(TAG, "Marked game ${session.gameId} as Incomplete after ${sessionDuration.seconds}s session")
                 }
             }
 
@@ -202,6 +202,7 @@ class PlaySessionTracker @Inject constructor(
             cacheCurrentSave(session)
             when (result) {
                 is SyncSaveOnSessionEndUseCase.Result.Conflict -> {
+                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: CONFLICT | local=${result.localTimestamp}, server=${result.serverTimestamp}")
                     _conflictEvents.emit(
                         SaveConflictEvent(
                             gameId = result.gameId,
@@ -211,19 +212,19 @@ class PlaySessionTracker @Inject constructor(
                     )
                 }
                 is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
-                    Log.d(TAG, "Save uploaded for game ${session.gameId}")
+                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: UPLOADED")
                 }
                 is SyncSaveOnSessionEndUseCase.Result.Queued -> {
-                    Log.d(TAG, "Save queued for game ${session.gameId}")
+                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: QUEUED")
                 }
                 is SyncSaveOnSessionEndUseCase.Result.NoSaveFound -> {
-                    Log.d(TAG, "No save found for game ${session.gameId}")
+                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NO_SAVE_FOUND")
                 }
                 is SyncSaveOnSessionEndUseCase.Result.NotConfigured -> {
-                    Log.d(TAG, "Save sync not configured for game ${session.gameId}")
+                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NOT_CONFIGURED")
                 }
                 is SyncSaveOnSessionEndUseCase.Result.Error -> {
-                    Log.e(TAG, "Save sync error: ${result.message}")
+                    Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: ERROR | ${result.message}")
                 }
             }
 
@@ -236,16 +237,16 @@ class PlaySessionTracker @Inject constructor(
             )
             when (stateResult) {
                 is StateSyncResult.Cached -> {
-                    Log.d(TAG, "Cached ${stateResult.count} states for game ${session.gameId}")
+                    Logger.debug(TAG, "Cached ${stateResult.count} states for game ${session.gameId}")
                 }
                 is StateSyncResult.NoStatesFound -> {
-                    Log.d(TAG, "No states found for game ${session.gameId}")
+                    Logger.debug(TAG, "No states found for game ${session.gameId}")
                 }
                 is StateSyncResult.NotConfigured -> {
-                    Log.d(TAG, "State caching not configured for game ${session.gameId}")
+                    Logger.debug(TAG, "State caching not configured for game ${session.gameId}")
                 }
                 is StateSyncResult.Error -> {
-                    Log.e(TAG, "State sync error: ${stateResult.message}")
+                    Logger.error(TAG, "State sync error: ${stateResult.message}")
                 }
             }
         }
@@ -290,15 +291,15 @@ class PlaySessionTracker @Inject constructor(
     fun canResumeSession(gameId: Long): Boolean {
         val session = _activeSession.value
         if (session == null) {
-            Log.d(TAG, "canResumeSession($gameId): no active session")
+            Logger.debug(TAG, "canResumeSession($gameId): no active session")
             return false
         }
         if (session.gameId != gameId) {
-            Log.d(TAG, "canResumeSession($gameId): gameId mismatch (active=${session.gameId})")
+            Logger.debug(TAG, "canResumeSession($gameId): gameId mismatch (active=${session.gameId})")
             return false
         }
         val inForeground = permissionHelper.isPackageInForeground(application, session.emulatorPackage, withinMs = 300_000)
-        Log.d(TAG, "canResumeSession($gameId): emulator=${session.emulatorPackage}, inForeground=$inForeground")
+        Logger.debug(TAG, "canResumeSession($gameId): emulator=${session.emulatorPackage}, inForeground=$inForeground")
         return inForeground
     }
 
@@ -308,7 +309,7 @@ class PlaySessionTracker @Inject constructor(
 
             val emulatorId = resolveEmulatorId(session.emulatorPackage)
             if (emulatorId == null) {
-                Log.d(TAG, "Cannot resolve emulator ID for ${session.emulatorPackage}")
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cannot resolve emulator ID | package=${session.emulatorPackage}")
                 return
             }
 
@@ -332,12 +333,13 @@ class PlaySessionTracker @Inject constructor(
                 )
                 if (cached) {
                     gameDao.updateActiveSaveTimestamp(session.gameId, null)
-                    val channelLog = activeChannel?.let { " (channel: $it)" } ?: ""
-                    Log.d(TAG, "Cached save for game ${session.gameId}$channelLog")
+                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cached local save | path=$savePath, channel=$activeChannel")
                 }
+            } else {
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | No save path found for caching | emulator=$emulatorId")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to cache save", e)
+            Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Failed to cache save", e)
         }
     }
 

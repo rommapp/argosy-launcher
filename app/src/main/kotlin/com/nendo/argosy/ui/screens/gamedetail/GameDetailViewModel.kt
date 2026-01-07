@@ -191,11 +191,16 @@ class GameDetailViewModel @Inject constructor(
                         GameDownloadStatus.NOT_DOWNLOADED to 0f
                     }
                     else -> {
-                        val game = _uiState.value.game
-                        if (game?.canPlay == true) {
-                            GameDownloadStatus.DOWNLOADED to 1f
+                        val currentStatus = _uiState.value.downloadStatus
+                        if (currentStatus != GameDownloadStatus.NOT_DOWNLOADED) {
+                            currentStatus to _uiState.value.downloadProgress
                         } else {
-                            GameDownloadStatus.NOT_DOWNLOADED to 0f
+                            val game = _uiState.value.game
+                            if (game?.canPlay == true) {
+                                GameDownloadStatus.DOWNLOADED to 1f
+                            } else {
+                                GameDownloadStatus.NOT_DOWNLOADED to 0f
+                            }
                         }
                     }
                 }

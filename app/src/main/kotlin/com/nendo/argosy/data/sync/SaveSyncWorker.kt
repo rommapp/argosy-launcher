@@ -49,7 +49,7 @@ class SaveSyncWorker @AssistedInject constructor(
                 request
             )
 
-            Logger.info(TAG, "Save sync scheduled every 6 hours")
+            Logger.info(TAG, "[SaveSync] WORKER | Scheduled periodic sync | interval=6h")
         }
 
         fun runNow(context: Context) {
@@ -62,7 +62,7 @@ class SaveSyncWorker @AssistedInject constructor(
                 .build()
 
             WorkManager.getInstance(context).enqueue(request)
-            Logger.info(TAG, "Save sync triggered manually")
+            Logger.info(TAG, "[SaveSync] WORKER | Manual sync triggered")
         }
 
         fun cancel(context: Context) {
@@ -73,22 +73,23 @@ class SaveSyncWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val isConnected = romMRepository.connectionState.value is RomMRepository.ConnectionState.Connected
         if (!isConnected) {
-            Logger.info(TAG, "RomM not connected, skipping save sync")
+            Logger.info(TAG, "[SaveSync] WORKER | RomM not connected, skipping sync")
             return Result.success()
         }
 
-        Logger.info(TAG, "Running save sync check")
+        Logger.info(TAG, "[SaveSync] WORKER | Starting background sync")
 
         return try {
             val checkResult = checkNewSavesUseCase()
-            Logger.info(TAG, "Found ${checkResult.newSavesCount} new saves from ${checkResult.platformsChecked} platforms")
+            Logger.info(TAG, "[SaveSync] WORKER | Check complete | newSaves=${checkResult.newSavesCount}, platformsChecked=${checkResult.platformsChecked}")
 
             val uploaded = saveSyncRepository.processPendingUploads()
-            Logger.info(TAG, "Processed $uploaded pending uploads")
+            Logger.info(TAG, "[SaveSync] WORKER | Uploads processed | count=$uploaded")
 
+            Logger.info(TAG, "[SaveSync] WORKER | Sync complete")
             Result.success()
         } catch (e: Exception) {
-            Logger.error(TAG, "Save sync failed", e)
+            Logger.error(TAG, "[SaveSync] WORKER | Sync failed, will retry", e)
             Result.retry()
         }
     }

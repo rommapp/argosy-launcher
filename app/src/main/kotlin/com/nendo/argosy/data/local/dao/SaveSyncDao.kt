@@ -31,6 +31,9 @@ interface SaveSyncDao {
     @Query("SELECT COUNT(*) FROM save_sync WHERE syncStatus = 'SERVER_NEWER'")
     fun observeNewSavesCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM save_sync WHERE syncStatus = :status")
+    suspend fun countByStatus(status: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SaveSyncEntity): Long
 

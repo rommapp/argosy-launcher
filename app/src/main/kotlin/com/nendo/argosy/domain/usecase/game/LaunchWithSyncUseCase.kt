@@ -85,7 +85,7 @@ class LaunchWithSyncUseCase @Inject constructor(
             }
             is SaveSyncRepository.PreLaunchSyncResult.ServerIsNewer -> {
                 emit(SyncState.Downloading)
-                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId)
+                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId, syncResult.channelName)
                 when (downloadResult) {
                     is SaveSyncResult.Success -> {
                         emit(SyncState.Complete)
@@ -173,7 +173,7 @@ class LaunchWithSyncUseCase @Inject constructor(
             }
             is SaveSyncRepository.PreLaunchSyncResult.ServerIsNewer -> {
                 emit(SyncProgress.PreLaunch.Downloading(channelName))
-                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId)
+                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId, syncResult.channelName)
                 when (downloadResult) {
                     is SaveSyncResult.Success -> {
                         emit(SyncProgress.PreLaunch.Downloading(channelName, success = true))

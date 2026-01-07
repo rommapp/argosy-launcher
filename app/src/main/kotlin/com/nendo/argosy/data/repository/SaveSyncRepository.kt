@@ -1072,6 +1072,16 @@ class SaveSyncRepository @Inject constructor(
             return@withContext SaveSyncResult.Error("Game not found")
         }
 
+        val resolvedEmulatorId = if (emulatorId == "default" || emulatorId.isBlank()) {
+            resolveEmulatorForGame(game) ?: run {
+                Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot resolve emulator from config")
+                return@withContext SaveSyncResult.Error("Cannot determine emulator")
+            }
+        } else {
+            emulatorId
+        }
+        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Using emulator=$resolvedEmulatorId (original=$emulatorId)")
+
         val serverSave = try {
             api.getSave(saveId).body()
         } catch (e: Exception) {
@@ -1083,10 +1093,10 @@ class SaveSyncRepository @Inject constructor(
             return@withContext SaveSyncResult.Error("Save not found on server")
         }
 
-        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
+        val config = SavePathRegistry.getConfigIncludingUnsupported(resolvedEmulatorId)
         val isFolderBased = config?.usesFolderBasedSaves == true &&
             serverSave.fileName.endsWith(".zip", ignoreCase = true)
-        val isSwitchEmulator = emulatorId in SWITCH_EMULATOR_IDS
+        val isSwitchEmulator = resolvedEmulatorId in SWITCH_EMULATOR_IDS
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Save info | fileName=${serverSave.fileName}, isFolderBased=$isFolderBased, isSwitchEmulator=$isSwitchEmulator")
 
         if (isFolderBased && !isFolderSaveSyncEnabled()) {
@@ -1101,14 +1111,14 @@ class SaveSyncRepository @Inject constructor(
                 }
             } else {
                 (syncEntity.localSavePath
-                    ?: constructFolderSavePath(emulatorId, game.platformSlug, game.localPath)).also {
+                    ?: constructFolderSavePath(resolvedEmulatorId, game.platformSlug, game.localPath)).also {
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Folder save path | cached=${syncEntity.localSavePath != null}, path=$it")
                 }
             }
         } else {
             (syncEntity.localSavePath
-                ?: discoverSavePath(emulatorId, game.title, game.platformSlug, game.localPath)
-                ?: constructSavePathWithFileName(emulatorId, platformSlug = game.platformSlug, romPath = game.localPath, serverFileName = serverSave.fileName)).also {
+                ?: discoverSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)
+                ?: constructSavePathWithFileName(resolvedEmulatorId, platformSlug = game.platformSlug, romPath = game.localPath, serverFileName = serverSave.fileName)).also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, path=$it")
             }
         }
@@ -1150,7 +1160,7 @@ class SaveSyncRepository @Inject constructor(
                 targetPath = if (isSwitchEmulator && config != null) {
                     val resolved = preDownloadTargetPath
                         ?: resolveSwitchSaveTargetPath(tempZipFile, config)
-                        ?: constructFolderSavePath(emulatorId, game.platformSlug, game.localPath)
+                        ?: constructFolderSavePath(resolvedEmulatorId, game.platformSlug, game.localPath)
                     if (resolved == null) {
                         Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine Switch save path from ZIP or ROM")
                         return@withContext SaveSyncResult.Error("Cannot determine save path from ZIP or ROM")
@@ -1167,7 +1177,7 @@ class SaveSyncRepository @Inject constructor(
                 val existingTarget = File(targetPath)
                 if (existingTarget.exists() && !skipBackup) {
                     try {
-                        saveCacheManager.get().cacheCurrentSave(gameId, emulatorId, targetPath)
+                        saveCacheManager.get().cacheCurrentSave(gameId, resolvedEmulatorId, targetPath)
                         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached existing save before overwrite")
                     } catch (e: Exception) {
                         Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Failed to cache existing save before download", e)
@@ -1192,7 +1202,7 @@ class SaveSyncRepository @Inject constructor(
                 val existingTarget = File(targetPath)
                 if (existingTarget.exists() && !skipBackup) {
                     try {
-                        saveCacheManager.get().cacheCurrentSave(gameId, emulatorId, targetPath)
+                        saveCacheManager.get().cacheCurrentSave(gameId, resolvedEmulatorId, targetPath)
                         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached existing save before overwrite")
                     } catch (e: Exception) {
                         Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Failed to cache existing save before download", e)
@@ -1238,7 +1248,7 @@ class SaveSyncRepository @Inject constructor(
             try {
                 saveCacheManager.get().cacheCurrentSave(
                     gameId = gameId,
-                    emulatorId = emulatorId,
+                    emulatorId = resolvedEmulatorId,
                     savePath = targetPath,
                     channelName = cacheChannelName,
                     isLocked = cacheIsLocked

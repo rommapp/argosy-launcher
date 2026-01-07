@@ -454,6 +454,31 @@ fun SettingsScreen(
         )
     }
 
+    if (uiState.storage.showPurgeAllConfirm) {
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelPurgeAll() },
+            title = { Text("Reset Library?") },
+            text = {
+                Text("This will clear all metadata, platforms, and cached images. Downloaded ROM files will be preserved. You will need to re-sync your library.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.confirmPurgeAll() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reset")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelPurgeAll() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (showFileBrowser) {
         FileBrowserScreen(
             mode = FileBrowserMode.FOLDER_SELECTION,

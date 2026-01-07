@@ -178,6 +178,21 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
         }
 
+        // DANGER ZONE
+        item { Spacer(modifier = Modifier.height(Dimens.spacingLg)) }
+        item { SectionHeader("DANGER ZONE") }
+
+        item {
+            val isPurging = storage.isPurgingAll
+            ActionPreference(
+                title = "Reset Library",
+                subtitle = if (isPurging) "Resetting..." else "Clear database and image cache, keep downloaded files",
+                isFocused = uiState.focusedIndex == focusMapping.purgeAllIndex,
+                isDangerous = true,
+                isEnabled = !isPurging,
+                onClick = { viewModel.requestPurgeAll() }
+            )
+        }
     }
 }
 
@@ -189,7 +204,8 @@ private data class FocusMapping(
     val validateCacheIndex: Int = 4,
     val platformsExpandIndex: Int = 5,
     val platformCount: Int = 0,
-    val maxIndex: Int = 5
+    val purgeAllIndex: Int = 6,
+    val maxIndex: Int = 6
 ) {
     fun focusToScrollIndex(focusIndex: Int): Int {
         return when {
@@ -199,7 +215,8 @@ private data class FocusMapping(
             focusIndex == imageCacheIndex -> 6
             focusIndex == validateCacheIndex -> 7
             focusIndex == platformsExpandIndex -> 10
-            focusIndex > platformsExpandIndex -> {
+            focusIndex == purgeAllIndex -> 11 + platformCount + 2
+            focusIndex > platformsExpandIndex && focusIndex < purgeAllIndex -> {
                 11 + (focusIndex - platformsExpandIndex - 1)
             }
             else -> focusIndex
@@ -219,7 +236,8 @@ private fun buildFocusMapping(
     val platformsExpandIndex = 5
 
     val expandedPlatformItems = if (platformsExpanded) platformCount else 0
-    val maxIndex = platformsExpandIndex + expandedPlatformItems
+    val purgeAllIndex = platformsExpandIndex + expandedPlatformItems + 1
+    val maxIndex = purgeAllIndex
 
     return FocusMapping(
         maxDownloadsIndex = maxDownloadsIndex,
@@ -229,6 +247,7 @@ private fun buildFocusMapping(
         validateCacheIndex = validateCacheIndex,
         platformsExpandIndex = platformsExpandIndex,
         platformCount = expandedPlatformItems,
+        purgeAllIndex = purgeAllIndex,
         maxIndex = maxIndex
     )
 }

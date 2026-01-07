@@ -1547,6 +1547,18 @@ class SettingsViewModel @Inject constructor(
         storageDelegate.cancelPurgePlatform()
     }
 
+    fun requestPurgeAll() {
+        storageDelegate.requestPurgeAll()
+    }
+
+    fun confirmPurgeAll() {
+        storageDelegate.confirmPurgeAll(viewModelScope)
+    }
+
+    fun cancelPurgeAll() {
+        storageDelegate.cancelPurgeAll()
+    }
+
     fun confirmPlatformMigration() {
         storageDelegate.confirmPlatformMigration(viewModelScope)
     }

@@ -2,6 +2,8 @@ package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.os.Build
 import android.os.Environment
+import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -10,6 +12,8 @@ import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
 import com.nendo.argosy.domain.usecase.PurgePlatformUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.nendo.argosy.ui.screens.settings.EmulatorSavePathInfo
 import com.nendo.argosy.ui.screens.settings.PlatformMigrationInfo
 import com.nendo.argosy.ui.screens.settings.PlatformStorageConfig
@@ -34,7 +38,9 @@ class StorageSettingsDelegate @Inject constructor(
     private val migrateStorageUseCase: MigrateStorageUseCase,
     private val migratePlatformStorageUseCase: MigratePlatformStorageUseCase,
     private val purgePlatformUseCase: PurgePlatformUseCase,
-    private val syncPlatformUseCase: SyncPlatformUseCase
+    private val syncPlatformUseCase: SyncPlatformUseCase,
+    private val database: ALauncherDatabase,
+    private val imageCacheManager: ImageCacheManager
 ) {
     private val _state = MutableStateFlow(StorageState())
     val state: StateFlow<StorageState> = _state.asStateFlow()
@@ -616,6 +622,26 @@ class StorageSettingsDelegate @Inject constructor(
                 preferencesRepository.setScreenDimmerLevel(next)
                 _state.update { it.copy(screenDimmerLevel = next) }
             }
+        }
+    }
+
+    fun requestPurgeAll() {
+        _state.update { it.copy(showPurgeAllConfirm = true) }
+    }
+
+    fun cancelPurgeAll() {
+        _state.update { it.copy(showPurgeAllConfirm = false) }
+    }
+
+    fun confirmPurgeAll(scope: CoroutineScope) {
+        _state.update { it.copy(showPurgeAllConfirm = false, isPurgingAll = true) }
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                database.clearAllTables()
+                imageCacheManager.clearCache()
+            }
+            _state.update { it.copy(isPurgingAll = false, platformConfigs = emptyList()) }
+            refreshCollectionStats(scope)
         }
     }
 }

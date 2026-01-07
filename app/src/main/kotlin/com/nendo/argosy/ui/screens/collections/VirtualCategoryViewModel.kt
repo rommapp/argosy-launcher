@@ -79,12 +79,10 @@ class VirtualCategoryViewModel @Inject constructor(
     val uiState: StateFlow<VirtualCategoryUiState> = combine(
         getGamesByCategoryUseCase(categoryType, category),
         platformDao.observeAllPlatforms(),
-        platformDao.observeAmbiguousSlugs(),
         _focusedIndex,
         combine(_isPinned, _isRefreshing) { a, b -> a to b }
-    ) { games, platforms, ambiguousSlugs, focusedIndex, (isPinned, isRefreshing) ->
-        val ambiguousSlugsSet = ambiguousSlugs.toSet()
-        val platformMap = platforms.associate { it.id to it.getDisplayName(ambiguousSlugsSet) }
+    ) { games, platforms, focusedIndex, (isPinned, isRefreshing) ->
+        val platformMap = platforms.associate { it.id to it.getDisplayName() }
         val gamesUi = games.map { game ->
             game.toUi(platformMap[game.platformId] ?: "Unknown")
         }

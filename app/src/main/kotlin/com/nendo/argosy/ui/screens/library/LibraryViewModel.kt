@@ -285,7 +285,6 @@ class LibraryViewModel @Inject constructor(
     private var gamesJob: Job? = null
     private var pendingInitialPlatformId: Long? = null
     private var pendingInitialSourceFilter: SourceFilter? = null
-    private var cachedAmbiguousSlugs: Set<String> = emptySet()
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
 
     private val pendingCoverRepairs = mutableSetOf<Long>()
@@ -355,9 +354,8 @@ class LibraryViewModel @Inject constructor(
             Log.d(TAG, "loadPlatforms: starting observation")
             platformDao.observeVisiblePlatforms().collect { platforms ->
                 Log.d(TAG, "loadPlatforms: received ${platforms.size} platforms")
-                cachedAmbiguousSlugs = platformDao.getAmbiguousSlugs().toSet()
-                cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName(cachedAmbiguousSlugs) }
-                val platformUis = platforms.map { it.toUi(cachedAmbiguousSlugs) }
+                cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName() }
+                val platformUis = platforms.map { it.toUi() }
 
                 val pendingPlatformIndex = pendingInitialPlatformId?.let { platformId ->
                     platformUis.indexOfFirst { it.id == platformId }.takeIf { it >= 0 }
@@ -1072,11 +1070,11 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    private fun PlatformEntity.toUi(ambiguousSlugs: Set<String>) = HomePlatformUi(
+    private fun PlatformEntity.toUi() = HomePlatformUi(
         id = id,
         name = name,
         shortName = shortName,
-        displayName = getDisplayName(ambiguousSlugs),
+        displayName = getDisplayName(),
         logoPath = logoPath
     )
 

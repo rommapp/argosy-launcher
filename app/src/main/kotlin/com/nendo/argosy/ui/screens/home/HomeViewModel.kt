@@ -346,7 +346,6 @@ class HomeViewModel @Inject constructor(
 
     private val recentGamesCache = AtomicReference(RecentGamesCache(null, 0L))
     private val _pinnedGamesLoading = MutableStateFlow<Set<Long>>(emptySet())
-    private var cachedAmbiguousSlugs: Set<String> = emptySet()
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
 
     init {
@@ -462,10 +461,9 @@ class HomeViewModel @Inject constructor(
     private fun observePlatformChanges() {
         viewModelScope.launch {
             platformDao.observePlatformsWithGames().collect { platforms ->
-                cachedAmbiguousSlugs = platformDao.getAmbiguousSlugs().toSet()
-                cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName(cachedAmbiguousSlugs) }
+                cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName() }
                 val currentPlatforms = _uiState.value.platforms
-                val newPlatformUis = platforms.map { it.toUi(cachedAmbiguousSlugs) }
+                val newPlatformUis = platforms.map { it.toUi() }
 
                 if (currentPlatforms.isEmpty() && newPlatformUis.isNotEmpty()) {
                     _uiState.update { state ->
@@ -600,10 +598,9 @@ class HomeViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             gameRepository.awaitStorageReady()
-            cachedAmbiguousSlugs = platformDao.getAmbiguousSlugs().toSet()
             val allPlatforms = platformDao.getPlatformsWithGames()
             val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
-            cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName(cachedAmbiguousSlugs) }
+            cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
             val favorites = gameDao.getFavorites()
             val androidGames = gameDao.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
             val steamGames = gameDao.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
@@ -624,7 +621,7 @@ class HomeViewModel @Inject constructor(
             }
             recentGamesCache.set(RecentGamesCache(validatedRecent, recentGamesCache.get().version))
 
-            val platformUis = platforms.map { it.toUi(cachedAmbiguousSlugs) }
+            val platformUis = platforms.map { it.toUi() }
             val favoriteUis = favorites.map { it.toUi(cachedPlatformDisplayNames) }
             val androidGameUis = androidGames.map { it.toUi(cachedPlatformDisplayNames) }
             val steamGameUis = steamGames.map { it.toUi(cachedPlatformDisplayNames) }
@@ -839,11 +836,10 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun loadPlatforms() {
-        cachedAmbiguousSlugs = platformDao.getAmbiguousSlugs().toSet()
         val allPlatforms = platformDao.getPlatformsWithGames()
         val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
-        cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName(cachedAmbiguousSlugs) }
-        val platformUis = platforms.map { it.toUi(cachedAmbiguousSlugs) }
+        cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
+        val platformUis = platforms.map { it.toUi() }
         val androidGames = gameDao.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
         val androidGameUis = androidGames.map { it.toUi(cachedPlatformDisplayNames) }
         val steamGames = gameDao.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
@@ -1628,11 +1624,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun PlatformEntity.toUi(ambiguousSlugs: Set<String>) = HomePlatformUi(
+    private fun PlatformEntity.toUi() = HomePlatformUi(
         id = id,
         name = name,
         shortName = shortName,
-        displayName = getDisplayName(ambiguousSlugs),
+        displayName = getDisplayName(),
         logoPath = logoPath
     )
 

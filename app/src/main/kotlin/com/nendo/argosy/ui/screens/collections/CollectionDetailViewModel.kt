@@ -114,11 +114,9 @@ class CollectionDetailViewModel @Inject constructor(
             collectionDao.observeCollectionById(collectionId),
             collectionDao.observeGamesInCollection(collectionId),
             platformDao.observeAllPlatforms(),
-            platformDao.observeAmbiguousSlugs(),
             _modalState
-        ) { collection, games, platforms, ambiguousSlugs, modalState ->
-            val ambiguousSlugsSet = ambiguousSlugs.toSet()
-            val platformMap = platforms.associate { it.id to it.getDisplayName(ambiguousSlugsSet) }
+        ) { collection, games, platforms, modalState ->
+            val platformMap = platforms.associate { it.id to it.getDisplayName() }
             val gamesUi = games.map { game ->
                 game.toUi(platformMap[game.platformId] ?: "Unknown")
             }

@@ -21,11 +21,10 @@ data class PlatformEntity(
     val customRomPath: String? = null
 )
 
-fun PlatformEntity.getDisplayName(ambiguousSlugs: Set<String>, maxLength: Int? = null): String {
-    val baseName = if (slug in ambiguousSlugs) name else shortName
-    return if (maxLength != null && baseName.length > maxLength) {
-        baseName.take(maxLength - 1) + "…"
+fun PlatformEntity.getDisplayName(maxLength: Int? = null): String {
+    return if (maxLength != null && name.length > maxLength) {
+        name.take(maxLength - 1) + "…"
     } else {
-        baseName
+        name
     }
 }

@@ -71,7 +71,7 @@ interface GameDao {
     """)
     fun observePlayable(): Flow<List<GameEntity>>
 
-    @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
+    @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     fun observeFavorites(): Flow<List<GameEntity>>
 
     // Lightweight list projections (avoid CursorWindow overflow)
@@ -92,7 +92,7 @@ interface GameDao {
     """)
     fun observePlayableList(): Flow<List<GameListItem>>
 
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
+    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     fun observeFavoritesList(): Flow<List<GameListItem>>
 
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games ORDER BY sortTitle ASC")
@@ -134,7 +134,7 @@ interface GameDao {
     """)
     fun observePlayableListIncludingHidden(): Flow<List<GameListItem>>
 
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE isFavorite = 1 ORDER BY sortTitle ASC")
+    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE isFavorite = 1 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     fun observeFavoritesListIncludingHidden(): Flow<List<GameListItem>>
 
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE isHidden = 1 ORDER BY sortTitle ASC")
@@ -143,7 +143,7 @@ interface GameDao {
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE platformId = :platformId AND isHidden = 1 ORDER BY sortTitle ASC")
     fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>>
 
-    @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY sortTitle ASC")
+    @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     suspend fun getFavorites(): List<GameEntity>
 
     @Query("SELECT rommId FROM games WHERE isFavorite = 1 AND rommId IS NOT NULL")

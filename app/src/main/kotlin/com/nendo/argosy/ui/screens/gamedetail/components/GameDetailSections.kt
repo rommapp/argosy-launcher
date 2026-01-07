@@ -58,8 +58,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Offset
-import kotlin.math.cos
-import kotlin.math.sin
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
@@ -249,26 +247,35 @@ fun ActionButtons(
                         Modifier.drawBehind {
                             val strokeWidth = 3.dp.toPx()
                             val cornerRadius = size.height / 2
-                            val angleRad = Math.toRadians(rotationAngle.toDouble())
-                            val gradientLength = maxOf(size.width, size.height) * 1.5f
                             val center = Offset(size.width / 2, size.height / 2)
-                            val startOffset = Offset(
-                                center.x - (cos(angleRad) * gradientLength / 2).toFloat(),
-                                center.y - (sin(angleRad) * gradientLength / 2).toFloat()
-                            )
-                            val endOffset = Offset(
-                                center.x + (cos(angleRad) * gradientLength / 2).toFloat(),
-                                center.y + (sin(angleRad) * gradientLength / 2).toFloat()
-                            )
+
+                            val bladeSize = 0.12f
+                            val bladeCenter = (rotationAngle / 360f).mod(1f)
+                            val bladeStart = (bladeCenter - bladeSize / 2).mod(1f)
+                            val bladeEnd = (bladeCenter + bladeSize / 2).mod(1f)
+
+                            val colorStops = if (bladeStart < bladeEnd) {
+                                arrayOf(
+                                    0f to primaryColor.copy(alpha = 0f),
+                                    bladeStart to primaryColor.copy(alpha = 0f),
+                                    bladeCenter to primaryColor,
+                                    bladeEnd to primaryColor.copy(alpha = 0f),
+                                    1f to primaryColor.copy(alpha = 0f)
+                                )
+                            } else {
+                                arrayOf(
+                                    0f to primaryColor,
+                                    bladeEnd to primaryColor.copy(alpha = 0f),
+                                    0.5f to primaryColor.copy(alpha = 0f),
+                                    bladeStart to primaryColor.copy(alpha = 0f),
+                                    1f to primaryColor
+                                )
+                            }
+
                             drawRoundRect(
-                                brush = Brush.linearGradient(
-                                    colorStops = arrayOf(
-                                        0f to primaryColor.copy(alpha = 0f),
-                                        0.5f to primaryColor,
-                                        1f to primaryColor.copy(alpha = 0f)
-                                    ),
-                                    start = startOffset,
-                                    end = endOffset
+                                brush = Brush.sweepGradient(
+                                    colorStops = colorStops,
+                                    center = center
                                 ),
                                 style = Stroke(width = strokeWidth),
                                 cornerRadius = CornerRadius(cornerRadius, cornerRadius)

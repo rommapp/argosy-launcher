@@ -409,9 +409,7 @@ class RomMRepository @Inject constructor(
 
     private suspend fun syncPlatformMetadata(remote: RomMPlatform) {
         val platformId = remote.id
-        val existingById = platformDao.getById(platformId)
-        val existingBySlug = if (existingById == null) platformDao.getBySlug(remote.slug) else null
-        val existing = existingById ?: existingBySlug
+        val existing = platformDao.getById(platformId)
         val platformDef = PlatformDefinitions.getBySlug(remote.slug)
 
         val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
@@ -431,28 +429,10 @@ class RomMRepository @Inject constructor(
             customRomPath = existing?.customRomPath
         )
 
-        when {
-            existing == null -> {
-                platformDao.insert(entity)
-            }
-            existingBySlug != null && existingBySlug.id != platformId -> {
-                val isSamePlatform = existingBySlug.name.equals(remote.name, ignoreCase = true) ||
-                    existingBySlug.name.equals(normalizedName, ignoreCase = true) ||
-                    platformDef?.name?.let { existingBySlug.name.equals(it, ignoreCase = true) } == true
-                if (isSamePlatform) {
-                    platformDao.insert(entity)
-                    gameDao.migratePlatform(existingBySlug.id, platformId)
-                    emulatorConfigDao.migratePlatform(existingBySlug.id, platformId)
-                    platformDao.deleteById(existingBySlug.id)
-                    Logger.info(TAG, "Migrated platform ${existingBySlug.id} -> $platformId")
-                } else {
-                    platformDao.insert(entity)
-                    Logger.info(TAG, "Inserted separate platform $platformId (same slug as ${existingBySlug.id})")
-                }
-            }
-            else -> {
-                platformDao.update(entity)
-            }
+        if (existing == null) {
+            platformDao.insert(entity)
+        } else {
+            platformDao.update(entity)
         }
 
         if (logoUrl != null && logoUrl.startsWith("http")) {

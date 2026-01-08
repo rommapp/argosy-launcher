@@ -21,10 +21,11 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.ExpandablePreference
@@ -36,7 +37,6 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -56,16 +56,20 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         platformCount = storage.platformConfigs.size
     )
 
-    LaunchedEffect(uiState.focusedIndex) {
-        val scrollIndex = focusMapping.focusToScrollIndex(uiState.focusedIndex)
-        if (scrollIndex >= 0) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
-        }
-    }
+    val platformItemCount = if (storage.platformsExpanded) storage.platformConfigs.size else 0
+    val sections = listOf(
+        ListSection(listStartIndex = 0, listEndIndex = 3, focusStartIndex = 0, focusEndIndex = 1),
+        ListSection(listStartIndex = 4, listEndIndex = 8, focusStartIndex = 2, focusEndIndex = 4),
+        ListSection(listStartIndex = 9, listEndIndex = 11 + platformItemCount, focusStartIndex = 5, focusEndIndex = 5 + platformItemCount),
+        ListSection(listStartIndex = 12 + platformItemCount, listEndIndex = 14 + platformItemCount, focusStartIndex = focusMapping.purgeAllIndex, focusEndIndex = focusMapping.purgeAllIndex)
+    )
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = { focusMapping.focusToScrollIndex(it) },
+        sections = sections
+    )
 
     LazyColumn(
         state = listState,

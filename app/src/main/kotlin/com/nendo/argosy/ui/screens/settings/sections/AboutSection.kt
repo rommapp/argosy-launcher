@@ -11,9 +11,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.InfoPreference
@@ -22,7 +23,6 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -31,19 +31,25 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val isDebug = com.nendo.argosy.BuildConfig.DEBUG
     val isOnBetaVersion = com.nendo.argosy.BuildConfig.VERSION_NAME.contains("-")
     val context = LocalContext.current
-    var debugItemCount = 1
-    if (uiState.fileLoggingPath != null) debugItemCount++
-    val maxIndex = 2 + debugItemCount
+    val hasLogLevel = uiState.fileLoggingPath != null
+    val debugListEnd = if (hasLogLevel) 6 else 5
+    val debugFocusEnd = if (hasLogLevel) 4 else 3
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-        }
+    val sections = listOf(
+        ListSection(listStartIndex = 0, listEndIndex = 3, focusStartIndex = 0, focusEndIndex = 2),
+        ListSection(listStartIndex = 4, listEndIndex = debugListEnd, focusStartIndex = 3, focusEndIndex = debugFocusEnd)
+    )
+
+    val focusToListIndex: (Int) -> Int = { focus ->
+        if (focus <= 2) focus else focus + 2
     }
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = focusToListIndex,
+        sections = sections
+    )
 
     LazyColumn(
         state = listState,

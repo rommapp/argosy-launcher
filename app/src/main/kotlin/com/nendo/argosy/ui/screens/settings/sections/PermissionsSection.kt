@@ -49,7 +49,8 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
             val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
             val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
+            val scrollIndex = uiState.focusedIndex + 1
+            listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
         }
     }
 

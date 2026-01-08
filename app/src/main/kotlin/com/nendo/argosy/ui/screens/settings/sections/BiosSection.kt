@@ -34,6 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -45,7 +47,6 @@ import com.nendo.argosy.ui.screens.settings.DistributeResultItem
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -57,16 +58,24 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         expandedIndex = bios.expandedPlatformIndex
     )
 
-    LaunchedEffect(uiState.focusedIndex) {
-        val scrollIndex = focusMapping.focusToScrollIndex(uiState.focusedIndex)
-        if (scrollIndex >= 0) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
-        }
+    val maxPlatformFocusIndex = focusMapping.getMaxFocusIndex()
+    val platformListItemCount = focusMapping.getPlatformListItemCount()
+
+    val sections = listOf(
+        ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 1),
+        ListSection(listStartIndex = 2, listEndIndex = 3 + platformListItemCount, focusStartIndex = 2, focusEndIndex = maxPlatformFocusIndex)
+    )
+
+    val focusToListIndex: (Int) -> Int = { focusIndex ->
+        focusMapping.focusToScrollIndex(focusIndex)
     }
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = focusToListIndex,
+        sections = sections
+    )
 
     LazyColumn(
         state = listState,
@@ -556,6 +565,16 @@ private data class BiosFocusMapping(
     fun getExpandedItemsBefore(platformIndex: Int): Int {
         if (expandedIndex < 0 || expandedIndex >= platformIndex) return 0
         return platformGroups.getOrNull(expandedIndex)?.firmwareItems?.size ?: 0
+    }
+
+    fun getMaxFocusIndex(): Int {
+        val expandedItemCount = platformGroups.getOrNull(expandedIndex)?.firmwareItems?.size ?: 0
+        return 1 + platformGroups.size + expandedItemCount
+    }
+
+    fun getPlatformListItemCount(): Int {
+        val expandedItemCount = platformGroups.getOrNull(expandedIndex)?.firmwareItems?.size ?: 0
+        return platformGroups.size + expandedItemCount
     }
 
     fun focusToScrollIndex(focusIndex: Int): Int {

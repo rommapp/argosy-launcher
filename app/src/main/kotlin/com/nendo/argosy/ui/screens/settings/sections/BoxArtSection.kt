@@ -16,11 +16,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
@@ -40,7 +41,6 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.BoxArtStyleConfig
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun BoxArtSection(
@@ -54,64 +54,51 @@ fun BoxArtSection(
     val showOuterThickness = display.boxArtOuterEffect != BoxArtOuterEffect.OFF
     val showInnerThickness = display.boxArtInnerEffect != BoxArtInnerEffect.OFF
     val showGlassTint = display.boxArtBorderStyle == BoxArtBorderStyle.GLASS
-    var idx = 3
-    val glassTintIndex = if (showGlassTint) idx++ else -1
-    val iconPosIndex = idx++
-    val iconPadIndex = if (showIconPadding) idx++ else -1
-    val outerEffectIndex = idx++
-    val outerThicknessIndex = if (showOuterThickness) idx++ else -1
-    val innerEffectIndex = idx++
-    val innerThicknessIndex = if (showInnerThickness) idx++ else -1
-    val maxIndex = idx - 1
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val scrollIndex = run {
-                val focus = uiState.focusedIndex
-                when {
-                    focus <= 2 -> focus + 1
-                    else -> {
-                        var scrollIdx = 4
-                        var focusIdx = 3
-                        if (showGlassTint) {
-                            if (focus == focusIdx) return@run scrollIdx
-                            scrollIdx++
-                            focusIdx++
-                        }
-                        scrollIdx++
-                        if (focus == focusIdx) return@run scrollIdx
-                        scrollIdx++
-                        focusIdx++
-                        if (showIconPadding) {
-                            if (focus == focusIdx) return@run scrollIdx
-                            scrollIdx++
-                            focusIdx++
-                        }
-                        scrollIdx++
-                        if (focus == focusIdx) return@run scrollIdx
-                        scrollIdx++
-                        focusIdx++
-                        if (showOuterThickness) {
-                            if (focus == focusIdx) return@run scrollIdx
-                            scrollIdx++
-                            focusIdx++
-                        }
-                        scrollIdx++
-                        if (focus == focusIdx) return@run scrollIdx
-                        scrollIdx++
-                        focusIdx++
-                        if (showInnerThickness && focus == focusIdx) return@run scrollIdx
-                        scrollIdx
-                    }
-                }
-            }
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
+    var focusIdx = 3
+    val glassTintIndex = if (showGlassTint) focusIdx++ else -1
+    val iconPosIndex = focusIdx++
+    val iconPadIndex = if (showIconPadding) focusIdx++ else -1
+    val outerEffectIndex = focusIdx++
+    val outerThicknessIndex = if (showOuterThickness) focusIdx++ else -1
+    val innerEffectIndex = focusIdx++
+    val innerThicknessIndex = if (showInnerThickness) focusIdx++ else -1
+
+    val stylingListEnd = 3 + (if (showGlassTint) 1 else 0)
+    val iconListStart = stylingListEnd + 1
+    val iconListEnd = iconListStart + 1 + (if (showIconPadding) 1 else 0)
+    val outerListStart = iconListEnd + 1
+    val outerListEnd = outerListStart + 1 + (if (showOuterThickness) 1 else 0)
+    val innerListStart = outerListEnd + 1
+    val innerListEnd = innerListStart + 1 + (if (showInnerThickness) 1 else 0)
+
+    val sections = listOf(
+        ListSection(listStartIndex = 0, listEndIndex = stylingListEnd, focusStartIndex = 0, focusEndIndex = if (showGlassTint) 3 else 2),
+        ListSection(listStartIndex = iconListStart, listEndIndex = iconListEnd, focusStartIndex = iconPosIndex, focusEndIndex = if (showIconPadding) iconPadIndex else iconPosIndex),
+        ListSection(listStartIndex = outerListStart, listEndIndex = outerListEnd, focusStartIndex = outerEffectIndex, focusEndIndex = if (showOuterThickness) outerThicknessIndex else outerEffectIndex),
+        ListSection(listStartIndex = innerListStart, listEndIndex = innerListEnd, focusStartIndex = innerEffectIndex, focusEndIndex = if (showInnerThickness) innerThicknessIndex else innerEffectIndex)
+    )
+
+    val focusToListIndex: (Int) -> Int = { focus ->
+        when {
+            focus <= 2 -> focus + 1
+            focus == glassTintIndex -> 4
+            focus == iconPosIndex -> 4 + (if (showGlassTint) 1 else 0) + 1
+            focus == iconPadIndex -> 4 + (if (showGlassTint) 1 else 0) + 2
+            focus == outerEffectIndex -> iconListEnd + 2
+            focus == outerThicknessIndex -> iconListEnd + 3
+            focus == innerEffectIndex -> outerListEnd + 2
+            focus == innerThicknessIndex -> outerListEnd + 3
+            else -> focus + 1
         }
     }
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = focusToListIndex,
+        sections = sections
+    )
 
     Row(
         modifier = Modifier

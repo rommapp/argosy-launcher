@@ -5,13 +5,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
@@ -26,7 +27,6 @@ import com.nendo.argosy.ui.components.hueToColorInt
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -34,17 +34,27 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val currentHue = uiState.display.primaryColor?.let { colorIntToHue(it) }
     val secondaryHue = uiState.display.secondaryColor?.let { colorIntToHue(it) }
     val storage = uiState.storage
-    val maxIndex = 9
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
+    val sections = listOf(
+        ListSection(listStartIndex = 0, listEndIndex = 6, focusStartIndex = 0, focusEndIndex = 5),
+        ListSection(listStartIndex = 7, listEndIndex = 8, focusStartIndex = 6, focusEndIndex = 6),
+        ListSection(listStartIndex = 9, listEndIndex = 12, focusStartIndex = 7, focusEndIndex = 9)
+    )
+
+    val focusToListIndex: (Int) -> Int = { focus ->
+        when {
+            focus <= 5 -> focus + 1
+            focus == 6 -> focus + 2
+            else -> focus + 3
         }
     }
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = focusToListIndex,
+        sections = sections
+    )
 
     LazyColumn(
         state = listState,

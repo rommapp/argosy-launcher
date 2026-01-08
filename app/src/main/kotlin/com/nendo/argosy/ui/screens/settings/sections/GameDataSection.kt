@@ -33,6 +33,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -51,7 +53,6 @@ import com.nendo.argosy.ui.screens.settings.components.RomMConfigForm
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SteamLauncherPreference
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -93,40 +94,20 @@ private fun GameDataContent(
         }
     }
 
-    val maxIndex = calculateMaxIndex(isConnected, saveSyncEnabled, launcherCount)
     val steamBaseIndex = calculateSteamBaseIndex(isConnected, saveSyncEnabled)
-    val steamHeaderScrollIndex = calculateSteamHeaderScrollIndex(isConnected, saveSyncEnabled)
+    val steamItemCount = if (launcherCount > 0) launcherCount + 1 else 1
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val scrollIndex = calculateScrollIndex(
-                focusedIndex = uiState.focusedIndex,
-                isConnected = isConnected,
-                saveSyncEnabled = saveSyncEnabled
-            )
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-
-            val isInSteamSection = uiState.focusedIndex >= steamBaseIndex
-            if (isInSteamSection) {
-                val steamItemOffset = uiState.focusedIndex - steamBaseIndex
-                val targetScrollIndex = steamHeaderScrollIndex + steamItemOffset + 1
-                val maxScrollIndex = steamHeaderScrollIndex
-                val currentFirstVisible = listState.firstVisibleItemIndex
-
-                if (currentFirstVisible < maxScrollIndex) {
-                    listState.animateScrollToItem(maxScrollIndex, 0)
-                } else if (targetScrollIndex > currentFirstVisible + 3) {
-                    val scrollTarget = (targetScrollIndex - 3).coerceAtLeast(maxScrollIndex)
-                    listState.animateScrollToItem(scrollTarget, 0)
-                }
-            } else {
-                listState.animateScrollToItem(scrollIndex, -centerOffset + paddingBuffer)
-            }
-        }
+    val sections = buildGameDataSections(isConnected, saveSyncEnabled, launcherCount)
+    val focusToListIndex: (Int) -> Int = { focusIndex ->
+        calculateScrollIndex(focusIndex, isConnected, saveSyncEnabled)
     }
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = focusToListIndex,
+        sections = sections
+    )
 
     LazyColumn(
         state = listState,
@@ -421,13 +402,37 @@ private fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsView
     )
 }
 
-private fun calculateMaxIndex(isConnected: Boolean, saveSyncEnabled: Boolean, launcherCount: Int): Int {
+private fun buildGameDataSections(
+    isConnected: Boolean,
+    saveSyncEnabled: Boolean,
+    launcherCount: Int
+): List<ListSection> {
+    val sections = mutableListOf<ListSection>()
+    val androidBaseIndex = calculateAndroidBaseIndex(isConnected, saveSyncEnabled)
     val steamBaseIndex = calculateSteamBaseIndex(isConnected, saveSyncEnabled)
-    return if (launcherCount > 0) {
-        steamBaseIndex + launcherCount // launchers + refresh metadata
+    val steamItemCount = if (launcherCount > 0) launcherCount + 1 else 1
+
+    if (!isConnected) {
+        sections.add(ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 0))
+        sections.add(ListSection(listStartIndex = 2, listEndIndex = 3, focusStartIndex = 1, focusEndIndex = 1))
+        sections.add(ListSection(listStartIndex = 4, listEndIndex = 4 + steamItemCount, focusStartIndex = 2, focusEndIndex = 2 + steamItemCount - 1))
+    } else if (!saveSyncEnabled) {
+        sections.add(ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 0))
+        sections.add(ListSection(listStartIndex = 2, listEndIndex = 4, focusStartIndex = 1, focusEndIndex = 2))
+        sections.add(ListSection(listStartIndex = 5, listEndIndex = 6, focusStartIndex = 3, focusEndIndex = 3))
+        sections.add(ListSection(listStartIndex = 7, listEndIndex = 8, focusStartIndex = 4, focusEndIndex = 4))
+        sections.add(ListSection(listStartIndex = 9, listEndIndex = 10, focusStartIndex = 5, focusEndIndex = 5))
+        sections.add(ListSection(listStartIndex = 11, listEndIndex = 11 + steamItemCount, focusStartIndex = 6, focusEndIndex = 6 + steamItemCount - 1))
     } else {
-        steamBaseIndex // just the "no launchers" info
+        sections.add(ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 0))
+        sections.add(ListSection(listStartIndex = 2, listEndIndex = 4, focusStartIndex = 1, focusEndIndex = 2))
+        sections.add(ListSection(listStartIndex = 5, listEndIndex = 6, focusStartIndex = 3, focusEndIndex = 3))
+        sections.add(ListSection(listStartIndex = 7, listEndIndex = 10, focusStartIndex = 4, focusEndIndex = 6))
+        sections.add(ListSection(listStartIndex = 11, listEndIndex = 12, focusStartIndex = 7, focusEndIndex = 7))
+        sections.add(ListSection(listStartIndex = 13, listEndIndex = 13 + steamItemCount, focusStartIndex = 8, focusEndIndex = 8 + steamItemCount - 1))
     }
+
+    return sections
 }
 
 private fun calculateAndroidBaseIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
@@ -440,14 +445,6 @@ private fun calculateAndroidBaseIndex(isConnected: Boolean, saveSyncEnabled: Boo
 
 private fun calculateSteamBaseIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
     return calculateAndroidBaseIndex(isConnected, saveSyncEnabled) + 1 // Steam comes after Android
-}
-
-private fun calculateSteamHeaderScrollIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
-    return when {
-        isConnected && saveSyncEnabled -> 14  // SERVER(0), RomM(1), LIBRARY(2), SyncSet(3), SyncLib(4), TRACKING(5), PlayTime(6), SAVES(7), SaveSync(8), Cache(9), SyncSaves(10), ANDROID(11), ScanAndroid(12), STEAM(13)
-        isConnected -> 11                      // SERVER(0), RomM(1), LIBRARY(2), SyncSet(3), SyncLib(4), TRACKING(5), PlayTime(6), SAVES(7), SaveSync(8), ANDROID(9), ScanAndroid(10), STEAM(11)
-        else -> 4                              // SERVER(0), RomM(1), ANDROID(2), ScanAndroid(3), STEAM(4)
-    }
 }
 
 private fun calculateScrollIndex(

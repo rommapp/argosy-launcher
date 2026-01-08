@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
@@ -150,10 +149,47 @@ fun QuickSettingsPanel(
                 )
 
                 val listState = rememberLazyListState()
-
-                LaunchedEffect(focusedIndex) {
-                    listState.animateScrollToItem(focusedIndex.coerceAtLeast(0))
+                val sections = if (state.deviceSettingsSupported) {
+                    val dividerListIndex = deviceItemCount
+                    listOf(
+                        ListSection(
+                            listStartIndex = 0,
+                            listEndIndex = deviceItemCount - 1,
+                            focusStartIndex = 0,
+                            focusEndIndex = deviceItemCount - 1
+                        ),
+                        ListSection(
+                            listStartIndex = dividerListIndex + 1,
+                            listEndIndex = dividerListIndex + baseItemCount,
+                            focusStartIndex = deviceItemCount,
+                            focusEndIndex = deviceItemCount + baseItemCount - 1
+                        )
+                    )
+                } else {
+                    listOf(
+                        ListSection(
+                            listStartIndex = 0,
+                            listEndIndex = baseItemCount - 1,
+                            focusStartIndex = 0,
+                            focusEndIndex = baseItemCount - 1
+                        )
+                    )
                 }
+
+                val focusToListIndex: (Int) -> Int = { focus ->
+                    if (state.deviceSettingsSupported && focus >= deviceItemCount) {
+                        focus + 1
+                    } else {
+                        focus
+                    }
+                }
+
+                SectionFocusedScroll(
+                    listState = listState,
+                    focusedIndex = focusedIndex,
+                    focusToListIndex = focusToListIndex,
+                    sections = sections
+                )
 
                 LazyColumn(
                     state = listState,

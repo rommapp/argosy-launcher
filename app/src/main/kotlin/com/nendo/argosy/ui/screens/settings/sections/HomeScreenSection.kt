@@ -10,31 +10,44 @@ import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val display = uiState.display
-    val maxIndex = if (display.useGameBackground) 4 else 5
+    val hasCustomImage = !display.useGameBackground
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
-        }
+    val sections = if (hasCustomImage) {
+        listOf(
+            ListSection(listStartIndex = 0, listEndIndex = 5, focusStartIndex = 0, focusEndIndex = 4),
+            ListSection(listStartIndex = 6, listEndIndex = 7, focusStartIndex = 5, focusEndIndex = 5)
+        )
+    } else {
+        listOf(
+            ListSection(listStartIndex = 0, listEndIndex = 4, focusStartIndex = 0, focusEndIndex = 3),
+            ListSection(listStartIndex = 5, listEndIndex = 6, focusStartIndex = 4, focusEndIndex = 4)
+        )
     }
+
+    val focusToListIndex: (Int) -> Int = { focus ->
+        if (hasCustomImage) focus + 1 else focus + 1
+    }
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = focusToListIndex,
+        sections = sections
+    )
 
     LazyColumn(
         state = listState,

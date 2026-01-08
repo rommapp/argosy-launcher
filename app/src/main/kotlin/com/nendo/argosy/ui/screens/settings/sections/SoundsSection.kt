@@ -18,38 +18,62 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.nendo.argosy.ui.components.ListSection
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 @Composable
 fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val soundTypes = SoundType.entries.toList()
 
-    // Background Music is first (indices 0, 1, 2 if enabled)
-    val bgmItemCount = if (uiState.ambientAudio.enabled) 3 else 1
-    val uiSoundsToggleIndex = bgmItemCount
-    val uiSoundsItemCount = if (uiState.sounds.enabled) 2 + soundTypes.size else 1
-    val maxIndex = bgmItemCount + uiSoundsItemCount - 1
+    val bgmEnabled = uiState.ambientAudio.enabled
+    val bgmFocusCount = if (bgmEnabled) 3 else 1
+    val bgmListCount = if (bgmEnabled) 3 else 1
+    val uiSoundsToggleIndex = bgmFocusCount
+    val uiSoundsEnabled = uiState.sounds.enabled
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex in 0..maxIndex) {
-            val viewportHeight = listState.layoutInfo.viewportSize.height
-            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            val paddingBuffer = (itemHeight * Motion.scrollPaddingPercent).toInt()
-            listState.animateScrollToItem(uiState.focusedIndex, -centerOffset + paddingBuffer)
+    val sections = if (uiSoundsEnabled) {
+        val uiSoundsListStart = bgmListCount
+        val uiSoundsListEnd = bgmListCount + 2
+        val customizeSoundsListStart = uiSoundsListEnd + 1
+        val customizeSoundsListEnd = customizeSoundsListStart + soundTypes.size
+        val customizeFocusStart = uiSoundsToggleIndex + 2
+        listOf(
+            ListSection(listStartIndex = 0, listEndIndex = bgmListCount - 1, focusStartIndex = 0, focusEndIndex = bgmFocusCount - 1),
+            ListSection(listStartIndex = uiSoundsListStart, listEndIndex = uiSoundsListEnd, focusStartIndex = uiSoundsToggleIndex, focusEndIndex = uiSoundsToggleIndex + 1),
+            ListSection(listStartIndex = customizeSoundsListStart, listEndIndex = customizeSoundsListEnd, focusStartIndex = customizeFocusStart, focusEndIndex = customizeFocusStart + soundTypes.size - 1)
+        )
+    } else {
+        listOf(
+            ListSection(listStartIndex = 0, listEndIndex = bgmListCount - 1, focusStartIndex = 0, focusEndIndex = bgmFocusCount - 1),
+            ListSection(listStartIndex = bgmListCount, listEndIndex = bgmListCount + 1, focusStartIndex = uiSoundsToggleIndex, focusEndIndex = uiSoundsToggleIndex)
+        )
+    }
+
+    val focusToListIndex: (Int) -> Int = { focus ->
+        when {
+            focus < bgmFocusCount -> focus
+            focus == uiSoundsToggleIndex -> bgmListCount + 1
+            focus == uiSoundsToggleIndex + 1 -> bgmListCount + 2
+            else -> bgmListCount + 3 + (focus - uiSoundsToggleIndex - 2) + 1
         }
     }
+
+    SectionFocusedScroll(
+        listState = listState,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = focusToListIndex,
+        sections = sections
+    )
 
     LazyColumn(
         state = listState,
@@ -98,7 +122,7 @@ fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             Text(
                 text = "UI SOUNDS",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(horizontal = Dimens.spacingSm)
             )
         }
@@ -133,7 +157,7 @@ fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 Text(
                     text = "CUSTOMIZE SOUNDS",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = Dimens.spacingSm)
                 )
             }

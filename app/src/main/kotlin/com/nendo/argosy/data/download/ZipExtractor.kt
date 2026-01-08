@@ -26,9 +26,19 @@ data class ExtractedFolderRom(
             if (chdFile != null) return chdFile.absolutePath
 
             // 3. Fall back to primary file or first disc
-            return primaryFile?.absolutePath
-                ?: discFiles.firstOrNull()?.absolutePath
-                ?: gameFolder.absolutePath
+            if (primaryFile != null) return primaryFile.absolutePath
+            if (discFiles.isNotEmpty()) return discFiles.first().absolutePath
+
+            // 4. Search allFiles for disc files (handles zips with files in subfolders)
+            val discExtensions = setOf("bin", "cue", "chd", "iso", "img", "mdf", "gdi", "cdi")
+            val allDiscFiles = allFiles.filter { it.extension.lowercase() in discExtensions }
+            val nestedCueGdi = allDiscFiles.find { it.extension.lowercase() in setOf("cue", "gdi") }
+            if (nestedCueGdi != null) return nestedCueGdi.absolutePath
+            val nestedChd = allDiscFiles.find { it.extension.lowercase() == "chd" }
+            if (nestedChd != null) return nestedChd.absolutePath
+            if (allDiscFiles.isNotEmpty()) return allDiscFiles.first().absolutePath
+
+            return gameFolder.absolutePath
         }
 }
 

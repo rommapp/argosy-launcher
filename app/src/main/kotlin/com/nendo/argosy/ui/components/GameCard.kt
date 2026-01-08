@@ -2,7 +2,6 @@ package com.nendo.argosy.ui.components
 
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -111,10 +110,8 @@ private fun hslToColor(h: Float, s: Float, l: Float): Color {
 private fun extractVibrantColors(
     bitmap: Bitmap,
     minDistancePercent: Int,
-    isDarkTheme: Boolean,
-    gameTitle: String = ""
+    isDarkTheme: Boolean
 ): Pair<Color, Color>? {
-    // Sample top and bottom halves for spatial coherence
     val halfHeight = (bitmap.height / 2).coerceAtLeast(1)
     val topBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, halfHeight)
     val bottomBitmap = Bitmap.createBitmap(bitmap, 0, halfHeight, bitmap.width, bitmap.height - halfHeight)
@@ -122,15 +119,9 @@ private fun extractVibrantColors(
     val topPalette = Palette.from(topBitmap).generate()
     val bottomPalette = Palette.from(bottomBitmap).generate()
 
-    // Get candidate swatches from each half, prioritizing vibrant colors
     fun Palette.getSwatchesByPriority(): List<Palette.Swatch> = listOfNotNull(
-        vibrantSwatch,
-        lightVibrantSwatch,
-        darkVibrantSwatch,
-        dominantSwatch,
-        mutedSwatch,
-        lightMutedSwatch,
-        darkMutedSwatch
+        vibrantSwatch, lightVibrantSwatch, darkVibrantSwatch,
+        dominantSwatch, mutedSwatch, lightMutedSwatch, darkMutedSwatch
     )
 
     fun Palette.Swatch.getHue(): Float {
@@ -150,48 +141,21 @@ private fun extractVibrantColors(
         return kotlin.math.min(diff, 360f - diff)
     }
 
-    fun hueToName(hue: Float): String = when {
-        hue < 15 || hue >= 345 -> "Red"
-        hue < 45 -> "Orange"
-        hue < 75 -> "Yellow"
-        hue < 150 -> "Green"
-        hue < 210 -> "Cyan"
-        hue < 270 -> "Blue"
-        hue < 315 -> "Purple"
-        else -> "Magenta"
+    fun Palette.Swatch.getScore(): Float {
+        val sat = getSaturation()
+        if (sat < 0.40f || population < 100) return 0f
+        return population * sat
     }
 
     val topSwatches = topPalette.getSwatchesByPriority()
     val bottomSwatches = bottomPalette.getSwatchesByPriority()
-
     if (topSwatches.isEmpty() || bottomSwatches.isEmpty()) return null
 
-    // Min distance in degrees (0-100% maps to 0-180 degrees)
     val minDistanceDegrees = minDistancePercent * 1.8f
-
-    // Score swatches by population * saturation (large colorful areas win)
-    fun Palette.Swatch.getScore(): Float {
-        val sat = getSaturation()
-        // Require minimum saturation AND population to be considered "colorful"
-        // 40% sat ensures only truly vibrant colors qualify
-        if (sat < 0.40f) return 0f
-        if (population < 100) return 0f
-        return population * sat
-    }
-
-    // Filter to only swatches that meet our quality threshold
     val validTopSwatches = topSwatches.filter { it.getScore() > 0 }
     val validBottomSwatches = bottomSwatches.filter { it.getScore() > 0 }
+    if (validTopSwatches.isEmpty() || validBottomSwatches.isEmpty()) return null
 
-    Log.d("VibrantColors", "[$gameTitle] Valid swatches: top=${validTopSwatches.size}/${topSwatches.size}, bottom=${validBottomSwatches.size}/${bottomSwatches.size}")
-
-    if (validTopSwatches.isEmpty() || validBottomSwatches.isEmpty()) {
-        Log.d("VibrantColors", "[$gameTitle] Not enough valid swatches, returning null")
-        return null
-    }
-
-    // Find best pair: top swatch + bottom swatch with sufficient hue distance
-    // Prefer swatches with higher score (population * saturation)
     var bestTopSwatch: Palette.Swatch? = null
     var bestBottomSwatch: Palette.Swatch? = null
     var bestScore = -1f
@@ -210,27 +174,17 @@ private fun extractVibrantColors(
         }
     }
 
-    // If no pair meets distance requirement, use highest-scoring from each
     if (bestTopSwatch == null || bestBottomSwatch == null) {
         bestTopSwatch = validTopSwatches.maxByOrNull { it.getScore() }
         bestBottomSwatch = validBottomSwatches.maxByOrNull { it.getScore() }
-        Log.d("VibrantColors", "[$gameTitle] No pair met distance, using fallback")
     }
-
     if (bestTopSwatch == null || bestBottomSwatch == null) return null
 
-    // Apply our vibrant HSL treatment
-    // L=50% is peak saturation; we use 50-55% for top, 40-45% for bottom
     val lightLightness = if (isDarkTheme) 0.55f else 0.50f
     val darkLightness = if (isDarkTheme) 0.45f else 0.40f
 
-    val topHue = bestTopSwatch.getHue()
-    val bottomHue = bestBottomSwatch.getHue()
-
-    Log.d("VibrantColors", "[$gameTitle] Top: ${hueToName(topHue)} (${topHue.toInt()}°, sat=${(bestTopSwatch.getSaturation()*100).toInt()}%, pop=${bestTopSwatch.population}) | Bottom: ${hueToName(bottomHue)} (${bottomHue.toInt()}°, sat=${(bestBottomSwatch.getSaturation()*100).toInt()}%, pop=${bestBottomSwatch.population})")
-
-    val topColor = hslToColor(topHue, 1f, lightLightness)
-    val bottomColor = hslToColor(bottomHue, 1f, darkLightness)
+    val topColor = hslToColor(bestTopSwatch.getHue(), 1f, lightLightness)
+    val bottomColor = hslToColor(bestBottomSwatch.getHue(), 1f, darkLightness)
 
     return Pair(topColor, bottomColor)
 }
@@ -474,7 +428,7 @@ fun GameCard(
                             }
                             if (bitmap != null) {
                                 if (boxArtStyle.gradientVibrance) {
-                                    val vibrantResult = extractVibrantColors(bitmap, boxArtStyle.vibranceMinDistance, isDarkTheme, game.title)
+                                    val vibrantResult = extractVibrantColors(bitmap, boxArtStyle.vibranceMinDistance, isDarkTheme)
                                     if (vibrantResult != null) {
                                         extractedTopColor = vibrantResult.first
                                         extractedBottomColor = vibrantResult.second

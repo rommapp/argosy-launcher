@@ -144,7 +144,7 @@ class GameLauncher @Inject constructor(
 
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName}")
 
-        val launchFile = if (m3uManager.supportsM3u(game.platformSlug)) {
+        val launchFile = if (M3uManager.supportsM3u(game.platformSlug)) {
             when (val m3uResult = m3uManager.ensureM3u(game)) {
                 is M3uResult.Valid -> {
                     Logger.debug(TAG, "Using existing m3u: ${m3uResult.m3uFile.name}")

@@ -541,6 +541,7 @@ class DownloadManager @Inject constructor(
                         platformSlug = progress.platformSlug,
                         gameTitle = progress.gameTitle,
                         progressId = progress.id,
+                        isDiscDownload = progress.isDiscDownload,
                         onExtractionProgress = { bytesWritten, totalBytes ->
                             updateProgress(
                                 progress.copy(
@@ -652,6 +653,7 @@ class DownloadManager @Inject constructor(
                                     platformSlug = progress.platformSlug,
                                     gameTitle = progress.gameTitle,
                                     progressId = progress.id,
+                                    isDiscDownload = progress.isDiscDownload,
                                     onExtractionProgress = { bytesWritten, totalBytes ->
                                         updateProgress(
                                             progress.copy(
@@ -720,6 +722,7 @@ class DownloadManager @Inject constructor(
         platformSlug: String,
         gameTitle: String,
         progressId: Long = 0,
+        isDiscDownload: Boolean = false,
         onExtractionProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)? = null
     ): String {
         val shouldExtract = ZipExtractor.shouldExtractZip(targetFile)
@@ -755,8 +758,31 @@ class DownloadManager @Inject constructor(
                 )
                 organizedFile.absolutePath
             }
+            isDiscDownload && M3uManager.supportsM3u(platformSlug) -> {
+                // Organize disc files into game folder for m3u-capable platforms
+                organizeDiscFile(targetFile, gameTitle, platformDir)
+            }
             else -> targetFile.absolutePath
         }
+    }
+
+    private fun organizeDiscFile(romFile: File, gameTitle: String, platformDir: File): String {
+        val sanitizedTitle = gameTitle
+            .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .take(200)
+        val gameFolder = File(platformDir, sanitizedTitle).apply { mkdirs() }
+        val targetFile = File(gameFolder, romFile.name)
+
+        if (romFile.absolutePath != targetFile.absolutePath) {
+            if (!romFile.renameTo(targetFile)) {
+                romFile.copyTo(targetFile, overwrite = true)
+                romFile.delete()
+            }
+        }
+
+        return targetFile.absolutePath
     }
 
     private fun updateProgress(progress: DownloadProgress) {
@@ -921,12 +947,15 @@ class DownloadManager @Inject constructor(
         }
 
         return try {
+            val discId = queueEntry.discId
+            val isDiscDownload = discId != null
             val finalPath = processDownloadedFile(
                 targetFile = targetFile,
                 platformDir = platformDir,
                 platformSlug = queueEntry.platformSlug,
                 gameTitle = queueEntry.gameTitle,
                 progressId = queueEntry.id,
+                isDiscDownload = isDiscDownload,
                 onExtractionProgress = { bytesWritten, totalBytes ->
                     val progress = queueEntry.toDownloadProgress()
                     updateProgress(
@@ -939,7 +968,12 @@ class DownloadManager @Inject constructor(
                 }
             )
 
-            gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED)
+            if (discId != null) {
+                gameDiscDao.updateLocalPath(discId, finalPath)
+                m3uManager.generateM3uIfComplete(gameId)
+            } else {
+                gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED)
+            }
             downloadQueueDao.deleteByGameId(gameId)
 
             _completionEvents.emit(
@@ -947,7 +981,7 @@ class DownloadManager @Inject constructor(
                     gameId = gameId,
                     rommId = queueEntry.rommId,
                     localPath = finalPath,
-                    isDiscDownload = false
+                    isDiscDownload = isDiscDownload
                 )
             )
 

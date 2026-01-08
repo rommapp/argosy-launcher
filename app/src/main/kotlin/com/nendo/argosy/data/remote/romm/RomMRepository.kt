@@ -590,6 +590,7 @@ class RomMRepository @Inject constructor(
         val romsWithRA = mutableSetOf<Long>()
         val multiDiscGroups = mutableListOf<MultiDiscGroup>()
         val processedDiscIds = mutableSetOf<Long>()
+        val skipIndividualDiscIds = mutableSetOf<Long>()
         var offset = 0
         var totalFetched = 0
 
@@ -616,6 +617,29 @@ class RomMRepository @Inject constructor(
 
             for (rom in romsPage.items) {
                 if (!RomMSyncFilter.shouldSyncRom(rom, filters)) continue
+
+                // Skip individual disc ROMs when a folder-based multi-disc version exists
+                if (rom.id in skipIndividualDiscIds) {
+                    Logger.debug(TAG, "syncPlatformRoms: skipping individual disc ${rom.name} - folder-based version preferred")
+                    continue
+                }
+
+                // When we find a folder-based multi-disc ROM, mark its individual disc siblings to skip
+                if (rom.isFolderMultiDisc) {
+                    val discSiblings = rom.siblings?.filter { it.isDiscVariant } ?: emptyList()
+                    if (discSiblings.isNotEmpty()) {
+                        val siblingIds = discSiblings.map { it.id }
+                        skipIndividualDiscIds.addAll(siblingIds)
+                        Logger.info(TAG, "syncPlatformRoms: ${rom.name} is folder-based multi-disc, marking ${siblingIds.size} individual disc siblings to skip")
+                        for (siblingId in siblingIds) {
+                            val existingGame = gameDao.getByRommId(siblingId)
+                            if (existingGame != null) {
+                                Logger.info(TAG, "syncPlatformRoms: deleting redundant individual disc game: ${existingGame.title}")
+                                gameDao.delete(existingGame.id)
+                            }
+                        }
+                    }
+                }
 
                 val dedupKey = RomMUtils.getDedupKey(rom)
                 val hasRA = rom.raId != null || rom.raMetadata?.achievements?.isNotEmpty() == true

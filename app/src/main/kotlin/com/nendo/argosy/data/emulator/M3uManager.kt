@@ -26,9 +26,9 @@ class M3uManager @Inject constructor(
 ) {
     companion object {
         private val SUPPORTED_PLATFORMS = setOf("psx", "saturn", "dreamcast", "dc")
-    }
 
-    fun supportsM3u(platformId: String): Boolean = platformId in SUPPORTED_PLATFORMS
+        fun supportsM3u(platformSlug: String): Boolean = platformSlug in SUPPORTED_PLATFORMS
+    }
 
     suspend fun ensureM3u(game: GameEntity): M3uResult {
         if (!game.isMultiDisc) {

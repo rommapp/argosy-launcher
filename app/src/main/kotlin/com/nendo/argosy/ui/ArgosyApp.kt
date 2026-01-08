@@ -91,6 +91,7 @@ fun ArgosyApp(
     val rootFocusRequester = remember { FocusRequester() }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        inputDispatcher.blockInputFor(200)
         inputDispatcher.resetToMainView()
         viewModel.resetAllModals()
         try { rootFocusRequester.requestFocus() } catch (_: Exception) {}

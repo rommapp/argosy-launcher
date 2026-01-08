@@ -90,7 +90,8 @@ data class GameEntity(
     val activeSaveChannel: String? = null,
     val activeSaveTimestamp: Long? = null,
 
-    val titleId: String? = null
+    val titleId: String? = null,
+    val youtubeVideoId: String? = null
 )
 
 data class GameListItem(

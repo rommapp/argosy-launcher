@@ -104,13 +104,16 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.components.SystemStatusBar
+import com.nendo.argosy.ui.components.YouTubeVideoPlayer
 import com.nendo.argosy.ui.input.ChangelogInputHandler
+import kotlinx.coroutines.delay
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.launch
 
 private const val SCROLL_OFFSET = -25
+private const val VIDEO_PREVIEW_DELAY_MS = 5000L
 
 @Composable
 fun HomeScreen(
@@ -253,6 +256,57 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(uiState.focusedGameIndex, uiState.focusedGame?.youtubeVideoId) {
+        viewModel.deactivateVideoPreview()
+        val videoId = uiState.focusedGame?.youtubeVideoId
+        if (videoId != null && !uiState.showGameMenu) {
+            delay(VIDEO_PREVIEW_DELAY_MS)
+            viewModel.startVideoPreviewLoading(videoId)
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                viewModel.deactivateVideoPreview()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val backgroundAlpha by animateFloatAsState(
+        targetValue = if (uiState.isVideoPreviewActive) 0f else 1f,
+        animationSpec = tween(500),
+        label = "backgroundAlpha"
+    )
+
+    val videoModeFooterOffset by animateDpAsState(
+        targetValue = if (uiState.isVideoPreviewActive) 100.dp else 0.dp,
+        animationSpec = tween(500),
+        label = "footerOffset"
+    )
+
+    val videoModeHeaderOffset by animateDpAsState(
+        targetValue = if (uiState.isVideoPreviewActive) (-60).dp else 0.dp,
+        animationSpec = tween(500),
+        label = "headerOffset"
+    )
+
+    val videoModeRailOffsetX by animateDpAsState(
+        targetValue = if (uiState.isVideoPreviewActive) (-40).dp else 0.dp,
+        animationSpec = tween(500),
+        label = "railOffsetX"
+    )
+
+    val videoModeRailOffsetY by animateDpAsState(
+        targetValue = if (uiState.isVideoPreviewActive) 30.dp else 0.dp,
+        animationSpec = tween(500),
+        label = "railOffsetY"
+    )
+
     val backgroundBlurDp = (uiState.backgroundBlur * 0.5f).dp
     val saturationFraction = uiState.backgroundSaturation / 100f
     val opacityFraction = uiState.backgroundOpacity / 100f
@@ -286,50 +340,77 @@ fun HomeScreen(
         } else {
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
-            AnimatedContent(
-            targetState = effectiveBackgroundPath,
-            transitionSpec = {
-                fadeIn(tween(300)) togetherWith fadeOut(tween(300))
-            },
-            label = "background"
-        ) { backgroundPath ->
-            if (backgroundPath != null) {
-                val imageData = if (backgroundPath.startsWith("/")) {
-                    java.io.File(backgroundPath)
-                } else {
-                    backgroundPath
-                }
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(imageData)
-                        .size(640, 360)
-                        .crossfade(300)
-                        .build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
-                        androidx.compose.ui.graphics.ColorMatrix().apply {
-                            setToSaturation(saturationFraction)
-                        }
-                    ),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(backgroundBlurDp)
-                )
-            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                overlayBaseColor.copy(alpha = overlayAlphaTop),
-                                overlayBaseColor.copy(alpha = overlayAlphaBottom)
-                            )
+                    .graphicsLayer { alpha = backgroundAlpha }
+            ) {
+                AnimatedContent(
+                    targetState = effectiveBackgroundPath,
+                    transitionSpec = {
+                        fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+                    },
+                    label = "background"
+                ) { backgroundPath ->
+                    if (backgroundPath != null) {
+                        val imageData = if (backgroundPath.startsWith("/")) {
+                            java.io.File(backgroundPath)
+                        } else {
+                            backgroundPath
+                        }
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(imageData)
+                                .size(640, 360)
+                                .crossfade(300)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                                androidx.compose.ui.graphics.ColorMatrix().apply {
+                                    setToSaturation(saturationFraction)
+                                }
+                            ),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .blur(backgroundBlurDp)
                         )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        overlayBaseColor.copy(alpha = overlayAlphaTop),
+                                        overlayBaseColor.copy(alpha = overlayAlphaBottom)
+                                    )
+                                )
+                            )
                     )
-            )
-        }
+                }
+            }
+
+            if (uiState.isVideoPreviewLoading || uiState.isVideoPreviewActive) {
+                val videoAlpha by animateFloatAsState(
+                    targetValue = if (uiState.isVideoPreviewActive) 1f else 0f,
+                    animationSpec = tween(500),
+                    label = "videoAlpha"
+                )
+                uiState.videoPreviewId?.let { videoId ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { alpha = videoAlpha }
+                    ) {
+                        YouTubeVideoPlayer(
+                            videoId = videoId,
+                            onReady = { viewModel.activateVideoPreview() },
+                            onError = { viewModel.cancelVideoPreviewLoading() }
+                        )
+                    }
+                }
+            }
 
         val edgeThreshold = with(LocalDensity.current) { 80.dp.toPx() }
 
@@ -370,7 +451,8 @@ fun HomeScreen(
             ) {
                 HomeHeader(
                     sectionTitle = uiState.rowTitle,
-                    showPlatformNav = false
+                    showPlatformNav = false,
+                    headerOffset = videoModeHeaderOffset
                 )
 
                 Box(
@@ -414,7 +496,10 @@ fun HomeScreen(
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
-                                modifier = Modifier.align(Alignment.BottomStart)
+                                isVideoPreviewActive = uiState.isVideoPreviewActive,
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .offset(x = videoModeRailOffsetX, y = videoModeRailOffsetY)
                             )
                         }
                     }
@@ -456,12 +541,25 @@ fun HomeScreen(
                                 else -> {}
                             }
                         },
-                        modifier = Modifier.padding(top = Dimens.spacingSm)
+                        modifier = Modifier
+                            .padding(top = Dimens.spacingSm)
+                            .offset(y = videoModeFooterOffset)
                     )
                 } else {
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }
+
+            val gameInfoWidth by animateFloatAsState(
+                targetValue = if (uiState.isVideoPreviewActive) 1f else 0.7f,
+                animationSpec = tween(500),
+                label = "gameInfoWidth"
+            )
+            val gameInfoTopPadding by animateDpAsState(
+                targetValue = if (uiState.isVideoPreviewActive) 24.dp else 80.dp,
+                animationSpec = tween(500),
+                label = "gameInfoTopPadding"
+            )
 
             GameInfo(
                 title = uiState.focusedGame?.title ?: "",
@@ -471,10 +569,11 @@ fun HomeScreen(
                 userDifficulty = uiState.focusedGame?.userDifficulty ?: 0,
                 achievementCount = uiState.focusedGame?.achievementCount ?: 0,
                 earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
+                showMetadata = !uiState.isVideoPreviewActive,
                 modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .align(Alignment.TopEnd)
-                    .padding(top = 80.dp)
+                    .fillMaxWidth(gameInfoWidth)
+                    .align(if (uiState.isVideoPreviewActive) Alignment.TopCenter else Alignment.TopEnd)
+                    .padding(top = gameInfoTopPadding)
             )
         }
         }
@@ -596,12 +695,14 @@ private fun SplashOverlay() {
 @Composable
 private fun HomeHeader(
     sectionTitle: String,
-    showPlatformNav: Boolean
+    showPlatformNav: Boolean,
+    headerOffset: androidx.compose.ui.unit.Dp = 0.dp
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp),
+            .padding(24.dp)
+            .offset(y = headerOffset),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -658,8 +759,15 @@ private fun GameInfo(
     userDifficulty: Int,
     achievementCount: Int,
     earnedAchievementCount: Int,
+    showMetadata: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    val metadataAlpha by animateFloatAsState(
+        targetValue = if (showMetadata) 1f else 0f,
+        animationSpec = tween(500),
+        label = "metadataAlpha"
+    )
+
     Column(
         modifier = modifier
             .padding(horizontal = 48.dp),
@@ -677,7 +785,8 @@ private fun GameInfo(
             Text(
                 text = developer,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.graphicsLayer { alpha = metadataAlpha }
             )
         }
 
@@ -685,6 +794,7 @@ private fun GameInfo(
         if (hasBadges) {
             Spacer(modifier = Modifier.height(4.dp))
             Row(
+                modifier = Modifier.graphicsLayer { alpha = metadataAlpha },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -778,6 +888,7 @@ private fun GameRail(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onItemTap: (Int) -> Unit = {},
     onItemLongPress: (Int) -> Unit = {},
+    isVideoPreviewActive: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -822,6 +933,9 @@ private fun GameRail(
                 label = "translationX"
             )
 
+            val videoScaleOverride = if (isVideoPreviewActive && isFocused) 1.0f else null
+            val videoAlphaOverride = if (isVideoPreviewActive && !isFocused) 0f else null
+
             when (item) {
                 is HomeRowItem.Game -> {
                     GameCard(
@@ -833,6 +947,8 @@ private fun GameRail(
                         showPlatformBadge = showPlatformBadge,
                         coverPathOverride = repairedCoverPaths[item.game.id],
                         onCoverLoadFailed = onCoverLoadFailed,
+                        scaleOverride = videoScaleOverride,
+                        alphaOverride = videoAlphaOverride,
                         modifier = Modifier
                             .graphicsLayer { this.translationX = translationX }
                             .width(cardWidth)
@@ -846,11 +962,19 @@ private fun GameRail(
                     )
                 }
                 is HomeRowItem.ViewAll -> {
+                    val viewAllAlpha by animateFloatAsState(
+                        targetValue = if (isVideoPreviewActive) 0f else 1f,
+                        animationSpec = Motion.focusSpring,
+                        label = "viewAllAlpha"
+                    )
                     ViewAllCard(
                         isFocused = isFocused,
                         onClick = { onItemTap(index) },
                         modifier = Modifier
-                            .graphicsLayer { this.translationX = translationX }
+                            .graphicsLayer {
+                                this.translationX = translationX
+                                alpha = viewAllAlpha
+                            }
                             .width(cardWidth)
                             .height(cardHeight)
                     )

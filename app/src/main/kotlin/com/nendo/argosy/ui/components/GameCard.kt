@@ -214,7 +214,9 @@ fun GameCard(
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     showPlatformBadge: Boolean = true,
     coverPathOverride: String? = null,
-    onCoverLoadFailed: ((gameId: Long, failedPath: String) -> Unit)? = null
+    onCoverLoadFailed: ((gameId: Long, failedPath: String) -> Unit)? = null,
+    scaleOverride: Float? = null,
+    alphaOverride: Float? = null
 ) {
     val themeConfig = LocalLauncherTheme.current
     val boxArtStyle = LocalBoxArtStyle.current
@@ -222,13 +224,13 @@ fun GameCard(
     val effectiveCoverPath = coverPathOverride ?: game.coverPath
 
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) focusScale else Motion.scaleDefault,
+        targetValue = scaleOverride ?: if (isFocused) focusScale else Motion.scaleDefault,
         animationSpec = Motion.focusSpring,
         label = "scale"
     )
 
     val alpha by animateFloatAsState(
-        targetValue = if (isFocused) Motion.alphaFocused else Motion.alphaUnfocused,
+        targetValue = alphaOverride ?: if (isFocused) Motion.alphaFocused else Motion.alphaUnfocused,
         animationSpec = Motion.focusSpring,
         label = "alpha"
     )

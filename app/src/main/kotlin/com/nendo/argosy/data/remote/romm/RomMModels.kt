@@ -63,7 +63,8 @@ data class RomMRom(
     @Json(name = "tags") val tags: List<String>? = null,
     @Json(name = "siblings") val siblings: List<RomMSibling>? = null,
     @Json(name = "multi") val multi: Boolean = false,
-    @Json(name = "files") val files: List<RomMRomFile>? = null
+    @Json(name = "files") val files: List<RomMRomFile>? = null,
+    @Json(name = "youtube_video_id") val youtubeVideoId: String? = null
 ) {
     val genres: List<String>? get() = metadatum?.genres
     val companies: List<String>? get() = metadatum?.companies

@@ -574,7 +574,8 @@ class RomMRepository @Inject constructor(
             playTimeMinutes = localDataSource?.playTimeMinutes ?: 0,
             lastPlayed = localDataSource?.lastPlayed,
             addedAt = localDataSource?.addedAt ?: java.time.Instant.now(),
-            achievementCount = rom.raMetadata?.achievements?.size ?: localDataSource?.achievementCount ?: 0
+            achievementCount = rom.raMetadata?.achievements?.size ?: localDataSource?.achievementCount ?: 0,
+            youtubeVideoId = rom.youtubeVideoId
         )
 
         val isNew = existing == null

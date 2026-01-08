@@ -138,7 +138,8 @@ data class HomeGameUi(
     val downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     val isAndroidApp: Boolean = false,
     val packageName: String? = null,
-    val needsInstall: Boolean = false
+    val needsInstall: Boolean = false,
+    val youtubeVideoId: String? = null
 )
 
 sealed class HomeRowItem {
@@ -201,7 +202,10 @@ data class HomeUiState(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val syncOverlayState: SyncOverlayState? = null,
-    val changelogEntry: ChangelogEntry? = null
+    val changelogEntry: ChangelogEntry? = null,
+    val isVideoPreviewActive: Boolean = false,
+    val videoPreviewId: String? = null,
+    val isVideoPreviewLoading: Boolean = false
 ) {
     val availableRows: List<HomeRow>
         get() = buildList {
@@ -920,6 +924,43 @@ class HomeViewModel @Inject constructor(
             _uiState.update { it.copy(changelogEntry = null) }
         }
         return action
+    }
+
+    fun startVideoPreviewLoading(videoId: String) {
+        _uiState.update {
+            it.copy(
+                isVideoPreviewLoading = true,
+                videoPreviewId = videoId
+            )
+        }
+    }
+
+    fun activateVideoPreview() {
+        _uiState.update {
+            it.copy(
+                isVideoPreviewActive = true,
+                isVideoPreviewLoading = false
+            )
+        }
+    }
+
+    fun cancelVideoPreviewLoading() {
+        _uiState.update {
+            it.copy(
+                isVideoPreviewLoading = false,
+                videoPreviewId = null
+            )
+        }
+    }
+
+    fun deactivateVideoPreview() {
+        _uiState.update {
+            it.copy(
+                isVideoPreviewActive = false,
+                isVideoPreviewLoading = false,
+                videoPreviewId = null
+            )
+        }
     }
 
     private suspend fun refreshRecommendationsIfNeeded() {
@@ -1656,7 +1697,8 @@ class HomeViewModel @Inject constructor(
             earnedAchievementCount = earnedAchievementCount,
             isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
             packageName = packageName,
-            needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP
+            needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP,
+            youtubeVideoId = youtubeVideoId
         )
     }
 

@@ -66,7 +66,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PinnedCollectionEntity::class,
         GameFileEntity::class
     ],
-    version = 44,
+    version = 45,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -753,6 +753,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE download_queue ADD COLUMN gameFileId INTEGER")
                 db.execSQL("ALTER TABLE download_queue ADD COLUMN fileCategory TEXT")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_download_queue_gameFileId ON download_queue(gameFileId)")
+            }
+        }
+
+        val MIGRATION_44_45 = object : Migration(44, 45) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN youtubeVideoId TEXT")
             }
         }
     }

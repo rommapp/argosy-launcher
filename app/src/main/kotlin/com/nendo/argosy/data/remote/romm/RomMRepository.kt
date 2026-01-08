@@ -5,8 +5,10 @@ import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.CollectionDao
+import java.io.File
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -16,6 +18,7 @@ import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
@@ -57,6 +60,7 @@ class RomMRepository @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
+    private val gameFileDao: GameFileDao,
     private val platformDao: PlatformDao,
     private val pendingSyncDao: PendingSyncDao,
     private val orphanedFileDao: OrphanedFileDao,
@@ -466,6 +470,23 @@ class RomMRepository @Inject constructor(
     private suspend fun syncRom(rom: RomMRom, platformId: Long, platformSlug: String): Pair<Boolean, GameEntity> {
         val existing = gameDao.getByRommId(rom.id)
 
+        val migrationSources = if (existing == null && rom.igdbId != null) {
+            gameDao.getAllByIgdbIdAndPlatform(rom.igdbId, platformId)
+                .filter { it.rommId != null && it.rommId != rom.id }
+        } else emptyList()
+
+        if (migrationSources.isNotEmpty()) {
+            Logger.info(TAG, "syncRom: detected migration for ${rom.name} (igdbId=${rom.igdbId}): ${migrationSources.size} old entries -> new rommId=${rom.id}")
+        }
+
+        val localDataSource = existing ?: GameMigrationHelper.aggregateMultiDiscData(migrationSources) { path ->
+            val exists = File(path).exists()
+            if (!exists) {
+                Logger.warn(TAG, "syncRom: migrated localPath no longer exists: $path")
+            }
+            exists
+        }
+
         val screenshotUrls = rom.screenshotUrls.ifEmpty {
             rom.screenshotPaths?.map { buildMediaUrl(it) } ?: emptyList()
         }
@@ -518,10 +539,10 @@ class RomMRepository @Inject constructor(
             platformSlug = platformSlug,
             title = rom.name,
             sortTitle = RomMUtils.createSortTitle(rom.name),
-            localPath = existing?.localPath,
+            localPath = localDataSource?.localPath,
             rommId = rom.id,
             igdbId = rom.igdbId,
-            source = if (existing?.localPath != null) GameSource.ROMM_SYNCED else GameSource.ROMM_REMOTE,
+            source = if (localDataSource?.localPath != null) GameSource.ROMM_SYNCED else GameSource.ROMM_REMOTE,
             coverPath = cachedCover,
             backgroundPath = cachedBackground,
             screenshotPaths = screenshotUrls.joinToString(","),
@@ -536,32 +557,73 @@ class RomMRepository @Inject constructor(
             languages = rom.languages?.joinToString(","),
             gameModes = rom.metadatum?.gameModes?.joinToString(","),
             franchises = rom.metadatum?.franchises?.joinToString(","),
-            userRating = rom.romUser?.rating ?: existing?.userRating ?: 0,
-            userDifficulty = rom.romUser?.difficulty ?: existing?.userDifficulty ?: 0,
-            completion = rom.romUser?.completion ?: existing?.completion ?: 0,
-            status = rom.romUser?.status ?: existing?.status,
-            backlogged = rom.romUser?.backlogged ?: existing?.backlogged ?: false,
-            nowPlaying = rom.romUser?.nowPlaying ?: existing?.nowPlaying ?: false,
-            isFavorite = existing?.isFavorite ?: false,
-            isHidden = existing?.isHidden ?: false,
-            // For folder-based: reset to false (extraction will set it if needed)
-            // For sibling-based: preserve existing value (consolidation sets it)
-            // Only preserve isMultiDisc if game was downloaded (has localPath)
+            userRating = rom.romUser?.rating ?: localDataSource?.userRating ?: 0,
+            userDifficulty = rom.romUser?.difficulty ?: localDataSource?.userDifficulty ?: 0,
+            completion = rom.romUser?.completion ?: localDataSource?.completion ?: 0,
+            status = rom.romUser?.status ?: localDataSource?.status,
+            backlogged = rom.romUser?.backlogged ?: localDataSource?.backlogged ?: false,
+            nowPlaying = rom.romUser?.nowPlaying ?: localDataSource?.nowPlaying ?: false,
+            isFavorite = localDataSource?.isFavorite ?: false,
+            isHidden = localDataSource?.isHidden ?: false,
             isMultiDisc = when {
-                rom.isFolderMultiDisc -> existing?.isMultiDisc == true && existing.localPath != null
-                shouldBeMultiDisc -> existing?.isMultiDisc ?: false
+                rom.isFolderMultiDisc -> localDataSource?.isMultiDisc == true && localDataSource.localPath != null
+                shouldBeMultiDisc -> localDataSource?.isMultiDisc ?: false
                 else -> false
             },
-            playCount = existing?.playCount ?: 0,
-            playTimeMinutes = existing?.playTimeMinutes ?: 0,
-            lastPlayed = existing?.lastPlayed,
-            addedAt = existing?.addedAt ?: java.time.Instant.now(),
-            achievementCount = rom.raMetadata?.achievements?.size ?: existing?.achievementCount ?: 0
+            playCount = localDataSource?.playCount ?: 0,
+            playTimeMinutes = localDataSource?.playTimeMinutes ?: 0,
+            lastPlayed = localDataSource?.lastPlayed,
+            addedAt = localDataSource?.addedAt ?: java.time.Instant.now(),
+            achievementCount = rom.raMetadata?.achievements?.size ?: localDataSource?.achievementCount ?: 0
         )
 
         val isNew = existing == null
         gameDao.insert(game)
+
+        if (migrationSources.isNotEmpty()) {
+            migrationSources.forEach { source ->
+                gameDao.delete(source.id)
+            }
+            Logger.info(TAG, "syncRom: deleted ${migrationSources.size} old game entries after migration")
+        }
+
+        val savedGame = gameDao.getByRommId(rom.id)
+        if (savedGame != null) {
+            syncGameFiles(savedGame.id, rom)
+        }
+
         return isNew to game
+    }
+
+    private suspend fun syncGameFiles(gameId: Long, rom: RomMRom) {
+        val files = rom.files?.filter { file ->
+            file.category in setOf("update", "dlc") &&
+            !file.fileName.startsWith("._")
+        } ?: return
+
+        if (files.isEmpty()) {
+            gameFileDao.deleteByGameId(gameId)
+            return
+        }
+
+        gameFileDao.deleteInvalidFiles(gameId, files.map { it.id })
+
+        val entities = files.map { file ->
+            val existing = gameFileDao.getByRommFileId(file.id)
+            GameFileEntity(
+                id = existing?.id ?: 0,
+                gameId = gameId,
+                rommFileId = file.id,
+                romId = file.romId,
+                fileName = file.fileName,
+                filePath = file.filePath,
+                category = file.category ?: "update",
+                fileSize = file.fileSizeBytes,
+                localPath = existing?.localPath,
+                downloadedAt = existing?.downloadedAt
+            )
+        }
+        gameFileDao.insertAll(entities)
     }
 
     private fun buildMediaUrl(path: String): String {

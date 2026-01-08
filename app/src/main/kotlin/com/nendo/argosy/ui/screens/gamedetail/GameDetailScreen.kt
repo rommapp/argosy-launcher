@@ -449,6 +449,7 @@ private fun GameDetailModals(
         UpdatesPickerModal(
             files = uiState.updateFiles + uiState.dlcFiles,
             focusIndex = uiState.updatesPickerFocusIndex,
+            onDownload = viewModel::downloadUpdateFile,
             onDismiss = viewModel::dismissUpdatesPicker
         )
     }

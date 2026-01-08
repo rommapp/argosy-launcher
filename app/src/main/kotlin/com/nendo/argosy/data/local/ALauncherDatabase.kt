@@ -15,6 +15,7 @@ import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
@@ -33,6 +34,7 @@ import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.local.entity.FirmwareEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.PendingSaveSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
@@ -61,9 +63,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         FirmwareEntity::class,
         CollectionEntity::class,
         CollectionGameEntity::class,
-        PinnedCollectionEntity::class
+        PinnedCollectionEntity::class,
+        GameFileEntity::class
     ],
-    version = 43,
+    version = 44,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -85,6 +88,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun firmwareDao(): FirmwareDao
     abstract fun collectionDao(): CollectionDao
     abstract fun pinnedCollectionDao(): PinnedCollectionDao
+    abstract fun gameFileDao(): GameFileDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -723,6 +727,32 @@ abstract class ALauncherDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE collections ADD COLUMN type TEXT NOT NULL DEFAULT 'REGULAR'")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_collections_type ON collections(type)")
+            }
+        }
+
+        val MIGRATION_43_44 = object : Migration(43, 44) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS game_files (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        rommFileId INTEGER NOT NULL,
+                        romId INTEGER NOT NULL,
+                        fileName TEXT NOT NULL,
+                        filePath TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        fileSize INTEGER NOT NULL,
+                        localPath TEXT,
+                        downloadedAt INTEGER,
+                        FOREIGN KEY (gameId) REFERENCES games(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_game_files_gameId ON game_files(gameId)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_game_files_rommFileId ON game_files(rommFileId)")
+
+                db.execSQL("ALTER TABLE download_queue ADD COLUMN gameFileId INTEGER")
+                db.execSQL("ALTER TABLE download_queue ADD COLUMN fileCategory TEXT")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_download_queue_gameFileId ON download_queue(gameFileId)")
             }
         }
     }

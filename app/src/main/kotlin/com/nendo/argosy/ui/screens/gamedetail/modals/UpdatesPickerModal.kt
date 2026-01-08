@@ -13,11 +13,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +44,7 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 fun UpdatesPickerModal(
     files: List<UpdateFileUi>,
     focusIndex: Int,
+    onDownload: (UpdateFileUi) -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -56,6 +62,9 @@ fun UpdatesPickerModal(
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
+    val focusedFile = files.getOrNull(focusIndex)
+    val canDownload = focusedFile?.isDownloaded == false && focusedFile.gameFileId != null
 
     Box(
         modifier = Modifier
@@ -100,7 +109,12 @@ fun UpdatesPickerModal(
                 itemsIndexed(files) { index, file ->
                     UpdateFileItem(
                         file = file,
-                        isFocused = focusIndex == index
+                        isFocused = focusIndex == index,
+                        onClick = {
+                            if (!file.isDownloaded && file.gameFileId != null) {
+                                onDownload(file)
+                            }
+                        }
                     )
                 }
             }
@@ -108,8 +122,9 @@ fun UpdatesPickerModal(
             Spacer(modifier = Modifier.height(16.dp))
 
             FooterBar(
-                hints = listOf(
+                hints = listOfNotNull(
                     InputButton.DPAD_VERTICAL to "Navigate",
+                    if (canDownload) InputButton.SOUTH to "Download" else null,
                     InputButton.EAST to "Back"
                 )
             )
@@ -120,7 +135,8 @@ fun UpdatesPickerModal(
 @Composable
 private fun UpdateFileItem(
     file: UpdateFileUi,
-    isFocused: Boolean
+    isFocused: Boolean,
+    onClick: () -> Unit
 ) {
     val backgroundColor = if (isFocused) {
         MaterialTheme.colorScheme.primaryContainer
@@ -147,39 +163,54 @@ private fun UpdateFileItem(
         UpdateFileType.DLC -> MaterialTheme.colorScheme.secondary
     }
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor, RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .clickable(enabled = !file.isDownloaded, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = file.fileName,
-            style = MaterialTheme.typography.bodyMedium,
-            color = contentColor,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+        Icon(
+            imageVector = if (file.isDownloaded) Icons.Outlined.Check else Icons.Outlined.CloudDownload,
+            contentDescription = if (file.isDownloaded) "Downloaded" else "Available to download",
+            tint = if (file.isDownloaded) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                secondaryColor
+            },
+            modifier = Modifier.size(20.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = typeLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiary,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(typeBgColor)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                text = file.fileName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = formatFileSize(file.sizeBytes),
-                style = MaterialTheme.typography.labelSmall,
-                color = secondaryColor
-            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = typeLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(typeBgColor)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = formatFileSize(file.sizeBytes),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = secondaryColor
+                )
+            }
         }
     }
 }

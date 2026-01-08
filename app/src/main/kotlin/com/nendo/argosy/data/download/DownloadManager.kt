@@ -6,6 +6,7 @@ import android.os.StatFs
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.model.GameSource
@@ -49,6 +50,8 @@ data class DownloadProgress(
     val rommId: Long,
     val discId: Long? = null,
     val discNumber: Int? = null,
+    val gameFileId: Long? = null,
+    val fileCategory: String? = null,
     val fileName: String,
     val gameTitle: String,
     val platformSlug: String,
@@ -67,9 +70,14 @@ data class DownloadProgress(
         get() = if (extractionTotalBytes > 0) extractionBytesWritten.toFloat() / extractionTotalBytes else 0f
 
     val isDiscDownload: Boolean get() = discId != null
+    val isGameFileDownload: Boolean get() = gameFileId != null
 
     val displayTitle: String
-        get() = if (discNumber != null) "$gameTitle (Disc $discNumber)" else gameTitle
+        get() = when {
+            discNumber != null -> "$gameTitle (Disc $discNumber)"
+            fileCategory != null -> "$gameTitle (${fileCategory.replaceFirstChar { it.uppercase() }})"
+            else -> gameTitle
+        }
 }
 
 enum class DownloadState {
@@ -115,6 +123,7 @@ class DownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
+    private val gameFileDao: GameFileDao,
     private val downloadQueueDao: DownloadQueueDao,
     private val platformDao: PlatformDao,
     private val romMRepository: RomMRepository,
@@ -432,6 +441,81 @@ class DownloadManager @Inject constructor(
         }
     }
 
+    suspend fun enqueueGameFileDownload(
+        gameId: Long,
+        gameFileId: Long,
+        rommFileId: Long,
+        romId: Long,
+        fileName: String,
+        category: String,
+        gameTitle: String,
+        platformSlug: String,
+        coverPath: String?,
+        expectedSizeBytes: Long = 0
+    ) {
+        val currentState = _state.value
+        if (currentState.activeDownloads.any { it.gameFileId == gameFileId }) return
+        if (currentState.queue.any { it.gameFileId == gameFileId }) return
+
+        val platformDir = getDownloadDir(platformSlug)
+        val gameFolder = getGameFolder(platformSlug, gameTitle)
+        val categoryFolder = File(gameFolder, category).apply { mkdirs() }
+        val tempFilePath = File(categoryFolder, "${fileName}.tmp").absolutePath
+
+        val entity = DownloadQueueEntity(
+            gameId = gameId,
+            rommId = romId,
+            gameFileId = gameFileId,
+            fileCategory = category,
+            fileName = fileName,
+            gameTitle = gameTitle,
+            platformSlug = platformSlug,
+            coverPath = coverPath,
+            bytesDownloaded = 0,
+            totalBytes = expectedSizeBytes,
+            state = DownloadState.QUEUED.name,
+            errorReason = null,
+            tempFilePath = tempFilePath,
+            createdAt = Instant.now()
+        )
+
+        val id = downloadQueueDao.insert(entity)
+
+        val progress = DownloadProgress(
+            id = id,
+            gameId = gameId,
+            rommId = romId,
+            gameFileId = gameFileId,
+            fileCategory = category,
+            fileName = fileName,
+            gameTitle = gameTitle,
+            platformSlug = platformSlug,
+            coverPath = coverPath,
+            bytesDownloaded = 0,
+            totalBytes = expectedSizeBytes,
+            state = DownloadState.QUEUED
+        )
+
+        if (isInstantDownload(expectedSizeBytes)) {
+            startDownloadJob(progress)
+        } else {
+            _state.value = _state.value.copy(
+                queue = _state.value.queue + progress
+            )
+            processQueue()
+        }
+    }
+
+    private suspend fun getGameFolder(platformSlug: String, gameTitle: String): File {
+        val platformDir = getDownloadDir(platformSlug)
+        val sanitizedTitle = gameTitle
+            .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .take(200)
+        return File(platformDir, sanitizedTitle).apply { mkdirs() }
+    }
+
     private suspend fun processQueue() {
         val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
         val currentActive = _state.value.activeDownloads.size
@@ -553,15 +637,25 @@ class DownloadManager @Inject constructor(
                         }
                     )
 
-                    if (progress.isDiscDownload && progress.discId != null) {
-                        gameDiscDao.updateLocalPath(progress.discId, finalPath)
-                        m3uManager.generateM3uIfComplete(progress.gameId)
-                    } else {
-                        gameDao.updateLocalPath(
-                            progress.gameId,
-                            finalPath,
-                            GameSource.ROMM_SYNCED
-                        )
+                    when {
+                        progress.isGameFileDownload && progress.gameFileId != null -> {
+                            gameFileDao.updateLocalPath(
+                                progress.gameFileId,
+                                finalPath,
+                                Instant.now()
+                            )
+                        }
+                        progress.isDiscDownload && progress.discId != null -> {
+                            gameDiscDao.updateLocalPath(progress.discId, finalPath)
+                            m3uManager.generateM3uIfComplete(progress.gameId)
+                        }
+                        else -> {
+                            gameDao.updateLocalPath(
+                                progress.gameId,
+                                finalPath,
+                                GameSource.ROMM_SYNCED
+                            )
+                        }
                     }
                     return@withContext DownloadResult.Success(progress.totalBytes)
                 }
@@ -665,15 +759,25 @@ class DownloadManager @Inject constructor(
                                     }
                                 )
 
-                                if (progress.isDiscDownload && progress.discId != null) {
-                                    gameDiscDao.updateLocalPath(progress.discId, finalPath)
-                                    m3uManager.generateM3uIfComplete(progress.gameId)
-                                } else {
-                                    gameDao.updateLocalPath(
-                                        progress.gameId,
-                                        finalPath,
-                                        GameSource.ROMM_SYNCED
-                                    )
+                                when {
+                                    progress.isGameFileDownload && progress.gameFileId != null -> {
+                                        gameFileDao.updateLocalPath(
+                                            progress.gameFileId,
+                                            finalPath,
+                                            Instant.now()
+                                        )
+                                    }
+                                    progress.isDiscDownload && progress.discId != null -> {
+                                        gameDiscDao.updateLocalPath(progress.discId, finalPath)
+                                        m3uManager.generateM3uIfComplete(progress.gameId)
+                                    }
+                                    else -> {
+                                        gameDao.updateLocalPath(
+                                            progress.gameId,
+                                            finalPath,
+                                            GameSource.ROMM_SYNCED
+                                        )
+                                    }
                                 }
 
                                 _completionEvents.emit(
@@ -1018,6 +1122,8 @@ class DownloadManager @Inject constructor(
             rommId = rommId,
             discId = discId,
             discNumber = discNumber,
+            gameFileId = gameFileId,
+            fileCategory = fileCategory,
             fileName = fileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,

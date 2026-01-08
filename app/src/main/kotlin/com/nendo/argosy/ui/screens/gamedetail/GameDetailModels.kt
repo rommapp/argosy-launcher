@@ -18,7 +18,11 @@ data class UpdateFileUi(
     val fileName: String,
     val filePath: String,
     val sizeBytes: Long,
-    val type: UpdateFileType = UpdateFileType.UPDATE
+    val type: UpdateFileType = UpdateFileType.UPDATE,
+    val isDownloaded: Boolean = true,
+    val gameFileId: Long? = null,
+    val rommFileId: Long? = null,
+    val romId: Long? = null
 )
 
 enum class UpdateFileType {

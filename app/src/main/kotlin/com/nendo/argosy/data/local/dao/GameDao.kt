@@ -179,6 +179,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE igdbId = :igdbId AND platformId = :platformId")
     suspend fun getByIgdbIdAndPlatform(igdbId: Long, platformId: Long): GameEntity?
 
+    @Query("SELECT * FROM games WHERE igdbId = :igdbId AND platformId = :platformId")
+    suspend fun getAllByIgdbIdAndPlatform(igdbId: Long, platformId: Long): List<GameEntity>
+
     @Query("SELECT * FROM games WHERE steamAppId = :steamAppId")
     suspend fun getBySteamAppId(steamAppId: Long): GameEntity?
 

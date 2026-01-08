@@ -26,6 +26,7 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
@@ -75,6 +76,7 @@ class GameDetailViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
+    private val gameFileDao: GameFileDao,
     private val platformDao: PlatformDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
@@ -308,31 +310,7 @@ class GameDetailViewModel @Inject constructor(
                 loadSaveStatusInfo(gameId, emulatorId!!, game.activeSaveChannel, game.activeSaveTimestamp)
             } else null
 
-            val updateFilesUi = if (ZipExtractor.hasUpdateSupport(game.platformSlug) && game.localPath != null) {
-                ZipExtractor.listUpdateFiles(game.localPath, game.platformSlug).map { file ->
-                    UpdateFileUi(
-                        fileName = file.name,
-                        filePath = file.absolutePath,
-                        sizeBytes = file.length(),
-                        type = UpdateFileType.UPDATE
-                    )
-                }
-            } else {
-                emptyList()
-            }
-
-            val dlcFilesUi = if (ZipExtractor.hasUpdateSupport(game.platformSlug) && game.localPath != null) {
-                ZipExtractor.listDlcFiles(game.localPath, game.platformSlug).map { file ->
-                    UpdateFileUi(
-                        fileName = file.name,
-                        filePath = file.absolutePath,
-                        sizeBytes = file.length(),
-                        type = UpdateFileType.DLC
-                    )
-                }
-            } else {
-                emptyList()
-            }
+            val (updateFilesUi, dlcFilesUi) = loadUpdateAndDlcFiles(gameId, game.platformSlug, game.localPath)
 
             _uiState.update { state ->
                 state.copy(
@@ -510,6 +488,97 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update { state ->
                 state.copy(game = state.game?.copy(achievements = fresh))
             }
+        }
+    }
+
+    private suspend fun loadUpdateAndDlcFiles(
+        gameId: Long,
+        platformSlug: String,
+        localPath: String?
+    ): Pair<List<UpdateFileUi>, List<UpdateFileUi>> {
+        val hasUpdateSupport = ZipExtractor.hasUpdateSupport(platformSlug)
+
+        val localUpdates = if (hasUpdateSupport && localPath != null) {
+            ZipExtractor.listUpdateFiles(localPath, platformSlug).map { file ->
+                UpdateFileUi(
+                    fileName = file.name,
+                    filePath = file.absolutePath,
+                    sizeBytes = file.length(),
+                    type = UpdateFileType.UPDATE,
+                    isDownloaded = true
+                )
+            }
+        } else emptyList()
+
+        val localDlc = if (hasUpdateSupport && localPath != null) {
+            ZipExtractor.listDlcFiles(localPath, platformSlug).map { file ->
+                UpdateFileUi(
+                    fileName = file.name,
+                    filePath = file.absolutePath,
+                    sizeBytes = file.length(),
+                    type = UpdateFileType.DLC,
+                    isDownloaded = true
+                )
+            }
+        } else emptyList()
+
+        val remoteFiles = gameFileDao.getFilesForGame(gameId)
+
+        val remoteUpdates = remoteFiles
+            .filter { it.category == "update" && it.localPath == null }
+            .filter { remote -> localUpdates.none { it.fileName == remote.fileName } }
+            .map { file ->
+                UpdateFileUi(
+                    fileName = file.fileName,
+                    filePath = file.filePath,
+                    sizeBytes = file.fileSize,
+                    type = UpdateFileType.UPDATE,
+                    isDownloaded = false,
+                    gameFileId = file.id,
+                    rommFileId = file.rommFileId,
+                    romId = file.romId
+                )
+            }
+
+        val remoteDlc = remoteFiles
+            .filter { it.category == "dlc" && it.localPath == null }
+            .filter { remote -> localDlc.none { it.fileName == remote.fileName } }
+            .map { file ->
+                UpdateFileUi(
+                    fileName = file.fileName,
+                    filePath = file.filePath,
+                    sizeBytes = file.fileSize,
+                    type = UpdateFileType.DLC,
+                    isDownloaded = false,
+                    gameFileId = file.id,
+                    rommFileId = file.rommFileId,
+                    romId = file.romId
+                )
+            }
+
+        return (localUpdates + remoteUpdates) to (localDlc + remoteDlc)
+    }
+
+    fun downloadUpdateFile(file: UpdateFileUi) {
+        val game = _uiState.value.game ?: return
+        val gameFileId = file.gameFileId ?: return
+        val rommFileId = file.rommFileId ?: return
+        val romId = file.romId ?: return
+
+        viewModelScope.launch {
+            downloadManager.enqueueGameFileDownload(
+                gameId = currentGameId,
+                gameFileId = gameFileId,
+                rommFileId = rommFileId,
+                romId = romId,
+                fileName = file.fileName,
+                category = file.type.name.lowercase(),
+                gameTitle = game.title,
+                platformSlug = game.platformSlug,
+                coverPath = game.coverPath,
+                expectedSizeBytes = file.sizeBytes
+            )
+            notificationManager.showSuccess("Download queued: ${file.fileName}")
         }
     }
 
@@ -1091,9 +1160,14 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    private fun confirmUpdateSelection() {
-        _uiState.update { it.copy(showUpdatesPicker = false) }
-        playGame()
+    private fun confirmUpdatesSelection() {
+        val state = _uiState.value
+        val allFiles = state.updateFiles + state.dlcFiles
+        val focusedFile = allFiles.getOrNull(state.updatesPickerFocusIndex)
+
+        if (focusedFile != null && !focusedFile.isDownloaded && focusedFile.gameFileId != null) {
+            downloadUpdateFile(focusedFile)
+        }
     }
 
     fun installAllUpdatesAndDlc() {
@@ -1787,7 +1861,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showMissingDiscPrompt -> repairAndPlay()
                 state.showExtractionFailedPrompt -> confirmExtractionPromptSelection()
                 state.showCorePicker -> confirmCoreSelection()
-                state.showUpdatesPicker -> { /* Informational only */ }
+                state.showUpdatesPicker -> confirmUpdatesSelection()
                 state.showEmulatorPicker -> confirmEmulatorSelection()
                 state.showSteamLauncherPicker -> confirmSteamLauncherSelection()
                 state.showAddToCollectionModal -> confirmCollectionSelection()

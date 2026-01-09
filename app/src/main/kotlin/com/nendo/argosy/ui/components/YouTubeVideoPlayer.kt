@@ -34,14 +34,21 @@ fun YouTubeVideoPlayer(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_PAUSE -> webView?.onPause()
-                Lifecycle.Event.ON_RESUME -> webView?.onResume()
+                Lifecycle.Event.ON_PAUSE -> {
+                    webView?.evaluateJavascript("if(player && player.pauseVideo) player.pauseVideo();", null)
+                    webView?.onPause()
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    webView?.onResume()
+                    webView?.evaluateJavascript("if(player && player.playVideo) player.playVideo();", null)
+                }
                 else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            webView?.evaluateJavascript("if(player && player.destroy) player.destroy();", null)
             webView?.destroy()
         }
     }

@@ -568,14 +568,14 @@ class ArgosyViewModel @Inject constructor(
             val device = _deviceSettings.value
 
             if (device.isSupported) {
-                when (index) {
-                    0 -> if (device.hasWritePermission) cyclePerformanceMode()
-                    1 -> if (device.hasWritePermission) cycleFanMode()
-                    2 -> if (hasSlider()) { /* slider - no action on confirm */ }
-                    offset -> cycleTheme()
-                    offset + 1 -> toggleHaptic()
-                    offset + 2 -> toggleSound()
-                    offset + 3 -> toggleAmbientAudio()
+                when {
+                    index == 0 && device.hasWritePermission -> cyclePerformanceMode()
+                    index == 1 && device.hasWritePermission -> cycleFanMode()
+                    index == 2 && hasSlider() -> { /* slider - no action on confirm */ }
+                    index == offset -> cycleTheme()
+                    index == offset + 1 -> toggleHaptic()
+                    index == offset + 2 -> toggleSound()
+                    index == offset + 3 -> toggleAmbientAudio()
                 }
             } else {
                 when (index) {

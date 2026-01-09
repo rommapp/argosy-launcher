@@ -6,6 +6,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SearchCandidate
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.usecase.quickmenu.GetTopUnplayedUseCase
 import com.nendo.argosy.ui.screens.common.LibrarySyncBus
 import com.nendo.argosy.util.FuzzySearch
@@ -59,6 +60,8 @@ data class QuickMenuUiState(
     val focusedContentIndex: Int = 0,
     val searchQuery: String = "",
     val searchResults: List<GameRowUi> = emptyList(),
+    val recentSearches: List<String> = emptyList(),
+    val searchInputFocused: Boolean = true,
     val randomGame: GameCardUi? = null,
     val mostPlayedGames: List<GameRowUi> = emptyList(),
     val topUnplayedGames: List<GameRowUi> = emptyList(),
@@ -74,7 +77,8 @@ class QuickMenuViewModel @Inject constructor(
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
     private val getTopUnplayedUseCase: GetTopUnplayedUseCase,
-    private val librarySyncBus: LibrarySyncBus
+    private val librarySyncBus: LibrarySyncBus,
+    private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickMenuUiState())
@@ -136,25 +140,49 @@ class QuickMenuViewModel @Inject constructor(
     }
 
     fun enterContent() {
-        _uiState.update { it.copy(contentFocused = true, focusedContentIndex = 0) }
+        val isSearch = _uiState.value.selectedOrb == QuickMenuOrb.SEARCH
+        _uiState.update {
+            it.copy(
+                contentFocused = true,
+                focusedContentIndex = 0,
+                searchInputFocused = isSearch
+            )
+        }
     }
 
     fun exitContent() {
-        _uiState.update { it.copy(contentFocused = false) }
+        _uiState.update { it.copy(contentFocused = false, searchInputFocused = true) }
     }
 
     fun moveContentUp() {
         _uiState.update { state ->
-            val newIndex = (state.focusedContentIndex - 1).coerceAtLeast(0)
-            state.copy(focusedContentIndex = newIndex)
+            if (state.selectedOrb == QuickMenuOrb.SEARCH && !state.searchInputFocused && state.focusedContentIndex == 0) {
+                state.copy(searchInputFocused = true)
+            } else {
+                val newIndex = (state.focusedContentIndex - 1).coerceAtLeast(0)
+                state.copy(focusedContentIndex = newIndex)
+            }
         }
     }
 
     fun moveContentDown() {
-        val maxIndex = getCurrentContentSize() - 1
         _uiState.update { state ->
-            val newIndex = (state.focusedContentIndex + 1).coerceAtMost(maxIndex.coerceAtLeast(0))
-            state.copy(focusedContentIndex = newIndex)
+            if (state.selectedOrb == QuickMenuOrb.SEARCH && state.searchInputFocused) {
+                val hasItems = if (state.searchQuery.length < 2) {
+                    state.recentSearches.isNotEmpty()
+                } else {
+                    state.searchResults.isNotEmpty()
+                }
+                if (hasItems) {
+                    state.copy(searchInputFocused = false, focusedContentIndex = 0)
+                } else {
+                    state
+                }
+            } else {
+                val maxIndex = getCurrentContentSize() - 1
+                val newIndex = (state.focusedContentIndex + 1).coerceAtMost(maxIndex.coerceAtLeast(0))
+                state.copy(focusedContentIndex = newIndex)
+            }
         }
     }
 
@@ -163,12 +191,41 @@ class QuickMenuViewModel @Inject constructor(
         if (!state.contentFocused) return null
 
         return when (state.selectedOrb) {
-            QuickMenuOrb.SEARCH -> state.searchResults.getOrNull(state.focusedContentIndex)?.id
+            QuickMenuOrb.SEARCH -> {
+                if (state.searchQuery.length < 2) null
+                else state.searchResults.getOrNull(state.focusedContentIndex)?.id
+            }
             QuickMenuOrb.RANDOM -> state.randomGame?.id
             QuickMenuOrb.MOST_PLAYED -> state.mostPlayedGames.getOrNull(state.focusedContentIndex)?.id
             QuickMenuOrb.TOP_UNPLAYED -> state.topUnplayedGames.getOrNull(state.focusedContentIndex)?.id
             QuickMenuOrb.RECENT -> state.recentGames.getOrNull(state.focusedContentIndex)?.id
             QuickMenuOrb.FAVORITES -> state.favoriteGames.getOrNull(state.focusedContentIndex)?.id
+        }
+    }
+
+    fun isOnRecentSearches(): Boolean {
+        val state = _uiState.value
+        return state.selectedOrb == QuickMenuOrb.SEARCH &&
+            state.contentFocused &&
+            !state.searchInputFocused &&
+            state.searchQuery.length < 2 &&
+            state.recentSearches.isNotEmpty()
+    }
+
+    fun selectRecentSearch(index: Int) {
+        val state = _uiState.value
+        val query = state.recentSearches.getOrNull(index) ?: return
+        _uiState.update { it.copy(searchQuery = query, focusedContentIndex = 0) }
+        performSearch(query)
+    }
+
+    fun saveSearchQuery() {
+        val query = _uiState.value.searchQuery
+        if (query.length >= 2) {
+            viewModelScope.launch {
+                preferencesRepository.addLibraryRecentSearch(query)
+                loadRecentSearches()
+            }
         }
     }
 
@@ -186,7 +243,10 @@ class QuickMenuViewModel @Inject constructor(
     private fun getCurrentContentSize(): Int {
         val state = _uiState.value
         return when (state.selectedOrb) {
-            QuickMenuOrb.SEARCH -> state.searchResults.size
+            QuickMenuOrb.SEARCH -> {
+                if (state.searchQuery.length < 2) state.recentSearches.size
+                else state.searchResults.size
+            }
             QuickMenuOrb.RANDOM -> if (state.randomGame != null) 1 else 0
             QuickMenuOrb.MOST_PLAYED -> state.mostPlayedGames.size
             QuickMenuOrb.TOP_UNPLAYED -> state.topUnplayedGames.size
@@ -204,9 +264,15 @@ class QuickMenuViewModel @Inject constructor(
             launch { loadRecent() }
             launch { loadFavorites() }
             launch { loadRandomGame() }
+            launch { loadRecentSearches() }
 
             _uiState.update { it.copy(isLoading = false) }
         }
+    }
+
+    private suspend fun loadRecentSearches() {
+        val prefs = preferencesRepository.preferences.first()
+        _uiState.update { it.copy(recentSearches = prefs.libraryRecentSearches) }
     }
 
     private suspend fun loadMostPlayed() {

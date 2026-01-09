@@ -556,9 +556,36 @@ fun HomeScreen(
                 label = "gameInfoWidth"
             )
             val gameInfoTopPadding by animateDpAsState(
-                targetValue = if (uiState.isVideoPreviewActive) 24.dp else 80.dp,
+                targetValue = if (uiState.isVideoPreviewActive) Dimens.spacingMd else 80.dp,
                 animationSpec = tween(500),
                 label = "gameInfoTopPadding"
+            )
+            val videoTitleBackgroundOffset by animateDpAsState(
+                targetValue = if (uiState.isVideoPreviewActive) 0.dp else (-72).dp,
+                animationSpec = tween(500),
+                label = "videoTitleBackgroundOffset"
+            )
+            val videoTextColor by animateColorAsState(
+                targetValue = if (uiState.isVideoPreviewActive) Color.White else Color.Unspecified,
+                animationSpec = tween(500),
+                label = "videoTextColor"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .offset(y = videoTitleBackgroundOffset)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.85f),
+                                Color.Black.copy(alpha = 0.5f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+                    .height(72.dp)
             )
 
             GameInfo(
@@ -570,6 +597,7 @@ fun HomeScreen(
                 achievementCount = uiState.focusedGame?.achievementCount ?: 0,
                 earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
                 showMetadata = !uiState.isVideoPreviewActive,
+                textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
                 modifier = Modifier
                     .fillMaxWidth(gameInfoWidth)
                     .align(if (uiState.isVideoPreviewActive) Alignment.TopCenter else Alignment.TopEnd)
@@ -760,6 +788,7 @@ private fun GameInfo(
     achievementCount: Int,
     earnedAchievementCount: Int,
     showMetadata: Boolean = true,
+    textColorOverride: Color? = null,
     modifier: Modifier = Modifier
 ) {
     val metadataAlpha by animateFloatAsState(
@@ -767,6 +796,9 @@ private fun GameInfo(
         animationSpec = tween(500),
         label = "metadataAlpha"
     )
+
+    val titleColor = textColorOverride ?: MaterialTheme.colorScheme.onSurface
+    val subtitleColor = textColorOverride?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier
@@ -776,7 +808,7 @@ private fun GameInfo(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = titleColor,
             textAlign = TextAlign.Center
         )
 
@@ -785,7 +817,7 @@ private fun GameInfo(
             Text(
                 text = developer,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = subtitleColor,
                 modifier = Modifier.graphicsLayer { alpha = metadataAlpha }
             )
         }
@@ -806,13 +838,13 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Default.People,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = textColorOverride ?: MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "${rating.toInt()}%",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = subtitleColor
                         )
                     }
                 }
@@ -824,13 +856,13 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700),
+                            tint = textColorOverride ?: Color(0xFFFFD700),
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "$userRating/10",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = subtitleColor
                         )
                     }
                 }
@@ -842,13 +874,13 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Default.Whatshot,
                             contentDescription = null,
-                            tint = Color(0xFFE53935),
+                            tint = textColorOverride ?: Color(0xFFE53935),
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "$userDifficulty/10",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = subtitleColor
                         )
                     }
                 }
@@ -860,13 +892,13 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Filled.EmojiEvents,
                             contentDescription = null,
-                            tint = Color(0xFFFFB300),
+                            tint = textColorOverride ?: Color(0xFFFFB300),
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "$earnedAchievementCount/$achievementCount",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = subtitleColor
                         )
                     }
                 }

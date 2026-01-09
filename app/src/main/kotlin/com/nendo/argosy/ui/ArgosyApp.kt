@@ -148,7 +148,7 @@ fun ArgosyApp(
     }
 
     // Quick settings input handler
-    val quickSettingsInputHandler = remember {
+    val quickSettingsInputHandler = remember(viewModel, inputDispatcher) {
         viewModel.createQuickSettingsInputHandler(
             onDismiss = {
                 inputDispatcher.unsubscribeDrawer()

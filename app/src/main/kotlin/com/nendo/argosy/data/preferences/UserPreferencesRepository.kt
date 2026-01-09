@@ -717,7 +717,7 @@ class UserPreferencesRepository @Inject constructor(
                 ?.filter { it.isNotBlank() }
                 ?: emptyList()
             val updated = listOf(query) + current.filter { it != query }
-            prefs[Keys.LIBRARY_RECENT_SEARCHES] = updated.take(5).joinToString(",")
+            prefs[Keys.LIBRARY_RECENT_SEARCHES] = updated.take(10).joinToString(",")
         }
     }
 

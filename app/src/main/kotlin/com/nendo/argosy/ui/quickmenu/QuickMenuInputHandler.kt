@@ -14,10 +14,15 @@ class QuickMenuInputHandler(
         if (!state.isVisible) return InputResult.UNHANDLED
 
         if (state.contentFocused) {
-            if (state.focusedContentIndex == 0 || state.selectedOrb == QuickMenuOrb.RANDOM) {
-                viewModel.exitContent()
-            } else {
-                viewModel.moveContentUp()
+            val isSearchWithInput = state.selectedOrb == QuickMenuOrb.SEARCH && state.searchInputFocused
+            val isAtFirstItem = state.focusedContentIndex == 0 && !state.searchInputFocused
+            val isRandom = state.selectedOrb == QuickMenuOrb.RANDOM
+
+            when {
+                isSearchWithInput || isRandom -> viewModel.exitContent()
+                isAtFirstItem && state.selectedOrb == QuickMenuOrb.SEARCH -> viewModel.moveContentUp()
+                isAtFirstItem -> viewModel.exitContent()
+                else -> viewModel.moveContentUp()
             }
         }
         return InputResult.HANDLED
@@ -60,9 +65,14 @@ class QuickMenuInputHandler(
         if (!state.isVisible) return InputResult.UNHANDLED
 
         if (state.contentFocused) {
-            viewModel.getSelectedGameId()?.let { gameId ->
-                viewModel.hide()
-                onGameSelect(gameId)
+            if (viewModel.isOnRecentSearches()) {
+                viewModel.selectRecentSearch(state.focusedContentIndex)
+            } else {
+                viewModel.getSelectedGameId()?.let { gameId ->
+                    viewModel.saveSearchQuery()
+                    viewModel.hide()
+                    onGameSelect(gameId)
+                }
             }
         } else {
             viewModel.enterContent()

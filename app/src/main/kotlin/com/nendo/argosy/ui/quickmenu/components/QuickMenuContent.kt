@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -76,8 +77,10 @@ fun QuickMenuContent(
             QuickMenuOrb.SEARCH -> SearchContent(
                 query = uiState.searchQuery,
                 results = uiState.searchResults,
+                recentSearches = uiState.recentSearches,
                 focusedIndex = uiState.focusedContentIndex,
-                isFocused = isFocused,
+                isInputFocused = isFocused && uiState.searchInputFocused,
+                isListFocused = isFocused && !uiState.searchInputFocused,
                 onQueryChange = onSearchQueryChange,
                 onGameSelect = onGameSelect
             )
@@ -122,19 +125,28 @@ fun QuickMenuContent(
 private fun SearchContent(
     query: String,
     results: List<GameRowUi>,
+    recentSearches: List<String>,
     focusedIndex: Int,
-    isFocused: Boolean,
+    isInputFocused: Boolean,
+    isListFocused: Boolean,
     onQueryChange: (String) -> Unit,
     onGameSelect: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val inputShape = RoundedCornerShape(12.dp)
+    val inputBorderModifier = if (isInputFocused) {
+        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, inputShape)
+    } else Modifier
+
     Column(modifier = modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .then(inputBorderModifier)
                 .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(12.dp)
+                    if (isInputFocused) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant,
+                    inputShape
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -172,14 +184,22 @@ private fun SearchContent(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         if (query.length < 2) {
-            EmptyState(message = "Type at least 2 characters to search")
+            if (recentSearches.isNotEmpty()) {
+                RecentSearchesList(
+                    searches = recentSearches,
+                    focusedIndex = focusedIndex,
+                    isFocused = isListFocused
+                )
+            } else {
+                EmptyState(message = "Type at least 2 characters to search")
+            }
         } else if (results.isEmpty()) {
             EmptyState(message = "No games found for \"$query\"")
         } else {
             GameList(
                 games = results,
                 focusedIndex = focusedIndex,
-                isFocused = isFocused,
+                isFocused = isListFocused,
                 onGameSelect = onGameSelect
             )
         }
@@ -376,6 +396,92 @@ private fun GameList(
                 onClick = { onGameSelect(game.id) }
             )
         }
+    }
+}
+
+@Composable
+private fun RecentSearchesList(
+    searches: List<String>,
+    focusedIndex: Int,
+    isFocused: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(focusedIndex) {
+        if (searches.isNotEmpty() && focusedIndex in searches.indices) {
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val viewportHeight = listState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size } / visibleItems.size
+            } else 56
+
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            listState.animateScrollToItem(focusedIndex, -targetOffset)
+        }
+    }
+
+    Column(modifier = modifier) {
+        Text(
+            text = "Recent Searches",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = Dimens.spacingSm)
+        )
+
+        LazyColumn(
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+        ) {
+            itemsIndexed(searches, key = { index, _ -> index }) { index, query ->
+                RecentSearchRow(
+                    query = query,
+                    isFocused = isFocused && index == focusedIndex
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentSearchRow(
+    query: String,
+    isFocused: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(8.dp)
+    val borderModifier = if (isFocused) {
+        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+    } else Modifier
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(borderModifier)
+            .background(
+                if (isFocused) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surface,
+                shape
+            )
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        Icon(
+            Icons.Default.History,
+            contentDescription = null,
+            tint = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = query,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

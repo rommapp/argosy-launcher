@@ -637,8 +637,13 @@ class DownloadManager @Inject constructor(
                         }
                     )
 
+                    Log.d(TAG, "processDownloadedFile returned: $finalPath")
+                    Log.d(TAG, "  targetFile was: ${targetFile.absolutePath}")
+                    Log.d(TAG, "  gameTitle: ${progress.gameTitle}")
+
                     when {
                         progress.isGameFileDownload && progress.gameFileId != null -> {
+                            Log.d(TAG, "Storing localPath to DB (gameFile): gameFileId=${progress.gameFileId}, path=$finalPath")
                             gameFileDao.updateLocalPath(
                                 progress.gameFileId,
                                 finalPath,
@@ -646,10 +651,12 @@ class DownloadManager @Inject constructor(
                             )
                         }
                         progress.isDiscDownload && progress.discId != null -> {
+                            Log.d(TAG, "Storing localPath to DB (disc): discId=${progress.discId}, path=$finalPath")
                             gameDiscDao.updateLocalPath(progress.discId, finalPath)
                             m3uManager.generateM3uIfComplete(progress.gameId)
                         }
                         else -> {
+                            Log.d(TAG, "Storing localPath to DB (game): gameId=${progress.gameId}, path=$finalPath")
                             gameDao.updateLocalPath(
                                 progress.gameId,
                                 finalPath,
@@ -759,8 +766,13 @@ class DownloadManager @Inject constructor(
                                     }
                                 )
 
+                                Log.d(TAG, "processDownloadedFile returned: $finalPath")
+                                Log.d(TAG, "  targetFile was: ${targetFile.absolutePath}")
+                                Log.d(TAG, "  gameTitle: ${progress.gameTitle}")
+
                                 when {
                                     progress.isGameFileDownload && progress.gameFileId != null -> {
+                                        Log.d(TAG, "Storing localPath to DB (gameFile): gameFileId=${progress.gameFileId}, path=$finalPath")
                                         gameFileDao.updateLocalPath(
                                             progress.gameFileId,
                                             finalPath,
@@ -768,10 +780,12 @@ class DownloadManager @Inject constructor(
                                         )
                                     }
                                     progress.isDiscDownload && progress.discId != null -> {
+                                        Log.d(TAG, "Storing localPath to DB (disc): discId=${progress.discId}, path=$finalPath")
                                         gameDiscDao.updateLocalPath(progress.discId, finalPath)
                                         m3uManager.generateM3uIfComplete(progress.gameId)
                                     }
                                     else -> {
+                                        Log.d(TAG, "Storing localPath to DB (game): gameId=${progress.gameId}, path=$finalPath")
                                         gameDao.updateLocalPath(
                                             progress.gameId,
                                             finalPath,
@@ -835,9 +849,11 @@ class DownloadManager @Inject constructor(
             onExtractionProgress(0L, targetFile.length())
         }
 
+        Log.d(TAG, "processDownloadedFile: targetFile=${targetFile.absolutePath}, shouldExtract=$shouldExtract, isNsw=${ZipExtractor.isNswPlatform(platformSlug)}, isDisc=$isDiscDownload")
+
         return when {
             shouldExtract -> {
-                // Extract zips with multiple files or folder structure
+                Log.d(TAG, "processDownloadedFile: BRANCH=ZIP_EXTRACT")
                 val extracted = ZipExtractor.extractFolderRom(
                     zipFilePath = targetFile,
                     gameTitle = gameTitle,
@@ -845,6 +861,7 @@ class DownloadManager @Inject constructor(
                     onProgress = onExtractionProgress
                 )
                 val resultPath = extracted.launchPath
+                Log.d(TAG, "processDownloadedFile: extracted.launchPath=$resultPath, extracted.gameFolder=${extracted.gameFolder}")
                 if (File(resultPath).exists()) {
                     if (targetFile.isFile) {
                         targetFile.delete()
@@ -855,18 +872,25 @@ class DownloadManager @Inject constructor(
                 }
             }
             ZipExtractor.isNswPlatform(platformSlug) -> {
+                Log.d(TAG, "processDownloadedFile: BRANCH=NSW_ORGANIZE")
                 val organizedFile = ZipExtractor.organizeNswSingleFile(
                     romFile = targetFile,
                     gameTitle = gameTitle,
                     platformDir = platformDir
                 )
+                Log.d(TAG, "processDownloadedFile: organizedFile=${organizedFile.absolutePath}")
                 organizedFile.absolutePath
             }
             isDiscDownload && M3uManager.supportsM3u(platformSlug) -> {
-                // Organize disc files into game folder for m3u-capable platforms
-                organizeDiscFile(targetFile, gameTitle, platformDir)
+                Log.d(TAG, "processDownloadedFile: BRANCH=DISC_ORGANIZE")
+                val result = organizeDiscFile(targetFile, gameTitle, platformDir)
+                Log.d(TAG, "processDownloadedFile: discResult=$result")
+                result
             }
-            else -> targetFile.absolutePath
+            else -> {
+                Log.d(TAG, "processDownloadedFile: BRANCH=PASSTHROUGH (no processing)")
+                targetFile.absolutePath
+            }
         }
     }
 

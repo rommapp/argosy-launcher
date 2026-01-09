@@ -304,8 +304,12 @@ class CollectionDetailViewModel @Inject constructor(
         onBack: () -> Unit,
         onGameClick: (Long) -> Unit
     ): InputHandler = object : InputHandler {
+        private fun hasDialogOpen(state: CollectionDetailUiState): Boolean =
+            state.showEditDialog || state.showDeleteDialog || state.showRemoveGameDialog
+
         override fun onUp(): InputResult {
             val state = uiState.value
+            if (hasDialogOpen(state)) return InputResult.UNHANDLED
             when {
                 state.showOptionsModal -> {
                     moveOptionsFocus(-1)
@@ -320,6 +324,7 @@ class CollectionDetailViewModel @Inject constructor(
 
         override fun onDown(): InputResult {
             val state = uiState.value
+            if (hasDialogOpen(state)) return InputResult.UNHANDLED
             when {
                 state.showOptionsModal -> {
                     moveOptionsFocus(1)
@@ -334,6 +339,7 @@ class CollectionDetailViewModel @Inject constructor(
 
         override fun onConfirm(): InputResult {
             val state = uiState.value
+            if (hasDialogOpen(state)) return InputResult.UNHANDLED
             when {
                 state.showOptionsModal -> {
                     confirmOptionSelection()
@@ -349,6 +355,18 @@ class CollectionDetailViewModel @Inject constructor(
         override fun onBack(): InputResult {
             val state = uiState.value
             when {
+                state.showEditDialog -> {
+                    hideEditDialog()
+                    return InputResult.HANDLED
+                }
+                state.showDeleteDialog -> {
+                    hideDeleteDialog()
+                    return InputResult.HANDLED
+                }
+                state.showRemoveGameDialog -> {
+                    hideRemoveGameDialog()
+                    return InputResult.HANDLED
+                }
                 state.showOptionsModal -> {
                     hideOptionsModal()
                     return InputResult.HANDLED

@@ -125,6 +125,7 @@ fun CollectionDetailScreen(
                         ),
                         verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
                     ) {
+                        val hasDialogOpen = uiState.showEditDialog || uiState.showDeleteDialog || uiState.showRemoveGameDialog
                         itemsIndexed(uiState.games, key = { _, g -> g.id }) { index, game ->
                             WideGameCard(
                                 title = game.title,
@@ -137,7 +138,7 @@ fun CollectionDetailScreen(
                                 userDifficulty = game.userDifficulty,
                                 achievementCount = game.achievementCount,
                                 playTimeMinutes = game.playTimeMinutes,
-                                isFocused = uiState.focusedIndex == index,
+                                isFocused = !hasDialogOpen && uiState.focusedIndex == index,
                                 onClick = { onGameClick(game.id) }
                             )
                         }

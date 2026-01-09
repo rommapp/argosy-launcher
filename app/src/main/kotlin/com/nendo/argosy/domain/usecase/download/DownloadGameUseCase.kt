@@ -66,7 +66,10 @@ class DownloadGameUseCase @Inject constructor(
         return when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
                 val rom = result.data
-                var fileName = rom.fileName ?: "${game.title}.rom"
+                val mainFile = rom.files?.singleOrNull { it.category == null }
+                var fileName = mainFile?.fileName
+                    ?: rom.fileName
+                    ?: "${game.title}.rom"
 
                 if (rom.multi) {
                     val hasExtension = fileName.contains('.')

@@ -66,6 +66,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 
     val maxIndex = 2 + uiState.steam.installedLaunchers.size
+    val hasDialogOpen = uiState.steam.showAddGameDialog
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex in 0..maxIndex) {
@@ -101,7 +102,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 icon = icon,
                 title = "Storage Permission",
                 subtitle = subtitle,
-                isFocused = uiState.focusedIndex == 0,
+                isFocused = !hasDialogOpen && uiState.focusedIndex == 0,
                 onClick = {
                     if (!uiState.steam.hasStoragePermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
@@ -119,14 +120,14 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 InfoPreference(
                     title = "No Steam Launchers",
                     value = "Install GameHub Lite or GameNative",
-                    isFocused = uiState.focusedIndex == 1,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == 1,
                     icon = Icons.Default.Info
                 )
             }
         } else {
             itemsIndexed(uiState.steam.installedLaunchers) { index, launcher ->
                 val isSyncingThis = uiState.steam.isSyncing && uiState.steam.syncingLauncher == launcher.packageName
-                val isFocused = uiState.focusedIndex == index + 1
+                val isFocused = !hasDialogOpen && uiState.focusedIndex == index + 1
                 val isEnabled = uiState.steam.hasStoragePermission && !uiState.steam.isSyncing
 
                 SteamLauncherPreference(
@@ -150,7 +151,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 icon = Icons.Default.Sync,
                 title = "Refresh Metadata",
                 subtitle = if (isRefreshing) "Refreshing..." else "Update screenshots and backgrounds",
-                isFocused = uiState.focusedIndex == refreshIndex,
+                isFocused = !hasDialogOpen && uiState.focusedIndex == refreshIndex,
                 isEnabled = !uiState.steam.isSyncing,
                 onClick = { viewModel.refreshSteamMetadata() }
             )

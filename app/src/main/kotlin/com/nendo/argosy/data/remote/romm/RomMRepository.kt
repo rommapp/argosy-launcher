@@ -3,7 +3,6 @@ package com.nendo.argosy.data.remote.romm
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.util.Logger
-import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.CollectionDao
 import java.io.File
 import com.nendo.argosy.data.local.dao.GameDao
@@ -64,7 +63,6 @@ class RomMRepository @Inject constructor(
     private val platformDao: PlatformDao,
     private val pendingSyncDao: PendingSyncDao,
     private val orphanedFileDao: OrphanedFileDao,
-    private val emulatorConfigDao: EmulatorConfigDao,
     private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>,
@@ -169,31 +167,55 @@ class RomMRepository @Inject constructor(
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {
         _connectionState.value = ConnectionState.Connecting
 
-        val normalizedUrl = url.trimEnd('/') + "/"
-        baseUrl = normalizedUrl
-        accessToken = token
+        val urlsToTry = buildUrlsToTry(url)
+        var lastError: String? = null
 
-        return try {
-            val newApi = createApi(normalizedUrl, token)
-            val response = newApi.heartbeat()
+        for (candidateUrl in urlsToTry) {
+            val normalizedUrl = candidateUrl.trimEnd('/') + "/"
+            try {
+                val newApi = createApi(normalizedUrl, token)
+                val response = newApi.heartbeat()
 
-            if (response.isSuccessful) {
-                api = newApi
-                saveSyncRepository.get().setApi(api)
-                biosRepository.setApi(api)
-                val version = response.body()?.version ?: "unknown"
-                _connectionState.value = ConnectionState.Connected(version)
-                Logger.info(TAG, "connect: success, version=$version")
-                RomMResult.Success(version)
-            } else {
-                Logger.info(TAG, "connect: heartbeat failed with ${response.code()}")
-                _connectionState.value = ConnectionState.Failed("Server returned ${response.code()}")
-                RomMResult.Error("Connection failed", response.code())
+                if (response.isSuccessful) {
+                    baseUrl = normalizedUrl
+                    accessToken = token
+                    api = newApi
+                    saveSyncRepository.get().setApi(api)
+                    biosRepository.setApi(api)
+                    val version = response.body()?.version ?: "unknown"
+                    _connectionState.value = ConnectionState.Connected(version)
+                    Logger.info(TAG, "connect: success at $normalizedUrl, version=$version")
+                    return RomMResult.Success(normalizedUrl)
+                } else {
+                    lastError = "Server returned ${response.code()}"
+                    Logger.info(TAG, "connect: heartbeat failed at $normalizedUrl with ${response.code()}")
+                }
+            } catch (e: Exception) {
+                lastError = e.message ?: "Connection failed"
+                Logger.info(TAG, "connect: exception at $normalizedUrl: ${e.message}")
             }
-        } catch (e: Exception) {
-            Logger.info(TAG, "connect: exception: ${e.message}")
-            _connectionState.value = ConnectionState.Failed(e.message ?: "Unknown error")
-            RomMResult.Error(e.message ?: "Connection failed")
+        }
+
+        _connectionState.value = ConnectionState.Failed(lastError ?: "Connection failed")
+        return RomMResult.Error(lastError ?: "Connection failed")
+    }
+
+    private fun buildUrlsToTry(url: String): List<String> {
+        val trimmed = url.trim()
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return listOf(trimmed)
+        }
+
+        val hostPart = trimmed.removePrefix("//")
+        val isIpAddress = hostPart.split("/").first().split(":").first().let { host ->
+            host.matches(Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")) ||
+                host == "localhost"
+        }
+
+        return if (isIpAddress) {
+            listOf("http://$hostPart", "https://$hostPart")
+        } else {
+            listOf("https://$hostPart", "http://$hostPart")
         }
     }
 
@@ -268,7 +290,7 @@ class RomMRepository @Inject constructor(
     private suspend fun doSyncPlatform(platformId: Long): SyncResult {
         val currentApi = api ?: return SyncResult(0, 0, 0, 0, listOf("Not connected"))
 
-        val localPlatform = platformDao.getById(platformId)
+        platformDao.getById(platformId)
             ?: return SyncResult(0, 0, 0, 0, listOf("Platform not found locally"))
 
         val prefs = userPreferencesRepository.preferences.first()

@@ -96,6 +96,7 @@ private fun GameDataContent(
 
     val steamBaseIndex = calculateSteamBaseIndex(isConnected, saveSyncEnabled)
     val steamItemCount = if (launcherCount > 0) launcherCount + 1 else 1
+    val hasDialogOpen = uiState.steam.showAddGameDialog
 
     val sections = buildGameDataSections(isConnected, saveSyncEnabled, launcherCount)
     val focusToListIndex: (Int) -> Int = { focusIndex ->
@@ -126,7 +127,7 @@ private fun GameDataContent(
                     ConnectionStatus.OFFLINE -> "${uiState.server.rommUrl} (offline)"
                     ConnectionStatus.NOT_CONFIGURED -> "Not configured"
                 },
-                isFocused = uiState.focusedIndex == 0,
+                isFocused = !hasDialogOpen && uiState.focusedIndex == 0,
                 onClick = { viewModel.startRommConfig() }
             )
         }
@@ -142,7 +143,7 @@ private fun GameDataContent(
                     icon = Icons.Default.Tune,
                     title = "Sync Settings",
                     subtitle = "Filters and media options",
-                    isFocused = uiState.focusedIndex == 1,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == 1,
                     onClick = { viewModel.navigateToSection(SettingsSection.SYNC_SETTINGS) }
                 )
             }
@@ -161,7 +162,7 @@ private fun GameDataContent(
                     icon = Icons.AutoMirrored.Filled.LibraryBooks,
                     title = "Sync Library",
                     subtitle = lastSyncText,
-                    isFocused = uiState.focusedIndex == 2,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == 2,
                     isEnabled = isOnline,
                     onClick = { viewModel.syncRomm() }
                 )
@@ -184,7 +185,7 @@ private fun GameDataContent(
                     title = "Accurate Play Time",
                     subtitle = subtitle,
                     isEnabled = isEnabled,
-                    isFocused = uiState.focusedIndex == 3,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == 3,
                     onToggle = { enabled ->
                         if (enabled && !hasPermission) {
                             viewModel.openUsageStatsSettings()
@@ -210,7 +211,7 @@ private fun GameDataContent(
                     title = "Save Sync",
                     subtitle = "Sync game saves with server",
                     isEnabled = saveSyncEnabled,
-                    isFocused = uiState.focusedIndex == 4,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == 4,
                     onToggle = { viewModel.toggleSaveSync() }
                 )
             }
@@ -219,7 +220,7 @@ private fun GameDataContent(
                     CyclePreference(
                         title = "Local Save Cache",
                         value = "${uiState.syncSettings.saveCacheLimit} saves per game",
-                        isFocused = uiState.focusedIndex == 5,
+                        isFocused = !hasDialogOpen && uiState.focusedIndex == 5,
                         onClick = { viewModel.cycleSaveCacheLimit() }
                     )
                 }
@@ -233,7 +234,7 @@ private fun GameDataContent(
                         icon = Icons.Default.Sync,
                         title = "Sync Saves",
                         subtitle = pendingText,
-                        isFocused = uiState.focusedIndex == 6,
+                        isFocused = !hasDialogOpen && uiState.focusedIndex == 6,
                         isEnabled = isOnline,
                         onClick = { viewModel.runSaveSyncNow() }
                     )
@@ -257,7 +258,7 @@ private fun GameDataContent(
                 icon = Icons.Default.PhoneAndroid,
                 title = "Scan for Android Games",
                 subtitle = subtitle,
-                isFocused = uiState.focusedIndex == androidBaseIndex,
+                isFocused = !hasDialogOpen && uiState.focusedIndex == androidBaseIndex,
                 isEnabled = !uiState.android.isScanning,
                 onClick = { viewModel.scanForAndroidGames() }
             )
@@ -281,7 +282,7 @@ private fun GameDataContent(
                 InfoPreference(
                     title = "No Steam Launchers",
                     value = "Install from Emulators settings",
-                    isFocused = uiState.focusedIndex == steamBaseIndex,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == steamBaseIndex,
                     icon = Icons.Default.Info
                 )
             }
@@ -289,7 +290,7 @@ private fun GameDataContent(
             itemsIndexed(uiState.steam.installedLaunchers) { index, launcher ->
                 val isSyncingThis = uiState.steam.isSyncing && uiState.steam.syncingLauncher == launcher.packageName
                 val itemIndex = steamBaseIndex + index
-                val isFocused = uiState.focusedIndex == itemIndex
+                val isFocused = !hasDialogOpen && uiState.focusedIndex == itemIndex
                 val isEnabled = uiState.steam.hasStoragePermission && !uiState.steam.isSyncing
 
                 SteamLauncherPreference(
@@ -312,7 +313,7 @@ private fun GameDataContent(
                     icon = Icons.Default.Sync,
                     title = "Refresh Metadata",
                     subtitle = if (isRefreshing) "Refreshing..." else "Update screenshots and backgrounds",
-                    isFocused = uiState.focusedIndex == refreshIndex,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == refreshIndex,
                     isEnabled = !uiState.steam.isSyncing,
                     onClick = { viewModel.refreshSteamMetadata() }
                 )

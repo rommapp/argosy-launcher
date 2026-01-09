@@ -119,10 +119,11 @@ private fun NotificationBar(
     val baseColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f)
     val backgroundColor = colors.tint.copy(alpha = 0.15f).compositeOver(baseColor)
     val textColor = MaterialTheme.colorScheme.onSurface
+    val isError = notification.type == NotificationType.ERROR
 
     Row(
         modifier = modifier
-            .widthIn(max = 280.dp)
+            .widthIn(max = if (isError) 360.dp else 280.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(backgroundColor)
             .padding(8.dp),
@@ -149,12 +150,13 @@ private fun NotificationBar(
         Spacer(modifier = Modifier.width(8.dp))
 
         Column(modifier = Modifier.weight(1f)) {
+            val isError = notification.type == NotificationType.ERROR
             Text(
                 text = notification.title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = textColor,
-                maxLines = 1,
+                maxLines = if (isError) 2 else 1,
                 overflow = TextOverflow.Ellipsis
             )
             notification.subtitle?.let { subtitle ->
@@ -162,7 +164,7 @@ private fun NotificationBar(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = textColor.copy(alpha = 0.7f),
-                    maxLines = 1,
+                    maxLines = if (isError) 3 else 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }

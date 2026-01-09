@@ -139,10 +139,11 @@ fun CollectionsScreen(
                 )
             }
 
+            val hasDialogOpen = uiState.showCreateDialog || uiState.showDeleteDialog
             if (uiState.collections.isEmpty()) {
                 item {
                     NewCollectionRow(
-                        isFocused = uiState.isNewCollectionItemFocused,
+                        isFocused = !hasDialogOpen && uiState.isNewCollectionItemFocused,
                         onClick = { viewModel.showCreateDialog() }
                     )
                 }
@@ -150,14 +151,14 @@ fun CollectionsScreen(
                 itemsIndexed(uiState.collections, key = { _, c -> c.id }) { index, collection ->
                     CollectionRow(
                         collection = collection,
-                        isFocused = uiState.focusedSection == CollectionSection.MY_COLLECTIONS && uiState.focusedIndex == index,
+                        isFocused = !hasDialogOpen && uiState.focusedSection == CollectionSection.MY_COLLECTIONS && uiState.focusedIndex == index,
                         isPinned = collection.id in uiState.pinnedCollectionIds,
                         onClick = { onCollectionClick(collection.id) }
                     )
                 }
                 item(key = "new_collection") {
                     NewCollectionRow(
-                        isFocused = uiState.isNewCollectionItemFocused,
+                        isFocused = !hasDialogOpen && uiState.isNewCollectionItemFocused,
                         onClick = { viewModel.showCreateDialog() }
                     )
                 }
@@ -178,7 +179,7 @@ fun CollectionsScreen(
                     icon = Icons.Default.Style,
                     label = "Genres",
                     count = uiState.genres.size,
-                    isFocused = uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 0,
+                    isFocused = !hasDialogOpen && uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 0,
                     onClick = { onVirtualBrowseClick("genres") }
                 )
             }
@@ -188,7 +189,7 @@ fun CollectionsScreen(
                     icon = Icons.Default.SportsEsports,
                     label = "Game Modes",
                     count = uiState.gameModes.size,
-                    isFocused = uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 1,
+                    isFocused = !hasDialogOpen && uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 1,
                     onClick = { onVirtualBrowseClick("modes") }
                 )
             }

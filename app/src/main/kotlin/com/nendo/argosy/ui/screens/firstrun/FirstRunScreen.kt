@@ -836,7 +836,9 @@ private fun PlatformSelectStep(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(32.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp)
     ) {
         Text(
             text = "SELECT PLATFORMS",
@@ -860,7 +862,7 @@ private fun PlatformSelectStep(
             state = listState,
             modifier = Modifier
                 .fillMaxWidth(0.9f)
-                .heightIn(max = 300.dp),
+                .weight(1f),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
             itemsIndexed(platforms, key = { _, p -> p.id }) { index, platform ->

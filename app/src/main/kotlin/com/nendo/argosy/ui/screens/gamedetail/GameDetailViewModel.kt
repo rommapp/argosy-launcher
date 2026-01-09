@@ -1647,6 +1647,7 @@ class GameDetailViewModel @Inject constructor(
                 }
                 state.showScreenshotViewer -> InputResult.UNHANDLED
                 state.showRatingPicker -> InputResult.UNHANDLED
+                state.showPermissionModal -> InputResult.UNHANDLED
                 state.showStatusPicker -> {
                     changeStatusValue(-1)
                     InputResult.HANDLED
@@ -1696,6 +1697,7 @@ class GameDetailViewModel @Inject constructor(
                 }
                 state.showScreenshotViewer -> InputResult.UNHANDLED
                 state.showRatingPicker -> InputResult.UNHANDLED
+                state.showPermissionModal -> InputResult.UNHANDLED
                 state.showStatusPicker -> {
                     changeStatusValue(1)
                     InputResult.HANDLED
@@ -1856,6 +1858,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.isVisible -> confirmSaveCacheSelection()
                 state.showScreenshotViewer -> closeScreenshotViewer()
                 isInScreenshotsSection() && state.game?.screenshots?.isNotEmpty() == true -> openScreenshotViewer()
+                state.showPermissionModal -> return InputResult.UNHANDLED
                 state.showRatingPicker -> confirmRating()
                 state.showStatusPicker -> confirmStatus()
                 state.showMissingDiscPrompt -> repairAndPlay()
@@ -1889,6 +1892,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showUpdatesPicker -> dismissUpdatesPicker()
                 state.showEmulatorPicker -> dismissEmulatorPicker()
                 state.showSteamLauncherPicker -> dismissSteamLauncherPicker()
+                state.showPermissionModal -> dismissPermissionModal()
                 state.showAddToCollectionModal -> dismissAddToCollectionModal()
                 state.showMoreOptions -> toggleMoreOptions()
                 else -> onBack()

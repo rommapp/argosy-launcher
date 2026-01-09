@@ -70,10 +70,12 @@ class GameLauncher @Inject constructor(
                 Logger.warn(TAG, "launch() failed: no local path for game")
             }
 
+        Logger.debug(TAG, "launch: gameId=$gameId, localPath=$romPath")
+
         var romFile = File(romPath)
         if (!romFile.exists()) {
             return LaunchResult.NoRomFile(romPath).also {
-                Logger.warn(TAG, "launch() failed: ROM file missing: ${romFile.name}")
+                Logger.warn(TAG, "launch() failed: ROM file missing: ${romFile.name}, fullPath=$romPath")
             }
         }
 

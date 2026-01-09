@@ -339,6 +339,9 @@ class CollectionsViewModel @Inject constructor(
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
             val state = uiState.value
+            if (state.showCreateDialog || state.showDeleteDialog) {
+                return InputResult.UNHANDLED
+            }
             if (state.showOptionsModal) {
                 moveOptionsUp()
             } else {
@@ -349,6 +352,9 @@ class CollectionsViewModel @Inject constructor(
 
         override fun onDown(): InputResult {
             val state = uiState.value
+            if (state.showCreateDialog || state.showDeleteDialog) {
+                return InputResult.UNHANDLED
+            }
             if (state.showOptionsModal) {
                 moveOptionsDown()
             } else {
@@ -359,6 +365,9 @@ class CollectionsViewModel @Inject constructor(
 
         override fun onConfirm(): InputResult {
             val state = uiState.value
+            if (state.showCreateDialog || state.showDeleteDialog) {
+                return InputResult.UNHANDLED
+            }
             if (state.showOptionsModal) {
                 selectOption()
                 return InputResult.HANDLED
@@ -383,6 +392,14 @@ class CollectionsViewModel @Inject constructor(
 
         override fun onBack(): InputResult {
             val state = uiState.value
+            if (state.showCreateDialog) {
+                hideCreateDialog()
+                return InputResult.HANDLED
+            }
+            if (state.showDeleteDialog) {
+                hideDeleteDialog()
+                return InputResult.HANDLED
+            }
             if (state.showOptionsModal) {
                 hideOptionsModal()
                 return InputResult.HANDLED

@@ -5,7 +5,7 @@ fun NotificationManager.showError(message: String) {
         title = "Error",
         subtitle = message,
         type = NotificationType.ERROR,
-        duration = NotificationDuration.SHORT
+        duration = NotificationDuration.LONG
     )
 }
 

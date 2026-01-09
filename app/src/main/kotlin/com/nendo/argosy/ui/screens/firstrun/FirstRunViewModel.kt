@@ -84,7 +84,8 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.PLATFORM_SELECT -> FirstRunStep.COMPLETE
                 FirstRunStep.COMPLETE -> FirstRunStep.COMPLETE
             }
-            state.copy(currentStep = nextStep, focusedIndex = 0)
+            val initialFocus = if (nextStep == FirstRunStep.IMAGE_CACHE) 1 else 0
+            state.copy(currentStep = nextStep, focusedIndex = initialFocus)
         }
         if (_uiState.value.currentStep == FirstRunStep.PLATFORM_SELECT) {
             loadPlatformsForSelection()
@@ -107,7 +108,8 @@ class FirstRunViewModel @Inject constructor(
                     else FirstRunStep.USAGE_STATS
                 }
             }
-            state.copy(currentStep = prevStep, focusedIndex = 0)
+            val initialFocus = if (prevStep == FirstRunStep.IMAGE_CACHE) 1 else 0
+            state.copy(currentStep = prevStep, focusedIndex = initialFocus)
         }
     }
 
@@ -160,7 +162,7 @@ class FirstRunViewModel @Inject constructor(
                     else -> 0
                 }
             }
-            FirstRunStep.IMAGE_CACHE -> if (state.imageCacheFolderSelected) 1 else 0
+            FirstRunStep.IMAGE_CACHE -> 1
             FirstRunStep.SAVE_SYNC -> 1
             FirstRunStep.USAGE_STATS -> 0
             FirstRunStep.PLATFORM_SELECT -> state.platforms.size
@@ -225,6 +227,9 @@ class FirstRunViewModel @Inject constructor(
                 }
                 return@launch
             }
+
+            val workingUrl = (connectResult as RomMResult.Success).data
+            _uiState.update { it.copy(rommUrl = workingUrl.trimEnd('/')) }
 
             val loginResult = romMRepository.login(username, password)
             when (loginResult) {

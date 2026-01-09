@@ -14,8 +14,12 @@ class SettingsInputHandler(
         private const val HUE_STEP = 10f
     }
 
+    private fun hasAlertDialogOpen(state: SettingsUiState): Boolean =
+        state.steam.showAddGameDialog
+
     override fun onUp(): InputResult {
         val state = viewModel.uiState.value
+        if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalFocus(-1)
@@ -62,6 +66,7 @@ class SettingsInputHandler(
 
     override fun onDown(): InputResult {
         val state = viewModel.uiState.value
+        if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalFocus(1)
@@ -108,6 +113,7 @@ class SettingsInputHandler(
 
     override fun onLeft(): InputResult {
         val state = viewModel.uiState.value
+        if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalButtonFocus(1)
@@ -277,6 +283,7 @@ class SettingsInputHandler(
 
     override fun onRight(): InputResult {
         val state = viewModel.uiState.value
+        if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalButtonFocus(-1)
@@ -446,6 +453,7 @@ class SettingsInputHandler(
 
     override fun onConfirm(): InputResult {
         val state = viewModel.uiState.value
+        if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
 
         if (state.storage.platformSettingsModalId != null) {
             viewModel.selectPlatformSettingsOption()

@@ -320,6 +320,7 @@ object EmulatorRegistry {
             packageName = "com.github.stenzek.duckstation",
             displayName = "DuckStation",
             supportedPlatforms = setOf("psx"),
+            launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
@@ -936,6 +937,7 @@ object EmulatorRegistry {
             displayNamePrefix = "DuckStation",
             packagePatterns = listOf("com.github.stenzek.duckstation*"),
             supportedPlatforms = setOf("psx"),
+            launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.FilePath)

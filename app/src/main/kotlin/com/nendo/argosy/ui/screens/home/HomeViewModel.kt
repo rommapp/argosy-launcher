@@ -1621,6 +1621,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun launchGame(gameId: Long) {
+        deactivateVideoPreview()
         saveCurrentState()
         gameLaunchDelegate.launchGame(viewModelScope, gameId) { intent ->
             viewModelScope.launch { _events.emit(HomeEvent.LaunchGame(intent)) }

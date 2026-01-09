@@ -37,7 +37,7 @@ class UserPreferencesRepository @Inject constructor(
         val SOUND_VOLUME = intPreferencesKey("sound_volume")
         val SWAP_AB = booleanPreferencesKey("nintendo_button_layout")  // Keep old key for migration
         val SWAP_XY = booleanPreferencesKey("swap_xy")
-        val AB_ICON_LAYOUT = stringPreferencesKey("ab_icon_layout")  // "auto", "xbox", "nintendo"
+        val CONTROLLER_LAYOUT = stringPreferencesKey("controller_layout")  // "auto", "xbox", "nintendo" - display only
         val SWAP_START_SELECT = booleanPreferencesKey("swap_start_select")
         val LAST_ROMM_SYNC = stringPreferencesKey("last_romm_sync")
         val LAST_FAVORITES_SYNC = stringPreferencesKey("last_favorites_sync")
@@ -126,7 +126,7 @@ class UserPreferencesRepository @Inject constructor(
             soundVolume = prefs[Keys.SOUND_VOLUME] ?: 40,
             swapAB = prefs[Keys.SWAP_AB] ?: false,
             swapXY = prefs[Keys.SWAP_XY] ?: false,
-            abIconLayout = prefs[Keys.AB_ICON_LAYOUT] ?: "auto",
+            controllerLayout = prefs[Keys.CONTROLLER_LAYOUT] ?: "auto",
             swapStartSelect = prefs[Keys.SWAP_START_SELECT] ?: false,
             lastRommSync = prefs[Keys.LAST_ROMM_SYNC]?.let { Instant.parse(it) },
             lastFavoritesSync = prefs[Keys.LAST_FAVORITES_SYNC]?.let { Instant.parse(it) },
@@ -354,9 +354,9 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setABIconLayout(layout: String) {
+    suspend fun setControllerLayout(layout: String) {
         dataStore.edit { prefs ->
-            prefs[Keys.AB_ICON_LAYOUT] = layout
+            prefs[Keys.CONTROLLER_LAYOUT] = layout
         }
     }
 
@@ -798,7 +798,7 @@ data class UserPreferences(
     val soundVolume: Int = 40,
     val swapAB: Boolean = false,
     val swapXY: Boolean = false,
-    val abIconLayout: String = "auto",
+    val controllerLayout: String = "auto",
     val swapStartSelect: Boolean = false,
     val lastRommSync: Instant? = null,
     val lastFavoritesSync: Instant? = null,

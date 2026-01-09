@@ -4,7 +4,7 @@ import android.app.Application
 import com.nendo.argosy.data.preferences.HapticIntensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.input.ControllerDetector
-import com.nendo.argosy.ui.input.DetectedIconLayout
+import com.nendo.argosy.ui.input.DetectedLayout
 import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.screens.settings.ControlsState
@@ -78,27 +78,43 @@ class ControlsSettingsDelegate @Inject constructor(
         }
     }
 
-    fun setABIconLayout(scope: CoroutineScope, layout: String) {
+    fun setControllerLayout(scope: CoroutineScope, layout: String) {
         scope.launch {
-            preferencesRepository.setABIconLayout(layout)
-            _state.update { it.copy(abIconLayout = layout) }
+            preferencesRepository.setControllerLayout(layout)
+            _state.update { it.copy(controllerLayout = layout) }
         }
     }
 
-    fun cycleABIconLayout(scope: CoroutineScope) {
-        val current = _state.value.abIconLayout
+    fun cycleControllerLayout(scope: CoroutineScope) {
+        val current = _state.value.controllerLayout
         val next = when (current) {
             "auto" -> "xbox"
             "xbox" -> "nintendo"
             else -> "auto"
         }
-        setABIconLayout(scope, next)
+        setControllerLayout(scope, next)
+    }
+
+    fun refreshDetectedLayout() {
+        val result = ControllerDetector.detectFromActiveGamepad()
+        val layoutName = when (result.layout) {
+            DetectedLayout.XBOX -> "Xbox"
+            DetectedLayout.NINTENDO -> "Nintendo"
+            null -> null
+        }
+        _state.update {
+            it.copy(
+                detectedLayout = layoutName,
+                detectedDeviceName = result.deviceName
+            )
+        }
     }
 
     fun detectControllerLayout(): String? {
-        return when (ControllerDetector.detectFromActiveGamepad()) {
-            DetectedIconLayout.XBOX -> "xbox"
-            DetectedIconLayout.NINTENDO -> "nintendo"
+        val result = ControllerDetector.detectFromActiveGamepad()
+        return when (result.layout) {
+            DetectedLayout.XBOX -> "xbox"
+            DetectedLayout.NINTENDO -> "nintendo"
             null -> null
         }
     }

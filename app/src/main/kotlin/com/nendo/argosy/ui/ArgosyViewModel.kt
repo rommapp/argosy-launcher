@@ -15,7 +15,7 @@ import com.nendo.argosy.ui.components.PerformanceMode
 import com.nendo.argosy.util.PServerExecutor
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.input.ControllerDetector
-import com.nendo.argosy.ui.input.DetectedIconLayout
+import com.nendo.argosy.ui.input.DetectedLayout
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.input.HapticPattern
@@ -45,6 +45,7 @@ data class ArgosyUiState(
     val isFirstRun: Boolean = true,
     val isLoading: Boolean = true,
     val abIconsSwapped: Boolean = false,
+    val xyIconsSwapped: Boolean = false,
     val swapStartSelect: Boolean = false,
     val defaultView: DefaultView = DefaultView.SHOWCASE
 )
@@ -104,6 +105,21 @@ class ArgosyViewModel @Inject constructor(
         scheduleDownloadValidation()
         observeFeedbackSettings(preferencesRepository)
         downloadManager.clearCompleted()
+        startControllerDetectionPolling()
+    }
+
+    private fun startControllerDetectionPolling() {
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                val result = ControllerDetector.detectFromActiveGamepad()
+                android.util.Log.d("ArgosyVM", "Polling: layout=${result.layout}, device=${result.deviceName}, current=${_detectedLayout.value}")
+                if (_detectedLayout.value != result.layout) {
+                    android.util.Log.d("ArgosyVM", "Layout changed: ${_detectedLayout.value} -> ${result.layout}")
+                    _detectedLayout.value = result.layout
+                }
+            }
+        }
     }
 
     private fun scheduleDownloadValidation() {
@@ -152,33 +168,34 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<ArgosyUiState> = preferencesRepository.userPreferences
-        .map { prefs ->
-            val abIconsSwapped = computeABIconsSwapped(prefs.abIconLayout)
-            ArgosyUiState(
-                isFirstRun = !prefs.firstRunComplete,
-                isLoading = false,
-                abIconsSwapped = abIconsSwapped,
-                swapStartSelect = prefs.swapStartSelect,
-                defaultView = prefs.defaultView
-            )
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ArgosyUiState()
-        )
+    private val _detectedLayout = MutableStateFlow(ControllerDetector.detectFromActiveGamepad().layout)
 
-    private fun computeABIconsSwapped(abIconLayout: String): Boolean {
-        return when (abIconLayout) {
+    fun refreshControllerDetection() {
+        _detectedLayout.value = ControllerDetector.detectFromActiveGamepad().layout
+    }
+
+    val uiState: StateFlow<ArgosyUiState> = combine(
+        preferencesRepository.userPreferences,
+        _detectedLayout
+    ) { prefs, detectedLayout ->
+        val isNintendoLayout = when (prefs.controllerLayout) {
             "nintendo" -> true
             "xbox" -> false
-            else -> {
-                val detected = ControllerDetector.detectFromActiveGamepad()
-                detected == DetectedIconLayout.NINTENDO
-            }
+            else -> detectedLayout == DetectedLayout.NINTENDO
         }
-    }
+        ArgosyUiState(
+            isFirstRun = !prefs.firstRunComplete,
+            isLoading = false,
+            abIconsSwapped = isNintendoLayout xor prefs.swapAB,
+            xyIconsSwapped = isNintendoLayout xor prefs.swapXY,
+            swapStartSelect = prefs.swapStartSelect,
+            defaultView = prefs.defaultView
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ArgosyUiState()
+    )
 
     val drawerUiState: StateFlow<DrawerState> = combine(
         romMRepository.connectionState,

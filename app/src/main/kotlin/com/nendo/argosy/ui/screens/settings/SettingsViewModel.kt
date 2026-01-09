@@ -28,6 +28,8 @@ import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryResult
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.ui.input.ControllerDetector
+import com.nendo.argosy.ui.input.DetectedLayout
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -52,6 +54,7 @@ import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -142,6 +145,16 @@ class SettingsViewModel @Inject constructor(
         observeConnectionState()
         loadSettings()
         displayDelegate.loadPreviewGame(viewModelScope)
+        startControllerDetectionPolling()
+    }
+
+    private fun startControllerDetectionPolling() {
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                controlsDelegate.refreshDetectedLayout()
+            }
+        }
     }
 
     private fun observeConnectionState() {
@@ -405,13 +418,20 @@ class SettingsViewModel @Inject constructor(
                 defaultView = prefs.defaultView
             ))
 
+            val detectionResult = ControllerDetector.detectFromActiveGamepad()
+            val detectedLayoutName = when (detectionResult.layout) {
+                DetectedLayout.XBOX -> "Xbox"
+                DetectedLayout.NINTENDO -> "Nintendo"
+                null -> null
+            }
             controlsDelegate.updateState(ControlsState(
                 hapticEnabled = prefs.hapticEnabled,
                 hapticIntensity = prefs.hapticIntensity,
+                controllerLayout = prefs.controllerLayout,
+                detectedLayout = detectedLayoutName,
+                detectedDeviceName = detectionResult.deviceName,
                 swapAB = prefs.swapAB,
                 swapXY = prefs.swapXY,
-                abIconLayout = prefs.abIconLayout,
-                detectedLayout = controlsDelegate.detectControllerLayout(),
                 swapStartSelect = prefs.swapStartSelect,
                 accuratePlayTimeEnabled = prefs.accuratePlayTimeEnabled
             ))
@@ -894,7 +914,7 @@ class SettingsViewModel @Inject constructor(
                     if (showInnerThickness) idx++
                     idx - 1
                 }
-                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 4 else 3
+                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 5 else 4
                 SettingsSection.SOUNDS -> {
                     val bgmItemCount = if (state.ambientAudio.enabled) 3 else 1
                     val uiSoundsItemCount = if (state.sounds.enabled) 2 + SoundType.entries.size else 1
@@ -1212,12 +1232,12 @@ class SettingsViewModel @Inject constructor(
         controlsDelegate.setSwapXY(viewModelScope, enabled)
     }
 
-    fun setABIconLayout(layout: String) {
-        controlsDelegate.setABIconLayout(viewModelScope, layout)
+    fun cycleControllerLayout() {
+        controlsDelegate.cycleControllerLayout(viewModelScope)
     }
 
-    fun cycleABIconLayout() {
-        controlsDelegate.cycleABIconLayout(viewModelScope)
+    fun refreshDetectedLayout() {
+        controlsDelegate.refreshDetectedLayout()
     }
 
     fun setSwapStartSelect(enabled: Boolean) {
@@ -2069,19 +2089,19 @@ class SettingsViewModel @Inject constructor(
                     when (state.focusedIndex) {
                         0 -> { setHapticEnabled(!state.controls.hapticEnabled); true }
                         1 -> { cycleHapticIntensity(); false }
-                        2 -> { setSwapAB(!state.controls.swapAB); true }
-                        3 -> { setSwapXY(!state.controls.swapXY); true }
-                        4 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
-                        5 -> { handlePlayTimeToggle(state.controls); true }
+                        2 -> { cycleControllerLayout(); false }
+                        3 -> { setSwapAB(!state.controls.swapAB); true }
+                        4 -> { setSwapXY(!state.controls.swapXY); true }
+                        5 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
                         else -> false
                     }
                 } else {
                     when (state.focusedIndex) {
                         0 -> { setHapticEnabled(!state.controls.hapticEnabled); true }
-                        1 -> { setSwapAB(!state.controls.swapAB); true }
-                        2 -> { setSwapXY(!state.controls.swapXY); true }
-                        3 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
-                        4 -> { handlePlayTimeToggle(state.controls); true }
+                        1 -> { cycleControllerLayout(); false }
+                        2 -> { setSwapAB(!state.controls.swapAB); true }
+                        3 -> { setSwapXY(!state.controls.swapXY); true }
+                        4 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
                         else -> false
                     }
                 }

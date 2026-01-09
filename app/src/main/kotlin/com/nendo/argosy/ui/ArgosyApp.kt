@@ -39,6 +39,7 @@ import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
+import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.navigation.NavGraph
@@ -94,6 +95,7 @@ fun ArgosyApp(
         inputDispatcher.blockInputFor(200)
         inputDispatcher.resetToMainView()
         viewModel.resetAllModals()
+        viewModel.refreshControllerDetection()
         try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
     }
 
@@ -274,6 +276,7 @@ fun ArgosyApp(
     CompositionLocalProvider(
         LocalInputDispatcher provides inputDispatcher,
         LocalABIconsSwapped provides uiState.abIconsSwapped,
+        LocalXYIconsSwapped provides uiState.xyIconsSwapped,
         LocalSwapStartSelect provides uiState.swapStartSelect
     ) {
         if (uiState.isLoading) {

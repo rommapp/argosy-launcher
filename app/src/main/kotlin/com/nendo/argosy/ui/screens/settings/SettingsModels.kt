@@ -130,10 +130,11 @@ data class DisplayState(
 data class ControlsState(
     val hapticEnabled: Boolean = true,
     val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    val controllerLayout: String = "auto",
+    val detectedLayout: String? = null,
+    val detectedDeviceName: String? = null,
     val swapAB: Boolean = false,
     val swapXY: Boolean = false,
-    val abIconLayout: String = "auto",
-    val detectedLayout: String? = null,
     val swapStartSelect: Boolean = false,
     val accuratePlayTimeEnabled: Boolean = false,
     val hasUsageStatsPermission: Boolean = false

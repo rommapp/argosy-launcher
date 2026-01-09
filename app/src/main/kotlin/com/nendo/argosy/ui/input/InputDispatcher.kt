@@ -174,4 +174,6 @@ val LocalInputDispatcher = staticCompositionLocalOf<InputDispatcher> {
 
 val LocalABIconsSwapped = staticCompositionLocalOf { false }
 
+val LocalXYIconsSwapped = staticCompositionLocalOf { false }
+
 val LocalSwapStartSelect = staticCompositionLocalOf { false }

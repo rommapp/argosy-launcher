@@ -322,7 +322,7 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("psx"),
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.github.stenzek.duckstation"
         ),
@@ -622,7 +622,7 @@ object EmulatorRegistry {
         "gg" to listOf("genesis_plus_gx", "gearsystem"),
         "scd" to listOf("genesis_plus_gx", "picodrive"),
         "32x" to listOf("picodrive"),
-        "psx" to listOf("pcsx", "mednafen_psx", "swanstation"),
+        "psx" to listOf("pcsx_rearmed", "swanstation", "mednafen_psx"),
         "psp" to listOf("ppsspp"),
         "saturn" to listOf("yabasanshiro", "yabause", "mednafen_saturn"),
         "dreamcast" to listOf("flycast"),
@@ -938,7 +938,7 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("psx"),
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://www.duckstation.org/android/"
         ),

@@ -117,6 +117,53 @@ object ZipExtractor {
         }
     }
 
+    sealed class ZipValidationResult {
+        data object Valid : ZipValidationResult()
+        data class Invalid(val reason: String) : ZipValidationResult()
+    }
+
+    fun validateZip(file: File, expectedSize: Long = 0): ZipValidationResult {
+        if (!file.exists()) {
+            return ZipValidationResult.Invalid("File does not exist")
+        }
+
+        if (!isZipFile(file)) {
+            return ZipValidationResult.Invalid("File is not a valid ZIP archive")
+        }
+
+        if (expectedSize > 0 && file.length() < expectedSize) {
+            val percent = (file.length() * 100 / expectedSize).toInt()
+            return ZipValidationResult.Invalid(
+                "Download incomplete ($percent% - ${file.length()} of $expectedSize bytes)"
+            )
+        }
+
+        return try {
+            ZipFile(file).use { zip ->
+                val entries = zip.entries()
+                var entryCount = 0
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+                    zip.getInputStream(entry).use { stream ->
+                        // Read a small portion to verify entry is accessible
+                        val buffer = ByteArray(1)
+                        stream.read(buffer)
+                    }
+                    entryCount++
+                }
+                if (entryCount == 0) {
+                    ZipValidationResult.Invalid("ZIP archive is empty")
+                } else {
+                    ZipValidationResult.Valid
+                }
+            }
+        } catch (e: java.util.zip.ZipException) {
+            ZipValidationResult.Invalid("ZIP file is corrupted: ${e.message}")
+        } catch (e: Exception) {
+            ZipValidationResult.Invalid("Failed to validate ZIP: ${e.message}")
+        }
+    }
+
     fun shouldExtractZip(zipFile: File): Boolean {
         if (!isZipFile(zipFile)) return false
         // APK files are ZIP archives but should be installed, not extracted

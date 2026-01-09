@@ -626,6 +626,7 @@ class DownloadManager @Inject constructor(
                         gameTitle = progress.gameTitle,
                         progressId = progress.id,
                         isDiscDownload = progress.isDiscDownload,
+                        expectedSize = progress.totalBytes,
                         onExtractionProgress = { bytesWritten, totalBytes ->
                             updateProgress(
                                 progress.copy(
@@ -755,6 +756,7 @@ class DownloadManager @Inject constructor(
                                     gameTitle = progress.gameTitle,
                                     progressId = progress.id,
                                     isDiscDownload = progress.isDiscDownload,
+                                    expectedSize = totalSize,
                                     onExtractionProgress = { bytesWritten, totalBytes ->
                                         updateProgress(
                                             progress.copy(
@@ -841,6 +843,7 @@ class DownloadManager @Inject constructor(
         gameTitle: String,
         progressId: Long = 0,
         isDiscDownload: Boolean = false,
+        expectedSize: Long = 0,
         onExtractionProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)? = null
     ): String {
         val shouldExtract = ZipExtractor.shouldExtractZip(targetFile)
@@ -854,12 +857,27 @@ class DownloadManager @Inject constructor(
         return when {
             shouldExtract -> {
                 Log.d(TAG, "processDownloadedFile: BRANCH=ZIP_EXTRACT")
-                val extracted = ZipExtractor.extractFolderRom(
-                    zipFilePath = targetFile,
-                    gameTitle = gameTitle,
-                    platformDir = platformDir,
-                    onProgress = onExtractionProgress
-                )
+
+                val validationResult = ZipExtractor.validateZip(targetFile, expectedSize)
+                if (validationResult is ZipExtractor.ZipValidationResult.Invalid) {
+                    Log.e(TAG, "ZIP validation failed: ${validationResult.reason}")
+                    targetFile.delete()
+                    throw java.io.IOException("${validationResult.reason}. Please try downloading again.")
+                }
+
+                val extracted = try {
+                    ZipExtractor.extractFolderRom(
+                        zipFilePath = targetFile,
+                        gameTitle = gameTitle,
+                        platformDir = platformDir,
+                        onProgress = onExtractionProgress
+                    )
+                } catch (e: java.util.zip.ZipException) {
+                    Log.e(TAG, "ZIP extraction failed: ${e.message}")
+                    targetFile.delete()
+                    throw java.io.IOException("ZIP file is corrupted: ${e.message}. Please try downloading again.")
+                }
+
                 val resultPath = extracted.launchPath
                 Log.d(TAG, "processDownloadedFile: extracted.launchPath=$resultPath, extracted.gameFolder=${extracted.gameFolder}")
                 if (File(resultPath).exists()) {
@@ -966,26 +984,6 @@ class DownloadManager @Inject constructor(
         }
     }
 
-    suspend fun retryFailedDownloads() {
-        val failed = downloadQueueDao.getFailedDownloads()
-        if (failed.isEmpty()) return
-
-        val retryable = failed.filter { entity ->
-            val reason = entity.errorReason ?: ""
-            !reason.contains("not found", ignoreCase = true) &&
-                !reason.contains("HTTP 400", ignoreCase = true) &&
-                !reason.contains("HTTP 404", ignoreCase = true)
-        }
-
-        if (retryable.isEmpty()) return
-
-        for (entity in retryable) {
-            downloadQueueDao.updateState(entity.id, DownloadState.QUEUED.name, null)
-        }
-
-        restoreQueueFromDatabase()
-    }
-
     suspend fun recheckStorageAndResume() {
         val waiting = _state.value.queue.filter { it.state == DownloadState.WAITING_FOR_STORAGE }
         if (waiting.isEmpty()) {
@@ -1084,6 +1082,7 @@ class DownloadManager @Inject constructor(
                 gameTitle = queueEntry.gameTitle,
                 progressId = queueEntry.id,
                 isDiscDownload = isDiscDownload,
+                expectedSize = queueEntry.totalBytes,
                 onExtractionProgress = { bytesWritten, totalBytes ->
                     val progress = queueEntry.toDownloadProgress()
                     updateProgress(

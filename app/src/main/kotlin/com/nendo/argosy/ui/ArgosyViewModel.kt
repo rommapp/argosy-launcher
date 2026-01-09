@@ -296,7 +296,6 @@ class ArgosyViewModel @Inject constructor(
             romMRepository.checkConnection()
             if (romMRepository.connectionState.value is RomMRepository.ConnectionState.Connected) {
                 romMRepository.processPendingSync()
-                downloadManager.retryFailedDownloads()
             }
             downloadManager.recheckStorageAndResume()
         }

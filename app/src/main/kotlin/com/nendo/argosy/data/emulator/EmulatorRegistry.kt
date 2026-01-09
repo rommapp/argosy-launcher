@@ -326,7 +326,19 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.github.stenzek.duckstation"
         ),
-        // NOTE: AetherSX2 is discontinued - NetherSX2 is the actively maintained fork
+        EmulatorDef(
+            id = "nethersx2",
+            packageName = "xyz.aethersx2.android",
+            displayName = "NetherSX2",
+            supportedPlatforms = setOf("ps2"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "xyz.aethersx2.android.EmulationActivity",
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
+            ),
+            downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
+        ),
+        // AetherSX2 is discontinued - shares package with NetherSX2, kept for detection
         EmulatorDef(
             id = "aethersx2",
             packageName = "xyz.aethersx2.android",
@@ -336,8 +348,14 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
-            ),
-            downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
+            )
+        ),
+        EmulatorDef(
+            id = "armsx2",
+            packageName = "come.nanodata.armsx2",
+            displayName = "ARMSX2",
+            supportedPlatforms = setOf("ps2"),
+            downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
         ),
         EmulatorDef(
             id = "pcsx2",
@@ -503,7 +521,7 @@ object EmulatorRegistry {
 
     fun getRecommendedEmulators(): Map<String, List<String>> = mapOf(
         "psx" to listOf("duckstation", "retroarch", "retroarch_64"),
-        "ps2" to listOf("aethersx2", "pcsx2"),
+        "ps2" to listOf("nethersx2", "armsx2", "pcsx2"),
         "psp" to listOf("ppsspp_gold", "ppsspp", "retroarch", "retroarch_64"),
         "vita" to listOf("vita3k-zx", "vita3k"),
         "psvita" to listOf("vita3k-zx", "vita3k"),
@@ -902,8 +920,8 @@ object EmulatorRegistry {
             downloadUrl = "https://www.ppsspp.org/download/"
         ),
         EmulatorFamily(
-            baseId = "aethersx2",
-            displayNamePrefix = "AetherSX2",
+            baseId = "nethersx2",
+            displayNamePrefix = "NetherSX2",
             packagePatterns = listOf("xyz.aethersx2.*"),
             supportedPlatforms = setOf("ps2"),
             launchAction = Intent.ACTION_MAIN,

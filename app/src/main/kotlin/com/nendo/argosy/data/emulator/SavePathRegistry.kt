@@ -205,6 +205,15 @@ object SavePathRegistry {
         ),
 
         // PS2 - uses shared memory cards, not yet supported
+        "nethersx2" to SavePathConfig(
+            emulatorId = "nethersx2",
+            defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/memcards"
+            ),
+            saveExtensions = listOf("ps2"),
+            usesSharedMemoryCard = true,
+            supported = false
+        ),
         "aethersx2" to SavePathConfig(
             emulatorId = "aethersx2",
             defaultPaths = listOf(

@@ -651,32 +651,6 @@ class SaveSyncRepository @Inject constructor(
         return result
     }
 
-    suspend fun constructSavePathWithFileName(
-        emulatorId: String,
-        platformSlug: String,
-        romPath: String?,
-        serverFileName: String
-    ): String? {
-        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
-        val isFolderBased = config?.usesFolderBasedSaves == true &&
-            serverFileName.endsWith(".zip", ignoreCase = true)
-        val isSwitchEmulator = emulatorId in SWITCH_EMULATOR_IDS
-
-        if (isFolderBased && isSwitchEmulator && config != null) {
-            val titleId = serverFileName.removeSuffix(".zip").removeSuffix(".ZIP")
-            if (isValidSwitchHexId(titleId)) {
-                val basePath = config.defaultPaths.firstOrNull { File(it).exists() }
-                    ?: config.defaultPaths.firstOrNull()
-                    ?: return null
-                val profileFolder = findActiveProfileFolder(basePath, platformSlug)
-                return "$profileFolder/$titleId"
-            }
-        }
-
-        val baseDir = getSaveDirectory(emulatorId, platformSlug, romPath) ?: return null
-        return "$baseDir/$serverFileName"
-    }
-
     private suspend fun getSaveDirectory(
         emulatorId: String,
         platformSlug: String,
@@ -1148,7 +1122,7 @@ class SaveSyncRepository @Inject constructor(
         } else {
             (syncEntity.localSavePath
                 ?: discoverSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)
-                ?: constructSavePathWithFileName(resolvedEmulatorId, platformSlug = game.platformSlug, romPath = game.localPath, serverFileName = serverSave.fileName)).also {
+                ?: constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)).also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, path=$it")
             }
         }

@@ -333,7 +333,9 @@ class HomeViewModel @Inject constructor(
     private val modalResetSignal: ModalResetSignal,
     private val getPinnedCollectionsUseCase: GetPinnedCollectionsUseCase,
     private val getGamesForPinnedCollectionUseCase: GetGamesForPinnedCollectionUseCase,
-    private val gameRepository: GameRepository
+    private val gameRepository: GameRepository,
+    private val playStoreService: com.nendo.argosy.data.remote.playstore.PlayStoreService,
+    private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -1218,8 +1220,9 @@ class HomeViewModel @Inject constructor(
             val isDownloaded = game?.isDownloaded == true
             val needsInstall = game?.needsInstall == true
             val isRommGame = game?.isRommGame == true
+            val isAndroidApp = game?.isAndroidApp == true
             var maxIndex = if (isDownloaded || needsInstall) MENU_INDEX_MAX_DOWNLOADED else MENU_INDEX_MAX_REMOTE
-            if (isRommGame) maxIndex++
+            if (isRommGame || isAndroidApp) maxIndex++
             val newIndex = (it.gameMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(gameMenuFocusIndex = newIndex)
         }
@@ -1239,7 +1242,7 @@ class HomeViewModel @Inject constructor(
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
         val addToCollectionIdx = currentIdx++
-        val refreshIdx = if (isRommGame) currentIdx++ else -1
+        val refreshIdx = if (isRommGame || isAndroidApp) currentIdx++ else -1
         val deleteIdx = if (isDownloaded || needsInstall || isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
 
@@ -1264,7 +1267,9 @@ class HomeViewModel @Inject constructor(
                 toggleGameMenu()
                 showAddToCollectionModal(game.id)
             }
-            refreshIdx -> refreshGameData(game.id)
+            refreshIdx -> {
+                if (isAndroidApp) refreshAndroidGameData(game.id) else refreshGameData(game.id)
+            }
             deleteIdx -> {
                 toggleGameMenu()
                 if (isAndroidApp) uninstallAndroidApp(game.packageName) else deleteLocalFile(game.id)
@@ -1435,6 +1440,44 @@ class HomeViewModel @Inject constructor(
                 is RomMResult.Error -> {
                     notificationManager.showError(result.message)
                 }
+            }
+            toggleGameMenu()
+        }
+    }
+
+    fun refreshAndroidGameData(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val packageName = game.packageName ?: return@launch
+
+            try {
+                val details = playStoreService.getAppDetails(packageName).getOrNull()
+                if (details != null) {
+                    val updated = game.copy(
+                        description = details.description ?: game.description,
+                        developer = details.developer ?: game.developer,
+                        genre = details.genre ?: game.genre,
+                        rating = details.ratingPercent ?: game.rating,
+                        screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
+                            ?.joinToString(",") ?: game.screenshotPaths,
+                        backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+                    )
+                    gameDao.update(updated)
+
+                    details.coverUrl?.let { url ->
+                        imageCacheManager.queueCoverCacheByGameId(url, gameId)
+                    }
+                    if (details.screenshotUrls.isNotEmpty()) {
+                        imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+                    }
+
+                    notificationManager.showSuccess("Game data refreshed")
+                    refreshCurrentRowInternal()
+                } else {
+                    notificationManager.showError("Could not fetch app data")
+                }
+            } catch (e: Exception) {
+                notificationManager.showError("Failed to refresh: ${e.message}")
             }
             toggleGameMenu()
         }

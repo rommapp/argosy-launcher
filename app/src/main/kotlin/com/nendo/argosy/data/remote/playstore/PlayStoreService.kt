@@ -95,8 +95,8 @@ class PlayStoreService @Inject constructor() {
             ?: category?.removePrefix("GAME_")?.replace("_", " ")?.lowercase()?.replaceFirstChar { it.uppercase() }
         val rating = extractPattern(html, """"ratingValue":\s*"?([0-9.]+)"?""")?.toFloatOrNull()
         val iconUrl = extractPattern(html, """<img[^>]*itemprop="image"[^>]*src="([^"]+)"""")
-        val coverUrl = extractFeatureGraphic(html)
         val screenshotUrls = extractScreenshots(html)
+        val coverUrl = extractFeatureGraphic(html) ?: screenshotUrls.firstOrNull()
 
         return PlayStoreAppDetails(
             title = title,
@@ -131,15 +131,22 @@ class PlayStoreService @Inject constructor() {
 
     private fun extractFeatureGraphic(html: String): String? {
         val patterns = listOf(
-            """<meta name="twitter:image" content="([^"]+)"""",
-            """<meta property="og:image" content="([^"]+)"""",
-            """data-screenshot-item-src-large="([^"]+)"""",
+            // Priority 1: Actual feature graphic patterns (promotional banners)
+            """"featureGraphic":\s*\{"url":\s*"([^"]+)"""",
             """srcset="([^"]*=w\d+-h\d+[^"]*)"[^>]*class="[^"]*feature"""",
-            """"featureGraphic":\s*\{"url":\s*"([^"]+)""""
+            """data-screenshot-item-src-large="([^"]+)"""",
+            // Priority 2: Meta tags (often return icons, but better than nothing)
+            """<meta property="og:image" content="([^"]+)"""",
+            """<meta name="twitter:image" content="([^"]+)""""
         )
         for (pattern in patterns) {
             extractPattern(html, pattern)?.let { url ->
-                return cleanImageUrl(url)
+                val cleaned = cleanImageUrl(url)
+                // Skip icon-like URLs (square dimensions or small)
+                if (cleaned.contains("=s") && !cleaned.contains("=w")) {
+                    return@let
+                }
+                return cleaned
             }
         }
         return null
@@ -189,8 +196,8 @@ class PlayStoreService @Inject constructor() {
 
     private fun cleanImageUrl(url: String): String {
         return url
-            .replace("=w\\d+-h\\d+".toRegex(), "=w720")
-            .replace("=s\\d+".toRegex(), "=s720")
+            .replace("=w\\d+-h\\d+".toRegex(), "=w1280")
+            .replace("=s\\d+".toRegex(), "=s1280")
             .let { if (it.startsWith("//")) "https:$it" else it }
     }
 

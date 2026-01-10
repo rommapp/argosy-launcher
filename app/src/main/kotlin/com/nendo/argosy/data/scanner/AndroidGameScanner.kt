@@ -13,10 +13,14 @@ import com.nendo.argosy.data.remote.playstore.PlayStoreAppDetails
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.data.repository.InstalledApp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -55,6 +59,7 @@ class AndroidGameScanner @Inject constructor(
     private val platformDao: PlatformDao,
     private val imageCacheManager: ImageCacheManager
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _progress = MutableStateFlow(AndroidScanProgress())
     val progress: StateFlow<AndroidScanProgress> = _progress.asStateFlow()
 
@@ -113,6 +118,12 @@ class AndroidGameScanner @Inject constructor(
             )
 
             Log.d(TAG, "Scan complete: added=$gamesAdded, updated=$gamesUpdated, skipped=$gamesSkipped")
+
+            // Schedule background refresh for games with low-quality covers
+            scope.launch {
+                delay(5000) // Wait for initial icon caching to complete
+                refreshLowQualityCovers()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Scan failed: ${e.message}", e)
             errors.add("Scan failed: ${e.message}")
@@ -217,10 +228,16 @@ class AndroidGameScanner @Inject constructor(
         )
 
         val gameId = gameDao.insert(game)
-        imageCacheManager.queueAppIconCache(gameId, app.packageName)
 
-        if (details != null) {
-            queueImageCaching(gameId, details)
+        // Prefer Play Store cover over app icon
+        if (details?.coverUrl != null) {
+            imageCacheManager.queueCoverCacheByGameId(details.coverUrl, gameId)
+            if (details.screenshotUrls.isNotEmpty()) {
+                imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+            }
+        } else {
+            // Fall back to app icon only if no Play Store cover
+            imageCacheManager.queueAppIconCache(gameId, app.packageName)
         }
 
         return ProcessResult.ADDED
@@ -349,6 +366,32 @@ class AndroidGameScanner @Inject constructor(
         if (EmulatorRegistry.getByPackage(packageName) != null) return true
         if (EmulatorRegistry.findFamilyForPackage(packageName) != null) return true
         return false
+    }
+
+    suspend fun refreshLowQualityCovers(): Int = withContext(Dispatchers.IO) {
+        val androidGames = gameDao.getBySource(GameSource.ANDROID_APP)
+        var refreshedCount = 0
+
+        for (game in androidGames) {
+            val coverPath = game.coverPath ?: continue
+            val coverFile = java.io.File(coverPath)
+
+            if (imageCacheManager.isLikelyAppIcon(coverFile)) {
+                val packageName = game.packageName ?: continue
+                val details = playStoreService.getAppDetails(packageName).getOrNull()
+
+                if (details?.coverUrl != null) {
+                    Log.d(TAG, "Refreshing low-quality cover for: ${game.title}")
+                    imageCacheManager.queueCoverCacheByGameId(details.coverUrl, game.id)
+                    refreshedCount++
+                }
+            }
+        }
+
+        if (refreshedCount > 0) {
+            Log.d(TAG, "Queued $refreshedCount low-quality covers for refresh")
+        }
+        refreshedCount
     }
 
     private enum class ProcessResult {

@@ -1218,8 +1218,8 @@ private fun GameSelectOverlay(
     val favoriteIdx = currentIndex++
     val detailsIdx = currentIndex++
     val addToCollectionIdx = currentIndex++
-    val refreshIdx = if (game.isRommGame) currentIndex++ else -1
-    val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
+    val refreshIdx = if (game.isRommGame || game.isAndroidApp) currentIndex++ else -1
+    val deleteIdx = if (game.isDownloaded || game.needsInstall || game.isAndroidApp) currentIndex++ else -1
     val hideIdx = currentIndex
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
@@ -1279,7 +1279,7 @@ private fun GameSelectOverlay(
                 isFocused = focusIndex == addToCollectionIdx,
                 onClick = onAddToCollection
             )
-            if (game.isRommGame) {
+            if (game.isRommGame || game.isAndroidApp) {
                 MenuOption(
                     icon = Icons.Default.Refresh,
                     label = "Refresh Data",

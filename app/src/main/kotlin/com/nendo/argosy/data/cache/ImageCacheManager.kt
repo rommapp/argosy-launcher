@@ -316,6 +316,18 @@ class ImageCacheManager @Inject constructor(
         return options.outWidth > 0 && options.outHeight > 0
     }
 
+    fun isLikelyAppIcon(file: File): Boolean {
+        if (!file.exists()) return true
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, options)
+        if (options.outWidth <= 0 || options.outHeight <= 0) return true
+
+        val isSquare = kotlin.math.abs(options.outWidth - options.outHeight) < 50
+        val isSmall = options.outWidth < 400 || options.outHeight < 400
+
+        return isSquare && isSmall
+    }
+
     fun clearCache() {
         cacheDir.listFiles()?.forEach { it.delete() }
     }

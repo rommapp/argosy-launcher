@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
@@ -75,6 +77,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import java.io.File
@@ -1023,6 +1026,96 @@ fun GameCardWithBadge(
             ) {
                 badge()
             }
+        }
+    }
+}
+
+@Composable
+fun GameCardWithNewBadge(
+    game: HomeGameUi,
+    isFocused: Boolean,
+    cardWidth: Dp,
+    cardHeight: Dp,
+    modifier: Modifier = Modifier,
+    focusScale: Float = Motion.scaleFocused,
+    scaleFromBottom: Boolean = false,
+    downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
+    showPlatformBadge: Boolean = true,
+    coverPathOverride: String? = null,
+    onCoverLoadFailed: ((gameId: Long, failedPath: String) -> Unit)? = null,
+    scaleOverride: Float? = null,
+    alphaOverride: Float? = null
+) {
+    val showNewBadge = game.isNew && !downloadIndicator.isActive
+    val badgeWidthDp = 44.dp
+    val badgeHeightDp = 30.dp
+    val badgeOffsetXDp = 8.dp
+    val badgeTopOverflow = 20.dp
+
+    val scale by animateFloatAsState(
+        targetValue = scaleOverride ?: if (isFocused) focusScale else Motion.scaleDefault,
+        animationSpec = Motion.focusSpring,
+        label = "wrapperScale"
+    )
+
+    val alpha by animateFloatAsState(
+        targetValue = alphaOverride ?: if (isFocused) Motion.alphaFocused else Motion.alphaUnfocused,
+        animationSpec = Motion.focusSpring,
+        label = "wrapperAlpha"
+    )
+
+    Layout(
+        content = {
+            GameCard(
+                game = game,
+                isFocused = isFocused,
+                focusScale = 1f,
+                scaleFromBottom = scaleFromBottom,
+                downloadIndicator = downloadIndicator,
+                showPlatformBadge = showPlatformBadge,
+                coverPathOverride = coverPathOverride,
+                onCoverLoadFailed = onCoverLoadFailed,
+                scaleOverride = 1f,
+                alphaOverride = 1f,
+                modifier = Modifier
+            )
+            if (showNewBadge) {
+                NewBadge(
+                    width = badgeWidthDp,
+                    height = badgeHeightDp,
+                    rotation = 15f
+                )
+            }
+        },
+        modifier = modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            transformOrigin = if (scaleFromBottom) TransformOrigin(0.5f, 1f) else TransformOrigin.Center
+            this.alpha = alpha
+        }
+    ) { measurables, constraints ->
+        val cardWidthPx = cardWidth.toPx().toInt()
+        val cardHeightPx = cardHeight.toPx().toInt()
+        val cardConstraints = Constraints.fixed(cardWidthPx, cardHeightPx)
+
+        val cardPlaceable = measurables[0].measure(cardConstraints)
+        val badgePlaceable = if (showNewBadge && measurables.size > 1) {
+            measurables[1].measure(Constraints())
+        } else null
+
+        val badgeOffsetX = badgeOffsetXDp.roundToPx()
+        val topOverflow = if (showNewBadge) badgeTopOverflow.roundToPx() else 0
+        val rightOverflow = if (showNewBadge) badgeOffsetX else 0
+
+        val layoutWidth = cardPlaceable.width + rightOverflow
+        val layoutHeight = cardPlaceable.height + topOverflow
+
+        layout(layoutWidth, layoutHeight) {
+            cardPlaceable.placeRelative(0, topOverflow)
+            badgePlaceable?.placeRelative(
+                x = cardPlaceable.width - badgePlaceable.width + badgeOffsetX,
+                y = topOverflow - (badgePlaceable.height / 2)
+            )
         }
     }
 }

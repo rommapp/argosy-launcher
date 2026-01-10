@@ -167,6 +167,28 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE isHidden = 0 AND lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT :limit")
     suspend fun getRecentlyPlayed(limit: Int = 20): List<GameEntity>
 
+    @Query("""
+        SELECT * FROM games
+        WHERE isHidden = 0
+        AND lastPlayed IS NULL
+        AND addedAt > :threshold
+        AND (localPath IS NOT NULL OR source = 'STEAM' OR source = 'ANDROID_APP')
+        ORDER BY addedAt DESC
+        LIMIT :limit
+    """)
+    fun observeNewlyAddedPlayable(threshold: Instant, limit: Int = 20): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE isHidden = 0
+        AND lastPlayed IS NULL
+        AND addedAt > :threshold
+        AND (localPath IS NOT NULL OR source = 'STEAM' OR source = 'ANDROID_APP')
+        ORDER BY addedAt DESC
+        LIMIT :limit
+    """)
+    suspend fun getNewlyAddedPlayable(threshold: Instant, limit: Int = 20): List<GameEntity>
+
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?
 

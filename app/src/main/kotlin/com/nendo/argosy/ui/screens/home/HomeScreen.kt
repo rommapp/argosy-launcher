@@ -77,6 +77,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.TransformOrigin
@@ -100,6 +101,7 @@ import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterHint
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.components.GameCard
+import com.nendo.argosy.ui.components.GameCardWithNewBadge
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
 import com.nendo.argosy.ui.components.SyncOverlay
@@ -957,6 +959,7 @@ private fun GameRail(
         modifier = modifier
             .fillMaxWidth()
             .height(railHeight)
+            .graphicsLayer { clip = false }
     ) {
         itemsIndexed(
             items,
@@ -983,9 +986,11 @@ private fun GameRail(
 
             when (item) {
                 is HomeRowItem.Game -> {
-                    GameCard(
+                    GameCardWithNewBadge(
                         game = item.game,
                         isFocused = isFocused,
+                        cardWidth = cardWidth,
+                        cardHeight = cardHeight,
                         focusScale = focusScale,
                         scaleFromBottom = true,
                         downloadIndicator = downloadIndicatorFor(item.game.id),
@@ -995,9 +1000,10 @@ private fun GameRail(
                         scaleOverride = videoScaleOverride,
                         alphaOverride = videoAlphaOverride,
                         modifier = Modifier
-                            .graphicsLayer { this.translationX = translationX }
-                            .width(cardWidth)
-                            .height(cardHeight)
+                            .graphicsLayer {
+                                this.translationX = translationX
+                            }
+                            .zIndex(if (isFocused) 1f else 0f)
                             .combinedClickable(
                                 onClick = { onItemTap(index) },
                                 onLongClick = { onItemLongPress(index) },

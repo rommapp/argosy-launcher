@@ -82,6 +82,8 @@ private val EXCLUDED_RECOMMENDATION_STATUSES = setOf(
 private const val RECENT_GAMES_LIMIT = 10
 private const val RECENT_GAMES_CANDIDATE_POOL = 40
 private const val AUTO_SYNC_DAYS = 7L
+private const val NEW_GAME_THRESHOLD_HOURS = 24L
+private const val RECENT_PLAYED_THRESHOLD_HOURS = 4L
 private const val MENU_INDEX_MAX_DOWNLOADED = 5
 private const val MENU_INDEX_MAX_REMOTE = 4
 
@@ -139,7 +141,8 @@ data class HomeGameUi(
     val isAndroidApp: Boolean = false,
     val packageName: String? = null,
     val needsInstall: Boolean = false,
-    val youtubeVideoId: String? = null
+    val youtubeVideoId: String? = null,
+    val isNew: Boolean = false
 )
 
 sealed class HomeRowItem {
@@ -398,20 +401,22 @@ class HomeViewModel @Inject constructor(
     private fun observeRecentlyPlayedChanges() {
         viewModelScope.launch {
             gameRepository.awaitStorageReady()
-            gameDao.observeRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL).collect { candidatePool ->
-                val validated = mutableListOf<HomeGameUi>()
-                for (game in candidatePool) {
-                    if (validated.size >= RECENT_GAMES_LIMIT) break
-                    val isPlayable = when {
+            val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+            gameDao.observeRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL).collect { recentlyPlayed ->
+                val newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+                val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+
+                val playableGames = allCandidates.filter { game ->
+                    when {
                         game.source == GameSource.STEAM -> true
                         game.source == GameSource.ANDROID_APP -> true
                         game.localPath != null -> File(game.localPath).exists()
                         else -> false
                     }
-                    if (isPlayable) {
-                        validated.add(game.toUi(cachedPlatformDisplayNames))
-                    }
                 }
+
+                val sorted = sortRecentGamesWithNewPriority(playableGames)
+                val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi(cachedPlatformDisplayNames) }
 
                 recentGamesCache.set(RecentGamesCache(validated, recentGamesCache.get().version))
 
@@ -426,6 +431,26 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun sortRecentGamesWithNewPriority(games: List<GameEntity>): List<GameEntity> {
+        val now = Instant.now()
+        val newThreshold = now.minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+        val recentPlayedThreshold = now.minus(RECENT_PLAYED_THRESHOLD_HOURS, ChronoUnit.HOURS)
+
+        return games.sortedWith(
+            compareBy<GameEntity> { game ->
+                val isNew = game.addedAt.isAfter(newThreshold) && game.lastPlayed == null
+                val playedRecently = game.lastPlayed?.isAfter(recentPlayedThreshold) == true
+                when {
+                    playedRecently -> 0
+                    isNew -> 1
+                    else -> 2
+                }
+            }.thenByDescending { game ->
+                game.lastPlayed?.toEpochMilli() ?: game.addedAt.toEpochMilli()
+            }
+        )
     }
 
     private suspend fun prefetchGamesForPinnedCollection(pinned: PinnedCollection) {
@@ -611,20 +636,21 @@ class HomeViewModel @Inject constructor(
             val androidGames = gameDao.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
             val steamGames = gameDao.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
 
-            val candidatePool = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-            val validatedRecent = mutableListOf<HomeGameUi>()
-            for (game in candidatePool) {
-                if (validatedRecent.size >= RECENT_GAMES_LIMIT) break
-                val isPlayable = when {
+            val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+            val recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
+            val newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+            val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+
+            val playableGames = allCandidates.filter { game ->
+                when {
                     game.source == GameSource.STEAM -> true
                     game.source == GameSource.ANDROID_APP -> true
                     game.localPath != null -> File(game.localPath).exists()
                     else -> false
                 }
-                if (isPlayable) {
-                    validatedRecent.add(game.toUi(cachedPlatformDisplayNames))
-                }
             }
+            val sortedRecent = sortRecentGamesWithNewPriority(playableGames)
+            val validatedRecent = sortedRecent.take(RECENT_GAMES_LIMIT).map { it.toUi(cachedPlatformDisplayNames) }
             recentGamesCache.set(RecentGamesCache(validatedRecent, recentGamesCache.get().version))
 
             val platformUis = platforms.map { it.toUi() }
@@ -716,23 +742,21 @@ class HomeViewModel @Inject constructor(
         val gameUis = if (currentCache.games != null) {
             currentCache.games
         } else {
-            val candidatePool = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-            val validated = mutableListOf<HomeGameUi>()
+            val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+            val recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
+            val newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+            val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
 
-            for (game in candidatePool) {
-                if (validated.size >= RECENT_GAMES_LIMIT) break
-
-                val isPlayable = when {
+            val playableGames = allCandidates.filter { game ->
+                when {
                     game.source == GameSource.STEAM -> true
                     game.source == GameSource.ANDROID_APP -> true
                     game.localPath != null -> File(game.localPath).exists()
                     else -> false
                 }
-
-                if (isPlayable) {
-                    validated.add(game.toUi(cachedPlatformDisplayNames))
-                }
             }
+            val sorted = sortRecentGamesWithNewPriority(playableGames)
+            val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi(cachedPlatformDisplayNames) }
 
             recentGamesCache.compareAndSet(
                 RecentGamesCache(null, startVersion),
@@ -1529,21 +1553,21 @@ class HomeViewModel @Inject constructor(
                 val currentCache = recentGamesCache.get()
                 val startVersion = currentCache.version
 
-                val candidatePool = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-                val validated = mutableListOf<HomeGameUi>()
+                val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+                val recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
+                val newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+                val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
 
-                for (game in candidatePool) {
-                    if (validated.size >= RECENT_GAMES_LIMIT) break
-                    val isPlayable = when {
+                val playableGames = allCandidates.filter { game ->
+                    when {
                         game.source == GameSource.STEAM -> true
                         game.source == GameSource.ANDROID_APP -> true
                         game.localPath != null -> File(game.localPath).exists()
                         else -> false
                     }
-                    if (isPlayable) {
-                        validated.add(game.toUi(cachedPlatformDisplayNames))
-                    }
                 }
+                val sorted = sortRecentGamesWithNewPriority(playableGames)
+                val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi(cachedPlatformDisplayNames) }
 
                 recentGamesCache.compareAndSet(
                     RecentGamesCache(null, startVersion),
@@ -1720,6 +1744,7 @@ class HomeViewModel @Inject constructor(
     private fun GameEntity.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): HomeGameUi {
         val firstScreenshot = screenshotPaths?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
         val effectiveBackground = backgroundPath ?: firstScreenshot ?: coverPath
+        val newThreshold = Instant.now().minus(24, ChronoUnit.HOURS)
         return HomeGameUi(
             id = id,
             title = title,
@@ -1742,7 +1767,8 @@ class HomeViewModel @Inject constructor(
             isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
             packageName = packageName,
             needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP,
-            youtubeVideoId = youtubeVideoId
+            youtubeVideoId = youtubeVideoId,
+            isNew = addedAt.isAfter(newThreshold) && lastPlayed == null
         )
     }
 

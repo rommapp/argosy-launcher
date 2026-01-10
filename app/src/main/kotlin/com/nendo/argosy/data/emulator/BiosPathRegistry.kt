@@ -141,6 +141,9 @@ object BiosPathRegistry {
         ),
         "arcade" to listOf(
             BiosRequirement("arcade", "neogeo.zip", null, "Neo Geo BIOS for arcade")
+        ),
+        "ps2" to listOf(
+            BiosRequirement("ps2", "ps2-bios.bin", null, "PlayStation 2 BIOS", isRequired = true)
         )
     )
 
@@ -211,6 +214,13 @@ object BiosPathRegistry {
                 "/storage/emulated/0/Android/data/it.dbtecno.pizzaboygba/files"
             ),
             supportedPlatforms = setOf("gba")
+        ),
+        "nethersx2" to BiosPathConfig(
+            emulatorId = "nethersx2",
+            defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/bios"
+            ),
+            supportedPlatforms = setOf("ps2")
         )
     )
 

@@ -12,8 +12,13 @@ class LaunchGameUseCase @Inject constructor(
     private val playSessionTracker: PlaySessionTracker,
     private val launchRetryTracker: LaunchRetryTracker
 ) {
-    suspend operator fun invoke(gameId: Long, discId: Long? = null, forResume: Boolean = false): LaunchResult {
-        val result = gameLauncher.launch(gameId, discId, forResume)
+    suspend operator fun invoke(
+        gameId: Long,
+        discId: Long? = null,
+        forResume: Boolean = false,
+        selectedDiscPath: String? = null
+    ): LaunchResult {
+        val result = gameLauncher.launch(gameId, discId, forResume, selectedDiscPath)
         if (result is LaunchResult.Success) {
             if (!forResume) {
                 val coreName = extractCoreName(result.intent)

@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
 import android.content.Intent
+import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.launcher.SteamLauncher
@@ -151,6 +152,9 @@ data class GameDetailUiState(
     val statusPickerValue: String? = null,
     val showMissingDiscPrompt: Boolean = false,
     val missingDiscNumbers: List<Int> = emptyList(),
+    val showDiscPicker: Boolean = false,
+    val discPickerOptions: List<DiscOption> = emptyList(),
+    val discPickerFocusIndex: Int = 0,
     val updateFiles: List<UpdateFileUi> = emptyList(),
     val dlcFiles: List<UpdateFileUi> = emptyList(),
     val showUpdatesPicker: Boolean = false,

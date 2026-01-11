@@ -104,10 +104,12 @@ import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.GameCardWithNewBadge
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
+import com.nendo.argosy.ui.components.DiscPickerModal
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.components.YouTubeVideoPlayer
 import com.nendo.argosy.ui.input.ChangelogInputHandler
+import com.nendo.argosy.ui.input.DiscPickerInputHandler
 import kotlinx.coroutines.delay
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -133,6 +135,7 @@ fun HomeScreen(
     var isProgrammaticScroll by remember { mutableStateOf(false) }
     var skipNextProgrammaticScroll by remember { mutableStateOf(false) }
     var suppressVideoPreview by remember { mutableStateOf(false) }
+    var videoPlayedForGameId by remember { mutableStateOf<Long?>(null) }
     val swipeThreshold = with(LocalDensity.current) { 50.dp.toPx() }
 
     val currentOnDrawerToggle by rememberUpdatedState(onDrawerToggle)
@@ -230,7 +233,7 @@ fun HomeScreen(
     }
 
     val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
@@ -245,9 +248,34 @@ fun HomeScreen(
         )
     }
 
+    val discPickerInputHandler = remember(viewModel) {
+        DiscPickerInputHandler(
+            getDiscs = { uiState.discPickerState?.discs ?: emptyList() },
+            getFocusIndex = { uiState.discPickerFocusIndex },
+            onFocusChange = { viewModel.setDiscPickerFocusIndex(it) },
+            onSelect = { viewModel.selectDisc(it) },
+            onDismiss = { viewModel.dismissDiscPicker() }
+        )
+    }
+
     LaunchedEffect(uiState.changelogEntry) {
         if (uiState.changelogEntry != null) {
             inputDispatcher.pushModal(changelogInputHandler)
+        }
+    }
+
+    LaunchedEffect(uiState.discPickerState) {
+        if (uiState.discPickerState != null) {
+            viewModel.setDiscPickerFocusIndex(0)
+            inputDispatcher.pushModal(discPickerInputHandler)
+        }
+    }
+
+    DisposableEffect(uiState.discPickerState) {
+        onDispose {
+            if (uiState.discPickerState != null) {
+                inputDispatcher.popModal()
+            }
         }
     }
 
@@ -259,18 +287,32 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(uiState.focusedGameIndex, uiState.currentRow) {
-        suppressVideoPreview = false
+    LaunchedEffect(uiState.focusedGame?.id) {
+        val currentGameId = uiState.focusedGame?.id
+        if (currentGameId != videoPlayedForGameId) {
+            videoPlayedForGameId = null
+            suppressVideoPreview = false
+        }
     }
 
     LaunchedEffect(uiState.focusedGameIndex, uiState.focusedGame?.youtubeVideoId) {
         viewModel.deactivateVideoPreview()
-        val videoId = uiState.focusedGame?.youtubeVideoId
-        if (videoId != null && !uiState.showGameMenu && !suppressVideoPreview) {
-            delay(VIDEO_PREVIEW_DELAY_MS)
-            if (!suppressVideoPreview) {
-                viewModel.startVideoPreviewLoading(videoId)
-            }
+        val game = uiState.focusedGame ?: return@LaunchedEffect
+        val videoId = game.youtubeVideoId ?: return@LaunchedEffect
+        val shouldSkip = uiState.showGameMenu ||
+            uiState.discPickerState != null ||
+            suppressVideoPreview ||
+            videoPlayedForGameId == game.id
+        if (shouldSkip) {
+            return@LaunchedEffect
+        }
+        delay(VIDEO_PREVIEW_DELAY_MS)
+        val stillValid = !suppressVideoPreview &&
+            uiState.discPickerState == null &&
+            videoPlayedForGameId != game.id
+        if (stillValid) {
+            videoPlayedForGameId = game.id
+            viewModel.startVideoPreviewLoading(videoId)
         }
     }
 
@@ -692,6 +734,15 @@ fun HomeScreen(
             syncProgress = uiState.syncOverlayState?.syncProgress,
             gameTitle = uiState.syncOverlayState?.gameTitle
         )
+
+        uiState.discPickerState?.let { pickerState ->
+            DiscPickerModal(
+                discs = pickerState.discs,
+                focusIndex = uiState.discPickerFocusIndex,
+                onSelectDisc = viewModel::selectDisc,
+                onDismiss = viewModel::dismissDiscPicker
+            )
+        }
 
         uiState.changelogEntry?.let { entry ->
             ChangelogModal(

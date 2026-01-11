@@ -736,6 +736,14 @@ class GameDetailViewModel @Inject constructor(
                         soundManager.play(SoundType.LAUNCH_GAME)
                         _launchEvents.emit(LaunchEvent.Launch(result.intent))
                     }
+                    is LaunchResult.SelectDisc -> {
+                        _uiState.update {
+                            it.copy(
+                                showDiscPicker = true,
+                                discPickerOptions = result.discs
+                            )
+                        }
+                    }
                     is LaunchResult.NoEmulator -> {
                         notificationManager.showError("No emulator installed for ${game.platformName}")
                     }
@@ -812,6 +820,14 @@ class GameDetailViewModel @Inject constructor(
                 is LaunchResult.Success -> {
                     soundManager.play(SoundType.LAUNCH_GAME)
                     _launchEvents.emit(LaunchEvent.Launch(result.intent))
+                }
+                is LaunchResult.SelectDisc -> {
+                    _uiState.update {
+                        it.copy(
+                            showDiscPicker = true,
+                            discPickerOptions = result.discs
+                        )
+                    }
                 }
                 is LaunchResult.NoEmulator -> {
                     notificationManager.showError("No emulator installed for ${game.platformName}")
@@ -1023,6 +1039,42 @@ class GameDetailViewModel @Inject constructor(
     fun showDiscPicker() {
         toggleMoreOptions()
         playGame()
+    }
+
+    fun dismissDiscPicker() {
+        _uiState.update { it.copy(showDiscPicker = false, discPickerOptions = emptyList(), discPickerFocusIndex = 0) }
+    }
+
+    fun navigateDiscPicker(direction: Int) {
+        val state = _uiState.value
+        val maxIndex = state.discPickerOptions.size - 1
+        val newIndex = (state.discPickerFocusIndex + direction).coerceIn(0, maxIndex)
+        _uiState.update { it.copy(discPickerFocusIndex = newIndex) }
+    }
+
+    fun selectFocusedDisc() {
+        val state = _uiState.value
+        val disc = state.discPickerOptions.getOrNull(state.discPickerFocusIndex) ?: return
+        selectDisc(disc.filePath)
+    }
+
+    fun selectDisc(discPath: String) {
+        dismissDiscPicker()
+        viewModelScope.launch {
+            val result = launchGameUseCase(currentGameId, selectedDiscPath = discPath)
+            when (result) {
+                is LaunchResult.Success -> {
+                    soundManager.play(SoundType.LAUNCH_GAME)
+                    _launchEvents.emit(LaunchEvent.Launch(result.intent))
+                }
+                is LaunchResult.Error -> {
+                    notificationManager.showError(result.message)
+                }
+                else -> {
+                    notificationManager.showError("Failed to launch disc")
+                }
+            }
+        }
     }
 
     fun showSteamLauncherPicker() {
@@ -1657,6 +1709,10 @@ class GameDetailViewModel @Inject constructor(
                     moveCorePickerFocus(-1)
                     InputResult.HANDLED
                 }
+                state.showDiscPicker -> {
+                    navigateDiscPicker(-1)
+                    InputResult.HANDLED
+                }
                 state.showUpdatesPicker -> {
                     moveUpdatesPickerFocus(-1)
                     InputResult.HANDLED
@@ -1705,6 +1761,10 @@ class GameDetailViewModel @Inject constructor(
                 state.showMissingDiscPrompt -> InputResult.UNHANDLED
                 state.showCorePicker -> {
                     moveCorePickerFocus(1)
+                    InputResult.HANDLED
+                }
+                state.showDiscPicker -> {
+                    navigateDiscPicker(1)
                     InputResult.HANDLED
                 }
                 state.showUpdatesPicker -> {
@@ -1825,7 +1885,7 @@ class GameDetailViewModel @Inject constructor(
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
                 state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker ||
-                state.showCorePicker || state.showMissingDiscPrompt ||
+                state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt ||
                 state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
             }
@@ -1839,7 +1899,7 @@ class GameDetailViewModel @Inject constructor(
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
                 state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker ||
-                state.showCorePicker || state.showMissingDiscPrompt ||
+                state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt ||
                 state.showUpdatesPicker || state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
             }
@@ -1864,6 +1924,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showMissingDiscPrompt -> repairAndPlay()
                 state.showExtractionFailedPrompt -> confirmExtractionPromptSelection()
                 state.showCorePicker -> confirmCoreSelection()
+                state.showDiscPicker -> selectFocusedDisc()
                 state.showUpdatesPicker -> confirmUpdatesSelection()
                 state.showEmulatorPicker -> confirmEmulatorSelection()
                 state.showSteamLauncherPicker -> confirmSteamLauncherSelection()
@@ -1889,6 +1950,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showMissingDiscPrompt -> dismissMissingDiscPrompt()
                 state.showExtractionFailedPrompt -> dismissExtractionPrompt()
                 state.showCorePicker -> dismissCorePicker()
+                state.showDiscPicker -> dismissDiscPicker()
                 state.showUpdatesPicker -> dismissUpdatesPicker()
                 state.showEmulatorPicker -> dismissEmulatorPicker()
                 state.showSteamLauncherPicker -> dismissSteamLauncherPicker()

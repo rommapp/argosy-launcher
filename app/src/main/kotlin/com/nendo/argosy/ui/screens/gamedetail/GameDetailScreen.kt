@@ -51,6 +51,7 @@ import com.nendo.argosy.ui.screens.gamedetail.components.GameHeader
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
 import com.nendo.argosy.ui.screens.gamedetail.components.SnapState
+import com.nendo.argosy.ui.components.DiscPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.CorePickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.EmulatorPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.ExtractionFailedModal
@@ -273,7 +274,7 @@ private fun GameDetailContent(
     val showAnyOverlay = uiState.showMoreOptions || uiState.showEmulatorPicker || uiState.showCorePicker ||
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || uiState.isSyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
-        uiState.showExtractionFailedPrompt
+        uiState.showExtractionFailedPrompt || uiState.showDiscPicker
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -493,6 +494,19 @@ private fun GameDetailModals(
             focusIndex = uiState.corePickerFocusIndex,
             onSelectCore = viewModel::selectCore,
             onDismiss = viewModel::dismissCorePicker
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.showDiscPicker,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        DiscPickerModal(
+            discs = uiState.discPickerOptions,
+            focusIndex = uiState.discPickerFocusIndex,
+            onSelectDisc = viewModel::selectDisc,
+            onDismiss = viewModel::dismissDiscPicker
         )
     }
 

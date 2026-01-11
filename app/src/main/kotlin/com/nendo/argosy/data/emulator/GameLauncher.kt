@@ -23,8 +23,15 @@ import javax.inject.Singleton
 
 private const val TAG = "GameLauncher"
 
+data class DiscOption(
+    val fileName: String,
+    val filePath: String,
+    val discNumber: Int
+)
+
 sealed class LaunchResult {
     data class Success(val intent: Intent, val discId: Long? = null) : LaunchResult()
+    data class SelectDisc(val gameId: Long, val discs: List<DiscOption>) : LaunchResult()
     data class NoEmulator(val platformSlug: String) : LaunchResult()
     data class NoRomFile(val gamePath: String?) : LaunchResult()
     data class NoSteamLauncher(val launcherPackage: String) : LaunchResult()
@@ -43,8 +50,13 @@ class GameLauncher @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager
 ) {
-    suspend fun launch(gameId: Long, discId: Long? = null, forResume: Boolean = false): LaunchResult {
-        Logger.debug(TAG, "launch() called: gameId=$gameId, discId=$discId, forResume=$forResume")
+    suspend fun launch(
+        gameId: Long,
+        discId: Long? = null,
+        forResume: Boolean = false,
+        selectedDiscPath: String? = null
+    ): LaunchResult {
+        Logger.debug(TAG, "launch() called: gameId=$gameId, discId=$discId, forResume=$forResume, selectedDiscPath=$selectedDiscPath")
 
         val game = gameDao.getById(gameId)
             ?: return LaunchResult.Error("Game not found").also {
@@ -79,8 +91,32 @@ class GameLauncher @Inject constructor(
             }
         }
 
-        // For m3u files, validate and fall back to disc file if broken
-        romFile = validateAndResolveLaunchFile(game, romFile)
+        // For m3u files on platforms that don't support m3u launching, prompt for disc selection
+        if (romFile.extension.lowercase() == "m3u" && !M3uManager.supportsM3u(game.platformSlug)) {
+            val discFiles = M3uManager.parseAllDiscs(romFile)
+            if (discFiles.size > 1 && selectedDiscPath == null) {
+                val discOptions = discFiles.mapIndexed { index, file ->
+                    DiscOption(
+                        fileName = file.name,
+                        filePath = file.absolutePath,
+                        discNumber = index + 1
+                    )
+                }
+                Logger.info(TAG, "${game.platformSlug} has ${discFiles.size} discs in m3u - prompting for selection")
+                return LaunchResult.SelectDisc(gameId, discOptions)
+            }
+            // Use selected disc or fall back to first disc
+            romFile = if (selectedDiscPath != null) {
+                File(selectedDiscPath).also {
+                    Logger.info(TAG, "Using selected disc: ${it.name}")
+                }
+            } else {
+                discFiles.firstOrNull() ?: romFile
+            }
+        } else {
+            // For m3u files, validate and fall back to disc file if broken
+            romFile = validateAndResolveLaunchFile(game, romFile)
+        }
 
         // Apply extension preference if needed (lazy rename on launch)
         romFile = applyExtensionPreferenceIfNeeded(game, romFile)
@@ -680,6 +716,17 @@ class GameLauncher @Inject constructor(
 
     private suspend fun validateAndResolveLaunchFile(game: GameEntity, romFile: File): File {
         if (romFile.extension.lowercase() != "m3u") return romFile
+
+        // For platforms that don't support m3u launching (e.g., PS2), use the first disc
+        if (!M3uManager.supportsM3u(game.platformSlug)) {
+            val firstDisc = M3uManager.parseFirstDisc(romFile)
+            if (firstDisc != null) {
+                Logger.info(TAG, "${game.platformSlug} doesn't support m3u - using first disc: ${firstDisc.name}")
+                gameDao.updateLocalPath(game.id, firstDisc.absolutePath, game.source)
+                return firstDisc
+            }
+            Logger.warn(TAG, "Could not parse first disc from m3u for ${game.platformSlug}")
+        }
 
         val parentDir = romFile.parentFile ?: return romFile
         val siblingFiles = parentDir.listFiles() ?: return romFile

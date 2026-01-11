@@ -75,9 +75,11 @@ import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.DiscPickerModal
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.icons.InputIcons
+import com.nendo.argosy.ui.input.DiscPickerInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -236,7 +238,7 @@ fun LibraryScreen(
         }
     }
 
-    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null
+    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null || uiState.discPickerState != null
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -456,6 +458,40 @@ fun LibraryScreen(
             syncProgress = uiState.syncOverlayState?.syncProgress,
             gameTitle = uiState.syncOverlayState?.gameTitle
         )
+
+        uiState.discPickerState?.let { pickerState ->
+            DiscPickerModal(
+                discs = pickerState.discs,
+                focusIndex = uiState.discPickerFocusIndex,
+                onSelectDisc = viewModel::selectDisc,
+                onDismiss = viewModel::dismissDiscPicker
+            )
+        }
+
+        val discPickerInputHandler = remember(viewModel) {
+            DiscPickerInputHandler(
+                getDiscs = { uiState.discPickerState?.discs ?: emptyList() },
+                getFocusIndex = { uiState.discPickerFocusIndex },
+                onFocusChange = { viewModel.setDiscPickerFocusIndex(it) },
+                onSelect = { viewModel.selectDisc(it) },
+                onDismiss = { viewModel.dismissDiscPicker() }
+            )
+        }
+
+        LaunchedEffect(uiState.discPickerState) {
+            if (uiState.discPickerState != null) {
+                viewModel.setDiscPickerFocusIndex(0)
+                inputDispatcher.pushModal(discPickerInputHandler)
+            }
+        }
+
+        DisposableEffect(uiState.discPickerState) {
+            onDispose {
+                if (uiState.discPickerState != null) {
+                    inputDispatcher.popModal()
+                }
+            }
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.common
 
 import android.content.Intent
+import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.LaunchResult
@@ -33,6 +34,13 @@ data class SyncOverlayState(
     val syncState: SyncState = SyncState.Idle
 )
 
+data class DiscPickerState(
+    val gameId: Long,
+    val discs: List<DiscOption>,
+    val channelName: String? = null,
+    val onLaunch: (Intent) -> Unit
+)
+
 class GameLaunchDelegate @Inject constructor(
     private val gameDao: GameDao,
     private val emulatorResolver: EmulatorResolver,
@@ -50,6 +58,9 @@ class GameLaunchDelegate @Inject constructor(
 
     private val _syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)
     val syncOverlayState: StateFlow<SyncOverlayState?> = _syncOverlayState.asStateFlow()
+
+    private val _discPickerState = MutableStateFlow<DiscPickerState?>(null)
+    val discPickerState: StateFlow<DiscPickerState?> = _discPickerState.asStateFlow()
 
     private val syncMutex = Mutex()
     val isSyncing: Boolean get() = _syncOverlayState.value != null
@@ -81,6 +92,14 @@ class GameLaunchDelegate @Inject constructor(
                         is LaunchResult.Success -> {
                             soundManager.play(SoundType.LAUNCH_GAME)
                             onLaunch(result.intent)
+                        }
+                        is LaunchResult.SelectDisc -> {
+                            _discPickerState.value = DiscPickerState(
+                                gameId = result.gameId,
+                                discs = result.discs,
+                                channelName = channelName,
+                                onLaunch = onLaunch
+                            )
                         }
                         is LaunchResult.NoEmulator -> {
                             notificationManager.showError("No emulator installed for this platform")
@@ -148,6 +167,14 @@ class GameLaunchDelegate @Inject constructor(
                     is LaunchResult.Success -> {
                         soundManager.play(SoundType.LAUNCH_GAME)
                         onLaunch(result.intent)
+                    }
+                    is LaunchResult.SelectDisc -> {
+                        _discPickerState.value = DiscPickerState(
+                            gameId = result.gameId,
+                            discs = result.discs,
+                            channelName = channelName,
+                            onLaunch = onLaunch
+                        )
                     }
                     is LaunchResult.NoEmulator -> {
                         notificationManager.showError("No emulator installed for this platform")
@@ -260,5 +287,33 @@ class GameLaunchDelegate @Inject constructor(
                 syncMutex.unlock()
             }
         }
+    }
+
+    fun selectDisc(scope: CoroutineScope, discPath: String) {
+        val state = _discPickerState.value ?: return
+        _discPickerState.value = null
+
+        scope.launch {
+            val result = launchGameUseCase(
+                gameId = state.gameId,
+                selectedDiscPath = discPath
+            )
+            when (result) {
+                is LaunchResult.Success -> {
+                    soundManager.play(SoundType.LAUNCH_GAME)
+                    state.onLaunch(result.intent)
+                }
+                is LaunchResult.Error -> {
+                    notificationManager.showError(result.message)
+                }
+                else -> {
+                    notificationManager.showError("Failed to launch disc")
+                }
+            }
+        }
+    }
+
+    fun dismissDiscPicker() {
+        _discPickerState.value = null
     }
 }

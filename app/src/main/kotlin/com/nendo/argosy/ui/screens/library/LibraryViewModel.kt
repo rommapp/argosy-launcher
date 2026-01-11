@@ -37,6 +37,7 @@ import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
+import com.nendo.argosy.ui.screens.common.DiscPickerState
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
@@ -161,6 +162,8 @@ data class LibraryUiState(
     val filterCategoryIndex: Int = 0,
     val filterOptionIndex: Int = 0,
     val syncOverlayState: SyncOverlayState? = null,
+    val discPickerState: DiscPickerState? = null,
+    val discPickerFocusIndex: Int = 0,
     val isTouchMode: Boolean = false,
     val hasSelectedGame: Boolean = false,
     val screenWidthDp: Int = 0,
@@ -334,6 +337,23 @@ class LibraryViewModel @Inject constructor(
                 _uiState.update { it.copy(syncOverlayState = overlayState) }
             }
         }
+        viewModelScope.launch {
+            gameLaunchDelegate.discPickerState.collect { pickerState ->
+                _uiState.update { it.copy(discPickerState = pickerState) }
+            }
+        }
+    }
+
+    fun selectDisc(discPath: String) {
+        gameLaunchDelegate.selectDisc(viewModelScope, discPath)
+    }
+
+    fun dismissDiscPicker() {
+        gameLaunchDelegate.dismissDiscPicker()
+    }
+
+    fun setDiscPickerFocusIndex(index: Int) {
+        _uiState.update { it.copy(discPickerFocusIndex = index) }
     }
 
     private fun observeGridDensity() {

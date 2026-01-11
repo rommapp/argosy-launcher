@@ -28,6 +28,28 @@ class M3uManager @Inject constructor(
         private val SUPPORTED_PLATFORMS = setOf("psx", "saturn", "dreamcast", "dc")
 
         fun supportsM3u(platformSlug: String): Boolean = platformSlug in SUPPORTED_PLATFORMS
+
+        fun parseFirstDisc(m3uFile: File): File? {
+            return parseAllDiscs(m3uFile).firstOrNull()
+        }
+
+        fun parseAllDiscs(m3uFile: File): List<File> {
+            if (!m3uFile.exists() || m3uFile.extension.lowercase() != "m3u") return emptyList()
+            val parentDir = m3uFile.parentFile ?: return emptyList()
+
+            val lines = try {
+                m3uFile.readLines()
+                    .filter { it.isNotBlank() && !it.startsWith("#") }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse m3u: ${e.message}")
+                return emptyList()
+            }
+
+            return lines.mapNotNull { line ->
+                val discFile = File(parentDir, line)
+                if (discFile.exists()) discFile else null
+            }
+        }
     }
 
     suspend fun ensureM3u(game: GameEntity): M3uResult {

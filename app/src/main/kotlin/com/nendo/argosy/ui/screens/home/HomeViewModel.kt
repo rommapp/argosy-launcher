@@ -41,6 +41,7 @@ import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.ui.screens.common.DiscPickerState
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
@@ -205,6 +206,8 @@ data class HomeUiState(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val syncOverlayState: SyncOverlayState? = null,
+    val discPickerState: DiscPickerState? = null,
+    val discPickerFocusIndex: Int = 0,
     val changelogEntry: ChangelogEntry? = null,
     val isVideoPreviewActive: Boolean = false,
     val videoPreviewId: String? = null,
@@ -471,6 +474,23 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(syncOverlayState = overlayState) }
             }
         }
+        viewModelScope.launch {
+            gameLaunchDelegate.discPickerState.collect { pickerState ->
+                _uiState.update { it.copy(discPickerState = pickerState) }
+            }
+        }
+    }
+
+    fun selectDisc(discPath: String) {
+        gameLaunchDelegate.selectDisc(viewModelScope, discPath)
+    }
+
+    fun dismissDiscPicker() {
+        gameLaunchDelegate.dismissDiscPicker()
+    }
+
+    fun setDiscPickerFocusIndex(index: Int) {
+        _uiState.update { it.copy(discPickerFocusIndex = index) }
     }
 
     private fun observeBackgroundSettings() {

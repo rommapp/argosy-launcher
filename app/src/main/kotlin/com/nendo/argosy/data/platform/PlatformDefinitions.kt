@@ -363,7 +363,7 @@ object PlatformDefinitions {
         // =====================================================================
         // SONY HANDHELDS (250-299) - Chronological order
         // =====================================================================
-        PlatformDef("psp", "PlayStation Portable", "PSP", setOf("iso", "cso", "pbp", "zip", "7z"), 250),
+        PlatformDef("psp", "PlayStation Portable", "PSP", setOf("iso", "cso", "chd", "pbp", "zip", "7z"), 250),
         PlatformDef("vita", "PlayStation Vita", "Vita", setOf("vpk", "mai", "zip", "7z"), 260),
 
         // =====================================================================

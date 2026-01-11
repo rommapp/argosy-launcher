@@ -436,7 +436,7 @@ object PlatformDefinitions {
         // COMMODORE (600-649) - Chronological order
         // =====================================================================
         PlatformDef("vic20", "VIC-20", "VIC-20", setOf("prg", "crt", "t64", "zip", "7z"), 600),
-        PlatformDef("c64", "Commodore 64", "C64", setOf("d64", "t64", "prg", "crt", "tap", "zip", "7z"), 605),
+        PlatformDef("c64", "Commodore 64", "C64", setOf("d64", "d81", "g64", "t64", "tap", "prg", "p00", "crt", "bin", "nib", "zip", "7z"), 605),
         PlatformDef("c128", "Commodore 128", "C128", setOf("d64", "d81", "prg", "zip", "7z"), 610),
         PlatformDef("amiga", "Amiga", "Amiga", setOf("adf", "ipf", "lha", "hdf", "zip", "7z"), 620),
         PlatformDef("amigacd32", "Amiga CD32", "CD32", setOf("chd", "cue", "iso", "zip", "7z"), 625),

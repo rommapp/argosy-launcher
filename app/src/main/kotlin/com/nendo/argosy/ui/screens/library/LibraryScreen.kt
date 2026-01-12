@@ -62,6 +62,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
@@ -148,45 +149,28 @@ fun LibraryScreen(
         }
     }
 
+    val density = LocalDensity.current
+    val headerHeightPx = with(density) { 140.dp.toPx() }.toInt()
+    val footerHeightPx = with(density) { 50.dp.toPx() }.toInt()
+
     LaunchedEffect(uiState.focusedIndex, uiState.lastFocusMove) {
-        if (uiState.games.isEmpty()) return@LaunchedEffect
-        if (uiState.lastFocusMove == FocusMove.LEFT || uiState.lastFocusMove == FocusMove.RIGHT) return@LaunchedEffect
+        if (uiState.lastFocusMove == null || uiState.games.isEmpty()) return@LaunchedEffect
 
         val layoutInfo = gridState.layoutInfo
-        val visibleItems = layoutInfo.visibleItemsInfo
-        if (visibleItems.isEmpty()) return@LaunchedEffect
+        val viewportHeight = layoutInfo.viewportSize.height
+        if (viewportHeight == 0) return@LaunchedEffect
 
-        val firstItem = visibleItems.first()
-        val rowHeight = firstItem.size.height
-        val spacing = visibleItems.find { it.offset.y != firstItem.offset.y }
-            ?.let { it.offset.y - firstItem.offset.y - rowHeight } ?: 0
-        val rowStep = rowHeight + spacing
-        val scrollAnim = tween<Float>(durationMillis = 60)
+        val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: return@LaunchedEffect
 
-        val focusedItem = visibleItems.find { it.index == uiState.focusedIndex }
-        if (focusedItem != null) {
-            val itemTop = focusedItem.offset.y
-            val itemBottom = itemTop + rowHeight
-            val viewportHeight = layoutInfo.viewportSize.height
-            val paddingBuffer = (rowHeight * Motion.scrollPaddingPercent).toInt()
+        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
+        val centeringOffset = (effectiveHeight - itemHeight) / 2
 
-            when {
-                itemBottom + paddingBuffer > viewportHeight -> {
-                    isProgrammaticScroll = true
-                    gridState.animateScrollBy(rowStep.toFloat(), scrollAnim)
-                    isProgrammaticScroll = false
-                }
-                itemTop - paddingBuffer < 0 -> {
-                    isProgrammaticScroll = true
-                    gridState.animateScrollBy(-rowStep.toFloat(), scrollAnim)
-                    isProgrammaticScroll = false
-                }
-            }
-        } else {
-            isProgrammaticScroll = true
-            gridState.scrollToItem(uiState.focusedIndex)
-            isProgrammaticScroll = false
-        }
+        isProgrammaticScroll = true
+        gridState.animateScrollToItem(
+            index = uiState.focusedIndex,
+            scrollOffset = -centeringOffset
+        )
+        isProgrammaticScroll = false
     }
 
     LaunchedEffect(gridState) {
@@ -275,18 +259,10 @@ fun LibraryScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
-            LibraryHeader(
-                platformName = uiState.currentPlatform?.displayName ?: "All Platforms",
-                gameCount = uiState.games.size,
-                onPreviousPlatform = { viewModel.previousPlatform() },
-                onNextPlatform = { viewModel.nextPlatform() }
-            )
-
+        Box(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .graphicsLayer { clip = false }
                     .then(swipeGestureModifier)
             ) {
@@ -324,7 +300,12 @@ fun LibraryScreen(
                                 LazyVerticalGrid(
                                     columns = GridCells.Fixed(columnsCount),
                                     state = gridState,
-                                    contentPadding = PaddingValues(gridSpacing),
+                                    contentPadding = PaddingValues(
+                                        start = gridSpacing,
+                                        end = gridSpacing,
+                                        top = 140.dp,
+                                        bottom = cardHeight + gridSpacing
+                                    ),
                                     horizontalArrangement = Arrangement.spacedBy(gridSpacing),
                                     verticalArrangement = Arrangement.spacedBy(gridSpacing),
                                     modifier = Modifier.fillMaxSize()
@@ -354,18 +335,29 @@ fun LibraryScreen(
                 }
             }
 
-            LibraryFooter(
-                focusedGame = uiState.focusedGame,
-                onHintClick = { button ->
-                    when (button) {
-                        InputButton.SOUTH -> uiState.focusedGame?.let { onGameSelect(it.id) }
-                        InputButton.NORTH -> uiState.focusedGame?.let { viewModel.toggleFavorite(it.id) }
-                        InputButton.WEST -> viewModel.toggleFilterMenu()
-                        InputButton.SELECT -> viewModel.toggleQuickMenu()
-                        else -> {}
+            Box(modifier = Modifier.align(Alignment.TopCenter)) {
+                LibraryHeader(
+                    platformName = uiState.currentPlatform?.displayName ?: "All Platforms",
+                    gameCount = uiState.games.size,
+                    onPreviousPlatform = { viewModel.previousPlatform() },
+                    onNextPlatform = { viewModel.nextPlatform() }
+                )
+            }
+
+            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                LibraryFooter(
+                    focusedGame = uiState.focusedGame,
+                    onHintClick = { button ->
+                        when (button) {
+                            InputButton.SOUTH -> uiState.focusedGame?.let { onGameSelect(it.id) }
+                            InputButton.NORTH -> uiState.focusedGame?.let { viewModel.toggleFavorite(it.id) }
+                            InputButton.WEST -> viewModel.toggleFilterMenu()
+                            InputButton.SELECT -> viewModel.toggleQuickMenu()
+                            else -> {}
+                        }
                     }
-                }
-            )
+                )
+            }
         }
 
         AnimatedVisibility(
@@ -504,81 +496,94 @@ private fun LibraryHeader(
     onPreviousPlatform: () -> Unit = {},
     onNextPlatform: () -> Unit = {}
 ) {
-    Column(
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f))
-            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
+            .height(140.dp)
+            .background(
+                Brush.verticalGradient(
+                    0.0f to surfaceColor,
+                    0.6f to surfaceColor.copy(alpha = 0.8f),
+                    1.0f to Color.Transparent
+                )
+            )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "LIBRARY",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = "$gameCount games",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(modifier = Modifier.height(Dimens.spacingSm))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
         ) {
             Row(
-                modifier = Modifier
-                    .clickable(
-                        onClick = onPreviousPlatform,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
-                    .padding(Dimens.spacingSm),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = InputIcons.BumperLeft,
-                    contentDescription = "Previous platform",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                Text(
+                    text = "LIBRARY",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                    text = "$gameCount games",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.width(Dimens.spacingMd))
-
-            Text(
-                text = platformName,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
             Row(
-                modifier = Modifier
-                    .clickable(
-                        onClick = onNextPlatform,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
-                    .padding(Dimens.spacingSm),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = InputIcons.BumperRight,
-                    contentDescription = "Next platform",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                Row(
+                    modifier = Modifier
+                        .clickable(
+                            onClick = onPreviousPlatform,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                        .padding(Dimens.spacingSm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = InputIcons.BumperLeft,
+                        contentDescription = "Previous platform",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(Dimens.spacingMd))
+
+                Text(
+                    text = platformName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
+
+                Spacer(modifier = Modifier.width(Dimens.spacingMd))
+
+                Row(
+                    modifier = Modifier
+                        .clickable(
+                            onClick = onNextPlatform,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                        .padding(Dimens.spacingSm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = InputIcons.BumperRight,
+                        contentDescription = "Next platform",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

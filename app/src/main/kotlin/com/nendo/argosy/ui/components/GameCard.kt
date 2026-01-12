@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -122,12 +123,6 @@ fun GameCard(
         label = "alpha"
     )
 
-    val saturation by animateFloatAsState(
-        targetValue = if (isFocused) Motion.saturationFocused else Motion.saturationUnfocused,
-        animationSpec = Motion.focusSpring,
-        label = "saturation"
-    )
-
     val outerEffect = boxArtStyle.outerEffect
     val outerEffectRadius = boxArtStyle.outerEffectThicknessPx
     val showOuterEffect = isFocused && outerEffect != BoxArtOuterEffect.OFF
@@ -135,10 +130,6 @@ fun GameCard(
     val glowColor = themeConfig.focusGlowColor
     val borderColor = MaterialTheme.colorScheme.primary
     val shape = RoundedCornerShape(boxArtStyle.cornerRadiusDp)
-
-    val saturationMatrix = ColorMatrix().apply {
-        setToSaturation(saturation)
-    }
 
     val outerShineTransition = if (outerEffect == BoxArtOuterEffect.SHINE && isFocused) {
         rememberInfiniteTransition(label = "outerShine")
@@ -264,6 +255,12 @@ fun GameCard(
         val gradientColors = game.gradientColors
         val hasGradientColors = gradientColors != null
 
+        val gradientBorderProgress by animateFloatAsState(
+            targetValue = if (hasGradientColors && useGradientBorder) 1f else 0f,
+            animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+            label = "gradientBorderProgress"
+        )
+
         val cardWidthDp = this@BoxWithConstraints.maxWidth
         val baseWidthDp = 150.dp
         val baseFontSizeSp = 11f
@@ -276,7 +273,7 @@ fun GameCard(
         val horizontalPadding = (baseHorizontalPaddingDp + userPadding + borderPadding) * badgeScale
         val verticalPadding = (baseVerticalPaddingDp + userPadding / 2 + borderPadding / 2) * badgeScale
 
-        val displayName = if (showPlatformBadge) game.platformDisplayName.take(8) else ""
+        val displayName = if (showPlatformBadge) game.platformSlug.take(8) else ""
         val fontSizePx = with(density) { (baseFontSizeSp * badgeScale).dp.toPx() }
         val estimatedTextWidthPx = displayName.length * fontSizePx * 0.7f
         val badgeWidthPx = with(density) { estimatedTextWidthPx + horizontalPadding.toPx() * 2 }
@@ -311,7 +308,6 @@ fun GameCard(
                 model = imageData,
                 contentDescription = game.title,
                 contentScale = ContentScale.Crop,
-                colorFilter = ColorFilter.colorMatrix(saturationMatrix),
                 modifier = Modifier.fillMaxSize(),
                 onError = {
                     if (onCoverLoadFailed != null && effectiveCoverPath.startsWith("/")) {
@@ -335,7 +331,7 @@ fun GameCard(
                         add = Color.Black
                     )
                 } else {
-                    ColorFilter.colorMatrix(saturationMatrix)
+                    null
                 }
                 val includeBadge = showPlatformBadge && boxArtStyle.systemIconPosition != SystemIconPosition.OFF
                 val combinedShape = GlassCombinedShape(
@@ -545,11 +541,17 @@ fun GameCard(
             }
         }
 
-        if (useGradientBorder && hasGradientColors) {
+        if (gradientBorderProgress > 0f && gradientColors != null) {
+            val isDark = isSystemInDarkTheme()
+            val neutralColor = if (isDark) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.5f)
+            val animatedPrimary = lerp(neutralColor, gradientColors.first, gradientBorderProgress)
+            val animatedSecondary = lerp(neutralColor, gradientColors.second, gradientBorderProgress)
+            val animatedFrameWidth = frameWidthPx * gradientBorderProgress
+
             val badgePosition = if (showPlatformBadge) boxArtStyle.systemIconPosition else SystemIconPosition.OFF
             val gradientMaskShape = GradientMaskShape(
                 outerCornerRadius = outerCornerRadiusPx,
-                frameWidth = frameWidthPx,
+                frameWidth = animatedFrameWidth,
                 isStub = false,
                 badgePosition = badgePosition,
                 badgeWidth = badgeWidthPx,
@@ -558,7 +560,7 @@ fun GameCard(
                 oneDpPx = oneDpPx
             )
 
-            val innerEffectShape = InnerEffectShape(outerCornerRadiusPx, frameWidthPx, innerEffectWidth)
+            val innerEffectShape = InnerEffectShape(outerCornerRadiusPx, animatedFrameWidth, innerEffectWidth)
             val gradientImageData = effectiveCoverPath?.let { path ->
                 if (path.startsWith("/")) File(path) else path
             }
@@ -600,7 +602,6 @@ fun GameCard(
                                     model = gradientImageData,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
-                                    colorFilter = ColorFilter.colorMatrix(saturationMatrix),
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .blur(blurAmount)
@@ -716,7 +717,7 @@ fun GameCard(
                     .clip(gradientMaskShape)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(gradientColors!!.first, gradientColors.second)
+                            colors = listOf(animatedPrimary, animatedSecondary)
                         )
                     )
             )

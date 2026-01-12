@@ -24,6 +24,7 @@ import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -47,11 +48,13 @@ import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -182,9 +185,9 @@ data class LibraryUiState(
     val columnsCount: Int
         get() {
             val baseColumns = when (gridDensity) {
-                GridDensity.COMPACT -> 5
-                GridDensity.NORMAL -> 4
-                GridDensity.SPACIOUS -> 3
+                GridDensity.COMPACT -> 8
+                GridDensity.NORMAL -> 6
+                GridDensity.SPACIOUS -> 5
             }
             return if (screenWidthDp > 900) {
                 (baseColumns * 1.5f).toInt()
@@ -193,18 +196,11 @@ data class LibraryUiState(
             }
         }
 
-    val cardHeightDp: Int
-        get() = when (gridDensity) {
-            GridDensity.COMPACT -> 150
-            GridDensity.NORMAL -> 180
-            GridDensity.SPACIOUS -> 220
-        }
-
     val gridSpacingDp: Int
         get() = when (gridDensity) {
-            GridDensity.COMPACT -> 12
-            GridDensity.NORMAL -> 16
-            GridDensity.SPACIOUS -> 20
+            GridDensity.COMPACT -> 4
+            GridDensity.NORMAL -> 6
+            GridDensity.SPACIOUS -> 8
         }
 
     val currentPlatform: HomePlatformUi?
@@ -295,6 +291,9 @@ class LibraryViewModel @Inject constructor(
     private var pendingInitialSourceFilter: SourceFilter? = null
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
     private var currentGradientPreset: GradientPreset = GradientPreset.BALANCED
+    private var currentBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID
+    private var gradientExtractionJob: Job? = null
+    private val extractedGradients = mutableMapOf<Long, Pair<Color, Color>>()
 
     private val pendingCoverRepairs = mutableSetOf<Long>()
 
@@ -366,12 +365,55 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.userPreferences.collectLatest { prefs ->
                 currentGradientPreset = prefs.gradientPreset
+                currentBorderStyle = prefs.boxArtBorderStyle
                 _uiState.update {
                     it.copy(
                         gridDensity = prefs.gridDensity,
                         recentSearches = prefs.libraryRecentSearches
                     )
                 }
+            }
+        }
+    }
+
+    private fun extractGradientsForVisibleGames(focusedIndex: Int) {
+        if (currentBorderStyle != BoxArtBorderStyle.GRADIENT) return
+
+        gradientExtractionJob?.cancel()
+        gradientExtractionJob = viewModelScope.launch {
+            val games = _uiState.value.games
+            val cols = _uiState.value.columnsCount
+            val buffer = cols * 3
+            val startIndex = (focusedIndex - buffer).coerceAtLeast(0)
+            val endIndex = (focusedIndex + buffer).coerceAtMost(games.size - 1)
+
+            val gamesToExtract = games.subList(startIndex, endIndex + 1)
+                .filter { it.coverPath != null && it.gradientColors == null && !extractedGradients.containsKey(it.id) }
+
+            if (gamesToExtract.isEmpty()) return@launch
+
+            val extracted = withContext(Dispatchers.IO) {
+                gamesToExtract.mapNotNull { game ->
+                    game.coverPath?.let { path ->
+                        gradientColorExtractor.getGradientColors(path, currentGradientPreset)?.let { colors ->
+                            game.id to colors
+                        }
+                    }
+                }
+            }
+
+            extracted.forEach { (id, colors) ->
+                extractedGradients[id] = colors
+            }
+
+            _uiState.update { state ->
+                state.copy(
+                    games = state.games.map { game ->
+                        extractedGradients[game.id]?.let { colors ->
+                            game.copy(gradientColors = colors)
+                        } ?: game
+                    }
+                )
             }
         }
     }
@@ -516,11 +558,13 @@ class LibraryViewModel @Inject constructor(
                     Log.d(TAG, "loadGames: ${games.size} total, ${filteredGames.size} after filters")
                     _uiState.update { uiState ->
                         val shouldResetFocus = uiState.games.isEmpty()
+                        val newFocusedIndex = if (shouldResetFocus) 0 else uiState.focusedIndex.coerceAtMost((filteredGames.size - 1).coerceAtLeast(0))
                         uiState.copy(
                             games = filteredGames.map { it.toUi(cachedPlatformDisplayNames) },
-                            focusedIndex = if (shouldResetFocus) 0 else uiState.focusedIndex.coerceAtMost((filteredGames.size - 1).coerceAtLeast(0))
+                            focusedIndex = newFocusedIndex
                         )
                     }
+                    extractGradientsForVisibleGames(_uiState.value.focusedIndex)
                 }
         }
     }
@@ -623,6 +667,7 @@ class LibraryViewModel @Inject constructor(
 
         Log.d(TAG, "moveFocus: $direction, $current -> $newIndex (cols=$cols, total=$total)")
         _uiState.update { it.copy(focusedIndex = newIndex, lastFocusMove = direction, isTouchMode = false) }
+        extractGradientsForVisibleGames(newIndex)
         return true
     }
 
@@ -1113,7 +1158,7 @@ class LibraryViewModel @Inject constructor(
             platformSlug = platformSlug,
             platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
             coverPath = coverPath,
-            gradientColors = coverPath?.let { gradientColorExtractor.getGradientColors(it, currentGradientPreset) },
+            gradientColors = extractedGradients[id],
             source = source,
             isFavorite = isFavorite,
             isDownloaded = localPath != null || source == GameSource.STEAM || source == GameSource.ANDROID_APP,
@@ -1133,7 +1178,7 @@ class LibraryViewModel @Inject constructor(
             platformSlug = platformSlug,
             platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
             coverPath = coverPath,
-            gradientColors = coverPath?.let { gradientColorExtractor.getGradientColors(it, currentGradientPreset) },
+            gradientColors = extractedGradients[id],
             source = source,
             isFavorite = isFavorite,
             isDownloaded = isDownloaded || source == GameSource.STEAM || source == GameSource.ANDROID_APP,

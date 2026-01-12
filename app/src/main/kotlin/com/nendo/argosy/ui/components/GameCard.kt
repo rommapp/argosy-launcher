@@ -107,6 +107,8 @@ fun GameCard(
     val boxArtStyle = LocalBoxArtStyle.current
     val isDarkTheme = isSystemInDarkTheme()
     val effectiveCoverPath = coverPathOverride ?: game.coverPath
+    val gradientColorsForGlow = game.gradientColors
+    val useGradientGlow = boxArtStyle.borderStyle == BoxArtBorderStyle.GRADIENT && gradientColorsForGlow != null
 
     val scale by animateFloatAsState(
         targetValue = scaleOverride ?: if (isFocused) focusScale else Motion.scaleDefault,
@@ -168,14 +170,22 @@ fun GameCard(
                             val spread = outerEffectRadius
                             when (outerEffect) {
                                 BoxArtOuterEffect.GLOW -> {
-                                    val paint = Paint().apply {
-                                        color = glowColor.copy(alpha = 0.4f)
-                                    }
-                                    val frameworkPaint = paint.asFrameworkPaint().apply {
+                                    val frameworkPaint = android.graphics.Paint().apply {
                                         maskFilter = android.graphics.BlurMaskFilter(
                                             outerEffectRadius,
                                             android.graphics.BlurMaskFilter.Blur.NORMAL
                                         )
+                                        if (useGradientGlow && gradientColorsForGlow != null) {
+                                            shader = android.graphics.LinearGradient(
+                                                0f, 0f,
+                                                0f, size.height,
+                                                gradientColorsForGlow.first.copy(alpha = 0.5f).toArgb(),
+                                                gradientColorsForGlow.second.copy(alpha = 0.5f).toArgb(),
+                                                android.graphics.Shader.TileMode.CLAMP
+                                            )
+                                        } else {
+                                            color = glowColor.copy(alpha = 0.4f).toArgb()
+                                        }
                                     }
                                     canvas.nativeCanvas.drawRoundRect(
                                         -spread, -spread,

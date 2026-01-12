@@ -33,7 +33,6 @@ class UserPreferencesRepository @Inject constructor(
         val TERTIARY_COLOR = intPreferencesKey("tertiary_color")
 
         val HAPTIC_ENABLED = booleanPreferencesKey("haptic_enabled")
-        val HAPTIC_INTENSITY = stringPreferencesKey("haptic_intensity")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
         val SOUND_VOLUME = intPreferencesKey("sound_volume")
         val SWAP_AB = booleanPreferencesKey("nintendo_button_layout")  // Keep old key for migration
@@ -123,7 +122,6 @@ class UserPreferencesRepository @Inject constructor(
             secondaryColor = prefs[Keys.SECONDARY_COLOR],
             tertiaryColor = prefs[Keys.TERTIARY_COLOR],
             hapticEnabled = prefs[Keys.HAPTIC_ENABLED] ?: true,
-            hapticIntensity = HapticIntensity.fromString(prefs[Keys.HAPTIC_INTENSITY]),
             soundEnabled = prefs[Keys.SOUND_ENABLED] ?: false,
             soundVolume = prefs[Keys.SOUND_VOLUME] ?: 40,
             swapAB = prefs[Keys.SWAP_AB] ?: false,
@@ -324,12 +322,6 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setHapticEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.HAPTIC_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setHapticIntensity(intensity: HapticIntensity) {
-        dataStore.edit { prefs ->
-            prefs[Keys.HAPTIC_INTENSITY] = intensity.name
         }
     }
 
@@ -802,7 +794,6 @@ data class UserPreferences(
     val secondaryColor: Int? = null,
     val tertiaryColor: Int? = null,
     val hapticEnabled: Boolean = true,
-    val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
     val soundEnabled: Boolean = false,
     val soundVolume: Int = 40,
     val swapAB: Boolean = false,
@@ -884,17 +875,6 @@ enum class GridDensity {
     companion object {
         fun fromString(value: String?): GridDensity =
             entries.find { it.name == value } ?: NORMAL
-    }
-}
-
-enum class HapticIntensity(val amplitude: Int) {
-    LOW(50),
-    MEDIUM(128),
-    HIGH(255);
-
-    companion object {
-        fun fromString(value: String?): HapticIntensity =
-            entries.find { it.name == value } ?: MEDIUM
     }
 }
 

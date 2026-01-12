@@ -21,7 +21,6 @@ import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
-import com.nendo.argosy.data.preferences.HapticIntensity
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
@@ -47,12 +46,6 @@ enum class SettingsSection {
     EMULATORS,
     PERMISSIONS,
     ABOUT
-}
-
-enum class BoxArtPreviewRatio(val ratio: Float, val displayName: String) {
-    VERTICAL_2_3(2f / 3f, "2:3"),
-    VERTICAL_3_4(3f / 4f, "3:4"),
-    SQUARE_1_1(1f, "1:1")
 }
 
 enum class ConnectionStatus {
@@ -134,7 +127,8 @@ data class DisplayState(
 
 data class ControlsState(
     val hapticEnabled: Boolean = true,
-    val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    val vibrationStrength: Float = 0.5f,
+    val vibrationSupported: Boolean = false,
     val controllerLayout: String = "auto",
     val detectedLayout: String? = null,
     val detectedDeviceName: String? = null,
@@ -449,7 +443,6 @@ data class SettingsUiState(
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,
-    val boxArtPreviewRatio: BoxArtPreviewRatio = BoxArtPreviewRatio.VERTICAL_3_4,
     val previewGame: GameListItem? = null,
     val previewGames: List<GameListItem> = emptyList(),
     val previewGameIndex: Int = 0,

@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.app.Application
-import com.nendo.argosy.data.preferences.HapticIntensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.input.ControllerDetector
 import com.nendo.argosy.ui.input.DetectedLayout
@@ -10,7 +9,6 @@ import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.screens.settings.ControlsState
 import com.nendo.argosy.util.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,31 +36,24 @@ class ControlsSettingsDelegate @Inject constructor(
         }
     }
 
-    fun setHapticIntensity(scope: CoroutineScope, intensity: HapticIntensity) {
-        scope.launch {
-            preferencesRepository.setHapticIntensity(intensity)
-            _state.update { it.copy(hapticIntensity = intensity) }
+    fun getVibrationStrength(): Float = hapticManager.getSystemVibrationStrength()
+
+    fun setVibrationStrength(strength: Float) {
+        hapticManager.setSystemVibrationStrength(strength)
+        _state.update { it.copy(vibrationStrength = strength) }
+        hapticManager.vibrate(HapticPattern.STRENGTH_PREVIEW)
+    }
+
+    fun adjustVibrationStrength(delta: Float) {
+        val current = _state.value.vibrationStrength
+        val newStrength = (current + delta).coerceIn(0f, 1f)
+        if (newStrength != current) {
+            setVibrationStrength(newStrength)
         }
     }
 
-    fun cycleHapticIntensity(scope: CoroutineScope) {
-        adjustHapticIntensity(scope, 1)
-    }
-
-    fun adjustHapticIntensity(scope: CoroutineScope, delta: Int) {
-        val current = _state.value.hapticIntensity
-        val currentIndex = current.ordinal
-        val newIndex = (currentIndex + delta).coerceIn(0, HapticIntensity.entries.lastIndex)
-        if (newIndex != currentIndex) {
-            val newIntensity = HapticIntensity.entries[newIndex]
-            hapticManager.setIntensity(newIntensity.amplitude)
-            setHapticIntensity(scope, newIntensity)
-            scope.launch {
-                delay(100)
-                hapticManager.vibrate(HapticPattern.INTENSITY_PREVIEW)
-            }
-        }
-    }
+    val supportsSystemVibration: Boolean
+        get() = hapticManager.supportsSystemVibration
 
     fun setSwapAB(scope: CoroutineScope, enabled: Boolean) {
         scope.launch {

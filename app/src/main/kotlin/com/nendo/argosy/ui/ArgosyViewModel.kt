@@ -60,6 +60,8 @@ data class QuickSettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val soundEnabled: Boolean = false,
     val hapticEnabled: Boolean = true,
+    val vibrationStrength: Float = 0.5f,
+    val vibrationSupported: Boolean = false,
     val ambientAudioEnabled: Boolean = false,
     val fanMode: FanMode = FanMode.SMART,
     val fanSpeed: Int = 25000,
@@ -160,7 +162,6 @@ class ArgosyViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
                 hapticManager.setEnabled(prefs.hapticEnabled)
-                hapticManager.setIntensity(prefs.hapticIntensity.amplitude)
                 soundManager.setEnabled(prefs.soundEnabled)
                 soundManager.setVolume(prefs.soundVolume)
                 soundManager.setSoundConfigs(prefs.soundConfigs)
@@ -326,6 +327,8 @@ class ArgosyViewModel @Inject constructor(
             themeMode = prefs.themeMode,
             soundEnabled = prefs.soundEnabled,
             hapticEnabled = prefs.hapticEnabled,
+            vibrationStrength = hapticManager.getSystemVibrationStrength(),
+            vibrationSupported = hapticManager.supportsSystemVibration,
             ambientAudioEnabled = prefs.ambientAudioEnabled,
             fanMode = device.fanMode,
             fanSpeed = device.fanSpeed,
@@ -405,16 +408,17 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
-    fun toggleSound() {
+    fun toggleSound(): Boolean {
         val current = quickSettingsState.value.soundEnabled
         val newState = !current
         soundManager.setEnabled(newState)
         viewModelScope.launch {
             preferencesRepository.setSoundEnabled(newState)
         }
+        return newState
     }
 
-    fun toggleHaptic() {
+    fun toggleHaptic(): Boolean {
         val current = quickSettingsState.value.hapticEnabled
         val newState = !current
         hapticManager.setEnabled(newState)
@@ -424,13 +428,21 @@ class ArgosyViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setHapticEnabled(newState)
         }
+        return newState
     }
 
-    fun toggleAmbientAudio() {
+    fun setVibrationStrength(strength: Float) {
+        hapticManager.setSystemVibrationStrength(strength)
+        hapticManager.vibrate(HapticPattern.STRENGTH_PREVIEW)
+    }
+
+    fun toggleAmbientAudio(): Boolean {
+        val current = quickSettingsState.value.ambientAudioEnabled
+        val newState = !current
         viewModelScope.launch {
-            val current = quickSettingsState.value.ambientAudioEnabled
-            preferencesRepository.setAmbientAudioEnabled(!current)
+            preferencesRepository.setAmbientAudioEnabled(newState)
         }
+        return newState
     }
 
     fun cycleFanMode() {
@@ -502,16 +514,20 @@ class ArgosyViewModel @Inject constructor(
     fun createQuickSettingsInputHandler(
         onDismiss: () -> Unit
     ): InputHandler = object : InputHandler {
-        private fun hasSlider(): Boolean {
+        private fun hasFanSlider(): Boolean {
             val device = _deviceSettings.value
             return device.isSupported && device.hasWritePermission && device.fanMode == FanMode.CUSTOM
         }
 
+        private fun hasVibrationSlider(): Boolean {
+            return hapticManager.supportsSystemVibration && quickSettingsState.value.hapticEnabled
+        }
+
         private fun getMaxIndex(): Int {
-            val baseItems = 4
+            val baseItems = if (hasVibrationSlider()) 5 else 4
             val deviceItems = when {
                 !_deviceSettings.value.isSupported -> 0
-                hasSlider() -> 3
+                hasFanSlider() -> 3
                 else -> 2
             }
             return baseItems + deviceItems - 1
@@ -519,7 +535,7 @@ class ArgosyViewModel @Inject constructor(
 
         private fun getDeviceOffset(): Int = when {
             !_deviceSettings.value.isSupported -> 0
-            hasSlider() -> 3
+            hasFanSlider() -> 3
             else -> 2
         }
 
@@ -542,27 +558,50 @@ class ArgosyViewModel @Inject constructor(
         }
 
         override fun onLeft(): InputResult {
-            if (hasSlider() && _quickSettingsFocusIndex.value == 2) {
+            val offset = getDeviceOffset()
+            val index = _quickSettingsFocusIndex.value
+
+            if (hasFanSlider() && index == 2) {
                 val currentSpeed = _deviceSettings.value.fanSpeed
                 val newSpeed = (currentSpeed - 1000).coerceAtLeast(25000)
                 setFanSpeed(newSpeed)
                 return InputResult.HANDLED
             }
+
+            if (hasVibrationSlider() && index == offset + 2) {
+                val currentStrength = hapticManager.getSystemVibrationStrength()
+                val newStrength = (currentStrength - 0.1f).coerceAtLeast(0f)
+                setVibrationStrength(newStrength)
+                return InputResult.HANDLED
+            }
+
             return InputResult.UNHANDLED
         }
 
         override fun onRight(): InputResult {
-            if (hasSlider() && _quickSettingsFocusIndex.value == 2) {
+            val offset = getDeviceOffset()
+            val index = _quickSettingsFocusIndex.value
+
+            if (hasFanSlider() && index == 2) {
                 val currentSpeed = _deviceSettings.value.fanSpeed
                 val newSpeed = (currentSpeed + 1000).coerceAtMost(35000)
                 setFanSpeed(newSpeed)
                 return InputResult.HANDLED
             }
+
+            if (hasVibrationSlider() && index == offset + 2) {
+                val currentStrength = hapticManager.getSystemVibrationStrength()
+                val newStrength = (currentStrength + 0.1f).coerceAtMost(1f)
+                setVibrationStrength(newStrength)
+                return InputResult.HANDLED
+            }
+
             return InputResult.UNHANDLED
         }
 
         override fun onConfirm(): InputResult {
             val offset = getDeviceOffset()
+            val vibrationOffset = if (hasVibrationSlider()) 1 else 0
             val index = _quickSettingsFocusIndex.value
             val device = _deviceSettings.value
 
@@ -570,18 +609,41 @@ class ArgosyViewModel @Inject constructor(
                 when {
                     index == 0 && device.hasWritePermission -> cyclePerformanceMode()
                     index == 1 && device.hasWritePermission -> cycleFanMode()
-                    index == 2 && hasSlider() -> { /* slider - no action on confirm */ }
+                    index == 2 && hasFanSlider() -> { /* slider - no action on confirm */ }
                     index == offset -> cycleTheme()
-                    index == offset + 1 -> toggleHaptic()
-                    index == offset + 2 -> toggleSound()
-                    index == offset + 3 -> toggleAmbientAudio()
+                    index == offset + 1 -> {
+                        val enabled = toggleHaptic()
+                        return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
+                    index == offset + 2 && hasVibrationSlider() -> { /* slider - no action on confirm */ }
+                    index == offset + 2 + vibrationOffset -> {
+                        val enabled = toggleSound()
+                        return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
+                    index == offset + 3 + vibrationOffset -> {
+                        val enabled = toggleAmbientAudio()
+                        return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
                 }
             } else {
                 when (index) {
                     0 -> cycleTheme()
-                    1 -> toggleHaptic()
-                    2 -> toggleSound()
-                    3 -> toggleAmbientAudio()
+                    1 -> {
+                        val enabled = toggleHaptic()
+                        return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
+                    2 -> if (hasVibrationSlider()) { /* slider */ } else {
+                        val enabled = toggleSound()
+                        return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
+                    3 -> {
+                        val enabled = if (hasVibrationSlider()) toggleSound() else toggleAmbientAudio()
+                        return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
+                    4 -> if (hasVibrationSlider()) {
+                        val enabled = toggleAmbientAudio()
+                        return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
                 }
             }
             return InputResult.HANDLED

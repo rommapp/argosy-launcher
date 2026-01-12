@@ -20,7 +20,8 @@ import com.nendo.argosy.ui.theme.Motion
 @Composable
 fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
-    val maxIndex = if (uiState.controls.hapticEnabled) 5 else 4
+    val showVibrationSlider = uiState.controls.hapticEnabled && uiState.controls.vibrationSupported
+    val maxIndex = if (showVibrationSlider) 5 else 4
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex in 0..maxIndex) {
@@ -46,20 +47,20 @@ fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onToggle = { viewModel.setHapticEnabled(it) }
             )
         }
-        if (uiState.controls.hapticEnabled) {
+        if (showVibrationSlider) {
             item {
                 SliderPreference(
-                    title = "Haptic Intensity",
-                    value = uiState.controls.hapticIntensity.ordinal + 1,
+                    title = "Vibration Strength",
+                    value = (uiState.controls.vibrationStrength * 10).toInt() + 1,
                     minValue = 1,
-                    maxValue = 3,
+                    maxValue = 11,
                     isFocused = uiState.focusedIndex == 1,
-                    onClick = { viewModel.cycleHapticIntensity() }
+                    onClick = { viewModel.cycleVibrationStrength() }
                 )
             }
         }
         item {
-            val focusIndex = if (uiState.controls.hapticEnabled) 2 else 1
+            val focusIndex = if (showVibrationSlider) 2 else 1
             val layoutDisplay = when (uiState.controls.controllerLayout) {
                 "nintendo" -> "Nintendo"
                 "xbox" -> "Xbox"
@@ -81,7 +82,7 @@ fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
         }
         item {
-            val focusIndex = if (uiState.controls.hapticEnabled) 3 else 2
+            val focusIndex = if (showVibrationSlider) 3 else 2
             SwitchPreference(
                 title = "Swap A/B",
                 subtitle = "Swap confirm and back buttons",
@@ -91,7 +92,7 @@ fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
         }
         item {
-            val focusIndex = if (uiState.controls.hapticEnabled) 4 else 3
+            val focusIndex = if (showVibrationSlider) 4 else 3
             SwitchPreference(
                 title = "Swap X/Y",
                 subtitle = "Swap context menu and secondary action",
@@ -101,7 +102,7 @@ fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
         }
         item {
-            val focusIndex = if (uiState.controls.hapticEnabled) 5 else 4
+            val focusIndex = if (showVibrationSlider) 5 else 4
             SwitchPreference(
                 title = "Swap Start/Select",
                 subtitle = "Flip the Start and Select button functions",

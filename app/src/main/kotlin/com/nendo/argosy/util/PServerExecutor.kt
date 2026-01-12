@@ -44,4 +44,14 @@ object PServerExecutor {
     fun setSystemSetting(key: String, value: Int): Boolean {
         return execute("settings put system $key $value").isSuccess
     }
+
+    fun getSystemSettingFloat(key: String, default: Float): Float {
+        return execute("settings get system $key")
+            .mapCatching { it?.toFloatOrNull() ?: default }
+            .getOrDefault(default)
+    }
+
+    fun setSystemSettingFloat(key: String, value: Float): Boolean {
+        return execute("settings put system $key $value").isSuccess
+    }
 }

@@ -75,6 +75,8 @@ data class QuickSettingsState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val soundEnabled: Boolean = false,
     val hapticEnabled: Boolean = true,
+    val vibrationStrength: Float = 0.5f,
+    val vibrationSupported: Boolean = false,
     val ambientAudioEnabled: Boolean = false,
     val fanMode: FanMode = FanMode.SMART,
     val fanSpeed: Int = 25000,
@@ -91,6 +93,7 @@ fun QuickSettingsPanel(
     onThemeCycle: () -> Unit,
     onSoundToggle: () -> Unit,
     onHapticToggle: () -> Unit,
+    onVibrationStrengthChange: (Float) -> Unit,
     onAmbientToggle: () -> Unit,
     onFanModeCycle: () -> Unit,
     onFanSpeedChange: (Int) -> Unit,
@@ -98,11 +101,12 @@ fun QuickSettingsPanel(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val baseItemCount = 4
-    val hasSlider = state.deviceSettingsSupported && state.fanMode == FanMode.CUSTOM && state.deviceSettingsEnabled
+    val hasVibrationSlider = state.vibrationSupported && state.hapticEnabled
+    val baseItemCount = if (hasVibrationSlider) 5 else 4
+    val hasFanSlider = state.deviceSettingsSupported && state.fanMode == FanMode.CUSTOM && state.deviceSettingsEnabled
     val deviceItemCount = when {
         !state.deviceSettingsSupported -> 0
-        hasSlider -> 3
+        hasFanSlider -> 3
         else -> 2
     }
     Box(
@@ -222,7 +226,7 @@ fun QuickSettingsPanel(
                             )
                         }
 
-                        if (hasSlider) {
+                        if (hasFanSlider) {
                             item {
                                 FanSpeedSlider(
                                     speed = state.fanSpeed,
@@ -264,12 +268,24 @@ fun QuickSettingsPanel(
                         )
                     }
 
+                    if (hasVibrationSlider) {
+                        item {
+                            VibrationStrengthSlider(
+                                strength = state.vibrationStrength,
+                                isFocused = focusedIndex == deviceItemCount + 2,
+                                onStrengthChange = onVibrationStrengthChange
+                            )
+                        }
+                    }
+
+                    val vibrationSliderOffset = if (hasVibrationSlider) 1 else 0
+
                     item {
                         QuickSettingToggle(
                             icon = if (state.soundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
                             label = "UI Sounds",
                             isEnabled = state.soundEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 2,
+                            isFocused = focusedIndex == deviceItemCount + 2 + vibrationSliderOffset,
                             onClick = onSoundToggle
                         )
                     }
@@ -279,7 +295,7 @@ fun QuickSettingsPanel(
                             icon = if (state.ambientAudioEnabled) Icons.Default.MusicNote else Icons.Default.MusicOff,
                             label = "BGM",
                             isEnabled = state.ambientAudioEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 3,
+                            isFocused = focusedIndex == deviceItemCount + 3 + vibrationSliderOffset,
                             onClick = onAmbientToggle
                         )
                     }
@@ -549,6 +565,60 @@ private fun FanSpeedSlider(
             value = speed.toFloat(),
             onValueChange = { onSpeedChange(it.toInt()) },
             valueRange = minSpeed..maxSpeed,
+            steps = 9,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier.height(24.dp)
+        )
+    }
+}
+
+@Composable
+private fun VibrationStrengthSlider(
+    strength: Float,
+    isFocused: Boolean,
+    onStrengthChange: (Float) -> Unit
+) {
+    val percentage = (strength * 100).toInt()
+
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+
+    val shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp)
+            .clip(shape)
+            .background(backgroundColor)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Strength",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "$percentage%",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Slider(
+            value = strength,
+            onValueChange = onStrengthChange,
+            valueRange = 0f..1f,
             steps = 9,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,

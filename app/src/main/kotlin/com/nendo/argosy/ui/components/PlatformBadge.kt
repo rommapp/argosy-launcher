@@ -102,19 +102,20 @@ fun PlatformBadge(
     val displayText = platformDisplayName.take(8).uppercase()
 
     val scale = (cardWidthDp / BASE_WIDTH_DP).coerceIn(0.5f, 2f)
-    val cornerRadius = boxArtStyle.cornerRadiusDp * scale
+    val outerCornerRadius = boxArtStyle.cornerRadiusDp
+    val innerCornerRadius = boxArtStyle.cornerRadiusDp * scale
     val position = boxArtStyle.systemIconPosition
 
     val badgeShape = when (position) {
         SystemIconPosition.TOP_LEFT -> RoundedCornerShape(
-            topStart = cornerRadius,
-            bottomEnd = cornerRadius
+            topStart = outerCornerRadius,
+            bottomEnd = innerCornerRadius
         )
         SystemIconPosition.TOP_RIGHT -> RoundedCornerShape(
-            topEnd = cornerRadius,
-            bottomStart = cornerRadius
+            topEnd = outerCornerRadius,
+            bottomStart = innerCornerRadius
         )
-        else -> RoundedCornerShape(bottomEnd = cornerRadius)
+        else -> RoundedCornerShape(bottomEnd = innerCornerRadius)
     }
 
     val fontSize = BASE_FONT_SIZE_SP * scale
@@ -131,7 +132,7 @@ fun PlatformBadge(
     val textColor = Color.White
     val borderOffset = if (isFocused) boxArtStyle.borderThicknessDp else 0.dp
     val isExtremeCase = isFocused && boxArtStyle.borderThicknessDp >= 4.dp && userPadding <= 1.dp
-    val earSize = if (isExtremeCase) cornerRadius - boxArtStyle.borderThicknessDp / 2 else cornerRadius
+    val earSize = if (isExtremeCase) outerCornerRadius - boxArtStyle.borderThicknessDp / 2 else outerCornerRadius
 
     when (position) {
         SystemIconPosition.TOP_LEFT -> {
@@ -156,7 +157,7 @@ fun PlatformBadge(
                         modifier = Modifier
                             .offset(x = (-1).dp, y = borderOffset - 1.dp)
                             .size(earSize)
-                            .clip(remember(cornerRadius) { CurvedEarShape(cornerRadius, EarPosition.TOP_LEFT_RIGHT) })
+                            .clip(remember(outerCornerRadius) { CurvedEarShape(outerCornerRadius, EarPosition.TOP_LEFT_RIGHT) })
                             .background(badgeColor)
                     )
                 }
@@ -165,7 +166,7 @@ fun PlatformBadge(
                         modifier = Modifier
                             .offset(x = borderOffset - 1.dp, y = (-1).dp)
                             .size(earSize)
-                            .clip(remember(cornerRadius) { CurvedEarShape(cornerRadius, EarPosition.TOP_LEFT_BOTTOM) })
+                            .clip(remember(outerCornerRadius) { CurvedEarShape(outerCornerRadius, EarPosition.TOP_LEFT_BOTTOM) })
                             .background(badgeColor)
                     )
                 }
@@ -178,7 +179,7 @@ fun PlatformBadge(
                         modifier = Modifier
                             .offset(x = 1.dp, y = borderOffset - 1.dp)
                             .size(earSize)
-                            .clip(remember(cornerRadius) { CurvedEarShape(cornerRadius, EarPosition.TOP_RIGHT_LEFT) })
+                            .clip(remember(outerCornerRadius) { CurvedEarShape(outerCornerRadius, EarPosition.TOP_RIGHT_LEFT) })
                             .background(badgeColor)
                     )
                     Box(
@@ -202,7 +203,7 @@ fun PlatformBadge(
                         modifier = Modifier
                             .offset(x = -(borderOffset - 1.dp), y = (-1).dp)
                             .size(earSize)
-                            .clip(remember(cornerRadius) { CurvedEarShape(cornerRadius, EarPosition.TOP_RIGHT_BOTTOM) })
+                            .clip(remember(outerCornerRadius) { CurvedEarShape(outerCornerRadius, EarPosition.TOP_RIGHT_BOTTOM) })
                             .background(badgeColor)
                     )
                 }

@@ -212,8 +212,8 @@ class SettingsInputHandler(
             }
         }
 
-        if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.focusedIndex == 1) {
-            viewModel.adjustHapticIntensity(-1)
+        if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.controls.vibrationSupported && state.focusedIndex == 1) {
+            viewModel.adjustVibrationStrength(-0.1f)
             return InputResult.HANDLED
         }
 
@@ -399,8 +399,8 @@ class SettingsInputHandler(
             }
         }
 
-        if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.focusedIndex == 1) {
-            viewModel.adjustHapticIntensity(1)
+        if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.controls.vibrationSupported && state.focusedIndex == 1) {
+            viewModel.adjustVibrationStrength(0.1f)
             return InputResult.HANDLED
         }
 
@@ -598,7 +598,7 @@ class SettingsInputHandler(
     override fun onPrevSection(): InputResult {
         val state = viewModel.uiState.value
         if (state.currentSection == SettingsSection.BOX_ART) {
-            viewModel.cyclePrevPreviewRatio()
+            viewModel.cycleBoxArtShape(-1)
             return InputResult.HANDLED
         }
         if (state.currentSection == SettingsSection.STORAGE) {
@@ -611,7 +611,7 @@ class SettingsInputHandler(
     override fun onNextSection(): InputResult {
         val state = viewModel.uiState.value
         if (state.currentSection == SettingsSection.BOX_ART) {
-            viewModel.cycleNextPreviewRatio()
+            viewModel.cycleBoxArtShape(1)
             return InputResult.HANDLED
         }
         if (state.currentSection == SettingsSection.STORAGE) {

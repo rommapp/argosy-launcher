@@ -111,7 +111,6 @@ fun ScreenshotViewerOverlay(
             FooterBar(
                 hints = listOf(
                     InputButton.DPAD_HORIZONTAL to "Navigate",
-                    InputButton.SOUTH to "Close",
                     InputButton.EAST to "Close",
                     InputButton.WEST to "Set Background"
                 )

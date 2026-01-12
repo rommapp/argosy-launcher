@@ -17,15 +17,15 @@ enum class GradientPreset {
 
     fun toConfig(): GradientExtractionConfig = when (this) {
         VIBRANT -> GradientExtractionConfig(
-            minSaturation = 0.40f,
-            saturationBump = 0.50f,
-            minHueDistance = 35
+            minSaturation = 0.25f,
+            saturationBump = 0.60f,
+            valueClamp = 0.90f
         )
         BALANCED -> GradientExtractionConfig()
         SUBTLE -> GradientExtractionConfig(
-            minSaturation = 0.25f,
-            saturationBump = 0.35f,
-            minValue = 0.12f
+            minSaturation = 0.40f,
+            saturationBump = 0.30f,
+            valueClamp = 0.70f
         )
         CUSTOM -> GradientExtractionConfig()
     }

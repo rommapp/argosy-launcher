@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import android.graphics.BitmapFactory
 import com.nendo.argosy.data.cache.GradientColorExtractor
 import com.nendo.argosy.data.cache.GradientExtractionConfig
+import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.ImageCacheProgress
 import com.nendo.argosy.data.scanner.AndroidGameScanner
@@ -196,7 +197,19 @@ class SettingsViewModel @Inject constructor(
 
     private fun observeDelegateStates() {
         displayDelegate.state.onEach { display ->
-            _uiState.update { it.copy(display = display, colorFocusIndex = displayDelegate.colorFocusIndex) }
+            _uiState.update { current ->
+                val newConfig = if (display.gradientPreset != GradientPreset.CUSTOM &&
+                    current.display.gradientPreset != display.gradientPreset) {
+                    display.gradientPreset.toConfig()
+                } else {
+                    current.gradientConfig
+                }
+                current.copy(
+                    display = display,
+                    colorFocusIndex = displayDelegate.colorFocusIndex,
+                    gradientConfig = newConfig
+                )
+            }
         }.launchIn(viewModelScope)
 
         displayDelegate.previewGame.onEach { previewGame ->
@@ -431,7 +444,8 @@ class SettingsViewModel @Inject constructor(
             }
             controlsDelegate.updateState(ControlsState(
                 hapticEnabled = prefs.hapticEnabled,
-                hapticIntensity = prefs.hapticIntensity,
+                vibrationStrength = controlsDelegate.getVibrationStrength(),
+                vibrationSupported = controlsDelegate.supportsSystemVibration,
                 controllerLayout = prefs.controllerLayout,
                 detectedLayout = detectedLayoutName,
                 detectedDeviceName = detectionResult.deviceName,
@@ -920,7 +934,7 @@ class SettingsViewModel @Inject constructor(
                     if (showInnerThickness) idx++
                     idx - 1
                 }
-                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled) 5 else 4
+                SettingsSection.CONTROLS -> if (state.controls.hapticEnabled && state.controls.vibrationSupported) 5 else 4
                 SettingsSection.SOUNDS -> {
                     val bgmItemCount = if (state.ambientAudio.enabled) 3 else 1
                     val uiSoundsItemCount = if (state.sounds.enabled) 2 + SoundType.entries.size else 1
@@ -1081,11 +1095,21 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun cycleGradientPreset(direction: Int = 1) {
-        displayDelegate.cycleGradientPreset(viewModelScope, direction)
+        val current = _uiState.value.display.gradientPreset
+        val next = when (current) {
+            GradientPreset.VIBRANT -> if (direction > 0) GradientPreset.BALANCED else GradientPreset.SUBTLE
+            GradientPreset.BALANCED -> if (direction > 0) GradientPreset.SUBTLE else GradientPreset.VIBRANT
+            GradientPreset.SUBTLE -> if (direction > 0) GradientPreset.VIBRANT else GradientPreset.BALANCED
+            GradientPreset.CUSTOM -> GradientPreset.BALANCED
+        }
+        _uiState.update { it.copy(gradientConfig = next.toConfig()) }
+        displayDelegate.setGradientPreset(viewModelScope, next)
+        extractGradientForPreview()
     }
 
     fun toggleGradientAdvancedMode() {
         displayDelegate.toggleGradientAdvancedMode(viewModelScope)
+        extractGradientForPreview()
     }
 
     fun cycleBoxArtGlowStrength(direction: Int = 1) {
@@ -1118,20 +1142,6 @@ class SettingsViewModel @Inject constructor(
 
     fun cycleDefaultView() {
         displayDelegate.cycleDefaultView(viewModelScope)
-    }
-
-    fun cyclePrevPreviewRatio() {
-        val values = BoxArtPreviewRatio.entries
-        val currentIndex = values.indexOf(_uiState.value.boxArtPreviewRatio)
-        val prevIndex = if (currentIndex <= 0) values.lastIndex else currentIndex - 1
-        _uiState.update { it.copy(boxArtPreviewRatio = values[prevIndex]) }
-    }
-
-    fun cycleNextPreviewRatio() {
-        val values = BoxArtPreviewRatio.entries
-        val currentIndex = values.indexOf(_uiState.value.boxArtPreviewRatio)
-        val nextIndex = if (currentIndex >= values.lastIndex) 0 else currentIndex + 1
-        _uiState.update { it.copy(boxArtPreviewRatio = values[nextIndex]) }
     }
 
     fun loadPreviewGames() {
@@ -1257,16 +1267,12 @@ class SettingsViewModel @Inject constructor(
         controlsDelegate.setHapticEnabled(viewModelScope, enabled)
     }
 
-    fun setHapticIntensity(intensity: com.nendo.argosy.data.preferences.HapticIntensity) {
-        controlsDelegate.setHapticIntensity(viewModelScope, intensity)
+    fun cycleVibrationStrength() {
+        controlsDelegate.adjustVibrationStrength(0.1f)
     }
 
-    fun cycleHapticIntensity() {
-        controlsDelegate.cycleHapticIntensity(viewModelScope)
-    }
-
-    fun adjustHapticIntensity(delta: Int) {
-        controlsDelegate.adjustHapticIntensity(viewModelScope, delta)
+    fun adjustVibrationStrength(delta: Float) {
+        controlsDelegate.adjustVibrationStrength(delta)
     }
 
     fun setSoundEnabled(enabled: Boolean) {
@@ -2197,42 +2203,55 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.CONTROLS -> {
-                val isToggle = if (state.controls.hapticEnabled) {
+                val showVibrationSlider = state.controls.hapticEnabled && state.controls.vibrationSupported
+                if (showVibrationSlider) {
                     when (state.focusedIndex) {
-                        0 -> { setHapticEnabled(!state.controls.hapticEnabled); true }
-                        1 -> { cycleHapticIntensity(); false }
-                        2 -> { cycleControllerLayout(); false }
-                        3 -> { setSwapAB(!state.controls.swapAB); true }
-                        4 -> { setSwapXY(!state.controls.swapXY); true }
-                        5 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
-                        else -> false
+                        0 -> {
+                            val newEnabled = !state.controls.hapticEnabled
+                            setHapticEnabled(newEnabled)
+                            return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
+                        }
+                        1 -> cycleVibrationStrength()
+                        2 -> cycleControllerLayout()
+                        3 -> { setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
+                        4 -> { setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
+                        5 -> { setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
                     }
                 } else {
                     when (state.focusedIndex) {
-                        0 -> { setHapticEnabled(!state.controls.hapticEnabled); true }
-                        1 -> { cycleControllerLayout(); false }
-                        2 -> { setSwapAB(!state.controls.swapAB); true }
-                        3 -> { setSwapXY(!state.controls.swapXY); true }
-                        4 -> { setSwapStartSelect(!state.controls.swapStartSelect); true }
-                        else -> false
+                        0 -> {
+                            val newEnabled = !state.controls.hapticEnabled
+                            setHapticEnabled(newEnabled)
+                            return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
+                        }
+                        1 -> cycleControllerLayout()
+                        2 -> { setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
+                        3 -> { setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
+                        4 -> { setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
                     }
                 }
-                if (isToggle) InputResult.handled(SoundType.TOGGLE) else InputResult.HANDLED
+                InputResult.HANDLED
             }
             SettingsSection.SOUNDS -> {
                 val bgmItemCount = if (state.ambientAudio.enabled) 3 else 1
                 val uiSoundsToggleIndex = bgmItemCount
                 when {
                     state.focusedIndex == 0 -> {
-                        setAmbientAudioEnabled(!state.ambientAudio.enabled)
-                        return InputResult.handled(SoundType.TOGGLE)
+                        val newEnabled = !state.ambientAudio.enabled
+                        setAmbientAudioEnabled(newEnabled)
+                        return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
                     }
                     state.focusedIndex == 2 && state.ambientAudio.enabled -> {
                         openAudioFilePicker()
                     }
                     state.focusedIndex == uiSoundsToggleIndex -> {
-                        setSoundEnabled(!state.sounds.enabled)
-                        return InputResult.handled(SoundType.TOGGLE)
+                        val newEnabled = !state.sounds.enabled
+                        setSoundEnabled(newEnabled)
+                        if (newEnabled) {
+                            soundManager.setEnabled(true)
+                            soundManager.play(SoundType.TOGGLE)
+                        }
+                        return InputResult.handled(SoundType.SILENT)
                     }
                     state.focusedIndex >= uiSoundsToggleIndex + 2 && state.sounds.enabled -> {
                         val soundIndex = state.focusedIndex - uiSoundsToggleIndex - 2

@@ -363,19 +363,10 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
-    fun cycleGradientPreset(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.gradientPreset
-        val isAdvanced = _state.value.gradientAdvancedMode
-        val values = if (isAdvanced) {
-            GradientPreset.entries
-        } else {
-            GradientPreset.entries.filter { it != GradientPreset.CUSTOM }
-        }
-        val currentIndex = values.indexOf(current).coerceAtLeast(0)
-        val next = values[(currentIndex + direction).mod(values.size)]
+    fun setGradientPreset(scope: CoroutineScope, preset: GradientPreset) {
+        _state.update { it.copy(gradientPreset = preset) }
         scope.launch {
-            preferencesRepository.setGradientPreset(next)
-            _state.update { it.copy(gradientPreset = next) }
+            preferencesRepository.setGradientPreset(preset)
         }
     }
 
@@ -384,13 +375,6 @@ class DisplaySettingsDelegate @Inject constructor(
         scope.launch {
             preferencesRepository.setGradientAdvancedMode(newAdvanced)
             _state.update { it.copy(gradientAdvancedMode = newAdvanced) }
-            if (newAdvanced) {
-                preferencesRepository.setGradientPreset(GradientPreset.CUSTOM)
-                _state.update { it.copy(gradientPreset = GradientPreset.CUSTOM) }
-            } else if (_state.value.gradientPreset == GradientPreset.CUSTOM) {
-                preferencesRepository.setGradientPreset(GradientPreset.BALANCED)
-                _state.update { it.copy(gradientPreset = GradientPreset.BALANCED) }
-            }
         }
     }
 }

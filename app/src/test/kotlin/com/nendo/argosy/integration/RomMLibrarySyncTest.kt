@@ -47,7 +47,7 @@ class RomMLibrarySyncTest : RomMIntegrationTest() {
 
     @Test
     fun `getRoms returns paginated results with limit 5`() = runBlocking {
-        val response = api.getRoms(limit = 5)
+        val response = api.getRoms(mapOf("limit" to "5"))
 
         assertTrue("getRoms should succeed", response.isSuccessful)
         val page = response.body()
@@ -59,7 +59,7 @@ class RomMLibrarySyncTest : RomMIntegrationTest() {
 
     @Test
     fun `getRom by ID returns full ROM with metadata`() = runBlocking {
-        val romsResponse = api.getRoms(limit = 1)
+        val romsResponse = api.getRoms(mapOf("limit" to "1"))
         assertTrue("Need ROMs to test", romsResponse.isSuccessful)
         val roms = romsResponse.body()!!.items
         assertTrue("Need at least one ROM", roms.isNotEmpty())

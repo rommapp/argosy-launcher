@@ -16,6 +16,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.QueryMap
 import retrofit2.http.Streaming
 
 @Suppress("TooManyFunctions")
@@ -51,12 +52,7 @@ interface RomMApi {
 
     @GET("api/roms")
     suspend fun getRoms(
-        @Query("platform_id") platformId: Long? = null,
-        @Query("search_term") searchTerm: String? = null,
-        @Query("order_by") orderBy: String = "name",
-        @Query("order_dir") orderDir: String = "asc",
-        @Query("limit") limit: Int = 100,
-        @Query("offset") offset: Int = 0
+        @QueryMap params: Map<String, String>
     ): Response<RomMRomPage>
 
     @GET("api/roms/{id}")

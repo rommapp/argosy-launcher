@@ -1,9 +1,9 @@
 package com.nendo.argosy.data.cache
 
 import android.content.Context
-import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.AchievementDao
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -24,7 +24,6 @@ class ImageCacheManagerTest {
     private lateinit var gameDao: GameDao
     private lateinit var platformDao: PlatformDao
     private lateinit var achievementDao: AchievementDao
-    private lateinit var gradientColorExtractor: GradientColorExtractor
     private lateinit var imageCacheManager: ImageCacheManager
     private lateinit var defaultCacheDir: File
 
@@ -37,8 +36,7 @@ class ImageCacheManagerTest {
         gameDao = mockk(relaxed = true)
         platformDao = mockk(relaxed = true)
         achievementDao = mockk(relaxed = true)
-        gradientColorExtractor = mockk(relaxed = true)
-        imageCacheManager = ImageCacheManager(context, gameDao, platformDao, achievementDao, gradientColorExtractor)
+        imageCacheManager = ImageCacheManager(context, gameDao, platformDao, achievementDao)
     }
 
     @Test

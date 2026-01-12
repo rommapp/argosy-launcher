@@ -44,7 +44,7 @@ class RomMPlatformSyncTest : RomMIntegrationTest() {
 
     @Test
     fun `ROM response includes platformSlug for mapping`() = runBlocking {
-        val romsResponse = api.getRoms(limit = 1)
+        val romsResponse = api.getRoms(mapOf("limit" to "1"))
         assertTrue("Need ROMs to test", romsResponse.isSuccessful)
         val roms = romsResponse.body()!!.items
         assertTrue("Need at least one ROM", roms.isNotEmpty())

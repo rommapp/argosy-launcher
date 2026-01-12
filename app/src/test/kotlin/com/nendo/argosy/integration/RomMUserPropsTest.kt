@@ -15,7 +15,7 @@ class RomMUserPropsTest : RomMIntegrationTest() {
 
     @Test
     fun `ROM response includes romUser object`() = runBlocking {
-        val romsResponse = api.getRoms(limit = 5)
+        val romsResponse = api.getRoms(mapOf("limit" to "5"))
         assertTrue("getRoms should succeed", romsResponse.isSuccessful)
         val roms = romsResponse.body()!!.items
         assertTrue("Need at least one ROM", roms.isNotEmpty())
@@ -30,7 +30,7 @@ class RomMUserPropsTest : RomMIntegrationTest() {
 
     @Test
     fun `romUser has rating field`() = runBlocking {
-        val romsResponse = api.getRoms(limit = 1)
+        val romsResponse = api.getRoms(mapOf("limit" to "1"))
         assertTrue("getRoms should succeed", romsResponse.isSuccessful)
         val rom = romsResponse.body()!!.items.first()
 
@@ -44,7 +44,7 @@ class RomMUserPropsTest : RomMIntegrationTest() {
 
     @Test
     fun `romUser has difficulty field`() = runBlocking {
-        val romsResponse = api.getRoms(limit = 1)
+        val romsResponse = api.getRoms(mapOf("limit" to "1"))
         assertTrue("getRoms should succeed", romsResponse.isSuccessful)
         val rom = romsResponse.body()!!.items.first()
 

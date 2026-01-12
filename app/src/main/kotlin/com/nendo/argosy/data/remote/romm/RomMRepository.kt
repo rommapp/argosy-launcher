@@ -91,6 +91,48 @@ class RomMRepository @Inject constructor(
         data class Failed(val reason: String) : ConnectionState()
     }
 
+    private fun getConnectedVersion(): String? {
+        return (_connectionState.value as? ConnectionState.Connected)?.version
+    }
+
+    private fun isVersionAtLeast(minVersion: String): Boolean {
+        val current = getConnectedVersion() ?: return false
+        return compareVersions(current, minVersion) >= 0
+    }
+
+    private fun compareVersions(v1: String, v2: String): Int {
+        val parts1 = v1.split("-")[0].split(".").mapNotNull { it.toIntOrNull() }
+        val parts2 = v2.split("-")[0].split(".").mapNotNull { it.toIntOrNull() }
+        val maxLen = maxOf(parts1.size, parts2.size)
+        for (i in 0 until maxLen) {
+            val p1 = parts1.getOrElse(i) { 0 }
+            val p2 = parts2.getOrElse(i) { 0 }
+            if (p1 != p2) return p1.compareTo(p2)
+        }
+        return 0
+    }
+
+    private fun buildRomsQueryParams(
+        platformId: Long? = null,
+        searchTerm: String? = null,
+        orderBy: String = "name",
+        orderDir: String = "asc",
+        limit: Int = 100,
+        offset: Int = 0
+    ): Map<String, String> {
+        val usePluralizedParams = isVersionAtLeast("4.6.0")
+        val platformKey = if (usePluralizedParams) "platform_ids" else "platform_id"
+
+        return buildMap {
+            platformId?.let { put(platformKey, it.toString()) }
+            searchTerm?.let { put("search_term", it) }
+            put("order_by", orderBy)
+            put("order_dir", orderDir)
+            put("limit", limit.toString())
+            put("offset", offset.toString())
+        }
+    }
+
     suspend fun initialize() {
         val prefs = userPreferencesRepository.preferences.first()
         Logger.info(TAG, "initialize: baseUrl=${prefs.rommBaseUrl?.take(30)}, hasToken=${prefs.rommToken != null}")
@@ -681,9 +723,11 @@ class RomMRepository @Inject constructor(
 
         while (true) {
             val romsResponse = api.getRoms(
-                platformId = platform.id,
-                limit = SYNC_PAGE_SIZE,
-                offset = offset
+                buildRomsQueryParams(
+                    platformId = platform.id,
+                    limit = SYNC_PAGE_SIZE,
+                    offset = offset
+                )
             )
 
             if (!romsResponse.isSuccessful) {

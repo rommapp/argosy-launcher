@@ -112,6 +112,7 @@ import com.nendo.argosy.ui.input.ChangelogInputHandler
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
 import kotlinx.coroutines.delay
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import kotlinx.coroutines.launch
@@ -501,8 +502,9 @@ fun HomeScreen(
 
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
+        val boxArtStyle = LocalBoxArtStyle.current
         val cardWidth = screenWidth * 0.16f
-        val cardHeight = cardWidth * 4f / 3f
+        val cardHeight = cardWidth / boxArtStyle.aspectRatio
         val focusScale = 1.8f
         val railHeight = cardHeight * focusScale + 16.dp
 
@@ -995,9 +997,10 @@ private fun GameRail(
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
+    val boxArtStyle = LocalBoxArtStyle.current
 
     val cardWidth = screenWidth * 0.16f
-    val cardHeight = cardWidth * 4f / 3f
+    val cardHeight = cardWidth / boxArtStyle.aspectRatio
     val focusScale = 1.8f
     val railHeight = cardHeight * focusScale + 16.dp
 

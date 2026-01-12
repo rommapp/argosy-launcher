@@ -82,6 +82,7 @@ import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.SourceBadge
@@ -307,7 +308,8 @@ fun LibraryScreen(
                         key(uiState.currentPlatformIndex) {
                             val gridSpacing = uiState.gridSpacingDp.dp
                             val columnsCount = uiState.columnsCount
-                            val aspectRatio = if (uiState.gridDensity == GridDensity.COMPACT) 2f / 3f else 3f / 4f
+                            val boxArtStyle = LocalBoxArtStyle.current
+                            val aspectRatio = boxArtStyle.aspectRatio
 
                             val configuration = LocalConfiguration.current
                             LaunchedEffect(configuration.screenWidthDp) {

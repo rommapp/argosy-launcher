@@ -95,10 +95,11 @@ fun WideGameCard(
                 modifier = Modifier.padding(Dimens.spacingMd),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
             ) {
+                val boxArtStyle = LocalBoxArtStyle.current
                 Box(
                     modifier = Modifier
                         .width(80.dp)
-                        .aspectRatio(3f / 4f)
+                        .aspectRatio(boxArtStyle.aspectRatio)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surface)
                 ) {

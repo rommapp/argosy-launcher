@@ -52,6 +52,7 @@ private sealed class BoxArtItem(val key: String, val section: String) {
         this !is OuterHeader && this !is InnerHeader && this !is GradientHeader
 
     data object StylingHeader : BoxArtItem("stylingHeader", "styling")
+    data object Shape : BoxArtItem("shape", "styling")
     data object CornerRadius : BoxArtItem("cornerRadius", "styling")
     data object BorderThickness : BoxArtItem("borderThickness", "styling")
     data object BorderStyle : BoxArtItem("borderStyle", "styling")
@@ -84,6 +85,7 @@ private sealed class BoxArtItem(val key: String, val section: String) {
 
 private fun buildVisibleItems(display: DisplayState, showGradientSection: Boolean): List<BoxArtItem> = buildList {
     add(BoxArtItem.StylingHeader)
+    add(BoxArtItem.Shape)
     add(BoxArtItem.CornerRadius)
     add(BoxArtItem.BorderThickness)
     add(BoxArtItem.BorderStyle)
@@ -194,6 +196,12 @@ fun BoxArtSection(
                     BoxArtItem.OuterHeader -> BoxArtSectionHeader("Outer Effect")
                     BoxArtItem.InnerHeader -> BoxArtSectionHeader("Inner Effect")
 
+                    BoxArtItem.Shape -> CyclePreference(
+                        title = "Shape",
+                        value = display.boxArtShape.displayName,
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleBoxArtShape() }
+                    )
                     BoxArtItem.CornerRadius -> CyclePreference(
                         title = "Corner Radius",
                         value = display.boxArtCornerRadius.displayName(),

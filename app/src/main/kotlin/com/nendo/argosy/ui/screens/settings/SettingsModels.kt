@@ -12,6 +12,7 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
+import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.BoxArtGlowStrength
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.GlassBorderTint
@@ -114,6 +115,7 @@ data class DisplayState(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val useAccentColorFooter: Boolean = false,
+    val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
     val boxArtBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID,

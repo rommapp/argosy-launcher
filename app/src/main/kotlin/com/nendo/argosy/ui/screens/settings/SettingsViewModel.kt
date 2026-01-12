@@ -406,6 +406,7 @@ class SettingsViewModel @Inject constructor(
                 useGameBackground = prefs.useGameBackground,
                 customBackgroundPath = prefs.customBackgroundPath,
                 useAccentColorFooter = prefs.useAccentColorFooter,
+                boxArtShape = prefs.boxArtShape,
                 boxArtCornerRadius = prefs.boxArtCornerRadius,
                 boxArtBorderThickness = prefs.boxArtBorderThickness,
                 boxArtBorderStyle = prefs.boxArtBorderStyle,
@@ -1057,6 +1058,10 @@ class SettingsViewModel @Inject constructor(
 
     fun navigateToHomeScreen() {
         _uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = 0) }
+    }
+
+    fun cycleBoxArtShape(direction: Int = 1) {
+        displayDelegate.cycleBoxArtShape(viewModelScope, direction)
     }
 
     fun cycleBoxArtCornerRadius(direction: Int = 1) {

@@ -161,7 +161,7 @@ class SettingsInputHandler(
             val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
             val showGlowIntensity = state.display.boxArtOuterEffect == com.nendo.argosy.data.preferences.BoxArtOuterEffect.GLOW
             val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
-            var idx = 3
+            var idx = 4
             val glassTintIdx = if (showGlassTint) idx++ else -1
             val gradientPresetIdx = if (showGradient) idx++ else -1
             val gradientAdvancedIdx = if (showGradient) idx++ else -1
@@ -180,9 +180,10 @@ class SettingsInputHandler(
             val innerEffectIdx = idx++
             val innerThicknessIdx = if (showInnerThickness) idx++ else -1
             when (state.focusedIndex) {
-                0 -> viewModel.cycleBoxArtCornerRadius(-1)
-                1 -> viewModel.cycleBoxArtBorderThickness(-1)
-                2 -> viewModel.cycleBoxArtBorderStyle(-1)
+                0 -> viewModel.cycleBoxArtShape(-1)
+                1 -> viewModel.cycleBoxArtCornerRadius(-1)
+                2 -> viewModel.cycleBoxArtBorderThickness(-1)
+                3 -> viewModel.cycleBoxArtBorderStyle(-1)
                 glassTintIdx -> viewModel.cycleGlassBorderTint(-1)
                 gradientPresetIdx -> viewModel.cycleGradientPreset(-1)
                 gradientAdvancedIdx -> viewModel.toggleGradientAdvancedMode()
@@ -347,7 +348,7 @@ class SettingsInputHandler(
             val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
             val showGlowIntensity = state.display.boxArtOuterEffect == com.nendo.argosy.data.preferences.BoxArtOuterEffect.GLOW
             val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
-            var idx = 3
+            var idx = 4
             val glassTintIdx = if (showGlassTint) idx++ else -1
             val gradientPresetIdx = if (showGradient) idx++ else -1
             val gradientAdvancedIdx = if (showGradient) idx++ else -1
@@ -366,9 +367,10 @@ class SettingsInputHandler(
             val innerEffectIdx = idx++
             val innerThicknessIdx = if (showInnerThickness) idx++ else -1
             when (state.focusedIndex) {
-                0 -> viewModel.cycleBoxArtCornerRadius(1)
-                1 -> viewModel.cycleBoxArtBorderThickness(1)
-                2 -> viewModel.cycleBoxArtBorderStyle(1)
+                0 -> viewModel.cycleBoxArtShape(1)
+                1 -> viewModel.cycleBoxArtCornerRadius(1)
+                2 -> viewModel.cycleBoxArtBorderThickness(1)
+                3 -> viewModel.cycleBoxArtBorderStyle(1)
                 glassTintIdx -> viewModel.cycleGlassBorderTint(1)
                 gradientPresetIdx -> viewModel.cycleGradientPreset(1)
                 gradientAdvancedIdx -> viewModel.toggleGradientAdvancedMode()

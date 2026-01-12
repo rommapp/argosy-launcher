@@ -181,6 +181,7 @@ val LocalLauncherTheme = staticCompositionLocalOf {
 }
 
 data class BoxArtStyleConfig(
+    val aspectRatio: Float = 3f / 4f,
     val cornerRadiusDp: Dp = 8.dp,
     val borderThicknessDp: Dp = 2.dp,
     val borderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID,
@@ -240,6 +241,7 @@ fun ALauncherTheme(
     )
 
     val boxArtStyle = BoxArtStyleConfig(
+        aspectRatio = themeState.boxArtShape.aspectRatio,
         cornerRadiusDp = themeState.boxArtCornerRadius.dp.dp,
         borderThicknessDp = themeState.boxArtBorderThickness.dp.dp,
         borderStyle = themeState.boxArtBorderStyle,

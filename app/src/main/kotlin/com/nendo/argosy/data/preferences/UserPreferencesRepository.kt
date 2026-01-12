@@ -77,6 +77,7 @@ class UserPreferencesRepository @Inject constructor(
         val FILE_LOGGING_PATH = stringPreferencesKey("file_logging_path")
         val FILE_LOG_LEVEL = stringPreferencesKey("file_log_level")
 
+        val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
         val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
         val BOX_ART_BORDER_THICKNESS = stringPreferencesKey("box_art_border_thickness")
         val BOX_ART_BORDER_STYLE = stringPreferencesKey("box_art_border_style")
@@ -180,6 +181,7 @@ class UserPreferencesRepository @Inject constructor(
             fileLoggingEnabled = prefs[Keys.FILE_LOGGING_ENABLED] ?: false,
             fileLoggingPath = prefs[Keys.FILE_LOGGING_PATH],
             fileLogLevel = LogLevel.fromString(prefs[Keys.FILE_LOG_LEVEL]),
+            boxArtShape = BoxArtShape.fromString(prefs[Keys.BOX_ART_SHAPE]),
             boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
             boxArtBorderThickness = BoxArtBorderThickness.fromString(prefs[Keys.BOX_ART_BORDER_THICKNESS]),
             boxArtBorderStyle = BoxArtBorderStyle.fromString(prefs[Keys.BOX_ART_BORDER_STYLE]),
@@ -590,6 +592,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setBoxArtShape(shape: BoxArtShape) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BOX_ART_SHAPE] = shape.name
+        }
+    }
+
     suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) {
         dataStore.edit { prefs ->
             prefs[Keys.BOX_ART_CORNER_RADIUS] = radius.name
@@ -827,6 +835,7 @@ data class UserPreferences(
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,
+    val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
     val boxArtBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.GLASS,
@@ -1002,5 +1011,16 @@ enum class BoxArtOuterEffectThickness(val px: Float) {
     companion object {
         fun fromString(value: String?): BoxArtOuterEffectThickness =
             entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class BoxArtShape(val aspectRatio: Float, val displayName: String) {
+    TALL(2f / 3f, "2:3"),
+    STANDARD(3f / 4f, "3:4"),
+    SQUARE(1f, "1:1");
+
+    companion object {
+        fun fromString(value: String?): BoxArtShape =
+            entries.find { it.name == value } ?: STANDARD
     }
 }

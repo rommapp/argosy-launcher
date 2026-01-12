@@ -6,6 +6,7 @@ import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
+import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.BoxArtGlowStrength
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
@@ -28,6 +29,7 @@ data class ThemeState(
     val primaryColor: Int? = null,
     val secondaryColor: Int? = null,
     val tertiaryColor: Int? = null,
+    val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
     val boxArtBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID,
@@ -55,6 +57,7 @@ class ThemeViewModel @Inject constructor(
                 primaryColor = prefs.primaryColor,
                 secondaryColor = prefs.secondaryColor,
                 tertiaryColor = prefs.tertiaryColor,
+                boxArtShape = prefs.boxArtShape,
                 boxArtCornerRadius = prefs.boxArtCornerRadius,
                 boxArtBorderThickness = prefs.boxArtBorderThickness,
                 boxArtBorderStyle = prefs.boxArtBorderStyle,

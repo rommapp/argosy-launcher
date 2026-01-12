@@ -6,6 +6,7 @@ import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
 import com.nendo.argosy.data.preferences.BoxArtGlowStrength
+import com.nendo.argosy.data.preferences.BoxArtShape
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.GlassBorderTint
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
@@ -227,6 +228,16 @@ class DisplaySettingsDelegate @Inject constructor(
     fun openBackgroundPicker(scope: CoroutineScope) {
         scope.launch {
             _openBackgroundPickerEvent.emit(Unit)
+        }
+    }
+
+    fun cycleBoxArtShape(scope: CoroutineScope, direction: Int = 1) {
+        val current = _state.value.boxArtShape
+        val values = BoxArtShape.entries
+        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        scope.launch {
+            preferencesRepository.setBoxArtShape(next)
+            _state.update { it.copy(boxArtShape = next) }
         }
     }
 

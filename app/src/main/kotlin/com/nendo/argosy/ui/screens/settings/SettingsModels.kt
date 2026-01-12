@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.settings
 
+import com.nendo.argosy.data.cache.GradientExtractionConfig
+import com.nendo.argosy.data.cache.GradientExtractionResult
 import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.ExtensionOption
 import com.nendo.argosy.data.emulator.InstalledEmulator
@@ -443,5 +445,9 @@ data class SettingsUiState(
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,
     val boxArtPreviewRatio: BoxArtPreviewRatio = BoxArtPreviewRatio.VERTICAL_3_4,
-    val previewGame: GameListItem? = null
+    val previewGame: GameListItem? = null,
+    val previewGames: List<GameListItem> = emptyList(),
+    val previewGameIndex: Int = 0,
+    val gradientConfig: GradientExtractionConfig = GradientExtractionConfig(),
+    val gradientExtractionResult: GradientExtractionResult? = null
 )

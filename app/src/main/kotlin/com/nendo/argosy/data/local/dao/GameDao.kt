@@ -497,6 +497,17 @@ interface GameDao {
         LIMIT 1
     """)
     suspend fun getFirstGameWithCover(): GameListItem?
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath,
+               isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName,
+               playCount, playTimeMinutes, lastPlayed, genre, gameModes, gradientColors
+        FROM games
+        WHERE coverPath LIKE '/%' AND isHidden = 0 AND lastPlayed IS NOT NULL
+        ORDER BY lastPlayed DESC
+        LIMIT :limit
+    """)
+    suspend fun getRecentlyPlayedWithCovers(limit: Int = 10): List<GameListItem>
 }
 
 data class SearchCandidate(

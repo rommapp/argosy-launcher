@@ -5,6 +5,9 @@ import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.graphics.BitmapFactory
+import com.nendo.argosy.data.cache.GradientColorExtractor
+import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.ImageCacheProgress
 import com.nendo.argosy.data.scanner.AndroidGameScanner
@@ -105,7 +108,8 @@ class SettingsViewModel @Inject constructor(
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
     private val androidGameScanner: AndroidGameScanner,
-    private val modalResetSignal: ModalResetSignal
+    private val modalResetSignal: ModalResetSignal,
+    private val gradientColorExtractor: GradientColorExtractor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -894,11 +898,13 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.BOX_ART -> {
                     val borderStyle = state.display.boxArtBorderStyle
                     val showGlassTint = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GLASS
+                    val showGradient = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GRADIENT
                     val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
                     val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
                     val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
                     var idx = 3
                     if (showGlassTint) idx++
+                    if (showGradient) idx += 7 // 7 gradient settings
                     idx++ // IconPos
                     if (showIconPadding) idx++
                     idx++ // OuterEffect
@@ -1040,6 +1046,7 @@ class SettingsViewModel @Inject constructor(
 
     fun navigateToBoxArt() {
         _uiState.update { it.copy(currentSection = SettingsSection.BOX_ART, focusedIndex = 0) }
+        loadPreviewGames()
     }
 
     fun navigateToHomeScreen() {
@@ -1106,6 +1113,125 @@ class SettingsViewModel @Inject constructor(
         val currentIndex = values.indexOf(_uiState.value.boxArtPreviewRatio)
         val nextIndex = if (currentIndex >= values.lastIndex) 0 else currentIndex + 1
         _uiState.update { it.copy(boxArtPreviewRatio = values[nextIndex]) }
+    }
+
+    fun loadPreviewGames() {
+        viewModelScope.launch {
+            val games = displayDelegate.loadPreviewGames()
+            _uiState.update {
+                it.copy(
+                    previewGames = games,
+                    previewGameIndex = 0,
+                    previewGame = games.firstOrNull() ?: it.previewGame
+                )
+            }
+            if (games.isNotEmpty()) {
+                extractGradientForPreview()
+            }
+        }
+    }
+
+    fun cyclePrevPreviewGame() {
+        val games = _uiState.value.previewGames
+        if (games.isEmpty()) return
+        val currentIndex = _uiState.value.previewGameIndex
+        val prevIndex = if (currentIndex <= 0) games.lastIndex else currentIndex - 1
+        _uiState.update {
+            it.copy(
+                previewGameIndex = prevIndex,
+                previewGame = games[prevIndex]
+            )
+        }
+        extractGradientForPreview()
+    }
+
+    fun cycleNextPreviewGame() {
+        val games = _uiState.value.previewGames
+        if (games.isEmpty()) return
+        val currentIndex = _uiState.value.previewGameIndex
+        val nextIndex = if (currentIndex >= games.lastIndex) 0 else currentIndex + 1
+        _uiState.update {
+            it.copy(
+                previewGameIndex = nextIndex,
+                previewGame = games[nextIndex]
+            )
+        }
+        extractGradientForPreview()
+    }
+
+    fun extractGradientForPreview() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val coverPath = _uiState.value.previewGame?.coverPath ?: return@launch
+            val config = _uiState.value.gradientConfig
+            val bitmap = BitmapFactory.decodeFile(coverPath) ?: return@launch
+            val result = gradientColorExtractor.extractWithMetrics(bitmap, config)
+            bitmap.recycle()
+            withContext(Dispatchers.Main) {
+                _uiState.update { it.copy(gradientExtractionResult = result) }
+            }
+        }
+    }
+
+    private inline fun updateGradientConfig(update: GradientExtractionConfig.() -> GradientExtractionConfig) {
+        _uiState.update { it.copy(gradientConfig = it.gradientConfig.update()) }
+        extractGradientForPreview()
+    }
+
+    fun cycleGradientSampleGrid(direction: Int) {
+        val options = listOf(8 to 12, 10 to 15, 12 to 18, 16 to 24)
+        val current = _uiState.value.gradientConfig.let { it.samplesX to it.samplesY }
+        val currentIdx = options.indexOf(current).coerceAtLeast(0)
+        val nextIdx = (currentIdx + direction).mod(options.size)
+        val (x, y) = options[nextIdx]
+        updateGradientConfig { copy(samplesX = x, samplesY = y) }
+    }
+
+    fun cycleGradientRadius(direction: Int) {
+        val options = listOf(1, 2, 3, 4)
+        val current = _uiState.value.gradientConfig.radius
+        val currentIdx = options.indexOf(current).coerceAtLeast(0)
+        val nextIdx = (currentIdx + direction).mod(options.size)
+        updateGradientConfig { copy(radius = options[nextIdx]) }
+    }
+
+    fun cycleGradientMinSaturation(direction: Int) {
+        val options = listOf(0.20f, 0.25f, 0.30f, 0.35f, 0.40f, 0.45f, 0.50f)
+        val current = _uiState.value.gradientConfig.minSaturation
+        val currentIdx = options.indexOfFirst { kotlin.math.abs(it - current) < 0.01f }.coerceAtLeast(0)
+        val nextIdx = (currentIdx + direction).mod(options.size)
+        updateGradientConfig { copy(minSaturation = options[nextIdx]) }
+    }
+
+    fun cycleGradientMinValue(direction: Int) {
+        val options = listOf(0.10f, 0.15f, 0.20f, 0.25f)
+        val current = _uiState.value.gradientConfig.minValue
+        val currentIdx = options.indexOfFirst { kotlin.math.abs(it - current) < 0.01f }.coerceAtLeast(0)
+        val nextIdx = (currentIdx + direction).mod(options.size)
+        updateGradientConfig { copy(minValue = options[nextIdx]) }
+    }
+
+    fun cycleGradientHueDistance(direction: Int) {
+        val options = listOf(20, 30, 40, 50, 60)
+        val current = _uiState.value.gradientConfig.minHueDistance
+        val currentIdx = options.indexOf(current).coerceAtLeast(0)
+        val nextIdx = (currentIdx + direction).mod(options.size)
+        updateGradientConfig { copy(minHueDistance = options[nextIdx]) }
+    }
+
+    fun cycleGradientSaturationBump(direction: Int) {
+        val options = listOf(0.30f, 0.35f, 0.40f, 0.45f, 0.50f, 0.55f)
+        val current = _uiState.value.gradientConfig.saturationBump
+        val currentIdx = options.indexOfFirst { kotlin.math.abs(it - current) < 0.01f }.coerceAtLeast(0)
+        val nextIdx = (currentIdx + direction).mod(options.size)
+        updateGradientConfig { copy(saturationBump = options[nextIdx]) }
+    }
+
+    fun cycleGradientValueClamp(direction: Int) {
+        val options = listOf(0.70f, 0.75f, 0.80f, 0.85f, 0.90f)
+        val current = _uiState.value.gradientConfig.valueClamp
+        val currentIdx = options.indexOfFirst { kotlin.math.abs(it - current) < 0.01f }.coerceAtLeast(0)
+        val nextIdx = (currentIdx + direction).mod(options.size)
+        updateGradientConfig { copy(valueClamp = options[nextIdx]) }
     }
 
     fun setHapticEnabled(enabled: Boolean) {

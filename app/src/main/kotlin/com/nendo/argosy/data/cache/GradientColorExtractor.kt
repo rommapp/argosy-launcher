@@ -7,18 +7,47 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import android.graphics.Color as AndroidColor
 
+data class GradientExtractionConfig(
+    val samplesX: Int = 12,
+    val samplesY: Int = 18,
+    val radius: Int = 3,
+    val minSaturation: Float = 0.35f,
+    val minValue: Float = 0.15f,
+    val minHueDistance: Int = 40,
+    val saturationBump: Float = 0.45f,
+    val valueClamp: Float = 0.8f
+)
+
+data class GradientExtractionResult(
+    val primary: Color,
+    val secondary: Color,
+    val extractionTimeMs: Long,
+    val sampleCount: Int,
+    val colorFamiliesUsed: Int
+)
+
 @Singleton
 class GradientColorExtractor @Inject constructor() {
 
     fun extractGradientColors(bitmap: Bitmap): Pair<Color, Color> {
-        val samplesX = 12
-        val samplesY = 18
-        val radius = 3
-        val minSaturation = 0.35f
-        val minValue = 0.15f
-        val minHueDistance = 40
-        val saturationBump = 0.45f
-        val valueClamp = 0.8f
+        val result = extractWithMetrics(bitmap, GradientExtractionConfig())
+        return Pair(result.primary, result.secondary)
+    }
+
+    fun extractWithMetrics(
+        bitmap: Bitmap,
+        config: GradientExtractionConfig = GradientExtractionConfig()
+    ): GradientExtractionResult {
+        val startTime = System.nanoTime()
+
+        val samplesX = config.samplesX
+        val samplesY = config.samplesY
+        val radius = config.radius
+        val minSaturation = config.minSaturation
+        val minValue = config.minValue
+        val minHueDistance = config.minHueDistance
+        val saturationBump = config.saturationBump
+        val valueClamp = config.valueClamp
 
         val colorFamilies = 36
         val colorResolution = 360 / colorFamilies
@@ -109,7 +138,16 @@ class GradientColorExtractor @Inject constructor() {
             getComplementaryColor(primaryColor)
         }
 
-        return Pair(primaryColor, secondaryColor)
+        val elapsedMs = (System.nanoTime() - startTime) / 1_000_000
+        val familiesUsed = colors.count { it.isNotEmpty() }
+
+        return GradientExtractionResult(
+            primary = primaryColor,
+            secondary = secondaryColor,
+            extractionTimeMs = elapsedMs,
+            sampleCount = samplesX * samplesY,
+            colorFamiliesUsed = familiesUsed
+        )
     }
 
     private fun getComplementaryColor(color: Color): Color {

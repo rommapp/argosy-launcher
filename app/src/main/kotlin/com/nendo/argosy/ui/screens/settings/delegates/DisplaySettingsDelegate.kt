@@ -53,6 +53,10 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    suspend fun loadPreviewGames(): List<GameListItem> {
+        return gameDao.getRecentlyPlayedWithCovers(10)
+    }
+
     fun updateState(newState: DisplayState) {
         _state.value = newState
     }

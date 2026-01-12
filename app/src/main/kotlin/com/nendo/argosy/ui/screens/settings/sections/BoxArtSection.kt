@@ -21,8 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.SectionFocusedScroll
+import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
@@ -45,7 +47,8 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 
 private sealed class BoxArtItem(val key: String, val section: String) {
-    val isFocusable: Boolean get() = this !is StylingHeader && this !is IconHeader && this !is OuterHeader && this !is InnerHeader
+    val isFocusable: Boolean get() = this !is StylingHeader && this !is IconHeader &&
+        this !is OuterHeader && this !is InnerHeader && this !is GradientHeader
 
     data object StylingHeader : BoxArtItem("stylingHeader", "styling")
     data object CornerRadius : BoxArtItem("cornerRadius", "styling")
@@ -64,15 +67,35 @@ private sealed class BoxArtItem(val key: String, val section: String) {
     data object InnerHeader : BoxArtItem("innerHeader", "inner")
     data object InnerEffect : BoxArtItem("innerEffect", "inner")
     data object InnerThickness : BoxArtItem("innerThickness", "inner")
+
+    data object GradientHeader : BoxArtItem("gradientHeader", "gradient")
+    data object SampleGrid : BoxArtItem("sampleGrid", "gradient")
+    data object SampleRadius : BoxArtItem("sampleRadius", "gradient")
+    data object MinSaturation : BoxArtItem("minSaturation", "gradient")
+    data object MinBrightness : BoxArtItem("minBrightness", "gradient")
+    data object HueDistance : BoxArtItem("hueDistance", "gradient")
+    data object SaturationBoost : BoxArtItem("saturationBoost", "gradient")
+    data object BrightnessClamp : BoxArtItem("brightnessClamp", "gradient")
 }
 
-private fun buildVisibleItems(display: DisplayState): List<BoxArtItem> = buildList {
+private fun buildVisibleItems(display: DisplayState, showGradientSection: Boolean): List<BoxArtItem> = buildList {
     add(BoxArtItem.StylingHeader)
     add(BoxArtItem.CornerRadius)
     add(BoxArtItem.BorderThickness)
     add(BoxArtItem.BorderStyle)
     if (display.boxArtBorderStyle == BoxArtBorderStyle.GLASS) {
         add(BoxArtItem.GlassTint)
+    }
+
+    if (showGradientSection) {
+        add(BoxArtItem.GradientHeader)
+        add(BoxArtItem.SampleGrid)
+        add(BoxArtItem.SampleRadius)
+        add(BoxArtItem.MinSaturation)
+        add(BoxArtItem.MinBrightness)
+        add(BoxArtItem.HueDistance)
+        add(BoxArtItem.SaturationBoost)
+        add(BoxArtItem.BrightnessClamp)
     }
 
     add(BoxArtItem.IconHeader)
@@ -95,7 +118,7 @@ private fun buildVisibleItems(display: DisplayState): List<BoxArtItem> = buildLi
 }
 
 private fun buildSections(visibleItems: List<BoxArtItem>, focusableItems: List<BoxArtItem>): List<ListSection> {
-    val sectionNames = listOf("styling", "icon", "outer", "inner")
+    val sectionNames = listOf("styling", "icon", "outer", "inner", "gradient")
     return sectionNames.mapNotNull { sectionName ->
         val sectionItems = visibleItems.filter { it.section == sectionName }
         val sectionFocusable = focusableItems.filter { it.section == sectionName }
@@ -118,8 +141,11 @@ fun BoxArtSection(
     val previewRatio = uiState.boxArtPreviewRatio
     val listState = rememberLazyListState()
     val display = uiState.display
+    val gradientConfig = uiState.gradientConfig
+    val extractionResult = uiState.gradientExtractionResult
+    val showGradientSection = display.boxArtBorderStyle == BoxArtBorderStyle.GRADIENT
 
-    val visibleItems = remember(display) { buildVisibleItems(display) }
+    val visibleItems = remember(display, showGradientSection) { buildVisibleItems(display, showGradientSection) }
     val focusableItems = remember(visibleItems) { visibleItems.filter { it.isFocusable } }
     val sections = remember(visibleItems, focusableItems) { buildSections(visibleItems, focusableItems) }
 
@@ -220,6 +246,50 @@ fun BoxArtSection(
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtInnerEffectThickness() }
                     )
+
+                    BoxArtItem.GradientHeader -> BoxArtSectionHeader("Gradient Colors")
+                    BoxArtItem.SampleGrid -> CyclePreference(
+                        title = "Sample Grid",
+                        value = "${gradientConfig.samplesX}x${gradientConfig.samplesY}",
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGradientSampleGrid(1) }
+                    )
+                    BoxArtItem.SampleRadius -> CyclePreference(
+                        title = "Sample Radius",
+                        value = gradientConfig.radius.toString(),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGradientRadius(1) }
+                    )
+                    BoxArtItem.MinSaturation -> CyclePreference(
+                        title = "Min Saturation",
+                        value = "%.0f%%".format(gradientConfig.minSaturation * 100),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGradientMinSaturation(1) }
+                    )
+                    BoxArtItem.MinBrightness -> CyclePreference(
+                        title = "Min Brightness",
+                        value = "%.0f%%".format(gradientConfig.minValue * 100),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGradientMinValue(1) }
+                    )
+                    BoxArtItem.HueDistance -> CyclePreference(
+                        title = "Hue Distance",
+                        value = "${gradientConfig.minHueDistance}deg",
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGradientHueDistance(1) }
+                    )
+                    BoxArtItem.SaturationBoost -> CyclePreference(
+                        title = "Saturation Boost",
+                        value = "+%.0f%%".format(gradientConfig.saturationBump * 100),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGradientSaturationBump(1) }
+                    )
+                    BoxArtItem.BrightnessClamp -> CyclePreference(
+                        title = "Brightness Clamp",
+                        value = ">=%.0f%%".format(gradientConfig.valueClamp * 100),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGradientValueClamp(1) }
+                    )
                 }
             }
         }
@@ -246,6 +316,10 @@ fun BoxArtSection(
                 systemIconPaddingDp = display.systemIconPadding.dp.dp
             )
 
+            val previewGradientColors = if (showGradientSection && extractionResult != null) {
+                Pair(extractionResult.primary, extractionResult.secondary)
+            } else null
+
             val previewGame = uiState.previewGame?.let { game ->
                 HomeGameUi(
                     id = game.id,
@@ -254,6 +328,7 @@ fun BoxArtSection(
                     platformSlug = game.platformSlug,
                     platformDisplayName = game.platformSlug.uppercase(),
                     coverPath = game.coverPath,
+                    gradientColors = previewGradientColors,
                     backgroundPath = null,
                     developer = null,
                     releaseYear = null,
@@ -281,13 +356,22 @@ fun BoxArtSection(
                     game = previewGame,
                     isFocused = true,
                     modifier = Modifier
-                        .width(120.dp)
+                        .width(180.dp)
                         .aspectRatio(previewRatio.ratio)
                         .clickable(
                             onClick = { viewModel.cycleNextPreviewRatio() },
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         )
+                )
+            }
+
+            if (showGradientSection && extractionResult != null) {
+                Text(
+                    text = "${extractionResult.extractionTimeMs}ms | ${extractionResult.sampleCount} samples | ${extractionResult.colorFamiliesUsed} families",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Dimens.spacingMd)
                 )
             }
         }

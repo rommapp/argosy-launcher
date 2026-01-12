@@ -124,7 +124,8 @@ class InputDispatcher(
                     soundManager?.play(SoundType.BOUNDARY)
                 }
             }
-            GamepadEvent.PrevSection, GamepadEvent.NextSection -> {
+            GamepadEvent.PrevSection, GamepadEvent.NextSection,
+            GamepadEvent.PrevTrigger, GamepadEvent.NextTrigger -> {
                 if (result.handled) {
                     hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
                     soundManager?.play(result.soundOverride ?: SoundType.SECTION_CHANGE)
@@ -161,6 +162,8 @@ class InputDispatcher(
             GamepadEvent.ContextMenu -> handler.onContextMenu()
             GamepadEvent.PrevSection -> handler.onPrevSection()
             GamepadEvent.NextSection -> handler.onNextSection()
+            GamepadEvent.PrevTrigger -> handler.onPrevTrigger()
+            GamepadEvent.NextTrigger -> handler.onNextTrigger()
             GamepadEvent.Select -> handler.onSelect()
             GamepadEvent.LeftStickClick -> handler.onLeftStickClick()
             GamepadEvent.RightStickClick -> handler.onRightStickClick()

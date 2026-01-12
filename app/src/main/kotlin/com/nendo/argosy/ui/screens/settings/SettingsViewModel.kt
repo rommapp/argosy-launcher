@@ -955,7 +955,7 @@ class SettingsViewModel @Inject constructor(
                     (1 + platformCount + expandedItems).coerceAtLeast(1)
                 }
                 SettingsSection.PERMISSIONS -> if (state.permissions.isWriteSettingsRelevant) 3 else 2
-                SettingsSection.ABOUT -> if (state.fileLoggingPath != null) 4 else 3
+                SettingsSection.ABOUT -> if (state.fileLoggingPath != null) 3 else 2
             }
             val newIndex = if (state.currentSection == SettingsSection.SERVER && state.server.rommConfiguring) {
                 when {

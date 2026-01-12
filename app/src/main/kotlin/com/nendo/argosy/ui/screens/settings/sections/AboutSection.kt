@@ -1,8 +1,11 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,14 +13,16 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
-import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -32,16 +37,40 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val isOnBetaVersion = com.nendo.argosy.BuildConfig.VERSION_NAME.contains("-")
     val context = LocalContext.current
     val hasLogLevel = uiState.fileLoggingPath != null
-    val debugListEnd = if (hasLogLevel) 6 else 5
-    val debugFocusEnd = if (hasLogLevel) 4 else 3
+
+    // List structure:
+    // 0: VERSION header (non-focusable)
+    // 1: Version info row (non-focusable)
+    // 2: Check for Updates (focus 0)
+    // 3: Beta Updates (focus 1)
+    // 4: Spacer (non-focusable)
+    // 5: DEBUG header (non-focusable)
+    // 6: File Logging (focus 2)
+    // 7: Log Level (focus 3, conditional)
 
     val sections = listOf(
-        ListSection(listStartIndex = 0, listEndIndex = 3, focusStartIndex = 0, focusEndIndex = 2),
-        ListSection(listStartIndex = 4, listEndIndex = debugListEnd, focusStartIndex = 3, focusEndIndex = debugFocusEnd)
+        ListSection(
+            listStartIndex = 0,
+            listEndIndex = 3,
+            focusStartIndex = 0,
+            focusEndIndex = 1
+        ),
+        ListSection(
+            listStartIndex = 5,
+            listEndIndex = if (hasLogLevel) 7 else 6,
+            focusStartIndex = 2,
+            focusEndIndex = if (hasLogLevel) 3 else 2
+        )
     )
 
     val focusToListIndex: (Int) -> Int = { focus ->
-        if (focus <= 2) focus else focus + 2
+        when (focus) {
+            0 -> 2 // Check for Updates
+            1 -> 3 // Beta Updates
+            2 -> 6 // File Logging
+            3 -> 7 // Log Level
+            else -> focus
+        }
     }
 
     SectionFocusedScroll(
@@ -56,11 +85,11 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
+        item { SectionHeader("VERSION") }
         item {
-            InfoPreference(
-                title = "Version",
-                value = uiState.appVersion,
-                isFocused = uiState.focusedIndex == 0
+            VersionInfoRow(
+                argosyVersion = uiState.appVersion,
+                rommVersion = uiState.server.rommVersion
             )
         }
         item {
@@ -79,7 +108,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 icon = Icons.Default.Sync,
                 title = title,
                 subtitle = subtitle,
-                isFocused = uiState.focusedIndex == 1,
+                isFocused = uiState.focusedIndex == 0,
                 isEnabled = !isDebug && !updateCheck.isChecking && !updateCheck.isDownloading,
                 onClick = {
                     if (updateCheck.updateAvailable) {
@@ -98,7 +127,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 else
                     "Stable releases only",
                 isEnabled = uiState.betaUpdatesEnabled,
-                isFocused = uiState.focusedIndex == 2,
+                isFocused = uiState.focusedIndex == 1,
                 onToggle = { viewModel.setBetaUpdatesEnabled(it) }
             )
         }
@@ -111,7 +140,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     title = "File Logging",
                     subtitle = formatLoggingPath(uiState.fileLoggingPath),
                     isEnabled = uiState.fileLoggingEnabled,
-                    isFocused = uiState.focusedIndex == 3,
+                    isFocused = uiState.focusedIndex == 2,
                     onToggle = { viewModel.toggleFileLogging(it) },
                     onLabelClick = { viewModel.openLogFolderPicker() }
                 )
@@ -120,7 +149,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     icon = Icons.Default.Description,
                     title = "Enable File Logging",
                     subtitle = "Write logs to a file for debugging",
-                    isFocused = uiState.focusedIndex == 3,
+                    isFocused = uiState.focusedIndex == 2,
                     onClick = { viewModel.openLogFolderPicker() }
                 )
             }
@@ -130,8 +159,48 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 CyclePreference(
                     title = "Log Level",
                     value = uiState.fileLogLevel.name,
-                    isFocused = uiState.focusedIndex == 4,
+                    isFocused = uiState.focusedIndex == 3,
                     onClick = { viewModel.cycleFileLogLevel() }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VersionInfoRow(
+    argosyVersion: String,
+    rommVersion: String?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.spacingXs),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXl)
+    ) {
+        Column {
+            Text(
+                text = "Argosy",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = argosyVersion,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        if (rommVersion != null) {
+            Column {
+                Text(
+                    text = "RomM API",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "v$rommVersion",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

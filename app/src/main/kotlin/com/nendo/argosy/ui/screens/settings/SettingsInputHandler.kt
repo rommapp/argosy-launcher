@@ -158,6 +158,7 @@ class SettingsInputHandler(
             val showGradient = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GRADIENT
             val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
             val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
+            val showGlowIntensity = state.display.boxArtOuterEffect == com.nendo.argosy.data.preferences.BoxArtOuterEffect.GLOW
             val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
             var idx = 3
             val glassTintIdx = if (showGlassTint) idx++ else -1
@@ -172,6 +173,7 @@ class SettingsInputHandler(
             val iconPadIdx = if (showIconPadding) idx++ else -1
             val outerEffectIdx = idx++
             val outerThicknessIdx = if (showOuterThickness) idx++ else -1
+            val glowIntensityIdx = if (showGlowIntensity) idx++ else -1
             val innerEffectIdx = idx++
             val innerThicknessIdx = if (showInnerThickness) idx++ else -1
             when (state.focusedIndex) {
@@ -190,6 +192,7 @@ class SettingsInputHandler(
                 iconPadIdx -> viewModel.cycleSystemIconPadding(-1)
                 outerEffectIdx -> viewModel.cycleBoxArtOuterEffect(-1)
                 outerThicknessIdx -> viewModel.cycleBoxArtOuterEffectThickness(-1)
+                glowIntensityIdx -> viewModel.cycleBoxArtGlowStrength(-1)
                 innerEffectIdx -> viewModel.cycleBoxArtInnerEffect(-1)
                 innerThicknessIdx -> viewModel.cycleBoxArtInnerEffectThickness(-1)
             }
@@ -336,6 +339,7 @@ class SettingsInputHandler(
             val showGradient = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GRADIENT
             val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
             val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
+            val showGlowIntensity = state.display.boxArtOuterEffect == com.nendo.argosy.data.preferences.BoxArtOuterEffect.GLOW
             val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
             var idx = 3
             val glassTintIdx = if (showGlassTint) idx++ else -1
@@ -350,6 +354,7 @@ class SettingsInputHandler(
             val iconPadIdx = if (showIconPadding) idx++ else -1
             val outerEffectIdx = idx++
             val outerThicknessIdx = if (showOuterThickness) idx++ else -1
+            val glowIntensityIdx = if (showGlowIntensity) idx++ else -1
             val innerEffectIdx = idx++
             val innerThicknessIdx = if (showInnerThickness) idx++ else -1
             when (state.focusedIndex) {
@@ -368,6 +373,7 @@ class SettingsInputHandler(
                 iconPadIdx -> viewModel.cycleSystemIconPadding(1)
                 outerEffectIdx -> viewModel.cycleBoxArtOuterEffect(1)
                 outerThicknessIdx -> viewModel.cycleBoxArtOuterEffectThickness(1)
+                glowIntensityIdx -> viewModel.cycleBoxArtGlowStrength(1)
                 innerEffectIdx -> viewModel.cycleBoxArtInnerEffect(1)
                 innerThicknessIdx -> viewModel.cycleBoxArtInnerEffectThickness(1)
             }

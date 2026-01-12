@@ -170,6 +170,7 @@ fun GameCard(
                             val spread = outerEffectRadius
                             when (outerEffect) {
                                 BoxArtOuterEffect.GLOW -> {
+                                    val glowAlpha = boxArtStyle.glowAlpha
                                     val frameworkPaint = android.graphics.Paint().apply {
                                         maskFilter = android.graphics.BlurMaskFilter(
                                             outerEffectRadius,
@@ -179,12 +180,12 @@ fun GameCard(
                                             shader = android.graphics.LinearGradient(
                                                 0f, 0f,
                                                 0f, size.height,
-                                                gradientColorsForGlow.first.copy(alpha = 0.5f).toArgb(),
-                                                gradientColorsForGlow.second.copy(alpha = 0.5f).toArgb(),
+                                                gradientColorsForGlow.first.copy(alpha = glowAlpha).toArgb(),
+                                                gradientColorsForGlow.second.copy(alpha = glowAlpha).toArgb(),
                                                 android.graphics.Shader.TileMode.CLAMP
                                             )
                                         } else {
-                                            color = glowColor.copy(alpha = 0.4f).toArgb()
+                                            color = glowColor.copy(alpha = glowAlpha).toArgb()
                                         }
                                     }
                                     canvas.nativeCanvas.drawRoundRect(

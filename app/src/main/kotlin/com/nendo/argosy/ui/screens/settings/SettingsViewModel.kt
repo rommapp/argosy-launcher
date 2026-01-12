@@ -901,6 +901,7 @@ class SettingsViewModel @Inject constructor(
                     val showGradient = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GRADIENT
                     val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
                     val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
+                    val showGlowIntensity = state.display.boxArtOuterEffect == com.nendo.argosy.data.preferences.BoxArtOuterEffect.GLOW
                     val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
                     var idx = 3
                     if (showGlassTint) idx++
@@ -909,6 +910,7 @@ class SettingsViewModel @Inject constructor(
                     if (showIconPadding) idx++
                     idx++ // OuterEffect
                     if (showOuterThickness) idx++
+                    if (showGlowIntensity) idx++ // GlowIntensity
                     idx++ // InnerEffect
                     if (showInnerThickness) idx++
                     idx - 1

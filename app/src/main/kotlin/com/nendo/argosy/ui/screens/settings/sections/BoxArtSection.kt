@@ -63,6 +63,7 @@ private sealed class BoxArtItem(val key: String, val section: String) {
     data object OuterHeader : BoxArtItem("outerHeader", "outer")
     data object OuterEffect : BoxArtItem("outerEffect", "outer")
     data object OuterThickness : BoxArtItem("outerThickness", "outer")
+    data object GlowIntensity : BoxArtItem("glowIntensity", "outer")
 
     data object InnerHeader : BoxArtItem("innerHeader", "inner")
     data object InnerEffect : BoxArtItem("innerEffect", "inner")
@@ -108,6 +109,9 @@ private fun buildVisibleItems(display: DisplayState, showGradientSection: Boolea
     add(BoxArtItem.OuterEffect)
     if (display.boxArtOuterEffect != BoxArtOuterEffect.OFF) {
         add(BoxArtItem.OuterThickness)
+    }
+    if (display.boxArtOuterEffect == BoxArtOuterEffect.GLOW) {
+        add(BoxArtItem.GlowIntensity)
     }
 
     add(BoxArtItem.InnerHeader)
@@ -232,6 +236,12 @@ fun BoxArtSection(
                         value = display.boxArtOuterEffectThickness.displayName(),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtOuterEffectThickness() }
+                    )
+                    BoxArtItem.GlowIntensity -> CyclePreference(
+                        title = "Intensity",
+                        value = display.boxArtGlowStrength.displayName(),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleBoxArtGlowStrength() }
                     )
 
                     BoxArtItem.InnerEffect -> CyclePreference(

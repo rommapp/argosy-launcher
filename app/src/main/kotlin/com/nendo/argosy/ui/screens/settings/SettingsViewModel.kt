@@ -2348,18 +2348,18 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsSection.ABOUT -> {
                 when (state.focusedIndex) {
-                    1 -> {
+                    0 -> {
                         if (state.updateCheck.updateAvailable) {
                             viewModelScope.launch { _downloadUpdateEvent.emit(Unit) }
                         } else {
                             checkForUpdates()
                         }
                     }
-                    2 -> {
+                    1 -> {
                         setBetaUpdatesEnabled(!state.betaUpdatesEnabled)
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    3 -> {
+                    2 -> {
                         if (state.fileLoggingPath != null) {
                             toggleFileLogging(!state.fileLoggingEnabled)
                         } else {
@@ -2367,7 +2367,7 @@ class SettingsViewModel @Inject constructor(
                         }
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    4 -> {
+                    3 -> {
                         if (state.fileLoggingPath != null) {
                             cycleFileLogLevel()
                         }

@@ -27,6 +27,7 @@ class AmbientAudioManager @Inject constructor(
     private var targetVolume = 0.5f
     private var fadeAnimator: ValueAnimator? = null
     private var fadeOutCancelled = false
+    private var suspended = false
 
     private val audioAttributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_GAME)
@@ -108,7 +109,25 @@ class AmbientAudioManager @Inject constructor(
         }
     }
 
+    fun suspend() {
+        suspended = true
+        fadeOut()
+        Log.d(TAG, "suspended - awaiting user input to resume")
+    }
+
+    fun resumeFromSuspend() {
+        if (suspended) {
+            suspended = false
+            Log.d(TAG, "resumed from suspend")
+            fadeIn()
+        }
+    }
+
     fun fadeIn(durationMs: Long = 500) {
+        if (suspended) {
+            Log.d(TAG, "fadeIn skipped: suspended (awaiting user input)")
+            return
+        }
         if (!enabled || currentUri == null) {
             Log.d(TAG, "fadeIn skipped: enabled=$enabled, uri=$currentUri")
             return

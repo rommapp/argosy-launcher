@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.core.view.WindowCompat
@@ -122,12 +123,27 @@ class MainActivity : ComponentActivity() {
         hasResumedBefore = true
     }
 
+    override fun onPause() {
+        super.onPause()
+        ambientAudioManager.suspend()
+    }
+
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            ambientAudioManager.resumeFromSuspend()
+        }
         if (gamepadInputHandler.handleKeyEvent(event)) {
             return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            ambientAudioManager.resumeFromSuspend()
+        }
+        return super.dispatchTouchEvent(event)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

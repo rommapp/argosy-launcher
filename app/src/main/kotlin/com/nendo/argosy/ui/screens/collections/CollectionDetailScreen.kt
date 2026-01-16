@@ -189,23 +189,10 @@ fun CollectionDetailScreen(
         CollectionOptionsModal(
             collectionName = uiState.collection!!.name,
             focusIndex = uiState.optionsModalFocusIndex,
-            onOptionSelect = { option ->
-                when (option) {
-                    CollectionOption.RENAME -> {
-                        viewModel.hideOptionsModal()
-                        viewModel.showEditDialog()
-                    }
-                    CollectionOption.DELETE -> {
-                        viewModel.hideOptionsModal()
-                        viewModel.showDeleteDialog()
-                    }
-                    CollectionOption.REMOVE_GAME -> {
-                        viewModel.hideOptionsModal()
-                        viewModel.showRemoveGameDialog()
-                    }
-                }
-            },
+            onOptionSelect = { option -> viewModel.selectOption(option) },
             onDismiss = { viewModel.hideOptionsModal() },
+            showDownloadAll = true,
+            downloadableCount = uiState.downloadableGamesCount,
             showRemoveGame = uiState.focusedGame != null,
             gameTitle = uiState.focusedGame?.title
         )

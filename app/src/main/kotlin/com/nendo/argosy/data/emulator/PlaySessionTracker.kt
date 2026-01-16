@@ -16,6 +16,9 @@ import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.domain.usecase.save.SyncSaveOnSessionEndUseCase
 import com.nendo.argosy.domain.usecase.state.StateSyncResult
 import com.nendo.argosy.domain.usecase.state.SyncStatesOnSessionEndUseCase
+import com.nendo.argosy.ui.notification.NotificationDuration
+import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.ui.notification.NotificationType
 import com.nendo.argosy.ui.screens.common.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
@@ -59,7 +62,8 @@ class PlaySessionTracker @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val permissionHelper: PermissionHelper,
     private val gameUpdateBus: GameUpdateBus,
-    private val emulatorResolver: EmulatorResolver
+    private val emulatorResolver: EmulatorResolver,
+    private val notificationManager: NotificationManager
 ) {
     companion object {
         private const val TAG = "PlaySessionTracker"
@@ -193,6 +197,7 @@ class PlaySessionTracker @Inject constructor(
                 }
             }
 
+            val syncGame = gameDao.getById(session.gameId)
             val result = syncSaveOnSessionEndUseCase.get()(
                 session.gameId,
                 session.emulatorPackage,
@@ -214,6 +219,15 @@ class PlaySessionTracker @Inject constructor(
                 }
                 is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
                     Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: UPLOADED")
+                    notificationManager.show(
+                        title = "Save Uploaded",
+                        subtitle = syncGame?.title,
+                        type = NotificationType.SUCCESS,
+                        imagePath = syncGame?.coverPath,
+                        duration = NotificationDuration.MEDIUM,
+                        key = "sync-${session.gameId}",
+                        immediate = true
+                    )
                 }
                 is SyncSaveOnSessionEndUseCase.Result.Queued -> {
                     Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: QUEUED")
@@ -226,6 +240,15 @@ class PlaySessionTracker @Inject constructor(
                 }
                 is SyncSaveOnSessionEndUseCase.Result.Error -> {
                     Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: ERROR | ${result.message}")
+                    notificationManager.show(
+                        title = "Upload Failed",
+                        subtitle = "${syncGame?.title ?: "Save"}: ${result.message}",
+                        type = NotificationType.ERROR,
+                        imagePath = syncGame?.coverPath,
+                        duration = NotificationDuration.MEDIUM,
+                        key = "sync-${session.gameId}",
+                        immediate = true
+                    )
                 }
             }
 

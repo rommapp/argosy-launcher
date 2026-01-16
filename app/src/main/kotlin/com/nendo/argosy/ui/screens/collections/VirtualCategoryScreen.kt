@@ -15,11 +15,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -143,14 +148,83 @@ fun VirtualCategoryScreen(
 
         FooterBar(
             modifier = Modifier.align(Alignment.BottomCenter),
-            hints = listOf(
-                InputButton.DPAD to "Navigate",
-                InputButton.SOUTH to "Open",
-                InputButton.EAST to "Back",
-                InputButton.NORTH to if (uiState.isPinned) "Unpin" else "Pin",
-                InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
-            )
+            hints = buildList {
+                add(InputButton.DPAD to "Navigate")
+                add(InputButton.SOUTH to "Open")
+                add(InputButton.EAST to "Back")
+                add(InputButton.NORTH to if (uiState.isPinned) "Unpin" else "Pin")
+                add(InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
+                if (uiState.canDownloadAll) {
+                    add(InputButton.SELECT to "Download All (${uiState.downloadableGamesCount})")
+                }
+            }
         )
+
+        if (uiState.downloadAllProgress.isActive) {
+            DownloadAllModal(
+                currentIndex = uiState.downloadAllProgress.currentIndex,
+                totalCount = uiState.downloadAllProgress.totalCount
+            )
+        }
+    }
+}
+
+@Composable
+private fun DownloadAllModal(
+    currentIndex: Int,
+    totalCount: Int
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Dimens.spacingXl),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(Dimens.spacingLg)
+                    .width(280.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                Text(
+                    text = "Queuing Downloads",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+                Text(
+                    text = "$currentIndex of $totalCount games",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                LinearProgressIndicator(
+                    progress = { if (totalCount > 0) currentIndex.toFloat() / totalCount else 0f },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
 

@@ -120,6 +120,7 @@ object SavePathRegistry {
         "citron" to SavePathConfig(
             emulatorId = "citron",
             defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/org.citron.citron_emu/files/nand/user/save",
                 "/storage/emulated/0/Android/data/org.citron.emu/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),

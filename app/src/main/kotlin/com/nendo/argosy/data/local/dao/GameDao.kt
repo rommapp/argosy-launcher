@@ -66,7 +66,7 @@ interface GameDao {
     @Query("""
         SELECT * FROM games
         WHERE isHidden = 0
-        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM')
+        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
         ORDER BY sortTitle ASC
     """)
     fun observePlayable(): Flow<List<GameEntity>>
@@ -87,7 +87,7 @@ interface GameDao {
     @Query("""
         SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games
         WHERE isHidden = 0
-        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM')
+        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
         ORDER BY sortTitle ASC
     """)
     fun observePlayableList(): Flow<List<GameListItem>>
@@ -129,7 +129,7 @@ interface GameDao {
 
     @Query("""
         SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games
-        WHERE (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM')
+        WHERE (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
         ORDER BY sortTitle ASC
     """)
     fun observePlayableListIncludingHidden(): Flow<List<GameListItem>>
@@ -142,6 +142,16 @@ interface GameDao {
 
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes FROM games WHERE platformId = :platformId AND isHidden = 1 ORDER BY sortTitle ASC")
     fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, playCount, playTimeMinutes, lastPlayed, genre, gameModes
+        FROM games
+        WHERE platformId = :platformId
+        AND isHidden = 0
+        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
+        ORDER BY sortTitle ASC
+    """)
+    fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>>
 
     @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     suspend fun getFavorites(): List<GameEntity>

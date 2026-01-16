@@ -55,8 +55,23 @@ class DeleteGameUseCase @Inject constructor(
         scope.launch {
             try {
                 val file = File(path)
-                if (file.exists() && !file.delete()) {
-                    Logger.warn(TAG, "Failed to delete file $path, adding to orphan index")
+                if (!file.exists()) return@launch
+
+                val deleted = if (file.isDirectory) {
+                    file.deleteRecursively()
+                } else {
+                    val parent = file.parentFile
+                    val grandparent = parent?.parentFile
+
+                    if (parent != null && grandparent != null && grandparent.exists()) {
+                        parent.deleteRecursively()
+                    } else {
+                        file.delete()
+                    }
+                }
+
+                if (!deleted) {
+                    Logger.warn(TAG, "Failed to delete $path, adding to orphan index")
                     orphanedFileDao.insert(OrphanedFileEntity(path = path))
                 }
             } catch (e: Exception) {

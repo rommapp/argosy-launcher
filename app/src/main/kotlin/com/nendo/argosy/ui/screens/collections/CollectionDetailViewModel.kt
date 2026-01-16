@@ -15,8 +15,13 @@ import com.nendo.argosy.domain.usecase.collection.RemoveGameFromCollectionUseCas
 import com.nendo.argosy.domain.usecase.collection.UnpinCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.UpdateCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.DeleteCollectionUseCase
+import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
+import com.nendo.argosy.ui.notification.NotificationDuration
+import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.ui.notification.NotificationType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,7 +45,9 @@ data class CollectionGameUi(
     val userDifficulty: Int,
     val achievementCount: Int,
     val playTimeMinutes: Int,
-    val isFavorite: Boolean
+    val isFavorite: Boolean,
+    val isDownloaded: Boolean,
+    val rommId: Long?
 )
 
 data class CollectionDetailUiState(
@@ -59,6 +66,9 @@ data class CollectionDetailUiState(
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
+
+    val downloadableGamesCount: Int
+        get() = games.count { !it.isDownloaded && it.rommId != null }
 }
 
 @HiltViewModel
@@ -72,7 +82,9 @@ class CollectionDetailViewModel @Inject constructor(
     private val isPinnedUseCase: IsPinnedUseCase,
     private val pinCollectionUseCase: PinCollectionUseCase,
     private val unpinCollectionUseCase: UnpinCollectionUseCase,
-    private val refreshAllCollectionsUseCase: RefreshAllCollectionsUseCase
+    private val refreshAllCollectionsUseCase: RefreshAllCollectionsUseCase,
+    private val downloadGameUseCase: DownloadGameUseCase,
+    private val notificationManager: NotificationManager
 ) : ViewModel() {
 
     private val collectionId: Long = checkNotNull(savedStateHandle["collectionId"])
@@ -154,7 +166,9 @@ class CollectionDetailViewModel @Inject constructor(
         userDifficulty = userDifficulty,
         achievementCount = achievementCount,
         playTimeMinutes = playTimeMinutes,
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        isDownloaded = localPath != null,
+        rommId = rommId
     )
 
     fun moveUp() {
@@ -184,32 +198,65 @@ class CollectionDetailViewModel @Inject constructor(
     }
 
     fun moveOptionsFocus(delta: Int) {
-        val hasGame = uiState.value.focusedGame != null
-        val maxIndex = if (hasGame) 2 else 1
+        val state = uiState.value
+        val hasGame = state.focusedGame != null
+        val hasDownloadable = state.downloadableGamesCount > 0
+        val optionCount = 2 + (if (hasDownloadable) 1 else 0) + (if (hasGame) 1 else 0)
+        val maxIndex = optionCount - 1
         val currentIndex = _modalState.value.optionsModalFocusIndex
         val newIndex = (currentIndex + delta).coerceIn(0, maxIndex)
         _modalState.value = _modalState.value.copy(optionsModalFocusIndex = newIndex)
     }
 
-    fun selectOptionAtIndex(index: Int) {
-        _modalState.value = _modalState.value.copy(optionsModalFocusIndex = index)
-        confirmOptionSelection()
+    fun selectOption(option: CollectionOption) {
+        hideOptionsModal()
+        when (option) {
+            CollectionOption.DOWNLOAD_ALL -> downloadAllGames()
+            CollectionOption.RENAME -> showEditDialog()
+            CollectionOption.DELETE -> showDeleteDialog()
+            CollectionOption.REMOVE_GAME -> showRemoveGameDialog()
+        }
     }
 
     fun confirmOptionSelection() {
-        when (_modalState.value.optionsModalFocusIndex) {
-            0 -> {
-                hideOptionsModal()
-                showEditDialog()
+        val state = uiState.value
+        val hasDownloadable = state.downloadableGamesCount > 0
+        var idx = _modalState.value.optionsModalFocusIndex
+
+        val option = if (hasDownloadable) {
+            when (idx) {
+                0 -> CollectionOption.DOWNLOAD_ALL
+                1 -> CollectionOption.RENAME
+                2 -> CollectionOption.DELETE
+                else -> CollectionOption.REMOVE_GAME
             }
-            1 -> {
-                hideOptionsModal()
-                showDeleteDialog()
+        } else {
+            when (idx) {
+                0 -> CollectionOption.RENAME
+                1 -> CollectionOption.DELETE
+                else -> CollectionOption.REMOVE_GAME
             }
-            2 -> {
-                hideOptionsModal()
-                showRemoveGameDialog()
+        }
+        selectOption(option)
+    }
+
+    fun downloadAllGames() {
+        val state = uiState.value
+        val downloadable = state.games.filter { !it.isDownloaded && it.rommId != null }
+        if (downloadable.isEmpty()) return
+
+        viewModelScope.launch {
+            var queued = 0
+            for (game in downloadable) {
+                downloadGameUseCase(game.id)
+                queued++
             }
+            notificationManager.show(
+                title = "Downloads Queued",
+                subtitle = "$queued game${if (queued > 1) "s" else ""} added to download queue",
+                type = NotificationType.INFO,
+                duration = NotificationDuration.MEDIUM
+            )
         }
     }
 

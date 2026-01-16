@@ -62,7 +62,8 @@ data class DownloadProgress(
     val errorReason: String? = null,
     val extractionBytesWritten: Long = 0,
     val extractionTotalBytes: Long = 0,
-    val isMultiFileRom: Boolean = false
+    val isMultiFileRom: Boolean = false,
+    val bytesPerSecond: Long = 0
 ) {
     val progressPercent: Float
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
@@ -715,6 +716,8 @@ class DownloadManager @Inject constructor(
                                 var bytesRead: Long = startOffset
                                 var lastUpdateTime = System.currentTimeMillis()
                                 var lastDbUpdateTime = System.currentTimeMillis()
+                                var lastBytesForSpeed: Long = startOffset
+                                var currentSpeed: Long = 0
 
                                 while (true) {
                                     coroutineContext.ensureActive()
@@ -726,13 +729,21 @@ class DownloadManager @Inject constructor(
 
                                     val now = System.currentTimeMillis()
                                     if (now - lastUpdateTime > UI_UPDATE_INTERVAL_MS) {
+                                        val timeDeltaMs = now - lastUpdateTime
+                                        val bytesDelta = bytesRead - lastBytesForSpeed
+                                        currentSpeed = if (timeDeltaMs > 0) {
+                                            (bytesDelta * 1000) / timeDeltaMs
+                                        } else 0
+
                                         updateProgress(
                                             progress.copy(
                                                 bytesDownloaded = bytesRead,
-                                                totalBytes = totalSize
+                                                totalBytes = totalSize,
+                                                bytesPerSecond = currentSpeed
                                             )
                                         )
                                         lastUpdateTime = now
+                                        lastBytesForSpeed = bytesRead
                                     }
 
                                     if (now - lastDbUpdateTime > DB_UPDATE_INTERVAL_MS) {
@@ -744,7 +755,8 @@ class DownloadManager @Inject constructor(
                                 updateProgress(
                                     progress.copy(
                                         bytesDownloaded = bytesRead,
-                                        totalBytes = totalSize
+                                        totalBytes = totalSize,
+                                        bytesPerSecond = 0
                                     )
                                 )
                                 downloadQueueDao.updateProgress(progress.id, bytesRead)

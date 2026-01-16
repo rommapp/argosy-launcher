@@ -155,13 +155,14 @@ fun DownloadsScreen(
         ) {
             if (activeItems.isNotEmpty()) {
                 val hasExtracting = activeItems.any { it.state == DownloadState.EXTRACTING }
-                val hasDownloading = activeItems.any { it.state == DownloadState.DOWNLOADING }
+                val totalSpeed = activeItems.sumOf { it.bytesPerSecond }
                 val headerText = when {
                     hasExtracting -> "Extracting"
-                    hasDownloading -> "Downloading"
+                    totalSpeed > 0 -> "Downloading"
                     else -> "Active"
                 }
-                item { SectionHeader(headerText) }
+                val speedText = if (totalSpeed > 0) formatSpeed(totalSpeed) else null
+                item { SectionHeader(headerText, speedText) }
                 itemsIndexed(activeItems) { index, download ->
                     DownloadItem(
                         download = download,
@@ -238,13 +239,25 @@ fun DownloadsScreen(
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
+private fun SectionHeader(title: String, speedSuffix: String? = null) {
+    Row(
+        modifier = Modifier.padding(bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        if (speedSuffix != null) {
+            Text(
+                text = speedSuffix,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
+    }
 }
 
 @Composable
@@ -354,13 +367,27 @@ private fun DownloadItem(
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = statusColor,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (isActiveDownload && download.bytesPerSecond > 0) {
+                        Text(
+                            text = formatSpeed(download.bytesPerSecond),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
             }
 
             Icon(
@@ -482,6 +509,10 @@ private fun formatBytes(bytes: Long): String {
     val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
     val safeIndex = digitGroups.coerceIn(0, units.lastIndex)
     return String.format(java.util.Locale.US, "%.1f %s", bytes / Math.pow(1024.0, safeIndex.toDouble()), units[safeIndex])
+}
+
+private fun formatSpeed(bytesPerSecond: Long): String {
+    return "${formatBytes(bytesPerSecond)}/s"
 }
 
 @Composable

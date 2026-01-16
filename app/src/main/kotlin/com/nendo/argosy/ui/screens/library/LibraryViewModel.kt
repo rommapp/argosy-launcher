@@ -528,7 +528,10 @@ class LibraryViewModel @Inject constructor(
                 }
             } else if (platformIndex >= 0) {
                 val platformId = state.platforms[platformIndex].id
-                gameDao.observeByPlatformList(platformId)
+                when (filters.source) {
+                    SourceFilter.PLAYABLE -> gameDao.observePlayableByPlatformList(platformId)
+                    else -> gameDao.observeByPlatformList(platformId)
+                }
             } else {
                 when (filters.source) {
                     SourceFilter.ALL -> gameDao.observeAllList()

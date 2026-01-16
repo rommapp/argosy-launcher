@@ -901,7 +901,12 @@ object EmulatorRegistry {
         EmulatorFamily(
             baseId = "eden",
             displayNamePrefix = "Eden",
-            packagePatterns = listOf("dev.eden.*", "dev.legacy.eden*"),
+            packagePatterns = listOf(
+                "dev.eden.*",
+                "dev.legacy.eden*",
+                "org.eden.*",
+                "com.miHoYo.Yuanshen"
+            ),
             supportedPlatforms = setOf("switch"),
             downloadUrl = "https://github.com/eden-emulator/Releases/releases"
         ),

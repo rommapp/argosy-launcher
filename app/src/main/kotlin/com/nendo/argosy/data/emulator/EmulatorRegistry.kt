@@ -130,6 +130,13 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita"
         ),
         EmulatorDef(
+            id = "m64pro_fzx_plus",
+            packageName = "com.m64.fx.plus.emulate",
+            displayName = "M64Pro FZX Plus+",
+            supportedPlatforms = setOf("n64"),
+            downloadUrl = "https://play.google.com/store/apps/details?id=com.m64.fx.plus.emulate"
+        ),
+        EmulatorDef(
             id = "dolphin",
             packageName = "org.dolphinemu.dolphinemu",
             displayName = "Dolphin",
@@ -530,7 +537,7 @@ object EmulatorRegistry {
         "psp" to listOf("ppsspp_gold", "ppsspp", "retroarch", "retroarch_64"),
         "vita" to listOf("vita3k-zx", "vita3k"),
         "psvita" to listOf("vita3k-zx", "vita3k"),
-        "n64" to listOf("mupen64plus_fz", "retroarch", "retroarch_64"),
+        "n64" to listOf("m64pro_fzx_plus", "mupen64plus_fz", "retroarch", "retroarch_64"),
         "nds" to listOf("drastic", "melonds", "retroarch", "retroarch_64"),
         "3ds" to listOf("azahar_plus", "azahar", "citra_mmj", "borked3ds", "citra", "retroarch", "retroarch_64"),
         "gc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),

@@ -205,6 +205,15 @@ object StatePathRegistry {
             maxSlots = 10,
             supported = false
         ),
+        "m64pro_fzx_plus" to StatePathConfig(
+            emulatorId = "m64pro_fzx_plus",
+            defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/com.m64.fx.plus.emulate/files/GameData"
+            ),
+            slotPattern = StateSlotPattern.SuffixNumber(extension = "st"),
+            maxSlots = 10,
+            supported = false
+        ),
 
         "pizza_boy_gba" to StatePathConfig(
             emulatorId = "pizza_boy_gba",

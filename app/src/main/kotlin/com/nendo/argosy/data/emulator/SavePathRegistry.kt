@@ -45,6 +45,14 @@ object SavePathRegistry {
             saveExtensions = listOf("sra", "eep", "fla", "mpk"),
             usesGameIdSubfolder = true
         ),
+        "m64pro_fzx_plus" to SavePathConfig(
+            emulatorId = "m64pro_fzx_plus",
+            defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/com.m64.fx.plus.emulate/files/GameData"
+            ),
+            saveExtensions = listOf("sra", "eep", "fla", "mpk"),
+            usesGameIdSubfolder = true
+        ),
 
         // GameCube/Wii - uses memory card files, not yet supported
         "dolphin" to SavePathConfig(

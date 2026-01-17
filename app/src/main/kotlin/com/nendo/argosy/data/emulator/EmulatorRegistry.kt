@@ -123,6 +123,37 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=com.retroarch.aarch64"
         ),
 
+        // Mupen64Plus FZ - file path workaround for content:// URI issue in emulator
+        EmulatorDef(
+            id = "mupen64plus_fz",
+            packageName = "org.mupen64plusae.v3.fzurita",
+            displayName = "Mupen64Plus FZ",
+            supportedPlatforms = setOf("n64"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "paulscode.android.mupen64plusae.SplashActivity",
+                intentExtras = mapOf(
+                    "paulscode.android.mupen64plusae.ActivityHelper.Keys.ROM_PATH" to ExtraValue.FilePath
+                )
+            ),
+            downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita"
+        ),
+        // M64Pro FZX Plus+ - Mupen64Plus fork, same launch pattern
+        EmulatorDef(
+            id = "m64pro_fzx_plus",
+            packageName = "com.m64.fx.plus.emulate",
+            displayName = "M64Pro FZX Plus+",
+            supportedPlatforms = setOf("n64"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "paulscode.android.mupen64plusae.SplashActivity",
+                intentExtras = mapOf(
+                    "paulscode.android.mupen64plusae.ActivityHelper.Keys.ROM_PATH" to ExtraValue.FilePath
+                )
+            ),
+            downloadUrl = "https://play.google.com/store/apps/details?id=com.m64.fx.plus.emulate"
+        ),
+
         EmulatorDef(
             id = "dolphin",
             packageName = "org.dolphinemu.dolphinemu",

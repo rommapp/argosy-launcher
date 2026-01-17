@@ -10,6 +10,7 @@ data class SavePathConfig(
     val usesFolderBasedSaves: Boolean = false,
     val usesGameIdSubfolder: Boolean = false,
     val usesSharedMemoryCard: Boolean = false,
+    val usesPackageTemplate: Boolean = false,
     val supported: Boolean = true
 )
 
@@ -100,63 +101,78 @@ object SavePathRegistry {
             usesFolderBasedSaves = true
         ),
 
-        // Switch - folder-based saves
+        // Switch - folder-based saves (using {package} for dynamic path resolution)
         "yuzu" to SavePathConfig(
             emulatorId = "yuzu",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/org.yuzu.yuzu_emu/files/nand/user/save"
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
         ),
         "ryujinx" to SavePathConfig(
             emulatorId = "ryujinx",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/org.ryujinx.android/files/nand/user/save"
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
         ),
         "citron" to SavePathConfig(
             emulatorId = "citron",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/org.citron.citron_emu/files/nand/user/save",
-                "/storage/emulated/0/Android/data/org.citron.emu/files/nand/user/save"
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
         ),
         "strato" to SavePathConfig(
             emulatorId = "strato",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/org.stratoemu.strato/files/nand/user/save"
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
         ),
         "eden" to SavePathConfig(
             emulatorId = "eden",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/dev.eden.eden_emulator/files/nand/user/save"
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
         ),
         "skyline" to SavePathConfig(
             emulatorId = "skyline",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/skyline.emu/files/nand/user/save"
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
         ),
         "sudachi" to SavePathConfig(
             emulatorId = "sudachi",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/org.sudachi.sudachi_emu/files/nand/user/save"
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
             ),
             saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
+        ),
+        "kenjinx" to SavePathConfig(
+            emulatorId = "kenjinx",
+            defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/{package}/files/nand/user/save"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true
         ),
 
         "drastic" to SavePathConfig(
@@ -407,5 +423,20 @@ object SavePathRegistry {
             path.replace("/{core}", "").replace("{core}", "")
         }
         return withCore + withoutCore
+    }
+
+    fun resolvePathWithPackage(
+        config: SavePathConfig,
+        emulatorPackage: String?
+    ): List<String> {
+        if (!config.usesPackageTemplate) return config.defaultPaths
+
+        val packageName = emulatorPackage
+            ?: EmulatorRegistry.getById(config.emulatorId)?.packageName
+            ?: return config.defaultPaths
+
+        return config.defaultPaths.map { path ->
+            path.replace("{package}", packageName)
+        }
     }
 }

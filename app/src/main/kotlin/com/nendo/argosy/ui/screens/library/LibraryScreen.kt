@@ -450,7 +450,10 @@ fun LibraryScreen(
 
         SyncOverlay(
             syncProgress = uiState.syncOverlayState?.syncProgress,
-            gameTitle = uiState.syncOverlayState?.gameTitle
+            gameTitle = uiState.syncOverlayState?.gameTitle,
+            onGrantPermission = uiState.syncOverlayState?.onGrantPermission,
+            onDisableSync = uiState.syncOverlayState?.onDisableSync,
+            onSkip = uiState.syncOverlayState?.onSkip
         )
 
         uiState.discPickerState?.let { pickerState ->

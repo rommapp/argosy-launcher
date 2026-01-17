@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.emulator
 
+import android.os.Build
+import android.os.Environment
 import com.nendo.argosy.util.Logger
 import java.io.File
 import javax.inject.Inject
@@ -18,12 +20,73 @@ class TitleIdDetector @Inject constructor() {
         val savePath: String
     )
 
+    sealed class ValidationResult {
+        data object Valid : ValidationResult()
+        data object PermissionRequired : ValidationResult()
+        data class SavePathNotFound(val checkedPaths: List<String>) : ValidationResult()
+        data class AccessDenied(val path: String) : ValidationResult()
+        data object NotFolderBased : ValidationResult()
+        data object NoConfig : ValidationResult()
+    }
+
+    fun validateSavePathAccess(emulatorId: String, emulatorPackage: String? = null): ValidationResult {
+        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
+        if (config == null) {
+            Logger.debug(TAG, "[SaveSync] VALIDATE | No config for emulator | emulator=$emulatorId")
+            return ValidationResult.NoConfig
+        }
+
+        if (!config.usesFolderBasedSaves) {
+            return ValidationResult.NotFolderBased
+        }
+
+        if (!hasFileAccessPermission()) {
+            Logger.debug(TAG, "[SaveSync] VALIDATE | Permission not granted | emulator=$emulatorId")
+            return ValidationResult.PermissionRequired
+        }
+
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+
+        for (path in resolvedPaths) {
+            val dir = File(path)
+            if (!dir.exists() || !dir.isDirectory) continue
+
+            // Directory exists - verify we can actually read it (catches SELinux/OEM restrictions)
+            val canRead = try {
+                dir.listFiles() != null
+            } catch (e: SecurityException) {
+                Logger.debug(TAG, "[SaveSync] VALIDATE | SecurityException reading path | path=$path, error=${e.message}")
+                false
+            }
+
+            if (canRead) {
+                Logger.debug(TAG, "[SaveSync] VALIDATE | Path accessible | path=$path")
+                return ValidationResult.Valid
+            } else {
+                Logger.debug(TAG, "[SaveSync] VALIDATE | Path exists but access denied (SELinux/OEM restriction?) | path=$path")
+                return ValidationResult.AccessDenied(path)
+            }
+        }
+
+        Logger.debug(TAG, "[SaveSync] VALIDATE | No save path found | emulator=$emulatorId, package=$emulatorPackage, paths=$resolvedPaths")
+        return ValidationResult.SavePathNotFound(resolvedPaths)
+    }
+
+    private fun hasFileAccessPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true
+        }
+    }
+
     fun detectRecentTitleId(
         emulatorId: String,
         platformSlug: String,
-        sessionStartTime: Long
+        sessionStartTime: Long,
+        emulatorPackage: String? = null
     ): DetectedTitleId? {
-        Logger.debug(TAG, "[SaveSync] DETECT | Starting title ID detection | emulator=$emulatorId, platform=$platformSlug, sessionStart=$sessionStartTime")
+        Logger.debug(TAG, "[SaveSync] DETECT | Starting title ID detection | emulator=$emulatorId, package=$emulatorPackage, platform=$platformSlug, sessionStart=$sessionStartTime")
 
         val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
         if (config == null) {
@@ -35,8 +98,9 @@ class TitleIdDetector @Inject constructor() {
             return null
         }
 
-        Logger.debug(TAG, "[SaveSync] DETECT | Scanning paths | paths=${config.defaultPaths}")
-        for (basePath in config.defaultPaths) {
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+        Logger.debug(TAG, "[SaveSync] DETECT | Scanning paths | paths=$resolvedPaths")
+        for (basePath in resolvedPaths) {
             val detected = scanForRecentTitleId(basePath, platformSlug, sessionStartTime)
             if (detected != null) {
                 val deltaMs = detected.modifiedAt - sessionStartTime

@@ -18,15 +18,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.FolderOff
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -52,13 +62,17 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 fun SyncOverlay(
     syncProgress: SyncProgress?,
     modifier: Modifier = Modifier,
-    gameTitle: String? = null
+    gameTitle: String? = null,
+    onGrantPermission: (() -> Unit)? = null,
+    onDisableSync: (() -> Unit)? = null,
+    onSkip: (() -> Unit)? = null
 ) {
     val isVisible = syncProgress != null &&
         syncProgress != SyncProgress.Idle &&
         syncProgress != SyncProgress.Skipped
 
-    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error
+    val isBlocked = syncProgress is SyncProgress.BlockedReason
+    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error && !isBlocked
 
     val infiniteTransition = rememberInfiniteTransition(label = "sync_rotation")
     val rotation by infiniteTransition.animateFloat(
@@ -102,58 +116,173 @@ fun SyncOverlay(
                 .background(overlayColor),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Sync,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .rotate(displayRotation)
+            if (isBlocked) {
+                BlockedSyncContent(
+                    syncProgress = syncProgress as SyncProgress.BlockedReason,
+                    gameTitle = gameTitle,
+                    onGrantPermission = onGrantPermission,
+                    onDisableSync = onDisableSync,
+                    onSkip = onSkip
                 )
-
-                Spacer(modifier = Modifier.height(Dimens.spacingLg))
-
-                Text(
-                    text = buildAnnotatedString {
-                        append("Channel: ")
-                        withStyle(SpanStyle(color = LocalLauncherTheme.current.semanticColors.info)) {
-                            append(channelName ?: "Latest")
-                        }
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                ActiveSyncContent(
+                    channelName = channelName,
+                    statusMessage = debouncedStatusMessage,
+                    gameTitle = gameTitle,
+                    rotation = displayRotation
                 )
+            }
+        }
+    }
+}
 
-                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+@Composable
+private fun ActiveSyncContent(
+    channelName: String?,
+    statusMessage: String,
+    gameTitle: String?,
+    rotation: Float
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Sync,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .size(56.dp)
+                .rotate(rotation)
+        )
 
-                AnimatedContent(
-                    targetState = debouncedStatusMessage,
-                    transitionSpec = {
-                        slideInVertically { -it / 2 } + fadeIn(tween(200)) togetherWith
-                            slideOutVertically { it / 2 } + fadeOut(tween(150)) using
-                            SizeTransform(clip = true)
-                    },
-                    label = "syncStatus"
-                ) { message ->
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Text(
+            text = buildAnnotatedString {
+                append("Channel: ")
+                withStyle(SpanStyle(color = LocalLauncherTheme.current.semanticColors.info)) {
+                    append(channelName ?: "Latest")
                 }
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
-                if (gameTitle != null) {
-                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
-                    Text(
-                        text = gameTitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        AnimatedContent(
+            targetState = statusMessage,
+            transitionSpec = {
+                slideInVertically { -it / 2 } + fadeIn(tween(200)) togetherWith
+                    slideOutVertically { it / 2 } + fadeOut(tween(150)) using
+                    SizeTransform(clip = true)
+            },
+            label = "syncStatus"
+        ) { message ->
+            Text(
+                text = message,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        if (gameTitle != null) {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            Text(
+                text = gameTitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun BlockedSyncContent(
+    syncProgress: SyncProgress.BlockedReason,
+    gameTitle: String?,
+    onGrantPermission: (() -> Unit)?,
+    onDisableSync: (() -> Unit)?,
+    onSkip: (() -> Unit)?
+) {
+    val isPermissionIssue = syncProgress is SyncProgress.BlockedReason.PermissionRequired
+    val isAccessDenied = syncProgress is SyncProgress.BlockedReason.AccessDenied
+
+    val icon = when {
+        isPermissionIssue -> Icons.Default.Lock
+        isAccessDenied -> Icons.Default.Block
+        else -> Icons.Default.FolderOff
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(horizontal = Dimens.spacingXl)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(56.dp)
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Text(
+            text = syncProgress.statusMessage,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        syncProgress.detailMessage?.let { detail ->
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+
+        if (gameTitle != null) {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            Text(
+                text = gameTitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            if (isPermissionIssue && onGrantPermission != null) {
+                Button(
+                    onClick = onGrantPermission,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Grant Permission")
                 }
+            }
+
+            if (onDisableSync != null) {
+                OutlinedButton(
+                    onClick = onDisableSync,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Disable Sync")
+                }
+            }
+        }
+
+        if (onSkip != null) {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            TextButton(onClick = onSkip) {
+                Text("Skip for Now")
             }
         }
     }

@@ -1,12 +1,18 @@
 package com.nendo.argosy.ui.screens.common
 
+import android.app.Application
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import com.nendo.argosy.data.emulator.DiscOption
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.emulator.TitleIdDetector
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.model.SyncProgress
@@ -31,7 +37,10 @@ data class SyncOverlayState(
     val gameTitle: String,
     val syncProgress: SyncProgress,
     @Deprecated("Use syncProgress instead")
-    val syncState: SyncState = SyncState.Idle
+    val syncState: SyncState = SyncState.Idle,
+    val onGrantPermission: (() -> Unit)? = null,
+    val onDisableSync: (() -> Unit)? = null,
+    val onSkip: (() -> Unit)? = null
 )
 
 data class DiscPickerState(
@@ -42,6 +51,7 @@ data class DiscPickerState(
 )
 
 class GameLaunchDelegate @Inject constructor(
+    private val application: Application,
     private val gameDao: GameDao,
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
@@ -50,7 +60,8 @@ class GameLaunchDelegate @Inject constructor(
     private val playSessionTracker: PlaySessionTracker,
     private val gameLauncher: GameLauncher,
     private val soundManager: SoundFeedbackManager,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val titleIdDetector: TitleIdDetector
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -241,9 +252,49 @@ class GameLaunchDelegate @Inject constructor(
                     playSessionTracker.endSession()
                     return@launch
                 }
+
                 val game = gameDao.getById(session.gameId)
                 val gameTitle = game?.title ?: "Game"
                 val channelName: String? = null
+                val emulatorName = EmulatorRegistry.getById(emulatorId)?.displayName
+
+                val validationResult = titleIdDetector.validateSavePathAccess(emulatorId, session.emulatorPackage)
+                when (validationResult) {
+                    is TitleIdDetector.ValidationResult.PermissionRequired -> {
+                        showBlockedOverlay(
+                            gameTitle = gameTitle,
+                            progress = SyncProgress.BlockedReason.PermissionRequired(emulatorName),
+                            scope = scope,
+                            onSyncComplete = onSyncComplete
+                        )
+                        return@launch
+                    }
+                    is TitleIdDetector.ValidationResult.SavePathNotFound -> {
+                        showBlockedOverlay(
+                            gameTitle = gameTitle,
+                            progress = SyncProgress.BlockedReason.SavePathNotFound(
+                                emulatorName,
+                                validationResult.checkedPaths.firstOrNull()
+                            ),
+                            scope = scope,
+                            onSyncComplete = onSyncComplete
+                        )
+                        return@launch
+                    }
+                    is TitleIdDetector.ValidationResult.AccessDenied -> {
+                        showBlockedOverlay(
+                            gameTitle = gameTitle,
+                            progress = SyncProgress.BlockedReason.AccessDenied(
+                                emulatorName,
+                                validationResult.path
+                            ),
+                            scope = scope,
+                            onSyncComplete = onSyncComplete
+                        )
+                        return@launch
+                    }
+                    else -> { /* Valid or not folder-based, proceed */ }
+                }
 
                 _syncOverlayState.value = SyncOverlayState(
                     gameTitle,
@@ -286,6 +337,48 @@ class GameLaunchDelegate @Inject constructor(
             } finally {
                 syncMutex.unlock()
             }
+        }
+    }
+
+    private fun showBlockedOverlay(
+        gameTitle: String,
+        progress: SyncProgress.BlockedReason,
+        scope: CoroutineScope,
+        onSyncComplete: () -> Unit
+    ) {
+        _syncOverlayState.value = SyncOverlayState(
+            gameTitle = gameTitle,
+            syncProgress = progress,
+            onGrantPermission = {
+                openAllFilesAccessSettings()
+                dismissBlockedOverlay(onSyncComplete)
+            },
+            onDisableSync = {
+                scope.launch {
+                    preferencesRepository.setSaveSyncEnabled(false)
+                }
+                dismissBlockedOverlay(onSyncComplete)
+            },
+            onSkip = {
+                dismissBlockedOverlay(onSyncComplete)
+            }
+        )
+    }
+
+    private fun dismissBlockedOverlay(onSyncComplete: () -> Unit) {
+        playSessionTracker.endSession()
+        _syncOverlayState.value = null
+        syncMutex.unlock()
+        onSyncComplete()
+    }
+
+    private fun openAllFilesAccessSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                data = Uri.parse("package:${application.packageName}")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            application.startActivity(intent)
         }
     }
 

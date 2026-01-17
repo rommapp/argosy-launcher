@@ -57,6 +57,24 @@ sealed class SyncProgress {
     data class Error(val message: String) : SyncProgress()
     data object Skipped : SyncProgress()
 
+    sealed class BlockedReason : SyncProgress() {
+        abstract val emulatorName: String?
+
+        data class PermissionRequired(
+            override val emulatorName: String? = null
+        ) : BlockedReason()
+
+        data class SavePathNotFound(
+            override val emulatorName: String? = null,
+            val checkedPath: String? = null
+        ) : BlockedReason()
+
+        data class AccessDenied(
+            override val emulatorName: String? = null,
+            val path: String? = null
+        ) : BlockedReason()
+    }
+
     val displayChannelName: String?
         get() = when (this) {
             is PreLaunch -> channelName
@@ -106,5 +124,21 @@ sealed class SyncProgress {
             is PostSession.Complete -> "Sync complete"
             is Error -> message
             is Skipped -> "Sync skipped"
+            is BlockedReason.PermissionRequired -> "File access permission required"
+            is BlockedReason.SavePathNotFound -> "Save folder not found"
+            is BlockedReason.AccessDenied -> "Save folder access blocked"
+        }
+
+    val detailMessage: String?
+        get() = when (this) {
+            is BlockedReason.PermissionRequired ->
+                "Grant \"All files access\" permission to sync saves for ${emulatorName ?: "this emulator"}."
+            is BlockedReason.SavePathNotFound ->
+                "The save folder for ${emulatorName ?: "this emulator"} was not found. " +
+                    "The emulator may use a non-standard save location."
+            is BlockedReason.AccessDenied ->
+                "Your device is blocking access to ${emulatorName ?: "emulator"} save data. " +
+                    "This may be due to manufacturer restrictions (Samsung, Xiaomi, etc.) or security policies."
+            else -> null
         }
 }

@@ -110,7 +110,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         if (savePath == null && titleId == null && sessionStartTime > 0) {
             Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | No save found, attempting folder-based detection")
             val detected = titleIdDetector.detectRecentTitleId(
-                emulatorId, game.platformSlug, sessionStartTime
+                emulatorId, game.platformSlug, sessionStartTime, emulatorPackage
             )
             if (detected == null) {
                 Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | No folder-based save detected")

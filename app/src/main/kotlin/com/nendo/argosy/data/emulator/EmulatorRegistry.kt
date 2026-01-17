@@ -59,6 +59,7 @@ sealed class ExtraValue {
     object FileUri : ExtraValue()
     object Platform : ExtraValue()
     data class Literal(val value: String) : ExtraValue()
+    data class BooleanLiteral(val value: Boolean) : ExtraValue()
 }
 
 data class RetroArchCore(
@@ -122,18 +123,40 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=com.retroarch.aarch64"
         ),
 
+        // NOTE: Mupen64Plus-based emulators require special handling for external ROM launches
+        // Problem: The emulator calls `new File(romPath).exists()` - content:// URIs fail this check
+        // Solution: Pass absolute file path via extras (not URI), so File.exists() returns true
+        // The emulator then calls launchGameOnCreation() which scans and caches the ROM properly
         EmulatorDef(
             id = "mupen64plus_fz",
             packageName = "org.mupen64plusae.v3.fzurita",
             displayName = "Mupen64Plus FZ",
             supportedPlatforms = setOf("n64"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "paulscode.android.mupen64plusae.SplashActivity",
+                intentExtras = mapOf(
+                    // Key derived from: ActivityHelper.Keys.ROM_PATH = Keys.class.getCanonicalName() + ".ROM_PATH"
+                    // Source: https://github.com/mupen64plus-ae/mupen64plus-ae/blob/master/app/src/main/java/paulscode/android/mupen64plusae/ActivityHelper.java
+                    "paulscode.android.mupen64plusae.ActivityHelper.Keys.ROM_PATH" to ExtraValue.FilePath
+                )
+            ),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita"
         ),
+        // NOTE: M64Pro FZX Plus+ is a Mupen64Plus fork, uses same launch pattern
         EmulatorDef(
             id = "m64pro_fzx_plus",
             packageName = "com.m64.fx.plus.emulate",
             displayName = "M64Pro FZX Plus+",
             supportedPlatforms = setOf("n64"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "paulscode.android.mupen64plusae.SplashActivity",
+                intentExtras = mapOf(
+                    // Same key as mupen64plus_fz - see source reference above
+                    "paulscode.android.mupen64plusae.ActivityHelper.Keys.ROM_PATH" to ExtraValue.FilePath
+                )
+            ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.m64.fx.plus.emulate"
         ),
         EmulatorDef(

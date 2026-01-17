@@ -38,6 +38,8 @@ sealed class LaunchResult {
     data class NoAndroidApp(val packageName: String) : LaunchResult()
     data class NoCore(val platformSlug: String) : LaunchResult()
     data class MissingDiscs(val missingDiscNumbers: List<Int>) : LaunchResult()
+    /** ROM is in an app-private directory that external emulators cannot access */
+    data class RomInPrivateDirectory(val romPath: String, val emulatorName: String) : LaunchResult()
     data class Error(val message: String) : LaunchResult()
 }
 
@@ -127,6 +129,13 @@ class GameLauncher @Inject constructor(
             }
 
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName} (${emulator.packageName})")
+
+        // Preflight check: Mupen64Plus emulators need direct filesystem access
+        // They cannot read files in this app's private external directory
+        if (isMupen64PlusEmulator(emulator) && isInPrivateDirectory(romFile)) {
+            Logger.warn(TAG, "launch() failed: ROM in private directory inaccessible to ${emulator.displayName}")
+            return LaunchResult.RomInPrivateDirectory(romFile.absolutePath, emulator.displayName)
+        }
 
         val intent = buildIntent(emulator, romFile, game, forResume)
             ?: return if (emulator.launchConfig is LaunchConfig.RetroArch) {
@@ -492,16 +501,18 @@ class GameLauncher @Inject constructor(
             val shouldSkipExtras = emulator.launchAction == Intent.ACTION_VIEW && usesIntentDataUri
             if (!shouldSkipExtras) {
                 config.intentExtras.forEach { (key, extraValue) ->
-                    val value = when (extraValue) {
-                        is ExtraValue.FilePath -> romFile.absolutePath
+                    // Using when as expression enforces compile-time exhaustiveness for sealed class
+                    @Suppress("UNUSED_VARIABLE")
+                    val handled: Unit = when (extraValue) {
+                        is ExtraValue.FilePath -> putExtra(key, romFile.absolutePath)
                         is ExtraValue.FileUri -> {
                             hasFileUri = true
-                            getFileUri(romFile).toString()
+                            putExtra(key, getFileUri(romFile).toString())
                         }
-                        is ExtraValue.Platform -> platformSlug
-                        is ExtraValue.Literal -> extraValue.value
-                    }
-                    putExtra(key, value)
+                        is ExtraValue.Platform -> putExtra(key, platformSlug)
+                        is ExtraValue.Literal -> putExtra(key, extraValue.value)
+                        is ExtraValue.BooleanLiteral -> putExtra(key, extraValue.value)
+                    }.let { Unit }
                 }
             }
 
@@ -648,6 +659,26 @@ class GameLauncher @Inject constructor(
         // Most emulators filter by file extension, not MIME type.
         // Using */* ensures the intent resolves to the target emulator.
         return "*/*"
+    }
+
+    /**
+     * Mupen64Plus-based emulators require direct filesystem access and cannot read
+     * files from this app's private directory via content:// URIs.
+     */
+    private fun isMupen64PlusEmulator(emulator: EmulatorDef): Boolean {
+        return emulator.id in setOf("mupen64plus_fz", "m64pro_fzx_plus")
+    }
+
+    /**
+     * Checks if the file is in this app's private directory, which other apps
+     * cannot access directly. Returns true if the ROM is in a private location.
+     */
+    private fun isInPrivateDirectory(file: File): Boolean {
+        val path = file.absolutePath
+        val privateExternalDir = context.getExternalFilesDir(null)?.absolutePath
+        val privateInternalDir = context.filesDir.absolutePath
+        return (privateExternalDir != null && path.startsWith(privateExternalDir)) ||
+            path.startsWith(privateInternalDir)
     }
 
     suspend fun buildInstallIntent(game: GameEntity, file: File): Intent? {

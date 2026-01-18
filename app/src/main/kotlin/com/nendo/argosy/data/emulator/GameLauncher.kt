@@ -339,10 +339,26 @@ class GameLauncher @Inject constructor(
     private fun buildFileUriIntent(emulator: EmulatorDef, romFile: File, forResume: Boolean): Intent {
         val uri = getFileUri(romFile)
 
+        // Multi-process emulators need explicit grantUriPermission() since intent grants don't extend to child processes
+        if (isMultiProcessEmulator(emulator)) {
+            try {
+                context.grantUriPermission(
+                    emulator.packageName,
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                Logger.debug(TAG, "Granted URI permission to ${emulator.packageName} for ${romFile.name}")
+            } catch (e: Exception) {
+                Logger.warn(TAG, "Failed to grant URI permission to ${emulator.packageName}", e)
+            }
+        }
+
         return Intent(emulator.launchAction).apply {
             setDataAndType(uri, getMimeType(romFile))
             setPackage(emulator.packageName)
             addCategory(Intent.CATEGORY_DEFAULT)
+            // Set clipData and flag for standard URI permission grant
+            clipData = android.content.ClipData.newRawUri(null, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             if (forResume) {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -350,6 +366,12 @@ class GameLauncher @Inject constructor(
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
         }
+    }
+
+    /** Returns true for emulators that run the core in a separate process (need explicit grantUriPermission). */
+    private fun isMultiProcessEmulator(emulator: EmulatorDef): Boolean {
+        return emulator.packageName.startsWith("org.mupen64plusae.") ||
+            emulator.packageName == "com.m64.fx.plus.emulate"
     }
 
     private fun buildFilePathIntent(

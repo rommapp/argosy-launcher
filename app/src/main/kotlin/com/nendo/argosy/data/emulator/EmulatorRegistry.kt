@@ -123,36 +123,27 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=com.retroarch.aarch64"
         ),
 
-        // Mupen64Plus FZ - file path workaround for content:// URI issue in emulator
+        // Mupen64Plus FZ - uses ACTION_VIEW with content:// URI
         EmulatorDef(
             id = "mupen64plus_fz",
             packageName = "org.mupen64plusae.v3.fzurita",
             displayName = "Mupen64Plus FZ",
             supportedPlatforms = setOf("n64"),
-            launchAction = Intent.ACTION_MAIN,
-            launchConfig = LaunchConfig.Custom(
-                activityClass = "paulscode.android.mupen64plusae.SplashActivity",
-                intentExtras = mapOf(
-                    "paulscode.android.mupen64plusae.ActivityHelper.Keys.ROM_PATH" to ExtraValue.FilePath
-                )
-            ),
+            launchAction = Intent.ACTION_VIEW,
+            launchConfig = LaunchConfig.FileUri,
             downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita"
         ),
-        // M64Pro FZX Plus+ - Mupen64Plus fork, same launch pattern
+        // M64Pro FZX Plus+ - Mupen64Plus fork, uses ACTION_VIEW with content:// URI
         EmulatorDef(
             id = "m64pro_fzx_plus",
             packageName = "com.m64.fx.plus.emulate",
             displayName = "M64Pro FZX Plus+",
             supportedPlatforms = setOf("n64"),
-            launchAction = Intent.ACTION_MAIN,
-            launchConfig = LaunchConfig.Custom(
-                activityClass = "paulscode.android.mupen64plusae.SplashActivity",
-                intentExtras = mapOf(
-                    "paulscode.android.mupen64plusae.ActivityHelper.Keys.ROM_PATH" to ExtraValue.FilePath
-                )
-            ),
+            launchAction = Intent.ACTION_VIEW,
+            launchConfig = LaunchConfig.FileUri,
             downloadUrl = "https://play.google.com/store/apps/details?id=com.m64.fx.plus.emulate"
         ),
+
 
         EmulatorDef(
             id = "dolphin",
@@ -875,19 +866,14 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("3ds"),
             downloadUrl = "https://citra-emu.org/"
         ),
-        // Mupen64Plus derivatives need file path via extras (content:// URIs fail File.exists() check)
+        // Mupen64Plus derivatives use ACTION_VIEW with content:// URI
         EmulatorFamily(
             baseId = "mupen64plus",
             displayNamePrefix = "Mupen64Plus",
             packagePatterns = listOf("org.mupen64plusae.*", "com.m64.fx.plus.emulate"),
             supportedPlatforms = setOf("n64"),
-            launchAction = Intent.ACTION_MAIN,
-            launchConfig = LaunchConfig.Custom(
-                activityClass = "paulscode.android.mupen64plusae.SplashActivity",
-                intentExtras = mapOf(
-                    "paulscode.android.mupen64plusae.ActivityHelper.Keys.ROM_PATH" to ExtraValue.FilePath
-                )
-            ),
+            launchAction = Intent.ACTION_VIEW,
+            launchConfig = LaunchConfig.FileUri,
             downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita"
         ),
         EmulatorFamily(

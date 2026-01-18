@@ -103,7 +103,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
 
         var titleId = game.titleId
         var savePath = saveSyncRepository.discoverSavePath(
-            emulatorId, game.title, game.platformSlug, game.localPath, titleId, coreName
+            emulatorId, game.title, game.platformSlug, game.localPath, titleId, coreName, emulatorPackage
         )
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Initial path discovery | savePath=$savePath, cachedTitleId=$titleId")
 

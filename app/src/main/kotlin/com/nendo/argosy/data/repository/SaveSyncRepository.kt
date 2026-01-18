@@ -192,7 +192,8 @@ class SaveSyncRepository @Inject constructor(
         platformSlug: String,
         romPath: String? = null,
         cachedTitleId: String? = null,
-        coreName: String? = null
+        coreName: String? = null,
+        emulatorPackage: String? = null
     ): String? = withContext(Dispatchers.IO) {
         if (emulatorId == "default" || emulatorId.isBlank()) {
             Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid emulatorId='$emulatorId' - caller should resolve emulator before calling discoverSavePath | game=$gameTitle, platform=$platformSlug")
@@ -220,7 +221,7 @@ class SaveSyncRepository @Inject constructor(
             if (!isFolderSaveSyncEnabled()) {
                 return@withContext null
             }
-            return@withContext discoverFolderSavePath(config, platformSlug, romPath, cachedTitleId)
+            return@withContext discoverFolderSavePath(config, platformSlug, romPath, cachedTitleId, emulatorPackage)
         }
 
         val basePathOverride = if (isRetroArch && userConfig?.isUserOverride == true) {
@@ -292,7 +293,8 @@ class SaveSyncRepository @Inject constructor(
         config: SavePathConfig,
         platformSlug: String,
         romPath: String,
-        cachedTitleId: String? = null
+        cachedTitleId: String? = null,
+        emulatorPackage: String? = null
     ): String? {
         val romFile = File(romPath)
         val titleId = cachedTitleId
@@ -301,7 +303,10 @@ class SaveSyncRepository @Inject constructor(
 
         Logger.debug(TAG, "Using titleId: $titleId (cached: ${cachedTitleId != null})")
 
-        for (basePath in config.defaultPaths) {
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+        Logger.debug(TAG, "[SaveSync] DISCOVER | Searching paths for titleId=$titleId | paths=$resolvedPaths")
+
+        for (basePath in resolvedPaths) {
             val saveFolder = findSaveFolderByTitleId(basePath, titleId, platformSlug)
             if (saveFolder != null) return saveFolder
         }
@@ -314,8 +319,12 @@ class SaveSyncRepository @Inject constructor(
         platformSlug: String
     ): String? {
         val baseDir = File(basePath)
-        if (!baseDir.exists()) return null
+        if (!baseDir.exists()) {
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Base path does not exist | path=$basePath")
+            return null
+        }
         val normalizedTitleId = titleId.uppercase()
+        Logger.debug(TAG, "[SaveSync] DISCOVER | Scanning base path | path=$basePath, titleId=$normalizedTitleId")
 
         when (platformSlug) {
             "vita", "psvita" -> {

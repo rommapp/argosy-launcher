@@ -1083,9 +1083,13 @@ class SaveSyncRepository @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Decision=PROCEED | Local is newer or equal")
             }
 
-            val serverSaveIdToUpdate = syncEntity?.rommSaveId ?: existingServerSave?.id
+            val serverSaveIdToUpdate = if (serverSaves.isNotEmpty()) {
+                existingServerSave?.id
+            } else {
+                syncEntity?.rommSaveId
+            }
             val isUpdate = serverSaveIdToUpdate != null
-            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | HTTP request | isUpdate=$isUpdate, saveIdToUpdate=$serverSaveIdToUpdate, fileName=$uploadFileName, size=${fileToUpload.length()}bytes")
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | HTTP request | isUpdate=$isUpdate, saveIdToUpdate=$serverSaveIdToUpdate, fileName=$uploadFileName, size=${fileToUpload.length()}bytes, serverSavesCount=${serverSaves.size}")
 
             val requestBody = fileToUpload.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
@@ -1796,17 +1800,20 @@ class SaveSyncRepository @Inject constructor(
                 val matchingSaves = serverSaves.filter { it.emulator == emulatorId || it.emulator == null }
                 Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Found ${serverSaves.size} server saves | matching=$emulatorId: ${matchingSaves.size}, channels=${matchingSaves.map { it.fileNameNoExt }}")
 
+                val game = gameDao.getById(gameId)
+                val romBaseName = game?.localPath?.let { File(it).nameWithoutExtension }
+
                 val serverSave = if (activeChannel != null) {
                     val channelSave = matchingSaves.find { it.fileNameNoExt == activeChannel }
                     if (channelSave != null) {
                         Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Using active channel save | channel=$activeChannel")
                         channelSave
                     } else {
-                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Active channel '$activeChannel' not found on server, falling back to first available")
-                        matchingSaves.firstOrNull()
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Active channel '$activeChannel' not found on server, no fallback")
+                        null
                     }
                 } else {
-                    matchingSaves.firstOrNull()
+                    matchingSaves.find { isLatestSaveFileName(it.fileName, romBaseName) }
                 }
                 if (serverSave == null) {
                     Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No server save found for emulator=$emulatorId")

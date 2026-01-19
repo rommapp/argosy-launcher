@@ -484,7 +484,7 @@ class SaveSyncRepository @Inject constructor(
                 } else {
                     normalizedTitleId
                 }
-                Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS lookup | fullId=$normalizedTitleId, shortId=$shortTitleId")
+                Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS lookup | baseDir=$basePath, fullId=$normalizedTitleId, shortId=$shortTitleId")
                 baseDir.listFiles()?.forEach { folder1 ->
                     if (folder1.isDirectory) {
                         folder1.listFiles()?.forEach { folder2 ->
@@ -1681,12 +1681,13 @@ class SaveSyncRepository @Inject constructor(
                 "$profileFolder/$normalizedTitleId"
             }
             "3ds" -> {
+                val shortTitleId = if (titleId.length > 8) titleId.takeLast(8) else titleId
                 val nintendo3dsDir = File(baseDir)
                 val userFolders = nintendo3dsDir.listFiles()?.filter { it.isDirectory }
                 val folder1 = userFolders?.firstOrNull()
                 val folder2 = folder1?.listFiles()?.firstOrNull { it.isDirectory }
                 if (folder2 != null) {
-                    "${folder2.absolutePath}/title/00040000/$titleId/data"
+                    "${folder2.absolutePath}/title/00040000/$shortTitleId/data"
                 } else {
                     null
                 }

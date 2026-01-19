@@ -426,6 +426,12 @@ interface GameDao {
     @Query("SELECT titleId FROM games WHERE id = :gameId")
     suspend fun getTitleId(gameId: Long): String?
 
+    @Query("UPDATE games SET titleIdCandidates = :candidates WHERE id = :gameId")
+    suspend fun updateTitleIdCandidates(gameId: Long, candidates: String?)
+
+    @Query("SELECT titleIdCandidates FROM games WHERE id = :gameId")
+    suspend fun getTitleIdCandidates(gameId: Long): String?
+
     @Query("SELECT * FROM games WHERE playCount > 0 AND isHidden = 0 ORDER BY playTimeMinutes DESC")
     suspend fun getPlayedGames(): List<GameEntity>
 

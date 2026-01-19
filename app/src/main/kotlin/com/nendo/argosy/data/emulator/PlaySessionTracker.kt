@@ -338,12 +338,13 @@ class PlaySessionTracker @Inject constructor(
             }
 
             val savePath = saveSyncRepository.get().discoverSavePath(
-                emulatorId,
-                game.title,
-                game.platformSlug,
-                game.localPath,
-                game.titleId,
-                session.coreName
+                emulatorId = emulatorId,
+                gameTitle = game.title,
+                platformSlug = game.platformSlug,
+                romPath = game.localPath,
+                cachedTitleId = game.titleId,
+                coreName = session.coreName,
+                gameId = session.gameId
             )
 
             if (savePath != null) {

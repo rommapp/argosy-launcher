@@ -10,6 +10,7 @@ import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdExtractor
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.titledb.TitleDbRepository
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
@@ -108,6 +109,7 @@ class SaveSyncRepository @Inject constructor(
     private val gameDao: GameDao,
     private val retroArchConfigParser: RetroArchConfigParser,
     private val titleIdExtractor: TitleIdExtractor,
+    private val titleDbRepository: TitleDbRepository,
     private val saveArchiver: SaveArchiver,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>
@@ -193,7 +195,8 @@ class SaveSyncRepository @Inject constructor(
         romPath: String? = null,
         cachedTitleId: String? = null,
         coreName: String? = null,
-        emulatorPackage: String? = null
+        emulatorPackage: String? = null,
+        gameId: Long? = null
     ): String? = withContext(Dispatchers.IO) {
         if (emulatorId == "default" || emulatorId.isBlank()) {
             Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid emulatorId='$emulatorId' - caller should resolve emulator before calling discoverSavePath | game=$gameTitle, platform=$platformSlug")
@@ -221,7 +224,15 @@ class SaveSyncRepository @Inject constructor(
             if (!isFolderSaveSyncEnabled()) {
                 return@withContext null
             }
-            return@withContext discoverFolderSavePath(config, platformSlug, romPath, cachedTitleId, emulatorPackage)
+            return@withContext discoverFolderSavePath(
+                config = config,
+                platformSlug = platformSlug,
+                romPath = romPath,
+                cachedTitleId = cachedTitleId,
+                emulatorPackage = emulatorPackage,
+                gameId = gameId,
+                gameTitle = gameTitle
+            )
         }
 
         val basePathOverride = if (isRetroArch && userConfig?.isUserOverride == true) {
@@ -289,27 +300,81 @@ class SaveSyncRepository @Inject constructor(
         null
     }
 
-    private fun discoverFolderSavePath(
+    private suspend fun discoverFolderSavePath(
         config: SavePathConfig,
         platformSlug: String,
         romPath: String,
         cachedTitleId: String? = null,
-        emulatorPackage: String? = null
+        emulatorPackage: String? = null,
+        gameId: Long? = null,
+        gameTitle: String? = null
     ): String? {
         val romFile = File(romPath)
-        val titleId = cachedTitleId
-            ?: titleIdExtractor.extractTitleId(romFile, platformSlug)
-            ?: return null
-
-        Logger.debug(TAG, "Using titleId: $titleId (cached: ${cachedTitleId != null})")
-
         val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
-        Logger.debug(TAG, "[SaveSync] DISCOVER | Searching paths for titleId=$titleId | paths=$resolvedPaths")
+        val triedTitleIds = mutableSetOf<String>()
 
-        for (basePath in resolvedPaths) {
-            val saveFolder = findSaveFolderByTitleId(basePath, titleId, platformSlug)
-            if (saveFolder != null) return saveFolder
+        // 1. Try confirmed titleId first
+        if (cachedTitleId != null) {
+            triedTitleIds.add(cachedTitleId.uppercase())
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying cached titleId=$cachedTitleId")
+            for (basePath in resolvedPaths) {
+                val saveFolder = findSaveFolderByTitleId(basePath, cachedTitleId, platformSlug)
+                if (saveFolder != null) return saveFolder
+            }
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Cached titleId=$cachedTitleId found no save")
         }
+
+        // 2. Try filename extraction
+        val extractedTitleId = titleIdExtractor.extractTitleId(romFile, platformSlug)
+        if (extractedTitleId != null && extractedTitleId.uppercase() !in triedTitleIds) {
+            triedTitleIds.add(extractedTitleId.uppercase())
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId")
+            for (basePath in resolvedPaths) {
+                val saveFolder = findSaveFolderByTitleId(basePath, extractedTitleId, platformSlug)
+                if (saveFolder != null) {
+                    if (gameId != null) {
+                        gameDao.updateTitleId(gameId, extractedTitleId)
+                    }
+                    return saveFolder
+                }
+            }
+        }
+
+        // 3. Try each cached candidate
+        if (gameId != null) {
+            val candidates = titleDbRepository.getCachedCandidates(gameId)
+            for (candidate in candidates) {
+                if (candidate.uppercase() in triedTitleIds) continue
+                triedTitleIds.add(candidate.uppercase())
+                Logger.debug(TAG, "[SaveSync] DISCOVER | Trying cached candidate titleId=$candidate")
+                for (basePath in resolvedPaths) {
+                    val saveFolder = findSaveFolderByTitleId(basePath, candidate, platformSlug)
+                    if (saveFolder != null) {
+                        gameDao.updateTitleId(gameId, candidate)
+                        return saveFolder
+                    }
+                }
+            }
+        }
+
+        // 4. Query remote for new candidates
+        if (gameId != null && gameTitle != null) {
+            val newCandidates = titleDbRepository.resolveTitleIdCandidates(gameId, gameTitle, platformSlug)
+            for (candidate in newCandidates) {
+                if (candidate.uppercase() in triedTitleIds) continue
+                triedTitleIds.add(candidate.uppercase())
+                Logger.debug(TAG, "[SaveSync] DISCOVER | Trying remote candidate titleId=$candidate")
+                for (basePath in resolvedPaths) {
+                    val saveFolder = findSaveFolderByTitleId(basePath, candidate, platformSlug)
+                    if (saveFolder != null) {
+                        gameDao.updateTitleId(gameId, candidate)
+                        return saveFolder
+                    }
+                }
+            }
+        }
+
+        Logger.debug(TAG, "[SaveSync] DISCOVER | No save folder found after trying ${triedTitleIds.size} titleIds")
         return null
     }
 
@@ -902,8 +967,30 @@ class SaveSyncRepository @Inject constructor(
         }
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Using emulator=$resolvedEmulatorId (original=$emulatorId)")
 
-        val localPath = syncEntity?.localSavePath
-            ?: discoverSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)
+        var localPath = syncEntity?.localSavePath
+            ?: discoverSavePath(
+                emulatorId = resolvedEmulatorId,
+                gameTitle = game.title,
+                platformSlug = game.platformSlug,
+                romPath = game.localPath,
+                cachedTitleId = game.titleId,
+                gameId = gameId
+            )
+
+        // If no path found and we had cached titleId data, clear it and retry with fresh lookup
+        if (localPath == null && (game.titleId != null || titleDbRepository.getCachedCandidates(gameId).isNotEmpty())) {
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Clearing stale titleId cache and retrying")
+            titleDbRepository.clearTitleIdCache(gameId)
+            localPath = discoverSavePath(
+                emulatorId = resolvedEmulatorId,
+                gameTitle = game.title,
+                platformSlug = game.platformSlug,
+                romPath = game.localPath,
+                cachedTitleId = null,
+                gameId = gameId
+            )
+        }
+
         if (localPath == null) {
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Could not discover save path | emulator=$emulatorId, platform=${game.platformSlug}")
             return@withContext SaveSyncResult.NoSaveFound
@@ -1129,10 +1216,32 @@ class SaveSyncRepository @Inject constructor(
                 }
             }
         } else {
-            (syncEntity.localSavePath
-                ?: discoverSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)
-                ?: constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)).also {
-                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, path=$it")
+            val discovered = syncEntity.localSavePath
+                ?: discoverSavePath(
+                    emulatorId = resolvedEmulatorId,
+                    gameTitle = game.title,
+                    platformSlug = game.platformSlug,
+                    romPath = game.localPath,
+                    cachedTitleId = game.titleId,
+                    gameId = gameId
+                )
+
+            // If discovery failed and we had cached titleId data, clear it and retry
+            val retried = if (discovered == null && (game.titleId != null || titleDbRepository.getCachedCandidates(gameId).isNotEmpty())) {
+                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Clearing stale titleId cache and retrying")
+                titleDbRepository.clearTitleIdCache(gameId)
+                discoverSavePath(
+                    emulatorId = resolvedEmulatorId,
+                    gameTitle = game.title,
+                    platformSlug = game.platformSlug,
+                    romPath = game.localPath,
+                    cachedTitleId = null,
+                    gameId = gameId
+                )
+            } else discovered
+
+            (retried ?: constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)).also {
+                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, discovered=${retried != null}, path=$it")
             }
         }
 

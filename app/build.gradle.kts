@@ -15,6 +15,16 @@ val keystoreProperties = Properties().apply {
     }
 }
 
+val envPropertiesFile = rootProject.file(".env")
+val envProperties = Properties().apply {
+    if (envPropertiesFile.exists()) {
+        load(envPropertiesFile.inputStream())
+    }
+}
+
+fun envString(key: String, default: String = ""): String =
+    envProperties.getProperty(key, System.getenv(key) ?: default)
+
 android {
     namespace = "com.nendo.argosy"
     compileSdk = 35
@@ -34,6 +44,9 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
+
+        buildConfigField("String", "TITLEDB_API_SECRET", "\"${envString("TITLEDB_API_SECRET")}\"")
+        buildConfigField("String", "TITLEDB_API_URL", "\"${envString("TITLEDB_API_URL", "https://api.argosy.dev")}\"")
     }
 
     signingConfigs {

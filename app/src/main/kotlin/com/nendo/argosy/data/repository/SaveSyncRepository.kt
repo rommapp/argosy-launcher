@@ -1013,7 +1013,7 @@ class SaveSyncRepository @Inject constructor(
         val syncEntity = if (channelName != null) {
             saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
         } else {
-            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, DEFAULT_SAVE_NAME)
         }
 
         val game = gameDao.getById(gameId)
@@ -1227,7 +1227,7 @@ class SaveSyncRepository @Inject constructor(
         val syncEntity = if (channelName != null) {
             saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
         } else {
-            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, DEFAULT_SAVE_NAME)
         }
         if (syncEntity == null) {
             Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No sync entity found in database")
@@ -1917,7 +1917,7 @@ class SaveSyncRepository @Inject constructor(
         val existing = if (channelName != null) {
             saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
         } else {
-            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, DEFAULT_SAVE_NAME)
         }
         val entity = SaveSyncEntity(
             id = existing?.id ?: 0,

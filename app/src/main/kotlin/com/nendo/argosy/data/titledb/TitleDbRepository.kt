@@ -51,8 +51,16 @@ class TitleDbRepository @Inject constructor(
             return cached
         }
 
-        Logger.debug(TAG, "Looking up titleId for game=$gameId, name=$gameName, platform=$mappedPlatform")
-        val result = service.lookupByName(gameName, mappedPlatform, deviceToken)
+        Logger.debug(TAG, "Looking up titleId for game=$gameId, name='$gameName', platform=$mappedPlatform")
+        var result = service.lookupByName(gameName, mappedPlatform, deviceToken)
+
+        if (result == null) {
+            val normalizedName = normalizeGameName(gameName)
+            if (normalizedName != gameName) {
+                Logger.debug(TAG, "Retrying with normalized name='$normalizedName' for game=$gameId")
+                result = service.lookupByName(normalizedName, mappedPlatform, deviceToken)
+            }
+        }
 
         if (result != null) {
             Logger.info(TAG, "Found titleId=${result.titleId} for game=$gameId (score=${result.score})")
@@ -62,6 +70,16 @@ class TitleDbRepository @Inject constructor(
 
         Logger.debug(TAG, "No titleId found for game=$gameId")
         return null
+    }
+
+    private fun normalizeGameName(name: String): String {
+        var normalized = name
+        normalized = normalized.replace(Regex("""\s*\([^)]*\)\s*"""), " ")
+        normalized = normalized.replace(Regex("""\s*\[[^\]]*\]\s*"""), " ")
+        normalized = normalized.replace(Regex("""^\d+\s*-\s*"""), "")
+        normalized = normalized.replace(Regex("""\.(3ds|cia|nds|xci|nsp|wua|rpx)$""", RegexOption.IGNORE_CASE), "")
+        normalized = normalized.trim().replace(Regex("""\s+"""), " ")
+        return normalized
     }
 
     suspend fun getCachedCandidates(gameId: Long): List<String> {
@@ -96,8 +114,16 @@ class TitleDbRepository @Inject constructor(
             return emptyList()
         }
 
-        Logger.debug(TAG, "Looking up candidates for game=$gameId, name=$gameName, platform=$mappedPlatform")
-        val result = service.lookupVariants(gameName, mappedPlatform, deviceToken)
+        Logger.debug(TAG, "Looking up candidates for game=$gameId, name='$gameName', platform=$mappedPlatform")
+        var result = service.lookupVariants(gameName, mappedPlatform, deviceToken)
+
+        if (result == null || result.candidates.isEmpty()) {
+            val normalizedName = normalizeGameName(gameName)
+            if (normalizedName != gameName) {
+                Logger.debug(TAG, "Retrying candidates with normalized name='$normalizedName' for game=$gameId")
+                result = service.lookupVariants(normalizedName, mappedPlatform, deviceToken)
+            }
+        }
 
         if (result != null && result.candidates.isNotEmpty()) {
             val titleIds = result.candidates.map { it.titleId }

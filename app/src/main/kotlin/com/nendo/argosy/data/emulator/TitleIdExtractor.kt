@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.util.Logger
 import java.io.File
+import java.io.RandomAccessFile
 import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -75,27 +76,82 @@ class TitleIdExtractor @Inject constructor() {
     }
 
     fun extract3DSTitleId(romFile: File): String? {
+        val ext = romFile.extension.lowercase()
+
+        if (ext == "3ds") {
+            extract3DSTitleIdFromBinary(romFile)?.let { return it }
+        }
+
         val filename = romFile.nameWithoutExtension
 
         // Full title ID pattern: [00040000001B5000] - 16 hex characters
         val fullPattern = Regex("""\[([0-9A-Fa-f]{16})\]""")
         fullPattern.find(filename)?.let {
-            // Return just the lower 8 characters (title_id_low)
-            return it.groupValues[1].takeLast(8).uppercase()
+            val fullId = it.groupValues[1].uppercase()
+            Logger.debug(TAG, "[SaveSync] DETECT | 3DS title ID from filename (full) | file=${romFile.name}, titleId=$fullId")
+            return fullId
         }
 
         // Short pattern: [001B5000] - 8 hex characters (title_id_low only)
         val shortPattern = Regex("""\[([0-9A-Fa-f]{8})\]""")
-        shortPattern.find(filename)?.let { return it.groupValues[1].uppercase() }
+        shortPattern.find(filename)?.let {
+            val shortId = it.groupValues[1].uppercase()
+            Logger.debug(TAG, "[SaveSync] DETECT | 3DS title ID from filename (short) | file=${romFile.name}, titleId=$shortId")
+            return shortId
+        }
 
         // Parentheses variant
         val parenPattern = Regex("""\(([0-9A-Fa-f]{8,16})\)""")
         parenPattern.find(filename)?.let {
             val id = it.groupValues[1]
-            return if (id.length == 16) id.takeLast(8).uppercase() else id.uppercase()
+            val result = if (id.length == 16) id.uppercase() else id.uppercase()
+            Logger.debug(TAG, "[SaveSync] DETECT | 3DS title ID from filename (paren) | file=${romFile.name}, titleId=$result")
+            return result
         }
 
         return null
+    }
+
+    private fun extract3DSTitleIdFromBinary(romFile: File): String? {
+        // .3ds files (NCSD format): NCCH partition at 0x4000, Program ID at offset 0x118
+        // Absolute offset: 0x4000 + 0x118 = 0x4118
+        val ncchOffset = 0x4000L
+        val programIdOffset = 0x118L
+        val absoluteOffset = ncchOffset + programIdOffset
+
+        return try {
+            RandomAccessFile(romFile, "r").use { raf ->
+                if (raf.length() < absoluteOffset + 8) {
+                    Logger.debug(TAG, "[SaveSync] DETECT | 3DS file too small for binary extraction | file=${romFile.name}, size=${raf.length()}")
+                    return null
+                }
+
+                raf.seek(absoluteOffset)
+                val bytes = ByteArray(8)
+                raf.readFully(bytes)
+
+                // Little-endian: reverse bytes to get proper hex string
+                val titleId = bytes.reversed().joinToString("") { "%02X".format(it) }
+
+                if (!isValid3DSTitleId(titleId)) {
+                    Logger.debug(TAG, "[SaveSync] DETECT | 3DS binary title ID invalid | file=${romFile.name}, raw=$titleId")
+                    return null
+                }
+
+                Logger.debug(TAG, "[SaveSync] DETECT | 3DS title ID from binary | file=${romFile.name}, titleId=$titleId")
+                titleId
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[SaveSync] DETECT | Failed to read 3DS binary | file=${romFile.name}", e)
+            null
+        }
+    }
+
+    private fun isValid3DSTitleId(titleId: String): Boolean {
+        if (titleId.length != 16) return false
+        if (!titleId.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }) return false
+        if (!titleId.uppercase().startsWith("0004")) return false
+        return true
     }
 
     fun extractWiiUTitleId(romFile: File): String? {

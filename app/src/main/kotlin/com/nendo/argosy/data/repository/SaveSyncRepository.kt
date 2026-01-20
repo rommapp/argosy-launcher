@@ -349,17 +349,21 @@ class SaveSyncRepository @Inject constructor(
             Logger.debug(TAG, "[SaveSync] DISCOVER | Cached titleId=$cachedTitleId found no save")
         }
 
-        // 2. Try filename extraction
+        // 2. Try ROM extraction (binary or filename)
         val extractedTitleId = titleIdExtractor.extractTitleId(romFile, platformSlug)
         if (extractedTitleId != null && extractedTitleId.uppercase() !in triedTitleIds) {
             triedTitleIds.add(extractedTitleId.uppercase())
             Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId")
+
+            // Cache valid extracted ID immediately for future use
+            if (gameId != null && cachedTitleId == null) {
+                Logger.debug(TAG, "[SaveSync] DISCOVER | Caching extracted titleId=$extractedTitleId for gameId=$gameId")
+                gameDao.updateTitleId(gameId, extractedTitleId)
+            }
+
             for (basePath in resolvedPaths) {
                 val saveFolder = findSaveFolderByTitleId(basePath, extractedTitleId, platformSlug)
                 if (saveFolder != null) {
-                    if (gameId != null) {
-                        gameDao.updateTitleId(gameId, extractedTitleId)
-                    }
                     return saveFolder
                 }
             }
@@ -485,26 +489,33 @@ class SaveSyncRepository @Inject constructor(
                     normalizedTitleId
                 }
                 Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS lookup | baseDir=$basePath, fullId=$normalizedTitleId, shortId=$shortTitleId")
-                baseDir.listFiles()?.forEach { folder1 ->
-                    if (folder1.isDirectory) {
-                        folder1.listFiles()?.forEach { folder2 ->
-                            if (folder2.isDirectory) {
-                                val titleDir = File(folder2, "title/00040000")
-                                val availableTitles = titleDir.listFiles()?.filter { it.isDirectory }?.map { it.name } ?: emptyList()
-                                Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS available titles: $availableTitles, looking for: $shortTitleId")
-                                val matchingFolder = titleDir.listFiles()?.firstOrNull {
-                                    it.isDirectory && it.name.equals(shortTitleId, ignoreCase = true)
-                                }
-                                if (matchingFolder != null) {
-                                    val dataDir = File(matchingFolder, "data")
-                                    if (dataDir.exists() && dataDir.isDirectory) {
-                                        Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS save found | path=${dataDir.absolutePath}")
-                                        return dataDir.absolutePath
+                var bestMatch: File? = null
+                var bestModTime = 0L
+                baseDir.listFiles()?.filter { it.isDirectory }?.forEach { id0Folder ->
+                    id0Folder.listFiles()?.filter { it.isDirectory }?.forEach { id1Folder ->
+                        val titleBaseDir = File(id1Folder, "title")
+                        if (!titleBaseDir.exists()) return@forEach
+                        titleBaseDir.listFiles()?.filter { it.isDirectory }?.forEach { categoryDir ->
+                            val matchingFolder = categoryDir.listFiles()?.firstOrNull {
+                                it.isDirectory && it.name.equals(shortTitleId, ignoreCase = true)
+                            }
+                            if (matchingFolder != null) {
+                                val dataDir = File(matchingFolder, "data")
+                                if (dataDir.exists() && dataDir.isDirectory) {
+                                    val modTime = findNewestFileTime(dataDir)
+                                    Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS candidate | path=${dataDir.absolutePath}, modTime=$modTime")
+                                    if (modTime > bestModTime) {
+                                        bestModTime = modTime
+                                        bestMatch = dataDir
                                     }
                                 }
                             }
                         }
                     }
+                }
+                if (bestMatch != null) {
+                    Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS save found | path=${bestMatch!!.absolutePath}")
+                    return bestMatch!!.absolutePath
                 }
             }
             "psp" -> {
@@ -1681,13 +1692,14 @@ class SaveSyncRepository @Inject constructor(
                 "$profileFolder/$normalizedTitleId"
             }
             "3ds" -> {
+                val category = if (titleId.length >= 16) titleId.take(8) else "00040000"
                 val shortTitleId = if (titleId.length > 8) titleId.takeLast(8) else titleId
                 val nintendo3dsDir = File(baseDir)
                 val userFolders = nintendo3dsDir.listFiles()?.filter { it.isDirectory }
                 val folder1 = userFolders?.firstOrNull()
                 val folder2 = folder1?.listFiles()?.firstOrNull { it.isDirectory }
                 if (folder2 != null) {
-                    "${folder2.absolutePath}/title/00040000/$shortTitleId/data"
+                    "${folder2.absolutePath}/title/$category/$shortTitleId/data"
                 } else {
                     null
                 }
@@ -1739,12 +1751,13 @@ class SaveSyncRepository @Inject constructor(
         return when (platformSlug) {
             "vita", "psvita" -> "$baseDir/$titleId"
             "3ds" -> {
+                val category = if (titleId.length >= 16) titleId.take(8) else "00040000"
                 val shortTitleId = if (titleId.length > 8) titleId.takeLast(8) else titleId
                 val userFolders = baseDirFile.listFiles()?.filter { it.isDirectory }
                 val folder1 = userFolders?.firstOrNull()
                 val folder2 = folder1?.listFiles()?.firstOrNull { it.isDirectory }
                 if (folder2 != null) {
-                    "${folder2.absolutePath}/title/00040000/$shortTitleId/data"
+                    "${folder2.absolutePath}/title/$category/$shortTitleId/data"
                 } else {
                     Logger.debug(TAG, "[SaveSync] CONSTRUCT | 3DS folder structure not found | baseDir=$baseDir")
                     null

@@ -543,7 +543,17 @@ class RomMRepository @Inject constructor(
             Logger.info(TAG, "syncRom: detected migration for ${rom.name} (igdbId=${rom.igdbId}): ${migrationSources.size} old entries -> new rommId=${rom.id}")
         }
 
-        val localDataSource = existing ?: GameMigrationHelper.aggregateMultiDiscData(migrationSources) { path ->
+        val validatedExisting = existing?.let { game ->
+            val path = game.localPath
+            if (path != null && !File(path).exists()) {
+                Logger.warn(TAG, "syncRom: existing localPath no longer exists: $path, clearing for ${rom.name}")
+                game.copy(localPath = null)
+            } else {
+                game
+            }
+        }
+
+        val localDataSource = validatedExisting ?: GameMigrationHelper.aggregateMultiDiscData(migrationSources) { path ->
             val exists = File(path).exists()
             if (!exists) {
                 Logger.warn(TAG, "syncRom: migrated localPath no longer exists: $path")

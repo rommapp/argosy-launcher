@@ -563,14 +563,12 @@ class GameDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
         val gameFileId = file.gameFileId ?: return
         val rommFileId = file.rommFileId ?: return
-        val romId = file.romId ?: return
 
         viewModelScope.launch {
             downloadManager.enqueueGameFileDownload(
                 gameId = currentGameId,
                 gameFileId = gameFileId,
                 rommFileId = rommFileId,
-                romId = romId,
                 fileName = file.fileName,
                 category = file.type.name.lowercase(),
                 gameTitle = game.title,

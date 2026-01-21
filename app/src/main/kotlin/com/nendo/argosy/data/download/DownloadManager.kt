@@ -450,7 +450,6 @@ class DownloadManager @Inject constructor(
         gameId: Long,
         gameFileId: Long,
         rommFileId: Long,
-        romId: Long,
         fileName: String,
         category: String,
         gameTitle: String,
@@ -469,7 +468,7 @@ class DownloadManager @Inject constructor(
 
         val entity = DownloadQueueEntity(
             gameId = gameId,
-            rommId = romId,
+            rommId = rommFileId,
             gameFileId = gameFileId,
             fileCategory = category,
             fileName = fileName,
@@ -489,7 +488,7 @@ class DownloadManager @Inject constructor(
         val progress = DownloadProgress(
             id = id,
             gameId = gameId,
-            rommId = romId,
+            rommId = rommFileId,
             gameFileId = gameFileId,
             fileCategory = category,
             fileName = fileName,
@@ -1116,7 +1115,6 @@ class DownloadManager @Inject constructor(
                     gameId = item.gameId,
                     gameFileId = item.gameFileId!!,
                     rommFileId = item.rommId,
-                    romId = item.rommId,
                     fileName = item.fileName,
                     category = item.fileCategory ?: "unknown",
                     gameTitle = item.gameTitle,

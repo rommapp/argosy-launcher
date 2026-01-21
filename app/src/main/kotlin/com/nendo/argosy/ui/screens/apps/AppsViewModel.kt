@@ -6,6 +6,10 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
@@ -31,13 +35,15 @@ data class AppUi(
     val packageName: String,
     val label: String,
     val isHidden: Boolean = false,
-    val isSystemApp: Boolean = false
+    val isSystemApp: Boolean = false,
+    val isOnHome: Boolean = false
 )
 
 enum class AppContextMenuItem {
     APP_INFO,
-    UNINSTALL,
-    TOGGLE_VISIBILITY
+    TOGGLE_HOME,
+    TOGGLE_VISIBILITY,
+    UNINSTALL
 }
 
 data class AppsUiState(
@@ -73,6 +79,7 @@ data class AppsUiState(
     val contextMenuItems: List<AppContextMenuItem>
         get() = listOf(
             AppContextMenuItem.APP_INFO,
+            AppContextMenuItem.TOGGLE_HOME,
             AppContextMenuItem.TOGGLE_VISIBILITY,
             AppContextMenuItem.UNINSTALL
         )
@@ -89,6 +96,7 @@ class AppsViewModel @Inject constructor(
     private val appsRepository: AppsRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val soundManager: SoundFeedbackManager,
+    private val gameDao: GameDao,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -137,6 +145,11 @@ class AppsViewModel @Inject constructor(
             val showHidden = _uiState.value.showHiddenApps
             val allApps = appsRepository.getInstalledApps(includeSystemApps = true)
 
+            val homePackages = gameDao.getBySource(GameSource.ANDROID_APP)
+                .filter { it.isFavorite && it.packageName != null }
+                .mapNotNull { it.packageName }
+                .toSet()
+
             val apps = allApps
                 .filter { app -> shouldShowApp(app, showHidden) }
                 .let { appList -> sortApps(appList) }
@@ -146,7 +159,11 @@ class AppsViewModel @Inject constructor(
                     apps = apps.map { app ->
                         val isHidden = app.packageName in hiddenApps ||
                             (app.isSystemApp && app.packageName !in visibleSystemApps)
-                        app.toUi(isHidden = isHidden, isSystemApp = app.isSystemApp)
+                        app.toUi(
+                            isHidden = isHidden,
+                            isSystemApp = app.isSystemApp,
+                            isOnHome = app.packageName in homePackages
+                        )
                     },
                     isLoading = false,
                     focusedIndex = 0
@@ -229,13 +246,16 @@ class AppsViewModel @Inject constructor(
                     _events.emit(AppsEvent.OpenAppInfo(app.packageName))
                 }
             }
+            AppContextMenuItem.TOGGLE_HOME -> {
+                toggleHomeStatus(app.packageName, app.label, app.isOnHome)
+            }
+            AppContextMenuItem.TOGGLE_VISIBILITY -> {
+                toggleAppVisibility(app.packageName, app.isHidden, app.isSystemApp)
+            }
             AppContextMenuItem.UNINSTALL -> {
                 viewModelScope.launch {
                     _events.emit(AppsEvent.RequestUninstall(app.packageName))
                 }
-            }
-            AppContextMenuItem.TOGGLE_VISIBILITY -> {
-                toggleAppVisibility(app.packageName, app.isHidden, app.isSystemApp)
             }
         }
         dismissContextMenu()
@@ -260,6 +280,42 @@ class AppsViewModel @Inject constructor(
                 preferencesRepository.setHiddenApps(newHidden)
                 hiddenApps = newHidden
             }
+            loadApps()
+        }
+    }
+
+    private fun toggleHomeStatus(packageName: String, label: String, isCurrentlyOnHome: Boolean) {
+        viewModelScope.launch {
+            val existing = gameDao.getByPackageName(packageName)
+
+            if (isCurrentlyOnHome) {
+                existing?.let { gameDao.updateFavorite(it.id, false) }
+            } else {
+                if (existing != null) {
+                    gameDao.updateFavorite(existing.id, true)
+                } else {
+                    val sortTitle = label.lowercase()
+                        .removePrefix("the ")
+                        .removePrefix("a ")
+                        .removePrefix("an ")
+                        .trim()
+                    val game = GameEntity(
+                        platformId = LocalPlatformIds.ANDROID,
+                        platformSlug = "android",
+                        title = label,
+                        sortTitle = sortTitle,
+                        localPath = null,
+                        rommId = null,
+                        igdbId = null,
+                        source = GameSource.ANDROID_APP,
+                        packageName = packageName,
+                        isFavorite = true
+                    )
+                    gameDao.insert(game)
+                }
+            }
+
+            soundManager.play(if (isCurrentlyOnHome) SoundType.UNFAVORITE else SoundType.FAVORITE)
             loadApps()
         }
     }
@@ -394,11 +450,16 @@ class AppsViewModel @Inject constructor(
         }
     }
 
-    private fun InstalledApp.toUi(isHidden: Boolean = false, isSystemApp: Boolean = false) = AppUi(
+    private fun InstalledApp.toUi(
+        isHidden: Boolean = false,
+        isSystemApp: Boolean = false,
+        isOnHome: Boolean = false
+    ) = AppUi(
         packageName = packageName,
         label = label,
         isHidden = isHidden,
-        isSystemApp = isSystemApp
+        isSystemApp = isSystemApp,
+        isOnHome = isOnHome
     )
 
     fun createInputHandler(

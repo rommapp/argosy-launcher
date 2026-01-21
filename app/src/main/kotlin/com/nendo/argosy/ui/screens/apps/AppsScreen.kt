@@ -28,9 +28,11 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -324,6 +326,7 @@ fun AppsScreen(
                                 item = item,
                                 isFocused = index == uiState.contextMenuFocusIndex,
                                 isAppHidden = uiState.focusedApp?.isHidden ?: false,
+                                isOnHome = uiState.focusedApp?.isOnHome ?: false,
                                 onClick = {
                                     viewModel.selectContextMenuItem(index)
                                 }
@@ -341,16 +344,22 @@ private fun ContextMenuItem(
     item: AppContextMenuItem,
     isFocused: Boolean,
     isAppHidden: Boolean = false,
+    isOnHome: Boolean = false,
     onClick: () -> Unit = {}
 ) {
     val (icon, label) = when (item) {
         AppContextMenuItem.APP_INFO -> Icons.Default.Info to "App Info"
-        AppContextMenuItem.UNINSTALL -> Icons.Default.Delete to "Uninstall"
+        AppContextMenuItem.TOGGLE_HOME -> if (isOnHome) {
+            Icons.Default.Home to "Remove from Home"
+        } else {
+            Icons.Outlined.Home to "Add to Home"
+        }
         AppContextMenuItem.TOGGLE_VISIBILITY -> if (isAppHidden) {
             Icons.Default.Visibility to "Show"
         } else {
             Icons.Default.VisibilityOff to "Hide"
         }
+        AppContextMenuItem.UNINSTALL -> Icons.Default.Delete to "Uninstall"
     }
 
     val isDangerous = item == AppContextMenuItem.UNINSTALL

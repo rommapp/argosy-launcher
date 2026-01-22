@@ -504,7 +504,8 @@ fun HomeScreen(
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
         val boxArtStyle = LocalBoxArtStyle.current
-        val cardWidth = screenWidth * 0.16f
+        val carouselScale = 0.9f
+        val cardWidth = screenWidth * 0.16f * carouselScale
         val cardHeight = cardWidth / boxArtStyle.aspectRatio
         val focusScale = 1.8f
         val railHeight = cardHeight * focusScale + 16.dp
@@ -1016,7 +1017,8 @@ private fun GameRail(
     val screenWidth = configuration.screenWidthDp.dp
     val boxArtStyle = LocalBoxArtStyle.current
 
-    val cardWidth = screenWidth * 0.16f
+    val carouselScale = 0.9f
+    val cardWidth = screenWidth * 0.16f * carouselScale
     val cardHeight = cardWidth / boxArtStyle.aspectRatio
     val focusScale = 1.8f
     val railHeight = cardHeight * focusScale + 16.dp

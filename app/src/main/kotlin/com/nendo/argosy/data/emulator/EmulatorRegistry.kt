@@ -343,7 +343,6 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.github.stenzek.duckstation"
         ),
-        // NetherSX2/AetherSX2 support content URIs in bootPath for Android 11+ Scoped Storage
         EmulatorDef(
             id = "nethersx2",
             packageName = "xyz.aethersx2.android",
@@ -352,7 +351,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
         ),
@@ -365,7 +364,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             )
         ),
         EmulatorDef(
@@ -974,7 +973,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
         ),

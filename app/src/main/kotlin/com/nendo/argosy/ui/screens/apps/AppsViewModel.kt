@@ -7,9 +7,11 @@ import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.LocalPlatformIds
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
@@ -97,6 +99,7 @@ class AppsViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val soundManager: SoundFeedbackManager,
     private val gameDao: GameDao,
+    private val platformDao: PlatformDao,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -294,6 +297,7 @@ class AppsViewModel @Inject constructor(
                 if (existing != null) {
                     gameDao.updateFavorite(existing.id, true)
                 } else {
+                    ensureAndroidPlatformExists()
                     val sortTitle = label.lowercase()
                         .removePrefix("the ")
                         .removePrefix("a ")
@@ -317,6 +321,19 @@ class AppsViewModel @Inject constructor(
 
             soundManager.play(if (isCurrentlyOnHome) SoundType.UNFAVORITE else SoundType.FAVORITE)
             loadApps()
+        }
+    }
+
+    private suspend fun ensureAndroidPlatformExists() {
+        val existing = platformDao.getById(LocalPlatformIds.ANDROID)
+        if (existing == null) {
+            val def = PlatformDefinitions.getBySlug("android")
+            if (def != null) {
+                val entity = PlatformDefinitions.toLocalPlatformEntity(def)
+                if (entity != null) {
+                    platformDao.insert(entity)
+                }
+            }
         }
     }
 

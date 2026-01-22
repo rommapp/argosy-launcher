@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.People
@@ -704,6 +705,10 @@ fun HomeScreen(
                         viewModel.toggleGameMenu()
                         viewModel.deleteLocalFile(focusedGame.id)
                     },
+                    onRemoveFromHome = {
+                        viewModel.toggleGameMenu()
+                        viewModel.removeFromHome(focusedGame.id)
+                    },
                     onHide = {
                         viewModel.toggleGameMenu()
                         viewModel.hideGame(focusedGame.id)
@@ -1297,6 +1302,7 @@ private fun GameSelectOverlay(
     onAddToCollection: () -> Unit,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
+    onRemoveFromHome: () -> Unit,
     onHide: () -> Unit
 ) {
     var currentIndex = 0
@@ -1305,7 +1311,8 @@ private fun GameSelectOverlay(
     val detailsIdx = currentIndex++
     val addToCollectionIdx = currentIndex++
     val refreshIdx = if (game.isRommGame || game.isAndroidApp) currentIndex++ else -1
-    val deleteIdx = if (game.isDownloaded || game.needsInstall || game.isAndroidApp) currentIndex++ else -1
+    val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
+    val removeFromHomeIdx = if (game.isAndroidApp) currentIndex++ else -1
     val hideIdx = currentIndex
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
@@ -1386,6 +1393,15 @@ private fun GameSelectOverlay(
                     isFocused = focusIndex == deleteIdx,
                     isDangerous = true,
                     onClick = onDelete
+                )
+            }
+            if (game.isAndroidApp) {
+                MenuOption(
+                    icon = Icons.Default.Home,
+                    label = "Remove from Home",
+                    isFocused = focusIndex == removeFromHomeIdx,
+                    isDangerous = true,
+                    onClick = onRemoveFromHome
                 )
             }
             MenuOption(

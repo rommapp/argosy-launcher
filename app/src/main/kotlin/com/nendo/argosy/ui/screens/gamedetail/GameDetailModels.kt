@@ -105,6 +105,7 @@ enum class RatingType { OPINION, DIFFICULTY }
 
 sealed class MoreOptionAction {
     data object ManageSaves : MoreOptionAction()
+    data object RatingsStatus : MoreOptionAction()
     data object RateGame : MoreOptionAction()
     data object SetDifficulty : MoreOptionAction()
     data object SetStatus : MoreOptionAction()
@@ -150,6 +151,8 @@ data class GameDetailUiState(
     val ratingPickerValue: Int = 0,
     val showStatusPicker: Boolean = false,
     val statusPickerValue: String? = null,
+    val showRatingsStatusMenu: Boolean = false,
+    val ratingsStatusFocusIndex: Int = 0,
     val showMissingDiscPrompt: Boolean = false,
     val missingDiscNumbers: List<Int> = emptyList(),
     val showDiscPicker: Boolean = false,

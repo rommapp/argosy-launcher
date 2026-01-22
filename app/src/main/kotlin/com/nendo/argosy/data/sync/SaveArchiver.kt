@@ -371,6 +371,77 @@ class SaveArchiver @Inject constructor() {
         }
     }
 
+    fun unzipPreservingStructure(
+        sourceZip: File,
+        targetFolder: File,
+        excludeFiles: Set<String>
+    ): Boolean {
+        if (!sourceZip.exists() || !sourceZip.isFile) {
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}")
+            return false
+        }
+
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping (preserving structure) | source=${sourceZip.name}")
+
+        return try {
+            targetFolder.mkdirs()
+            var fileCount = 0
+            var totalSize = 0L
+            var skippedCount = 0
+            ZipInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
+                var entry: ZipEntry?
+                val buffer = ByteArray(BUFFER_SIZE)
+
+                while (zis.nextEntry.also { entry = it } != null) {
+                    val entryName = entry!!.name
+
+                    val fileName = entryName.substringAfterLast('/')
+                    if (excludeFiles.contains(fileName)) {
+                        Logger.debug(TAG, "[SaveSync] ARCHIVE | Skipping excluded file | entry=$entryName")
+                        skippedCount++
+                        zis.closeEntry()
+                        continue
+                    }
+
+                    val entryFile = File(targetFolder, entryName)
+
+                    if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
+                        Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
+                        return false
+                    }
+
+                    if (entry!!.isDirectory) {
+                        entryFile.mkdirs()
+                    } else {
+                        entryFile.parentFile?.mkdirs()
+                        FileOutputStream(entryFile).use { fos ->
+                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
+                                var count: Int
+                                while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
+                                    bos.write(buffer, 0, count)
+                                    totalSize += count
+                                }
+                                bos.flush()
+                            }
+                            try {
+                                fos.fd.sync()
+                            } catch (e: Exception) {
+                                Logger.debug(TAG, "[SaveSync] ARCHIVE | fsync not supported for ${entryFile.name}")
+                            }
+                        }
+                        fileCount++
+                    }
+                    zis.closeEntry()
+                }
+            }
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip complete | files=$fileCount, skipped=$skippedCount, size=${totalSize}bytes")
+            true
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Unzip failed | source=${sourceZip.absolutePath}", e)
+            false
+        }
+    }
+
     fun calculateFileHash(file: File): String {
         val md = MessageDigest.getInstance("MD5")
         file.inputStream().buffered().use { input ->

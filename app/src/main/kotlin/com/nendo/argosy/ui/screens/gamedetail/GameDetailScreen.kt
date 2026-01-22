@@ -59,6 +59,7 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.MissingDiscModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.SteamLauncherPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.MoreOptionsModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.RatingsStatusModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.PermissionRequiredModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
@@ -272,7 +273,8 @@ private fun GameDetailContent(
     onAchievementPositioned: (Int) -> Unit,
     onBack: () -> Unit
 ) {
-    val showAnyOverlay = uiState.showMoreOptions || uiState.showEmulatorPicker || uiState.showCorePicker ||
+    val showAnyOverlay = uiState.showMoreOptions || uiState.showRatingsStatusMenu ||
+        uiState.showEmulatorPicker || uiState.showCorePicker ||
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || uiState.isSyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
         uiState.showExtractionFailedPrompt || uiState.showDiscPicker
@@ -440,6 +442,19 @@ private fun GameDetailModals(
             updateCount = uiState.updateFiles.size + uiState.dlcFiles.size,
             onAction = { action -> viewModel.handleMoreOptionAction(action, onBack) },
             onDismiss = viewModel::toggleMoreOptions
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.showRatingsStatusMenu,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        RatingsStatusModal(
+            game = game,
+            focusIndex = uiState.ratingsStatusFocusIndex,
+            onAction = { action -> viewModel.handleMoreOptionAction(action, onBack) },
+            onDismiss = viewModel::dismissRatingsStatusMenu
         )
     }
 

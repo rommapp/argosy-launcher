@@ -593,7 +593,7 @@ class SaveSyncRepository @Inject constructor(
                 }
 
                 val newestFileTime = findNewestFileTime(profileFolder)
-                if (newestFileTime > mostRecentTime) {
+                if (!isZeroProfile && newestFileTime > mostRecentTime) {
                     mostRecentTime = newestFileTime
                     mostRecentPath = profileFolder.absolutePath
                 }
@@ -1465,8 +1465,8 @@ class SaveSyncRepository @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Unzipping to | target=$targetPath")
                 val isJksv = saveArchiver.isJksvFormat(tempZipFile)
                 val unzipSuccess = if (isJksv) {
-                    Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Detected JKSV format, excluding metadata")
-                    saveArchiver.unzipSingleFolderExcluding(tempZipFile, targetFolder, JKSV_EXCLUDE_FILES)
+                    Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Detected JKSV format, preserving structure")
+                    saveArchiver.unzipPreservingStructure(tempZipFile, targetFolder, JKSV_EXCLUDE_FILES)
                 } else {
                     saveArchiver.unzipSingleFolder(tempZipFile, targetFolder)
                 }
@@ -1617,7 +1617,7 @@ class SaveSyncRepository @Inject constructor(
 
                 val isJksv = saveArchiver.isJksvFormat(tempZipFile)
                 val unzipSuccess = if (isJksv) {
-                    saveArchiver.unzipSingleFolderExcluding(tempZipFile, targetFolder, JKSV_EXCLUDE_FILES)
+                    saveArchiver.unzipPreservingStructure(tempZipFile, targetFolder, JKSV_EXCLUDE_FILES)
                 } else {
                     saveArchiver.unzipSingleFolder(tempZipFile, targetFolder)
                 }

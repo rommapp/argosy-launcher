@@ -1364,7 +1364,8 @@ class HomeViewModel @Inject constructor(
             val isRommGame = game?.isRommGame == true
             val isAndroidApp = game?.isAndroidApp == true
             var maxIndex = if (isDownloaded || needsInstall) MENU_INDEX_MAX_DOWNLOADED else MENU_INDEX_MAX_REMOTE
-            if (isRommGame || isAndroidApp) maxIndex++
+            if (isRommGame || isAndroidApp) maxIndex++ // Refresh Data
+            if (isAndroidApp) maxIndex++ // Remove from Home
             val newIndex = (it.gameMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(gameMenuFocusIndex = newIndex)
         }
@@ -1385,7 +1386,8 @@ class HomeViewModel @Inject constructor(
         val detailsIdx = currentIdx++
         val addToCollectionIdx = currentIdx++
         val refreshIdx = if (isRommGame || isAndroidApp) currentIdx++ else -1
-        val deleteIdx = if (isDownloaded || needsInstall || isAndroidApp) currentIdx++ else -1
+        val deleteIdx = if (isDownloaded || needsInstall) currentIdx++ else -1
+        val removeFromHomeIdx = if (isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
 
         when (index) {
@@ -1414,7 +1416,11 @@ class HomeViewModel @Inject constructor(
             }
             deleteIdx -> {
                 toggleGameMenu()
-                if (isAndroidApp) uninstallAndroidApp(game.packageName) else deleteLocalFile(game.id)
+                deleteLocalFile(game.id)
+            }
+            removeFromHomeIdx -> {
+                toggleGameMenu()
+                removeFromHome(game.id)
             }
             hideIdx -> {
                 toggleGameMenu()
@@ -1434,6 +1440,17 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             gameActions.hideGame(gameId)
             refreshCurrentRowInternal()
+        }
+    }
+
+    fun removeFromHome(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameDao.getById(gameId)
+            if (game != null && game.source == GameSource.ANDROID_APP) {
+                gameDao.delete(game)
+                refreshCurrentRowInternal()
+                soundManager.play(SoundType.UNFAVORITE)
+            }
         }
     }
 

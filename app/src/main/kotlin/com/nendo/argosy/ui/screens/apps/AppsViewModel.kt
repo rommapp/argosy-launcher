@@ -153,7 +153,6 @@ class AppsViewModel @Inject constructor(
             val allApps = appsRepository.getInstalledApps(includeSystemApps = true)
 
             val homePackages = gameDao.getBySource(GameSource.ANDROID_APP)
-                .filter { it.isFavorite && it.packageName != null }
                 .mapNotNull { it.packageName }
                 .toSet()
 
@@ -296,11 +295,10 @@ class AppsViewModel @Inject constructor(
             val existing = gameDao.getByPackageName(packageName)
 
             if (isCurrentlyOnHome) {
-                existing?.let { gameDao.updateFavorite(it.id, false) }
+                existing?.let { gameDao.delete(it) }
             } else {
                 val gameId: Long
                 if (existing != null) {
-                    gameDao.updateFavorite(existing.id, true)
                     gameId = existing.id
                 } else {
                     ensureAndroidPlatformExists()
@@ -318,8 +316,7 @@ class AppsViewModel @Inject constructor(
                         rommId = null,
                         igdbId = null,
                         source = GameSource.ANDROID_APP,
-                        packageName = packageName,
-                        isFavorite = true
+                        packageName = packageName
                     )
                     gameId = gameDao.insert(game)
                 }

@@ -894,7 +894,7 @@ class GameDetailViewModel @Inject constructor(
 
             var optionCount = 1  // Base: Hide (always present)
             if (canManageSaves) optionCount++  // Manage Cached Saves
-            if (canTrackProgress) optionCount += 4  // Rate + Difficulty + Completion + Refresh
+            if (canTrackProgress) optionCount += 2  // Ratings & Status + Refresh
             if (isSteamGame || isEmulatedGame) optionCount++  // Emulator/Launcher (not for Android)
             if (isRetroArch && isEmulatedGame) optionCount++  // Change Core (emulated only)
             if (isMultiDisc) optionCount++  // Select Disc
@@ -912,6 +912,7 @@ class GameDetailViewModel @Inject constructor(
         val isAndroidApp = _uiState.value.game?.isAndroidApp == true
         when (action) {
             MoreOptionAction.ManageSaves -> showSaveCacheDialog()
+            MoreOptionAction.RatingsStatus -> showRatingsStatusMenu()
             MoreOptionAction.RateGame -> showRatingPicker(RatingType.OPINION)
             MoreOptionAction.SetDifficulty -> showRatingPicker(RatingType.DIFFICULTY)
             MoreOptionAction.SetStatus -> showStatusPicker()
@@ -946,9 +947,7 @@ class GameDetailViewModel @Inject constructor(
 
         var currentIdx = 0
         val saveCacheIdx = if (canManageSaves) currentIdx++ else -1
-        val rateIdx = if (canTrackProgress) currentIdx++ else -1
-        val difficultyIdx = if (canTrackProgress) currentIdx++ else -1
-        val completionIdx = if (canTrackProgress) currentIdx++ else -1
+        val ratingsStatusIdx = if (canTrackProgress) currentIdx++ else -1
         val emulatorOrLauncherIdx = if (isSteamGame || isEmulatedGame) currentIdx++ else -1
         val coreIdx = if (isRetroArch && isEmulatedGame) currentIdx++ else -1
         val discIdx = if (isMultiDisc) currentIdx++ else -1
@@ -960,9 +959,7 @@ class GameDetailViewModel @Inject constructor(
 
         val action = when (index) {
             saveCacheIdx -> MoreOptionAction.ManageSaves
-            rateIdx -> MoreOptionAction.RateGame
-            difficultyIdx -> MoreOptionAction.SetDifficulty
-            completionIdx -> MoreOptionAction.SetStatus
+            ratingsStatusIdx -> MoreOptionAction.RatingsStatus
             emulatorOrLauncherIdx -> if (isSteamGame) MoreOptionAction.ChangeSteamLauncher else MoreOptionAction.ChangeEmulator
             coreIdx -> MoreOptionAction.ChangeCore
             discIdx -> MoreOptionAction.SelectDisc
@@ -1253,7 +1250,7 @@ class GameDetailViewModel @Inject constructor(
         }
         _uiState.update {
             it.copy(
-                showMoreOptions = false,
+                showRatingsStatusMenu = false,
                 showRatingPicker = true,
                 ratingPickerType = type,
                 ratingPickerValue = currentValue
@@ -1263,8 +1260,44 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun dismissRatingPicker() {
-        _uiState.update { it.copy(showRatingPicker = false) }
+        _uiState.update { it.copy(showRatingPicker = false, showRatingsStatusMenu = true) }
         soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun showRatingsStatusMenu() {
+        _uiState.update {
+            it.copy(
+                showMoreOptions = false,
+                showRatingsStatusMenu = true,
+                ratingsStatusFocusIndex = 0
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissRatingsStatusMenu() {
+        _uiState.update {
+            it.copy(
+                showRatingsStatusMenu = false,
+                showMoreOptions = true
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun changeRatingsStatusFocus(delta: Int) {
+        _uiState.update { state ->
+            val newIndex = (state.ratingsStatusFocusIndex + delta).coerceIn(0, 2)
+            state.copy(ratingsStatusFocusIndex = newIndex)
+        }
+    }
+
+    fun confirmRatingsStatusSelection() {
+        when (_uiState.value.ratingsStatusFocusIndex) {
+            0 -> showRatingPicker(RatingType.OPINION)
+            1 -> showRatingPicker(RatingType.DIFFICULTY)
+            2 -> showStatusPicker()
+        }
     }
 
     fun changeRatingValue(delta: Int) {
@@ -1291,13 +1324,15 @@ class GameDetailViewModel @Inject constructor(
 
             when (result) {
                 is com.nendo.argosy.data.remote.romm.RomMResult.Success -> {
+                    val label = if (type == RatingType.OPINION) "Rating" else "Difficulty"
+                    notificationManager.showSuccess("$label saved")
                     loadGame(currentGameId)
                 }
                 is com.nendo.argosy.data.remote.romm.RomMResult.Error -> {
                     notificationManager.showError(result.message)
                 }
             }
-            _uiState.update { it.copy(showRatingPicker = false) }
+            _uiState.update { it.copy(showRatingPicker = false, showRatingsStatusMenu = true) }
         }
     }
 
@@ -1305,7 +1340,7 @@ class GameDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
         _uiState.update {
             it.copy(
-                showMoreOptions = false,
+                showRatingsStatusMenu = false,
                 showStatusPicker = true,
                 statusPickerValue = game.status
             )
@@ -1314,7 +1349,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun dismissStatusPicker() {
-        _uiState.update { it.copy(showStatusPicker = false) }
+        _uiState.update { it.copy(showStatusPicker = false, showRatingsStatusMenu = true) }
         soundManager.play(SoundType.CLOSE_MODAL)
     }
 
@@ -1343,13 +1378,14 @@ class GameDetailViewModel @Inject constructor(
 
             when (result) {
                 is com.nendo.argosy.data.remote.romm.RomMResult.Success -> {
+                    notificationManager.showSuccess("Status saved")
                     loadGame(currentGameId)
                 }
                 is com.nendo.argosy.data.remote.romm.RomMResult.Error -> {
                     notificationManager.showError(result.message)
                 }
             }
-            _uiState.update { it.copy(showStatusPicker = false) }
+            _uiState.update { it.copy(showStatusPicker = false, showRatingsStatusMenu = true) }
         }
     }
 
@@ -1727,6 +1763,10 @@ class GameDetailViewModel @Inject constructor(
                     moveCollectionFocusUp()
                     InputResult.HANDLED
                 }
+                state.showRatingsStatusMenu -> {
+                    changeRatingsStatusFocus(-1)
+                    InputResult.HANDLED
+                }
                 state.showMoreOptions -> {
                     moveOptionsFocus(-1)
                     InputResult.HANDLED
@@ -1781,6 +1821,10 @@ class GameDetailViewModel @Inject constructor(
                     moveCollectionFocusDown()
                     InputResult.HANDLED
                 }
+                state.showRatingsStatusMenu -> {
+                    changeRatingsStatusFocus(1)
+                    InputResult.HANDLED
+                }
                 state.showMoreOptions -> {
                     moveOptionsFocus(1)
                     InputResult.HANDLED
@@ -1824,7 +1868,7 @@ class GameDetailViewModel @Inject constructor(
                     moveExtractionPromptFocus(-1)
                     return InputResult.HANDLED
                 }
-                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
                     return InputResult.UNHANDLED
                 }
                 else -> {
@@ -1867,7 +1911,7 @@ class GameDetailViewModel @Inject constructor(
                     moveExtractionPromptFocus(1)
                     return InputResult.HANDLED
                 }
-                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
                     return InputResult.UNHANDLED
                 }
                 else -> {
@@ -1882,7 +1926,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
-                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker ||
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt ||
                 state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
@@ -1896,7 +1940,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
-                state.showAddToCollectionModal || state.showMoreOptions || state.showEmulatorPicker ||
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt ||
                 state.showUpdatesPicker || state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
@@ -1927,6 +1971,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showEmulatorPicker -> confirmEmulatorSelection()
                 state.showSteamLauncherPicker -> confirmSteamLauncherSelection()
                 state.showAddToCollectionModal -> confirmCollectionSelection()
+                state.showRatingsStatusMenu -> confirmRatingsStatusSelection()
                 state.showMoreOptions -> confirmOptionSelection(onBack)
                 else -> primaryAction()
             }
@@ -1954,6 +1999,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showSteamLauncherPicker -> dismissSteamLauncherPicker()
                 state.showPermissionModal -> dismissPermissionModal()
                 state.showAddToCollectionModal -> dismissAddToCollectionModal()
+                state.showRatingsStatusMenu -> dismissRatingsStatusMenu()
                 state.showMoreOptions -> toggleMoreOptions()
                 else -> onBack()
             }

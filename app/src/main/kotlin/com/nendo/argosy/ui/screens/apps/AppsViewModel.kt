@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -14,6 +15,7 @@ import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.data.repository.InstalledApp
 import com.nendo.argosy.ui.input.InputHandler
@@ -100,6 +102,8 @@ class AppsViewModel @Inject constructor(
     private val soundManager: SoundFeedbackManager,
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
+    private val playStoreService: PlayStoreService,
+    private val imageCacheManager: ImageCacheManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -294,8 +298,10 @@ class AppsViewModel @Inject constructor(
             if (isCurrentlyOnHome) {
                 existing?.let { gameDao.updateFavorite(it.id, false) }
             } else {
+                val gameId: Long
                 if (existing != null) {
                     gameDao.updateFavorite(existing.id, true)
+                    gameId = existing.id
                 } else {
                     ensureAndroidPlatformExists()
                     val sortTitle = label.lowercase()
@@ -315,12 +321,39 @@ class AppsViewModel @Inject constructor(
                         packageName = packageName,
                         isFavorite = true
                     )
-                    gameDao.insert(game)
+                    gameId = gameDao.insert(game)
                 }
+                fetchMetadataForApp(gameId, packageName)
             }
 
             soundManager.play(if (isCurrentlyOnHome) SoundType.UNFAVORITE else SoundType.FAVORITE)
             loadApps()
+        }
+    }
+
+    private suspend fun fetchMetadataForApp(gameId: Long, packageName: String) {
+        try {
+            val details = playStoreService.getAppDetails(packageName).getOrNull() ?: return
+            val game = gameDao.getById(gameId) ?: return
+            val updated = game.copy(
+                description = details.description ?: game.description,
+                developer = details.developer ?: game.developer,
+                genre = details.genre ?: game.genre,
+                rating = details.ratingPercent ?: game.rating,
+                screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
+                    ?.joinToString(",") ?: game.screenshotPaths,
+                backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+            )
+            gameDao.update(updated)
+
+            details.coverUrl?.let { url ->
+                imageCacheManager.queueCoverCacheByGameId(url, gameId)
+            }
+            if (details.screenshotUrls.isNotEmpty()) {
+                imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+            }
+        } catch (_: Exception) {
+            // Silently fail - metadata fetch is best-effort
         }
     }
 

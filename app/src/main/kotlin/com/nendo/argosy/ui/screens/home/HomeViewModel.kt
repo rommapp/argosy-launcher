@@ -1589,39 +1589,46 @@ class HomeViewModel @Inject constructor(
 
     fun refreshAndroidGameData(gameId: Long) {
         viewModelScope.launch {
-            val game = gameDao.getById(gameId) ?: return@launch
-            val packageName = game.packageName ?: return@launch
-
             try {
-                val details = playStoreService.getAppDetails(packageName).getOrNull()
-                if (details != null) {
-                    val updated = game.copy(
-                        description = details.description ?: game.description,
-                        developer = details.developer ?: game.developer,
-                        genre = details.genre ?: game.genre,
-                        rating = details.ratingPercent ?: game.rating,
-                        screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
-                            ?.joinToString(",") ?: game.screenshotPaths,
-                        backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
-                    )
-                    gameDao.update(updated)
+                val game = gameDao.getById(gameId)
+                val packageName = game?.packageName
 
-                    details.coverUrl?.let { url ->
-                        imageCacheManager.queueCoverCacheByGameId(url, gameId)
-                    }
-                    if (details.screenshotUrls.isNotEmpty()) {
-                        imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
-                    }
+                when {
+                    game == null -> notificationManager.showError("Game not found")
+                    packageName == null -> notificationManager.showError("Package name not available")
+                    else -> {
+                        val details = playStoreService.getAppDetails(packageName).getOrNull()
+                        if (details != null) {
+                            val updated = game.copy(
+                                description = details.description ?: game.description,
+                                developer = details.developer ?: game.developer,
+                                genre = details.genre ?: game.genre,
+                                rating = details.ratingPercent ?: game.rating,
+                                screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
+                                    ?.joinToString(",") ?: game.screenshotPaths,
+                                backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+                            )
+                            gameDao.update(updated)
 
-                    notificationManager.showSuccess("Game data refreshed")
-                    refreshCurrentRowInternal()
-                } else {
-                    notificationManager.showError("Could not fetch app data")
+                            details.coverUrl?.let { url ->
+                                imageCacheManager.queueCoverCacheByGameId(url, gameId)
+                            }
+                            if (details.screenshotUrls.isNotEmpty()) {
+                                imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+                            }
+
+                            notificationManager.showSuccess("Game data refreshed")
+                            refreshCurrentRowInternal()
+                        } else {
+                            notificationManager.showError("App not found on Play Store")
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 notificationManager.showError("Failed to refresh: ${e.message}")
+            } finally {
+                toggleGameMenu()
             }
-            toggleGameMenu()
         }
     }
 

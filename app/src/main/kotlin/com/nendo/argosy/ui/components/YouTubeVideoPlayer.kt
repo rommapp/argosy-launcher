@@ -10,6 +10,7 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,11 @@ fun YouTubeVideoPlayer(
 ) {
     var webView by remember { mutableStateOf<WebView?>(null) }
     val processLifecycle = ProcessLifecycleOwner.get().lifecycle
+
+    LaunchedEffect(muted) {
+        val js = if (muted) "if(player && player.mute) player.mute();" else "if(player && player.unMute) player.unMute();"
+        webView?.evaluateJavascript(js, null)
+    }
 
     DisposableEffect(Unit) {
         val observer = LifecycleEventObserver { _, event ->

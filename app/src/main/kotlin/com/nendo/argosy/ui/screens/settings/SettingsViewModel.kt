@@ -63,6 +63,8 @@ import com.nendo.argosy.ui.screens.settings.sections.DisplayItem
 import com.nendo.argosy.ui.screens.settings.sections.displayItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.displayMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
+import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.permissionsMaxFocusIndex
@@ -2291,36 +2293,29 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.HOME_SCREEN -> {
-                val sliderOffset = if (state.display.useGameBackground) 0 else 1
-                when (state.focusedIndex) {
-                    0 -> {
+                when (homeScreenItemAtFocusIndex(state.focusedIndex, state.display)) {
+                    HomeScreenItem.GameArtwork -> {
                         setUseGameBackground(!state.display.useGameBackground)
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    1 -> {
-                        if (!state.display.useGameBackground) {
-                            openBackgroundPicker()
-                        }
-                    }
-                    1 + sliderOffset -> cycleBackgroundBlur()
-                    2 + sliderOffset -> cycleBackgroundSaturation()
-                    3 + sliderOffset -> cycleBackgroundOpacity()
-                    4 + sliderOffset -> {
+                    HomeScreenItem.CustomImage -> openBackgroundPicker()
+                    HomeScreenItem.Blur -> cycleBackgroundBlur()
+                    HomeScreenItem.Saturation -> cycleBackgroundSaturation()
+                    HomeScreenItem.Opacity -> cycleBackgroundOpacity()
+                    HomeScreenItem.VideoWallpaper -> {
                         setVideoWallpaperEnabled(!state.display.videoWallpaperEnabled)
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    5 + sliderOffset -> cycleVideoWallpaperDelay()
-                    6 + sliderOffset -> {
-                        val hasCustomBgm = state.ambientAudio.enabled && state.ambientAudio.audioUri != null
-                        if (!hasCustomBgm) {
-                            setVideoWallpaperMuted(!state.display.videoWallpaperMuted)
-                            return InputResult.handled(SoundType.TOGGLE)
-                        }
+                    HomeScreenItem.VideoDelay -> cycleVideoWallpaperDelay()
+                    HomeScreenItem.VideoMuted -> {
+                        setVideoWallpaperMuted(!state.display.videoWallpaperMuted)
+                        return InputResult.handled(SoundType.TOGGLE)
                     }
-                    7 + sliderOffset -> {
+                    HomeScreenItem.AccentFooter -> {
                         setUseAccentColorFooter(!state.display.useAccentColorFooter)
                         return InputResult.handled(SoundType.TOGGLE)
                     }
+                    else -> {}
                 }
                 InputResult.HANDLED
             }

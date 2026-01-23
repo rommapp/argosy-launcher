@@ -51,6 +51,7 @@ import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.ModalResetSignal
 import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
+import com.nendo.argosy.ui.audio.AmbientAudioManager
 import android.content.Intent
 import android.net.Uri
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -354,7 +355,8 @@ class HomeViewModel @Inject constructor(
     private val playStoreService: com.nendo.argosy.data.remote.playstore.PlayStoreService,
     private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     private val gradientColorExtractor: com.nendo.argosy.data.cache.GradientColorExtractor,
-    private val ambientLedManager: AmbientLedManager
+    private val ambientLedManager: AmbientLedManager,
+    private val ambientAudioManager: AmbientAudioManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -543,6 +545,10 @@ class HomeViewModel @Inject constructor(
             preferencesRepository.preferences.collect { prefs ->
                 currentGradientPreset = prefs.gradientPreset
                 currentBorderStyle = prefs.boxArtBorderStyle
+
+                val wasMuted = _uiState.value.muteVideoPreview
+                val nowMuted = prefs.videoWallpaperMuted
+
                 _uiState.update {
                     it.copy(
                         backgroundBlur = prefs.backgroundBlur,
@@ -550,12 +556,20 @@ class HomeViewModel @Inject constructor(
                         backgroundOpacity = prefs.backgroundOpacity,
                         useGameBackground = prefs.useGameBackground,
                         customBackgroundPath = prefs.customBackgroundPath,
-                        muteVideoPreview = prefs.videoWallpaperMuted ||
-                            (prefs.ambientAudioEnabled && prefs.ambientAudioUri != null),
+                        muteVideoPreview = nowMuted,
                         videoWallpaperEnabled = prefs.videoWallpaperEnabled,
                         videoWallpaperDelayMs = prefs.videoWallpaperDelaySeconds * 1000L
                     )
                 }
+
+                if (_uiState.value.isVideoPreviewActive && wasMuted != nowMuted) {
+                    if (nowMuted) {
+                        ambientAudioManager.fadeIn()
+                    } else {
+                        ambientAudioManager.fadeOut()
+                    }
+                }
+
                 extractGradientsForVisibleGames(_uiState.value.focusedGameIndex)
             }
         }
@@ -1144,6 +1158,9 @@ class HomeViewModel @Inject constructor(
                 isVideoPreviewLoading = false
             )
         }
+        if (!_uiState.value.muteVideoPreview) {
+            ambientAudioManager.fadeOut()
+        }
     }
 
     fun cancelVideoPreviewLoading() {
@@ -1153,6 +1170,7 @@ class HomeViewModel @Inject constructor(
                 videoPreviewId = null
             )
         }
+        ambientAudioManager.fadeIn()
     }
 
     fun deactivateVideoPreview() {
@@ -1163,6 +1181,7 @@ class HomeViewModel @Inject constructor(
                 videoPreviewId = null
             )
         }
+        ambientAudioManager.fadeIn()
     }
 
     private suspend fun refreshRecommendationsIfNeeded() {

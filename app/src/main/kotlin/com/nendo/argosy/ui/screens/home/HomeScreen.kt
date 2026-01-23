@@ -347,7 +347,7 @@ fun HomeScreen(
     )
 
     val videoModeFooterOffset by animateDpAsState(
-        targetValue = if (uiState.isVideoPreviewActive) 100.dp else 0.dp,
+        targetValue = if (uiState.isVideoPreviewActive) 48.dp else 0.dp,
         animationSpec = tween(500),
         label = "footerOffset"
     )

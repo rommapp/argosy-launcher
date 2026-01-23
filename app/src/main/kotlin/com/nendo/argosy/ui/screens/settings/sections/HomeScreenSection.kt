@@ -24,7 +24,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
-private sealed class HomeScreenItem(
+internal sealed class HomeScreenItem(
     val key: String,
     val section: String,
     val visibleWhen: (DisplayState) -> Boolean = { true }
@@ -83,6 +83,9 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
 internal fun homeScreenMaxFocusIndex(display: DisplayState): Int = homeScreenLayout.maxFocusIndex(display)
 
 internal fun homeScreenSections(display: DisplayState) = homeScreenLayout.buildSections(display)
+
+internal fun homeScreenItemAtFocusIndex(index: Int, display: DisplayState): HomeScreenItem? =
+    homeScreenLayout.itemAtFocusIndex(index, display)
 
 @Composable
 fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -188,14 +191,12 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
 
                 HomeScreenItem.VideoMuted -> {
-                    val hasCustomBgm = uiState.ambientAudio.enabled && uiState.ambientAudio.audioUri != null
-                    val effectiveMuted = hasCustomBgm || display.videoWallpaperMuted
                     SwitchPreference(
                         title = "Muted Playback",
-                        subtitle = if (hasCustomBgm) "Auto-muted while Custom BGM is active" else "Mute video audio",
-                        isEnabled = effectiveMuted,
+                        subtitle = "Mute video audio",
+                        isEnabled = display.videoWallpaperMuted,
                         isFocused = isFocused(item),
-                        onToggle = { if (!hasCustomBgm) viewModel.setVideoWallpaperMuted(!display.videoWallpaperMuted) }
+                        onToggle = { viewModel.setVideoWallpaperMuted(it) }
                     )
                 }
 

@@ -4,9 +4,11 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.sections.DisplayItem
+import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.displayItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.displaySections
+import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
 import com.nendo.argosy.ui.screens.settings.sections.soundsSections
 
@@ -151,11 +153,11 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.HOME_SCREEN) {
-            val sliderOffset = if (state.display.useGameBackground) 0 else 1
-            when (state.focusedIndex) {
-                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(-SLIDER_STEP); return InputResult.HANDLED }
-                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(-SLIDER_STEP); return InputResult.HANDLED }
-                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(-SLIDER_STEP); return InputResult.HANDLED }
+            when (homeScreenItemAtFocusIndex(state.focusedIndex, state.display)) {
+                HomeScreenItem.Blur -> { viewModel.adjustBackgroundBlur(-SLIDER_STEP); return InputResult.HANDLED }
+                HomeScreenItem.Saturation -> { viewModel.adjustBackgroundSaturation(-SLIDER_STEP); return InputResult.HANDLED }
+                HomeScreenItem.Opacity -> { viewModel.adjustBackgroundOpacity(-SLIDER_STEP); return InputResult.HANDLED }
+                else -> {}
             }
         }
 
@@ -339,11 +341,11 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.HOME_SCREEN) {
-            val sliderOffset = if (state.display.useGameBackground) 0 else 1
-            when (state.focusedIndex) {
-                1 + sliderOffset -> { viewModel.adjustBackgroundBlur(SLIDER_STEP); return InputResult.HANDLED }
-                2 + sliderOffset -> { viewModel.adjustBackgroundSaturation(SLIDER_STEP); return InputResult.HANDLED }
-                3 + sliderOffset -> { viewModel.adjustBackgroundOpacity(SLIDER_STEP); return InputResult.HANDLED }
+            when (homeScreenItemAtFocusIndex(state.focusedIndex, state.display)) {
+                HomeScreenItem.Blur -> { viewModel.adjustBackgroundBlur(SLIDER_STEP); return InputResult.HANDLED }
+                HomeScreenItem.Saturation -> { viewModel.adjustBackgroundSaturation(SLIDER_STEP); return InputResult.HANDLED }
+                HomeScreenItem.Opacity -> { viewModel.adjustBackgroundOpacity(SLIDER_STEP); return InputResult.HANDLED }
+                else -> {}
             }
         }
 

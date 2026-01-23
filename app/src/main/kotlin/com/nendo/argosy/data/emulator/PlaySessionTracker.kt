@@ -46,6 +46,7 @@ data class ActiveSession(
 
 data class SaveConflictEvent(
     val gameId: Long,
+    val emulatorId: String,
     val localTimestamp: Instant,
     val serverTimestamp: Instant
 )
@@ -212,6 +213,7 @@ class PlaySessionTracker @Inject constructor(
                     _conflictEvents.emit(
                         SaveConflictEvent(
                             gameId = result.gameId,
+                            emulatorId = result.emulatorId,
                             localTimestamp = result.localTimestamp,
                             serverTimestamp = result.serverTimestamp
                         )

@@ -32,11 +32,14 @@ import androidx.navigation.compose.rememberNavController
 import com.nendo.argosy.ui.components.MainDrawer
 import com.nendo.argosy.ui.components.QuickSettingsPanel
 import com.nendo.argosy.ui.components.QuickSettingsState
+import com.nendo.argosy.ui.components.SaveConflictModal
 import com.nendo.argosy.ui.components.ScreenDimmerOverlay
 import com.nendo.argosy.ui.components.rememberScreenDimmerState
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
+import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
@@ -75,6 +78,8 @@ fun ArgosyApp(
     val screenDimmerPrefs by viewModel.screenDimmerPreferences.collectAsState()
     val isEmulatorRunning by viewModel.isEmulatorRunning.collectAsState()
     val quickMenuState by quickMenuViewModel.uiState.collectAsState()
+    val saveConflictInfo by viewModel.saveConflictInfo.collectAsState()
+    val saveConflictButtonIndex by viewModel.saveConflictButtonIndex.collectAsState()
     val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
 
@@ -201,6 +206,40 @@ fun ArgosyApp(
             inputDispatcher.subscribeDrawer(quickMenuInputHandler)
             quickMenuViewModel.show()
             viewModel.soundManager.play(SoundType.OPEN_MODAL)
+        }
+    }
+
+    val saveConflictInputHandler = remember(viewModel) {
+        object : InputHandler {
+            override fun onLeft(): InputResult {
+                viewModel.moveSaveConflictFocus(-1)
+                return InputResult.HANDLED
+            }
+            override fun onRight(): InputResult {
+                viewModel.moveSaveConflictFocus(1)
+                return InputResult.HANDLED
+            }
+            override fun onConfirm(): InputResult {
+                val buttonIndex = viewModel.saveConflictButtonIndex.value
+                if (buttonIndex == 0) {
+                    viewModel.dismissSaveConflict()
+                } else {
+                    viewModel.forceUploadConflictSave()
+                }
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+            override fun onBack(): InputResult {
+                viewModel.dismissSaveConflict()
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+        }
+    }
+
+    LaunchedEffect(saveConflictInfo) {
+        if (saveConflictInfo != null) {
+            inputDispatcher.subscribeDrawer(saveConflictInputHandler)
+        } else {
+            inputDispatcher.unsubscribeDrawer()
         }
     }
 
@@ -398,6 +437,16 @@ fun ArgosyApp(
                 onPerformanceModeCycle = { viewModel.cyclePerformanceMode() },
                 onDismiss = closeQuickSettings
             )
+
+            // Save Conflict Modal
+            saveConflictInfo?.let { info ->
+                SaveConflictModal(
+                    info = info,
+                    focusedButton = saveConflictButtonIndex,
+                    onKeepLocal = { viewModel.dismissSaveConflict() },
+                    onOverwrite = { viewModel.forceUploadConflictSave() }
+                )
+            }
             }
         }
     }

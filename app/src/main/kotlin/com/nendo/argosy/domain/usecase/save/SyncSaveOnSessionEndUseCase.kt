@@ -33,6 +33,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         data object Queued : Result()
         data class Conflict(
             val gameId: Long,
+            val emulatorId: String,
             val localTimestamp: Instant,
             val serverTimestamp: Instant
         ) : Result()
@@ -173,6 +174,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
                 Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=CONFLICT | local=${syncResult.localTimestamp}, server=${syncResult.serverTimestamp}")
                 Result.Conflict(
                     syncResult.gameId,
+                    emulatorId,
                     syncResult.localTimestamp,
                     syncResult.serverTimestamp
                 )

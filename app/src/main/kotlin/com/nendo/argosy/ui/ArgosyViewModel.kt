@@ -6,7 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.DefaultView
+import com.nendo.argosy.data.repository.SaveSyncRepository
+import com.nendo.argosy.ui.components.SaveConflictInfo
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -95,7 +98,9 @@ class ArgosyViewModel @Inject constructor(
     private val romMRepository: RomMRepository,
     private val downloadManager: DownloadManager,
     private val modalResetSignal: ModalResetSignal,
-    private val playSessionTracker: PlaySessionTracker
+    private val playSessionTracker: PlaySessionTracker,
+    private val saveSyncRepository: SaveSyncRepository,
+    private val gameDao: GameDao
 ) : ViewModel() {
 
     private val contentResolver get() = application.contentResolver
@@ -108,6 +113,23 @@ class ArgosyViewModel @Inject constructor(
         observeFeedbackSettings(preferencesRepository)
         downloadManager.clearCompleted()
         startControllerDetectionPolling()
+        observeSaveConflicts()
+    }
+
+    private fun observeSaveConflicts() {
+        viewModelScope.launch {
+            playSessionTracker.conflictEvents.collect { event ->
+                val game = gameDao.getById(event.gameId)
+                _saveConflictInfo.value = SaveConflictInfo(
+                    gameId = event.gameId,
+                    gameName = game?.title ?: "Unknown Game",
+                    emulatorId = event.emulatorId,
+                    localTimestamp = event.localTimestamp,
+                    serverTimestamp = event.serverTimestamp
+                )
+                _saveConflictButtonIndex.value = 0
+            }
+        }
     }
 
     private fun startControllerDetectionPolling() {
@@ -240,6 +262,7 @@ class ArgosyViewModel @Inject constructor(
     fun resetAllModals() {
         _isDrawerOpen.value = false
         _isQuickSettingsOpen.value = false
+        _saveConflictInfo.value = null
         modalResetSignal.emit()
     }
 
@@ -365,6 +388,45 @@ class ArgosyViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
+
+    private val _saveConflictInfo = MutableStateFlow<SaveConflictInfo?>(null)
+    val saveConflictInfo: StateFlow<SaveConflictInfo?> = _saveConflictInfo.asStateFlow()
+
+    private val _saveConflictButtonIndex = MutableStateFlow(0)
+    val saveConflictButtonIndex: StateFlow<Int> = _saveConflictButtonIndex.asStateFlow()
+
+    fun dismissSaveConflict() {
+        _saveConflictInfo.value = null
+        _saveConflictButtonIndex.value = 0
+    }
+
+    fun moveSaveConflictFocus(direction: Int) {
+        val newIndex = (_saveConflictButtonIndex.value + direction).coerceIn(0, 1)
+        _saveConflictButtonIndex.value = newIndex
+    }
+
+    fun forceUploadConflictSave() {
+        val info = _saveConflictInfo.value ?: return
+        viewModelScope.launch {
+            saveSyncRepository.uploadSave(
+                gameId = info.gameId,
+                emulatorId = info.emulatorId,
+                channelName = null,
+                forceOverwrite = true
+            )
+            val game = gameDao.getById(info.gameId)
+            notificationManager.show(
+                title = "Save Uploaded",
+                subtitle = game?.title,
+                type = com.nendo.argosy.ui.notification.NotificationType.SUCCESS,
+                imagePath = game?.coverPath,
+                duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM,
+                key = "sync-${info.gameId}",
+                immediate = true
+            )
+        }
+        dismissSaveConflict()
+    }
 
     fun setQuickSettingsOpen(open: Boolean) {
         _isQuickSettingsOpen.value = open

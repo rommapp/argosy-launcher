@@ -1028,7 +1028,8 @@ class SaveSyncRepository @Inject constructor(
     suspend fun uploadSave(
         gameId: Long,
         emulatorId: String,
-        channelName: String? = null
+        channelName: String? = null,
+        forceOverwrite: Boolean = false
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId emulator=$emulatorId channel=$channelName | Starting upload")
         val api = this@SaveSyncRepository.api
@@ -1179,7 +1180,7 @@ class SaveSyncRepository @Inject constructor(
                 }
             }
 
-            if (channelName == null && latestServerSave != null) {
+            if (!forceOverwrite && channelName == null && latestServerSave != null) {
                 val serverTime = parseTimestamp(latestServerSave.updatedAt)
                 val deltaMs = serverTime.toEpochMilli() - localModified.toEpochMilli()
                 val deltaStr = if (deltaMs >= 0) "+${deltaMs/1000}s" else "${deltaMs/1000}s"
@@ -1189,6 +1190,8 @@ class SaveSyncRepository @Inject constructor(
                     return@withContext SaveSyncResult.Conflict(gameId, localModified, serverTime)
                 }
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Decision=PROCEED | Local is newer or equal")
+            } else if (forceOverwrite) {
+                Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipping conflict check (force overwrite)")
             }
 
             val serverSaveIdToUpdate = if (serverSaves.isNotEmpty()) {

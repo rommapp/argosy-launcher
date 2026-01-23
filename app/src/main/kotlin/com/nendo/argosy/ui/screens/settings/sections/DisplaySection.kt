@@ -117,6 +117,8 @@ internal fun displayMaxFocusIndex(display: DisplayState): Int = displayLayout.ma
 internal fun displayItemAtFocusIndex(index: Int, display: DisplayState): DisplayItem? =
     displayLayout.itemAtFocusIndex(index, display)
 
+internal fun displaySections(display: DisplayState) = displayLayout.buildSections(display)
+
 @Composable
 fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()

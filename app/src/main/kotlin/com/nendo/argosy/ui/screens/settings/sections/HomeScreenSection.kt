@@ -44,8 +44,16 @@ private sealed class HomeScreenItem(
     data object Opacity : HomeScreenItem("opacity", "background")
 
     data object VideoWallpaper : HomeScreenItem("videoWallpaper", "video")
-    data object VideoDelay : HomeScreenItem("videoDelay", "video")
-    data object VideoMuted : HomeScreenItem("videoMuted", "video")
+    data object VideoDelay : HomeScreenItem(
+        key = "videoDelay",
+        section = "video",
+        visibleWhen = { it.videoWallpaperEnabled }
+    )
+    data object VideoMuted : HomeScreenItem(
+        key = "videoMuted",
+        section = "video",
+        visibleWhen = { it.videoWallpaperEnabled }
+    )
 
     data object AccentFooter : HomeScreenItem("accentFooter", "footer")
 
@@ -74,15 +82,17 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
 
 internal fun homeScreenMaxFocusIndex(display: DisplayState): Int = homeScreenLayout.maxFocusIndex(display)
 
+internal fun homeScreenSections(display: DisplayState) = homeScreenLayout.buildSections(display)
+
 @Composable
 fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val display = uiState.display
 
-    val visibleItems = remember(display.useGameBackground) {
+    val visibleItems = remember(display.useGameBackground, display.videoWallpaperEnabled) {
         homeScreenLayout.visibleItems(display)
     }
-    val sections = remember(display.useGameBackground) {
+    val sections = remember(display.useGameBackground, display.videoWallpaperEnabled) {
         homeScreenLayout.buildSections(display)
     }
 

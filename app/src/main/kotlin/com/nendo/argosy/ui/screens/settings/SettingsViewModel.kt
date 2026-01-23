@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.graphics.BitmapFactory
 import com.nendo.argosy.data.cache.GradientColorExtractor
+import com.nendo.argosy.ui.input.HapticFeedbackManager
+import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.cache.ImageCacheManager
@@ -95,6 +97,7 @@ private const val TAG = "SettingsViewModel"
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferencesRepository: UserPreferencesRepository,
+    private val hapticManager: HapticFeedbackManager,
     private val platformDao: PlatformDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
@@ -1026,6 +1029,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustUiScale(delta: Int) {
+        val current = uiState.value.display.uiScale
+        val wouldBe = (current + delta).coerceIn(75, 150)
+        if (wouldBe == current && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         displayDelegate.adjustUiScale(viewModelScope, delta)
     }
 
@@ -1034,14 +1042,29 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustBackgroundBlur(delta: Int) {
+        val current = uiState.value.display.backgroundBlur
+        val wouldBe = (current + delta).coerceIn(0, 100)
+        if (wouldBe == current && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         displayDelegate.adjustBackgroundBlur(viewModelScope, delta)
     }
 
     fun adjustBackgroundSaturation(delta: Int) {
+        val current = uiState.value.display.backgroundSaturation
+        val wouldBe = (current + delta).coerceIn(0, 100)
+        if (wouldBe == current && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         displayDelegate.adjustBackgroundSaturation(viewModelScope, delta)
     }
 
     fun adjustBackgroundOpacity(delta: Int) {
+        val current = uiState.value.display.backgroundOpacity
+        val wouldBe = (current + delta).coerceIn(0, 100)
+        if (wouldBe == current && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         displayDelegate.adjustBackgroundOpacity(viewModelScope, delta)
     }
 
@@ -1314,6 +1337,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustVibrationStrength(delta: Float) {
+        val current = uiState.value.controls.vibrationStrength
+        val wouldBe = (current + delta).coerceIn(0f, 1f)
+        if (wouldBe == current && delta != 0f) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         controlsDelegate.adjustVibrationStrength(delta)
     }
 
@@ -1333,6 +1361,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustSoundVolume(delta: Int) {
+        val volumeLevels = listOf(50, 70, 85, 95, 100)
+        val current = uiState.value.sounds.volume
+        val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
+        val newIndex = (currentIndex + delta).coerceIn(0, volumeLevels.lastIndex)
+        if (newIndex == currentIndex && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         soundsDelegate.adjustSoundVolume(viewModelScope, delta)
     }
 
@@ -1369,6 +1404,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustAmbientAudioVolume(delta: Int) {
+        val volumeLevels = listOf(2, 5, 10, 20, 35)
+        val current = uiState.value.ambientAudio.volume
+        val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
+        val newIndex = (currentIndex + delta).coerceIn(0, volumeLevels.lastIndex)
+        if (newIndex == currentIndex && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         ambientAudioDelegate.adjustVolume(viewModelScope, delta)
     }
 
@@ -1627,6 +1669,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustMaxConcurrentDownloads(delta: Int) {
+        val current = uiState.value.storage.maxConcurrentDownloads
+        val wouldBe = (current + delta).coerceIn(1, 5)
+        if (wouldBe == current && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         storageDelegate.adjustMaxConcurrentDownloads(viewModelScope, delta)
     }
 
@@ -1643,6 +1690,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustScreenDimmerTimeout(delta: Int) {
+        val current = uiState.value.storage.screenDimmerTimeoutMinutes
+        val wouldBe = (current + delta).coerceIn(1, 5)
+        if (wouldBe == current && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         storageDelegate.adjustScreenDimmerTimeout(viewModelScope, delta)
     }
 
@@ -1651,6 +1703,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun adjustScreenDimmerLevel(delta: Int) {
+        val current = uiState.value.storage.screenDimmerLevel
+        val wouldBe = (current + delta * 10).coerceIn(40, 70)
+        if (wouldBe == current && delta != 0) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
         storageDelegate.adjustScreenDimmerLevel(viewModelScope, delta)
     }
 
@@ -1798,6 +1855,29 @@ class SettingsViewModel @Inject constructor(
             sectionStarts[currentSectionIdx]
         }
         _uiState.update { it.copy(focusedIndex = prevSectionStart) }
+    }
+
+    fun jumpToNextSection(sections: List<com.nendo.argosy.ui.components.ListSection>): Boolean {
+        val currentFocus = _uiState.value.focusedIndex
+        val nextSection = sections.firstOrNull { it.focusStartIndex > currentFocus }
+        if (nextSection != null) {
+            _uiState.update { it.copy(focusedIndex = nextSection.focusStartIndex) }
+            return true
+        }
+        return false
+    }
+
+    fun jumpToPrevSection(sections: List<com.nendo.argosy.ui.components.ListSection>): Boolean {
+        val currentFocus = _uiState.value.focusedIndex
+        val currentSectionIdx = sections.indexOfLast { it.focusStartIndex <= currentFocus }
+        if (currentSectionIdx <= 0) return false
+        val prevSection = if (currentFocus == sections[currentSectionIdx].focusStartIndex) {
+            sections[currentSectionIdx - 1]
+        } else {
+            sections[currentSectionIdx]
+        }
+        _uiState.update { it.copy(focusedIndex = prevSection.focusStartIndex) }
+        return true
     }
 
     fun requestPurgePlatform(platformId: Long) {

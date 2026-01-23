@@ -628,3 +628,16 @@ private fun buildBiosFocusMapping(
     platformGroups: List<BiosPlatformGroup>,
     expandedIndex: Int
 ): BiosFocusMapping = BiosFocusMapping(platformGroups, expandedIndex)
+
+internal fun biosSections(
+    platformGroups: List<BiosPlatformGroup>,
+    expandedIndex: Int
+): List<ListSection> {
+    val focusMapping = buildBiosFocusMapping(platformGroups, expandedIndex)
+    val maxPlatformFocusIndex = focusMapping.getMaxFocusIndex()
+    val platformListItemCount = focusMapping.getPlatformListItemCount()
+    return listOf(
+        ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 1),
+        ListSection(listStartIndex = 2, listEndIndex = 3 + platformListItemCount, focusStartIndex = 2, focusEndIndex = maxPlatformFocusIndex)
+    )
+}

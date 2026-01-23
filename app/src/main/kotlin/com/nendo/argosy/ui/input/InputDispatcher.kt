@@ -112,38 +112,26 @@ class InputDispatcher(
     }
 
     private fun playFeedback(event: GamepadEvent, result: InputResult) {
+        if (!result.handled) return
+
         when (event) {
             GamepadEvent.Up, GamepadEvent.Down, GamepadEvent.Left, GamepadEvent.Right -> {
-                if (result.handled) {
-                    if (result.soundOverride != SoundType.SILENT) {
-                        hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
-                    }
-                    soundManager?.play(result.soundOverride ?: SoundType.NAVIGATE)
-                } else {
-                    hapticManager?.vibrate(HapticPattern.BOUNDARY_HIT)
-                    soundManager?.play(SoundType.BOUNDARY)
+                if (result.soundOverride != SoundType.SILENT) {
+                    hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
                 }
+                soundManager?.play(result.soundOverride ?: SoundType.NAVIGATE)
             }
             GamepadEvent.PrevSection, GamepadEvent.NextSection,
             GamepadEvent.PrevTrigger, GamepadEvent.NextTrigger -> {
-                if (result.handled) {
-                    hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
-                    soundManager?.play(result.soundOverride ?: SoundType.SECTION_CHANGE)
-                } else {
-                    hapticManager?.vibrate(HapticPattern.BOUNDARY_HIT)
-                    soundManager?.play(SoundType.BOUNDARY)
-                }
+                hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
+                soundManager?.play(result.soundOverride ?: SoundType.SECTION_CHANGE)
             }
             GamepadEvent.Confirm -> {
-                if (result.handled) {
-                    hapticManager?.vibrate(HapticPattern.SELECTION)
-                    soundManager?.play(result.soundOverride ?: SoundType.SELECT)
-                }
+                hapticManager?.vibrate(HapticPattern.SELECTION)
+                soundManager?.play(result.soundOverride ?: SoundType.SELECT)
             }
             GamepadEvent.Back -> {
-                if (result.handled) {
-                    soundManager?.play(result.soundOverride ?: SoundType.BACK)
-                }
+                soundManager?.play(result.soundOverride ?: SoundType.BACK)
             }
             else -> {}
         }

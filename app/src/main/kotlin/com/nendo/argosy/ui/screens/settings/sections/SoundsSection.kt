@@ -97,6 +97,9 @@ private val soundsLayout = SettingsLayout<SoundsItem, SoundsLayoutState>(
 internal fun soundsMaxFocusIndex(bgmEnabled: Boolean, uiSoundsEnabled: Boolean): Int =
     soundsLayout.maxFocusIndex(SoundsLayoutState(bgmEnabled, uiSoundsEnabled))
 
+internal fun soundsSections(bgmEnabled: Boolean, uiSoundsEnabled: Boolean) =
+    soundsLayout.buildSections(SoundsLayoutState(bgmEnabled, uiSoundsEnabled))
+
 @Composable
 fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()

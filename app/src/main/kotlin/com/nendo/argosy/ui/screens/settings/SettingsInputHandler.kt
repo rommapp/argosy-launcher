@@ -4,7 +4,11 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.sections.DisplayItem
+import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.displayItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.displaySections
+import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
+import com.nendo.argosy.ui.screens.settings.sections.soundsSections
 
 class SettingsInputHandler(
     private val viewModel: SettingsViewModel,
@@ -128,13 +132,11 @@ class SettingsInputHandler(
             }
             return InputResult.HANDLED
         }
-        if (state.sounds.showSoundPicker ||
-            state.syncSettings.showRegionPicker ||
-            state.syncSettings.showPlatformFiltersModal ||
-            state.syncSettings.showSyncFiltersModal ||
-            state.emulators.showEmulatorPicker) {
-            return InputResult.HANDLED
-        }
+        if (state.sounds.showSoundPicker) return InputResult.HANDLED
+        if (state.syncSettings.showRegionPicker) return InputResult.HANDLED
+        if (state.syncSettings.showPlatformFiltersModal) return InputResult.HANDLED
+        if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
+        if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
 
         if (state.currentSection == SettingsSection.DISPLAY) {
             when (displayItemAtFocusIndex(state.focusedIndex, state.display)) {
@@ -318,13 +320,11 @@ class SettingsInputHandler(
             }
             return InputResult.HANDLED
         }
-        if (state.sounds.showSoundPicker ||
-            state.syncSettings.showRegionPicker ||
-            state.syncSettings.showPlatformFiltersModal ||
-            state.syncSettings.showSyncFiltersModal ||
-            state.emulators.showEmulatorPicker) {
-            return InputResult.HANDLED
-        }
+        if (state.sounds.showSoundPicker) return InputResult.HANDLED
+        if (state.syncSettings.showRegionPicker) return InputResult.HANDLED
+        if (state.syncSettings.showPlatformFiltersModal) return InputResult.HANDLED
+        if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
+        if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
 
         if (state.currentSection == SettingsSection.DISPLAY) {
             when (displayItemAtFocusIndex(state.focusedIndex, state.display)) {
@@ -609,26 +609,72 @@ class SettingsInputHandler(
 
     override fun onPrevSection(): InputResult {
         val state = viewModel.uiState.value
-        if (state.currentSection == SettingsSection.BOX_ART) {
-            viewModel.cycleBoxArtShape(-1)
-            return InputResult.HANDLED
-        }
-        if (state.currentSection == SettingsSection.STORAGE) {
-            viewModel.jumpToStoragePrevSection()
-            return InputResult.HANDLED
+        when (state.currentSection) {
+            SettingsSection.BOX_ART -> {
+                viewModel.cycleBoxArtShape(-1)
+                return InputResult.HANDLED
+            }
+            SettingsSection.STORAGE -> {
+                viewModel.jumpToStoragePrevSection()
+                return InputResult.HANDLED
+            }
+            SettingsSection.DISPLAY -> {
+                if (viewModel.jumpToPrevSection(displaySections(state.display))) {
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.HOME_SCREEN -> {
+                if (viewModel.jumpToPrevSection(homeScreenSections(state.display))) {
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.SOUNDS -> {
+                if (viewModel.jumpToPrevSection(soundsSections(state.ambientAudio.enabled, state.sounds.enabled))) {
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.BIOS -> {
+                if (viewModel.jumpToPrevSection(biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex))) {
+                    return InputResult.HANDLED
+                }
+            }
+            else -> {}
         }
         return InputResult.UNHANDLED
     }
 
     override fun onNextSection(): InputResult {
         val state = viewModel.uiState.value
-        if (state.currentSection == SettingsSection.BOX_ART) {
-            viewModel.cycleBoxArtShape(1)
-            return InputResult.HANDLED
-        }
-        if (state.currentSection == SettingsSection.STORAGE) {
-            viewModel.jumpToStorageNextSection()
-            return InputResult.HANDLED
+        when (state.currentSection) {
+            SettingsSection.BOX_ART -> {
+                viewModel.cycleBoxArtShape(1)
+                return InputResult.HANDLED
+            }
+            SettingsSection.STORAGE -> {
+                viewModel.jumpToStorageNextSection()
+                return InputResult.HANDLED
+            }
+            SettingsSection.DISPLAY -> {
+                if (viewModel.jumpToNextSection(displaySections(state.display))) {
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.HOME_SCREEN -> {
+                if (viewModel.jumpToNextSection(homeScreenSections(state.display))) {
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.SOUNDS -> {
+                if (viewModel.jumpToNextSection(soundsSections(state.ambientAudio.enabled, state.sounds.enabled))) {
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.BIOS -> {
+                if (viewModel.jumpToNextSection(biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex))) {
+                    return InputResult.HANDLED
+                }
+            }
+            else -> {}
         }
         return InputResult.UNHANDLED
     }

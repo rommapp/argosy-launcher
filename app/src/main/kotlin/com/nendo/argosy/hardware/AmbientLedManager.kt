@@ -57,6 +57,7 @@ class AmbientLedManager @Inject constructor(
     private var visualizer: Visualizer? = null
 
     private var isEnabled = false
+    private var brightnessScalar = 1f
     private var audioBrightnessEnabled = true
     private var audioColorsEnabled = false
     private var colorMode = AmbientLedColorMode.DOMINANT_3
@@ -84,6 +85,7 @@ class AmbientLedManager @Inject constructor(
             preferencesRepository.userPreferences.collectLatest { prefs ->
                 val wasEnabled = isEnabled
                 isEnabled = prefs.ambientLedEnabled
+                brightnessScalar = prefs.ambientLedBrightness / 100f
                 audioBrightnessEnabled = prefs.ambientLedAudioBrightness
                 audioColorsEnabled = prefs.ambientLedAudioColors
                 colorMode = prefs.ambientLedColorMode
@@ -268,7 +270,7 @@ class AmbientLedManager @Inject constructor(
         }
 
         ledController.setColor(leftColor, rightColor)
-        ledController.setBrightness(currentState.brightness)
+        ledController.setBrightness(currentState.brightness * brightnessScalar)
     }
 
     private fun blendForIntensity(intensity: Float, colors: SideColors): Color {

@@ -439,6 +439,24 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setAmbientLedBrightness(scope: CoroutineScope, brightness: Int) {
+        scope.launch {
+            val clamped = brightness.coerceIn(0, 100)
+            preferencesRepository.setAmbientLedBrightness(clamped)
+            _state.update { it.copy(ambientLedBrightness = clamped) }
+        }
+    }
+
+    fun adjustAmbientLedBrightness(scope: CoroutineScope, delta: Int) {
+        setAmbientLedBrightness(scope, _state.value.ambientLedBrightness + delta)
+    }
+
+    fun cycleAmbientLedBrightness(scope: CoroutineScope) {
+        val current = _state.value.ambientLedBrightness
+        val next = (current + 10) % 110
+        setAmbientLedBrightness(scope, next)
+    }
+
     fun setAmbientLedAudioBrightness(scope: CoroutineScope, enabled: Boolean) {
         scope.launch {
             preferencesRepository.setAmbientLedAudioBrightness(enabled)

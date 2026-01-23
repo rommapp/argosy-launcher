@@ -463,6 +463,7 @@ class SettingsViewModel @Inject constructor(
                 videoWallpaperMuted = prefs.videoWallpaperMuted,
                 uiScale = prefs.uiScale,
                 ambientLedEnabled = prefs.ambientLedEnabled,
+                ambientLedBrightness = prefs.ambientLedBrightness,
                 ambientLedAudioBrightness = prefs.ambientLedAudioBrightness,
                 ambientLedAudioColors = prefs.ambientLedAudioColors,
                 ambientLedColorMode = prefs.ambientLedColorMode,
@@ -1197,6 +1198,14 @@ class SettingsViewModel @Inject constructor(
 
     fun setAmbientLedEnabled(enabled: Boolean) {
         displayDelegate.setAmbientLedEnabled(viewModelScope, enabled)
+    }
+
+    fun adjustAmbientLedBrightness(delta: Int) {
+        displayDelegate.adjustAmbientLedBrightness(viewModelScope, delta)
+    }
+
+    fun cycleAmbientLedBrightness() {
+        displayDelegate.cycleAmbientLedBrightness(viewModelScope)
     }
 
     fun setAmbientLedAudioBrightness(enabled: Boolean) {
@@ -2285,6 +2294,7 @@ class SettingsViewModel @Inject constructor(
                     DisplayItem.DimAfter -> cycleScreenDimmerTimeout()
                     DisplayItem.DimLevel -> cycleScreenDimmerLevel()
                     DisplayItem.AmbientLed -> setAmbientLedEnabled(!state.display.ambientLedEnabled)
+                    DisplayItem.AmbientLedBrightness -> cycleAmbientLedBrightness()
                     DisplayItem.AmbientLedAudioBrightness -> setAmbientLedAudioBrightness(!state.display.ambientLedAudioBrightness)
                     DisplayItem.AmbientLedAudioColors -> setAmbientLedAudioColors(!state.display.ambientLedAudioColors)
                     DisplayItem.AmbientLedColorMode -> cycleAmbientLedColorMode()

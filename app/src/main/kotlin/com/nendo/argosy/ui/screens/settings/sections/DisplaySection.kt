@@ -65,6 +65,11 @@ internal sealed class DisplayItem(
         section = "ambientLed",
         visibleWhen = { it.ambientLedAvailable }
     )
+    data object AmbientLedBrightness : DisplayItem(
+        key = "ambientLedBrightness",
+        section = "ambientLed",
+        visibleWhen = { it.ambientLedAvailable && it.ambientLedEnabled }
+    )
     data object AmbientLedAudioBrightness : DisplayItem(
         key = "ambientLedAudioBrightness",
         section = "ambientLed",
@@ -100,7 +105,7 @@ internal sealed class DisplayItem(
             ScreenSafetyHeader,
             ScreenDimmer, DimAfter, DimLevel,
             AmbientLedHeader,
-            AmbientLed, AmbientLedAudioBrightness, AmbientLedAudioColors, AmbientLedColorMode
+            AmbientLed, AmbientLedBrightness, AmbientLedAudioBrightness, AmbientLedAudioColors, AmbientLedColorMode
         )
     }
 }
@@ -288,6 +293,15 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         }
                     )
                 }
+
+                DisplayItem.AmbientLedBrightness -> SliderPreference(
+                    title = "Brightness",
+                    value = display.ambientLedBrightness / 10,
+                    minValue = 0,
+                    maxValue = 10,
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleAmbientLedBrightness() }
+                )
 
                 DisplayItem.AmbientLedAudioBrightness -> SwitchPreference(
                     title = "Audio Brightness",

@@ -115,6 +115,7 @@ class UserPreferencesRepository @Inject constructor(
         val UI_SCALE = intPreferencesKey("ui_scale")
 
         val AMBIENT_LED_ENABLED = booleanPreferencesKey("ambient_led_enabled")
+        val AMBIENT_LED_BRIGHTNESS = intPreferencesKey("ambient_led_brightness")
         val AMBIENT_LED_AUDIO_BRIGHTNESS = booleanPreferencesKey("ambient_led_audio_brightness")
         val AMBIENT_LED_AUDIO_COLORS = booleanPreferencesKey("ambient_led_audio_colors")
         val AMBIENT_LED_COLOR_MODE = stringPreferencesKey("ambient_led_color_mode")
@@ -231,6 +232,7 @@ class UserPreferencesRepository @Inject constructor(
             videoWallpaperMuted = prefs[Keys.VIDEO_WALLPAPER_MUTED] ?: false,
             uiScale = prefs[Keys.UI_SCALE] ?: 100,
             ambientLedEnabled = prefs[Keys.AMBIENT_LED_ENABLED] ?: false,
+            ambientLedBrightness = prefs[Keys.AMBIENT_LED_BRIGHTNESS] ?: 100,
             ambientLedAudioBrightness = prefs[Keys.AMBIENT_LED_AUDIO_BRIGHTNESS] ?: true,
             ambientLedAudioColors = prefs[Keys.AMBIENT_LED_AUDIO_COLORS] ?: false,
             ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE])
@@ -830,6 +832,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setAmbientLedBrightness(brightness: Int) {
+        dataStore.edit { prefs ->
+            prefs[Keys.AMBIENT_LED_BRIGHTNESS] = brightness.coerceIn(0, 100)
+        }
+    }
+
     suspend fun setAmbientLedAudioBrightness(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.AMBIENT_LED_AUDIO_BRIGHTNESS] = enabled
@@ -927,6 +935,7 @@ data class UserPreferences(
     val videoWallpaperMuted: Boolean = false,
     val uiScale: Int = 100,
     val ambientLedEnabled: Boolean = false,
+    val ambientLedBrightness: Int = 100,
     val ambientLedAudioBrightness: Boolean = true,
     val ambientLedAudioColors: Boolean = false,
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3

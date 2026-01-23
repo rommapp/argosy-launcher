@@ -129,6 +129,7 @@ data class DisplayState(
     val videoWallpaperMuted: Boolean = false,
     val uiScale: Int = 100,
     val ambientLedEnabled: Boolean = false,
+    val ambientLedBrightness: Int = 100,
     val ambientLedAudioBrightness: Boolean = true,
     val ambientLedAudioColors: Boolean = false,
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,

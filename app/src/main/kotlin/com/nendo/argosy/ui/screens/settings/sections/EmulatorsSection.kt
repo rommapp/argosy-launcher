@@ -34,7 +34,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.ActionPreference
-import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -44,33 +44,37 @@ import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 
-private data class EmulatorsLayoutState(val canAutoAssign: Boolean)
+internal data class EmulatorsLayoutState(val canAutoAssign: Boolean)
 
-private sealed class EmulatorsItem(
+internal sealed class EmulatorsItem(
     val key: String,
+    val section: String,
     val visibleWhen: (EmulatorsLayoutState) -> Boolean = { true }
 ) {
-    data object BuiltinHeader : EmulatorsItem("builtin_header")
-    data object BuiltinVideo : EmulatorsItem("builtin_video")
-    data object BuiltinAudio : EmulatorsItem("builtin_audio")
-    data object BuiltinCores : EmulatorsItem("builtin_cores")
-    data object AutoAssign : EmulatorsItem("autoAssign", visibleWhen = { it.canAutoAssign })
+    data object BuiltinHeader : EmulatorsItem("builtin_header", "builtin")
+    data object BuiltinVideo : EmulatorsItem("builtin_video", "builtin")
+    data object BuiltinAudio : EmulatorsItem("builtin_audio", "builtin")
+    data object BuiltinCores : EmulatorsItem("builtin_cores", "builtin")
+    data object PlatformsHeader : EmulatorsItem("platforms_header", "platforms")
+    data object AutoAssign : EmulatorsItem("autoAssign", "platforms", visibleWhen = { it.canAutoAssign })
 
     class PlatformItem(val config: PlatformEmulatorConfig, val index: Int) : EmulatorsItem(
-        key = "platform_${config.platform.id}"
+        key = "platform_${config.platform.id}",
+        section = "platforms"
     )
 
     companion object {
         fun buildItems(platforms: List<PlatformEmulatorConfig>): List<EmulatorsItem> =
-            listOf(BuiltinHeader, BuiltinVideo, BuiltinAudio, BuiltinCores, AutoAssign) +
+            listOf(BuiltinHeader, BuiltinVideo, BuiltinAudio, BuiltinCores, PlatformsHeader, AutoAssign) +
                 platforms.mapIndexed { index, config -> PlatformItem(config, index) }
     }
 }
 
-private fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<EmulatorsItem, EmulatorsLayoutState>(
+internal fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<EmulatorsItem, EmulatorsLayoutState>(
     allItems = items,
-    isFocusable = { item -> item !is EmulatorsItem.BuiltinHeader },
-    visibleWhen = { item, state -> item.visibleWhen(state) }
+    isFocusable = { item -> item !is EmulatorsItem.BuiltinHeader && item !is EmulatorsItem.PlatformsHeader },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section }
 )
 
 internal fun emulatorsMaxFocusIndex(canAutoAssign: Boolean, platformCount: Int): Int {
@@ -78,6 +82,26 @@ internal fun emulatorsMaxFocusIndex(canAutoAssign: Boolean, platformCount: Int):
     val autoAssignCount = if (canAutoAssign) 1 else 0
     return (builtinCount + autoAssignCount + platformCount - 1).coerceAtLeast(0)
 }
+
+internal data class EmulatorsLayoutInfo(
+    val layout: SettingsLayout<EmulatorsItem, EmulatorsLayoutState>,
+    val state: EmulatorsLayoutState
+)
+
+internal fun createEmulatorsLayoutInfo(
+    platforms: List<PlatformEmulatorConfig>,
+    canAutoAssign: Boolean
+): EmulatorsLayoutInfo {
+    val items = EmulatorsItem.buildItems(platforms)
+    val layout = createEmulatorsLayout(items)
+    val state = EmulatorsLayoutState(canAutoAssign)
+    return EmulatorsLayoutInfo(layout, state)
+}
+
+internal fun emulatorsSections(info: EmulatorsLayoutInfo) = info.layout.buildSections(info.state)
+
+internal fun emulatorsItemAtFocusIndex(index: Int, info: EmulatorsLayoutInfo): EmulatorsItem? =
+    info.layout.itemAtFocusIndex(index, info.state)
 
 @Composable
 fun EmulatorsSection(
@@ -98,6 +122,7 @@ fun EmulatorsSection(
 
     val layout = remember(allItems) { createEmulatorsLayout(allItems) }
     val visibleItems = remember(layoutState, allItems) { layout.visibleItems(layoutState) }
+    val sections = remember(layoutState, allItems) { layout.buildSections(layoutState) }
 
     fun isFocused(item: EmulatorsItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, layoutState)
@@ -108,9 +133,11 @@ fun EmulatorsSection(
         label = "emulatorPickerBlur"
     )
 
-    FocusedScroll(
+    SectionFocusedScroll(
         listState = listState,
-        focusedIndex = layout.focusToListIndex(uiState.focusedIndex, layoutState)
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = { layout.focusToListIndex(it, layoutState) },
+        sections = sections
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -156,6 +183,19 @@ fun EmulatorsSection(
                             isFocused = isFocused(item),
                             onClick = { viewModel.navigateToCoreManagement() },
                             badge = if (updatesAvailable > 0) "$updatesAvailable update${if (updatesAvailable > 1) "s" else ""}" else null
+                        )
+                    }
+
+                    EmulatorsItem.PlatformsHeader -> {
+                        Text(
+                            text = "Platforms",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(
+                                start = Dimens.spacingSm,
+                                top = Dimens.spacingLg,
+                                bottom = Dimens.spacingXs
+                            )
                         )
                     }
 

@@ -31,6 +31,20 @@ class LibretroCoreManager @Inject constructor(
         return getCorePath(coreInfo.fileName)
     }
 
+    fun getCorePathForPlatform(platformSlug: String, selectedCoreId: String?): String? {
+        val coreInfo = if (selectedCoreId != null) {
+            val selectedCore = LibretroCoreRegistry.getCoreById(selectedCoreId)
+            if (selectedCore != null && platformSlug in selectedCore.platforms) {
+                selectedCore
+            } else {
+                LibretroCoreRegistry.getDefaultCoreForPlatform(platformSlug)
+            }
+        } else {
+            LibretroCoreRegistry.getDefaultCoreForPlatform(platformSlug)
+        } ?: return null
+        return getCorePath(coreInfo.fileName)
+    }
+
     fun getCorePathForCoreId(coreId: String): String? {
         val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return null
         return getCorePath(coreInfo.fileName)

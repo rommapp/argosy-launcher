@@ -20,6 +20,12 @@ class SettingsInputHandler(
     companion object {
         private const val SLIDER_STEP = 10
         private const val HUE_STEP = 10f
+        private const val EMULATORS_BUILTIN_COUNT = 3  // Video, Audio, Cores
+    }
+
+    private fun getEmulatorsPlatformIndex(focusedIndex: Int, canAutoAssign: Boolean): Int {
+        val platformStartIndex = EMULATORS_BUILTIN_COUNT + (if (canAutoAssign) 1 else 0)
+        return if (focusedIndex >= platformStartIndex) focusedIndex - platformStartIndex else -1
     }
 
     private fun hasAlertDialogOpen(state: SettingsUiState): Boolean =
@@ -58,8 +64,7 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-            val platformIndex = state.focusedIndex - focusOffset
+            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign)
             val config = state.emulators.platforms.getOrNull(platformIndex)
             if (config != null && config.hasInstalledEmulators && config.showSavePath &&
                 state.emulators.platformSubFocusIndex == 1
@@ -105,8 +110,7 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-            val platformIndex = state.focusedIndex - focusOffset
+            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign)
             val config = state.emulators.platforms.getOrNull(platformIndex)
             if (config != null && config.hasInstalledEmulators && config.showSavePath &&
                 state.emulators.platformSubFocusIndex == 0
@@ -261,8 +265,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-            val platformIndex = state.focusedIndex - focusOffset
+            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign)
             val config = state.emulators.platforms.getOrNull(platformIndex)
             if (config?.showCoreSelection == true) {
                 viewModel.cycleCoreForPlatform(config, -1)
@@ -291,6 +294,11 @@ class SettingsInputHandler(
                     }
                 }
             }
+        }
+
+        if (state.currentSection == SettingsSection.CORE_MANAGEMENT) {
+            viewModel.moveCoreManagementCoreFocus(-1)
+            return InputResult.HANDLED
         }
 
         return InputResult.UNHANDLED
@@ -437,8 +445,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-            val platformIndex = state.focusedIndex - focusOffset
+            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign)
             val config = state.emulators.platforms.getOrNull(platformIndex)
             if (config?.showCoreSelection == true) {
                 viewModel.cycleCoreForPlatform(config, 1)
@@ -467,6 +474,11 @@ class SettingsInputHandler(
                     }
                 }
             }
+        }
+
+        if (state.currentSection == SettingsSection.CORE_MANAGEMENT) {
+            viewModel.moveCoreManagementCoreFocus(1)
+            return InputResult.HANDLED
         }
 
         return InputResult.UNHANDLED
@@ -527,8 +539,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-            val platformIndex = state.focusedIndex - focusOffset
+            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign)
             val config = state.emulators.platforms.getOrNull(platformIndex)
             if (config != null && config.hasInstalledEmulators && config.showSavePath) {
                 val subFocus = state.emulators.platformSubFocusIndex
@@ -574,8 +585,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-            val platformIndex = state.focusedIndex - focusOffset
+            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign)
             val config = state.emulators.platforms.getOrNull(platformIndex)
             if (config?.showSavePath == true && config.hasInstalledEmulators) {
                 viewModel.showSavePathModal(config)

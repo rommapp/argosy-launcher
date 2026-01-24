@@ -30,6 +30,8 @@ import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.github.UpdateState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.update.AppInstaller
+import com.nendo.argosy.libretro.LibretroCoreManager
+import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryResult
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
@@ -127,7 +129,8 @@ class SettingsViewModel @Inject constructor(
     val biosDelegate: BiosSettingsDelegate,
     private val androidGameScanner: AndroidGameScanner,
     private val modalResetSignal: ModalResetSignal,
-    private val gradientColorExtractor: GradientColorExtractor
+    private val gradientColorExtractor: GradientColorExtractor,
+    private val coreManager: LibretroCoreManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -153,6 +156,7 @@ class SettingsViewModel @Inject constructor(
     val openAudioFileBrowserEvent: SharedFlow<Unit> = ambientAudioDelegate.openAudioFileBrowserEvent
     val launchPlatformFolderPicker: SharedFlow<Long> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
+    val builtinNavigationEvent = emulatorDelegate.builtinNavigationEvent
     val launchPlatformSavePathPicker: SharedFlow<Long> = storageDelegate.launchSavePathPicker
     val resetPlatformSavePathEvent: SharedFlow<Long> = storageDelegate.resetSavePathEvent
     val launchPlatformStatePathPicker: SharedFlow<Long> = storageDelegate.launchStatePathPicker
@@ -640,6 +644,210 @@ class SettingsViewModel @Inject constructor(
         emulatorDelegate.navigateToCoreManagement(viewModelScope)
     }
 
+    fun getInstalledCoreIds(): Set<String> {
+        return coreManager.getInstalledCores().map { it.coreId }.toSet()
+    }
+
+    fun downloadCore(coreId: String) {
+        viewModelScope.launch {
+            coreManager.downloadCoreById(coreId)
+            emulatorDelegate.updateCoreCounts()
+        }
+    }
+
+    fun deleteCore(coreId: String) {
+        viewModelScope.launch {
+            coreManager.deleteCore(coreId)
+            emulatorDelegate.updateCoreCounts()
+        }
+    }
+
+    fun setBuiltinShader(value: String) {
+        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(shader = value)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinShader(value)
+        }
+    }
+
+    fun setBuiltinAspectRatio(value: String) {
+        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(aspectRatio = value)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinAspectRatio(value)
+        }
+    }
+
+    fun setBuiltinIntegerScaling(enabled: Boolean) {
+        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(integerScaling = enabled)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinIntegerScaling(enabled)
+        }
+    }
+
+    fun setBuiltinAudioLatency(value: Int) {
+        _uiState.update { it.copy(builtinAudio = it.builtinAudio.copy(latency = value)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinAudioLatency(value)
+        }
+    }
+
+    fun setBuiltinAudioSyncMode(value: String) {
+        _uiState.update { it.copy(builtinAudio = it.builtinAudio.copy(syncMode = value)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinAudioSyncMode(value)
+        }
+    }
+
+    fun loadCoreManagementState(preserveFocus: Boolean = false) {
+        viewModelScope.launch {
+            val currentState = _uiState.value.coreManagement
+            val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
+            val syncEnabledPlatforms = platformDao.getSyncEnabledPlatforms()
+            val coreSelections = preferencesRepository.getBuiltinCoreSelections().first()
+            val installedCoreIds = getInstalledCoreIds()
+
+            val platformRows = syncEnabledPlatforms
+                .filter { LibretroCoreRegistry.isPlatformSupported(it.slug) }
+                .map { platform ->
+                    val availableCores = LibretroCoreRegistry.getCoresForPlatform(platform.slug)
+                    val selectedCoreId = coreSelections[platform.slug]
+                    val activeCoreId = selectedCoreId
+                        ?: LibretroCoreRegistry.getDefaultCoreForPlatform(platform.slug)?.coreId
+
+                    PlatformCoreRow(
+                        platformSlug = platform.slug,
+                        platformName = platform.name,
+                        cores = availableCores.map { core ->
+                            CoreChipState(
+                                coreId = core.coreId,
+                                displayName = core.displayName,
+                                isInstalled = core.coreId in installedCoreIds,
+                                isActive = core.coreId == activeCoreId
+                            )
+                        }
+                    )
+                }
+
+            val focusedPlatformIndex = if (preserveFocus) {
+                currentState.focusedPlatformIndex.coerceIn(0, (platformRows.size - 1).coerceAtLeast(0))
+            } else {
+                0
+            }
+            val focusedCoreIndex = if (preserveFocus) {
+                val maxCoreIndex = (platformRows.getOrNull(focusedPlatformIndex)?.cores?.size ?: 1) - 1
+                currentState.focusedCoreIndex.coerceIn(0, maxCoreIndex.coerceAtLeast(0))
+            } else {
+                platformRows.firstOrNull()?.activeCoreIndex ?: 0
+            }
+
+            _uiState.update {
+                it.copy(
+                    coreManagement = CoreManagementState(
+                        platforms = platformRows,
+                        focusedPlatformIndex = focusedPlatformIndex,
+                        focusedCoreIndex = focusedCoreIndex,
+                        isOnline = isOnline
+                    )
+                )
+            }
+        }
+    }
+
+    fun moveCoreManagementPlatformFocus(delta: Int): Boolean {
+        val state = _uiState.value.coreManagement
+        val newIndex = (state.focusedPlatformIndex + delta).coerceIn(0, state.platforms.size - 1)
+        if (newIndex == state.focusedPlatformIndex) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+            return false
+        }
+        val newPlatform = state.platforms.getOrNull(newIndex)
+        _uiState.update {
+            it.copy(
+                coreManagement = it.coreManagement.copy(
+                    focusedPlatformIndex = newIndex,
+                    focusedCoreIndex = newPlatform?.activeCoreIndex ?: 0
+                )
+            )
+        }
+        return true
+    }
+
+    fun moveCoreManagementCoreFocus(delta: Int): Boolean {
+        val state = _uiState.value.coreManagement
+        val platform = state.focusedPlatform ?: return false
+        val newIndex = (state.focusedCoreIndex + delta).coerceIn(0, platform.cores.size - 1)
+        if (newIndex == state.focusedCoreIndex) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+            return false
+        }
+        _uiState.update {
+            it.copy(coreManagement = it.coreManagement.copy(focusedCoreIndex = newIndex))
+        }
+        return true
+    }
+
+    fun selectCoreForPlatform() {
+        val state = _uiState.value.coreManagement
+        val platform = state.focusedPlatform ?: return
+        val core = state.focusedCore ?: return
+
+        if (!core.isInstalled) {
+            if (state.isOnline) {
+                downloadCoreWithNotification(core.coreId)
+            } else {
+                notificationManager.showError("Cannot download while offline")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinCoreForPlatform(platform.platformSlug, core.coreId)
+            loadCoreManagementState(preserveFocus = true)
+        }
+    }
+
+    private fun downloadCoreWithNotification(coreId: String) {
+        viewModelScope.launch {
+            val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return@launch
+            _uiState.update {
+                it.copy(coreManagement = it.coreManagement.copy(isDownloading = true, downloadingCoreId = coreId))
+            }
+
+            val notificationKey = "core_download_$coreId"
+            notificationManager.showPersistent(
+                title = "Downloading ${coreInfo.displayName}",
+                subtitle = "Please wait...",
+                key = notificationKey
+            )
+
+            val result = coreManager.downloadCoreById(coreId)
+
+            result.fold(
+                onSuccess = {
+                    notificationManager.completePersistent(
+                        key = notificationKey,
+                        title = "Downloaded ${coreInfo.displayName}",
+                        subtitle = "Core is now available",
+                        type = NotificationType.SUCCESS
+                    )
+                    emulatorDelegate.updateCoreCounts()
+                    loadCoreManagementState(preserveFocus = true)
+                },
+                onFailure = { error ->
+                    notificationManager.completePersistent(
+                        key = notificationKey,
+                        title = "Download failed",
+                        subtitle = error.message ?: "Unknown error",
+                        type = NotificationType.ERROR
+                    )
+                }
+            )
+
+            _uiState.update {
+                it.copy(coreManagement = it.coreManagement.copy(isDownloading = false, downloadingCoreId = null))
+            }
+        }
+    }
+
     fun movePlatformSubFocus(delta: Int, maxIndex: Int): Boolean {
         return emulatorDelegate.movePlatformSubFocus(delta, maxIndex)
     }
@@ -910,6 +1118,18 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = 6) }
                 true
             }
+            state.currentSection == SettingsSection.BUILTIN_VIDEO -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 0) }
+                true
+            }
+            state.currentSection == SettingsSection.BUILTIN_AUDIO -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 1) }
+                true
+            }
+            state.currentSection == SettingsSection.CORE_MANAGEMENT -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 2) }
+                true
+            }
             state.currentSection != SettingsSection.MAIN -> {
                 _uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = 0) }
                 true
@@ -937,6 +1157,10 @@ class SettingsViewModel @Inject constructor(
         }
         if (_uiState.value.emulators.showEmulatorPicker) {
             emulatorDelegate.moveEmulatorPickerFocus(delta)
+            return
+        }
+        if (_uiState.value.currentSection == SettingsSection.CORE_MANAGEMENT) {
+            moveCoreManagementPlatformFocus(delta)
             return
         }
         _uiState.update { state ->
@@ -971,6 +1195,9 @@ class SettingsViewModel @Inject constructor(
                     state.emulators.canAutoAssign,
                     state.emulators.platforms.size
                 )
+                SettingsSection.BUILTIN_VIDEO -> 2
+                SettingsSection.BUILTIN_AUDIO -> 1
+                SettingsSection.CORE_MANAGEMENT -> (state.coreManagement.platforms.size - 1).coerceAtLeast(0)
                 SettingsSection.BIOS -> {
                     // Summary card (0), Directory (1), platforms start at 2
                     val bios = state.bios
@@ -2447,14 +2674,23 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.EMULATORS -> {
-                val focusOffset = if (state.emulators.canAutoAssign) 1 else 0
-                if (state.emulators.canAutoAssign && state.focusedIndex == 0) {
-                    autoAssignAllEmulators()
-                } else {
-                    val platformIndex = state.focusedIndex - focusOffset
-                    val config = state.emulators.platforms.getOrNull(platformIndex)
-                    if (config != null) {
-                        showEmulatorPicker(config)
+                // Built-in items: 0=Video, 1=Audio, 2=Cores
+                // Then: AutoAssign (if canAutoAssign), then platforms
+                val builtinCount = 3
+                val autoAssignIndex = if (state.emulators.canAutoAssign) builtinCount else -1
+                val platformStartIndex = builtinCount + (if (state.emulators.canAutoAssign) 1 else 0)
+
+                when {
+                    state.focusedIndex == 0 -> navigateToBuiltinVideo()
+                    state.focusedIndex == 1 -> navigateToBuiltinAudio()
+                    state.focusedIndex == 2 -> navigateToCoreManagement()
+                    state.focusedIndex == autoAssignIndex -> autoAssignAllEmulators()
+                    state.focusedIndex >= platformStartIndex -> {
+                        val platformIndex = state.focusedIndex - platformStartIndex
+                        val config = state.emulators.platforms.getOrNull(platformIndex)
+                        if (config != null) {
+                            showEmulatorPicker(config)
+                        }
                     }
                 }
                 InputResult.HANDLED
@@ -2532,6 +2768,12 @@ class SettingsViewModel @Inject constructor(
                         }
                     }
                 }
+                InputResult.HANDLED
+            }
+            SettingsSection.BUILTIN_VIDEO -> InputResult.HANDLED
+            SettingsSection.BUILTIN_AUDIO -> InputResult.HANDLED
+            SettingsSection.CORE_MANAGEMENT -> {
+                selectCoreForPlatform()
                 InputResult.HANDLED
             }
         }

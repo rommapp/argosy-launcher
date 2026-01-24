@@ -75,12 +75,19 @@ object LibretroCoreRegistry {
 
         // Nintendo 64
         CoreInfo(
-            coreId = "mupen64plus_next",
-            fileName = "mupen64plus_next_libretro_android.so",
-            displayName = "Mupen64Plus-Next",
+            coreId = "mupen64plus_next_gles3",
+            fileName = "mupen64plus_next_gles3_libretro_android.so",
+            displayName = "Mupen64+ GLES3",
             platforms = setOf("n64"),
             estimatedSizeBytes = 8_000_000L,
             isDefault = true
+        ),
+        CoreInfo(
+            coreId = "mupen64plus_next_gles2",
+            fileName = "mupen64plus_next_gles2_libretro_android.so",
+            displayName = "Mupen64+ GLES2",
+            platforms = setOf("n64"),
+            estimatedSizeBytes = 7_000_000L
         ),
         CoreInfo(
             coreId = "parallel_n64",
@@ -184,6 +191,256 @@ object LibretroCoreRegistry {
             displayName = "PPSSPP",
             platforms = setOf("psp"),
             estimatedSizeBytes = 10_000_000L,
+            isDefault = true
+        ),
+
+        // Virtual Boy
+        CoreInfo(
+            coreId = "mednafen_vb",
+            fileName = "mednafen_vb_libretro_android.so",
+            displayName = "Beetle VB",
+            platforms = setOf("vb", "virtualboy"),
+            estimatedSizeBytes = 1_500_000L,
+            isDefault = true
+        ),
+
+        // Atari 5200
+        CoreInfo(
+            coreId = "a5200",
+            fileName = "a5200_libretro_android.so",
+            displayName = "a5200",
+            platforms = setOf("atari5200"),
+            estimatedSizeBytes = 500_000L,
+            requiresBios = listOf("5200.rom"),
+            isDefault = true
+        ),
+
+        // Atari 7800
+        CoreInfo(
+            coreId = "prosystem",
+            fileName = "prosystem_libretro_android.so",
+            displayName = "ProSystem",
+            platforms = setOf("atari7800"),
+            estimatedSizeBytes = 500_000L,
+            requiresBios = listOf("7800 BIOS (U).rom"),
+            isDefault = true
+        ),
+
+        // Atari Lynx
+        CoreInfo(
+            coreId = "handy",
+            fileName = "handy_libretro_android.so",
+            displayName = "Handy",
+            platforms = setOf("lynx"),
+            estimatedSizeBytes = 500_000L,
+            requiresBios = listOf("lynxboot.img"),
+            isDefault = true
+        ),
+        CoreInfo(
+            coreId = "mednafen_lynx",
+            fileName = "mednafen_lynx_libretro_android.so",
+            displayName = "Beetle Lynx",
+            platforms = setOf("lynx"),
+            estimatedSizeBytes = 800_000L,
+            requiresBios = listOf("lynxboot.img")
+        ),
+
+        // WonderSwan / WonderSwan Color
+        CoreInfo(
+            coreId = "mednafen_wswan",
+            fileName = "mednafen_wswan_libretro_android.so",
+            displayName = "Beetle WS",
+            platforms = setOf("wonderswan", "wsc"),
+            estimatedSizeBytes = 1_000_000L,
+            isDefault = true
+        ),
+
+        // Neo Geo Pocket / Color
+        CoreInfo(
+            coreId = "mednafen_ngp",
+            fileName = "mednafen_ngp_libretro_android.so",
+            displayName = "Beetle NGP",
+            platforms = setOf("ngp", "ngpc"),
+            estimatedSizeBytes = 1_000_000L,
+            isDefault = true
+        ),
+
+        // ColecoVision
+        CoreInfo(
+            coreId = "bluemsx",
+            fileName = "bluemsx_libretro_android.so",
+            displayName = "blueMSX",
+            platforms = setOf("coleco", "msx", "msx2"),
+            estimatedSizeBytes = 2_000_000L,
+            isDefault = true
+        ),
+        CoreInfo(
+            coreId = "gearcoleco",
+            fileName = "gearcoleco_libretro_android.so",
+            displayName = "Gearcoleco",
+            platforms = setOf("coleco"),
+            estimatedSizeBytes = 500_000L
+        ),
+
+        // Intellivision
+        CoreInfo(
+            coreId = "freeintv",
+            fileName = "freeintv_libretro_android.so",
+            displayName = "FreeIntv",
+            platforms = setOf("intellivision"),
+            estimatedSizeBytes = 500_000L,
+            requiresBios = listOf("exec.bin", "grom.bin"),
+            isDefault = true
+        ),
+
+        // 3DO
+        CoreInfo(
+            coreId = "opera",
+            fileName = "opera_libretro_android.so",
+            displayName = "Opera",
+            platforms = setOf("3do"),
+            estimatedSizeBytes = 2_000_000L,
+            requiresBios = listOf("panafz10.bin"),
+            isDefault = true
+        ),
+
+        // Arcade / Neo Geo
+        CoreInfo(
+            coreId = "fbneo",
+            fileName = "fbneo_libretro_android.so",
+            displayName = "FBNeo",
+            platforms = setOf("arcade", "neogeo", "cps1", "cps2", "cps3"),
+            estimatedSizeBytes = 15_000_000L,
+            isDefault = true
+        ),
+        CoreInfo(
+            coreId = "mame2003_plus",
+            fileName = "mame2003_plus_libretro_android.so",
+            displayName = "MAME 2003+",
+            platforms = setOf("arcade"),
+            estimatedSizeBytes = 8_000_000L
+        ),
+
+        // PC Engine SuperGrafx
+        CoreInfo(
+            coreId = "mednafen_supergrafx",
+            fileName = "mednafen_supergrafx_libretro_android.so",
+            displayName = "Beetle SuperGrafx",
+            platforms = setOf("supergrafx", "tg16", "tgcd"),
+            estimatedSizeBytes = 1_500_000L
+        ),
+
+        // Vectrex
+        CoreInfo(
+            coreId = "vecx",
+            fileName = "vecx_libretro_android.so",
+            displayName = "vecx",
+            platforms = setOf("vectrex"),
+            estimatedSizeBytes = 300_000L,
+            isDefault = true
+        ),
+
+        // Odyssey 2
+        CoreInfo(
+            coreId = "o2em",
+            fileName = "o2em_libretro_android.so",
+            displayName = "O2EM",
+            platforms = setOf("odyssey2"),
+            estimatedSizeBytes = 500_000L,
+            requiresBios = listOf("o2rom.bin"),
+            isDefault = true
+        ),
+
+        // Commodore 64
+        CoreInfo(
+            coreId = "vice_x64",
+            fileName = "vice_x64_libretro_android.so",
+            displayName = "VICE x64",
+            platforms = setOf("c64"),
+            estimatedSizeBytes = 5_000_000L,
+            isDefault = true
+        ),
+
+        // Amiga
+        CoreInfo(
+            coreId = "puae",
+            fileName = "puae_libretro_android.so",
+            displayName = "PUAE",
+            platforms = setOf("amiga", "amigacd32", "cdtv"),
+            estimatedSizeBytes = 3_000_000L,
+            requiresBios = listOf("kick34005.A500"),
+            isDefault = true
+        ),
+
+        // DOS
+        CoreInfo(
+            coreId = "dosbox_pure",
+            fileName = "dosbox_pure_libretro_android.so",
+            displayName = "DOSBox Pure",
+            platforms = setOf("dos"),
+            estimatedSizeBytes = 4_000_000L,
+            isDefault = true
+        ),
+
+        // ScummVM
+        CoreInfo(
+            coreId = "scummvm",
+            fileName = "scummvm_libretro_android.so",
+            displayName = "ScummVM",
+            platforms = setOf("scummvm"),
+            estimatedSizeBytes = 20_000_000L,
+            isDefault = true
+        ),
+
+        // ZX Spectrum
+        CoreInfo(
+            coreId = "fuse",
+            fileName = "fuse_libretro_android.so",
+            displayName = "Fuse",
+            platforms = setOf("zx"),
+            estimatedSizeBytes = 1_000_000L,
+            isDefault = true
+        ),
+
+        // Amstrad CPC
+        CoreInfo(
+            coreId = "cap32",
+            fileName = "cap32_libretro_android.so",
+            displayName = "Caprice32",
+            platforms = setOf("amstradcpc"),
+            estimatedSizeBytes = 1_000_000L,
+            isDefault = true
+        ),
+
+        // Channel F
+        CoreInfo(
+            coreId = "freechaf",
+            fileName = "freechaf_libretro_android.so",
+            displayName = "FreeChaF",
+            platforms = setOf("channelf"),
+            estimatedSizeBytes = 300_000L,
+            requiresBios = listOf("sl31253.bin", "sl31254.bin"),
+            isDefault = true
+        ),
+
+        // Pokemon Mini
+        CoreInfo(
+            coreId = "pokemini",
+            fileName = "pokemini_libretro_android.so",
+            displayName = "PokeMini",
+            platforms = setOf("pokemini"),
+            estimatedSizeBytes = 500_000L,
+            requiresBios = listOf("bios.min"),
+            isDefault = true
+        ),
+
+        // Game & Watch
+        CoreInfo(
+            coreId = "gw",
+            fileName = "gw_libretro_android.so",
+            displayName = "GW",
+            platforms = setOf("gameandwatch"),
+            estimatedSizeBytes = 300_000L,
             isDefault = true
         ),
     )

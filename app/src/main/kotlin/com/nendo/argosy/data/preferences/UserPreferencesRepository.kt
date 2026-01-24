@@ -119,6 +119,13 @@ class UserPreferencesRepository @Inject constructor(
         val AMBIENT_LED_AUDIO_BRIGHTNESS = booleanPreferencesKey("ambient_led_audio_brightness")
         val AMBIENT_LED_AUDIO_COLORS = booleanPreferencesKey("ambient_led_audio_colors")
         val AMBIENT_LED_COLOR_MODE = stringPreferencesKey("ambient_led_color_mode")
+
+        val BUILTIN_SHADER = stringPreferencesKey("builtin_shader")
+        val BUILTIN_ASPECT_RATIO = stringPreferencesKey("builtin_aspect_ratio")
+        val BUILTIN_INTEGER_SCALING = booleanPreferencesKey("builtin_integer_scaling")
+        val BUILTIN_AUDIO_LATENCY = intPreferencesKey("builtin_audio_latency")
+        val BUILTIN_AUDIO_SYNC_MODE = stringPreferencesKey("builtin_audio_sync_mode")
+        val BUILTIN_CORE_SELECTIONS = stringPreferencesKey("builtin_core_selections")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -854,6 +861,66 @@ class UserPreferencesRepository @Inject constructor(
         dataStore.edit { prefs ->
             prefs[Keys.AMBIENT_LED_COLOR_MODE] = mode.name
         }
+    }
+
+    suspend fun setBuiltinShader(shader: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_SHADER] = shader
+        }
+    }
+
+    suspend fun setBuiltinAspectRatio(aspectRatio: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_ASPECT_RATIO] = aspectRatio
+        }
+    }
+
+    suspend fun setBuiltinIntegerScaling(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_INTEGER_SCALING] = enabled
+        }
+    }
+
+    suspend fun setBuiltinAudioLatency(latency: Int) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_AUDIO_LATENCY] = latency.coerceIn(1, 5)
+        }
+    }
+
+    suspend fun setBuiltinAudioSyncMode(syncMode: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_AUDIO_SYNC_MODE] = syncMode
+        }
+    }
+
+    suspend fun setBuiltinCoreForPlatform(platformSlug: String, coreId: String) {
+        dataStore.edit { prefs ->
+            val current = prefs[Keys.BUILTIN_CORE_SELECTIONS]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?.associate {
+                    val parts = it.split(":")
+                    parts[0] to parts.getOrElse(1) { "" }
+                }
+                ?.toMutableMap()
+                ?: mutableMapOf()
+
+            current[platformSlug] = coreId
+
+            prefs[Keys.BUILTIN_CORE_SELECTIONS] = current.entries
+                .joinToString(",") { "${it.key}:${it.value}" }
+        }
+    }
+
+    fun getBuiltinCoreSelections(): Flow<Map<String, String>> = dataStore.data.map { prefs ->
+        prefs[Keys.BUILTIN_CORE_SELECTIONS]
+            ?.split(",")
+            ?.filter { it.isNotBlank() && it.contains(":") }
+            ?.associate {
+                val parts = it.split(":")
+                parts[0] to parts.getOrElse(1) { "" }
+            }
+            ?: emptyMap()
     }
 }
 

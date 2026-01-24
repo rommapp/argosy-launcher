@@ -19,8 +19,10 @@ import com.nendo.argosy.libretro.ui.InGameMenuAction
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
+@AndroidEntryPoint
 class LibretroActivity : ComponentActivity() {
     private lateinit var retroView: GLRetroView
     private lateinit var statesDir: File
@@ -94,23 +96,16 @@ class LibretroActivity : ComponentActivity() {
 
     private fun handleMenuAction(action: InGameMenuAction) {
         when (action) {
-            InGameMenuAction.Resume -> {
-                menuVisible = false
-                retroView.onResume()
-            }
+            InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
                 performQuickSave()
-                menuVisible = false
-                retroView.onResume()
+                hideMenu()
             }
             InGameMenuAction.QuickLoad -> {
                 performQuickLoad()
-                menuVisible = false
-                retroView.onResume()
+                hideMenu()
             }
-            InGameMenuAction.Quit -> {
-                finish()
-            }
+            InGameMenuAction.Quit -> finish()
         }
     }
 
@@ -141,6 +136,11 @@ class LibretroActivity : ComponentActivity() {
     private fun showMenu() {
         retroView.onPause()
         menuVisible = true
+    }
+
+    private fun hideMenu() {
+        menuVisible = false
+        retroView.onResume()
     }
 
     private fun enterImmersiveMode() {

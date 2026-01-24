@@ -44,6 +44,9 @@ enum class SettingsSection {
     HOME_SCREEN,
     CONTROLS,
     EMULATORS,
+    BUILTIN_VIDEO,
+    BUILTIN_AUDIO,
+    CORE_MANAGEMENT,
     PERMISSIONS,
     ABOUT
 }
@@ -196,6 +199,51 @@ data class EmulatorState(
     val totalCoreCount: Int = 0,
     val coreUpdatesAvailable: Int = 0
 )
+
+data class BuiltinVideoState(
+    val shader: String = "None",
+    val aspectRatio: String = "Auto",
+    val integerScaling: Boolean = false
+)
+
+data class BuiltinAudioState(
+    val latency: Int = 3,
+    val syncMode: String = "Auto"
+)
+
+enum class CoreChipStatus {
+    OFFLINE_NOT_DOWNLOADED,
+    ONLINE_NOT_DOWNLOADED,
+    DOWNLOADED,
+    ACTIVE
+}
+
+data class CoreChipState(
+    val coreId: String,
+    val displayName: String,
+    val isInstalled: Boolean,
+    val isActive: Boolean
+)
+
+data class PlatformCoreRow(
+    val platformSlug: String,
+    val platformName: String,
+    val cores: List<CoreChipState>
+) {
+    val activeCoreIndex: Int get() = cores.indexOfFirst { it.isActive }.coerceAtLeast(0)
+}
+
+data class CoreManagementState(
+    val platforms: List<PlatformCoreRow> = emptyList(),
+    val focusedPlatformIndex: Int = 0,
+    val focusedCoreIndex: Int = 0,
+    val isOnline: Boolean = false,
+    val isDownloading: Boolean = false,
+    val downloadingCoreId: String? = null
+) {
+    val focusedPlatform: PlatformCoreRow? get() = platforms.getOrNull(focusedPlatformIndex)
+    val focusedCore: CoreChipState? get() = focusedPlatform?.cores?.getOrNull(focusedCoreIndex)
+}
 
 data class SavePathModalInfo(
     val emulatorId: String,
@@ -449,6 +497,9 @@ data class SettingsUiState(
     val sounds: SoundState = SoundState(),
     val ambientAudio: AmbientAudioState = AmbientAudioState(),
     val emulators: EmulatorState = EmulatorState(),
+    val builtinVideo: BuiltinVideoState = BuiltinVideoState(),
+    val builtinAudio: BuiltinAudioState = BuiltinAudioState(),
+    val coreManagement: CoreManagementState = CoreManagementState(),
     val server: ServerState = ServerState(),
     val storage: StorageState = StorageState(),
     val syncSettings: SyncSettingsState = SyncSettingsState(),

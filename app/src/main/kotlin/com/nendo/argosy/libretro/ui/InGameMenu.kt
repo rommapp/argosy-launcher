@@ -3,6 +3,7 @@ package com.nendo.argosy.libretro.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +60,8 @@ fun InGameMenu(
 
     var focusedIndex by remember { mutableIntStateOf(0) }
     val focusRequester = remember { FocusRequester() }
+    val isDarkTheme = isSystemInDarkTheme()
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -67,7 +70,7 @@ fun InGameMenu(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .background(overlayColor)
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { event ->
@@ -113,6 +116,7 @@ fun InGameMenu(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2
                 )
 

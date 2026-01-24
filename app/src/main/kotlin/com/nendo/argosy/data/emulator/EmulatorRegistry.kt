@@ -100,7 +100,7 @@ object EmulatorRegistry {
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
-            downloadUrl = "https://play.google.com/store/apps/details?id=com.retroarch"
+            downloadUrl = "https://www.retroarch.com/?page=platforms"
         ),
         EmulatorDef(
             id = "retroarch_64",
@@ -120,7 +120,7 @@ object EmulatorRegistry {
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
-            downloadUrl = "https://play.google.com/store/apps/details?id=com.retroarch.aarch64"
+            downloadUrl = "https://www.retroarch.com/?page=platforms"
         ),
 
         EmulatorDef(

@@ -125,6 +125,7 @@ class GameDetailViewModel @Inject constructor(
     private val pageLoadDebounceMs = 500L
 
     private var backgroundRepairPending = false
+    private var gameFilesObserverJob: kotlinx.coroutines.Job? = null
 
     override fun onCleared() {
         super.onCleared()
@@ -342,6 +343,88 @@ class GameDetailViewModel @Inject constructor(
                 refreshUserPropsInBackground(gameId)
                 refreshAchievementsInBackground(game.rommId, gameId)
             }
+
+            gameFilesObserverJob?.cancel()
+            gameFilesObserverJob = viewModelScope.launch {
+                gameFileDao.observeFilesForGame(gameId).collect { files ->
+                    val platformSlug = game.platformSlug
+                    val localPath = game.localPath
+                    val hasUpdateSupport = ZipExtractor.hasUpdateSupport(platformSlug)
+
+                    val localUpdateFileNames = if (hasUpdateSupport && localPath != null) {
+                        ZipExtractor.listAllUpdateFiles(localPath, platformSlug).map { it.name }.toSet()
+                    } else emptySet()
+
+                    val localDlcFileNames = if (hasUpdateSupport && localPath != null) {
+                        ZipExtractor.listAllDlcFiles(localPath, platformSlug).map { it.name }.toSet()
+                    } else emptySet()
+
+                    val dbUpdates = files
+                        .filter { it.category == "update" }
+                        .map { file ->
+                            UpdateFileUi(
+                                fileName = file.fileName,
+                                filePath = file.filePath,
+                                sizeBytes = file.fileSize,
+                                type = UpdateFileType.UPDATE,
+                                isDownloaded = file.fileName in localUpdateFileNames,
+                                gameFileId = file.id,
+                                rommFileId = file.rommFileId,
+                                romId = file.romId
+                            )
+                        }
+
+                    val dbDlc = files
+                        .filter { it.category == "dlc" }
+                        .map { file ->
+                            UpdateFileUi(
+                                fileName = file.fileName,
+                                filePath = file.filePath,
+                                sizeBytes = file.fileSize,
+                                type = UpdateFileType.DLC,
+                                isDownloaded = file.fileName in localDlcFileNames,
+                                gameFileId = file.id,
+                                rommFileId = file.rommFileId,
+                                romId = file.romId
+                            )
+                        }
+
+                    val localUpdates = if (hasUpdateSupport && localPath != null) {
+                        ZipExtractor.listAllUpdateFiles(localPath, platformSlug)
+                            .filter { file -> dbUpdates.none { it.fileName == file.name } }
+                            .map { file ->
+                                UpdateFileUi(
+                                    fileName = file.name,
+                                    filePath = file.absolutePath,
+                                    sizeBytes = file.length(),
+                                    type = UpdateFileType.UPDATE,
+                                    isDownloaded = true
+                                )
+                            }
+                    } else emptyList()
+
+                    val localDlc = if (hasUpdateSupport && localPath != null) {
+                        ZipExtractor.listAllDlcFiles(localPath, platformSlug)
+                            .filter { file -> dbDlc.none { it.fileName == file.name } }
+                            .map { file ->
+                                UpdateFileUi(
+                                    fileName = file.name,
+                                    filePath = file.absolutePath,
+                                    sizeBytes = file.length(),
+                                    type = UpdateFileType.DLC,
+                                    isDownloaded = true
+                                )
+                            }
+                    } else emptyList()
+
+                    _uiState.update { state ->
+                        state.copy(
+                            updateFiles = dbUpdates + localUpdates,
+                            dlcFiles = dbDlc + localDlc
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -499,6 +582,14 @@ class GameDetailViewModel @Inject constructor(
         val hasUpdateSupport = ZipExtractor.hasUpdateSupport(platformSlug)
         val remoteFiles = gameFileDao.getFilesForGame(gameId)
 
+        val localUpdateFileNames = if (hasUpdateSupport && localPath != null) {
+            ZipExtractor.listAllUpdateFiles(localPath, platformSlug).map { it.name }.toSet()
+        } else emptySet()
+
+        val localDlcFileNames = if (hasUpdateSupport && localPath != null) {
+            ZipExtractor.listAllDlcFiles(localPath, platformSlug).map { it.name }.toSet()
+        } else emptySet()
+
         val dbUpdates = remoteFiles
             .filter { it.category == "update" }
             .map { file ->
@@ -507,7 +598,7 @@ class GameDetailViewModel @Inject constructor(
                     filePath = file.filePath,
                     sizeBytes = file.fileSize,
                     type = UpdateFileType.UPDATE,
-                    isDownloaded = file.localPath != null,
+                    isDownloaded = file.fileName in localUpdateFileNames,
                     gameFileId = file.id,
                     rommFileId = file.rommFileId,
                     romId = file.romId
@@ -522,7 +613,7 @@ class GameDetailViewModel @Inject constructor(
                     filePath = file.filePath,
                     sizeBytes = file.fileSize,
                     type = UpdateFileType.DLC,
-                    isDownloaded = file.localPath != null,
+                    isDownloaded = file.fileName in localDlcFileNames,
                     gameFileId = file.id,
                     rommFileId = file.rommFileId,
                     romId = file.romId

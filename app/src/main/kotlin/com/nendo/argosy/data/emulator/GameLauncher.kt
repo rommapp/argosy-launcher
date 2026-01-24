@@ -308,6 +308,7 @@ class GameLauncher @Inject constructor(
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
             putExtra(LibretroActivity.EXTRA_CORE_PATH, corePath)
             putExtra(LibretroActivity.EXTRA_SYSTEM_DIR, systemDir.absolutePath)
+            putExtra(LibretroActivity.EXTRA_GAME_NAME, game.title)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }

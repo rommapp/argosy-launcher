@@ -256,6 +256,10 @@ class SettingsViewModel @Inject constructor(
             _uiState.update { it.copy(emulators = emulators) }
         }.launchIn(viewModelScope)
 
+        emulatorDelegate.observeCoreUpdateCount().onEach { count ->
+            emulatorDelegate.updateCoreUpdatesAvailable(count)
+        }.launchIn(viewModelScope)
+
         serverDelegate.state.onEach { server ->
             _uiState.update { it.copy(server = server) }
         }.launchIn(viewModelScope)

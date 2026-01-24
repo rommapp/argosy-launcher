@@ -148,12 +148,16 @@ fun EmulatorsSection(
                         onClick = { viewModel.navigateToBuiltinAudio() }
                     )
 
-                    EmulatorsItem.BuiltinCores -> ActionPreference(
-                        title = "Manage Cores",
-                        subtitle = "${uiState.emulators.installedCoreCount} of ${uiState.emulators.totalCoreCount} cores installed",
-                        isFocused = isFocused(item),
-                        onClick = { viewModel.navigateToCoreManagement() }
-                    )
+                    EmulatorsItem.BuiltinCores -> {
+                        val updatesAvailable = uiState.emulators.coreUpdatesAvailable
+                        ActionPreference(
+                            title = "Manage Cores",
+                            subtitle = "${uiState.emulators.installedCoreCount} of ${uiState.emulators.totalCoreCount} cores installed",
+                            isFocused = isFocused(item),
+                            onClick = { viewModel.navigateToCoreManagement() },
+                            badge = if (updatesAvailable > 0) "$updatesAvailable update${if (updatesAvailable > 1) "s" else ""}" else null
+                        )
+                    }
 
                     EmulatorsItem.AutoAssign -> ActionPreference(
                         title = "Auto-assign Emulators",

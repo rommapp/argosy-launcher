@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings.delegates
 
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -9,6 +10,7 @@ import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.LibretroCoreRegistry
+import kotlinx.coroutines.flow.Flow
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
@@ -41,7 +43,8 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val gameDao: GameDao,
-    private val coreManager: LibretroCoreManager
+    private val coreManager: LibretroCoreManager,
+    private val coreVersionDao: CoreVersionDao
 ) {
     private val _state = MutableStateFlow(EmulatorState())
     val state: StateFlow<EmulatorState> = _state.asStateFlow()
@@ -372,6 +375,12 @@ class EmulatorSettingsDelegate @Inject constructor(
                 totalCoreCount = allCores.size
             )
         }
+    }
+
+    fun observeCoreUpdateCount(): Flow<Int> = coreVersionDao.observeUpdateCount()
+
+    fun updateCoreUpdatesAvailable(count: Int) {
+        _state.update { it.copy(coreUpdatesAvailable = count) }
     }
 
     fun navigateToBuiltinVideo(scope: CoroutineScope) {

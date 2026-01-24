@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.converter.Converters
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.CollectionDao
+import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
@@ -28,6 +29,7 @@ import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.AppCategoryEntity
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
+import com.nendo.argosy.data.local.entity.CoreVersionEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
@@ -64,9 +66,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         CollectionEntity::class,
         CollectionGameEntity::class,
         PinnedCollectionEntity::class,
-        GameFileEntity::class
+        GameFileEntity::class,
+        CoreVersionEntity::class
     ],
-    version = 49,
+    version = 50,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -89,6 +92,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun collectionDao(): CollectionDao
     abstract fun pinnedCollectionDao(): PinnedCollectionDao
     abstract fun gameFileDao(): GameFileDao
+    abstract fun coreVersionDao(): CoreVersionDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -784,6 +788,21 @@ abstract class ALauncherDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE save_cache ADD COLUMN contentHash TEXT")
                 db.execSQL("ALTER TABLE save_sync ADD COLUMN lastUploadedHash TEXT")
+            }
+        }
+
+        val MIGRATION_49_50 = object : Migration(49, 50) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS core_versions (
+                        coreId TEXT PRIMARY KEY NOT NULL,
+                        installedVersion TEXT,
+                        latestVersion TEXT,
+                        installedAt INTEGER,
+                        lastCheckedAt INTEGER,
+                        updateAvailable INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
             }
         }
     }

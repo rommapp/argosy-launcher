@@ -430,6 +430,7 @@ fun ActionPreference(
     isDangerous: Boolean = false,
     isEnabled: Boolean = true,
     trailingText: String? = null,
+    badge: String? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -451,12 +452,33 @@ fun ActionPreference(
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (isEnabled) preferenceContentColor(isFocused, isDangerous)
-                        else preferenceContentColor(isFocused, isDangerous).copy(alpha = 0.5f)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (isEnabled) preferenceContentColor(isFocused, isDangerous)
+                            else preferenceContentColor(isFocused, isDangerous).copy(alpha = 0.5f)
+                )
+                if (badge != null) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.tertiary,
+                                shape = RoundedCornerShape(Dimens.radiusSm)
+                            )
+                            .padding(horizontal = Dimens.spacingXs, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = badge,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiary
+                        )
+                    }
+                }
+            }
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,

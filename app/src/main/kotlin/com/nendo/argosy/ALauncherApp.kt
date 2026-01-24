@@ -13,6 +13,7 @@ import com.nendo.argosy.data.download.DownloadServiceController
 import com.nendo.argosy.data.sync.SaveSyncWorker
 import com.nendo.argosy.data.sync.SyncServiceController
 import com.nendo.argosy.data.update.UpdateCheckWorker
+import com.nendo.argosy.libretro.CoreUpdateCheckWorker
 import com.nendo.argosy.ui.coil.AppIconFetcher
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -48,6 +49,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         super.onCreate()
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
+        CoreUpdateCheckWorker.schedule(this)
         saveSyncDownloadObserver.start()
         downloadServiceController.start()
         syncServiceController.start()

@@ -2,11 +2,15 @@ package com.nendo.argosy.libretro
 
 import android.content.Context
 import android.util.Log
+import com.nendo.argosy.data.local.dao.CoreVersionDao
+import com.nendo.argosy.data.local.entity.CoreVersionEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.HttpURLConnection
 import java.net.URL
+import java.time.Instant
 import java.util.zip.ZipInputStream
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,7 +20,8 @@ private const val BUILDBOT_BASE = "https://buildbot.libretro.com/nightly/android
 
 @Singleton
 class LibretroCoreManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val coreVersionDao: CoreVersionDao
 ) {
     private val downloadedCoresDir = File(context.filesDir, "libretro/cores").apply { mkdirs() }
     private val nativeLibDir = context.applicationInfo.nativeLibraryDir
@@ -101,7 +106,12 @@ class LibretroCoreManager @Inject constructor(
 
                 Log.i(TAG, "Downloading ${coreInfo.displayName}: $zipUrl")
 
-                URL(zipUrl).openStream().use { input ->
+                val url = URL(zipUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                val version = connection.getHeaderField("Last-Modified")
+                    ?: connection.contentLengthLong.toString()
+
+                connection.inputStream.use { input ->
                     ZipInputStream(input).use { zip ->
                         val entry = zip.nextEntry
                         if (entry != null && entry.name == coreInfo.fileName) {
@@ -113,12 +123,24 @@ class LibretroCoreManager @Inject constructor(
                         }
                     }
                 }
+                connection.disconnect()
 
                 if (!targetFile.setExecutable(true)) {
                     Log.w(TAG, "Failed to set executable permission")
                 }
 
-                Log.i(TAG, "Downloaded ${coreInfo.displayName}: ${targetFile.length()} bytes")
+                coreVersionDao.upsert(
+                    CoreVersionEntity(
+                        coreId = coreInfo.coreId,
+                        installedVersion = version,
+                        latestVersion = version,
+                        installedAt = Instant.now(),
+                        lastCheckedAt = Instant.now(),
+                        updateAvailable = false
+                    )
+                )
+
+                Log.i(TAG, "Downloaded ${coreInfo.displayName}: ${targetFile.length()} bytes, version=$version")
                 targetFile
             }
         }
@@ -128,9 +150,13 @@ class LibretroCoreManager @Inject constructor(
         return downloadedFiles.mapNotNull { LibretroCoreRegistry.getCoreByFileName(it) }
     }
 
-    fun deleteCore(coreId: String): Boolean {
+    suspend fun deleteCore(coreId: String): Boolean {
         val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return false
-        return File(downloadedCoresDir, coreInfo.fileName).delete()
+        val deleted = File(downloadedCoresDir, coreInfo.fileName).delete()
+        if (deleted) {
+            coreVersionDao.delete(coreId)
+        }
+        return deleted
     }
 
     fun getCoresDir(): File = downloadedCoresDir

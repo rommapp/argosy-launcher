@@ -59,16 +59,16 @@ import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.controlsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.DisplayItem
-import com.nendo.argosy.ui.screens.settings.sections.displayItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.displayMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
+import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.interfaceMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.permissionsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.soundsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageMaxFocusIndex
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -525,6 +525,7 @@ class SettingsViewModel @Inject constructor(
                 canAutoAssign = canAutoAssign,
                 platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex
             ))
+            emulatorDelegate.updateCoreCounts()
 
             serverDelegate.updateState(ServerState(
                 connectionStatus = connectionStatus,
@@ -621,6 +622,18 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissEmulatorPicker() {
         emulatorDelegate.dismissEmulatorPicker()
+    }
+
+    fun navigateToBuiltinVideo() {
+        emulatorDelegate.navigateToBuiltinVideo(viewModelScope)
+    }
+
+    fun navigateToBuiltinAudio() {
+        emulatorDelegate.navigateToBuiltinAudio(viewModelScope)
+    }
+
+    fun navigateToCoreManagement() {
+        emulatorDelegate.navigateToCoreManagement(viewModelScope)
     }
 
     fun movePlatformSubFocus(delta: Int, maxIndex: Int): Boolean {
@@ -886,11 +899,11 @@ class SettingsViewModel @Inject constructor(
                 true
             }
             state.currentSection == SettingsSection.BOX_ART -> {
-                _uiState.update { it.copy(currentSection = SettingsSection.DISPLAY, focusedIndex = 5) }
+                _uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = 5) }
                 true
             }
             state.currentSection == SettingsSection.HOME_SCREEN -> {
-                _uiState.update { it.copy(currentSection = SettingsSection.DISPLAY, focusedIndex = 6) }
+                _uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = 6) }
                 true
             }
             state.currentSection != SettingsSection.MAIN -> {
@@ -944,11 +957,12 @@ class SettingsViewModel @Inject constructor(
                     state.storage.platformsExpanded,
                     state.storage.platformConfigs.size
                 )
-                SettingsSection.DISPLAY -> displayMaxFocusIndex(state.display)
+                SettingsSection.INTERFACE -> interfaceMaxFocusIndex(
+                    InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                )
                 SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
                 SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)
                 SettingsSection.CONTROLS -> controlsMaxFocusIndex(state.controls)
-                SettingsSection.SOUNDS -> soundsMaxFocusIndex(state.ambientAudio.enabled, state.sounds.enabled)
                 SettingsSection.EMULATORS -> emulatorsMaxFocusIndex(
                     state.emulators.canAutoAssign,
                     state.emulators.platforms.size
@@ -1386,6 +1400,14 @@ class SettingsViewModel @Inject constructor(
         soundsDelegate.adjustSoundVolume(viewModelScope, delta)
     }
 
+    fun cycleSoundVolume() {
+        val volumeLevels = listOf(50, 70, 85, 95, 100)
+        val current = uiState.value.sounds.volume
+        val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
+        val nextIndex = (currentIndex + 1) % volumeLevels.size
+        soundsDelegate.setSoundVolume(viewModelScope, volumeLevels[nextIndex])
+    }
+
     fun showSoundPicker(type: SoundType) {
         soundsDelegate.showSoundPicker(type)
     }
@@ -1427,6 +1449,14 @@ class SettingsViewModel @Inject constructor(
             hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
         }
         ambientAudioDelegate.adjustVolume(viewModelScope, delta)
+    }
+
+    fun cycleAmbientAudioVolume() {
+        val volumeLevels = listOf(2, 5, 10, 20, 35)
+        val current = uiState.value.ambientAudio.volume
+        val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
+        val nextIndex = (currentIndex + 1) % volumeLevels.size
+        ambientAudioDelegate.setVolume(viewModelScope, volumeLevels[nextIndex])
     }
 
     fun openAudioFilePicker() {
@@ -2155,13 +2185,12 @@ class SettingsViewModel @Inject constructor(
                     val section = when (state.focusedIndex) {
                         1 -> SettingsSection.SERVER
                         2 -> SettingsSection.STORAGE
-                        3 -> SettingsSection.DISPLAY
+                        3 -> SettingsSection.INTERFACE
                         4 -> SettingsSection.CONTROLS
-                        5 -> SettingsSection.SOUNDS
-                        6 -> SettingsSection.EMULATORS
-                        7 -> SettingsSection.BIOS
-                        8 -> SettingsSection.PERMISSIONS
-                        9 -> SettingsSection.ABOUT
+                        5 -> SettingsSection.EMULATORS
+                        6 -> SettingsSection.BIOS
+                        7 -> SettingsSection.PERMISSIONS
+                        8 -> SettingsSection.ABOUT
                         else -> null
                     }
                     section?.let { navigateToSection(it) }
@@ -2272,9 +2301,10 @@ class SettingsViewModel @Inject constructor(
                 }
                 InputResult.HANDLED
             }
-            SettingsSection.DISPLAY -> {
-                when (displayItemAtFocusIndex(state.focusedIndex, state.display)) {
-                    DisplayItem.Theme -> {
+            SettingsSection.INTERFACE -> {
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
+                    InterfaceItem.Theme -> {
                         val next = when (state.display.themeMode) {
                             ThemeMode.SYSTEM -> ThemeMode.LIGHT
                             ThemeMode.LIGHT -> ThemeMode.DARK
@@ -2282,7 +2312,7 @@ class SettingsViewModel @Inject constructor(
                         }
                         setThemeMode(next)
                     }
-                    DisplayItem.GridDensity -> {
+                    InterfaceItem.GridDensity -> {
                         val next = when (state.display.gridDensity) {
                             GridDensity.COMPACT -> GridDensity.NORMAL
                             GridDensity.NORMAL -> GridDensity.SPACIOUS
@@ -2290,18 +2320,39 @@ class SettingsViewModel @Inject constructor(
                         }
                         setGridDensity(next)
                     }
-                    DisplayItem.UiScale -> cycleUiScale()
-                    DisplayItem.BoxArt -> navigateToBoxArt()
-                    DisplayItem.HomeScreen -> navigateToHomeScreen()
-                    DisplayItem.DefaultView -> cycleDefaultView()
-                    DisplayItem.ScreenDimmer -> toggleScreenDimmer()
-                    DisplayItem.DimAfter -> cycleScreenDimmerTimeout()
-                    DisplayItem.DimLevel -> cycleScreenDimmerLevel()
-                    DisplayItem.AmbientLed -> setAmbientLedEnabled(!state.display.ambientLedEnabled)
-                    DisplayItem.AmbientLedBrightness -> cycleAmbientLedBrightness()
-                    DisplayItem.AmbientLedAudioBrightness -> setAmbientLedAudioBrightness(!state.display.ambientLedAudioBrightness)
-                    DisplayItem.AmbientLedAudioColors -> setAmbientLedAudioColors(!state.display.ambientLedAudioColors)
-                    DisplayItem.AmbientLedColorMode -> cycleAmbientLedColorMode()
+                    InterfaceItem.UiScale -> cycleUiScale()
+                    InterfaceItem.BoxArt -> navigateToBoxArt()
+                    InterfaceItem.HomeScreen -> navigateToHomeScreen()
+                    InterfaceItem.DefaultView -> cycleDefaultView()
+                    InterfaceItem.ScreenDimmer -> toggleScreenDimmer()
+                    InterfaceItem.DimAfter -> cycleScreenDimmerTimeout()
+                    InterfaceItem.DimLevel -> cycleScreenDimmerLevel()
+                    InterfaceItem.AmbientLed -> setAmbientLedEnabled(!state.display.ambientLedEnabled)
+                    InterfaceItem.AmbientLedBrightness -> cycleAmbientLedBrightness()
+                    InterfaceItem.AmbientLedAudioBrightness -> setAmbientLedAudioBrightness(!state.display.ambientLedAudioBrightness)
+                    InterfaceItem.AmbientLedAudioColors -> setAmbientLedAudioColors(!state.display.ambientLedAudioColors)
+                    InterfaceItem.AmbientLedColorMode -> cycleAmbientLedColorMode()
+                    InterfaceItem.BgmToggle -> {
+                        val newEnabled = !state.ambientAudio.enabled
+                        setAmbientAudioEnabled(newEnabled)
+                        return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
+                    }
+                    InterfaceItem.BgmVolume -> cycleAmbientAudioVolume()
+                    InterfaceItem.BgmFile -> openAudioFilePicker()
+                    InterfaceItem.UiSoundsToggle -> {
+                        val newEnabled = !state.sounds.enabled
+                        setSoundEnabled(newEnabled)
+                        if (newEnabled) {
+                            soundManager.setEnabled(true)
+                            soundManager.play(SoundType.TOGGLE)
+                        }
+                        return InputResult.handled(SoundType.SILENT)
+                    }
+                    InterfaceItem.UiSoundsVolume -> cycleSoundVolume()
+                    is InterfaceItem.SoundTypeItem -> {
+                        val soundItem = interfaceItemAtFocusIndex(state.focusedIndex, layoutState) as InterfaceItem.SoundTypeItem
+                        showSoundPicker(soundItem.soundType)
+                    }
                     else -> {}
                 }
                 InputResult.HANDLED
@@ -2387,35 +2438,6 @@ class SettingsViewModel @Inject constructor(
                         2 -> { setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
                         3 -> { setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
                         4 -> { setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
-                    }
-                }
-                InputResult.HANDLED
-            }
-            SettingsSection.SOUNDS -> {
-                val bgmItemCount = if (state.ambientAudio.enabled) 3 else 1
-                val uiSoundsToggleIndex = bgmItemCount
-                when {
-                    state.focusedIndex == 0 -> {
-                        val newEnabled = !state.ambientAudio.enabled
-                        setAmbientAudioEnabled(newEnabled)
-                        return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
-                    }
-                    state.focusedIndex == 2 && state.ambientAudio.enabled -> {
-                        openAudioFilePicker()
-                    }
-                    state.focusedIndex == uiSoundsToggleIndex -> {
-                        val newEnabled = !state.sounds.enabled
-                        setSoundEnabled(newEnabled)
-                        if (newEnabled) {
-                            soundManager.setEnabled(true)
-                            soundManager.play(SoundType.TOGGLE)
-                        }
-                        return InputResult.handled(SoundType.SILENT)
-                    }
-                    state.focusedIndex >= uiSoundsToggleIndex + 2 && state.sounds.enabled -> {
-                        val soundIndex = state.focusedIndex - uiSoundsToggleIndex - 2
-                        val soundType = SoundType.entries.getOrNull(soundIndex)
-                        soundType?.let { showSoundPicker(it) }
                     }
                 }
                 InputResult.HANDLED

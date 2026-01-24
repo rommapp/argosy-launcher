@@ -39,11 +39,10 @@ enum class SettingsSection {
     STEAM_SETTINGS,
     STORAGE,
     BIOS,
-    DISPLAY,
+    INTERFACE,
     BOX_ART,
     HOME_SCREEN,
     CONTROLS,
-    SOUNDS,
     EMULATORS,
     PERMISSIONS,
     ABOUT
@@ -192,7 +191,9 @@ data class EmulatorState(
     val showSavePathModal: Boolean = false,
     val savePathModalInfo: SavePathModalInfo? = null,
     val savePathModalFocusIndex: Int = 0,
-    val savePathModalButtonIndex: Int = 0
+    val savePathModalButtonIndex: Int = 0,
+    val installedCoreCount: Int = 0,
+    val totalCoreCount: Int = 0
 )
 
 data class SavePathModalInfo(

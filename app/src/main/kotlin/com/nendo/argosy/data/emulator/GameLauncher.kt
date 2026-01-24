@@ -9,6 +9,8 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.libretro.LibretroActivity
+import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.entity.GameDiscEntity
@@ -49,7 +51,8 @@ class GameLauncher @Inject constructor(
     private val gameDiscDao: GameDiscDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
-    private val m3uManager: M3uManager
+    private val m3uManager: M3uManager,
+    private val libretroCoreMgr: LibretroCoreManager
 ) {
     suspend fun launch(
         gameId: Long,
@@ -288,6 +291,21 @@ class GameLauncher @Inject constructor(
         return LaunchResult.Success(intent)
     }
 
+    private suspend fun buildBuiltInIntent(romFile: File, game: GameEntity): Intent? {
+        val corePath = libretroCoreMgr.getCorePathForPlatform(game.platformSlug)
+        if (corePath == null) {
+            Logger.warn(TAG, "No built-in core available for platform: ${game.platformSlug}")
+            return null
+        }
+
+        Logger.info(TAG, "Launching via built-in libretro: ${romFile.name}")
+        return Intent(context, LibretroActivity::class.java).apply {
+            putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
+            putExtra(LibretroActivity.EXTRA_CORE_PATH, corePath)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+
     private suspend fun resolveEmulator(game: GameEntity): EmulatorDef? {
         if (emulatorDetector.installedEmulators.value.isEmpty()) {
             emulatorDetector.detectEmulators()
@@ -332,6 +350,7 @@ class GameLauncher @Inject constructor(
             is LaunchConfig.Custom -> buildCustomIntent(emulator, romFile, game.platformSlug, config, forResume)
             is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config, forResume)
             is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config, forResume)
+            is LaunchConfig.BuiltIn -> buildBuiltInIntent(romFile, game)
         }.also { intent ->
             Logger.debug(TAG, "Intent built: ${LogSanitizer.describeIntent(intent)}")
         }

@@ -162,6 +162,9 @@ dependencies {
     implementation(libs.commons.compress)
     implementation(libs.xz)
 
+    // Libretro (built-in emulation)
+    implementation("com.github.Swordfish90:LibretroDroid:0.13.1")
+
     // WorkManager
     implementation(libs.work.runtime.ktx)
     implementation(libs.hilt.work)

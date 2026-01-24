@@ -7,6 +7,8 @@ import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
+import com.nendo.argosy.libretro.LibretroCoreManager
+import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
@@ -26,13 +28,20 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import javax.inject.Inject
 
+enum class BuiltinNavigationTarget {
+    VIDEO_SETTINGS,
+    AUDIO_SETTINGS,
+    CORE_MANAGEMENT
+}
+
 class EmulatorSettingsDelegate @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val soundManager: SoundFeedbackManager,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorConfigDao: EmulatorConfigDao,
-    private val gameDao: GameDao
+    private val gameDao: GameDao,
+    private val coreManager: LibretroCoreManager
 ) {
     private val _state = MutableStateFlow(EmulatorState())
     val state: StateFlow<EmulatorState> = _state.asStateFlow()
@@ -42,6 +51,9 @@ class EmulatorSettingsDelegate @Inject constructor(
 
     private val _launchSavePathPicker = MutableSharedFlow<Unit>()
     val launchSavePathPicker: SharedFlow<Unit> = _launchSavePathPicker.asSharedFlow()
+
+    private val _builtinNavigationEvent = MutableSharedFlow<BuiltinNavigationTarget>()
+    val builtinNavigationEvent: SharedFlow<BuiltinNavigationTarget> = _builtinNavigationEvent.asSharedFlow()
 
     fun updateState(newState: EmulatorState) {
         _state.value = newState
@@ -348,6 +360,35 @@ class EmulatorSettingsDelegate @Inject constructor(
                 savePath = config.savePathPattern,
                 isCustom = config.isUserOverride
             )
+        }
+    }
+
+    fun updateCoreCounts() {
+        val installedCores = coreManager.getInstalledCores()
+        val allCores = LibretroCoreRegistry.getAllCores()
+        _state.update {
+            it.copy(
+                installedCoreCount = installedCores.size,
+                totalCoreCount = allCores.size
+            )
+        }
+    }
+
+    fun navigateToBuiltinVideo(scope: CoroutineScope) {
+        scope.launch {
+            _builtinNavigationEvent.emit(BuiltinNavigationTarget.VIDEO_SETTINGS)
+        }
+    }
+
+    fun navigateToBuiltinAudio(scope: CoroutineScope) {
+        scope.launch {
+            _builtinNavigationEvent.emit(BuiltinNavigationTarget.AUDIO_SETTINGS)
+        }
+    }
+
+    fun navigateToCoreManagement(scope: CoroutineScope) {
+        scope.launch {
+            _builtinNavigationEvent.emit(BuiltinNavigationTarget.CORE_MANAGEMENT)
         }
     }
 

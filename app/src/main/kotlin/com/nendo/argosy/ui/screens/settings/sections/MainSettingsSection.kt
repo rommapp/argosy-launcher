@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Info
@@ -43,9 +42,8 @@ private sealed class MainSettingsItem(
     data object DeviceSettings : MainSettingsItem("device", Icons.Default.PhoneAndroid, "Device Settings")
     data object GameData : MainSettingsItem("gameData", Icons.Default.Dns, "Game Data")
     data object Storage : MainSettingsItem("storage", Icons.Default.Storage, "Storage")
-    data object Display : MainSettingsItem("display", Icons.Default.Palette, "Display")
+    data object Interface : MainSettingsItem("interface", Icons.Default.Palette, "Interface")
     data object Controls : MainSettingsItem("controls", Icons.Default.TouchApp, "Controls")
-    data object Sounds : MainSettingsItem("sounds", Icons.AutoMirrored.Filled.VolumeUp, "Sounds")
     data object Emulators : MainSettingsItem("emulators", Icons.Default.Gamepad, "Emulators")
     data object Bios : MainSettingsItem("bios", Icons.Default.Memory, "BIOS Files")
     data object Permissions : MainSettingsItem("permissions", Icons.Default.Security, "Permissions")
@@ -53,8 +51,8 @@ private sealed class MainSettingsItem(
 
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
-            DeviceSettings, GameData, Storage, Display, Controls,
-            Sounds, Emulators, Bios, Permissions, About
+            DeviceSettings, GameData, Storage, Interface, Controls,
+            Emulators, Bios, Permissions, About
         )
     }
 }
@@ -97,9 +95,8 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         } else {
             "No downloads"
         }
-        MainSettingsItem.Display -> "Theme, colors, animations"
+        MainSettingsItem.Interface -> "Theme, colors, sounds"
         MainSettingsItem.Controls -> "Button layout, haptic feedback"
-        MainSettingsItem.Sounds -> if (uiState.sounds.enabled) "Enabled" else "Disabled"
         MainSettingsItem.Emulators -> "${uiState.emulators.installedEmulators.size} installed"
         MainSettingsItem.Bios -> uiState.bios.summaryText
         MainSettingsItem.Permissions -> if (uiState.permissions.allGranted) {
@@ -115,9 +112,8 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.DeviceSettings -> context.startActivity(Intent(Settings.ACTION_SETTINGS))
             MainSettingsItem.GameData -> viewModel.navigateToSection(SettingsSection.SERVER)
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
-            MainSettingsItem.Display -> viewModel.navigateToSection(SettingsSection.DISPLAY)
+            MainSettingsItem.Interface -> viewModel.navigateToSection(SettingsSection.INTERFACE)
             MainSettingsItem.Controls -> viewModel.navigateToSection(SettingsSection.CONTROLS)
-            MainSettingsItem.Sounds -> viewModel.navigateToSection(SettingsSection.SOUNDS)
             MainSettingsItem.Emulators -> viewModel.navigateToSection(SettingsSection.EMULATORS)
             MainSettingsItem.Bios -> viewModel.navigateToSection(SettingsSection.BIOS)
             MainSettingsItem.Permissions -> viewModel.navigateToSection(SettingsSection.PERMISSIONS)

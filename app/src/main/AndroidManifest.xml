@@ -113,5 +113,12 @@
             android:name=".hardware.AudioLevelDebugActivity"
             android:exported="true"
             android:theme="@style/Theme.Argosy" />
+
+        <activity
+            android:name=".libretro.LibretroActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@style/Theme.Argosy"
+            android:exported="false" />
     </application>
 </manifest>

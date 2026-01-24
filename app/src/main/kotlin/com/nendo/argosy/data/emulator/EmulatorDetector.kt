@@ -36,6 +36,12 @@ class EmulatorDetector @Inject constructor(
         val detectedPackages = mutableSetOf<String>()
 
         for (emulatorDef in EmulatorRegistry.getAll()) {
+            if (emulatorDef.packageName == EmulatorRegistry.BUILTIN_PACKAGE) {
+                installed.add(createBuiltinEmulator(emulatorDef))
+                detectedPackages.add(emulatorDef.packageName)
+                continue
+            }
+
             try {
                 val packageInfo = packageManager.getPackageInfo(emulatorDef.packageName, 0)
                 installed.add(createInstalledEmulator(emulatorDef, packageInfo))
@@ -48,6 +54,20 @@ class EmulatorDetector @Inject constructor(
 
         _installedEmulators.value = installed
         installed
+    }
+
+    private fun createBuiltinEmulator(def: EmulatorDef): InstalledEmulator {
+        val appVersion = try {
+            val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
+            packageInfo.versionName
+        } catch (_: PackageManager.NameNotFoundException) {
+            null
+        }
+        return InstalledEmulator(
+            def = def,
+            versionName = appVersion,
+            versionCode = 0
+        )
     }
 
     private fun detectEmulatorFamilies(

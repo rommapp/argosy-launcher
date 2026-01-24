@@ -50,6 +50,10 @@ private sealed class EmulatorsItem(
     val key: String,
     val visibleWhen: (EmulatorsLayoutState) -> Boolean = { true }
 ) {
+    data object BuiltinHeader : EmulatorsItem("builtin_header")
+    data object BuiltinVideo : EmulatorsItem("builtin_video")
+    data object BuiltinAudio : EmulatorsItem("builtin_audio")
+    data object BuiltinCores : EmulatorsItem("builtin_cores")
     data object AutoAssign : EmulatorsItem("autoAssign", visibleWhen = { it.canAutoAssign })
 
     class PlatformItem(val config: PlatformEmulatorConfig, val index: Int) : EmulatorsItem(
@@ -58,19 +62,21 @@ private sealed class EmulatorsItem(
 
     companion object {
         fun buildItems(platforms: List<PlatformEmulatorConfig>): List<EmulatorsItem> =
-            listOf(AutoAssign) + platforms.mapIndexed { index, config -> PlatformItem(config, index) }
+            listOf(BuiltinHeader, BuiltinVideo, BuiltinAudio, BuiltinCores, AutoAssign) +
+                platforms.mapIndexed { index, config -> PlatformItem(config, index) }
     }
 }
 
 private fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<EmulatorsItem, EmulatorsLayoutState>(
     allItems = items,
-    isFocusable = { true },
+    isFocusable = { item -> item !is EmulatorsItem.BuiltinHeader },
     visibleWhen = { item, state -> item.visibleWhen(state) }
 )
 
 internal fun emulatorsMaxFocusIndex(canAutoAssign: Boolean, platformCount: Int): Int {
+    val builtinCount = 3  // Video, Audio, Cores (header not focusable)
     val autoAssignCount = if (canAutoAssign) 1 else 0
-    return (autoAssignCount + platformCount - 1).coerceAtLeast(0)
+    return (builtinCount + autoAssignCount + platformCount - 1).coerceAtLeast(0)
 }
 
 @Composable
@@ -115,6 +121,40 @@ fun EmulatorsSection(
         ) {
             items(visibleItems, key = { it.key }) { item ->
                 when (item) {
+                    EmulatorsItem.BuiltinHeader -> {
+                        Text(
+                            text = "Built-in Emulator",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(
+                                start = Dimens.spacingSm,
+                                top = Dimens.spacingMd,
+                                bottom = Dimens.spacingXs
+                            )
+                        )
+                    }
+
+                    EmulatorsItem.BuiltinVideo -> ActionPreference(
+                        title = "Video Settings",
+                        subtitle = "Shaders, scaling, aspect ratio",
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.navigateToBuiltinVideo() }
+                    )
+
+                    EmulatorsItem.BuiltinAudio -> ActionPreference(
+                        title = "Audio Settings",
+                        subtitle = "Latency, sync mode",
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.navigateToBuiltinAudio() }
+                    )
+
+                    EmulatorsItem.BuiltinCores -> ActionPreference(
+                        title = "Manage Cores",
+                        subtitle = "${uiState.emulators.installedCoreCount} of ${uiState.emulators.totalCoreCount} cores installed",
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.navigateToCoreManagement() }
+                    )
+
                     EmulatorsItem.AutoAssign -> ActionPreference(
                         title = "Auto-assign Emulators",
                         subtitle = "Set recommended emulators for all platforms",

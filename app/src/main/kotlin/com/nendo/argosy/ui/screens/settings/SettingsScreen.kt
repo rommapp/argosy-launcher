@@ -57,13 +57,12 @@ import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
-import com.nendo.argosy.ui.screens.settings.sections.DisplaySection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
 import com.nendo.argosy.ui.screens.settings.sections.GameDataSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
+import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
-import com.nendo.argosy.ui.screens.settings.sections.SoundsSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
@@ -302,11 +301,10 @@ fun SettingsScreen(
                     SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
                     SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
                     SettingsSection.STORAGE -> "STORAGE"
-                    SettingsSection.DISPLAY -> "DISPLAY"
+                    SettingsSection.INTERFACE -> "INTERFACE"
                     SettingsSection.BOX_ART -> "BOX ART"
                     SettingsSection.HOME_SCREEN -> "HOME SCREEN"
                     SettingsSection.CONTROLS -> "CONTROLS"
-                    SettingsSection.SOUNDS -> "SOUNDS"
                     SettingsSection.EMULATORS -> "EMULATORS"
                     SettingsSection.BIOS -> "BIOS FILES"
                     SettingsSection.PERMISSIONS -> "PERMISSIONS"
@@ -321,11 +319,10 @@ fun SettingsScreen(
                     SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
                     SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
-                    SettingsSection.DISPLAY -> DisplaySection(uiState, viewModel)
+                    SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
                     SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)
                     SettingsSection.HOME_SCREEN -> HomeScreenSection(uiState, viewModel)
                     SettingsSection.CONTROLS -> ControlsSection(uiState, viewModel)
-                    SettingsSection.SOUNDS -> SoundsSection(uiState, viewModel)
                     SettingsSection.EMULATORS -> EmulatorsSection(
                         uiState = uiState,
                         viewModel = viewModel,

@@ -3,14 +3,14 @@ package com.nendo.argosy.ui.screens.settings
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.ui.screens.settings.sections.DisplayItem
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
+import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
+import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
-import com.nendo.argosy.ui.screens.settings.sections.displayItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.displaySections
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
-import com.nendo.argosy.ui.screens.settings.sections.soundsSections
+import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.interfaceSections
 
 class SettingsInputHandler(
     private val viewModel: SettingsViewModel,
@@ -140,15 +140,18 @@ class SettingsInputHandler(
         if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
 
-        if (state.currentSection == SettingsSection.DISPLAY) {
-            when (displayItemAtFocusIndex(state.focusedIndex, state.display)) {
-                DisplayItem.AccentColor -> { viewModel.adjustHue(-HUE_STEP); return InputResult.HANDLED }
-                DisplayItem.SecondaryColor -> { viewModel.adjustSecondaryHue(-HUE_STEP); return InputResult.HANDLED }
-                DisplayItem.UiScale -> { viewModel.adjustUiScale(-5); return InputResult.HANDLED }
-                DisplayItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(-1); return InputResult.HANDLED }
-                DisplayItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(-1); return InputResult.HANDLED }
-                DisplayItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(-5); return InputResult.HANDLED }
-                DisplayItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(-1); return InputResult.HANDLED }
+        if (state.currentSection == SettingsSection.INTERFACE) {
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+            when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
+                InterfaceItem.AccentColor -> { viewModel.adjustHue(-HUE_STEP); return InputResult.HANDLED }
+                InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(-HUE_STEP); return InputResult.HANDLED }
+                InterfaceItem.UiScale -> { viewModel.adjustUiScale(-5); return InputResult.HANDLED }
+                InterfaceItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(-1); return InputResult.HANDLED }
+                InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(-1); return InputResult.HANDLED }
+                InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(-5); return InputResult.HANDLED }
+                InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(-1); return InputResult.HANDLED }
+                InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(-1); return InputResult.HANDLED }
+                InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(-1); return InputResult.HANDLED }
                 else -> {}
             }
         }
@@ -227,21 +230,6 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
 
-        if (state.currentSection == SettingsSection.SOUNDS) {
-            val bgmVolumeIndex = 1
-            val uiSoundsToggleIndex = if (state.ambientAudio.enabled) 3 else 1
-            val uiSoundsVolumeIndex = uiSoundsToggleIndex + 1
-            when (state.focusedIndex) {
-                bgmVolumeIndex -> if (state.ambientAudio.enabled) {
-                    viewModel.adjustAmbientAudioVolume(-1)
-                    return InputResult.HANDLED
-                }
-                uiSoundsVolumeIndex -> if (state.sounds.enabled) {
-                    viewModel.adjustSoundVolume(-1)
-                    return InputResult.HANDLED
-                }
-            }
-        }
 
         if (state.currentSection == SettingsSection.SERVER) {
             if (state.server.rommConfiguring && state.focusedIndex == 2) {
@@ -329,15 +317,18 @@ class SettingsInputHandler(
         if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
 
-        if (state.currentSection == SettingsSection.DISPLAY) {
-            when (displayItemAtFocusIndex(state.focusedIndex, state.display)) {
-                DisplayItem.AccentColor -> { viewModel.adjustHue(HUE_STEP); return InputResult.HANDLED }
-                DisplayItem.SecondaryColor -> { viewModel.adjustSecondaryHue(HUE_STEP); return InputResult.HANDLED }
-                DisplayItem.UiScale -> { viewModel.adjustUiScale(5); return InputResult.HANDLED }
-                DisplayItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(1); return InputResult.HANDLED }
-                DisplayItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(1); return InputResult.HANDLED }
-                DisplayItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(5); return InputResult.HANDLED }
-                DisplayItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(1); return InputResult.HANDLED }
+        if (state.currentSection == SettingsSection.INTERFACE) {
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+            when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
+                InterfaceItem.AccentColor -> { viewModel.adjustHue(HUE_STEP); return InputResult.HANDLED }
+                InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(HUE_STEP); return InputResult.HANDLED }
+                InterfaceItem.UiScale -> { viewModel.adjustUiScale(5); return InputResult.HANDLED }
+                InterfaceItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(1); return InputResult.HANDLED }
+                InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(1); return InputResult.HANDLED }
+                InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(5); return InputResult.HANDLED }
+                InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(1); return InputResult.HANDLED }
+                InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(1); return InputResult.HANDLED }
+                InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(1); return InputResult.HANDLED }
                 else -> {}
             }
         }
@@ -414,22 +405,6 @@ class SettingsInputHandler(
         if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.controls.vibrationSupported && state.focusedIndex == 1) {
             viewModel.adjustVibrationStrength(0.1f)
             return InputResult.HANDLED
-        }
-
-        if (state.currentSection == SettingsSection.SOUNDS) {
-            val bgmVolumeIndex = 1
-            val uiSoundsToggleIndex = if (state.ambientAudio.enabled) 3 else 1
-            val uiSoundsVolumeIndex = uiSoundsToggleIndex + 1
-            when (state.focusedIndex) {
-                bgmVolumeIndex -> if (state.ambientAudio.enabled) {
-                    viewModel.adjustAmbientAudioVolume(1)
-                    return InputResult.HANDLED
-                }
-                uiSoundsVolumeIndex -> if (state.sounds.enabled) {
-                    viewModel.adjustSoundVolume(1)
-                    return InputResult.HANDLED
-                }
-            }
         }
 
         if (state.currentSection == SettingsSection.SERVER) {
@@ -536,13 +511,14 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
 
-        if (state.currentSection == SettingsSection.DISPLAY) {
-            when (displayItemAtFocusIndex(state.focusedIndex, state.display)) {
-                DisplayItem.AccentColor -> {
+        if (state.currentSection == SettingsSection.INTERFACE) {
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+            when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
+                InterfaceItem.AccentColor -> {
                     viewModel.resetToDefaultColor()
                     return InputResult.HANDLED
                 }
-                DisplayItem.SecondaryColor -> {
+                InterfaceItem.SecondaryColor -> {
                     viewModel.resetToDefaultSecondaryColor()
                     return InputResult.HANDLED
                 }
@@ -622,18 +598,14 @@ class SettingsInputHandler(
                 viewModel.jumpToStoragePrevSection()
                 return InputResult.HANDLED
             }
-            SettingsSection.DISPLAY -> {
-                if (viewModel.jumpToPrevSection(displaySections(state.display))) {
+            SettingsSection.INTERFACE -> {
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                if (viewModel.jumpToPrevSection(interfaceSections(layoutState))) {
                     return InputResult.HANDLED
                 }
             }
             SettingsSection.HOME_SCREEN -> {
                 if (viewModel.jumpToPrevSection(homeScreenSections(state.display))) {
-                    return InputResult.HANDLED
-                }
-            }
-            SettingsSection.SOUNDS -> {
-                if (viewModel.jumpToPrevSection(soundsSections(state.ambientAudio.enabled, state.sounds.enabled))) {
                     return InputResult.HANDLED
                 }
             }
@@ -658,18 +630,14 @@ class SettingsInputHandler(
                 viewModel.jumpToStorageNextSection()
                 return InputResult.HANDLED
             }
-            SettingsSection.DISPLAY -> {
-                if (viewModel.jumpToNextSection(displaySections(state.display))) {
+            SettingsSection.INTERFACE -> {
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                if (viewModel.jumpToNextSection(interfaceSections(layoutState))) {
                     return InputResult.HANDLED
                 }
             }
             SettingsSection.HOME_SCREEN -> {
                 if (viewModel.jumpToNextSection(homeScreenSections(state.display))) {
-                    return InputResult.HANDLED
-                }
-            }
-            SettingsSection.SOUNDS -> {
-                if (viewModel.jumpToNextSection(soundsSections(state.ambientAudio.enabled, state.sounds.enabled))) {
                     return InputResult.HANDLED
                 }
             }

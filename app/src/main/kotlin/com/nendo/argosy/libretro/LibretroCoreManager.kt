@@ -1,0 +1,137 @@
+package com.nendo.argosy.libretro
+
+import android.content.Context
+import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.net.URL
+import java.util.zip.ZipInputStream
+import javax.inject.Inject
+import javax.inject.Singleton
+
+private const val TAG = "LibretroCoreManager"
+private const val BUILDBOT_BASE = "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a"
+
+@Singleton
+class LibretroCoreManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    private val downloadedCoresDir = File(context.filesDir, "libretro/cores").apply { mkdirs() }
+    private val nativeLibDir = context.applicationInfo.nativeLibraryDir
+
+    fun getCorePathForPlatform(platformSlug: String): String? {
+        val coreInfo = LibretroCoreRegistry.getDefaultCoreForPlatform(platformSlug) ?: return null
+        return getCorePath(coreInfo.fileName)
+    }
+
+    fun getCorePathForCoreId(coreId: String): String? {
+        val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return null
+        return getCorePath(coreInfo.fileName)
+    }
+
+    fun isCoreAvailable(platformSlug: String): Boolean =
+        getCorePathForPlatform(platformSlug) != null
+
+    fun isCoreInstalled(coreId: String): Boolean {
+        val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return false
+        return getCorePath(coreInfo.fileName) != null
+    }
+
+    fun isPlatformSupported(platformSlug: String): Boolean =
+        LibretroCoreRegistry.isPlatformSupported(platformSlug)
+
+    fun getInstalledCores(): List<LibretroCoreRegistry.CoreInfo> {
+        val downloadedFiles = downloadedCoresDir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+        return LibretroCoreRegistry.getAllCores().filter { core ->
+            core.fileName in downloadedFiles || File(nativeLibDir, "lib${core.fileName}").exists()
+        }
+    }
+
+    fun getMissingCoresForPlatforms(platformSlugs: Set<String>): List<LibretroCoreRegistry.CoreInfo> {
+        val neededCores = platformSlugs.mapNotNull { LibretroCoreRegistry.getDefaultCoreForPlatform(it) }
+            .distinctBy { it.coreId }
+        return neededCores.filter { !isCoreInstalled(it.coreId) }
+    }
+
+    suspend fun downloadCoreForPlatform(platformSlug: String): String? {
+        val coreInfo = LibretroCoreRegistry.getDefaultCoreForPlatform(platformSlug) ?: return null
+        return downloadCore(coreInfo).fold(
+            onSuccess = { it.absolutePath },
+            onFailure = { e ->
+                Log.e(TAG, "Failed to download core: ${e.message}", e)
+                null
+            }
+        )
+    }
+
+    suspend fun downloadCoreById(coreId: String): Result<File> {
+        val coreInfo = LibretroCoreRegistry.getCoreById(coreId)
+            ?: return Result.failure(IllegalArgumentException("Unknown core: $coreId"))
+        return downloadCore(coreInfo)
+    }
+
+    private fun getCorePath(fileName: String): String? {
+        val downloadedCore = File(downloadedCoresDir, fileName)
+        if (downloadedCore.exists()) {
+            ensureExecutable(downloadedCore)
+            return downloadedCore.absolutePath
+        }
+
+        val bundledCore = File(nativeLibDir, "lib$fileName")
+        if (bundledCore.exists()) {
+            return bundledCore.absolutePath
+        }
+
+        return null
+    }
+
+    private fun ensureExecutable(file: File) {
+        if (!file.canExecute()) {
+            file.setExecutable(true)
+        }
+    }
+
+    suspend fun downloadCore(coreInfo: LibretroCoreRegistry.CoreInfo): Result<File> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val targetFile = File(downloadedCoresDir, coreInfo.fileName)
+                val zipUrl = "$BUILDBOT_BASE/${coreInfo.fileName}.zip"
+
+                Log.i(TAG, "Downloading ${coreInfo.displayName}: $zipUrl")
+
+                URL(zipUrl).openStream().use { input ->
+                    ZipInputStream(input).use { zip ->
+                        val entry = zip.nextEntry
+                        if (entry != null && entry.name == coreInfo.fileName) {
+                            targetFile.outputStream().use { output ->
+                                zip.copyTo(output)
+                            }
+                        } else {
+                            throw IllegalStateException("Expected ${coreInfo.fileName} in zip, got ${entry?.name}")
+                        }
+                    }
+                }
+
+                if (!targetFile.setExecutable(true)) {
+                    Log.w(TAG, "Failed to set executable permission")
+                }
+
+                Log.i(TAG, "Downloaded ${coreInfo.displayName}: ${targetFile.length()} bytes")
+                targetFile
+            }
+        }
+
+    fun getDownloadedCores(): List<LibretroCoreRegistry.CoreInfo> {
+        val downloadedFiles = downloadedCoresDir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+        return downloadedFiles.mapNotNull { LibretroCoreRegistry.getCoreByFileName(it) }
+    }
+
+    fun deleteCore(coreId: String): Boolean {
+        val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return false
+        return File(downloadedCoresDir, coreInfo.fileName).delete()
+    }
+
+    fun getCoresDir(): File = downloadedCoresDir
+}

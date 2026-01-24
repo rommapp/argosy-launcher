@@ -65,6 +65,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
@@ -218,6 +223,14 @@ fun FirstRunScreen(
                     onToggle = { viewModel.togglePlatform(it) },
                     onToggleAll = { viewModel.toggleAllPlatforms() },
                     onContinue = { viewModel.proceedFromPlatformSelect() }
+                )
+                FirstRunStep.CORE_DOWNLOAD -> CoreDownloadStep(
+                    coreDownloads = uiState.coreDownloads,
+                    isComplete = uiState.coreDownloadComplete,
+                    focusedIndex = uiState.focusedIndex,
+                    onRetry = { viewModel.retryCoreDownload(it) },
+                    onContinue = { viewModel.nextStep() },
+                    onSkip = { viewModel.skipCoreDownloads() }
                 )
                 FirstRunStep.COMPLETE -> CompleteStep(
                     gameCount = uiState.rommGameCount,
@@ -935,6 +948,183 @@ private fun PlatformToggleItem(
             checked = platform.syncEnabled,
             onCheckedChange = { onToggle() }
         )
+    }
+}
+
+@Composable
+private fun CoreDownloadStep(
+    coreDownloads: List<CoreDownloadState>,
+    isComplete: Boolean,
+    focusedIndex: Int,
+    onRetry: (String) -> Unit,
+    onContinue: () -> Unit,
+    onSkip: () -> Unit
+) {
+    val completeCount = coreDownloads.count { it.status == CoreDownloadStatus.COMPLETE }
+    val failedCount = coreDownloads.count { it.status == CoreDownloadStatus.FAILED }
+    val downloadingCount = coreDownloads.count { it.status == CoreDownloadStatus.DOWNLOADING }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Dimens.spacingXl)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Download,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        Text(
+            text = "Downloading Emulator Cores",
+            style = MaterialTheme.typography.headlineSmall
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        if (coreDownloads.isEmpty()) {
+            Text(
+                text = "No cores needed for selected platforms",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingXl))
+            FocusableButton(
+                text = "Continue",
+                isFocused = focusedIndex == 0,
+                onClick = onContinue
+            )
+        } else {
+            Text(
+                text = if (isComplete) {
+                    if (failedCount > 0) "$completeCount of ${coreDownloads.size} cores downloaded"
+                    else "All cores downloaded"
+                } else {
+                    "Downloading $completeCount of ${coreDownloads.size} cores..."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                itemsIndexed(coreDownloads, key = { _, c -> c.coreId }) { _, core ->
+                    CoreDownloadItem(
+                        core = core,
+                        onRetry = { onRetry(core.coreId) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+            ) {
+                FocusableOutlinedButton(
+                    text = "Skip",
+                    isFocused = focusedIndex == 1,
+                    onClick = onSkip
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                FocusableButton(
+                    text = "Continue",
+                    isFocused = focusedIndex == 0,
+                    enabled = isComplete,
+                    onClick = onContinue
+                )
+            }
+
+            if (!isComplete) {
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                Text(
+                    text = "You can skip and download cores later from Settings",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoreDownloadItem(
+    core: CoreDownloadState,
+    onRetry: () -> Unit
+) {
+    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
+            .padding(Dimens.spacingMd),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = core.displayName,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = core.platforms.joinToString(", ") { it.uppercase() },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        when (core.status) {
+            CoreDownloadStatus.PENDING -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            CoreDownloadStatus.DOWNLOADING -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            }
+            CoreDownloadStatus.COMPLETE -> {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Complete",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            CoreDownloadStatus.FAILED -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = "Failed",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                    OutlinedButton(
+                        onClick = onRetry,
+                        modifier = Modifier.heightIn(min = 32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Retry",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Retry", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
     }
 }
 

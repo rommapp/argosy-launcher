@@ -10,6 +10,8 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.libretro.LibretroCoreManager
+import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +31,19 @@ enum class FirstRunStep {
     SAVE_SYNC,
     USAGE_STATS,
     PLATFORM_SELECT,
+    CORE_DOWNLOAD,
     COMPLETE
+}
+
+data class CoreDownloadState(
+    val coreId: String,
+    val displayName: String,
+    val platforms: Set<String>,
+    val status: CoreDownloadStatus = CoreDownloadStatus.PENDING
+)
+
+enum class CoreDownloadStatus {
+    PENDING, DOWNLOADING, COMPLETE, FAILED
 }
 
 data class FirstRunUiState(
@@ -53,7 +67,9 @@ data class FirstRunUiState(
     val hasUsageStatsPermission: Boolean = false,
     val rommFocusField: Int? = null,
     val platforms: List<PlatformEntity> = emptyList(),
-    val platformButtonFocus: Int = 1
+    val platformButtonFocus: Int = 1,
+    val coreDownloads: List<CoreDownloadState> = emptyList(),
+    val coreDownloadComplete: Boolean = false
 )
 
 @HiltViewModel
@@ -62,7 +78,8 @@ class FirstRunViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
     private val platformDao: PlatformDao,
-    private val permissionHelper: PermissionHelper
+    private val permissionHelper: PermissionHelper,
+    private val coreManager: LibretroCoreManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FirstRunUiState())
@@ -79,16 +96,19 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.SAVE_SYNC -> FirstRunStep.USAGE_STATS
                 FirstRunStep.USAGE_STATS -> {
                     if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
-                    else FirstRunStep.COMPLETE
+                    else FirstRunStep.CORE_DOWNLOAD
                 }
-                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.COMPLETE
+                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.CORE_DOWNLOAD
+                FirstRunStep.CORE_DOWNLOAD -> FirstRunStep.COMPLETE
                 FirstRunStep.COMPLETE -> FirstRunStep.COMPLETE
             }
             val initialFocus = if (nextStep == FirstRunStep.IMAGE_CACHE) 1 else 0
             state.copy(currentStep = nextStep, focusedIndex = initialFocus)
         }
-        if (_uiState.value.currentStep == FirstRunStep.PLATFORM_SELECT) {
-            loadPlatformsForSelection()
+        when (_uiState.value.currentStep) {
+            FirstRunStep.PLATFORM_SELECT -> loadPlatformsForSelection()
+            FirstRunStep.CORE_DOWNLOAD -> prepareCoreDownloads()
+            else -> {}
         }
     }
 
@@ -103,10 +123,11 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.SAVE_SYNC -> FirstRunStep.IMAGE_CACHE
                 FirstRunStep.USAGE_STATS -> FirstRunStep.SAVE_SYNC
                 FirstRunStep.PLATFORM_SELECT -> FirstRunStep.USAGE_STATS
-                FirstRunStep.COMPLETE -> {
+                FirstRunStep.CORE_DOWNLOAD -> {
                     if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
                     else FirstRunStep.USAGE_STATS
                 }
+                FirstRunStep.COMPLETE -> FirstRunStep.CORE_DOWNLOAD
             }
             val initialFocus = if (prevStep == FirstRunStep.IMAGE_CACHE) 1 else 0
             state.copy(currentStep = prevStep, focusedIndex = initialFocus)
@@ -125,6 +146,97 @@ class FirstRunViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun prepareCoreDownloads() {
+        val enabledPlatforms = _uiState.value.platforms
+            .filter { it.syncEnabled }
+            .map { it.slug }
+            .toSet()
+
+        val missingCores = coreManager.getMissingCoresForPlatforms(enabledPlatforms)
+        val coreDownloads = missingCores.map { core ->
+            CoreDownloadState(
+                coreId = core.coreId,
+                displayName = core.displayName,
+                platforms = core.platforms
+            )
+        }
+
+        _uiState.update {
+            it.copy(
+                coreDownloads = coreDownloads,
+                coreDownloadComplete = coreDownloads.isEmpty()
+            )
+        }
+
+        if (coreDownloads.isNotEmpty()) {
+            startCoreDownloads()
+        }
+    }
+
+    private fun startCoreDownloads() {
+        viewModelScope.launch {
+            val cores = _uiState.value.coreDownloads.filter { it.status == CoreDownloadStatus.PENDING }
+            for (core in cores) {
+                _uiState.update { state ->
+                    state.copy(
+                        coreDownloads = state.coreDownloads.map {
+                            if (it.coreId == core.coreId) it.copy(status = CoreDownloadStatus.DOWNLOADING)
+                            else it
+                        }
+                    )
+                }
+
+                val result = coreManager.downloadCoreById(core.coreId)
+                val newStatus = if (result.isSuccess) CoreDownloadStatus.COMPLETE else CoreDownloadStatus.FAILED
+
+                _uiState.update { state ->
+                    val updatedCores = state.coreDownloads.map {
+                        if (it.coreId == core.coreId) it.copy(status = newStatus)
+                        else it
+                    }
+                    val allComplete = updatedCores.all { it.status == CoreDownloadStatus.COMPLETE || it.status == CoreDownloadStatus.FAILED }
+                    state.copy(
+                        coreDownloads = updatedCores,
+                        coreDownloadComplete = allComplete
+                    )
+                }
+            }
+        }
+    }
+
+    fun retryCoreDownload(coreId: String) {
+        viewModelScope.launch {
+            _uiState.update { state ->
+                state.copy(
+                    coreDownloads = state.coreDownloads.map {
+                        if (it.coreId == coreId) it.copy(status = CoreDownloadStatus.DOWNLOADING)
+                        else it
+                    },
+                    coreDownloadComplete = false
+                )
+            }
+
+            val result = coreManager.downloadCoreById(coreId)
+            val newStatus = if (result.isSuccess) CoreDownloadStatus.COMPLETE else CoreDownloadStatus.FAILED
+
+            _uiState.update { state ->
+                val updatedCores = state.coreDownloads.map {
+                    if (it.coreId == coreId) it.copy(status = newStatus)
+                    else it
+                }
+                val allComplete = updatedCores.all { it.status == CoreDownloadStatus.COMPLETE || it.status == CoreDownloadStatus.FAILED }
+                state.copy(
+                    coreDownloads = updatedCores,
+                    coreDownloadComplete = allComplete
+                )
+            }
+        }
+    }
+
+    fun skipCoreDownloads() {
+        nextStep()
     }
 
     fun togglePlatform(platformId: Long) {
@@ -166,6 +278,7 @@ class FirstRunViewModel @Inject constructor(
             FirstRunStep.SAVE_SYNC -> 1
             FirstRunStep.USAGE_STATS -> 0
             FirstRunStep.PLATFORM_SELECT -> state.platforms.size
+            FirstRunStep.CORE_DOWNLOAD -> 1
             FirstRunStep.COMPLETE -> 0
         }
     }
@@ -424,6 +537,10 @@ class FirstRunViewModel @Inject constructor(
                     val platform = state.platforms.getOrNull(state.focusedIndex)
                     if (platform != null) togglePlatform(platform.id)
                 }
+            }
+            FirstRunStep.CORE_DOWNLOAD -> {
+                if (state.focusedIndex == 0 && state.coreDownloadComplete) nextStep()
+                else if (state.focusedIndex == 1) skipCoreDownloads()
             }
             FirstRunStep.COMPLETE -> {}
         }

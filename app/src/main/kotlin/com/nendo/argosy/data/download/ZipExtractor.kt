@@ -342,13 +342,16 @@ object ZipExtractor {
         val gameFolder = romFile.parentFile ?: return null
         val config = platformSlug?.let { getPlatformConfig(it) }
         val folderName = config?.updateFolder ?: "update"
-        val updatesFolder = File(gameFolder, folderName)
 
-        return if (updatesFolder.exists() && updatesFolder.isDirectory) {
-            updatesFolder
-        } else {
-            null
+        // Check both singular and plural folder names for compatibility
+        val candidates = listOf(folderName, "${folderName}s").distinct()
+        for (name in candidates) {
+            val folder = File(gameFolder, name)
+            if (folder.exists() && folder.isDirectory) {
+                return folder
+            }
         }
+        return null
     }
 
     fun getDlcFolder(localPath: String, platformSlug: String): File? {

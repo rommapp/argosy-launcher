@@ -620,30 +620,44 @@ class DownloadManager @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val platformDir = getDownloadDir(progress.platformSlug)
-                val tempFile = File(platformDir, "${progress.fileName}.tmp")
-                val targetFile = File(platformDir, progress.fileName)
+
+                // Game file downloads (DLC/updates) go to category subfolders
+                val downloadDir = if (progress.isGameFileDownload && progress.fileCategory != null) {
+                    val gameFolder = getGameFolder(progress.platformSlug, progress.gameTitle)
+                    File(gameFolder, progress.fileCategory).apply { mkdirs() }
+                } else {
+                    platformDir
+                }
+
+                val tempFile = File(downloadDir, "${progress.fileName}.tmp")
+                val targetFile = File(downloadDir, progress.fileName)
 
                 // Check if download is already complete (e.g., app crashed during extraction)
                 if (targetFile.exists() && targetFile.length() >= progress.totalBytes && progress.totalBytes > 0) {
-                    val finalPath = processDownloadedFile(
-                        targetFile = targetFile,
-                        platformDir = platformDir,
-                        platformSlug = progress.platformSlug,
-                        gameTitle = progress.gameTitle,
-                        progressId = progress.id,
-                        isDiscDownload = progress.isDiscDownload,
-                        expectedSize = progress.totalBytes,
-                        isMultiFileRom = progress.isMultiFileRom,
-                        onExtractionProgress = { bytesWritten, totalBytes ->
-                            updateProgress(
-                                progress.copy(
-                                    state = DownloadState.EXTRACTING,
-                                    extractionBytesWritten = bytesWritten,
-                                    extractionTotalBytes = totalBytes
+                    // Game file downloads (DLC/updates) don't need extraction or organization
+                    val finalPath = if (progress.isGameFileDownload) {
+                        targetFile.absolutePath
+                    } else {
+                        processDownloadedFile(
+                            targetFile = targetFile,
+                            platformDir = platformDir,
+                            platformSlug = progress.platformSlug,
+                            gameTitle = progress.gameTitle,
+                            progressId = progress.id,
+                            isDiscDownload = progress.isDiscDownload,
+                            expectedSize = progress.totalBytes,
+                            isMultiFileRom = progress.isMultiFileRom,
+                            onExtractionProgress = { bytesWritten, totalBytes ->
+                                updateProgress(
+                                    progress.copy(
+                                        state = DownloadState.EXTRACTING,
+                                        extractionBytesWritten = bytesWritten,
+                                        extractionTotalBytes = totalBytes
+                                    )
                                 )
-                            )
-                        }
-                    )
+                            }
+                        )
+                    }
 
                     Log.d(TAG, "processDownloadedFile returned: $finalPath")
                     Log.d(TAG, "  targetFile was: ${targetFile.absolutePath}")
@@ -779,25 +793,30 @@ class DownloadManager @Inject constructor(
                                     tempFile.delete()
                                 }
 
-                                val finalPath = processDownloadedFile(
-                                    targetFile = targetFile,
-                                    platformDir = platformDir,
-                                    platformSlug = progress.platformSlug,
-                                    gameTitle = progress.gameTitle,
-                                    progressId = progress.id,
-                                    isDiscDownload = progress.isDiscDownload,
-                                    expectedSize = totalSize,
-                                    isMultiFileRom = progress.isMultiFileRom,
-                                    onExtractionProgress = { bytesWritten, totalBytes ->
-                                        updateProgress(
-                                            progress.copy(
-                                                state = DownloadState.EXTRACTING,
-                                                extractionBytesWritten = bytesWritten,
-                                                extractionTotalBytes = totalBytes
+                                // Game file downloads (DLC/updates) don't need extraction or organization
+                                val finalPath = if (progress.isGameFileDownload) {
+                                    targetFile.absolutePath
+                                } else {
+                                    processDownloadedFile(
+                                        targetFile = targetFile,
+                                        platformDir = platformDir,
+                                        platformSlug = progress.platformSlug,
+                                        gameTitle = progress.gameTitle,
+                                        progressId = progress.id,
+                                        isDiscDownload = progress.isDiscDownload,
+                                        expectedSize = totalSize,
+                                        isMultiFileRom = progress.isMultiFileRom,
+                                        onExtractionProgress = { bytesWritten, totalBytes ->
+                                            updateProgress(
+                                                progress.copy(
+                                                    state = DownloadState.EXTRACTING,
+                                                    extractionBytesWritten = bytesWritten,
+                                                    extractionTotalBytes = totalBytes
+                                                )
                                             )
-                                        )
-                                    }
-                                )
+                                        }
+                                    )
+                                }
 
                                 Log.d(TAG, "processDownloadedFile returned: $finalPath")
                                 Log.d(TAG, "  targetFile was: ${targetFile.absolutePath}")

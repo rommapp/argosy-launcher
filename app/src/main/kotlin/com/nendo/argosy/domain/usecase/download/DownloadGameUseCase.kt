@@ -66,7 +66,9 @@ class DownloadGameUseCase @Inject constructor(
         return when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
                 val rom = result.data
-                val mainFile = rom.files?.singleOrNull { it.category == null }
+                val mainFile = rom.files
+                    ?.filter { it.category == null && !it.fileName.startsWith(".") }
+                    ?.maxByOrNull { it.fileSizeBytes }
                 var fileName = mainFile?.fileName
                     ?: rom.fileName
                     ?: "${game.title}.rom"
@@ -92,7 +94,7 @@ class DownloadGameUseCase @Inject constructor(
                     gameTitle = game.title,
                     platformSlug = game.platformSlug,
                     coverPath = game.coverPath,
-                    expectedSizeBytes = rom.fileSize,
+                    expectedSizeBytes = mainFile?.fileSizeBytes ?: rom.fileSize,
                     isMultiFileRom = rom.hasMultipleFiles
                 )
                 DownloadResult.Queued

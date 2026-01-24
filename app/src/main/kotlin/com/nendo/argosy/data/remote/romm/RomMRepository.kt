@@ -673,7 +673,7 @@ class RomMRepository @Inject constructor(
     private suspend fun syncGameFiles(gameId: Long, rom: RomMRom) {
         val files = rom.files?.filter { file ->
             file.category in setOf("update", "dlc") &&
-            !file.fileName.startsWith("._")
+            !file.fileName.startsWith(".")
         } ?: return
 
         if (files.isEmpty()) {

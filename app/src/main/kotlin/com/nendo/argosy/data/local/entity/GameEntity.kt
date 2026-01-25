@@ -93,7 +93,9 @@ data class GameEntity(
 
     val titleId: String? = null,
     val titleIdCandidates: String? = null,
-    val youtubeVideoId: String? = null
+    val youtubeVideoId: String? = null,
+
+    val cheatsFetched: Boolean = false
 )
 
 data class GameListItem(

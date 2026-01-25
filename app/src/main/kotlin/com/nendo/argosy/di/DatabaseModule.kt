@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
+import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.ControllerMappingDao
 import com.nendo.argosy.data.local.dao.ControllerOrderDao
@@ -94,7 +95,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_47_48,
                 ALauncherDatabase.MIGRATION_48_49,
                 ALauncherDatabase.MIGRATION_49_50,
-                ALauncherDatabase.MIGRATION_50_51
+                ALauncherDatabase.MIGRATION_50_51,
+                ALauncherDatabase.MIGRATION_51_52
             )
             .build()
     }
@@ -183,4 +185,8 @@ object DatabaseModule {
     @Provides
     fun provideHotkeyDao(database: ALauncherDatabase): HotkeyDao =
         database.hotkeyDao()
+
+    @Provides
+    fun provideCheatDao(database: ALauncherDatabase): CheatDao =
+        database.cheatDao()
 }

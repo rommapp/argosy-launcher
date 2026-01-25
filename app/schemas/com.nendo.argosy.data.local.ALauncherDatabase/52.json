@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 51,
-    "identityHash": "d95daa159735be467ee028c5cf8339bb",
+    "version": 52,
+    "identityHash": "097f8a72e5e10a3f5746920ab178a49b",
     "entities": [
       {
         "tableName": "platforms",
@@ -2329,12 +2329,84 @@
           }
         ],
         "foreignKeys": []
+      },
+      {
+        "tableName": "cheats",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `gameId` INTEGER NOT NULL, `cheatIndex` INTEGER NOT NULL, `description` TEXT NOT NULL, `code` TEXT NOT NULL, `enabled` INTEGER NOT NULL, FOREIGN KEY(`gameId`) REFERENCES `games`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameId",
+            "columnName": "gameId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cheatIndex",
+            "columnName": "cheatIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cheats_gameId",
+            "unique": false,
+            "columnNames": [
+              "gameId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cheats_gameId` ON `${TABLE_NAME}` (`gameId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "games",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "gameId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd95daa159735be467ee028c5cf8339bb')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '097f8a72e5e10a3f5746920ab178a49b')"
     ]
   }
 }

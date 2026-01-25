@@ -517,6 +517,12 @@ interface GameDao {
         LIMIT :limit
     """)
     suspend fun getRecentlyPlayedWithCovers(limit: Int = 10): List<GameListItem>
+
+    @Query("UPDATE games SET cheatsFetched = :fetched WHERE id = :gameId")
+    suspend fun updateCheatsFetched(gameId: Long, fetched: Boolean)
+
+    @Query("SELECT * FROM games WHERE cheatsFetched = 0 AND localPath IS NOT NULL LIMIT :limit")
+    suspend fun getGamesWithoutCheats(limit: Int = 50): List<GameEntity>
 }
 
 data class SearchCandidate(

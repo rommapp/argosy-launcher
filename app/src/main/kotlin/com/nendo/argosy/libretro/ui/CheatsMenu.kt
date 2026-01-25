@@ -7,13 +7,19 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,41 +39,39 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.data.local.entity.CheatEntity
 
-sealed class InGameMenuAction {
-    data object Resume : InGameMenuAction()
-    data object QuickSave : InGameMenuAction()
-    data object QuickLoad : InGameMenuAction()
-    data object Cheats : InGameMenuAction()
-    data object Quit : InGameMenuAction()
-}
+data class CheatItem(
+    val id: Long,
+    val description: String,
+    val enabled: Boolean
+)
 
 @Composable
-fun InGameMenu(
-    gameName: String,
-    hasQuickSave: Boolean,
-    cheatsAvailable: Boolean = false,
-    onAction: (InGameMenuAction) -> Unit
+fun CheatsMenu(
+    cheats: List<CheatItem>,
+    onToggleCheat: (Long, Boolean) -> Unit,
+    onDismiss: () -> Unit
 ) {
-    val menuItems = buildList {
-        add("Resume" to InGameMenuAction.Resume)
-        add("Quick Save" to InGameMenuAction.QuickSave)
-        if (hasQuickSave) {
-            add("Quick Load" to InGameMenuAction.QuickLoad)
-        }
-        add("Cheats" to InGameMenuAction.Cheats)
-        add("Quit Game" to InGameMenuAction.Quit)
-    }
-
     var focusedIndex by remember { mutableIntStateOf(0) }
     val focusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
     val isDarkTheme = isSystemInDarkTheme()
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    LaunchedEffect(focusedIndex) {
+        if (cheats.isNotEmpty()) {
+            listState.animateScrollToItem(
+                index = focusedIndex,
+                scrollOffset = -150
+            )
+        }
     }
 
     Box(
@@ -81,7 +85,7 @@ fun InGameMenu(
 
                 when (event.key) {
                     Key.DirectionDown, Key.ButtonThumbRight -> {
-                        focusedIndex = (focusedIndex + 1).coerceAtMost(menuItems.lastIndex)
+                        focusedIndex = (focusedIndex + 1).coerceAtMost(cheats.lastIndex)
                         true
                     }
                     Key.DirectionUp, Key.ButtonThumbLeft -> {
@@ -89,11 +93,14 @@ fun InGameMenu(
                         true
                     }
                     Key.ButtonA, Key.Enter -> {
-                        onAction(menuItems[focusedIndex].second)
+                        if (cheats.isNotEmpty()) {
+                            val cheat = cheats[focusedIndex]
+                            onToggleCheat(cheat.id, !cheat.enabled)
+                        }
                         true
                     }
                     Key.ButtonB, Key.Escape, Key.Back -> {
-                        onAction(InGameMenuAction.Resume)
+                        onDismiss()
                         true
                     }
                     else -> false
@@ -103,7 +110,8 @@ fun InGameMenu(
     ) {
         Surface(
             modifier = Modifier
-                .widthIn(max = 300.dp)
+                .widthIn(max = 400.dp)
+                .heightIn(max = 500.dp)
                 .padding(32.dp),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
@@ -115,24 +123,32 @@ fun InGameMenu(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = gameName,
+                    text = "Cheats",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    menuItems.forEachIndexed { index, (label, action) ->
-                        MenuButton(
-                            text = label,
-                            isFocused = index == focusedIndex,
-                            onClick = { onAction(action) }
-                        )
+                if (cheats.isEmpty()) {
+                    Text(
+                        text = "No cheats available",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(cheats) { index, cheat ->
+                            CheatRow(
+                                description = cheat.description,
+                                enabled = cheat.enabled,
+                                isFocused = index == focusedIndex,
+                                onToggle = { onToggleCheat(cheat.id, !cheat.enabled) }
+                            )
+                        }
                     }
                 }
             }
@@ -141,37 +157,40 @@ fun InGameMenu(
 }
 
 @Composable
-private fun MenuButton(
-    text: String,
+private fun CheatRow(
+    description: String,
+    enabled: Boolean,
     isFocused: Boolean,
-    onClick: () -> Unit
+    onToggle: () -> Unit
 ) {
     val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primary
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
     } else {
-        MaterialTheme.colorScheme.surfaceVariant
+        Color.Transparent
     }
 
-    val textColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        contentAlignment = Alignment.Center
+            .clickable(onClick = onToggle)
+            .padding(vertical = 8.dp, horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = text,
-            color = textColor,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (isFocused) FontWeight.Bold else FontWeight.Normal
+            text = description,
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Switch(
+            checked = enabled,
+            onCheckedChange = { onToggle() }
         )
     }
 }

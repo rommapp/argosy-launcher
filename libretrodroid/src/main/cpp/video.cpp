@@ -146,7 +146,12 @@ void Video::updateProgram() {
 }
 
 void Video::renderFrame() {
-    if (skipDuplicateFrames && !bfiEnabled && !isDirty) return;
+    LOGD("Video::renderFrame: skipDuplicateFrames=%d bfiEnabled=%d isDirty=%d shadersChain.size=%zu",
+         skipDuplicateFrames, bfiEnabled, isDirty, shadersChain.size());
+    if (skipDuplicateFrames && !bfiEnabled && !isDirty) {
+        LOGD("Video::renderFrame: SKIPPING (not dirty)");
+        return;
+    }
     isDirty = false;
 
     glDisable(GL_DEPTH_TEST);
@@ -234,10 +239,14 @@ float Video::getTextureHeight() {
 }
 
 void Video::onNewFrame(const void *data, unsigned width, unsigned height, size_t pitch) {
+    LOGD("Video::onNewFrame: data=%p width=%u height=%u pitch=%zu", data, width, height, pitch);
     if (data != nullptr) {
         renderer->onNewFrame(data, width, height, pitch);
         videoLayout.updateContentSize(width, height);
         isDirty = true;
+        LOGD("Video::onNewFrame: isDirty set to true");
+    } else {
+        LOGD("Video::onNewFrame: data is NULL, skipping");
     }
 }
 

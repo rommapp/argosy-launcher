@@ -81,7 +81,7 @@ class GLRetroView(
         runOnGLThread {
             LibretroDroid.setBlackFrameInsertion(value)
         }
-        renderMode = if (value) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
+        // Always use RENDERMODE_CONTINUOUSLY - libretro cores expect continuous frame calls
     }
 
     var viewport: RectF by Delegates.observable(RectF(0f, 0f, 1f, 1f)) { _, _, value ->
@@ -117,6 +117,7 @@ class GLRetroView(
         preserveEGLContextOnPause = true
         setEGLContextClientVersion(openGLESVersion)
         setRenderer(Renderer())
+        renderMode = RENDERMODE_CONTINUOUSLY
         keepScreenOn = true
     }
 
@@ -340,15 +341,26 @@ class GLRetroView(
 
     // These functions are called only after the GLSurfaceView has been created.
     private inner class RenderLifecycleObserver : LifecycleObserver {
-        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        private fun resume() = catchExceptions {
+        fun manualResume() = catchExceptions {
+            Log.d(TAG_LOG, "RenderLifecycleObserver.manualResume() called")
             LibretroDroid.resume()
             onResume()
             isEmulationReady = true
         }
 
+        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        private fun resume() = catchExceptions {
+            Log.d(TAG_LOG, "RenderLifecycleObserver.resume() lifecycle event")
+            if (!isEmulationReady) {
+                LibretroDroid.resume()
+                onResume()
+                isEmulationReady = true
+            }
+        }
+
         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         private fun pause() = catchExceptions {
+            Log.d(TAG_LOG, "RenderLifecycleObserver.pause() lifecycle event")
             isEmulationReady = false
             onPause()
             LibretroDroid.pause()
@@ -411,7 +423,9 @@ class GLRetroView(
         isGameLoaded = true
 
         KtUtils.runOnUIThread {
-            lifecycle?.addObserver(RenderLifecycleObserver())
+            val observer = RenderLifecycleObserver()
+            // When adding observer to already-RESUMED lifecycle, ON_RESUME event fires synchronously
+            lifecycle?.addObserver(observer)
         }
     }
 

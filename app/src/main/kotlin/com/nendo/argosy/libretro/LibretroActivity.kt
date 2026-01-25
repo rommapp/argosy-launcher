@@ -22,12 +22,18 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.nendo.argosy.data.cheats.CheatsRepository
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.local.dao.CheatDao
+import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.CheatEntity
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
+import com.nendo.argosy.libretro.ui.CheatItem
+import com.nendo.argosy.libretro.ui.CheatsMenu
 import com.nendo.argosy.libretro.ui.InGameMenu
 import com.nendo.argosy.libretro.ui.InGameMenuAction
 import com.nendo.argosy.ui.theme.ALauncherTheme
@@ -46,6 +52,9 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var playSessionTracker: PlaySessionTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var inputConfigRepository: InputConfigRepository
+    @Inject lateinit var cheatDao: CheatDao
+    @Inject lateinit var gameDao: GameDao
+    @Inject lateinit var cheatsRepository: CheatsRepository
 
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
@@ -61,7 +70,9 @@ class LibretroActivity : ComponentActivity() {
     private var startPressed = false
     private var selectPressed = false
     private var menuVisible by mutableStateOf(false)
+    private var cheatsMenuVisible by mutableStateOf(false)
     private var hasQuickSave by mutableStateOf(false)
+    private var cheats by mutableStateOf<List<CheatEntity>>(emptyList())
     private var gameName: String = ""
     private var lastSramHash: String? = null
     private var aspectRatioMode: String = "Auto"
@@ -155,7 +166,15 @@ class LibretroActivity : ComponentActivity() {
                                 InGameMenu(
                                     gameName = gameName,
                                     hasQuickSave = hasQuickSave,
+                                    cheatsAvailable = cheats.isNotEmpty(),
                                     onAction = ::handleMenuAction
+                                )
+                            }
+                            if (cheatsMenuVisible) {
+                                CheatsMenu(
+                                    cheats = cheats.map { CheatItem(it.id, it.description, it.enabled) },
+                                    onToggleCheat = ::handleToggleCheat,
+                                    onDismiss = { cheatsMenuVisible = false; menuVisible = true }
                                 )
                             }
                         }
@@ -183,6 +202,30 @@ class LibretroActivity : ComponentActivity() {
 
         if (gameId != -1L) {
             playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName)
+            loadCheats()
+        }
+    }
+
+    private fun loadCheats() {
+        lifecycleScope.launch {
+            val game = gameDao.getById(gameId)
+            Log.d("LibretroActivity", "loadCheats: game=$game, cheatsFetched=${game?.cheatsFetched}, configured=${cheatsRepository.isConfigured()}")
+
+            if (game != null && !game.cheatsFetched && cheatsRepository.isConfigured()) {
+                Log.d("LibretroActivity", "Fetching cheats from server for game $gameId (${game.title})")
+                try {
+                    val success = cheatsRepository.syncCheatsForGame(game)
+                    Log.d("LibretroActivity", "Cheats sync result: $success")
+                } catch (e: Exception) {
+                    Log.w("LibretroActivity", "Failed to fetch cheats: ${e.message}", e)
+                }
+            }
+
+            cheats = cheatDao.getCheatsForGame(gameId)
+            Log.d("LibretroActivity", "Loaded ${cheats.size} cheats for game $gameId")
+            if (cheats.any { it.enabled }) {
+                applyAllEnabledCheats()
+            }
         }
     }
 
@@ -324,6 +367,7 @@ class LibretroActivity : ComponentActivity() {
                         val maxStateSize = 4 * 1024 * 1024
                         retroView.initRewindBuffer(slotCount, maxStateSize)
                         Log.d("LibretroActivity", "Rewind buffer initialized: $slotCount slots, ${maxStateSize / 1024}KB max state")
+                        applyAllEnabledCheats()
                     }
                     is GLRetroView.GLRetroEvents.FrameRendered -> {
                         if (!menuVisible) {
@@ -363,7 +407,32 @@ class LibretroActivity : ComponentActivity() {
                 performQuickLoad()
                 hideMenu()
             }
+            InGameMenuAction.Cheats -> {
+                menuVisible = false
+                cheatsMenuVisible = true
+            }
             InGameMenuAction.Quit -> finish()
+        }
+    }
+
+    private fun handleToggleCheat(cheatId: Long, enabled: Boolean) {
+        lifecycleScope.launch {
+            cheatDao.setEnabled(cheatId, enabled)
+            cheats = cheatDao.getCheatsForGame(gameId)
+            applyCheat(cheatId, enabled)
+        }
+    }
+
+    private fun applyCheat(cheatId: Long, enabled: Boolean) {
+        val cheat = cheats.find { it.id == cheatId } ?: return
+        retroView.setCheat(cheat.cheatIndex, enabled, cheat.code)
+        Log.d("LibretroActivity", "Applied cheat ${cheat.cheatIndex}: $enabled - ${cheat.description}")
+    }
+
+    private fun applyAllEnabledCheats() {
+        cheats.filter { it.enabled }.forEachIndexed { _, cheat ->
+            retroView.setCheat(cheat.cheatIndex, true, cheat.code)
+            Log.d("LibretroActivity", "Applied enabled cheat ${cheat.cheatIndex}: ${cheat.description}")
         }
     }
 

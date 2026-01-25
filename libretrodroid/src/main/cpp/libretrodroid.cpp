@@ -57,7 +57,7 @@ void LibretroDroid::callback_hw_video_refresh(
     unsigned height,
     size_t pitch
 ) {
-    LOGD("hw video refresh callback called %i %i", width, height);
+    LOGD("VIDEO CALLBACK: data=%p width=%u height=%u pitch=%zu", data, width, height, pitch);
     LibretroDroid::getInstance().handleVideoRefresh(data, width, height, pitch);
 }
 
@@ -564,12 +564,18 @@ void LibretroDroid::handleVideoRefresh(
     unsigned int height,
     size_t pitch
 ) {
+    LOGD("handleVideoRefresh: video=%p data=%p", video.get(), data);
     if (video) {
         video->onNewFrame(data, width, height, pitch);
 
         if (video->rendersInVideoCallback()) {
+            LOGD("handleVideoRefresh: rendering in video callback");
             video->renderFrame();
+        } else {
+            LOGD("handleVideoRefresh: NOT rendering in video callback (will render in step)");
         }
+    } else {
+        LOGE("handleVideoRefresh: video is NULL!");
     }
 }
 

@@ -8,6 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.nendo.argosy.data.local.converter.Converters
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
+import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.ControllerMappingDao
 import com.nendo.argosy.data.local.dao.ControllerOrderDao
@@ -30,6 +31,7 @@ import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.AppCategoryEntity
+import com.nendo.argosy.data.local.entity.CheatEntity
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.ControllerMappingEntity
@@ -76,9 +78,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         CoreVersionEntity::class,
         ControllerOrderEntity::class,
         ControllerMappingEntity::class,
-        HotkeyEntity::class
+        HotkeyEntity::class,
+        CheatEntity::class
     ],
-    version = 51,
+    version = 52,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -105,6 +108,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun controllerOrderDao(): ControllerOrderDao
     abstract fun controllerMappingDao(): ControllerMappingDao
     abstract fun hotkeyDao(): HotkeyDao
+    abstract fun cheatDao(): CheatDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -857,6 +861,25 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     )
                 """)
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_hotkeys_action ON hotkeys(action)")
+            }
+        }
+
+        val MIGRATION_51_52 = object : Migration(51, 52) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS cheats (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        cheatIndex INTEGER NOT NULL,
+                        description TEXT NOT NULL,
+                        code TEXT NOT NULL,
+                        enabled INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (gameId) REFERENCES games(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_cheats_gameId ON cheats(gameId)")
+
+                db.execSQL("ALTER TABLE games ADD COLUMN cheatsFetched INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

@@ -40,3 +40,9 @@
 # Coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# Lifecycle observers - critical for libretrodroid rendering
+# Methods annotated with @OnLifecycleEvent use reflection and must keep their names
+-keepclassmembers class * implements androidx.lifecycle.LifecycleObserver {
+    @androidx.lifecycle.OnLifecycleEvent <methods>;
+}

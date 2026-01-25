@@ -709,16 +709,28 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setBuiltinSkipDuplicateFrames(enabled: Boolean) {
-        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(skipDuplicateFrames = enabled)) }
+        _uiState.update {
+            it.copy(builtinVideo = it.builtinVideo.copy(
+                skipDuplicateFrames = enabled,
+                blackFrameInsertion = if (enabled) false else it.builtinVideo.blackFrameInsertion
+            ))
+        }
         viewModelScope.launch {
             preferencesRepository.setBuiltinSkipDuplicateFrames(enabled)
+            if (enabled) preferencesRepository.setBuiltinBlackFrameInsertion(false)
         }
     }
 
     fun setBuiltinLowLatencyAudio(enabled: Boolean) {
-        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(lowLatencyAudio = enabled)) }
+        _uiState.update {
+            it.copy(builtinVideo = it.builtinVideo.copy(
+                lowLatencyAudio = enabled,
+                blackFrameInsertion = if (enabled) false else it.builtinVideo.blackFrameInsertion
+            ))
+        }
         viewModelScope.launch {
             preferencesRepository.setBuiltinLowLatencyAudio(enabled)
+            if (enabled) preferencesRepository.setBuiltinBlackFrameInsertion(false)
         }
     }
 
@@ -832,9 +844,19 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setBuiltinBlackFrameInsertion(enabled: Boolean) {
-        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(blackFrameInsertion = enabled)) }
+        _uiState.update {
+            it.copy(builtinVideo = it.builtinVideo.copy(
+                blackFrameInsertion = enabled,
+                skipDuplicateFrames = if (enabled) false else it.builtinVideo.skipDuplicateFrames,
+                lowLatencyAudio = if (enabled) false else it.builtinVideo.lowLatencyAudio
+            ))
+        }
         viewModelScope.launch {
             preferencesRepository.setBuiltinBlackFrameInsertion(enabled)
+            if (enabled) {
+                preferencesRepository.setBuiltinSkipDuplicateFrames(false)
+                preferencesRepository.setBuiltinLowLatencyAudio(false)
+            }
         }
     }
 

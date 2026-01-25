@@ -134,6 +134,8 @@ public:
     void setShaderConfig(ShaderManager::Config shaderConfig);
     void setFilterMode(int mode);
     void setIntegerScaling(bool enabled);
+    void setBlackFrameInsertion(bool enabled);
+    void renderBlackFrame();
 
     void resetGlobalVariables();
 
@@ -167,6 +169,7 @@ private:
     };
     int filterMode = -1;  // -1 = auto, 0 = nearest, 1 = linear
     bool integerScaling = false;
+    bool bfiEnabled = false;
 
     Rect viewportRect = Rect(0.0F, 0.0F, 1.0F, 1.0F);
     float screenRefreshRate = 60.0;

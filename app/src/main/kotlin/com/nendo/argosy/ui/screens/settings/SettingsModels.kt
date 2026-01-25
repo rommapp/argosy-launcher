@@ -204,8 +204,12 @@ data class BuiltinVideoState(
     val shader: String = "None",
     val filter: String = "Auto",
     val aspectRatio: String = "Core Provided",
-    val skipDuplicateFrames: Boolean = false
-)
+    val skipDuplicateFrames: Boolean = false,
+    val blackFrameInsertion: Boolean = false,
+    val displayRefreshRate: Float = 60f
+) {
+    val canEnableBlackFrameInsertion: Boolean get() = displayRefreshRate >= 120f
+}
 
 data class BuiltinAudioState(
     val lowLatencyAudio: Boolean = true,

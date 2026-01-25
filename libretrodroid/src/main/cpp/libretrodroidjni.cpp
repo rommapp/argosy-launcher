@@ -596,6 +596,21 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setInteger
     LibretroDroid::getInstance().setIntegerScaling(enabled);
 }
 
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setBlackFrameInsertion(
+    JNIEnv* env,
+    jclass obj,
+    jboolean enabled
+) {
+    LibretroDroid::getInstance().setBlackFrameInsertion(enabled);
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_renderBlackFrame(
+    JNIEnv* env,
+    jclass obj
+) {
+    LibretroDroid::getInstance().renderBlackFrame();
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setViewport(
     JNIEnv* env,
     jclass obj,

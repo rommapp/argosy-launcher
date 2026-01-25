@@ -146,7 +146,7 @@ void Video::updateProgram() {
 }
 
 void Video::renderFrame() {
-    if (skipDuplicateFrames && !isDirty) return;
+    if (skipDuplicateFrames && !bfiEnabled && !isDirty) return;
     isDirty = false;
 
     glDisable(GL_DEPTH_TEST);
@@ -302,6 +302,18 @@ void Video::setFilterMode(int mode) {
 
 void Video::setIntegerScaling(bool enabled) {
     videoLayout.setIntegerScaling(enabled);
+}
+
+void Video::setBlackFrameInsertion(bool enabled) {
+    bfiEnabled = enabled;
+    bfiFrameCounter = 0;
+}
+
+void Video::renderBlackFrame() {
+    glDisable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Video::initializeRenderer(RenderingOptions renderingOptions) {

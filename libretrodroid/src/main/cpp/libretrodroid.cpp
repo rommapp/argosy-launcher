@@ -218,6 +218,9 @@ void LibretroDroid::onSurfaceCreated() {
     if (integerScaling) {
         video->setIntegerScaling(integerScaling);
     }
+    if (bfiEnabled) {
+        video->setBlackFrameInsertion(bfiEnabled);
+    }
 
     if (Environment::getInstance().getHwContextReset() != nullptr) {
         Environment::getInstance().getHwContextReset()();
@@ -539,6 +542,22 @@ void LibretroDroid::setIntegerScaling(bool enabled) {
     }
 }
 
+void LibretroDroid::setBlackFrameInsertion(bool enabled) {
+    bfiEnabled = enabled;
+    if (video) {
+        video->setBlackFrameInsertion(enabled);
+    }
+    if (fpsSync) {
+        fpsSync->setExternalTimingControl(enabled);
+    }
+}
+
+void LibretroDroid::renderBlackFrame() {
+    if (video) {
+        video->renderBlackFrame();
+    }
+}
+
 void LibretroDroid::handleVideoRefresh(
     const void *data,
     unsigned int width,
@@ -614,6 +633,10 @@ void LibretroDroid::afterGameLoad() {
     core->retro_get_system_av_info(&system_av_info);
 
     fpsSync = std::make_unique<FPSSync>(system_av_info.timing.fps, screenRefreshRate);
+
+    if (bfiEnabled) {
+        fpsSync->setExternalTimingControl(true);
+    }
 
     double inputSampleRate = system_av_info.timing.sample_rate * fpsSync->getTimeStretchFactor();
 

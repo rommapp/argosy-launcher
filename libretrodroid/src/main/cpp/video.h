@@ -74,8 +74,10 @@ public:
     void updateShaderType(ShaderManager::Config shaderConfig);
     void setFilterMode(int mode);
     void setIntegerScaling(bool enabled);
+    void setBlackFrameInsertion(bool enabled);
 
     void renderFrame();
+    void renderBlackFrame();
 
     void onNewFrame(const void *data, unsigned width, unsigned height, size_t pitch);
 
@@ -105,6 +107,8 @@ private:
     bool isDirty = false;
     bool skipDuplicateFrames = false;
     int filterMode = -1;  // -1 = auto (shader decides), 0 = nearest, 1 = linear
+    bool bfiEnabled = false;
+    unsigned int bfiFrameCounter = 0;
 
     std::vector<ShaderChainEntry> shadersChain;
 

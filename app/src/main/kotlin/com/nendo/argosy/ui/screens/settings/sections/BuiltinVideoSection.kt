@@ -34,6 +34,11 @@ internal sealed class BuiltinVideoItem(
     data object Shader : BuiltinVideoItem("shader", "shaders")
     data object Filter : BuiltinVideoItem("filter", "shaders")
     data object AspectRatio : BuiltinVideoItem("aspectRatio", "display")
+    data object BlackFrameInsertion : BuiltinVideoItem(
+        "blackFrameInsertion",
+        "display",
+        visibleWhen = { it.canEnableBlackFrameInsertion }
+    )
     data object SkipDuplicateFrames : BuiltinVideoItem("skipDuplicateFrames", "performance")
 
     companion object {
@@ -47,6 +52,7 @@ internal sealed class BuiltinVideoItem(
             Filter,
             DisplayHeader,
             AspectRatio,
+            BlackFrameInsertion,
             PerformanceHeader,
             SkipDuplicateFrames
         )
@@ -138,6 +144,14 @@ fun BuiltinVideoSection(
                     value = videoState.aspectRatio,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleBuiltinAspectRatio(1) }
+                )
+
+                BuiltinVideoItem.BlackFrameInsertion -> SwitchPreference(
+                    title = "Black Frame Insertion",
+                    subtitle = "Reduce motion blur (requires 120Hz+ display)",
+                    isEnabled = videoState.blackFrameInsertion,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setBuiltinBlackFrameInsertion(it) }
                 )
 
                 BuiltinVideoItem.SkipDuplicateFrames -> SwitchPreference(

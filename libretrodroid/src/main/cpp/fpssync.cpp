@@ -61,4 +61,13 @@ void FPSSync::wait() {
     std::this_thread::sleep_until(lastFrame);
 }
 
+void FPSSync::setExternalTimingControl(bool enabled) {
+    if (enabled) {
+        useVSync = true;
+    } else {
+        useVSync = std::abs(contentRefreshRate - screenRefreshRate) < FPS_TOLERANCE;
+    }
+    reset();
+}
+
 } //namespace libretrodroid

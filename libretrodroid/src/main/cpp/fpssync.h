@@ -35,6 +35,7 @@ public:
     unsigned advanceFrames();
     void wait();
     double getTimeStretchFactor();
+    void setExternalTimingControl(bool enabled);
 private:
 
     double screenRefreshRate;

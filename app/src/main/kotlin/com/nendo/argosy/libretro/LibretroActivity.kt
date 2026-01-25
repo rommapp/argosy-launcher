@@ -107,6 +107,7 @@ class LibretroActivity : ComponentActivity() {
         lifecycle.addObserver(retroView)
         retroView.audioEnabled = true
         retroView.filterMode = settings.filterMode
+        retroView.blackFrameInsertion = settings.blackFrameInsertion
 
         if (settings.rumbleEnabled) {
             setupRumble()

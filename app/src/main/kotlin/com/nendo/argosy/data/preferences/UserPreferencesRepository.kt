@@ -126,6 +126,7 @@ class UserPreferencesRepository @Inject constructor(
         val BUILTIN_SKIP_DUPLICATE_FRAMES = booleanPreferencesKey("builtin_skip_duplicate_frames")
         val BUILTIN_LOW_LATENCY_AUDIO = booleanPreferencesKey("builtin_low_latency_audio")
         val BUILTIN_RUMBLE_ENABLED = booleanPreferencesKey("builtin_rumble_enabled")
+        val BUILTIN_BLACK_FRAME_INSERTION = booleanPreferencesKey("builtin_black_frame_insertion")
         val BUILTIN_CORE_SELECTIONS = stringPreferencesKey("builtin_core_selections")
     }
 
@@ -894,6 +895,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setBuiltinBlackFrameInsertion(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] = enabled
+        }
+    }
+
     suspend fun setBuiltinCoreForPlatform(platformSlug: String, coreId: String) {
         dataStore.edit { prefs ->
             val current = prefs[Keys.BUILTIN_CORE_SELECTIONS]
@@ -931,7 +938,8 @@ class UserPreferencesRepository @Inject constructor(
             aspectRatio = prefs[Keys.BUILTIN_ASPECT_RATIO] ?: "Core Provided",
             skipDuplicateFrames = prefs[Keys.BUILTIN_SKIP_DUPLICATE_FRAMES] ?: false,
             lowLatencyAudio = prefs[Keys.BUILTIN_LOW_LATENCY_AUDIO] ?: true,
-            rumbleEnabled = prefs[Keys.BUILTIN_RUMBLE_ENABLED] ?: true
+            rumbleEnabled = prefs[Keys.BUILTIN_RUMBLE_ENABLED] ?: true,
+            blackFrameInsertion = prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] ?: false
         )
     }
 
@@ -948,7 +956,8 @@ data class BuiltinEmulatorSettings(
     val aspectRatio: String = "Core Provided",
     val skipDuplicateFrames: Boolean = false,
     val lowLatencyAudio: Boolean = true,
-    val rumbleEnabled: Boolean = true
+    val rumbleEnabled: Boolean = true,
+    val blackFrameInsertion: Boolean = false
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {

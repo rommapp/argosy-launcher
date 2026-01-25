@@ -593,6 +593,9 @@ class SettingsViewModel @Inject constructor(
             ))
 
             val builtinSettings = preferencesRepository.getBuiltinEmulatorSettings().first()
+            val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager
+            val display = displayManager.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+            val refreshRate = display?.supportedModes?.maxOfOrNull { it.refreshRate } ?: 60f
             _uiState.update {
                 it.copy(
                     betaUpdatesEnabled = prefs.betaUpdatesEnabled,
@@ -603,7 +606,9 @@ class SettingsViewModel @Inject constructor(
                         shader = builtinSettings.shader,
                         filter = builtinSettings.filter,
                         aspectRatio = builtinSettings.aspectRatio,
-                        skipDuplicateFrames = builtinSettings.skipDuplicateFrames
+                        skipDuplicateFrames = builtinSettings.skipDuplicateFrames,
+                        blackFrameInsertion = builtinSettings.blackFrameInsertion,
+                        displayRefreshRate = refreshRate
                     ),
                     builtinAudio = BuiltinAudioState(
                         lowLatencyAudio = builtinSettings.lowLatencyAudio,
@@ -714,6 +719,13 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(builtinAudio = it.builtinAudio.copy(rumbleEnabled = enabled)) }
         viewModelScope.launch {
             preferencesRepository.setBuiltinRumbleEnabled(enabled)
+        }
+    }
+
+    fun setBuiltinBlackFrameInsertion(enabled: Boolean) {
+        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(blackFrameInsertion = enabled)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinBlackFrameInsertion(enabled)
         }
     }
 

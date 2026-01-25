@@ -73,6 +73,13 @@ class GLRetroView(
         }
     }
 
+    var blackFrameInsertion: Boolean by Delegates.observable(false) { _, _, value ->
+        runOnGLThread {
+            LibretroDroid.setBlackFrameInsertion(value)
+        }
+        renderMode = if (value) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
+    }
+
     var viewport: RectF by Delegates.observable(RectF(0f, 0f, 1f, 1f)) { _, _, value ->
         runOnGLThread {
             LibretroDroid.setViewport(value.left, value.top, value.width(), value.height())
@@ -304,11 +311,26 @@ class GLRetroView(
     }
 
     inner class Renderer : GLSurfaceView.Renderer {
+        private var bfiShowBlackNext = false
+
         override fun onDrawFrame(gl: GL10) = catchExceptions {
             if (isEmulationReady) {
-                LibretroDroid.step(this@GLRetroView)
-                lifecycle?.coroutineScope?.launch {
-                    retroGLEventsSubject.emit(GLRetroEvents.FrameRendered)
+                if (blackFrameInsertion) {
+                    if (bfiShowBlackNext) {
+                        LibretroDroid.renderBlackFrame()
+                        bfiShowBlackNext = false
+                    } else {
+                        LibretroDroid.step(this@GLRetroView)
+                        bfiShowBlackNext = true
+                        lifecycle?.coroutineScope?.launch {
+                            retroGLEventsSubject.emit(GLRetroEvents.FrameRendered)
+                        }
+                    }
+                } else {
+                    LibretroDroid.step(this@GLRetroView)
+                    lifecycle?.coroutineScope?.launch {
+                        retroGLEventsSubject.emit(GLRetroEvents.FrameRendered)
+                    }
                 }
             }
         }

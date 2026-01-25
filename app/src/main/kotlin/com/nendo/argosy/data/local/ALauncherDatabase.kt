@@ -9,7 +9,10 @@ import com.nendo.argosy.data.local.converter.Converters
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.CollectionDao
+import com.nendo.argosy.data.local.dao.ControllerMappingDao
+import com.nendo.argosy.data.local.dao.ControllerOrderDao
 import com.nendo.argosy.data.local.dao.CoreVersionDao
+import com.nendo.argosy.data.local.dao.HotkeyDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
@@ -29,7 +32,10 @@ import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.AppCategoryEntity
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
+import com.nendo.argosy.data.local.entity.ControllerMappingEntity
+import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.data.local.entity.CoreVersionEntity
+import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
@@ -67,9 +73,12 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         CollectionGameEntity::class,
         PinnedCollectionEntity::class,
         GameFileEntity::class,
-        CoreVersionEntity::class
+        CoreVersionEntity::class,
+        ControllerOrderEntity::class,
+        ControllerMappingEntity::class,
+        HotkeyEntity::class
     ],
-    version = 50,
+    version = 51,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -93,6 +102,9 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun pinnedCollectionDao(): PinnedCollectionDao
     abstract fun gameFileDao(): GameFileDao
     abstract fun coreVersionDao(): CoreVersionDao
+    abstract fun controllerOrderDao(): ControllerOrderDao
+    abstract fun controllerMappingDao(): ControllerMappingDao
+    abstract fun hotkeyDao(): HotkeyDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -803,6 +815,48 @@ abstract class ALauncherDatabase : RoomDatabase() {
                         updateAvailable INTEGER NOT NULL DEFAULT 0
                     )
                 """)
+            }
+        }
+
+        val MIGRATION_50_51 = object : Migration(50, 51) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS controller_order (
+                        port INTEGER PRIMARY KEY NOT NULL,
+                        controllerId TEXT NOT NULL,
+                        controllerName TEXT NOT NULL,
+                        assignedAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_controller_order_controllerId ON controller_order(controllerId)")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS controller_mappings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        controllerId TEXT NOT NULL,
+                        controllerName TEXT NOT NULL,
+                        vendorId INTEGER NOT NULL,
+                        productId INTEGER NOT NULL,
+                        mappingJson TEXT NOT NULL,
+                        presetName TEXT,
+                        isAutoDetected INTEGER NOT NULL DEFAULT 0,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_controller_mappings_controllerId ON controller_mappings(controllerId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_controller_mappings_vendorProduct ON controller_mappings(vendorId, productId)")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS hotkeys (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        action TEXT NOT NULL,
+                        buttonComboJson TEXT NOT NULL,
+                        controllerId TEXT,
+                        isEnabled INTEGER NOT NULL DEFAULT 1
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_hotkeys_action ON hotkeys(action)")
             }
         }
     }

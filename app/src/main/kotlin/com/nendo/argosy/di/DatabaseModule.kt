@@ -6,7 +6,10 @@ import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.CollectionDao
+import com.nendo.argosy.data.local.dao.ControllerMappingDao
+import com.nendo.argosy.data.local.dao.ControllerOrderDao
 import com.nendo.argosy.data.local.dao.CoreVersionDao
+import com.nendo.argosy.data.local.dao.HotkeyDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
@@ -90,7 +93,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_46_47,
                 ALauncherDatabase.MIGRATION_47_48,
                 ALauncherDatabase.MIGRATION_48_49,
-                ALauncherDatabase.MIGRATION_49_50
+                ALauncherDatabase.MIGRATION_49_50,
+                ALauncherDatabase.MIGRATION_50_51
             )
             .build()
     }
@@ -167,4 +171,16 @@ object DatabaseModule {
     @Provides
     fun provideCoreVersionDao(database: ALauncherDatabase): CoreVersionDao =
         database.coreVersionDao()
+
+    @Provides
+    fun provideControllerOrderDao(database: ALauncherDatabase): ControllerOrderDao =
+        database.controllerOrderDao()
+
+    @Provides
+    fun provideControllerMappingDao(database: ALauncherDatabase): ControllerMappingDao =
+        database.controllerMappingDao()
+
+    @Provides
+    fun provideHotkeyDao(database: ALauncherDatabase): HotkeyDao =
+        database.hotkeyDao()
 }

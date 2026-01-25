@@ -35,9 +35,15 @@ class SettingsInputHandler(
     private fun hasAlertDialogOpen(state: SettingsUiState): Boolean =
         state.steam.showAddGameDialog
 
+    private fun hasBuiltinControlsModalOpen(state: SettingsUiState): Boolean =
+        state.builtinControls.showControllerOrderModal ||
+            state.builtinControls.showInputMappingModal ||
+            state.builtinControls.showHotkeysModal
+
     override fun onUp(): InputResult {
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
+        if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalFocus(-1)
@@ -84,6 +90,7 @@ class SettingsInputHandler(
     override fun onDown(): InputResult {
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
+        if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalFocus(1)
@@ -130,6 +137,7 @@ class SettingsInputHandler(
     override fun onLeft(): InputResult {
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
+        if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalButtonFocus(1)
@@ -323,6 +331,7 @@ class SettingsInputHandler(
     override fun onRight(): InputResult {
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
+        if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalButtonFocus(-1)
@@ -515,6 +524,7 @@ class SettingsInputHandler(
     override fun onConfirm(): InputResult {
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
+        if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
         if (state.storage.platformSettingsModalId != null) {
             viewModel.selectPlatformSettingsOption()
@@ -630,10 +640,24 @@ class SettingsInputHandler(
                     viewModel.setBuiltinLimitHotkeysToPlayer1(!state.builtinControls.limitHotkeysToPlayer1)
                     return InputResult.handled(SoundType.TOGGLE)
                 }
-                BuiltinControlsItem.ControllerOrder,
-                BuiltinControlsItem.InputMapping,
+                BuiltinControlsItem.AnalogAsDpad -> {
+                    viewModel.setBuiltinAnalogAsDpad(!state.builtinControls.analogAsDpad)
+                    return InputResult.handled(SoundType.TOGGLE)
+                }
+                BuiltinControlsItem.DpadAsAnalog -> {
+                    viewModel.setBuiltinDpadAsAnalog(!state.builtinControls.dpadAsAnalog)
+                    return InputResult.handled(SoundType.TOGGLE)
+                }
+                BuiltinControlsItem.ControllerOrder -> {
+                    viewModel.showControllerOrderModal()
+                    return InputResult.handled(SoundType.SELECT)
+                }
+                BuiltinControlsItem.InputMapping -> {
+                    viewModel.showInputMappingModal()
+                    return InputResult.handled(SoundType.SELECT)
+                }
                 BuiltinControlsItem.Hotkeys -> {
-                    // TODO: Open respective screens/modals
+                    viewModel.showHotkeysModal()
                     return InputResult.handled(SoundType.SELECT)
                 }
                 else -> {}
@@ -644,6 +668,9 @@ class SettingsInputHandler(
     }
 
     override fun onBack(): InputResult {
+        val state = viewModel.uiState.value
+        if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
+
         return if (!viewModel.navigateBack()) {
             onBackNavigation()
             InputResult.HANDLED
@@ -654,6 +681,7 @@ class SettingsInputHandler(
 
     override fun onContextMenu(): InputResult {
         val state = viewModel.uiState.value
+        if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
         if (state.emulators.showSavePathModal ||
             state.storage.platformSettingsModalId != null ||

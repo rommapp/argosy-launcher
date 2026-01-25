@@ -132,7 +132,8 @@ class SettingsViewModel @Inject constructor(
     private val androidGameScanner: AndroidGameScanner,
     private val modalResetSignal: ModalResetSignal,
     private val gradientColorExtractor: GradientColorExtractor,
-    private val coreManager: LibretroCoreManager
+    private val coreManager: LibretroCoreManager,
+    private val inputConfigRepository: com.nendo.argosy.data.repository.InputConfigRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -616,7 +617,9 @@ class SettingsViewModel @Inject constructor(
                     ),
                     builtinControls = BuiltinControlsState(
                         rumbleEnabled = builtinSettings.rumbleEnabled,
-                        limitHotkeysToPlayer1 = true
+                        limitHotkeysToPlayer1 = builtinSettings.limitHotkeysToPlayer1,
+                        analogAsDpad = builtinSettings.analogAsDpad,
+                        dpadAsAnalog = builtinSettings.dpadAsAnalog
                     )
                 )
             }
@@ -728,7 +731,104 @@ class SettingsViewModel @Inject constructor(
 
     fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) {
         _uiState.update { it.copy(builtinControls = it.builtinControls.copy(limitHotkeysToPlayer1 = enabled)) }
-        // TODO: persist this preference when adding to UserPreferencesRepository
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinLimitHotkeysToPlayer1(enabled)
+        }
+    }
+
+    fun setBuiltinAnalogAsDpad(enabled: Boolean) {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(analogAsDpad = enabled)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinAnalogAsDpad(enabled)
+        }
+    }
+
+    fun setBuiltinDpadAsAnalog(enabled: Boolean) {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(dpadAsAnalog = enabled)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinDpadAsAnalog(enabled)
+        }
+    }
+
+    fun showControllerOrderModal() {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(showControllerOrderModal = true)) }
+    }
+
+    fun hideControllerOrderModal() {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(showControllerOrderModal = false)) }
+    }
+
+    fun assignControllerToPort(port: Int, device: android.view.InputDevice) {
+        viewModelScope.launch {
+            inputConfigRepository.assignControllerToPort(port, device)
+            updateControllerOrderCount()
+        }
+    }
+
+    fun clearControllerOrder() {
+        viewModelScope.launch {
+            inputConfigRepository.clearControllerOrder()
+            updateControllerOrderCount()
+        }
+    }
+
+    fun getControllerOrder() = inputConfigRepository.observeControllerOrder()
+
+    private suspend fun updateControllerOrderCount() {
+        val count = inputConfigRepository.getControllerOrder().size
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(controllerOrderCount = count)) }
+    }
+
+    fun showInputMappingModal() {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(showInputMappingModal = true)) }
+    }
+
+    fun hideInputMappingModal() {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(showInputMappingModal = false)) }
+    }
+
+    fun getConnectedControllers() = inputConfigRepository.getConnectedControllers()
+
+    suspend fun getControllerMapping(controller: com.nendo.argosy.data.repository.ControllerInfo): Pair<Map<Int, Int>, String?> {
+        val device = android.view.InputDevice.getDevice(controller.deviceId)
+            ?: return Pair(emptyMap(), null)
+        val mapping = inputConfigRepository.getOrCreateMappingForDevice(device)
+        val entity = inputConfigRepository.observeControllerMappings().first()
+            .find { it.controllerId == controller.controllerId }
+        return Pair(mapping, entity?.presetName)
+    }
+
+    suspend fun saveControllerMapping(
+        controller: com.nendo.argosy.data.repository.ControllerInfo,
+        mapping: Map<Int, Int>,
+        presetName: String?,
+        isAutoDetected: Boolean
+    ) {
+        val device = android.view.InputDevice.getDevice(controller.deviceId) ?: return
+        inputConfigRepository.saveMapping(device, mapping, presetName, isAutoDetected)
+    }
+
+    suspend fun applyControllerPreset(controller: com.nendo.argosy.data.repository.ControllerInfo, presetName: String) {
+        val device = android.view.InputDevice.getDevice(controller.deviceId) ?: return
+        inputConfigRepository.applyPreset(device, presetName)
+    }
+
+    fun showHotkeysModal() {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(showHotkeysModal = true)) }
+    }
+
+    fun hideHotkeysModal() {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(showHotkeysModal = false)) }
+    }
+
+    fun observeHotkeys() = inputConfigRepository.observeHotkeys()
+
+    suspend fun saveHotkey(action: com.nendo.argosy.data.local.entity.HotkeyAction, keyCodes: List<Int>) {
+        inputConfigRepository.setHotkey(action, keyCodes)
+    }
+
+    suspend fun clearHotkey(action: com.nendo.argosy.data.local.entity.HotkeyAction) {
+        inputConfigRepository.deleteHotkey(action)
     }
 
     fun setBuiltinBlackFrameInsertion(enabled: Boolean) {
@@ -1227,6 +1327,18 @@ class SettingsViewModel @Inject constructor(
             }
             state.bios.showDistributeResultModal -> {
                 dismissDistributeResultModal()
+                true
+            }
+            state.builtinControls.showControllerOrderModal -> {
+                hideControllerOrderModal()
+                true
+            }
+            state.builtinControls.showInputMappingModal -> {
+                hideInputMappingModal()
+                true
+            }
+            state.builtinControls.showHotkeysModal -> {
+                hideHotkeysModal()
                 true
             }
             state.server.rommConfiguring -> {

@@ -43,6 +43,8 @@ class GamepadInputHandler @Inject constructor(
     private var swapXY = false
     private var swapStartSelect = false
 
+    private var rawKeyEventListener: ((KeyEvent) -> Boolean)? = null
+
     init {
         scope.launch {
             preferencesRepository.preferences.collect { prefs ->
@@ -63,7 +65,19 @@ class GamepadInputHandler @Inject constructor(
         inputBlockedUntil = System.currentTimeMillis() + durationMs
     }
 
+    fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
+        rawKeyEventListener = listener
+    }
+
     fun handleKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            android.util.Log.d("GamepadInput", "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}")
+        }
+
+        rawKeyEventListener?.let { listener ->
+            return listener(event)
+        }
+
         if (event.action != KeyEvent.ACTION_DOWN) return false
 
         val gamepadEvent = mapKeyToEvent(event.keyCode) ?: return false

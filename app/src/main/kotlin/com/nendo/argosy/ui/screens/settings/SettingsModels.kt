@@ -217,7 +217,13 @@ data class BuiltinVideoState(
 
 data class BuiltinControlsState(
     val rumbleEnabled: Boolean = true,
-    val limitHotkeysToPlayer1: Boolean = true
+    val limitHotkeysToPlayer1: Boolean = true,
+    val analogAsDpad: Boolean = false,
+    val dpadAsAnalog: Boolean = false,
+    val showControllerOrderModal: Boolean = false,
+    val showInputMappingModal: Boolean = false,
+    val showHotkeysModal: Boolean = false,
+    val controllerOrderCount: Int = 0
 )
 
 enum class CoreChipStatus {

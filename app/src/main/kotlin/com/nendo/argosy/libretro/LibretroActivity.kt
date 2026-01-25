@@ -24,8 +24,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.libretro.ui.InGameMenu
 import com.nendo.argosy.libretro.ui.InGameMenuAction
 import com.nendo.argosy.ui.theme.ALauncherTheme
@@ -43,8 +45,12 @@ import javax.inject.Inject
 class LibretroActivity : ComponentActivity() {
     @Inject lateinit var playSessionTracker: PlaySessionTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
+    @Inject lateinit var inputConfigRepository: InputConfigRepository
 
     private lateinit var retroView: GLRetroView
+    private val portResolver = ControllerPortResolver()
+    private val keyMapper = ControllerKeyMapper()
+    private lateinit var hotkeyManager: HotkeyManager
     private var vibrator: Vibrator? = null
     private lateinit var statesDir: File
     private lateinit var savesDir: File
@@ -72,6 +78,7 @@ class LibretroActivity : ComponentActivity() {
     private var lastCaptureTime = 0L
     private var lastRewindTime = 0L
     private val frameIntervalMs = 16L
+    private var limitHotkeysToPlayer1 = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,6 +131,10 @@ class LibretroActivity : ComponentActivity() {
         retroView.audioEnabled = true
         retroView.filterMode = settings.filterMode
         retroView.blackFrameInsertion = settings.blackFrameInsertion
+        retroView.portResolver = portResolver
+        retroView.keyMapper = keyMapper
+
+        setupInputConfig()
 
         if (settings.rumbleEnabled) {
             setupRumble()
@@ -254,6 +265,35 @@ class LibretroActivity : ComponentActivity() {
         return digest.digest(data).joinToString("") { "%02x".format(it) }
     }
 
+    private fun setupInputConfig() {
+        hotkeyManager = HotkeyManager(inputConfigRepository)
+
+        lifecycleScope.launch {
+            val controllerOrder = inputConfigRepository.getControllerOrder()
+            portResolver.setControllerOrder(controllerOrder)
+
+            val mappings = mutableMapOf<String, Map<Int, Int>>()
+            for (controller in inputConfigRepository.getConnectedControllers()) {
+                val mapping = inputConfigRepository.getOrCreateMappingForDevice(
+                    android.view.InputDevice.getDevice(controller.deviceId)!!
+                )
+                mappings[controller.controllerId] = mapping
+            }
+            keyMapper.setMappings(mappings)
+
+            inputConfigRepository.initializeDefaultHotkeys()
+            val hotkeys = inputConfigRepository.getEnabledHotkeys()
+            hotkeyManager.setHotkeys(hotkeys)
+            hotkeyManager.setLimitToPlayer1(limitHotkeysToPlayer1)
+
+            if (controllerOrder.isNotEmpty()) {
+                hotkeyManager.setPlayer1ControllerId(controllerOrder.first().controllerId)
+            }
+
+            Log.d("LibretroActivity", "Input config loaded: ${controllerOrder.size} port assignments, ${mappings.size} mappings, ${hotkeys.size} hotkeys")
+        }
+    }
+
     private fun setupRumble() {
         vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager
@@ -374,31 +414,47 @@ class LibretroActivity : ComponentActivity() {
             return super.onKeyDown(keyCode, event)
         }
 
-        when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_START -> startPressed = true
-            KeyEvent.KEYCODE_BUTTON_SELECT -> selectPressed = true
-            KeyEvent.KEYCODE_BUTTON_R2 -> {
-                if (!isFastForwarding) {
-                    isFastForwarding = true
-                    retroView.frameSpeed = fastForwardSpeed
-                }
-                return true
-            }
-            KeyEvent.KEYCODE_BUTTON_L2 -> {
-                if (rewindEnabled && !isRewinding) {
-                    isRewinding = true
-                    lastRewindTime = 0L
-                    retroView.frameSpeed = 1
-                }
-                return true
-            }
-        }
+        val controllerId = event.device?.let { getControllerId(it) }
+        val triggeredAction = hotkeyManager.onKeyDown(keyCode, controllerId)
 
-        if (startPressed && selectPressed) {
-            showMenu()
-            startPressed = false
-            selectPressed = false
-            return true
+        if (triggeredAction != null) {
+            when (triggeredAction) {
+                HotkeyAction.IN_GAME_MENU -> {
+                    showMenu()
+                    hotkeyManager.clearState()
+                    return true
+                }
+                HotkeyAction.QUICK_SAVE -> {
+                    performQuickSave()
+                    hotkeyManager.clearState()
+                    return true
+                }
+                HotkeyAction.QUICK_LOAD -> {
+                    performQuickLoad()
+                    hotkeyManager.clearState()
+                    return true
+                }
+                HotkeyAction.FAST_FORWARD -> {
+                    if (!isFastForwarding) {
+                        isFastForwarding = true
+                        retroView.frameSpeed = fastForwardSpeed
+                    }
+                    return true
+                }
+                HotkeyAction.REWIND -> {
+                    if (rewindEnabled && !isRewinding) {
+                        isRewinding = true
+                        lastRewindTime = 0L
+                        retroView.frameSpeed = 1
+                    }
+                    return true
+                }
+                HotkeyAction.QUICK_SUSPEND -> {
+                    saveSram()
+                    finish()
+                    return true
+                }
+            }
         }
 
         return retroView.onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event)
@@ -409,20 +465,15 @@ class LibretroActivity : ComponentActivity() {
             return super.onKeyUp(keyCode, event)
         }
 
-        when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_START -> startPressed = false
-            KeyEvent.KEYCODE_BUTTON_SELECT -> selectPressed = false
-            KeyEvent.KEYCODE_BUTTON_R2 -> {
-                if (isFastForwarding) {
-                    isFastForwarding = false
-                    retroView.frameSpeed = 1
-                }
-                return true
-            }
-            KeyEvent.KEYCODE_BUTTON_L2 -> {
-                isRewinding = false
-                return true
-            }
+        hotkeyManager.onKeyUp(keyCode)
+
+        if (!hotkeyManager.isHotkeyActive(HotkeyAction.FAST_FORWARD) && isFastForwarding) {
+            isFastForwarding = false
+            retroView.frameSpeed = 1
+        }
+
+        if (!hotkeyManager.isHotkeyActive(HotkeyAction.REWIND) && isRewinding) {
+            isRewinding = false
         }
 
         return retroView.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event)
@@ -456,6 +507,10 @@ class LibretroActivity : ComponentActivity() {
             playSessionTracker.endSession()
         }
         super.onDestroy()
+    }
+
+    private fun getControllerId(device: android.view.InputDevice): String {
+        return "${device.vendorId}:${device.productId}:${device.descriptor}"
     }
 
     companion object {

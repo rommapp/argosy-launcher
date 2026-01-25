@@ -96,6 +96,9 @@ class GLRetroView(
         }
     }
 
+    var portResolver: PortResolver? = null
+    var keyMapper: KeyMapper? = null
+
     private val openGLESVersion: Int
 
     private var isGameLoaded = false
@@ -271,8 +274,9 @@ class GLRetroView(
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        val mappedKey = GamepadsManager.getGamepadKeyEvent(keyCode)
-        val port = (event?.device?.controllerNumber ?: 0) - 1
+        val device = event?.device
+        val mappedKey = mapKey(device, keyCode)
+        val port = resolvePort(device)
 
         if (event != null && port >= 0 && keyCode in GamepadsManager.GAMEPAD_KEYS) {
             sendKeyEvent(KeyEvent.ACTION_DOWN, mappedKey, port)
@@ -282,8 +286,9 @@ class GLRetroView(
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        val mappedKey = GamepadsManager.getGamepadKeyEvent(keyCode)
-        val port = (event?.device?.controllerNumber ?: 0) - 1
+        val device = event?.device
+        val mappedKey = mapKey(device, keyCode)
+        val port = resolvePort(device)
 
         if (event != null && port >= 0 && keyCode in GamepadsManager.GAMEPAD_KEYS) {
             sendKeyEvent(KeyEvent.ACTION_UP, mappedKey, port)
@@ -293,7 +298,7 @@ class GLRetroView(
     }
 
     override fun onGenericMotionEvent(event: MotionEvent?): Boolean {
-        val port = (event?.device?.controllerNumber ?: 0) - 1
+        val port = resolvePort(event?.device)
         if (port >= 0) {
             when (event?.source) {
                 InputDevice.SOURCE_JOYSTICK -> {
@@ -319,6 +324,18 @@ class GLRetroView(
             }
         }
         return super.onGenericMotionEvent(event)
+    }
+
+    private fun resolvePort(device: InputDevice?): Int {
+        if (device == null) return -1
+        return portResolver?.getPort(device) ?: ((device.controllerNumber - 1).coerceAtLeast(0))
+    }
+
+    private fun mapKey(device: InputDevice?, keyCode: Int): Int {
+        if (device != null && keyMapper != null) {
+            return keyMapper!!.mapKey(device, keyCode)
+        }
+        return GamepadsManager.getGamepadKeyEvent(keyCode)
     }
 
     // These functions are called only after the GLSurfaceView has been created.

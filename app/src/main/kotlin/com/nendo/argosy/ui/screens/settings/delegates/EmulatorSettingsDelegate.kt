@@ -32,7 +32,7 @@ import javax.inject.Inject
 
 enum class BuiltinNavigationTarget {
     VIDEO_SETTINGS,
-    AUDIO_SETTINGS,
+    CONTROLS_SETTINGS,
     CORE_MANAGEMENT
 }
 
@@ -389,9 +389,9 @@ class EmulatorSettingsDelegate @Inject constructor(
         }
     }
 
-    fun navigateToBuiltinAudio(scope: CoroutineScope) {
+    fun navigateToBuiltinControls(scope: CoroutineScope) {
         scope.launch {
-            _builtinNavigationEvent.emit(BuiltinNavigationTarget.AUDIO_SETTINGS)
+            _builtinNavigationEvent.emit(BuiltinNavigationTarget.CONTROLS_SETTINGS)
         }
     }
 

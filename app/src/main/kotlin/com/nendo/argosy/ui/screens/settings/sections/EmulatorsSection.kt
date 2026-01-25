@@ -53,7 +53,7 @@ internal sealed class EmulatorsItem(
 ) {
     data object BuiltinHeader : EmulatorsItem("builtin_header", "builtin")
     data object BuiltinVideo : EmulatorsItem("builtin_video", "builtin")
-    data object BuiltinAudio : EmulatorsItem("builtin_audio", "builtin")
+    data object BuiltinControls : EmulatorsItem("builtin_controls", "builtin")
     data object BuiltinCores : EmulatorsItem("builtin_cores", "builtin")
     data object PlatformsHeader : EmulatorsItem("platforms_header", "platforms")
     data object AutoAssign : EmulatorsItem("autoAssign", "platforms", visibleWhen = { it.canAutoAssign })
@@ -65,7 +65,7 @@ internal sealed class EmulatorsItem(
 
     companion object {
         fun buildItems(platforms: List<PlatformEmulatorConfig>): List<EmulatorsItem> =
-            listOf(BuiltinHeader, BuiltinVideo, BuiltinAudio, BuiltinCores, PlatformsHeader, AutoAssign) +
+            listOf(BuiltinHeader, BuiltinVideo, BuiltinControls, BuiltinCores, PlatformsHeader, AutoAssign) +
                 platforms.mapIndexed { index, config -> PlatformItem(config, index) }
     }
 }
@@ -168,11 +168,11 @@ fun EmulatorsSection(
                         onClick = { viewModel.navigateToBuiltinVideo() }
                     )
 
-                    EmulatorsItem.BuiltinAudio -> ActionPreference(
-                        title = "Audio Settings",
-                        subtitle = "Latency, sync mode",
+                    EmulatorsItem.BuiltinControls -> ActionPreference(
+                        title = "Controls",
+                        subtitle = "Rumble, input mapping, hotkeys",
                         isFocused = isFocused(item),
-                        onClick = { viewModel.navigateToBuiltinAudio() }
+                        onClick = { viewModel.navigateToBuiltinControls() }
                     )
 
                     EmulatorsItem.BuiltinCores -> {

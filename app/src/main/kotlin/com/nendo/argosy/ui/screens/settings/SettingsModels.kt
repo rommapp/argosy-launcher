@@ -45,7 +45,7 @@ enum class SettingsSection {
     CONTROLS,
     EMULATORS,
     BUILTIN_VIDEO,
-    BUILTIN_AUDIO,
+    BUILTIN_CONTROLS,
     CORE_MANAGEMENT,
     PERMISSIONS,
     ABOUT
@@ -209,14 +209,15 @@ data class BuiltinVideoState(
     val displayRefreshRate: Float = 60f,
     val fastForwardSpeed: String = "4x",
     val rotation: String = "Auto",
-    val overscanCrop: String = "Off"
+    val overscanCrop: String = "Off",
+    val lowLatencyAudio: Boolean = true
 ) {
     val canEnableBlackFrameInsertion: Boolean get() = displayRefreshRate >= 120f
 }
 
-data class BuiltinAudioState(
-    val lowLatencyAudio: Boolean = true,
-    val rumbleEnabled: Boolean = true
+data class BuiltinControlsState(
+    val rumbleEnabled: Boolean = true,
+    val limitHotkeysToPlayer1: Boolean = true
 )
 
 enum class CoreChipStatus {
@@ -506,7 +507,7 @@ data class SettingsUiState(
     val ambientAudio: AmbientAudioState = AmbientAudioState(),
     val emulators: EmulatorState = EmulatorState(),
     val builtinVideo: BuiltinVideoState = BuiltinVideoState(),
-    val builtinAudio: BuiltinAudioState = BuiltinAudioState(),
+    val builtinControls: BuiltinControlsState = BuiltinControlsState(),
     val coreManagement: CoreManagementState = CoreManagementState(),
     val server: ServerState = ServerState(),
     val storage: StorageState = StorageState(),

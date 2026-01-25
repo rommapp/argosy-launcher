@@ -43,6 +43,7 @@ internal sealed class BuiltinVideoItem(
     )
     data object FastForwardSpeed : BuiltinVideoItem("fastForwardSpeed", "performance")
     data object SkipDuplicateFrames : BuiltinVideoItem("skipDuplicateFrames", "performance")
+    data object LowLatencyAudio : BuiltinVideoItem("lowLatencyAudio", "performance")
 
     companion object {
         private val ShadersHeader = Header("shadersHeader", "shaders", "Shaders")
@@ -60,7 +61,8 @@ internal sealed class BuiltinVideoItem(
             BlackFrameInsertion,
             PerformanceHeader,
             FastForwardSpeed,
-            SkipDuplicateFrames
+            SkipDuplicateFrames,
+            LowLatencyAudio
         )
     }
 }
@@ -187,6 +189,14 @@ fun BuiltinVideoSection(
                     isEnabled = videoState.skipDuplicateFrames,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setBuiltinSkipDuplicateFrames(it) }
+                )
+
+                BuiltinVideoItem.LowLatencyAudio -> SwitchPreference(
+                    title = "Low Latency Audio",
+                    subtitle = "Reduce audio delay for better responsiveness",
+                    isEnabled = videoState.lowLatencyAudio,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setBuiltinLowLatencyAudio(it) }
                 )
             }
         }

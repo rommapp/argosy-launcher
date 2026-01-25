@@ -67,8 +67,11 @@ class LibretroActivity : ComponentActivity() {
     private var isFastForwarding = false
     private var isRewinding = false
     private var rewindEnabled = false
-    private var rewindCaptureInterval = 30
-    private var frameCounter = 0
+    private var rewindCaptureInterval = 1
+    private var rewindSpeed = 2
+    private var lastCaptureTime = 0L
+    private var lastRewindTime = 0L
+    private val frameIntervalMs = 16L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -277,20 +280,24 @@ class LibretroActivity : ComponentActivity() {
             retroView.getGLRetroEvents().collect { event ->
                 when (event) {
                     is GLRetroView.GLRetroEvents.SurfaceCreated -> {
-                        val slotCount = 60
+                        val slotCount = 900
                         val maxStateSize = 4 * 1024 * 1024
                         retroView.initRewindBuffer(slotCount, maxStateSize)
                         Log.d("LibretroActivity", "Rewind buffer initialized: $slotCount slots, ${maxStateSize / 1024}KB max state")
                     }
                     is GLRetroView.GLRetroEvents.FrameRendered -> {
                         if (!menuVisible) {
+                            val now = System.currentTimeMillis()
                             if (isRewinding) {
-                                performRewind()
+                                if (now - lastRewindTime >= frameIntervalMs) {
+                                    lastRewindTime = now
+                                    repeat(rewindSpeed) { performRewind() }
+                                }
                             } else {
-                                frameCounter++
-                                if (frameCounter >= rewindCaptureInterval) {
-                                    frameCounter = 0
-                                    retroView.captureRewindState()
+                                if (now - lastCaptureTime >= frameIntervalMs) {
+                                    lastCaptureTime = now
+                                    val captureCount = if (isFastForwarding) fastForwardSpeed else 1
+                                    repeat(captureCount) { retroView.captureRewindState() }
                                 }
                             }
                         }
@@ -380,8 +387,8 @@ class LibretroActivity : ComponentActivity() {
             KeyEvent.KEYCODE_BUTTON_L2 -> {
                 if (rewindEnabled && !isRewinding) {
                     isRewinding = true
+                    lastRewindTime = 0L
                     retroView.frameSpeed = 1
-                    performRewind()
                 }
                 return true
             }

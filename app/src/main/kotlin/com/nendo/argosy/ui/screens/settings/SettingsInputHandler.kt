@@ -3,13 +3,13 @@ package com.nendo.argosy.ui.screens.settings
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.ui.screens.settings.sections.BuiltinAudioItem
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinVideoItem
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
-import com.nendo.argosy.ui.screens.settings.sections.builtinAudioItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
@@ -612,19 +612,29 @@ class SettingsInputHandler(
                     viewModel.setBuiltinSkipDuplicateFrames(!state.builtinVideo.skipDuplicateFrames)
                     return InputResult.handled(SoundType.TOGGLE)
                 }
+                BuiltinVideoItem.LowLatencyAudio -> {
+                    viewModel.setBuiltinLowLatencyAudio(!state.builtinVideo.lowLatencyAudio)
+                    return InputResult.handled(SoundType.TOGGLE)
+                }
                 else -> {}
             }
         }
 
-        if (state.currentSection == SettingsSection.BUILTIN_AUDIO) {
-            when (builtinAudioItemAtFocusIndex(state.focusedIndex, state.builtinAudio)) {
-                BuiltinAudioItem.LowLatencyAudio -> {
-                    viewModel.setBuiltinLowLatencyAudio(!state.builtinAudio.lowLatencyAudio)
+        if (state.currentSection == SettingsSection.BUILTIN_CONTROLS) {
+            when (builtinControlsItemAtFocusIndex(state.focusedIndex, state.builtinControls)) {
+                BuiltinControlsItem.Rumble -> {
+                    viewModel.setBuiltinRumbleEnabled(!state.builtinControls.rumbleEnabled)
                     return InputResult.handled(SoundType.TOGGLE)
                 }
-                BuiltinAudioItem.Rumble -> {
-                    viewModel.setBuiltinRumbleEnabled(!state.builtinAudio.rumbleEnabled)
+                BuiltinControlsItem.LimitHotkeysToPlayer1 -> {
+                    viewModel.setBuiltinLimitHotkeysToPlayer1(!state.builtinControls.limitHotkeysToPlayer1)
                     return InputResult.handled(SoundType.TOGGLE)
+                }
+                BuiltinControlsItem.ControllerOrder,
+                BuiltinControlsItem.InputMapping,
+                BuiltinControlsItem.Hotkeys -> {
+                    // TODO: Open respective screens/modals
+                    return InputResult.handled(SoundType.SELECT)
                 }
                 else -> {}
             }

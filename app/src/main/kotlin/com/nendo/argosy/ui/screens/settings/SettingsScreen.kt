@@ -60,7 +60,7 @@ import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinVideoSection
-import com.nendo.argosy.ui.screens.settings.sections.BuiltinAudioSection
+import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.CoreManagementSection
 import com.nendo.argosy.ui.screens.settings.sections.GameDataSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
@@ -267,7 +267,7 @@ fun SettingsScreen(
         viewModel.builtinNavigationEvent.collect { target ->
             when (target) {
                 BuiltinNavigationTarget.VIDEO_SETTINGS -> viewModel.navigateToSection(SettingsSection.BUILTIN_VIDEO)
-                BuiltinNavigationTarget.AUDIO_SETTINGS -> viewModel.navigateToSection(SettingsSection.BUILTIN_AUDIO)
+                BuiltinNavigationTarget.CONTROLS_SETTINGS -> viewModel.navigateToSection(SettingsSection.BUILTIN_CONTROLS)
                 BuiltinNavigationTarget.CORE_MANAGEMENT -> {
                     viewModel.loadCoreManagementState()
                     viewModel.navigateToSection(SettingsSection.CORE_MANAGEMENT)
@@ -324,7 +324,7 @@ fun SettingsScreen(
                     SettingsSection.CONTROLS -> "CONTROLS"
                     SettingsSection.EMULATORS -> "EMULATORS"
                     SettingsSection.BUILTIN_VIDEO -> "BUILT-IN VIDEO"
-                    SettingsSection.BUILTIN_AUDIO -> "BUILT-IN AUDIO"
+                    SettingsSection.BUILTIN_CONTROLS -> "BUILT-IN CONTROLS"
                     SettingsSection.CORE_MANAGEMENT -> "MANAGE CORES"
                     SettingsSection.BIOS -> "BIOS FILES"
                     SettingsSection.PERMISSIONS -> "PERMISSIONS"
@@ -354,7 +354,7 @@ fun SettingsScreen(
                         }
                     )
                     SettingsSection.BUILTIN_VIDEO -> BuiltinVideoSection(uiState, viewModel)
-                    SettingsSection.BUILTIN_AUDIO -> BuiltinAudioSection(uiState, viewModel)
+                    SettingsSection.BUILTIN_CONTROLS -> BuiltinControlsSection(uiState, viewModel)
                     SettingsSection.CORE_MANAGEMENT -> CoreManagementSection(uiState, viewModel)
                     SettingsSection.BIOS -> BiosSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)

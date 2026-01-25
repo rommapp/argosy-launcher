@@ -60,7 +60,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.builtinAudioMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.controlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
@@ -611,11 +611,12 @@ class SettingsViewModel @Inject constructor(
                         displayRefreshRate = refreshRate,
                         fastForwardSpeed = builtinSettings.fastForwardSpeedDisplay,
                         rotation = builtinSettings.rotationDisplay,
-                        overscanCrop = builtinSettings.overscanCropDisplay
+                        overscanCrop = builtinSettings.overscanCropDisplay,
+                        lowLatencyAudio = builtinSettings.lowLatencyAudio
                     ),
-                    builtinAudio = BuiltinAudioState(
-                        lowLatencyAudio = builtinSettings.lowLatencyAudio,
-                        rumbleEnabled = builtinSettings.rumbleEnabled
+                    builtinControls = BuiltinControlsState(
+                        rumbleEnabled = builtinSettings.rumbleEnabled,
+                        limitHotkeysToPlayer1 = true
                     )
                 )
             }
@@ -657,8 +658,8 @@ class SettingsViewModel @Inject constructor(
         emulatorDelegate.navigateToBuiltinVideo(viewModelScope)
     }
 
-    fun navigateToBuiltinAudio() {
-        emulatorDelegate.navigateToBuiltinAudio(viewModelScope)
+    fun navigateToBuiltinControls() {
+        emulatorDelegate.navigateToBuiltinControls(viewModelScope)
     }
 
     fun navigateToCoreManagement() {
@@ -712,17 +713,22 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setBuiltinLowLatencyAudio(enabled: Boolean) {
-        _uiState.update { it.copy(builtinAudio = it.builtinAudio.copy(lowLatencyAudio = enabled)) }
+        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(lowLatencyAudio = enabled)) }
         viewModelScope.launch {
             preferencesRepository.setBuiltinLowLatencyAudio(enabled)
         }
     }
 
     fun setBuiltinRumbleEnabled(enabled: Boolean) {
-        _uiState.update { it.copy(builtinAudio = it.builtinAudio.copy(rumbleEnabled = enabled)) }
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(rumbleEnabled = enabled)) }
         viewModelScope.launch {
             preferencesRepository.setBuiltinRumbleEnabled(enabled)
         }
+    }
+
+    fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) {
+        _uiState.update { it.copy(builtinControls = it.builtinControls.copy(limitHotkeysToPlayer1 = enabled)) }
+        // TODO: persist this preference when adding to UserPreferencesRepository
     }
 
     fun setBuiltinBlackFrameInsertion(enabled: Boolean) {
@@ -1248,7 +1254,7 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 0) }
                 true
             }
-            state.currentSection == SettingsSection.BUILTIN_AUDIO -> {
+            state.currentSection == SettingsSection.BUILTIN_CONTROLS -> {
                 _uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 1) }
                 true
             }
@@ -1322,7 +1328,7 @@ class SettingsViewModel @Inject constructor(
                     state.emulators.platforms.size
                 )
                 SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo)
-                SettingsSection.BUILTIN_AUDIO -> builtinAudioMaxFocusIndex(state.builtinAudio)
+                SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(state.builtinControls)
                 SettingsSection.CORE_MANAGEMENT -> (state.coreManagement.platforms.size - 1).coerceAtLeast(0)
                 SettingsSection.BIOS -> {
                     // Summary card (0), Directory (1), platforms start at 2
@@ -2808,7 +2814,7 @@ class SettingsViewModel @Inject constructor(
 
                 when {
                     state.focusedIndex == 0 -> navigateToBuiltinVideo()
-                    state.focusedIndex == 1 -> navigateToBuiltinAudio()
+                    state.focusedIndex == 1 -> navigateToBuiltinControls()
                     state.focusedIndex == 2 -> navigateToCoreManagement()
                     state.focusedIndex == autoAssignIndex -> autoAssignAllEmulators()
                     state.focusedIndex >= platformStartIndex -> {
@@ -2897,7 +2903,7 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.BUILTIN_VIDEO -> InputResult.HANDLED
-            SettingsSection.BUILTIN_AUDIO -> InputResult.HANDLED
+            SettingsSection.BUILTIN_CONTROLS -> InputResult.HANDLED
             SettingsSection.CORE_MANAGEMENT -> {
                 selectCoreForPlatform()
                 InputResult.HANDLED

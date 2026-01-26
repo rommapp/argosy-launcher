@@ -74,5 +74,6 @@ fun AchievementEntity.toAchievementUi() = AchievementUi(
     } else {
         cachedBadgeUrlLock ?: badgeUrlLock ?: cachedBadgeUrl ?: badgeUrl
     },
-    isUnlocked = isUnlocked
+    isUnlocked = isUnlocked,
+    isUnlockedHardcore = unlockedHardcoreAt != null
 )

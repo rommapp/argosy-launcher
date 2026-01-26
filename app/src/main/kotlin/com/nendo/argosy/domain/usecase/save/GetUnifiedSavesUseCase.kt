@@ -84,7 +84,9 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         source = UnifiedSaveEntry.Source.BOTH,
                         serverFileName = matchingServer.fileName,
                         isLatest = isLatest,
-                        isLocked = isLocked
+                        isLocked = isLocked,
+                        isHardcore = cache.isHardcore,
+                        cheatsUsed = cache.cheatsUsed
                     )
                 )
             } else {
@@ -98,7 +100,9 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         size = cache.saveSize,
                         channelName = channelName,
                         source = UnifiedSaveEntry.Source.LOCAL,
-                        isLocked = shouldBeLocked
+                        isLocked = shouldBeLocked,
+                        isHardcore = cache.isHardcore,
+                        cheatsUsed = cache.cheatsUsed
                     )
                 )
             }

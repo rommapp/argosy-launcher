@@ -22,6 +22,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
+import com.nendo.argosy.data.local.dao.PendingAchievementDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
@@ -46,6 +47,7 @@ import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
+import com.nendo.argosy.data.local.entity.PendingAchievementEntity
 import com.nendo.argosy.data.local.entity.PendingSaveSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PinnedCollectionEntity
@@ -79,9 +81,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         ControllerOrderEntity::class,
         ControllerMappingEntity::class,
         HotkeyEntity::class,
-        CheatEntity::class
+        CheatEntity::class,
+        PendingAchievementEntity::class
     ],
-    version = 53,
+    version = 55,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -109,6 +112,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun controllerMappingDao(): ControllerMappingDao
     abstract fun hotkeyDao(): HotkeyDao
     abstract fun cheatDao(): CheatDao
+    abstract fun pendingAchievementDao(): PendingAchievementDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -887,6 +891,36 @@ abstract class ALauncherDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE cheats ADD COLUMN isUserCreated INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE cheats ADD COLUMN lastUsedAt INTEGER")
+            }
+        }
+
+        val MIGRATION_53_54 = object : Migration(53, 54) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS pending_achievements (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        achievementRaId INTEGER NOT NULL,
+                        forHardcoreMode INTEGER NOT NULL,
+                        earnedAt INTEGER NOT NULL,
+                        retryCount INTEGER NOT NULL DEFAULT 0,
+                        lastError TEXT,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_achievements_gameId ON pending_achievements(gameId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_achievements_createdAt ON pending_achievements(createdAt)")
+
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN cheatsUsed INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN isHardcore INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN slotName TEXT")
+            }
+        }
+
+        val MIGRATION_54_55 = object : Migration(54, 55) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE achievements ADD COLUMN unlockedAt INTEGER")
+                db.execSQL("ALTER TABLE achievements ADD COLUMN unlockedHardcoreAt INTEGER")
             }
         }
     }

@@ -38,6 +38,10 @@ import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
+import com.nendo.argosy.data.repository.RetroAchievementsRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import com.nendo.argosy.libretro.scanner.MemoryScanner
 import com.nendo.argosy.libretro.ui.cheats.CheatDisplayItem
 import com.nendo.argosy.libretro.ui.cheats.CheatsScreen
@@ -67,6 +71,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var cheatDao: CheatDao
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var cheatsRepository: CheatsRepository
+    @Inject lateinit var raRepository: RetroAchievementsRepository
 
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
@@ -111,6 +116,13 @@ class LibretroActivity : ComponentActivity() {
     private lateinit var menuInputHandler: LibretroMenuInputHandler
     private var activeMenuHandler: InputHandler? = null
 
+    private var sessionTainted = false
+    private var hardcoreMode = false
+    private var raSessionActive = false
+    private var gameRaId: Long? = null
+    private var heartbeatJob: Job? = null
+    private var launchMode = LaunchMode.RESUME
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -122,6 +134,8 @@ class LibretroActivity : ComponentActivity() {
         gameName = intent.getStringExtra(EXTRA_GAME_NAME) ?: File(romPath).nameWithoutExtension
         gameId = intent.getLongExtra(EXTRA_GAME_ID, -1L)
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
+        launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
+        hardcoreMode = launchMode.isHardcore
 
         val systemDir = if (systemPath != null) File(systemPath) else File(filesDir, "libretro/system")
         systemDir.mkdirs()
@@ -280,6 +294,48 @@ class LibretroActivity : ComponentActivity() {
         if (gameId != -1L) {
             playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName)
             loadCheats()
+            initializeRASession()
+        }
+    }
+
+    private fun initializeRASession() {
+        lifecycleScope.launch {
+            if (!raRepository.isLoggedIn()) {
+                Log.d("LibretroActivity", "Not logged in to RA, skipping session")
+                return@launch
+            }
+
+            val game = gameDao.getById(gameId) ?: return@launch
+
+            // TODO: Add raId field to GameEntity and populate from RomM sync
+            // For now, we can't start RA sessions until this is implemented
+            // The ra_id is available in RomMRom but not persisted to GameEntity yet
+            gameRaId = null
+
+            if (gameRaId == null) {
+                Log.d("LibretroActivity", "Game has no RA ID (not yet implemented), skipping RA session")
+                return@launch
+            }
+
+            val started = raRepository.startSession(gameRaId!!, hardcoreMode)
+            if (started) {
+                raSessionActive = true
+                Log.d("LibretroActivity", "RA session started for game $gameRaId (hardcore=$hardcoreMode)")
+                startHeartbeatLoop()
+            } else {
+                Log.w("LibretroActivity", "Failed to start RA session")
+            }
+        }
+    }
+
+    private fun startHeartbeatLoop() {
+        heartbeatJob = lifecycleScope.launch {
+            while (isActive && raSessionActive) {
+                delay(120_000L) // 2 minutes
+                val raId = gameRaId ?: break
+                raRepository.sendHeartbeat(raId, null)
+                Log.d("LibretroActivity", "RA heartbeat sent for game $raId")
+            }
         }
     }
 
@@ -494,7 +550,11 @@ class LibretroActivity : ComponentActivity() {
 
     private fun handleToggleCheat(cheatId: Long, enabled: Boolean) {
         lifecycleScope.launch {
-            cheatDao.setEnabled(cheatId, enabled)
+            if (enabled) {
+                sessionTainted = true
+                Log.d("LibretroActivity", "Session marked as tainted (cheats enabled)")
+            }
+            cheatDao.setEnabled(cheatId, enabled, System.currentTimeMillis())
             cheats = cheatDao.getCheatsForGame(gameId)
             applyCheat(cheatId, enabled)
         }
@@ -739,6 +799,8 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        heartbeatJob?.cancel()
+        raSessionActive = false
         if (rewindEnabled) {
             retroView.destroyRewindBuffer()
         }

@@ -29,15 +29,19 @@ fun OptionItem(
     isFocused: Boolean = false,
     isDangerous: Boolean = false,
     isSelected: Boolean = false,
+    isEnabled: Boolean = true,
     onClick: (() -> Unit)? = null
 ) {
+    val disabledAlpha = 0.38f
     val contentColor = when {
+        !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha)
         isDangerous && isFocused -> MaterialTheme.colorScheme.onErrorContainer
         isDangerous -> MaterialTheme.colorScheme.error
         isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
         else -> MaterialTheme.colorScheme.onSurface
     }
     val backgroundColor = when {
+        !isEnabled -> Color.Transparent
         isDangerous && isFocused -> MaterialTheme.colorScheme.errorContainer
         isFocused -> MaterialTheme.colorScheme.primaryContainer
         else -> Color.Transparent
@@ -48,7 +52,7 @@ fun OptionItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
-            .then(if (onClick != null) Modifier.clickableNoFocus(onClick = onClick) else Modifier)
+            .then(if (onClick != null && isEnabled) Modifier.clickableNoFocus(onClick = onClick) else Modifier)
             .padding(horizontal = Dimens.radiusLg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)

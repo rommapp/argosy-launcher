@@ -49,7 +49,10 @@ class SaveCacheManager @Inject constructor(
         emulatorId: String,
         savePath: String,
         channelName: String? = null,
-        isLocked: Boolean = false
+        isLocked: Boolean = false,
+        cheatsUsed: Boolean = false,
+        isHardcore: Boolean = false,
+        slotName: String? = null
     ): CacheResult = withContext(Dispatchers.IO) {
         val saveFile = File(savePath)
         if (!saveFile.exists()) {
@@ -99,6 +102,19 @@ class SaveCacheManager @Inject constructor(
                 "$gameId/$timestamp/${saveFile.name}" to cachedFile.length()
             }
 
+            // For hardcore slots, replace existing instead of creating new entries
+            val effectiveSlotName = if (isHardcore) SaveCacheEntity.SLOT_HARDCORE else slotName
+            if (effectiveSlotName != null) {
+                val existing = saveCacheDao.getByGameAndSlot(gameId, effectiveSlotName)
+                if (existing != null) {
+                    val oldFile = File(cacheBaseDir, existing.cachePath)
+                    oldFile.delete()
+                    oldFile.parentFile?.takeIf { it.listFiles()?.isEmpty() == true }?.delete()
+                    saveCacheDao.deleteById(existing.id)
+                    Log.d(TAG, "Replaced existing slot '$effectiveSlotName' for game $gameId")
+                }
+            }
+
             val entity = SaveCacheEntity(
                 gameId = gameId,
                 emulatorId = emulatorId,
@@ -106,8 +122,11 @@ class SaveCacheManager @Inject constructor(
                 saveSize = saveSize,
                 cachePath = cachePath,
                 note = channelName,
-                isLocked = isLocked,
-                contentHash = contentHash
+                isLocked = isLocked || isHardcore,
+                contentHash = contentHash,
+                cheatsUsed = cheatsUsed,
+                isHardcore = isHardcore,
+                slotName = effectiveSlotName
             )
             saveCacheDao.insert(entity)
             Log.d(TAG, "Cached save for game $gameId at $cachePath (hash=$contentHash)${channelName?.let { " (channel: $it)" } ?: ""}")
@@ -258,6 +277,24 @@ class SaveCacheManager @Inject constructor(
 
     suspend fun getCacheById(cacheId: Long): SaveCacheEntity? =
         saveCacheDao.getById(cacheId)
+
+    suspend fun getHardcoreSlot(gameId: Long): SaveCacheEntity? =
+        saveCacheDao.getHardcoreSlot(gameId)
+
+    suspend fun deleteHardcoreSlot(gameId: Long) = withContext(Dispatchers.IO) {
+        val hardcore = saveCacheDao.getHardcoreSlot(gameId) ?: return@withContext
+        val cacheFile = File(cacheBaseDir, hardcore.cachePath)
+        val parentDir = cacheFile.parentFile
+        cacheFile.delete()
+        if (parentDir?.listFiles()?.isEmpty() == true) {
+            parentDir.delete()
+        }
+        saveCacheDao.deleteById(hardcore.id)
+        Log.d(TAG, "Deleted hardcore slot for game $gameId")
+    }
+
+    suspend fun hasHardcoreSlot(gameId: Long): Boolean =
+        saveCacheDao.getHardcoreSlot(gameId) != null
 
     suspend fun deleteAllCachesForGame(gameId: Long) = withContext(Dispatchers.IO) {
         val caches = saveCacheDao.getByGame(gameId)

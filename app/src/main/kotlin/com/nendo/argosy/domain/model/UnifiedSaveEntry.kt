@@ -12,7 +12,9 @@ data class UnifiedSaveEntry(
     val serverFileName: String? = null,
     val isLatest: Boolean = false,
     val isActive: Boolean = false,
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    val isHardcore: Boolean = false,
+    val cheatsUsed: Boolean = false
 ) {
     enum class Source { LOCAL, SERVER, BOTH }
 

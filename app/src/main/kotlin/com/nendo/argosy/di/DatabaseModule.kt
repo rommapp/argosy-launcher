@@ -19,6 +19,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
+import com.nendo.argosy.data.local.dao.PendingAchievementDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
@@ -97,7 +98,9 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_49_50,
                 ALauncherDatabase.MIGRATION_50_51,
                 ALauncherDatabase.MIGRATION_51_52,
-                ALauncherDatabase.MIGRATION_52_53
+                ALauncherDatabase.MIGRATION_52_53,
+                ALauncherDatabase.MIGRATION_53_54,
+                ALauncherDatabase.MIGRATION_54_55
             )
             .build()
     }
@@ -190,4 +193,8 @@ object DatabaseModule {
     @Provides
     fun provideCheatDao(database: ALauncherDatabase): CheatDao =
         database.cheatDao()
+
+    @Provides
+    fun providePendingAchievementDao(database: ALauncherDatabase): PendingAchievementDao =
+        database.pendingAchievementDao()
 }

@@ -25,6 +25,8 @@ class UserPreferencesRepository @Inject constructor(
         val ROMM_URL = stringPreferencesKey("romm_url")
         val ROMM_USERNAME = stringPreferencesKey("romm_username")
         val ROMM_TOKEN = stringPreferencesKey("romm_token")
+        val RA_USERNAME = stringPreferencesKey("ra_username")
+        val RA_TOKEN = stringPreferencesKey("ra_token")
         val ROM_STORAGE_PATH = stringPreferencesKey("rom_storage_path")
 
         val THEME_MODE = stringPreferencesKey("theme_mode")
@@ -144,6 +146,8 @@ class UserPreferencesRepository @Inject constructor(
             rommBaseUrl = prefs[Keys.ROMM_URL],
             rommUsername = prefs[Keys.ROMM_USERNAME],
             rommToken = prefs[Keys.ROMM_TOKEN],
+            raUsername = prefs[Keys.RA_USERNAME],
+            raToken = prefs[Keys.RA_TOKEN],
             romStoragePath = prefs[Keys.ROM_STORAGE_PATH],
             themeMode = ThemeMode.fromString(prefs[Keys.THEME_MODE]),
             primaryColor = prefs[Keys.PRIMARY_COLOR],
@@ -326,6 +330,20 @@ class UserPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ROMM_URL)
             prefs.remove(Keys.ROMM_TOKEN)
             prefs.remove(Keys.ROMM_USERNAME)
+        }
+    }
+
+    suspend fun setRACredentials(username: String, token: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.RA_USERNAME] = username
+            prefs[Keys.RA_TOKEN] = token
+        }
+    }
+
+    suspend fun clearRACredentials() {
+        dataStore.edit { prefs ->
+            prefs.remove(Keys.RA_USERNAME)
+            prefs.remove(Keys.RA_TOKEN)
         }
     }
 
@@ -1079,6 +1097,8 @@ data class UserPreferences(
     val rommBaseUrl: String? = null,
     val rommUsername: String? = null,
     val rommToken: String? = null,
+    val raUsername: String? = null,
+    val raToken: String? = null,
     val romStoragePath: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val primaryColor: Int? = null,

@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
@@ -41,6 +42,7 @@ private sealed class MainSettingsItem(
 ) {
     data object DeviceSettings : MainSettingsItem("device", Icons.Default.PhoneAndroid, "Device Settings")
     data object GameData : MainSettingsItem("gameData", Icons.Default.Dns, "Game Data")
+    data object RetroAchievements : MainSettingsItem("retroAchievements", Icons.Default.EmojiEvents, "RetroAchievements")
     data object Storage : MainSettingsItem("storage", Icons.Default.Storage, "Storage")
     data object Interface : MainSettingsItem("interface", Icons.Default.Palette, "Interface")
     data object Controls : MainSettingsItem("controls", Icons.Default.TouchApp, "Controls")
@@ -51,7 +53,7 @@ private sealed class MainSettingsItem(
 
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
-            DeviceSettings, GameData, Storage, Interface, Controls,
+            DeviceSettings, GameData, RetroAchievements, Storage, Interface, Controls,
             Emulators, Bios, Permissions, About
         )
     }
@@ -90,6 +92,11 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 } ?: "Never synced"
             }
         }
+        MainSettingsItem.RetroAchievements -> if (uiState.retroAchievements.isLoggedIn) {
+            "Logged in as ${uiState.retroAchievements.username}"
+        } else {
+            "Not logged in"
+        }
         MainSettingsItem.Storage -> if (uiState.storage.downloadedGamesCount > 0) {
             "${uiState.storage.downloadedGamesCount} downloaded"
         } else {
@@ -111,6 +118,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         when (item) {
             MainSettingsItem.DeviceSettings -> context.startActivity(Intent(Settings.ACTION_SETTINGS))
             MainSettingsItem.GameData -> viewModel.navigateToSection(SettingsSection.SERVER)
+            MainSettingsItem.RetroAchievements -> viewModel.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
             MainSettingsItem.Interface -> viewModel.navigateToSection(SettingsSection.INTERFACE)
             MainSettingsItem.Controls -> viewModel.navigateToSection(SettingsSection.CONTROLS)

@@ -37,6 +37,7 @@ enum class SettingsSection {
     SERVER,
     SYNC_SETTINGS,
     STEAM_SETTINGS,
+    RETRO_ACHIEVEMENTS,
     STORAGE,
     BIOS,
     INTERFACE,
@@ -446,6 +447,19 @@ data class PermissionsState(
     }
 }
 
+data class RASettingsState(
+    val isLoggedIn: Boolean = false,
+    val username: String? = null,
+    val isLoggingIn: Boolean = false,
+    val isLoggingOut: Boolean = false,
+    val showLoginForm: Boolean = false,
+    val loginUsername: String = "",
+    val loginPassword: String = "",
+    val loginError: String? = null,
+    val focusField: Int? = null,
+    val pendingAchievementsCount: Int = 0
+)
+
 data class BiosFirmwareItem(
     val id: Long,
     val rommId: Long,
@@ -520,6 +534,7 @@ data class SettingsUiState(
     val storage: StorageState = StorageState(),
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
+    val retroAchievements: RASettingsState = RASettingsState(),
     val android: AndroidSettingsState = AndroidSettingsState(),
     val bios: BiosState = BiosState(),
     val permissions: PermissionsState = PermissionsState(),

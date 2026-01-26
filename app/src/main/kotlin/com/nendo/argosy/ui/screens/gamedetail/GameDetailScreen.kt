@@ -59,6 +59,7 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.MissingDiscModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.SteamLauncherPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.MoreOptionsModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionsModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingsStatusModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.PermissionRequiredModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
@@ -273,8 +274,8 @@ private fun GameDetailContent(
     onAchievementPositioned: (Int) -> Unit,
     onBack: () -> Unit
 ) {
-    val showAnyOverlay = uiState.showMoreOptions || uiState.showRatingsStatusMenu ||
-        uiState.showEmulatorPicker || uiState.showCorePicker ||
+    val showAnyOverlay = uiState.showMoreOptions || uiState.showPlayOptions ||
+        uiState.showRatingsStatusMenu || uiState.showEmulatorPicker || uiState.showCorePicker ||
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || uiState.isSyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
         uiState.showExtractionFailedPrompt || uiState.showDiscPicker
@@ -396,10 +397,12 @@ private fun GameDetailContent(
                 exit = fadeOut()
             ) {
                 val isInScreenshots = currentSnapState == SnapState.SCREENSHOTS && game.screenshots.isNotEmpty()
+                val canShowPlayOptions = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED &&
+                    game.isRetroArchEmulator
                 FooterBar(
-                    hints = listOf(
-                        InputButton.LB_RB to "Prev/Next Game",
-                        InputButton.A to when {
+                    hints = buildList {
+                        add(InputButton.LB_RB to "Prev/Next Game")
+                        add(InputButton.A to when {
                             isInScreenshots -> "View"
                             uiState.isSyncing -> "Syncing..."
                             uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
@@ -411,10 +414,13 @@ private fun GameDetailContent(
                             uiState.downloadStatus == GameDownloadStatus.EXTRACTING -> "Extracting"
                             uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
                             else -> "Play"
-                        },
-                        InputButton.B to "Back",
-                        InputButton.Y to if (uiState.game?.isFavorite == true) "Unfavorite" else "Favorite"
-                    )
+                        })
+                        add(InputButton.B to "Back")
+                        if (canShowPlayOptions) {
+                            add(InputButton.X to "Play Options")
+                        }
+                        add(InputButton.Y to if (uiState.game?.isFavorite == true) "Unfavorite" else "Favorite")
+                    }
                 )
             }
         }
@@ -442,6 +448,22 @@ private fun GameDetailModals(
             updateCount = uiState.updateFiles.size + uiState.dlcFiles.size,
             onAction = { action -> viewModel.handleMoreOptionAction(action, onBack) },
             onDismiss = viewModel::toggleMoreOptions
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.showPlayOptions,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        PlayOptionsModal(
+            focusIndex = uiState.playOptionsFocusIndex,
+            hasSaves = uiState.hasCasualSaves,
+            hasHardcoreSave = uiState.hasHardcoreSave,
+            isRALoggedIn = uiState.isRALoggedIn,
+            isOnline = uiState.isOnline,
+            onAction = viewModel::handlePlayOption,
+            onDismiss = viewModel::dismissPlayOptions
         )
     }
 

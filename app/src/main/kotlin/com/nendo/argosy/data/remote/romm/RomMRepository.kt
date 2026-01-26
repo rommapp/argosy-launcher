@@ -76,7 +76,7 @@ class RomMRepository @Inject constructor(
     private val syncMutex = Mutex()
     private var raProgressionRefreshedThisSession = false
 
-    private var cachedRAProgression: Map<Long, Set<String>> = emptyMap()
+    private var cachedRAProgression: Map<Long, List<RomMEarnedAchievement>> = emptyMap()
 
     private val _syncProgress = MutableStateFlow(SyncProgress())
     val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
@@ -195,15 +195,18 @@ class RomMRepository @Inject constructor(
             cachedRAProgression = progression
                 .filter { it.romRaId != null }
                 .associate { gameProgress ->
-                    val earnedBadgeIds = gameProgress.earnedAchievements.map { it.id }.toSet()
-                    gameProgress.romRaId!! to earnedBadgeIds
+                    gameProgress.romRaId!! to gameProgress.earnedAchievements
                 }
         } catch (_: Exception) {
         }
     }
 
     fun getEarnedBadgeIds(raGameId: Long): Set<String> {
-        return cachedRAProgression[raGameId] ?: emptySet()
+        return cachedRAProgression[raGameId]?.map { it.id }?.toSet() ?: emptySet()
+    }
+
+    fun getEarnedAchievements(raGameId: Long): List<RomMEarnedAchievement> {
+        return cachedRAProgression[raGameId] ?: emptyList()
     }
 
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {

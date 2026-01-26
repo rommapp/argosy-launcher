@@ -109,7 +109,9 @@ class GameDetailViewModel @Inject constructor(
     private val collectionDao: com.nendo.argosy.data.local.dao.CollectionDao,
     private val addGameToCollectionUseCase: com.nendo.argosy.domain.usecase.collection.AddGameToCollectionUseCase,
     private val removeGameFromCollectionUseCase: com.nendo.argosy.domain.usecase.collection.RemoveGameFromCollectionUseCase,
-    private val createCollectionUseCase: com.nendo.argosy.domain.usecase.collection.CreateCollectionUseCase
+    private val createCollectionUseCase: com.nendo.argosy.domain.usecase.collection.CreateCollectionUseCase,
+    private val saveCacheManager: com.nendo.argosy.data.repository.SaveCacheManager,
+    private val raRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -512,10 +514,15 @@ class GameDetailViewModel @Inject constructor(
                 val apiAchievements = rom.raMetadata?.achievements ?: emptyList()
                 if (apiAchievements.isEmpty()) return emptyList()
 
-                val earnedBadgeIds = getEarnedBadgeIds(rom.raId)
+                val earnedAchievements = getEarnedAchievements(rom.raId)
+                val earnedByBadgeId = earnedAchievements.associateBy { it.id }
 
                 val entities = apiAchievements.map { achievement ->
-                    val isUnlocked = achievement.badgeId in earnedBadgeIds
+                    val earned = earnedByBadgeId[achievement.badgeId]
+                    val unlockedAt = earned?.date?.let { parseTimestamp(it) }
+                    val unlockedHardcoreAt = earned?.dateHardcore?.let { parseTimestamp(it) }
+                    val isUnlocked = earned != null
+
                     com.nendo.argosy.data.local.entity.AchievementEntity(
                         gameId = gameId,
                         raId = achievement.raId,
@@ -525,7 +532,9 @@ class GameDetailViewModel @Inject constructor(
                         type = achievement.type,
                         badgeUrl = achievement.badgeUrl,
                         badgeUrlLock = achievement.badgeUrlLock,
-                        isUnlocked = isUnlocked
+                        isUnlocked = isUnlocked,
+                        unlockedAt = unlockedAt,
+                        unlockedHardcoreAt = unlockedHardcoreAt
                     )
                 }
                 achievementDao.replaceForGame(gameId, entities)
@@ -544,7 +553,9 @@ class GameDetailViewModel @Inject constructor(
                 }
 
                 apiAchievements.map { achievement ->
-                    val isUnlocked = achievement.badgeId in earnedBadgeIds
+                    val earned = earnedByBadgeId[achievement.badgeId]
+                    val isUnlocked = earned != null
+                    val isUnlockedHardcore = earned?.dateHardcore != null
                     AchievementUi(
                         raId = achievement.raId,
                         title = achievement.title,
@@ -552,7 +563,8 @@ class GameDetailViewModel @Inject constructor(
                         points = achievement.points,
                         type = achievement.type,
                         badgeUrl = if (isUnlocked) achievement.badgeUrl else (achievement.badgeUrlLock ?: achievement.badgeUrl),
-                        isUnlocked = isUnlocked
+                        isUnlocked = isUnlocked,
+                        isUnlockedHardcore = isUnlockedHardcore
                     )
                 }
             }
@@ -560,9 +572,21 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    private fun getEarnedBadgeIds(gameRaId: Long?): Set<String> {
-        if (gameRaId == null) return emptySet()
-        return romMRepository.getEarnedBadgeIds(gameRaId)
+    private fun getEarnedAchievements(gameRaId: Long?): List<com.nendo.argosy.data.remote.romm.RomMEarnedAchievement> {
+        if (gameRaId == null) return emptyList()
+        return romMRepository.getEarnedAchievements(gameRaId)
+    }
+
+    private fun parseTimestamp(timestamp: String): Long? {
+        return try {
+            java.time.ZonedDateTime.parse(timestamp, java.time.format.DateTimeFormatter.ISO_DATE_TIME).toInstant().toEpochMilli()
+        } catch (_: Exception) {
+            try {
+                java.time.Instant.parse(timestamp).toEpochMilli()
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     private suspend fun refreshAchievementsInBackground(rommId: Long, gameId: Long) {
@@ -968,6 +992,132 @@ class GameDetailViewModel @Inject constructor(
             soundManager.play(SoundType.OPEN_MODAL)
         } else {
             soundManager.play(SoundType.CLOSE_MODAL)
+        }
+    }
+
+    fun showPlayOptions() {
+        viewModelScope.launch {
+            val hasCasualSaves = saveCacheManager.getCachesForGameOnce(currentGameId)
+                .any { !it.isHardcore }
+            val hasHardcoreSave = saveCacheManager.hasHardcoreSlot(currentGameId)
+            val isRALoggedIn = raRepository.isLoggedIn()
+            val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
+
+            _uiState.update {
+                it.copy(
+                    showPlayOptions = true,
+                    playOptionsFocusIndex = 0,
+                    hasCasualSaves = hasCasualSaves,
+                    hasHardcoreSave = hasHardcoreSave,
+                    isRALoggedIn = isRALoggedIn,
+                    isOnline = isOnline
+                )
+            }
+            soundManager.play(SoundType.OPEN_MODAL)
+        }
+    }
+
+    fun dismissPlayOptions() {
+        _uiState.update {
+            it.copy(showPlayOptions = false)
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun movePlayOptionsFocus(delta: Int) {
+        _uiState.update {
+            val state = it
+            var optionCount = 1  // New Game (Casual) - always present
+
+            if (state.hasCasualSaves) optionCount++  // Resume
+            if (state.isRALoggedIn) optionCount++  // New Game (Hardcore)
+            if (state.hasHardcoreSave && state.isRALoggedIn) optionCount++  // Resume Hardcore
+
+            val maxIndex = (optionCount - 1).coerceAtLeast(0)
+            val newIndex = (it.playOptionsFocusIndex + delta).coerceIn(0, maxIndex)
+            it.copy(playOptionsFocusIndex = newIndex)
+        }
+    }
+
+    private fun confirmPlayOptionSelection() {
+        val state = _uiState.value
+        val focusIndex = state.playOptionsFocusIndex
+
+        var currentIdx = 0
+        val resumeIdx = if (state.hasCasualSaves) currentIdx++ else -1
+        val newCasualIdx = currentIdx++
+        val newHardcoreIdx = if (state.isRALoggedIn) currentIdx++ else -1
+        val resumeHardcoreIdx = if (state.hasHardcoreSave && state.isRALoggedIn) currentIdx else -1
+
+        val action = when (focusIndex) {
+            resumeIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.Resume
+            newCasualIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewCasual
+            newHardcoreIdx -> {
+                if (!state.isOnline) return
+                com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewHardcore
+            }
+            resumeHardcoreIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.ResumeHardcore
+            else -> return
+        }
+        handlePlayOption(action)
+    }
+
+    fun handlePlayOption(action: com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction) {
+        dismissPlayOptions()
+        viewModelScope.launch {
+            val launchMode = when (action) {
+                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.Resume ->
+                    com.nendo.argosy.libretro.LaunchMode.RESUME
+                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewCasual ->
+                    com.nendo.argosy.libretro.LaunchMode.NEW_CASUAL
+                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewHardcore ->
+                    com.nendo.argosy.libretro.LaunchMode.NEW_HARDCORE
+                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.ResumeHardcore ->
+                    com.nendo.argosy.libretro.LaunchMode.RESUME_HARDCORE
+            }
+            launchWithMode(launchMode)
+        }
+    }
+
+    private suspend fun launchWithMode(launchMode: com.nendo.argosy.libretro.LaunchMode) {
+        val result = launchGameUseCase(currentGameId)
+        when (result) {
+            is LaunchResult.Success -> {
+                val intentWithMode = result.intent.apply {
+                    putExtra(com.nendo.argosy.libretro.LaunchMode.EXTRA_LAUNCH_MODE, launchMode.name)
+                }
+                soundManager.play(SoundType.LAUNCH_GAME)
+                _launchEvents.emit(LaunchEvent.Launch(intentWithMode))
+            }
+            is LaunchResult.SelectDisc -> {
+                _uiState.update {
+                    it.copy(
+                        showDiscPicker = true,
+                        discPickerOptions = result.discs,
+                        discPickerFocusIndex = 0
+                    )
+                }
+            }
+            is LaunchResult.NoEmulator -> {
+                showEmulatorPicker()
+            }
+            is LaunchResult.NoCore -> {
+                showCorePicker()
+            }
+            is LaunchResult.MissingDiscs -> {
+                _uiState.update {
+                    it.copy(
+                        showMissingDiscPrompt = true,
+                        missingDiscNumbers = result.missingDiscNumbers
+                    )
+                }
+            }
+            is LaunchResult.NoRomFile,
+            is LaunchResult.NoSteamLauncher,
+            is LaunchResult.NoAndroidApp,
+            is LaunchResult.Error -> {
+                // Handle error silently for now
+            }
         }
     }
 
@@ -1859,6 +2009,10 @@ class GameDetailViewModel @Inject constructor(
                     changeRatingsStatusFocus(-1)
                     InputResult.HANDLED
                 }
+                state.showPlayOptions -> {
+                    movePlayOptionsFocus(-1)
+                    InputResult.HANDLED
+                }
                 state.showMoreOptions -> {
                     moveOptionsFocus(-1)
                     InputResult.HANDLED
@@ -1917,6 +2071,10 @@ class GameDetailViewModel @Inject constructor(
                     changeRatingsStatusFocus(1)
                     InputResult.HANDLED
                 }
+                state.showPlayOptions -> {
+                    movePlayOptionsFocus(1)
+                    InputResult.HANDLED
+                }
                 state.showMoreOptions -> {
                     moveOptionsFocus(1)
                     InputResult.HANDLED
@@ -1960,7 +2118,7 @@ class GameDetailViewModel @Inject constructor(
                     moveExtractionPromptFocus(-1)
                     return InputResult.HANDLED
                 }
-                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
                     return InputResult.UNHANDLED
                 }
                 else -> {
@@ -2003,7 +2161,7 @@ class GameDetailViewModel @Inject constructor(
                     moveExtractionPromptFocus(1)
                     return InputResult.HANDLED
                 }
-                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions || state.showMoreOptions || state.showEmulatorPicker || state.showCorePicker || state.showMissingDiscPrompt -> {
                     return InputResult.UNHANDLED
                 }
                 else -> {
@@ -2018,7 +2176,8 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
-                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker ||
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions ||
+                state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt ||
                 state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
@@ -2032,7 +2191,8 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             if (saveState.isVisible || saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
-                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showMoreOptions || state.showEmulatorPicker ||
+                state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions ||
+                state.showMoreOptions || state.showEmulatorPicker ||
                 state.showCorePicker || state.showDiscPicker || state.showMissingDiscPrompt ||
                 state.showUpdatesPicker || state.showExtractionFailedPrompt) {
                 return InputResult.UNHANDLED
@@ -2064,6 +2224,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showSteamLauncherPicker -> confirmSteamLauncherSelection()
                 state.showAddToCollectionModal -> confirmCollectionSelection()
                 state.showRatingsStatusMenu -> confirmRatingsStatusSelection()
+                state.showPlayOptions -> confirmPlayOptionSelection()
                 state.showMoreOptions -> confirmOptionSelection(onBack)
                 else -> primaryAction()
             }
@@ -2092,6 +2253,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showPermissionModal -> dismissPermissionModal()
                 state.showAddToCollectionModal -> dismissAddToCollectionModal()
                 state.showRatingsStatusMenu -> dismissRatingsStatusMenu()
+                state.showPlayOptions -> dismissPlayOptions()
                 state.showMoreOptions -> toggleMoreOptions()
                 else -> onBack()
             }
@@ -2141,6 +2303,10 @@ class GameDetailViewModel @Inject constructor(
                 dismissUpdatesPicker()
                 return InputResult.UNHANDLED
             }
+            if (state.showPlayOptions) {
+                dismissPlayOptions()
+                return InputResult.UNHANDLED
+            }
             if (state.showMoreOptions) {
                 toggleMoreOptions()
                 return InputResult.UNHANDLED
@@ -2182,6 +2348,11 @@ class GameDetailViewModel @Inject constructor(
                 setCurrentScreenshotAsBackground()
                 return InputResult.HANDLED
             }
+            if (state.downloadStatus == GameDownloadStatus.DOWNLOADED &&
+                state.game?.isRetroArchEmulator == true) {
+                showPlayOptions()
+                return InputResult.HANDLED
+            }
             return InputResult.UNHANDLED
         }
 
@@ -2189,8 +2360,9 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
 
-            val anyModalOpen = state.showMoreOptions || state.showEmulatorPicker ||
-                state.showSteamLauncherPicker || state.showCorePicker || state.showRatingPicker ||
+            val anyModalOpen = state.showMoreOptions || state.showPlayOptions ||
+                state.showEmulatorPicker || state.showSteamLauncherPicker ||
+                state.showCorePicker || state.showRatingPicker ||
                 state.showStatusPicker || state.showUpdatesPicker ||
                 state.showMissingDiscPrompt || state.showScreenshotViewer || saveState.isVisible
 
@@ -2213,6 +2385,7 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showMoreOptions = false,
+                showPlayOptions = false,
                 showEmulatorPicker = false,
                 showSteamLauncherPicker = false,
                 showCorePicker = false,

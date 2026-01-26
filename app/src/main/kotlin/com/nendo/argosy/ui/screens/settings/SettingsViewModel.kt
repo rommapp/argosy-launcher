@@ -53,6 +53,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.EmulatorSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.PermissionsSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.RASettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ServerSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SoundSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
@@ -127,6 +128,7 @@ class SettingsViewModel @Inject constructor(
     val storageDelegate: StorageSettingsDelegate,
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
+    val raDelegate: RASettingsDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
     private val androidGameScanner: AndroidGameScanner,
@@ -179,6 +181,7 @@ class SettingsViewModel @Inject constructor(
         observeModalResetSignal()
         observeConnectionState()
         loadSettings()
+        raDelegate.initialize(viewModelScope)
         displayDelegate.loadPreviewGame(viewModelScope)
         displayDelegate.observeScreenCapturePermission(viewModelScope)
         startControllerDetectionPolling()
@@ -297,6 +300,10 @@ class SettingsViewModel @Inject constructor(
 
         steamDelegate.state.onEach { steam ->
             _uiState.update { it.copy(steam = steam) }
+        }.launchIn(viewModelScope)
+
+        raDelegate.state.onEach { ra ->
+            _uiState.update { it.copy(retroAchievements = ra) }
         }.launchIn(viewModelScope)
 
         androidGameScanner.progress.onEach { progress ->
@@ -1384,6 +1391,14 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = steamIndex) }
                 true
             }
+            state.retroAchievements.showLoginForm -> {
+                hideRALoginForm()
+                true
+            }
+            state.currentSection == SettingsSection.RETRO_ACHIEVEMENTS -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = 2) }
+                true
+            }
             state.currentSection == SettingsSection.BOX_ART -> {
                 _uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = 5) }
                 true
@@ -1455,6 +1470,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 SettingsSection.SYNC_SETTINGS -> 3
                 SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
+                SettingsSection.RETRO_ACHIEVEMENTS -> if (state.retroAchievements.showLoginForm) 3 else 0
                 SettingsSection.STORAGE -> storageMaxFocusIndex(
                     state.storage.platformsExpanded,
                     state.storage.platformConfigs.size
@@ -2680,6 +2696,34 @@ class SettingsViewModel @Inject constructor(
         serverDelegate.connectToRomm(viewModelScope) { loadSettings() }
     }
 
+    fun showRALoginForm() {
+        raDelegate.showLoginForm { _uiState.update { it.copy(focusedIndex = 0) } }
+    }
+
+    fun hideRALoginForm() {
+        raDelegate.hideLoginForm { _uiState.update { it.copy(focusedIndex = 0) } }
+    }
+
+    fun setRALoginUsername(username: String) {
+        raDelegate.setLoginUsername(username)
+    }
+
+    fun setRALoginPassword(password: String) {
+        raDelegate.setLoginPassword(password)
+    }
+
+    fun clearRAFocusField() {
+        raDelegate.clearFocusField()
+    }
+
+    fun loginToRA() {
+        raDelegate.login(viewModelScope) { _uiState.update { it.copy(focusedIndex = 0) } }
+    }
+
+    fun logoutFromRA() {
+        raDelegate.logout(viewModelScope) { _uiState.update { it.copy(focusedIndex = 0) } }
+    }
+
     fun handleConfirm(): InputResult {
         val state = _uiState.value
         return when (state.currentSection) {
@@ -2765,6 +2809,21 @@ class SettingsViewModel @Inject constructor(
                     state.focusedIndex > 0 && state.focusedIndex < refreshIndex && state.steam.hasStoragePermission && !state.steam.isSyncing -> {
                         confirmLauncherAction()
                     }
+                }
+                InputResult.HANDLED
+            }
+            SettingsSection.RETRO_ACHIEVEMENTS -> {
+                val ra = state.retroAchievements
+                if (ra.showLoginForm) {
+                    when (state.focusedIndex) {
+                        0, 1 -> raDelegate.setFocusField(state.focusedIndex)
+                        2 -> loginToRA()
+                        3 -> hideRALoginForm()
+                    }
+                } else if (ra.isLoggedIn) {
+                    if (state.focusedIndex == 0) logoutFromRA()
+                } else {
+                    if (state.focusedIndex == 0) showRALoginForm()
                 }
                 InputResult.HANDLED
             }

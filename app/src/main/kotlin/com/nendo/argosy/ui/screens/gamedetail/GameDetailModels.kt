@@ -43,7 +43,8 @@ data class AchievementUi(
     val points: Int,
     val type: String?,
     val badgeUrl: String?,
-    val isUnlocked: Boolean = false
+    val isUnlocked: Boolean = false,
+    val isUnlockedHardcore: Boolean = false
 )
 
 data class GameDetailUi(
@@ -130,6 +131,12 @@ data class GameDetailUiState(
     val game: GameDetailUi? = null,
     val showMoreOptions: Boolean = false,
     val moreOptionsFocusIndex: Int = 0,
+    val showPlayOptions: Boolean = false,
+    val playOptionsFocusIndex: Int = 0,
+    val hasCasualSaves: Boolean = false,
+    val hasHardcoreSave: Boolean = false,
+    val isRALoggedIn: Boolean = false,
+    val isOnline: Boolean = false,
     val isLoading: Boolean = true,
     val isRefreshingGameData: Boolean = false,
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,

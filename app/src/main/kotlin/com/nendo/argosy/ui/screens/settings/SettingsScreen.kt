@@ -67,6 +67,7 @@ import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
+import com.nendo.argosy.ui.screens.settings.sections.RASettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
@@ -317,6 +318,7 @@ fun SettingsScreen(
                     SettingsSection.SERVER -> "GAME DATA"
                     SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
                     SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
+                    SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
                     SettingsSection.STORAGE -> "STORAGE"
                     SettingsSection.INTERFACE -> "INTERFACE"
                     SettingsSection.BOX_ART -> "BOX ART"
@@ -338,6 +340,7 @@ fun SettingsScreen(
                     SettingsSection.SERVER -> GameDataSection(uiState, viewModel)
                     SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
+                    SettingsSection.RETRO_ACHIEVEMENTS -> RASettingsSection(uiState, viewModel)
                     SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
                     SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
                     SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)

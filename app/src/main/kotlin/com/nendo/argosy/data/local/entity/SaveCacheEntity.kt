@@ -22,5 +22,12 @@ data class SaveCacheEntity(
     val cachePath: String,
     val isLocked: Boolean = false,
     val note: String? = null,
-    val contentHash: String? = null
-)
+    val contentHash: String? = null,
+    val cheatsUsed: Boolean = false,
+    val isHardcore: Boolean = false,
+    val slotName: String? = null
+) {
+    companion object {
+        const val SLOT_HARDCORE = "HARDCORE"
+    }
+}

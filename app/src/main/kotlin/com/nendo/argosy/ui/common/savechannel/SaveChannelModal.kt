@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
@@ -413,6 +414,8 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
     return hints
 }
 
+private val goldColor = Color(0xFFFFD700)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SaveCacheEntryRow(
@@ -437,15 +440,18 @@ private fun SaveCacheEntryRow(
         }
     }
 
-    val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        Color.Transparent
+    val isHardcore = entry.isHardcore
+    val backgroundColor = when {
+        isFocused && isHardcore -> goldColor.copy(alpha = 0.3f)
+        isFocused -> MaterialTheme.colorScheme.primaryContainer
+        isHardcore -> goldColor.copy(alpha = 0.1f)
+        else -> Color.Transparent
     }
-    val contentColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
+    val contentColor = when {
+        isFocused && isHardcore -> goldColor
+        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
+        isHardcore -> goldColor
+        else -> MaterialTheme.colorScheme.onSurface
     }
 
     val sourceText = when (entry.source) {
@@ -471,6 +477,22 @@ private fun SaveCacheEntryRow(
         horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
     ) {
         when {
+            isHardcore -> {
+                Icon(
+                    imageVector = Icons.Default.EmojiEvents,
+                    contentDescription = "Hardcore",
+                    tint = goldColor,
+                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
+                )
+            }
+            entry.cheatsUsed -> {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Cheats used",
+                    tint = LocalLauncherTheme.current.semanticColors.warning,
+                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
+                )
+            }
             entry.isChannel -> {
                 Icon(
                     imageVector = Icons.Default.Lock,
@@ -498,7 +520,7 @@ private fun SaveCacheEntryRow(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 Text(
-                    text = entry.displayName,
+                    text = if (isHardcore) "HARDCORE" else entry.displayName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = contentColor,
                     maxLines = 1,
@@ -509,7 +531,7 @@ private fun SaveCacheEntryRow(
                     Text(
                         text = "[ACTIVE]",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (isHardcore) goldColor else MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -535,7 +557,7 @@ private fun SaveCacheEntryRow(
             color = when (entry.source) {
                 UnifiedSaveEntry.Source.LOCAL -> LocalLauncherTheme.current.semanticColors.warning
                 UnifiedSaveEntry.Source.SERVER -> MaterialTheme.colorScheme.secondary
-                UnifiedSaveEntry.Source.BOTH -> MaterialTheme.colorScheme.primary
+                UnifiedSaveEntry.Source.BOTH -> if (isHardcore) goldColor else MaterialTheme.colorScheme.primary
             }
         )
     }

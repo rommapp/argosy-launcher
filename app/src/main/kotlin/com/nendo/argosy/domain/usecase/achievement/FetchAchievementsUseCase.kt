@@ -4,8 +4,12 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
+import com.nendo.argosy.data.remote.romm.RomMEarnedAchievement
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import java.time.Instant
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class AchievementCounts(
@@ -26,9 +30,15 @@ class FetchAchievementsUseCase @Inject constructor(
                 val apiAchievements = rom.raMetadata?.achievements
                 if (apiAchievements.isNullOrEmpty()) return null
 
-                val earnedBadgeIds = rom.raId?.let { romMRepository.getEarnedBadgeIds(it) } ?: emptySet()
+                val earnedAchievements = rom.raId?.let { romMRepository.getEarnedAchievements(it) } ?: emptyList()
+                val earnedByBadgeId = earnedAchievements.associateBy { it.id }
 
                 val entities = apiAchievements.map { achievement ->
+                    val earned = earnedByBadgeId[achievement.badgeId]
+                    val unlockedAt = earned?.date?.let { parseTimestamp(it) }
+                    val unlockedHardcoreAt = earned?.dateHardcore?.let { parseTimestamp(it) }
+                    val isUnlocked = earned != null
+
                     AchievementEntity(
                         gameId = gameId,
                         raId = achievement.raId,
@@ -38,7 +48,9 @@ class FetchAchievementsUseCase @Inject constructor(
                         type = achievement.type,
                         badgeUrl = achievement.badgeUrl,
                         badgeUrlLock = achievement.badgeUrlLock,
-                        isUnlocked = achievement.badgeId in earnedBadgeIds
+                        isUnlocked = isUnlocked,
+                        unlockedAt = unlockedAt,
+                        unlockedHardcoreAt = unlockedHardcoreAt
                     )
                 }
                 achievementDao.replaceForGame(gameId, entities)
@@ -60,6 +72,18 @@ class FetchAchievementsUseCase @Inject constructor(
                 AchievementCounts(total = entities.size, earned = earnedCount)
             }
             is RomMResult.Error -> null
+        }
+    }
+
+    private fun parseTimestamp(timestamp: String): Long? {
+        return try {
+            ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME).toInstant().toEpochMilli()
+        } catch (_: Exception) {
+            try {
+                Instant.parse(timestamp).toEpochMilli()
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 }

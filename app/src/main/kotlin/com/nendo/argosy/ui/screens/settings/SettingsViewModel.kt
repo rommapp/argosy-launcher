@@ -797,6 +797,18 @@ class SettingsViewModel @Inject constructor(
     fun confirmPlatformFiltersModalSelection() = syncDelegate.confirmPlatformFiltersModalSelection(viewModelScope)
     fun togglePlatformSyncEnabled(platformId: Long) = syncDelegate.togglePlatformSyncEnabled(viewModelScope, platformId)
 
+    fun setPlatformFilterSortMode(mode: com.nendo.argosy.util.PlatformFilterLogic.SortMode) {
+        syncDelegate.setPlatformFilterSortMode(mode)
+    }
+
+    fun setPlatformFilterSearchQuery(query: String) {
+        syncDelegate.setPlatformFilterSearchQuery(query)
+    }
+
+    fun cyclePlatformFilterMode() {
+        syncDelegate.cyclePlatformFilterMode()
+    }
+
     fun showRegionPicker() = routeShowRegionPicker(this)
     fun dismissRegionPicker() = routeDismissRegionPicker(this)
 

@@ -20,6 +20,7 @@ import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.util.PermissionHelper
+import com.nendo.argosy.util.PlatformFilterLogic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,6 +78,10 @@ data class FirstRunUiState(
     val hasUsageStatsPermission: Boolean = false,
     val rommFocusField: Int? = null,
     val platforms: List<PlatformEntity> = emptyList(),
+    val platformsAll: List<PlatformEntity> = emptyList(),
+    val platformFilterSortMode: PlatformFilterLogic.SortMode = PlatformFilterLogic.SortMode.DEFAULT,
+    val platformFilterHasGames: Boolean = false,
+    val platformFilterSearchQuery: String = "",
     val platformButtonFocus: Int = 1,
     val missingCoreCount: Int = 0,
     val coreDownloads: List<CoreDownloadState> = emptyList(),
@@ -84,6 +89,7 @@ data class FirstRunUiState(
 )
 
 @HiltViewModel
+@Suppress("TooManyFunctions")
 class FirstRunViewModel @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
@@ -156,11 +162,20 @@ class FirstRunViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = romMRepository.fetchAndStorePlatforms(defaultSyncEnabled = false)) {
                 is RomMResult.Success -> {
-                    _uiState.update { it.copy(platforms = result.data) }
+                    val allPlatforms = result.data
+                    val filtered = PlatformFilterLogic.filterAndSort(
+                        items = allPlatforms,
+                        searchQuery = _uiState.value.platformFilterSearchQuery,
+                        hasGames = _uiState.value.platformFilterHasGames,
+                        sortMode = _uiState.value.platformFilterSortMode,
+                        nameSelector = { it.name },
+                        countSelector = { it.gameCount }
+                    )
+                    _uiState.update { it.copy(platformsAll = allPlatforms, platforms = filtered) }
                 }
                 is RomMResult.Error -> {
                     val platforms = platformRepository.observeAllPlatforms().first()
-                    _uiState.update { it.copy(platforms = platforms) }
+                    _uiState.update { it.copy(platformsAll = platforms, platforms = platforms) }
                 }
             }
         }
@@ -285,23 +300,78 @@ class FirstRunViewModel @Inject constructor(
 
     fun togglePlatform(platformId: Long) {
         viewModelScope.launch {
-            val platform = _uiState.value.platforms.find { it.id == platformId } ?: return@launch
-            platformRepository.updateSyncEnabled(platformId, !platform.syncEnabled)
-            val updatedPlatforms = platformRepository.observeAllPlatforms().first()
-            _uiState.update { it.copy(platforms = updatedPlatforms) }
+            val currentAll = _uiState.value.platformsAll
+            val platformIndex = currentAll.indexOfFirst { it.id == platformId }
+            if (platformIndex == -1) return@launch
+
+            val platform = currentAll[platformIndex]
+            val newEnabled = !platform.syncEnabled
+
+            // Update repository
+            platformRepository.updateSyncEnabled(platformId, newEnabled)
+
+            // Update local state in-memory
+            val updatedAll = currentAll.toMutableList()
+            updatedAll[platformIndex] = platform.copy(syncEnabled = newEnabled)
+
+            _uiState.update { it.copy(platformsAll = updatedAll) }
+            applyPlatformFilters()
         }
     }
 
     fun toggleAllPlatforms() {
         viewModelScope.launch {
-            val platforms = _uiState.value.platforms
-            val allEnabled = platforms.all { it.syncEnabled }
+            val currentAll = _uiState.value.platformsAll
+            val allEnabled = currentAll.all { it.syncEnabled }
             val newState = !allEnabled
-            platforms.forEach { platform ->
+
+            // Update repository
+            currentAll.forEach { platform ->
                 platformRepository.updateSyncEnabled(platform.id, newState)
             }
-            val updatedPlatforms = platformRepository.observeAllPlatforms().first()
-            _uiState.update { it.copy(platforms = updatedPlatforms) }
+
+            // Update local state
+            val updatedAll = currentAll.map { it.copy(syncEnabled = newState) }
+
+            _uiState.update { it.copy(platformsAll = updatedAll) }
+            applyPlatformFilters()
+        }
+    }
+
+    fun setPlatformFilterSortMode(mode: PlatformFilterLogic.SortMode) {
+        _uiState.update { it.copy(platformFilterSortMode = mode) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    fun setPlatformFilterHasGames(enabled: Boolean) {
+        _uiState.update { it.copy(platformFilterHasGames = enabled) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    fun setPlatformFilterSearchQuery(query: String) {
+        _uiState.update { it.copy(platformFilterSearchQuery = query) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    private fun applyPlatformFilters(resetFocus: Boolean = false) {
+        viewModelScope.launch {
+            val allPlatforms = platformDao.observeAllPlatforms().first()
+            val filtered = PlatformFilterLogic.filterAndSort(
+                items = allPlatforms,
+                searchQuery = _uiState.value.platformFilterSearchQuery,
+                hasGames = _uiState.value.platformFilterHasGames,
+                sortMode = _uiState.value.platformFilterSortMode,
+                nameSelector = { it.name },
+                countSelector = { it.gameCount }
+            )
+            _uiState.update {
+                it.copy(
+                    platformsAll = allPlatforms,
+                    platforms = filtered,
+                    focusedIndex = if (resetFocus) 0 else it.focusedIndex
+                )
+            }
+>>>>>>> 875e1e71 (feat(platform filters): implement sort, search, and 'Has Games' filtering - Add PlatformFilterLogic for searching, sorting, and filtering - Refactor platform filter modals to include small header with controls - Implement expandable search, sort dropdown, and FilterChip - Add test coverage for filter/sort scenarios)
         }
     }
 

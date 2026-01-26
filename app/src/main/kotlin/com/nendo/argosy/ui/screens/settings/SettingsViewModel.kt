@@ -58,6 +58,9 @@ import com.nendo.argosy.ui.screens.settings.delegates.SoundSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.setPlatformFilterSortMode
+import com.nendo.argosy.ui.screens.settings.delegates.setPlatformFilterHasGames
+import com.nendo.argosy.ui.screens.settings.delegates.setPlatformFilterSearchQuery
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
@@ -2077,6 +2080,18 @@ class SettingsViewModel @Inject constructor(
 
     fun togglePlatformSyncEnabled(platformId: Long) {
         syncDelegate.togglePlatformSyncEnabled(viewModelScope, platformId)
+    }
+
+    fun setPlatformFilterSortMode(mode: com.nendo.argosy.util.PlatformFilterLogic.SortMode) {
+        syncDelegate.setPlatformFilterSortMode(viewModelScope, mode)
+    }
+
+    fun setPlatformFilterHasGames(enabled: Boolean) {
+        syncDelegate.setPlatformFilterHasGames(viewModelScope, enabled)
+    }
+
+    fun setPlatformFilterSearchQuery(query: String) {
+        syncDelegate.setPlatformFilterSearchQuery(viewModelScope, query)
     }
 
     fun showRegionPicker() {

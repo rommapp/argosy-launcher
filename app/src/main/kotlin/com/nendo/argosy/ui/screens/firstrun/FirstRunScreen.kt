@@ -68,13 +68,24 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.util.PlatformFilterLogic
 
 @Composable
 fun FirstRunScreen(
@@ -218,10 +229,15 @@ fun FirstRunScreen(
                 )
                 FirstRunStep.PLATFORM_SELECT -> PlatformSelectStep(
                     platforms = uiState.platforms,
+                    hasGames = uiState.platformFilterHasGames,
+                    searchQuery = uiState.platformFilterSearchQuery,
                     focusedIndex = uiState.focusedIndex,
                     buttonFocusIndex = uiState.platformButtonFocus,
                     onToggle = { viewModel.togglePlatform(it) },
                     onToggleAll = { viewModel.toggleAllPlatforms() },
+                    onSortModeChange = { viewModel.setPlatformFilterSortMode(it) },
+                    onHasGamesChange = { viewModel.setPlatformFilterHasGames(it) },
+                    onSearchQueryChange = { viewModel.setPlatformFilterSearchQuery(it) },
                     onContinue = { viewModel.proceedFromPlatformSelect() }
                 )
                 FirstRunStep.CORE_DOWNLOAD -> CoreDownloadStep(
@@ -831,10 +847,15 @@ private fun UsageStatsStep(
 @Composable
 private fun PlatformSelectStep(
     platforms: List<PlatformEntity>,
+    hasGames: Boolean,
+    searchQuery: String,
     focusedIndex: Int,
     buttonFocusIndex: Int,
     onToggle: (Long) -> Unit,
     onToggleAll: () -> Unit,
+    onSortModeChange: (PlatformFilterLogic.SortMode) -> Unit,
+    onHasGamesChange: (Boolean) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
     onContinue: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -845,6 +866,13 @@ private fun PlatformSelectStep(
     LaunchedEffect(focusedIndex) {
         if (platforms.isNotEmpty() && focusedIndex in platforms.indices) {
             listState.animateScrollToItem(focusedIndex)
+        }
+    }
+
+    // Scroll to top when the filtered list changes (e.g. search, sort, filter)
+    LaunchedEffect(platforms) {
+        if (platforms.isNotEmpty()) {
+            listState.scrollToItem(0)
         }
     }
 
@@ -870,6 +898,126 @@ private fun PlatformSelectStep(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(0.9f),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            var showSearch by remember { mutableStateOf(searchQuery.isNotEmpty()) }
+            var showSortMenu by remember { mutableStateOf(false) }
+
+            if (showSearch) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    placeholder = { Text("Search platforms...") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, "Search")
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            onSearchQueryChange("")
+                            showSearch = false
+                        }) {
+                            Icon(Icons.Default.Close, "Clear")
+                        }
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            } else {
+                Text(
+                    text = "${platforms.size} platforms",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
+                if (!showSearch) {
+                    IconButton(onClick = { showSearch = true }) {
+                        Icon(Icons.Default.Search, "Search")
+                    }
+                }
+
+                Box {
+                    IconButton(onClick = { showSortMenu = true }) {
+                        Icon(Icons.AutoMirrored.Filled.Sort, "Sort")
+                    }
+                    DropdownMenu(
+                        expanded = showSortMenu,
+                        onDismissRequest = { showSortMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Default") },
+                            onClick = {
+                                onSortModeChange(PlatformFilterLogic.SortMode.DEFAULT)
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Name (A-Z)") },
+                            onClick = {
+                                onSortModeChange(PlatformFilterLogic.SortMode.NAME_ASC)
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Name (Z-A)") },
+                            onClick = {
+                                onSortModeChange(PlatformFilterLogic.SortMode.NAME_DESC)
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Most Games") },
+                            onClick = {
+                                onSortModeChange(PlatformFilterLogic.SortMode.MOST_GAMES)
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Least Games") },
+                            onClick = {
+                                onSortModeChange(PlatformFilterLogic.SortMode.LEAST_GAMES)
+                                showSortMenu = false
+                            }
+                        )
+                    }
+                }
+
+                if (hasGames) {
+                    FilterChip(
+                        selected = true,
+                        onClick = { onHasGamesChange(false) },
+                        label = { Text("Has Games") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.FilterList,
+                                contentDescription = null,
+                                modifier = Modifier.size(Dimens.iconXs)
+                            )
+                        }
+                    )
+                } else {
+                    IconButton(
+                        onClick = { onHasGamesChange(true) }
+                    ) {
+                        Icon(
+                            Icons.Default.FilterList,
+                            "Show platforms with games"
+                        )
+                    }
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         LazyColumn(

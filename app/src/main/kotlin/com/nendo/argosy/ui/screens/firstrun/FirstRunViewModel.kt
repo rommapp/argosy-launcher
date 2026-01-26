@@ -13,6 +13,7 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.util.PermissionHelper
+import com.nendo.argosy.util.PlatformFilterLogic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,12 +68,17 @@ data class FirstRunUiState(
     val hasUsageStatsPermission: Boolean = false,
     val rommFocusField: Int? = null,
     val platforms: List<PlatformEntity> = emptyList(),
+    val platformsAll: List<PlatformEntity> = emptyList(),
+    val platformFilterSortMode: PlatformFilterLogic.SortMode = PlatformFilterLogic.SortMode.DEFAULT,
+    val platformFilterHasGames: Boolean = false,
+    val platformFilterSearchQuery: String = "",
     val platformButtonFocus: Int = 1,
     val coreDownloads: List<CoreDownloadState> = emptyList(),
     val coreDownloadComplete: Boolean = false
 )
 
 @HiltViewModel
+@Suppress("TooManyFunctions")
 class FirstRunViewModel @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
@@ -138,11 +144,20 @@ class FirstRunViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = romMRepository.fetchAndStorePlatforms(defaultSyncEnabled = false)) {
                 is RomMResult.Success -> {
-                    _uiState.update { it.copy(platforms = result.data) }
+                    val allPlatforms = result.data
+                    val filtered = PlatformFilterLogic.filterAndSort(
+                        items = allPlatforms,
+                        searchQuery = _uiState.value.platformFilterSearchQuery,
+                        hasGames = _uiState.value.platformFilterHasGames,
+                        sortMode = _uiState.value.platformFilterSortMode,
+                        nameSelector = { it.name },
+                        countSelector = { it.gameCount }
+                    )
+                    _uiState.update { it.copy(platformsAll = allPlatforms, platforms = filtered) }
                 }
                 is RomMResult.Error -> {
                     val platforms = platformDao.observeAllPlatforms().first()
-                    _uiState.update { it.copy(platforms = platforms) }
+                    _uiState.update { it.copy(platformsAll = platforms, platforms = platforms) }
                 }
             }
         }
@@ -241,23 +256,57 @@ class FirstRunViewModel @Inject constructor(
 
     fun togglePlatform(platformId: Long) {
         viewModelScope.launch {
-            val platform = _uiState.value.platforms.find { it.id == platformId } ?: return@launch
+            val platform = _uiState.value.platformsAll.find { it.id == platformId } ?: return@launch
             platformDao.updateSyncEnabled(platformId, !platform.syncEnabled)
-            val updatedPlatforms = platformDao.observeAllPlatforms().first()
-            _uiState.update { it.copy(platforms = updatedPlatforms) }
+            applyPlatformFilters()
         }
     }
 
     fun toggleAllPlatforms() {
         viewModelScope.launch {
-            val platforms = _uiState.value.platforms
+            val platforms = _uiState.value.platformsAll
             val allEnabled = platforms.all { it.syncEnabled }
             val newState = !allEnabled
             platforms.forEach { platform ->
                 platformDao.updateSyncEnabled(platform.id, newState)
             }
-            val updatedPlatforms = platformDao.observeAllPlatforms().first()
-            _uiState.update { it.copy(platforms = updatedPlatforms) }
+            applyPlatformFilters()
+        }
+    }
+
+    fun setPlatformFilterSortMode(mode: PlatformFilterLogic.SortMode) {
+        _uiState.update { it.copy(platformFilterSortMode = mode) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    fun setPlatformFilterHasGames(enabled: Boolean) {
+        _uiState.update { it.copy(platformFilterHasGames = enabled) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    fun setPlatformFilterSearchQuery(query: String) {
+        _uiState.update { it.copy(platformFilterSearchQuery = query) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    private fun applyPlatformFilters(resetFocus: Boolean = false) {
+        viewModelScope.launch {
+            val allPlatforms = platformDao.observeAllPlatforms().first()
+            val filtered = PlatformFilterLogic.filterAndSort(
+                items = allPlatforms,
+                searchQuery = _uiState.value.platformFilterSearchQuery,
+                hasGames = _uiState.value.platformFilterHasGames,
+                sortMode = _uiState.value.platformFilterSortMode,
+                nameSelector = { it.name },
+                countSelector = { it.gameCount }
+            )
+            _uiState.update {
+                it.copy(
+                    platformsAll = allPlatforms,
+                    platforms = filtered,
+                    focusedIndex = if (resetFocus) 0 else it.focusedIndex
+                )
+            }
         }
     }
 

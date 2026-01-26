@@ -30,6 +30,7 @@ import com.nendo.argosy.ui.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundPreset
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.util.LogLevel
+import com.nendo.argosy.util.PlatformFilterLogic
 import com.nendo.argosy.BuildConfig
 
 enum class SettingsSection {
@@ -361,6 +362,10 @@ data class SyncSettingsState(
     val showPlatformFiltersModal: Boolean = false,
     val platformFiltersModalFocusIndex: Int = 0,
     val platformFiltersList: List<PlatformFilterItem> = emptyList(),
+    val platformFiltersAllPlatforms: List<PlatformFilterItem> = emptyList(),
+    val platformFilterSortMode: PlatformFilterLogic.SortMode = PlatformFilterLogic.SortMode.DEFAULT,
+    val platformFilterHasGames: Boolean = false,
+    val platformFilterSearchQuery: String = "",
     val isLoadingPlatforms: Boolean = false,
     val enabledPlatformCount: Int = 0,
     val totalGames: Int = 0,

@@ -16,6 +16,7 @@ import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
 import com.nendo.argosy.ui.screens.settings.SyncSettingsState
+import com.nendo.argosy.util.PlatformFilterLogic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -386,7 +387,7 @@ class SyncSettingsDelegate @Inject constructor(
                 notificationManager.showError("Failed to fetch platforms: ${result.exceptionOrNull()?.message}")
             }
 
-            val platforms = platformDao.getAllPlatformsOrdered().map { entity ->
+            val allPlatforms = platformDao.getAllPlatformsOrdered().map { entity ->
                 PlatformFilterItem(
                     id = entity.id,
                     name = entity.name,
@@ -395,14 +396,24 @@ class SyncSettingsDelegate @Inject constructor(
                     syncEnabled = entity.syncEnabled
                 )
             }
-            val enabledCount = platforms.count { it.syncEnabled }
+            val currentState = _state.value
+            val filtered = PlatformFilterLogic.filterAndSort(
+                items = allPlatforms,
+                searchQuery = currentState.platformFilterSearchQuery,
+                hasGames = currentState.platformFilterHasGames,
+                sortMode = currentState.platformFilterSortMode,
+                nameSelector = { it.name },
+                countSelector = { it.romCount }
+            )
+            val enabledCount = allPlatforms.count { it.syncEnabled }
             _state.update {
                 it.copy(
-                    platformFiltersList = platforms,
+                    platformFiltersAllPlatforms = allPlatforms,
+                    platformFiltersList = filtered,
                     isLoadingPlatforms = false,
                     platformFiltersModalFocusIndex = 0,
                     enabledPlatformCount = enabledCount,
-                    totalPlatforms = platforms.size
+                    totalPlatforms = allPlatforms.size
                 )
             }
         }

@@ -133,9 +133,14 @@ fun SyncSettingsSection(
         if (uiState.syncSettings.showPlatformFiltersModal) {
             PlatformFiltersModal(
                 platforms = uiState.syncSettings.platformFiltersList,
+                hasGames = uiState.syncSettings.platformFilterHasGames,
+                searchQuery = uiState.syncSettings.platformFilterSearchQuery,
                 focusIndex = uiState.syncSettings.platformFiltersModalFocusIndex,
                 isLoading = uiState.syncSettings.isLoadingPlatforms,
                 onTogglePlatform = { viewModel.togglePlatformSyncEnabled(it) },
+                onSortModeChange = { viewModel.setPlatformFilterSortMode(it) },
+                onHasGamesChange = { viewModel.setPlatformFilterHasGames(it) },
+                onSearchQueryChange = { viewModel.setPlatformFilterSearchQuery(it) },
                 onDismiss = { viewModel.dismissPlatformFiltersModal() }
             )
         }

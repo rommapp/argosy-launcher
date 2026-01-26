@@ -36,8 +36,8 @@ fun ExtractionFailedModal(
         title = "EXTRACTION FAILED",
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.SOUTH to "Select",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Select",
+            InputButton.B to "Cancel"
         )
     ) {
         Icon(

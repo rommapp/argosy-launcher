@@ -128,6 +128,14 @@ public class LibretroDroid {
     public static native byte[] serializeSRAM();
     public static native boolean unserializeSRAM(byte[] sram);
 
+    public static final int MEMORY_SAVE_RAM = 0;
+    public static final int MEMORY_RTC = 1;
+    public static final int MEMORY_SYSTEM_RAM = 2;
+    public static final int MEMORY_VIDEO_RAM = 3;
+
+    public static native byte[] getMemoryData(int memoryType);
+    public static native int getMemorySize(int memoryType);
+
     public static native void updateVariable(Variable variable);
     public static native Variable[] getVariables();
 

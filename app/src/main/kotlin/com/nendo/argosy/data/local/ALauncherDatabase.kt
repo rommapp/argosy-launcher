@@ -81,7 +81,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         HotkeyEntity::class,
         CheatEntity::class
     ],
-    version = 52,
+    version = 53,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -880,6 +880,13 @@ abstract class ALauncherDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_cheats_gameId ON cheats(gameId)")
 
                 db.execSQL("ALTER TABLE games ADD COLUMN cheatsFetched INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_52_53 = object : Migration(52, 53) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cheats ADD COLUMN isUserCreated INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cheats ADD COLUMN lastUsedAt INTEGER")
             }
         }
     }

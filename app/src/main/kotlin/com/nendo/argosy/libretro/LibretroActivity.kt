@@ -14,10 +14,16 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import com.nendo.argosy.ui.input.ControllerDetector
+import com.nendo.argosy.ui.input.DetectedLayout
+import com.nendo.argosy.ui.input.LocalABIconsSwapped
+import com.nendo.argosy.ui.input.LocalSwapStartSelect
+import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -32,10 +38,16 @@ import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
-import com.nendo.argosy.libretro.ui.CheatItem
-import com.nendo.argosy.libretro.ui.CheatsMenu
+import com.nendo.argosy.libretro.scanner.MemoryScanner
+import com.nendo.argosy.libretro.ui.cheats.CheatDisplayItem
+import com.nendo.argosy.libretro.ui.cheats.CheatsScreen
+import com.nendo.argosy.libretro.ui.cheats.CheatsTab
 import com.nendo.argosy.libretro.ui.InGameMenu
 import com.nendo.argosy.libretro.ui.InGameMenuAction
+import com.nendo.argosy.libretro.ui.LibretroMenuInputHandler
+import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
@@ -71,6 +83,8 @@ class LibretroActivity : ComponentActivity() {
     private var selectPressed = false
     private var menuVisible by mutableStateOf(false)
     private var cheatsMenuVisible by mutableStateOf(false)
+    private var lastCheatsTab by mutableStateOf(CheatsTab.CHEATS)
+    private var cheatsNeedReset = false
     private var hasQuickSave by mutableStateOf(false)
     private var cheats by mutableStateOf<List<CheatEntity>>(emptyList())
     private var gameName: String = ""
@@ -89,6 +103,13 @@ class LibretroActivity : ComponentActivity() {
     private var limitHotkeysToPlayer1 = true
     private val frameIntervalMs = 16L
     private val rewindSpeed = 2
+    private val memoryScanner = MemoryScanner()
+    private var swapAB by mutableStateOf(false)
+    private var swapXY by mutableStateOf(false)
+    private var swapStartSelect by mutableStateOf(false)
+    private var menuFocusIndex by mutableStateOf(0)
+    private lateinit var menuInputHandler: LibretroMenuInputHandler
+    private var activeMenuHandler: InputHandler? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,6 +136,24 @@ class LibretroActivity : ComponentActivity() {
         val settings = kotlinx.coroutines.runBlocking {
             preferencesRepository.getBuiltinEmulatorSettings().first()
         }
+        val inputPrefs = kotlinx.coroutines.runBlocking {
+            preferencesRepository.preferences.first()
+        }
+        val detectedLayout = ControllerDetector.detectFromActiveGamepad().layout
+        val isNintendoLayout = when (inputPrefs.controllerLayout) {
+            "nintendo" -> true
+            "xbox" -> false
+            else -> detectedLayout == DetectedLayout.NINTENDO
+        }
+        swapAB = isNintendoLayout xor inputPrefs.swapAB
+        swapXY = isNintendoLayout xor inputPrefs.swapXY
+        swapStartSelect = inputPrefs.swapStartSelect
+        // Key mapping uses raw pref values (like GamepadInputHandler), not icon-swap values
+        menuInputHandler = LibretroMenuInputHandler(
+            inputPrefs.swapAB,
+            inputPrefs.swapXY,
+            inputPrefs.swapStartSelect
+        )
         aspectRatioMode = settings.aspectRatio
         fastForwardSpeed = settings.fastForwardSpeed
         overscanCrop = settings.overscanCrop
@@ -177,20 +216,43 @@ class LibretroActivity : ComponentActivity() {
                 ComposeView(this@LibretroActivity).apply {
                     setContent {
                         ALauncherTheme {
-                            if (menuVisible) {
-                                InGameMenu(
-                                    gameName = gameName,
-                                    hasQuickSave = hasQuickSave,
-                                    cheatsAvailable = cheats.isNotEmpty(),
-                                    onAction = ::handleMenuAction
-                                )
-                            }
-                            if (cheatsMenuVisible) {
-                                CheatsMenu(
-                                    cheats = cheats.map { CheatItem(it.id, it.description, it.enabled) },
-                                    onToggleCheat = ::handleToggleCheat,
-                                    onDismiss = { cheatsMenuVisible = false; menuVisible = true }
-                                )
+                            CompositionLocalProvider(
+                                LocalABIconsSwapped provides swapAB,
+                                LocalXYIconsSwapped provides swapXY,
+                                LocalSwapStartSelect provides swapStartSelect
+                            ) {
+                                if (menuVisible) {
+                                    activeMenuHandler = InGameMenu(
+                                        gameName = gameName,
+                                        hasQuickSave = hasQuickSave,
+                                        cheatsAvailable = cheats.isNotEmpty(),
+                                        focusedIndex = menuFocusIndex,
+                                        onFocusChange = { menuFocusIndex = it },
+                                        onAction = ::handleMenuAction
+                                    )
+                                }
+                                if (cheatsMenuVisible) {
+                                    activeMenuHandler = CheatsScreen(
+                                        cheats = cheats.map { CheatDisplayItem(it.id, it.description, it.code, it.enabled, it.isUserCreated, it.lastUsedAt) },
+                                        scanner = memoryScanner,
+                                        initialTab = lastCheatsTab,
+                                        onToggleCheat = ::handleToggleCheat,
+                                        onCreateCheat = ::handleCreateCheat,
+                                        onUpdateCheat = ::handleUpdateCheat,
+                                        onDeleteCheat = ::handleDeleteCheat,
+                                        onGetRam = { retroView.getSystemRam() },
+                                        onTabChange = { lastCheatsTab = it },
+                                        onDismiss = {
+                                            cheatsMenuVisible = false
+                                            menuVisible = true
+                                            memoryScanner.markGameRan()
+                                            flushCheatReset()
+                                        }
+                                    )
+                                }
+                                if (!menuVisible && !cheatsMenuVisible) {
+                                    activeMenuHandler = null
+                                }
                             }
                         }
                     }
@@ -438,10 +500,73 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun handleCreateCheat(address: Int, value: Int, description: String) {
+        lifecycleScope.launch {
+            val maxIndex = cheatDao.getMaxCheatIndex(gameId) ?: -1
+            val code = String.format("%06X:%02X", address, value)
+            val newCheat = CheatEntity(
+                gameId = gameId,
+                cheatIndex = maxIndex + 1,
+                description = description,
+                code = code,
+                enabled = true,
+                isUserCreated = true,
+                lastUsedAt = System.currentTimeMillis()
+            )
+            val newId = cheatDao.insert(newCheat)
+            cheats = cheatDao.getCheatsForGame(gameId)
+            applyCheat(newId, true)
+            Log.d("LibretroActivity", "Created custom cheat: $description -> $code")
+        }
+    }
+
+    private fun handleUpdateCheat(cheatId: Long, description: String, code: String) {
+        lifecycleScope.launch {
+            cheatDao.updateDescription(cheatId, description)
+            cheatDao.updateCode(cheatId, code)
+            val cheat = cheats.find { it.id == cheatId }
+            cheats = cheatDao.getCheatsForGame(gameId)
+            if (cheat?.enabled == true) {
+                val updatedCheat = cheats.find { it.id == cheatId }
+                if (updatedCheat != null) {
+                    retroView.setCheat(updatedCheat.cheatIndex, true, updatedCheat.code)
+                }
+            }
+            Log.d("LibretroActivity", "Updated cheat $cheatId: $description -> $code")
+        }
+    }
+
+    private fun handleDeleteCheat(cheatId: Long) {
+        lifecycleScope.launch {
+            val cheat = cheats.find { it.id == cheatId }
+            if (cheat?.enabled == true) {
+                retroView.setCheat(cheat.cheatIndex, false, cheat.code)
+            }
+            cheatDao.deleteById(cheatId)
+            cheats = cheatDao.getCheatsForGame(gameId)
+            Log.d("LibretroActivity", "Deleted cheat $cheatId")
+        }
+    }
+
     private fun applyCheat(cheatId: Long, enabled: Boolean) {
         val cheat = cheats.find { it.id == cheatId } ?: return
-        retroView.setCheat(cheat.cheatIndex, enabled, cheat.code)
+        if (enabled) {
+            retroView.setCheat(cheat.cheatIndex, true, cheat.code)
+        } else {
+            retroView.setCheat(cheat.cheatIndex, false, cheat.code)
+            cheatsNeedReset = true
+        }
         Log.d("LibretroActivity", "Applied cheat ${cheat.cheatIndex}: $enabled - ${cheat.description}")
+    }
+
+    private fun flushCheatReset() {
+        if (!cheatsNeedReset) return
+        cheatsNeedReset = false
+        val stateData = retroView.serializeState()
+        retroView.resetCheat()
+        retroView.unserializeState(stateData)
+        applyAllEnabledCheats()
+        Log.d("LibretroActivity", "Flushed cheat reset cycle")
     }
 
     private fun applyAllEnabledCheats() {
@@ -477,6 +602,7 @@ class LibretroActivity : ComponentActivity() {
 
     private fun showMenu() {
         retroView.onPause()
+        menuFocusIndex = 0
         menuVisible = true
     }
 
@@ -494,7 +620,15 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible) {
+        if (menuVisible || cheatsMenuVisible) {
+            val gamepadEvent = menuInputHandler.mapKeyToEvent(keyCode)
+            if (gamepadEvent != null) {
+                val handler = activeMenuHandler
+                if (handler != null) {
+                    val result = dispatchToMenuHandler(gamepadEvent, handler)
+                    if (result.handled) return true
+                }
+            }
             return super.onKeyDown(keyCode, event)
         }
 
@@ -545,7 +679,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible) {
+        if (menuVisible || cheatsMenuVisible) {
             return super.onKeyUp(keyCode, event)
         }
 
@@ -564,10 +698,31 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
-        if (menuVisible) {
+        if (menuVisible || cheatsMenuVisible) {
             return super.onGenericMotionEvent(event)
         }
         return retroView.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
+    }
+
+    private fun dispatchToMenuHandler(event: GamepadEvent, handler: InputHandler): InputResult {
+        return when (event) {
+            GamepadEvent.Up -> handler.onUp()
+            GamepadEvent.Down -> handler.onDown()
+            GamepadEvent.Left -> handler.onLeft()
+            GamepadEvent.Right -> handler.onRight()
+            GamepadEvent.Confirm -> handler.onConfirm()
+            GamepadEvent.Back -> handler.onBack()
+            GamepadEvent.SecondaryAction -> handler.onSecondaryAction()
+            GamepadEvent.ContextMenu -> handler.onContextMenu()
+            GamepadEvent.PrevSection -> handler.onPrevSection()
+            GamepadEvent.NextSection -> handler.onNextSection()
+            GamepadEvent.Menu -> handler.onMenu()
+            GamepadEvent.Select -> handler.onSelect()
+            GamepadEvent.PrevTrigger -> handler.onPrevTrigger()
+            GamepadEvent.NextTrigger -> handler.onNextTrigger()
+            GamepadEvent.LeftStickClick -> handler.onLeftStickClick()
+            GamepadEvent.RightStickClick -> handler.onRightStickClick()
+        }
     }
 
     override fun onResume() {

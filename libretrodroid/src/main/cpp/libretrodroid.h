@@ -73,6 +73,9 @@ public:
     std::pair<int8_t *, size_t> serializeSRAM();
     jboolean unserializeSRAM(int8_t *data, size_t size);
 
+    std::pair<int8_t *, size_t> getMemoryData(unsigned int memoryType);
+    size_t getMemorySize(unsigned int memoryType);
+
     void onSurfaceCreated();
     void onSurfaceChanged(unsigned int width, unsigned int height);
 

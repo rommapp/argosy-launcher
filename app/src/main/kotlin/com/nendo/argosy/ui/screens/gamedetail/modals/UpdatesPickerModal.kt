@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail.modals
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,19 +67,14 @@ fun UpdatesPickerModal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .clickable(onClick = onDismiss),
+            .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .width(Dimens.modalWidthXl)
                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(Dimens.radiusLg))
-                .clickable(
-                    enabled = false,
-                    onClick = {},
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                )
+                .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg)
         ) {
             Text(
@@ -121,8 +116,8 @@ fun UpdatesPickerModal(
             FooterBar(
                 hints = listOfNotNull(
                     InputButton.DPAD_VERTICAL to "Navigate",
-                    if (canDownload) InputButton.SOUTH to "Download" else null,
-                    InputButton.EAST to "Back"
+                    if (canDownload) InputButton.A to "Download" else null,
+                    InputButton.B to "Back"
                 )
             )
         }
@@ -165,7 +160,7 @@ private fun UpdateFileItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickable(enabled = !file.isDownloaded, onClick = onClick)
+            .clickableNoFocus(enabled = !file.isDownloaded, onClick = onClick)
             .padding(horizontal = Dimens.radiusLg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

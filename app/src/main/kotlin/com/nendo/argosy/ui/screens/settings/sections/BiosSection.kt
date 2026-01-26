@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.SectionFocusedScroll
@@ -270,10 +268,7 @@ private fun DistributeResultModal(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Dimens.radiusSm))
                     .background(MaterialTheme.colorScheme.primary)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onDismiss() }
+                    .clickableNoFocus { onDismiss() }
                     .padding(Dimens.spacingSm),
                 contentAlignment = Alignment.Center
             ) {
@@ -419,11 +414,7 @@ private fun BiosSummaryCard(
                         .weight(1f)
                         .clip(RoundedCornerShape(Dimens.radiusSm))
                         .background(downloadBgColor)
-                        .clickable(
-                            enabled = downloadEnabled,
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { onDownloadAll() }
+                        .clickableNoFocus(enabled = downloadEnabled) { onDownloadAll() }
                         .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
                     contentAlignment = Alignment.Center
                 ) {
@@ -461,11 +452,7 @@ private fun BiosSummaryCard(
                         .weight(1f)
                         .clip(RoundedCornerShape(Dimens.radiusSm))
                         .background(distributeBgColor)
-                        .clickable(
-                            enabled = distributeEnabled,
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { onDistributeAll() }
+                        .clickableNoFocus(enabled = distributeEnabled) { onDistributeAll() }
                         .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
                     contentAlignment = Alignment.Center
                 ) {
@@ -509,10 +496,7 @@ private fun BiosPlatformItem(
             .heightIn(min = Dimens.settingsItemMinHeight)
             .clip(RoundedCornerShape(Dimens.radiusLg))
             .background(backgroundColor)
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) { onClick() }
+            .clickableNoFocus { onClick() }
             .padding(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -552,10 +536,7 @@ private fun BiosPlatformItem(
                 modifier = Modifier
                     .clip(RoundedCornerShape(Dimens.radiusSm))
                     .background(downloadBgColor)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onDownload() }
+                    .clickableNoFocus { onDownload() }
                     .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
             ) {
                 Text(

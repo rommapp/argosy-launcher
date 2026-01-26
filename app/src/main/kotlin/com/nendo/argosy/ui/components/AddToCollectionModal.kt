@@ -2,8 +2,7 @@ package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -100,11 +99,7 @@ private fun CreateCollectionRow(
                 if (isFocused) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                 shape
             )
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -146,11 +141,7 @@ private fun CollectionCheckRow(
                 if (isFocused) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                 shape
             )
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -1,9 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.runtime.remember
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -112,12 +110,7 @@ fun SteamLauncherPreference(
                     modifier = Modifier
                         .clip(RoundedCornerShape(Dimens.radiusSm))
                         .background(scanBgColor)
-                        .clickable(
-                            enabled = isEnabled,
-                            onClick = onScan,
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        )
+                        .clickableNoFocus(enabled = isEnabled, onClick = onScan)
                         .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
                 ) {
                     Text(
@@ -143,12 +136,7 @@ fun SteamLauncherPreference(
                 modifier = Modifier
                     .clip(RoundedCornerShape(Dimens.radiusSm))
                     .background(addBgColor)
-                    .clickable(
-                        enabled = isEnabled,
-                        onClick = onAdd,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    .clickableNoFocus(enabled = isEnabled, onClick = onAdd)
                     .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
             ) {
                 Text(

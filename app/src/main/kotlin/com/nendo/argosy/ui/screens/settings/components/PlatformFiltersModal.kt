@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,11 +52,7 @@ fun PlatformFiltersModal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .clickable(
-                onClick = onDismiss,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -66,7 +60,7 @@ fun PlatformFiltersModal(
                 .width(Dimens.modalWidthXl)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable(enabled = false, onClick = {})
+                .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
@@ -143,8 +137,8 @@ fun PlatformFiltersModal(
             FooterBar(
                 hints = listOf(
                     InputButton.DPAD to "Navigate",
-                    InputButton.SOUTH to "Toggle",
-                    InputButton.EAST to "Close"
+                    InputButton.A to "Toggle",
+                    InputButton.B to "Close"
                 )
             )
         }

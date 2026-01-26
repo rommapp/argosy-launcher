@@ -4,7 +4,7 @@ import android.view.InputDevice
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -126,8 +126,8 @@ fun ControllerOrderModal(
         baseWidth = 500.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.SOUTH to "Confirm",
-            InputButton.EAST to "Unregister/Back"
+            InputButton.A to "Confirm",
+            InputButton.B to "Unregister/Back"
         )
     ) {
         Row(
@@ -175,7 +175,7 @@ private fun ControllerSlot(
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor)
             .border(1.dp, borderColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)

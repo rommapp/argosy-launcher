@@ -2,7 +2,7 @@ package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +29,8 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,7 +43,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalUiScale
@@ -64,14 +65,7 @@ private fun preferenceModifier(
         .heightIn(min = Dimens.settingsItemMinHeight)
         .clip(preferenceShape)
         .background(backgroundColor, preferenceShape)
-        .then(
-            if (onClick != null) Modifier.clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
-            else Modifier
-        )
+        .then(if (onClick != null) Modifier.clickableNoFocus(onClick = onClick) else Modifier)
         .padding(Dimens.spacingMd)
 }
 
@@ -341,15 +335,8 @@ fun SwitchPreference(
             modifier = Modifier
                 .weight(1f)
                 .then(
-                    if (onLabelClick != null) Modifier.clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                        onClick = onLabelClick
-                    )
-                    else Modifier.clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onToggle(!isEnabled) }
+                    if (onLabelClick != null) Modifier.clickableNoFocus(onClick = onLabelClick)
+                    else Modifier.clickableNoFocus { onToggle(!isEnabled) }
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -380,7 +367,9 @@ fun SwitchPreference(
         }
         Switch(
             checked = isEnabled,
-            onCheckedChange = onToggle
+            onCheckedChange = onToggle,
+            modifier = Modifier.focusProperties { canFocus = false },
+            interactionSource = remember { MutableInteractionSource() }
         )
     }
 }
@@ -603,10 +592,7 @@ fun ColorPickerPreference(
         ) {
             presetColors.forEachIndexed { index, (color, _) ->
                 Box(
-                    modifier = Modifier.clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onColorSelect(color) },
+                    modifier = Modifier.clickableNoFocus { onColorSelect(color) },
                     contentAlignment = Alignment.Center
                 ) {
                     colorCircleContent(
@@ -796,12 +782,7 @@ fun ImageCachePreference(
                 modifier = Modifier
                     .clip(RoundedCornerShape(Dimens.radiusSm))
                     .background(changeBgColor)
-                    .clickable(
-                        enabled = !isMigrating,
-                        onClick = onChange,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    .clickableNoFocus(enabled = !isMigrating) { onChange() }
                     .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
             ) {
                 Text(
@@ -828,12 +809,7 @@ fun ImageCachePreference(
                     modifier = Modifier
                         .clip(RoundedCornerShape(Dimens.radiusSm))
                         .background(resetBgColor)
-                        .clickable(
-                            enabled = !isMigrating,
-                            onClick = onReset,
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        )
+                        .clickableNoFocus(enabled = !isMigrating) { onReset() }
                         .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
                 ) {
                     Text(

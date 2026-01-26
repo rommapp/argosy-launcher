@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -45,15 +44,7 @@ fun Modal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .then(
-                if (onDismiss != null) {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onDismiss
-                    )
-                } else Modifier
-            ),
+            .then(if (onDismiss != null) Modifier.clickableNoFocus(onClick = onDismiss) else Modifier),
         contentAlignment = Alignment.Center
     ) {
         val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
@@ -67,15 +58,7 @@ fun Modal(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(Dimens.radiusLg)
                 )
-                .then(
-                    if (onDismiss != null) {
-                        Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        )
-                    } else Modifier
-                )
+                .then(if (onDismiss != null) Modifier.clickableNoFocus {} else Modifier)
                 .padding(Dimens.spacingLg)
         ) {
             Text(
@@ -119,15 +102,7 @@ fun CenteredModal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .then(
-                if (onDismiss != null) {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onDismiss
-                    )
-                } else Modifier
-            ),
+            .then(if (onDismiss != null) Modifier.clickableNoFocus(onClick = onDismiss) else Modifier),
         contentAlignment = Alignment.Center
     ) {
         val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
@@ -139,15 +114,7 @@ fun CenteredModal(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(Dimens.radiusLg)
                 )
-                .then(
-                    if (onDismiss != null) {
-                        Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        )
-                    } else Modifier
-                )
+                .then(if (onDismiss != null) Modifier.clickableNoFocus {} else Modifier)
                 .padding(Dimens.spacingLg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -185,15 +152,7 @@ fun NestedModal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .then(
-                if (onDismiss != null) {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onDismiss
-                    )
-                } else Modifier
-            ),
+            .then(if (onDismiss != null) Modifier.clickableNoFocus(onClick = onDismiss) else Modifier),
         contentAlignment = Alignment.Center
     ) {
         val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
@@ -205,15 +164,7 @@ fun NestedModal(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(Dimens.radiusLg)
                 )
-                .then(
-                    if (onDismiss != null) {
-                        Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        )
-                    } else Modifier
-                )
+                .then(if (onDismiss != null) Modifier.clickableNoFocus {} else Modifier)
                 .padding(Dimens.spacingLg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

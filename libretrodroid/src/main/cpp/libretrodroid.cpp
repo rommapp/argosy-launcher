@@ -175,6 +175,26 @@ std::pair<int8_t*, size_t> LibretroDroid::serializeSRAM() {
     return std::pair(data, size);
 }
 
+std::pair<int8_t*, size_t> LibretroDroid::getMemoryData(unsigned int memoryType) {
+    size_t size = core->retro_get_memory_size(memoryType);
+    if (size == 0) {
+        return std::pair(nullptr, 0);
+    }
+
+    void* memPtr = core->retro_get_memory_data(memoryType);
+    if (memPtr == nullptr) {
+        return std::pair(nullptr, 0);
+    }
+
+    auto* data = new int8_t[size];
+    memcpy(data, (int8_t*) memPtr, size);
+    return std::pair(data, size);
+}
+
+size_t LibretroDroid::getMemorySize(unsigned int memoryType) {
+    return core->retro_get_memory_size(memoryType);
+}
+
 void LibretroDroid::onSurfaceChanged(unsigned int width, unsigned int height) {
     LOGD("Performing libretrodroid onSurfaceChanged");
     video->updateScreenSize(width, height);

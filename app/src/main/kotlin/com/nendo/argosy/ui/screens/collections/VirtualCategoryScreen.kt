@@ -150,10 +150,10 @@ fun VirtualCategoryScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
             hints = buildList {
                 add(InputButton.DPAD to "Navigate")
-                add(InputButton.SOUTH to "Open")
-                add(InputButton.EAST to "Back")
-                add(InputButton.NORTH to if (uiState.isPinned) "Unpin" else "Pin")
-                add(InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
+                add(InputButton.A to "Open")
+                add(InputButton.B to "Back")
+                add(InputButton.Y to if (uiState.isPinned) "Unpin" else "Pin")
+                add(InputButton.X to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
                 if (uiState.canDownloadAll) {
                     add(InputButton.SELECT to "Download All (${uiState.downloadableGamesCount})")
                 }

@@ -9,8 +9,8 @@ fun SettingsFooter() {
     FooterBar(
         hints = listOf(
             InputButton.DPAD to "Navigate",
-            InputButton.SOUTH to "Select",
-            InputButton.EAST to "Back"
+            InputButton.A to "Select",
+            InputButton.B to "Back"
         )
     )
 }

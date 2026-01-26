@@ -88,7 +88,7 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.SourceBadge
 import com.nendo.argosy.ui.screens.home.HomeGameUi
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -349,9 +349,9 @@ fun LibraryScreen(
                     focusedGame = uiState.focusedGame,
                     onHintClick = { button ->
                         when (button) {
-                            InputButton.SOUTH -> uiState.focusedGame?.let { onGameSelect(it.id) }
-                            InputButton.NORTH -> uiState.focusedGame?.let { viewModel.toggleFavorite(it.id) }
-                            InputButton.WEST -> viewModel.toggleFilterMenu()
+                            InputButton.A -> uiState.focusedGame?.let { onGameSelect(it.id) }
+                            InputButton.Y -> uiState.focusedGame?.let { viewModel.toggleFavorite(it.id) }
+                            InputButton.X -> viewModel.toggleFilterMenu()
                             InputButton.SELECT -> viewModel.toggleQuickMenu()
                             else -> {}
                         }
@@ -557,11 +557,7 @@ private fun LibraryHeader(
             ) {
                 Row(
                     modifier = Modifier
-                        .clickable(
-                            onClick = onPreviousPlatform,
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        )
+                        .clickableNoFocus(onClick = onPreviousPlatform)
                         .padding(Dimens.spacingSm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -585,11 +581,7 @@ private fun LibraryHeader(
 
                 Row(
                     modifier = Modifier
-                        .clickable(
-                            onClick = onNextPlatform,
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        )
+                        .clickableNoFocus(onClick = onNextPlatform)
                         .padding(Dimens.spacingSm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -659,9 +651,9 @@ private fun LibraryFooter(
 ) {
     FooterBar(
         hints = listOf(
-            InputButton.SOUTH to "Details",
-            InputButton.NORTH to if (focusedGame?.isFavorite == true) "Unfavorite" else "Favorite",
-            InputButton.WEST to "Filter",
+            InputButton.A to "Details",
+            InputButton.Y to if (focusedGame?.isFavorite == true) "Unfavorite" else "Favorite",
+            InputButton.X to "Filter",
             InputButton.SELECT to "Quick Menu"
         ),
         onHintClick = onHintClick
@@ -739,11 +731,7 @@ private fun FilterMenuOverlay(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .clickable(
-                onClick = onDismiss,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -751,7 +739,7 @@ private fun FilterMenuOverlay(
                 .width(Dimens.modalWidthLg)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable(enabled = false, onClick = {})
+                .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
@@ -785,11 +773,7 @@ private fun FilterMenuOverlay(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(Dimens.radiusMd))
-                            .clickable(
-                                onClick = { onCategorySelect(category) },
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            )
+                            .clickableNoFocus { onCategorySelect(category) }
                             .then(
                                 if (hasActiveFilters && !isCurrent) {
                                     Modifier.border(
@@ -881,10 +865,7 @@ private fun FilterMenuOverlay(
                                     if (isFocused) Modifier.background(MaterialTheme.colorScheme.primaryContainer)
                                     else Modifier
                                 )
-                                .clickable(
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() }
-                                ) { onOptionSelect(index) }
+                                .clickableNoFocus { onOptionSelect(index) }
                                 .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
@@ -931,14 +912,14 @@ private fun FilterMenuOverlay(
             FooterBar(
                 hints = if (isSearchCategory) {
                     listOf(
-                        InputButton.WEST to "Clear",
-                        InputButton.EAST to "Close"
+                        InputButton.X to "Clear",
+                        InputButton.B to "Close"
                     )
                 } else {
                     listOf(
-                        InputButton.WEST to "Reset",
-                        InputButton.SOUTH to if (isMultiSelect) "Toggle" else "Select",
-                        InputButton.EAST to "Close"
+                        InputButton.X to "Reset",
+                        InputButton.A to if (isMultiSelect) "Toggle" else "Select",
+                        InputButton.B to "Close"
                     )
                 }
             )
@@ -957,11 +938,7 @@ private fun FilterOptionItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .background(
                 when {
                     isFocused -> MaterialTheme.colorScheme.primaryContainer
@@ -1034,11 +1011,7 @@ private fun QuickMenuOverlay(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .clickable(
-                onClick = onDismiss,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -1047,7 +1020,7 @@ private fun QuickMenuOverlay(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(Dimens.radiusLg)
                 )
-                .clickable(enabled = false, onClick = {})
+                .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg)
                 .width(Dimens.modalWidth)
         ) {
@@ -1145,11 +1118,7 @@ private fun QuickMenuItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
             .padding(horizontal = Dimens.radiusLg, vertical = Dimens.spacingSm + Dimens.borderMedium),
         verticalAlignment = Alignment.CenterVertically,

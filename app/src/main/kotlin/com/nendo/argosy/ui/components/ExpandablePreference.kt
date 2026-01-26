@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,11 +55,7 @@ fun ExpandablePreference(
             .heightIn(min = Dimens.settingsItemMinHeight)
             .clip(preferenceShape)
             .background(backgroundColor, preferenceShape)
-            .clickable(
-                onClick = onToggle,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onToggle)
             .padding(Dimens.spacingMd),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -117,11 +112,7 @@ fun ExpandedChildItem(
             .heightIn(min = Dimens.settingsItemMinHeight)
             .clip(preferenceShape)
             .background(backgroundColor, preferenceShape)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

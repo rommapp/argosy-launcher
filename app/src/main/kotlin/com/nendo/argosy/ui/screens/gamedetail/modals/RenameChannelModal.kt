@@ -19,8 +19,8 @@ fun RenameChannelModal(
     NestedModal(
         title = "CREATE CHANNEL",
         footerHints = listOf(
-            InputButton.SOUTH to "Confirm",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Confirm",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(

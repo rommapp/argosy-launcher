@@ -28,6 +28,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Switch
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -946,7 +948,9 @@ private fun PlatformToggleItem(
         }
         Switch(
             checked = platform.syncEnabled,
-            onCheckedChange = { onToggle() }
+            onCheckedChange = { onToggle() },
+            modifier = Modifier.focusProperties { canFocus = false },
+            interactionSource = remember { MutableInteractionSource() }
         )
     }
 }

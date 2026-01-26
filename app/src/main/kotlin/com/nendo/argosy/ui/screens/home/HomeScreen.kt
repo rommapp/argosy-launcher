@@ -16,7 +16,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import kotlin.math.abs
@@ -574,25 +574,25 @@ fun HomeScreen(
                         hints = listOf(
                             InputButton.DPAD_HORIZONTAL to "Game",
                             InputButton.DPAD_VERTICAL to "Platform",
-                            InputButton.SOUTH to when {
+                            InputButton.A to when {
                                 focusedGame.needsInstall -> "Install"
                                 focusedGame.isDownloaded -> "Play"
                                 else -> "Download"
                             },
-                            InputButton.NORTH to if (focusedGame.isFavorite) "Unfavorite" else "Favorite",
-                            InputButton.WEST to "Details"
+                            InputButton.Y to if (focusedGame.isFavorite) "Unfavorite" else "Favorite",
+                            InputButton.X to "Details"
                         ),
                         onHintClick = { button ->
                             when (button) {
-                                InputButton.SOUTH -> {
+                                InputButton.A -> {
                                     when {
                                         focusedGame.needsInstall -> viewModel.installApk(focusedGame.id)
                                         focusedGame.isDownloaded -> viewModel.launchGame(focusedGame.id)
                                         else -> viewModel.queueDownload(focusedGame.id)
                                     }
                                 }
-                                InputButton.NORTH -> viewModel.toggleFavorite(focusedGame.id)
-                                InputButton.WEST -> onGameSelect(focusedGame.id)
+                                InputButton.Y -> viewModel.toggleFavorite(focusedGame.id)
+                                InputButton.X -> onGameSelect(focusedGame.id)
                                 else -> {}
                             }
                         },
@@ -1143,11 +1143,7 @@ private fun ViewAllCard(
                 RoundedCornerShape(Dimens.radiusMd)
             )
             .border(Dimens.borderThin, borderColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -1273,7 +1269,7 @@ private fun EmptyState(
                 )
                 if (isRommConfigured) {
                     Spacer(modifier = Modifier.height(Dimens.spacingMd))
-                    FooterHint(button = InputButton.SOUTH, action = "Sync Library")
+                    FooterHint(button = InputButton.A, action = "Sync Library")
                 }
             }
         }
@@ -1426,11 +1422,7 @@ private fun MenuOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
             .padding(horizontal = Dimens.radiusLg, vertical = Dimens.spacingSm + Dimens.borderMedium),
         verticalAlignment = Alignment.CenterVertically,

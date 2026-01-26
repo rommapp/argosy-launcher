@@ -2,7 +2,7 @@ package com.nendo.argosy.ui.common.savechannel
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -93,7 +93,7 @@ fun SaveChannelModal(
             .focusRequester(focusRequester)
             .focusable()
             .background(overlayColor)
-            .clickable(onClick = onDismiss),
+            .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -103,7 +103,7 @@ fun SaveChannelModal(
                     RoundedCornerShape(Dimens.radiusLg)
                 )
                 .width(Dimens.modalWidthLg)
-                .clickable(enabled = false, onClick = {})
+                .clickableNoFocus {}
                 .padding(Dimens.spacingLg)
         ) {
             Row(
@@ -357,12 +357,7 @@ private fun TabButton(
         modifier = Modifier
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor)
-            .clickable(
-                enabled = isEnabled && !isSelected,
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(enabled = isEnabled && !isSelected, onClick = onClick)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
     ) {
         Text(
@@ -387,30 +382,30 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
 
     when (state.selectedTab) {
         SaveTab.SLOTS -> {
-            hints.add(FooterHintItem(InputButton.SOUTH, "Activate"))
+            hints.add(FooterHintItem(InputButton.A, "Activate"))
             if (state.canDeleteChannel) {
-                hints.add(FooterHintItem(InputButton.NORTH, "Delete"))
+                hints.add(FooterHintItem(InputButton.Y, "Delete"))
             }
             if (state.canRenameChannel) {
-                hints.add(FooterHintItem(InputButton.WEST, "Rename"))
+                hints.add(FooterHintItem(InputButton.X, "Rename"))
             }
         }
         SaveTab.TIMELINE -> {
-            hints.add(FooterHintItem(InputButton.SOUTH, "Restore"))
+            hints.add(FooterHintItem(InputButton.A, "Restore"))
             if (state.canCreateChannel) {
-                hints.add(FooterHintItem(InputButton.NORTH, "Lock"))
+                hints.add(FooterHintItem(InputButton.Y, "Lock"))
             }
             hints.add(FooterHintItem(InputButton.SELECT, "Reset"))
         }
         SaveTab.STATES -> {
             val focusedState = state.focusedStateEntry
             val canRestore = focusedState != null && focusedState.localCacheId != null
-            hints.add(FooterHintItem(InputButton.SOUTH, "Restore", enabled = canRestore))
+            hints.add(FooterHintItem(InputButton.A, "Restore", enabled = canRestore))
             if (state.canDeleteState) {
-                hints.add(FooterHintItem(InputButton.NORTH, "Delete"))
+                hints.add(FooterHintItem(InputButton.Y, "Delete"))
             }
             if (state.canReplaceAutoWithSlot) {
-                hints.add(FooterHintItem(InputButton.WEST, "Set as Auto"))
+                hints.add(FooterHintItem(InputButton.X, "Set as Auto"))
             }
         }
     }
@@ -551,8 +546,8 @@ private fun RestoreConfirmationOverlay() {
     NestedModal(
         title = "RESTORE SAVE",
         footerHints = listOf(
-            InputButton.SOUTH to "Restore",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Restore",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(
@@ -574,8 +569,8 @@ private fun RenameChannelOverlay(
     NestedModal(
         title = if (isCreate) "CREATE SAVE SLOT" else "RENAME SAVE SLOT",
         footerHints = listOf(
-            InputButton.SOUTH to "Confirm",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Confirm",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(
@@ -606,8 +601,8 @@ private fun DeleteConfirmationOverlay(channelName: String) {
     NestedModal(
         title = "DELETE SAVE SLOT",
         footerHints = listOf(
-            InputButton.SOUTH to "Delete",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Delete",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(
@@ -632,8 +627,8 @@ private fun ResetConfirmationOverlay() {
     NestedModal(
         title = "RESET SAVE",
         footerHints = listOf(
-            InputButton.SOUTH to "Reset",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Reset",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(
@@ -811,8 +806,8 @@ fun VersionMismatchOverlay(
     NestedModal(
         title = "CORE VERSION MISMATCH",
         footerHints = listOf(
-            InputButton.SOUTH to "Load Anyway",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Load Anyway",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(
@@ -861,8 +856,8 @@ private fun StateDeleteConfirmationOverlay(slotNumber: Int) {
     NestedModal(
         title = "DELETE STATE",
         footerHints = listOf(
-            InputButton.SOUTH to "Delete",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Delete",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(
@@ -887,8 +882,8 @@ private fun StateReplaceAutoConfirmationOverlay(slotNumber: Int) {
     NestedModal(
         title = "REPLACE AUTO STATE",
         footerHints = listOf(
-            InputButton.SOUTH to "Replace",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Replace",
+            InputButton.B to "Cancel"
         )
     ) {
         Text(

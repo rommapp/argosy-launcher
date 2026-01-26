@@ -3,8 +3,7 @@ package com.nendo.argosy.ui.screens.settings.sections
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -283,11 +282,7 @@ private fun PlatformEmulatorItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusLg))
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusLg))
-            .clickable(
-                onClick = onEmulatorClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onEmulatorClick)
             .padding(Dimens.spacingMd)
     ) {
         Row(
@@ -479,11 +474,7 @@ private fun PlatformEmulatorItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Dimens.radiusSm))
-                    .clickable(
-                        onClick = onSavePathClick,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ),
+                    .clickableNoFocus(onClick = onSavePathClick),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {

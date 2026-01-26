@@ -4,8 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +41,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -119,11 +120,7 @@ fun QuickSettingsPanel(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        onClick = onDismiss,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    .clickableNoFocus(onClick = onDismiss)
             )
         }
 
@@ -350,17 +347,7 @@ private fun QuickSettingItem(
             .padding(start = Dimens.spacingMd)
             .clip(shape)
             .background(backgroundColor)
-            .then(
-                if (isDisabled) {
-                    Modifier
-                } else {
-                    Modifier.clickable(
-                        onClick = onClick,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
-                }
-            )
+            .then(if (isDisabled) Modifier else Modifier.clickableNoFocus(onClick = onClick))
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg)
     ) {
         Icon(
@@ -419,17 +406,7 @@ private fun QuickSettingItemTwoLine(
             .padding(start = Dimens.spacingMd)
             .clip(shape)
             .background(backgroundColor)
-            .then(
-                if (isDisabled) {
-                    Modifier
-                } else {
-                    Modifier.clickable(
-                        onClick = onClick,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
-                }
-            )
+            .then(if (isDisabled) Modifier else Modifier.clickableNoFocus(onClick = onClick))
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -488,11 +465,7 @@ private fun QuickSettingToggle(
             .padding(start = Dimens.spacingMd)
             .clip(shape)
             .background(backgroundColor)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg)
     ) {
         Icon(
@@ -511,6 +484,8 @@ private fun QuickSettingToggle(
         Switch(
             checked = isEnabled,
             onCheckedChange = null,
+            modifier = Modifier.focusProperties { canFocus = false },
+            interactionSource = remember { MutableInteractionSource() },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.primary,
                 checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,

@@ -149,12 +149,12 @@ fun CollectionDetailScreen(
 
         val baseHints = listOf(
             InputButton.DPAD to "Navigate",
-            InputButton.SOUTH to "Open",
-            InputButton.EAST to "Back",
-            InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
+            InputButton.A to "Open",
+            InputButton.B to "Back",
+            InputButton.X to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
         )
         val pinHint = if (uiState.collection != null) {
-            listOf(InputButton.NORTH to if (uiState.isPinned) "Unpin" else "Pin")
+            listOf(InputButton.Y to if (uiState.isPinned) "Unpin" else "Pin")
         } else {
             emptyList()
         }

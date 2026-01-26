@@ -30,8 +30,8 @@ fun MissingDiscModal(
         title = "MISSING DISCS",
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.SOUTH to "Download",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Download",
+            InputButton.B to "Cancel"
         )
     ) {
         Icon(

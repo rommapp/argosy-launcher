@@ -4,7 +4,7 @@ import android.view.InputDevice
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -271,8 +271,8 @@ private fun ControllerListContent(
         baseWidth = 450.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.SOUTH to "Select",
-            InputButton.EAST to "Back"
+            InputButton.A to "Select",
+            InputButton.B to "Back"
         )
     ) {
         if (controllers.isEmpty()) {
@@ -342,7 +342,7 @@ private fun ControllerRow(
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor)
             .border(1.dp, borderColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
@@ -392,8 +392,8 @@ private fun PlatformMappingContent(
         baseWidth = 450.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.SOUTH to "Remap",
-            InputButton.EAST to "Back",
+            InputButton.A to "Remap",
+            InputButton.B to "Back",
             InputButton.LB to "Prev Platform",
             InputButton.RB to "Next Platform"
         )
@@ -445,7 +445,7 @@ private fun ButtonMappingRow(
             .clip(RoundedCornerShape(Dimens.radiusSm))
             .background(backgroundColor)
             .border(1.dp, borderColor, RoundedCornerShape(Dimens.radiusSm))
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -490,7 +490,7 @@ private fun RecordingOverlay(
         subtitle = "Recording input for $targetButton",
         baseWidth = 350.dp,
         onDismiss = onDismiss,
-        footerHints = listOf(InputButton.EAST to "Hold to Cancel")
+        footerHints = listOf(InputButton.B to "Hold to Cancel")
     ) {
         Box(
             modifier = Modifier

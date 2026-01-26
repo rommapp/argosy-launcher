@@ -329,8 +329,8 @@ private fun SearchFooter(resultCount: Int) {
     FooterBar(
         hints = listOf(
             InputButton.DPAD to "Navigate",
-            InputButton.SOUTH to "Select",
-            InputButton.EAST to "Back/Clear"
+            InputButton.A to "Select",
+            InputButton.B to "Back/Clear"
         ),
         trailingContent = if (resultCount > 0) {
             {

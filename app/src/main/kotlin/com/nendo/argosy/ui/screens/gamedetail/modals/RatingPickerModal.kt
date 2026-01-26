@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.screens.gamedetail.modals
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -44,8 +43,8 @@ fun RatingPickerModal(
         onDismiss = onDismiss,
         footerHints = listOf(
             InputButton.DPAD_HORIZONTAL to "Adjust",
-            InputButton.SOUTH to "Confirm",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Confirm",
+            InputButton.B to "Cancel"
         )
     ) {
         Row(
@@ -60,10 +59,7 @@ fun RatingPickerModal(
                     tint = if (isFilled) filledColor else outlineColor,
                     modifier = Modifier
                         .size(Dimens.iconLg)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { onValueChange(i) }
+                        .clickableNoFocus { onValueChange(i) }
                 )
             }
         }

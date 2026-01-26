@@ -2,7 +2,7 @@ package com.nendo.argosy.ui.screens.settings
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -138,15 +138,15 @@ fun ManagePinsScreen(
         val hints = if (uiState.isReorderMode) {
             listOf(
                 InputButton.DPAD_VERTICAL to "Move",
-                InputButton.SOUTH to "Done",
-                InputButton.EAST to "Cancel"
+                InputButton.A to "Done",
+                InputButton.B to "Cancel"
             )
         } else {
             listOf(
                 InputButton.DPAD to "Navigate",
-                InputButton.SOUTH to "Reorder",
-                InputButton.NORTH to "Unpin",
-                InputButton.EAST to "Back"
+                InputButton.A to "Reorder",
+                InputButton.Y to "Unpin",
+                InputButton.B to "Back"
             )
         }
 
@@ -220,7 +220,7 @@ private fun PinRow(
                 if (isFocused) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surfaceVariant
             )
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {

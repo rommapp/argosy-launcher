@@ -399,7 +399,7 @@ private fun GameDetailContent(
                 FooterBar(
                     hints = listOf(
                         InputButton.LB_RB to "Prev/Next Game",
-                        InputButton.SOUTH to when {
+                        InputButton.A to when {
                             isInScreenshots -> "View"
                             uiState.isSyncing -> "Syncing..."
                             uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
@@ -412,8 +412,8 @@ private fun GameDetailContent(
                             uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
                             else -> "Play"
                         },
-                        InputButton.EAST to "Back",
-                        InputButton.NORTH to if (uiState.game?.isFavorite == true) "Unfavorite" else "Favorite"
+                        InputButton.B to "Back",
+                        InputButton.Y to if (uiState.game?.isFavorite == true) "Unfavorite" else "Favorite"
                     )
                 )
             }

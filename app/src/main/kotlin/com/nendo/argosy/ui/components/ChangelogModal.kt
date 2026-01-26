@@ -36,10 +36,10 @@ fun ChangelogModal(
 
     val footerHints = buildList {
         if (!hasRequiredAction) {
-            add(InputButton.SOUTH to "Continue")
+            add(InputButton.A to "Continue")
         }
         if (firstAction != null) {
-            add(InputButton.WEST to firstAction.label)
+            add(InputButton.X to firstAction.label)
         }
     }
 

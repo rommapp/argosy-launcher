@@ -1,9 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.runtime.remember
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,13 +48,7 @@ fun OptionItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
-            .then(
-                if (onClick != null) Modifier.clickable(
-                    onClick = onClick,
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) else Modifier
-            )
+            .then(if (onClick != null) Modifier.clickableNoFocus(onClick = onClick) else Modifier)
             .padding(horizontal = Dimens.radiusLg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)

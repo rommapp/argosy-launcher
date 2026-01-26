@@ -2,8 +2,7 @@ package com.nendo.argosy.ui.filebrowser
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -91,11 +90,7 @@ fun FileBrowserScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {}
-            )
+            .clickableNoFocus {}
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             FileBrowserHeader(
@@ -272,7 +267,7 @@ private fun VolumeItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor)
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -489,7 +484,7 @@ private fun FileItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusSm))
             .background(backgroundColor)
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -528,11 +523,11 @@ private fun FileBrowserFooter(
 ) {
     val selectHint = if (mode == FileBrowserMode.FILE_SELECTION) "Select File" else "Open"
     val hints = buildList {
-        add(InputButton.SOUTH to selectHint)
-        add(InputButton.EAST to "Back")
+        add(InputButton.A to selectHint)
+        add(InputButton.B to "Back")
         if (mode == FileBrowserMode.FOLDER_SELECTION && currentPath.isNotEmpty()) {
-            add(InputButton.NORTH to "New Folder")
-            add(InputButton.WEST to "Use Current")
+            add(InputButton.Y to "New Folder")
+            add(InputButton.X to "Use Current")
         }
     }
 
@@ -540,9 +535,9 @@ private fun FileBrowserFooter(
         hints = hints,
         onHintClick = { button ->
             when (button) {
-                InputButton.NORTH -> onNewFolder()
-                InputButton.WEST -> onUseCurrentFolder()
-                InputButton.EAST -> onCancel()
+                InputButton.Y -> onNewFolder()
+                InputButton.X -> onUseCurrentFolder()
+                InputButton.B -> onCancel()
                 else -> {}
             }
         }

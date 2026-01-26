@@ -26,5 +26,7 @@ data class CheatEntity(
     val cheatIndex: Int,
     val description: String,
     val code: String,
-    val enabled: Boolean = false
+    val enabled: Boolean = false,
+    val isUserCreated: Boolean = false,
+    val lastUsedAt: Long? = null
 )

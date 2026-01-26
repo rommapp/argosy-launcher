@@ -2,8 +2,7 @@ package com.nendo.argosy.ui.screens.collections.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -81,11 +80,7 @@ fun WideGameCard(
         modifier = modifier
             .fillMaxWidth()
             .then(borderModifier)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onClick),
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant

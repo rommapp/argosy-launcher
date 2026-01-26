@@ -195,6 +195,10 @@ class GLRetroView(
         LibretroDroid.setCheat(index, enable, code)
     }
 
+    fun resetCheat() = runOnGLThread {
+        LibretroDroid.resetCheat()
+    }
+
     fun unserializeState(data: ByteArray): Boolean = runOnGLThread {
         LibretroDroid.unserializeState(data)
     }
@@ -206,6 +210,18 @@ class GLRetroView(
     fun unserializeSRAM(data: ByteArray): Boolean = runOnGLThread {
         LibretroDroid.unserializeSRAM(data)
     }
+
+    fun getMemoryData(memoryType: Int): ByteArray? = runOnGLThread {
+        LibretroDroid.getMemoryData(memoryType)
+    }
+
+    fun getMemorySize(memoryType: Int): Int = runOnGLThread {
+        LibretroDroid.getMemorySize(memoryType)
+    } ?: 0
+
+    fun getSystemRam(): ByteArray? = getMemoryData(LibretroDroid.MEMORY_SYSTEM_RAM)
+
+    fun getSystemRamSize(): Int = getMemorySize(LibretroDroid.MEMORY_SYSTEM_RAM)
 
     fun reset() = runOnGLThread {
         LibretroDroid.reset()

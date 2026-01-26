@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,7 +43,7 @@ data class FooterHintItem(
 )
 
 enum class InputButton {
-    SOUTH, EAST, WEST, NORTH,
+    A, B, X, Y,
     DPAD, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, DPAD_HORIZONTAL, DPAD_VERTICAL,
     LB, RB, LB_RB, LT, RT, LT_RT,
     START, SELECT
@@ -58,7 +57,7 @@ private fun InputButton.category(): HintCategory = when (this) {
     InputButton.DPAD_HORIZONTAL, InputButton.DPAD_VERTICAL -> HintCategory.DPAD
     InputButton.LB, InputButton.RB, InputButton.LB_RB -> HintCategory.BUMPER
     InputButton.LT, InputButton.RT, InputButton.LT_RT, InputButton.START, InputButton.SELECT -> HintCategory.SHOULDER_MENU
-    InputButton.SOUTH, InputButton.EAST, InputButton.WEST, InputButton.NORTH -> HintCategory.FACE
+    InputButton.A, InputButton.B, InputButton.X, InputButton.Y -> HintCategory.FACE
 }
 
 @Composable
@@ -67,10 +66,10 @@ private fun InputButton.toPainter(): Painter? {
     val xyIconsSwapped = LocalXYIconsSwapped.current
     val swapStartSelect = LocalSwapStartSelect.current
     return when (this) {
-        InputButton.SOUTH -> if (abIconsSwapped) InputIcons.FaceRight else InputIcons.FaceBottom
-        InputButton.EAST -> if (abIconsSwapped) InputIcons.FaceBottom else InputIcons.FaceRight
-        InputButton.WEST -> if (xyIconsSwapped) InputIcons.FaceTop else InputIcons.FaceLeft
-        InputButton.NORTH -> if (xyIconsSwapped) InputIcons.FaceLeft else InputIcons.FaceTop
+        InputButton.A -> if (abIconsSwapped) InputIcons.FaceRight else InputIcons.FaceBottom
+        InputButton.B -> if (abIconsSwapped) InputIcons.FaceBottom else InputIcons.FaceRight
+        InputButton.X -> if (xyIconsSwapped) InputIcons.FaceTop else InputIcons.FaceLeft
+        InputButton.Y -> if (xyIconsSwapped) InputIcons.FaceLeft else InputIcons.FaceTop
         InputButton.DPAD -> InputIcons.Dpad
         InputButton.DPAD_UP -> InputIcons.DpadUp
         InputButton.DPAD_DOWN -> InputIcons.DpadDown
@@ -195,10 +194,10 @@ private fun CompositeButtonIcon(button: InputButton, iconColor: Color) {
 }
 
 private fun InputButton.faceButtonPriority(): Int = when (this) {
-    InputButton.NORTH -> 0
-    InputButton.WEST -> 1
-    InputButton.EAST -> 2
-    InputButton.SOUTH -> 3
+    InputButton.Y -> 0
+    InputButton.X -> 1
+    InputButton.B -> 2
+    InputButton.A -> 3
     else -> 0
 }
 
@@ -336,11 +335,7 @@ private fun TappableFooterHint(
     enabled: Boolean = true
 ) {
     val clickModifier = if (onHintClick != null && enabled) {
-        Modifier.clickable(
-            onClick = { onHintClick(button) },
-            indication = null,
-            interactionSource = remember { MutableInteractionSource() }
-        )
+        Modifier.clickableNoFocus { onHintClick(button) }
     } else {
         Modifier
     }

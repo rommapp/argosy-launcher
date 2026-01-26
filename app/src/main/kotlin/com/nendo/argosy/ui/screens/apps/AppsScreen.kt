@@ -6,9 +6,9 @@ import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -254,31 +254,31 @@ fun AppsScreen(
                 hints = when {
                     uiState.isReorderMode -> listOf(
                         InputButton.DPAD to "Move",
-                        InputButton.SOUTH to "Save",
-                        InputButton.EAST to "Cancel"
+                        InputButton.A to "Save",
+                        InputButton.B to "Cancel"
                     )
                     else -> listOf(
-                        InputButton.SOUTH to "Open",
-                        InputButton.EAST to "Back",
-                        InputButton.NORTH to "Reorder",
+                        InputButton.A to "Open",
+                        InputButton.B to "Back",
+                        InputButton.Y to "Reorder",
                         InputButton.SELECT to "Options",
-                        InputButton.WEST to if (uiState.showHiddenApps) "Show Apps" else "Show Hidden"
+                        InputButton.X to if (uiState.showHiddenApps) "Show Apps" else "Show Hidden"
                     )
                 },
                 onHintClick = { button ->
                     if (uiState.isReorderMode) {
                         when (button) {
-                            InputButton.SOUTH -> viewModel.saveReorderAndExit()
-                            InputButton.EAST -> viewModel.cancelReorderAndExit()
+                            InputButton.A -> viewModel.saveReorderAndExit()
+                            InputButton.B -> viewModel.cancelReorderAndExit()
                             else -> {}
                         }
                     } else {
                         when (button) {
-                            InputButton.SOUTH -> uiState.focusedApp?.let { viewModel.launchAppAt(uiState.focusedIndex) }
-                            InputButton.EAST -> onBack()
-                            InputButton.NORTH -> viewModel.enterReorderMode()
+                            InputButton.A -> uiState.focusedApp?.let { viewModel.launchAppAt(uiState.focusedIndex) }
+                            InputButton.B -> onBack()
+                            InputButton.Y -> viewModel.enterReorderMode()
                             InputButton.SELECT -> viewModel.showContextMenuAt(uiState.focusedIndex)
-                            InputButton.WEST -> viewModel.toggleShowHidden()
+                            InputButton.X -> viewModel.toggleShowHidden()
                             else -> {}
                         }
                     }
@@ -291,17 +291,14 @@ fun AppsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.6f))
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { viewModel.dismissContextMenu() },
+                    .clickableNoFocus { viewModel.dismissContextMenu() },
                 contentAlignment = Alignment.Center
             ) {
                 Surface(
                     shape = RoundedCornerShape(Dimens.radiusLg),
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = Dimens.elevationLg,
-                    modifier = Modifier.clickable(enabled = false) {}
+                    modifier = Modifier.clickableNoFocus(enabled = false) {}
                 ) {
                     Column(
                         modifier = Modifier
@@ -387,11 +384,7 @@ private fun ContextMenuItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .background(backgroundColor)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg),
         verticalAlignment = Alignment.CenterVertically

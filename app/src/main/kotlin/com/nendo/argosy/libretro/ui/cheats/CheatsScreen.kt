@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,7 +21,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,17 +44,14 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
-import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.util.touchOnly
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class CheatsTab(val label: String) {
-    ACTIVATED("Activated"),
-    AVAILABLE("Available"),
+    CHEATS("Cheats"),
     DISCOVER("Discover")
 }
 
@@ -63,7 +59,9 @@ data class CheatDisplayItem(
     val id: Long,
     val description: String,
     val code: String,
-    val enabled: Boolean
+    val enabled: Boolean,
+    val isUserCreated: Boolean = false,
+    val lastUsedAt: Long? = null
 ) {
     val address: Int? by lazy {
         code.substringBefore(':').toIntOrNull(16)
@@ -74,7 +72,7 @@ data class CheatDisplayItem(
 fun CheatsScreen(
     cheats: List<CheatDisplayItem>,
     scanner: MemoryScanner,
-    initialTab: CheatsTab = CheatsTab.AVAILABLE,
+    initialTab: CheatsTab = CheatsTab.CHEATS,
     onToggleCheat: (Long, Boolean) -> Unit,
     onCreateCheat: (address: Int, value: Int, description: String) -> Unit,
     onUpdateCheat: (id: Long, description: String, code: String) -> Unit,
@@ -100,14 +98,10 @@ fun CheatsScreen(
     val isDarkTheme = isSystemInDarkTheme()
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
-    val aspectRatioClass = LocalUiScale.current.aspectRatioClass
-    val isLandscape = aspectRatioClass == AspectRatioClass.ULTRA_WIDE ||
-                      aspectRatioClass == AspectRatioClass.WIDE
-
-    val activatedCheats = cheats.filter { it.enabled }
     val filteredCheats = if (searchQuery.isBlank()) cheats else {
         cheats.filter { it.description.contains(searchQuery, ignoreCase = true) }
     }
+    val currentFilteredCheats by rememberUpdatedState(filteredCheats)
     val knownAddresses = remember(cheats) {
         cheats.mapNotNull { cheat -> cheat.address?.let { it to cheat.description } }.toMap()
     }
@@ -137,12 +131,8 @@ fun CheatsScreen(
 
     fun getNextFocusIndex(current: Int, delta: Int): Int {
         return when (currentTab) {
-            CheatsTab.ACTIVATED -> {
-                val maxIndex = (activatedCheats.size - 1).coerceAtLeast(0)
-                (current + delta).coerceIn(0, maxIndex)
-            }
-            CheatsTab.AVAILABLE -> {
-                val maxIndex = filteredCheats.size
+            CheatsTab.CHEATS -> {
+                val maxIndex = currentFilteredCheats.size
                 (current + delta).coerceIn(0, maxIndex)
             }
             CheatsTab.DISCOVER -> {
@@ -298,19 +288,13 @@ fun CheatsScreen(
     }
 
     fun buildFooterHints(): List<Pair<InputButton, String>> = buildList {
-        add(InputButton.LB_RB to "Tabs")
         when (currentTab) {
-            CheatsTab.ACTIVATED -> {
-                add(InputButton.DPAD_VERTICAL to "Navigate")
-                add(InputButton.A to "Toggle")
-                if (activatedCheats.getOrNull(contentFocusIndex) != null) {
-                    add(InputButton.X to "Edit")
-                }
-            }
-            CheatsTab.AVAILABLE -> {
-                add(InputButton.DPAD_VERTICAL to "Navigate")
+            CheatsTab.CHEATS -> {
                 if (contentFocusIndex == 0) {
                     add(InputButton.A to "Search")
+                    if (searchQuery.isNotEmpty()) {
+                        add(InputButton.X to "Clear")
+                    }
                 } else {
                     add(InputButton.A to "Toggle")
                     if (filteredCheats.getOrNull(contentFocusIndex - 1) != null) {
@@ -326,11 +310,9 @@ fun CheatsScreen(
                         add(InputButton.A to "Snapshot")
                     }
                     showActions && canCompare -> {
-                        add(InputButton.DPAD_VERTICAL to "Navigate")
                         add(InputButton.A to "Select")
                     }
                     showingResults -> {
-                        add(InputButton.DPAD_VERTICAL to "Navigate")
                         val onResult = contentFocusIndex >= 1
                         if (onResult) {
                             add(InputButton.A to "Save Cheat")
@@ -361,6 +343,12 @@ fun CheatsScreen(
         if (canCompare && currentTab == CheatsTab.DISCOVER) {
             showingResults = false
             contentFocusIndex = getDiscoverFocusableIndices().firstOrNull() ?: 0
+        }
+    }
+
+    LaunchedEffect(currentFilteredCheats.size) {
+        if (currentTab == CheatsTab.CHEATS && contentFocusIndex > currentFilteredCheats.size) {
+            contentFocusIndex = currentFilteredCheats.size.coerceAtLeast(0)
         }
     }
 
@@ -401,16 +389,11 @@ fun CheatsScreen(
             override fun onConfirm(): InputResult {
                 if (isLoading) return InputResult.HANDLED
                 when (currentTab) {
-                    CheatsTab.ACTIVATED -> {
-                        activatedCheats.getOrNull(contentFocusIndex)?.let { cheat ->
-                            onToggleCheat(cheat.id, !cheat.enabled)
-                        }
-                    }
-                    CheatsTab.AVAILABLE -> {
+                    CheatsTab.CHEATS -> {
                         if (contentFocusIndex == 0) {
                             showSearchDialog = true
                         } else {
-                            filteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
+                            currentFilteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                 onToggleCheat(cheat.id, !cheat.enabled)
                             }
                         }
@@ -432,14 +415,13 @@ fun CheatsScreen(
             override fun onSecondaryAction(): InputResult {
                 if (isLoading) return InputResult.HANDLED
                 when (currentTab) {
-                    CheatsTab.ACTIVATED -> {
-                        activatedCheats.getOrNull(contentFocusIndex)?.let { cheat ->
-                            editingCheat = cheat
-                        }
-                    }
-                    CheatsTab.AVAILABLE -> {
-                        if (contentFocusIndex > 0) {
-                            filteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
+                    CheatsTab.CHEATS -> {
+                        if (contentFocusIndex == 0) {
+                            if (searchQuery.isNotEmpty()) {
+                                searchQuery = ""
+                            }
+                        } else {
+                            currentFilteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                 editingCheat = cheat
                             }
                         }
@@ -477,90 +459,45 @@ fun CheatsScreen(
     ) {
         Surface(
             modifier = Modifier
-                .then(
-                    if (isLandscape) {
-                        Modifier.widthIn(max = 600.dp).heightIn(max = 500.dp)
-                    } else {
-                        Modifier.widthIn(max = 400.dp).heightIn(max = 600.dp)
-                    }
-                )
+                .widthIn(max = 500.dp)
+                .heightIn(max = 550.dp)
                 .padding(Dimens.spacingLg)
                 .focusProperties { canFocus = false },
             shape = RoundedCornerShape(Dimens.radiusLg),
             color = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.fillMaxSize().focusProperties { canFocus = false }) {
-                if (isLandscape) {
-                    Row(modifier = Modifier.weight(1f).focusProperties { canFocus = false }) {
-                        VerticalTabBar(
-                            currentTab = currentTab,
-                            onTabSelect = ::setTab,
-                            modifier = Modifier.fillMaxHeight().width(120.dp)
-                        )
-                        VerticalDivider()
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight().focusProperties { canFocus = false }) {
-                            TabContent(
-                                tab = currentTab,
-                                activatedCheats = activatedCheats,
-                                filteredCheats = filteredCheats,
-                                allCheats = cheats,
-                                searchQuery = searchQuery,
-                                onSearchClick = { showSearchDialog = true },
-                                valueSearchText = valueSearchText,
-                                onValueSearchChange = { valueSearchText = it },
-                                hasSnapshot = hasSnapshot,
-                                canCompare = canCompare,
-                                candidateCount = candidateCount,
-                                scanResults = scanResults,
-                                knownAddresses = knownAddresses,
-                                contentFocusIndex = contentFocusIndex,
-                                onToggleCheat = onToggleCheat,
-                                onDiscoverAction = ::handleDiscoverAction,
-                                isLoading = isLoading,
-                                ramError = ramError,
-                                narrowError = narrowError,
-                                showingResults = showingResults,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                            if (isLoading) {
-                                LoadingOverlay()
-                            }
-                        }
-                    }
-                } else {
-                    HorizontalTabBar(
-                        currentTab = currentTab,
-                        onTabSelect = ::setTab,
-                        modifier = Modifier.fillMaxWidth()
+                TabHeader(
+                    currentTab = currentTab,
+                    onTabSelect = ::setTab,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                HorizontalDivider()
+                Box(modifier = Modifier.weight(1f).fillMaxWidth().focusProperties { canFocus = false }) {
+                    TabContent(
+                        tab = currentTab,
+                        filteredCheats = filteredCheats,
+                        allCheats = cheats,
+                        searchQuery = searchQuery,
+                        onSearchClick = { showSearchDialog = true },
+                        valueSearchText = valueSearchText,
+                        onValueSearchChange = { valueSearchText = it },
+                        hasSnapshot = hasSnapshot,
+                        canCompare = canCompare,
+                        candidateCount = candidateCount,
+                        scanResults = scanResults,
+                        knownAddresses = knownAddresses,
+                        contentFocusIndex = contentFocusIndex,
+                        onToggleCheat = onToggleCheat,
+                        onDiscoverAction = ::handleDiscoverAction,
+                        isLoading = isLoading,
+                        ramError = ramError,
+                        narrowError = narrowError,
+                        showingResults = showingResults,
+                        modifier = Modifier.fillMaxSize()
                     )
-                    HorizontalDivider()
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth().focusProperties { canFocus = false }) {
-                        TabContent(
-                            tab = currentTab,
-                            activatedCheats = activatedCheats,
-                            filteredCheats = filteredCheats,
-                            allCheats = cheats,
-                            searchQuery = searchQuery,
-                            onSearchClick = { showSearchDialog = true },
-                            valueSearchText = valueSearchText,
-                            onValueSearchChange = { valueSearchText = it },
-                            hasSnapshot = hasSnapshot,
-                            canCompare = canCompare,
-                            candidateCount = candidateCount,
-                            scanResults = scanResults,
-                            knownAddresses = knownAddresses,
-                            contentFocusIndex = contentFocusIndex,
-                            onToggleCheat = onToggleCheat,
-                            onDiscoverAction = ::handleDiscoverAction,
-                            isLoading = isLoading,
-                            ramError = ramError,
-                            narrowError = narrowError,
-                            showingResults = showingResults,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        if (isLoading) {
-                            LoadingOverlay()
-                        }
+                    if (isLoading) {
+                        LoadingOverlay()
                     }
                 }
                 FooterBar(
@@ -578,13 +515,12 @@ fun CheatsScreen(
                             }
                             InputButton.X -> {
                                 when (currentTab) {
-                                    CheatsTab.ACTIVATED -> {
-                                        activatedCheats.getOrNull(contentFocusIndex)?.let { cheat ->
-                                            editingCheat = cheat
-                                        }
-                                    }
-                                    CheatsTab.AVAILABLE -> {
-                                        if (contentFocusIndex > 0) {
+                                    CheatsTab.CHEATS -> {
+                                        if (contentFocusIndex == 0) {
+                                            if (searchQuery.isNotEmpty()) {
+                                                searchQuery = ""
+                                            }
+                                        } else {
                                             filteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                                 editingCheat = cheat
                                             }
@@ -602,12 +538,7 @@ fun CheatsScreen(
                             }
                             InputButton.A -> {
                                 when (currentTab) {
-                                    CheatsTab.ACTIVATED -> {
-                                        activatedCheats.getOrNull(contentFocusIndex)?.let { cheat ->
-                                            onToggleCheat(cheat.id, !cheat.enabled)
-                                        }
-                                    }
-                                    CheatsTab.AVAILABLE -> {
+                                    CheatsTab.CHEATS -> {
                                         if (contentFocusIndex > 0) {
                                             filteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                                 onToggleCheat(cheat.id, !cheat.enabled)
@@ -637,8 +568,7 @@ fun CheatsScreen(
             },
             onDelete = {
                 val maxIndex = when (currentTab) {
-                    CheatsTab.ACTIVATED -> (activatedCheats.size - 2).coerceAtLeast(0)
-                    CheatsTab.AVAILABLE -> filteredCheats.size - 1
+                    CheatsTab.CHEATS -> filteredCheats.size - 1
                     CheatsTab.DISCOVER -> contentFocusIndex
                 }
                 if (contentFocusIndex > maxIndex) {
@@ -708,83 +638,57 @@ private fun LoadingOverlay() {
 }
 
 @Composable
-private fun HorizontalTabBar(
+private fun TabHeader(
     currentTab: CheatsTab,
     onTabSelect: (CheatsTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
-            .padding(Dimens.spacingSm)
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
             .focusProperties { canFocus = false },
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)
     ) {
         CheatsTab.entries.forEach { tab ->
-            TabButton(
+            TabIndicator(
                 label = tab.label,
                 isSelected = tab == currentTab,
-                onClick = { onTabSelect(tab) },
-                modifier = Modifier.weight(1f)
+                onClick = { onTabSelect(tab) }
             )
         }
     }
 }
 
 @Composable
-private fun VerticalTabBar(
-    currentTab: CheatsTab,
-    onTabSelect: (CheatsTab) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .padding(Dimens.spacingSm)
-            .focusProperties { canFocus = false },
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        CheatsTab.entries.forEach { tab ->
-            TabButton(
-                label = tab.label,
-                isSelected = tab == currentTab,
-                onClick = { onTabSelect(tab) },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        Spacer(Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun TabButton(
+private fun TabIndicator(
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-    val textColor = if (isSelected) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(Dimens.radiusMd))
-            .background(backgroundColor)
-            .touchOnly(onClick = onClick)
-            .padding(vertical = Dimens.spacingSm, horizontal = Dimens.spacingMd),
-        contentAlignment = Alignment.Center
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.touchOnly(onClick = onClick)
     ) {
         Text(
             text = label,
-            color = textColor,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .width(32.dp)
+                .height(2.dp)
+                .background(
+                    if (isSelected) MaterialTheme.colorScheme.primary
+                    else Color.Transparent,
+                    RoundedCornerShape(1.dp)
+                )
         )
     }
 }
@@ -792,7 +696,6 @@ private fun TabButton(
 @Composable
 private fun TabContent(
     tab: CheatsTab,
-    activatedCheats: List<CheatDisplayItem>,
     filteredCheats: List<CheatDisplayItem>,
     allCheats: List<CheatDisplayItem>,
     searchQuery: String,
@@ -814,13 +717,7 @@ private fun TabContent(
     modifier: Modifier = Modifier
 ) {
     when (tab) {
-        CheatsTab.ACTIVATED -> ActivatedTab(
-            cheats = activatedCheats,
-            focusedIndex = contentFocusIndex,
-            onToggleCheat = onToggleCheat,
-            modifier = modifier
-        )
-        CheatsTab.AVAILABLE -> AvailableTab(
+        CheatsTab.CHEATS -> AvailableTab(
             cheats = filteredCheats,
             allCheats = allCheats,
             searchQuery = searchQuery,

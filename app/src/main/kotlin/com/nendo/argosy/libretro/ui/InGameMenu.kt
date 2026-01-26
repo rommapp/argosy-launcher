@@ -1,8 +1,6 @@
 package com.nendo.argosy.libretro.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,25 +14,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.util.clickableNoFocus
 
 sealed class InGameMenuAction {
     data object Resume : InGameMenuAction()
@@ -49,62 +41,66 @@ fun InGameMenu(
     gameName: String,
     hasQuickSave: Boolean,
     cheatsAvailable: Boolean = false,
+    focusedIndex: Int,
+    onFocusChange: (Int) -> Unit,
     onAction: (InGameMenuAction) -> Unit
-) {
-    val menuItems = buildList {
-        add("Resume" to InGameMenuAction.Resume)
-        add("Quick Save" to InGameMenuAction.QuickSave)
-        if (hasQuickSave) {
-            add("Quick Load" to InGameMenuAction.QuickLoad)
+): InputHandler {
+    val menuItems = remember(hasQuickSave) {
+        buildList {
+            add("Resume" to InGameMenuAction.Resume)
+            add("Quick Save" to InGameMenuAction.QuickSave)
+            if (hasQuickSave) {
+                add("Quick Load" to InGameMenuAction.QuickLoad)
+            }
+            add("Cheats" to InGameMenuAction.Cheats)
+            add("Quit Game" to InGameMenuAction.Quit)
         }
-        add("Cheats" to InGameMenuAction.Cheats)
-        add("Quit Game" to InGameMenuAction.Quit)
     }
 
-    var focusedIndex by remember { mutableIntStateOf(0) }
-    val focusRequester = remember { FocusRequester() }
     val isDarkTheme = isSystemInDarkTheme()
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+    val currentFocusedIndex = rememberUpdatedState(focusedIndex)
+    val currentOnFocusChange = rememberUpdatedState(onFocusChange)
+    val currentOnAction = rememberUpdatedState(onAction)
+
+    val inputHandler = remember(menuItems) {
+        object : InputHandler {
+            override fun onUp(): InputResult {
+                val idx = currentFocusedIndex.value
+                val newIndex = (idx - 1).coerceAtLeast(0)
+                if (newIndex != idx) currentOnFocusChange.value(newIndex)
+                return InputResult.HANDLED
+            }
+            override fun onDown(): InputResult {
+                val idx = currentFocusedIndex.value
+                val newIndex = (idx + 1).coerceAtMost(menuItems.lastIndex)
+                if (newIndex != idx) currentOnFocusChange.value(newIndex)
+                return InputResult.HANDLED
+            }
+            override fun onConfirm(): InputResult {
+                menuItems.getOrNull(currentFocusedIndex.value)?.let { currentOnAction.value(it.second) }
+                return InputResult.HANDLED
+            }
+            override fun onBack(): InputResult {
+                currentOnAction.value(InGameMenuAction.Resume)
+                return InputResult.HANDLED
+            }
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .focusRequester(focusRequester)
-            .focusable()
-            .onKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
-
-                when (event.key) {
-                    Key.DirectionDown, Key.ButtonThumbRight -> {
-                        focusedIndex = (focusedIndex + 1).coerceAtMost(menuItems.lastIndex)
-                        true
-                    }
-                    Key.DirectionUp, Key.ButtonThumbLeft -> {
-                        focusedIndex = (focusedIndex - 1).coerceAtLeast(0)
-                        true
-                    }
-                    Key.ButtonA, Key.Enter -> {
-                        onAction(menuItems[focusedIndex].second)
-                        true
-                    }
-                    Key.ButtonB, Key.Escape, Key.Back -> {
-                        onAction(InGameMenuAction.Resume)
-                        true
-                    }
-                    else -> false
-                }
-            },
+            .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier
                 .widthIn(max = 300.dp)
-                .padding(32.dp),
+                .padding(32.dp)
+                .focusProperties { canFocus = false },
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             tonalElevation = 8.dp
@@ -138,6 +134,8 @@ fun InGameMenu(
             }
         }
     }
+
+    return inputHandler
 }
 
 @Composable
@@ -163,7 +161,7 @@ private fun MenuButton(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {

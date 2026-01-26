@@ -287,6 +287,42 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
     return nullptr;
 }
 
+JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_getMemoryData(
+    JNIEnv* env,
+    jclass obj,
+    jint memoryType
+) {
+    try {
+        auto [data, size] = LibretroDroid::getInstance().getMemoryData(memoryType);
+        if (data == nullptr) {
+            return nullptr;
+        }
+
+        jbyteArray result = env->NewByteArray(size);
+        env->SetByteArrayRegion(result, 0, size, (jbyte*) data);
+        delete[] data;
+        return result;
+
+    } catch (std::exception &exception) {
+        LOGE("Error in getMemoryData: %s", exception.what());
+    }
+
+    return nullptr;
+}
+
+JNIEXPORT jint JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_getMemorySize(
+    JNIEnv* env,
+    jclass obj,
+    jint memoryType
+) {
+    try {
+        return LibretroDroid::getInstance().getMemorySize(memoryType);
+    } catch (std::exception &exception) {
+        LOGE("Error in getMemorySize: %s", exception.what());
+    }
+    return 0;
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_reset(
     JNIEnv* env,
     jclass obj

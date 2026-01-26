@@ -2,8 +2,7 @@ package com.nendo.argosy.ui.screens.collections
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -148,15 +147,15 @@ fun VirtualBrowserScreen(
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             val baseHints = listOf(
                 InputButton.DPAD to "Navigate",
-                InputButton.SOUTH to "Select",
-                InputButton.EAST to "Back"
+                InputButton.A to "Select",
+                InputButton.B to "Back"
             )
             val pinHint = if (uiState.focusedCategory != null) {
-                listOf(InputButton.NORTH to if (uiState.isFocusedCategoryPinned) "Unpin" else "Pin")
+                listOf(InputButton.Y to if (uiState.isFocusedCategoryPinned) "Unpin" else "Pin")
             } else {
                 emptyList()
             }
-            val refreshHint = listOf(InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
+            val refreshHint = listOf(InputButton.X to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
             FooterBar(hints = baseHints + pinHint + refreshHint)
         }
     }
@@ -216,11 +215,7 @@ private fun CategoryRow(
         modifier = modifier
             .fillMaxWidth()
             .then(borderModifier)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onClick),
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (isFocused) {

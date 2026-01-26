@@ -2,6 +2,7 @@ package com.nendo.argosy.data.cheats
 
 import android.content.Context
 import android.provider.Settings
+import android.text.Html
 import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.CheatEntity
@@ -55,7 +56,7 @@ class CheatsRepository @Inject constructor(
                     CheatEntity(
                         gameId = game.id,
                         cheatIndex = cheat.index,
-                        description = cheat.description,
+                        description = Html.fromHtml(cheat.description, Html.FROM_HTML_MODE_LEGACY).toString(),
                         code = cheat.code,
                         enabled = false
                     )

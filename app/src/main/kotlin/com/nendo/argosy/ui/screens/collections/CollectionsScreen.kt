@@ -2,8 +2,7 @@ package com.nendo.argosy.ui.screens.collections
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -198,13 +197,13 @@ fun CollectionsScreen(
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             val baseHints = listOf(
                 InputButton.DPAD to "Navigate",
-                InputButton.SOUTH to "Select",
-                InputButton.EAST to "Back",
-                InputButton.WEST to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
+                InputButton.A to "Select",
+                InputButton.B to "Back",
+                InputButton.X to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
             )
             val contextHints = if (uiState.focusedSection == CollectionSection.MY_COLLECTIONS && uiState.focusedCollection != null) {
                 listOf(
-                    InputButton.NORTH to if (uiState.isFocusedCollectionPinned) "Unpin" else "Pin",
+                    InputButton.Y to if (uiState.isFocusedCollectionPinned) "Unpin" else "Pin",
                     InputButton.SELECT to "Options"
                 )
             } else {
@@ -264,11 +263,7 @@ private fun CollectionRow(
         modifier = modifier
             .fillMaxWidth()
             .then(borderModifier)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onClick),
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (isFocused) {
@@ -430,11 +425,7 @@ private fun NewCollectionRow(
         modifier = modifier
             .fillMaxWidth()
             .then(borderModifier)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onClick),
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (isFocused) {
@@ -494,11 +485,7 @@ private fun BrowseByRow(
         modifier = modifier
             .fillMaxWidth()
             .then(borderModifier)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickableNoFocus(onClick = onClick),
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (isFocused) {

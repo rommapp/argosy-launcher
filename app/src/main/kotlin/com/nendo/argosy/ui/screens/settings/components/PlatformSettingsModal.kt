@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.Modal
@@ -137,11 +138,7 @@ private fun ToggleOptionItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickable(
-                onClick = onToggle,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onToggle)
             .padding(horizontal = Dimens.radiusLg, vertical = Dimens.spacingXs),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -153,7 +150,9 @@ private fun ToggleOptionItem(
         )
         Switch(
             checked = checked,
-            onCheckedChange = { onToggle() }
+            onCheckedChange = { onToggle() },
+            modifier = Modifier.focusProperties { canFocus = false },
+            interactionSource = remember { MutableInteractionSource() }
         )
     }
 }
@@ -195,11 +194,7 @@ private fun PathConfigItem(
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
             .then(
                 if (enabled) {
-                    Modifier.clickable(
-                        onClick = onChange,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    Modifier.clickableNoFocus(onClick = onChange)
                 } else Modifier
             )
             .padding(horizontal = Dimens.radiusLg, vertical = Dimens.spacingSm)

@@ -652,11 +652,11 @@ private fun SettingsFooter(uiState: SettingsUiState) {
             add(InputButton.LB_RB to "Preview Shape")
             add(InputButton.LT_RT to "Preview Game")
         }
-        add(InputButton.SOUTH to "Select")
+        add(InputButton.A to "Select")
         if (uiState.currentSection == SettingsSection.EMULATORS) {
-            add(InputButton.WEST to "Saves")
+            add(InputButton.X to "Saves")
         }
-        add(InputButton.EAST to "Back")
+        add(InputButton.B to "Back")
     }
 
     FooterBar(hints = hints)

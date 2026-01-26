@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -65,7 +64,7 @@ fun SoundPickerPopup(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .clickable(onClick = onDismiss),
+            .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         val maxModalHeight = maxHeight * 0.85f
@@ -76,7 +75,7 @@ fun SoundPickerPopup(
                 .heightIn(max = maxModalHeight)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable(enabled = false, onClick = {})
+                .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
@@ -106,9 +105,9 @@ fun SoundPickerPopup(
 
             FooterBar(
                 hints = listOf(
-                    InputButton.WEST to "Preview",
-                    InputButton.SOUTH to "Select",
-                    InputButton.EAST to "Close"
+                    InputButton.X to "Preview",
+                    InputButton.A to "Select",
+                    InputButton.B to "Close"
                 )
             )
         }
@@ -133,11 +132,7 @@ private fun SoundPickerItem(
                     else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 }
             )
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

@@ -24,8 +24,8 @@ fun RatingsStatusModal(
         onDismiss = onDismiss,
         footerHints = listOf(
             InputButton.DPAD_VERTICAL to "Navigate",
-            InputButton.SOUTH to "Select",
-            InputButton.EAST to "Back"
+            InputButton.A to "Select",
+            InputButton.B to "Back"
         )
     ) {
         OptionItem(

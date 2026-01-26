@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,7 +58,7 @@ fun RegionPickerPopup(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .clickable(onClick = onDismiss),
+            .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -67,7 +66,7 @@ fun RegionPickerPopup(
                 .width(Dimens.modalWidthLg)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable(enabled = false, onClick = {})
+                .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
@@ -106,8 +105,8 @@ fun RegionPickerPopup(
             FooterBar(
                 hints = listOf(
                     InputButton.DPAD to "Navigate",
-                    InputButton.SOUTH to "Toggle",
-                    InputButton.EAST to "Close"
+                    InputButton.A to "Toggle",
+                    InputButton.B to "Close"
                 )
             )
         }
@@ -132,11 +131,7 @@ private fun RegionPickerItem(
                     else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 }
             )
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

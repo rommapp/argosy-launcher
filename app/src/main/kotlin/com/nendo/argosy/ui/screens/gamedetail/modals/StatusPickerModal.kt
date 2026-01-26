@@ -26,8 +26,8 @@ fun StatusPickerModal(
         baseWidth = 320.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.SOUTH to "Confirm",
-            InputButton.EAST to "Cancel"
+            InputButton.A to "Confirm",
+            InputButton.B to "Cancel"
         )
     ) {
         Column(

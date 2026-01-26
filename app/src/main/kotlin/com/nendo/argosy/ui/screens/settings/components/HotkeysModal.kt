@@ -6,7 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -208,9 +208,9 @@ private fun ActionListContent(
         baseWidth = 450.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.SOUTH to "Record",
-            InputButton.EAST to "Back",
-            InputButton.NORTH to "Clear"
+            InputButton.A to "Record",
+            InputButton.B to "Back",
+            InputButton.Y to "Clear"
         )
     ) {
         LazyColumn(
@@ -260,7 +260,7 @@ private fun HotkeyRow(
             .clip(RoundedCornerShape(Dimens.radiusSm))
             .background(backgroundColor)
             .border(1.dp, borderColor, RoundedCornerShape(Dimens.radiusSm))
-            .clickable(onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -345,7 +345,7 @@ private fun RecordingContent(
         subtitle = getActionDisplayName(action),
         baseWidth = 350.dp,
         onDismiss = onCancel,
-        footerHints = listOf(InputButton.EAST to "Cancel")
+        footerHints = listOf(InputButton.B to "Cancel")
     ) {
         Box(
             modifier = Modifier

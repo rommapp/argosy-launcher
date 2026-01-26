@@ -1,8 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -71,31 +70,19 @@ fun ScreenshotViewerOverlay(
                 modifier = Modifier
                     .weight(0.25f)
                     .fillMaxHeight()
-                    .clickable(
-                        onClick = { onNavigate(-1) },
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    .clickableNoFocus { onNavigate(-1) }
             )
             Box(
                 modifier = Modifier
                     .weight(0.5f)
                     .fillMaxHeight()
-                    .clickable(
-                        onClick = onDismiss,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    .clickableNoFocus(onClick = onDismiss)
             )
             Box(
                 modifier = Modifier
                     .weight(0.25f)
                     .fillMaxHeight()
-                    .clickable(
-                        onClick = { onNavigate(1) },
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    .clickableNoFocus { onNavigate(1) }
             )
         }
 
@@ -112,8 +99,8 @@ fun ScreenshotViewerOverlay(
             FooterBar(
                 hints = listOf(
                     InputButton.DPAD_HORIZONTAL to "Navigate",
-                    InputButton.EAST to "Close",
-                    InputButton.WEST to "Set Background"
+                    InputButton.B to "Close",
+                    InputButton.X to "Set Background"
                 )
             )
         }

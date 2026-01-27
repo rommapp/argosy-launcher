@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.StatFs
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.emulator.GameCubeHeaderParser
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
@@ -257,6 +258,15 @@ class SaveSyncRepository @Inject constructor(
             )
         }
 
+        // GameCube GCI format - uses game ID from ROM header
+        if (config.usesGciFormat && romPath != null) {
+            val gciSave = discoverGciSavePath(config, romPath)
+            if (gciSave != null) {
+                Logger.debug(TAG, "discoverSavePath: GCI save found at $gciSave")
+                return@withContext gciSave
+            }
+        }
+
         val basePathOverride = if (isRetroArch && userConfig?.isUserOverride == true) {
             userConfig.savePathPattern
         } else null
@@ -457,6 +467,46 @@ class SaveSyncRepository @Inject constructor(
         }
 
         Logger.debug(TAG, "[SaveSync] DISCOVER | No save folder found after trying ${triedTitleIds.size} titleIds")
+        return null
+    }
+
+    private fun discoverGciSavePath(
+        config: SavePathConfig,
+        romPath: String
+    ): String? {
+        val romFile = File(romPath)
+        if (!romFile.exists()) {
+            Logger.debug(TAG, "[SaveSync] GCI | ROM file does not exist: $romPath")
+            return null
+        }
+
+        val gameInfo = GameCubeHeaderParser.parseRomHeader(romFile)
+        if (gameInfo == null) {
+            Logger.debug(TAG, "[SaveSync] GCI | Failed to parse ROM header: $romPath")
+            return null
+        }
+
+        Logger.debug(TAG, "[SaveSync] GCI | Parsed ROM: gameId=${gameInfo.gameId}, region=${gameInfo.region}, name=${gameInfo.gameName}")
+
+        val resolvedPaths = SavePathRegistry.resolvePath(config, "ngc", null)
+        Logger.debug(TAG, "[SaveSync] GCI | Searching ${resolvedPaths.size} paths for GCI saves")
+
+        for (basePath in resolvedPaths) {
+            val saveDir = File(basePath)
+            if (!saveDir.exists()) {
+                Logger.verbose(TAG) { "[SaveSync] GCI | Save dir does not exist: $basePath" }
+                continue
+            }
+
+            val gciFiles = GameCubeHeaderParser.findGciForGame(saveDir, gameInfo.gameId)
+            if (gciFiles.isNotEmpty()) {
+                val firstGci = gciFiles.first()
+                Logger.debug(TAG, "[SaveSync] GCI | Found ${gciFiles.size} GCI file(s), using: ${firstGci.absolutePath}")
+                return firstGci.absolutePath
+            }
+        }
+
+        Logger.debug(TAG, "[SaveSync] GCI | No GCI saves found for gameId=${gameInfo.gameId}")
         return null
     }
 

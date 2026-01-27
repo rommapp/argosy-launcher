@@ -13,6 +13,7 @@ data class SavePathConfig(
     val usesSharedMemoryCard: Boolean = false,
     val usesPackageTemplate: Boolean = false,
     val usesInternalStorage: Boolean = false,
+    val usesGciFormat: Boolean = false,
     val supported: Boolean = true
 )
 
@@ -59,16 +60,39 @@ object SavePathRegistry {
             usesGameIdSubfolder = true
         ),
 
-        // GameCube/Wii - uses memory card files, not yet supported
+        // GameCube - GCI folder mode (per-game saves)
         "dolphin" to SavePathConfig(
             emulatorId = "dolphin",
             defaultPaths = listOf(
                 "{extStorage}/Android/data/org.dolphinemu.dolphinemu/files/GC",
                 "{extStorage}/dolphin-emu/GC"
             ),
-            saveExtensions = listOf("raw", "gci"),
-            usesSharedMemoryCard = true,
-            supported = false
+            saveExtensions = listOf("gci"),
+            usesGciFormat = true,
+            supported = true
+        ),
+        "dolphin_mmjr" to SavePathConfig(
+            emulatorId = "dolphin_mmjr",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/org.dolphinemu.mmjr/files/GC",
+                "{extStorage}/mmjr/GC",
+                "{extStorage}/mmjr2-vbi/GC"
+            ),
+            saveExtensions = listOf("gci"),
+            usesGciFormat = true,
+            supported = true
+        ),
+        // RetroArch dolphin-emu core uses GCI folder structure
+        "retroarch_dolphin" to SavePathConfig(
+            emulatorId = "retroarch_dolphin",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/dolphin-emu/User/GC",
+                "{extStorage}/Android/data/com.retroarch/files/saves/dolphin-emu/User/GC",
+                "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/dolphin-emu/User/GC"
+            ),
+            saveExtensions = listOf("gci"),
+            usesGciFormat = true,
+            supported = true
         ),
 
         // 3DS - folder-based saves
@@ -256,6 +280,15 @@ object SavePathRegistry {
             emulatorId = "pcsx2",
             defaultPaths = listOf(
                 "{extStorage}/Android/data/net.pcsx2.emulator/files/memcards"
+            ),
+            saveExtensions = listOf("ps2"),
+            usesSharedMemoryCard = true,
+            supported = false
+        ),
+        "armsx2" to SavePathConfig(
+            emulatorId = "armsx2",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/come.nanodata.armsx2/files/memcards"
             ),
             saveExtensions = listOf("ps2"),
             usesSharedMemoryCard = true,

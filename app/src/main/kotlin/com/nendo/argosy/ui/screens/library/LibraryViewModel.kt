@@ -983,6 +983,9 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = gameActions.queueDownload(gameId)) {
                 is DownloadResult.Queued -> { }
+                is DownloadResult.AlreadyDownloaded -> {
+                    notificationManager.showSuccess("Game already downloaded")
+                }
                 is DownloadResult.MultiDiscQueued -> {
                     notificationManager.showSuccess("Downloading ${result.discCount} discs")
                 }

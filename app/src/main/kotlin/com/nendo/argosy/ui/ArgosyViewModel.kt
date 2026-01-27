@@ -111,7 +111,7 @@ class ArgosyViewModel @Inject constructor(
     init {
         downloadNotificationObserver.observe(viewModelScope)
         syncNotificationObserver.observe(viewModelScope)
-        scheduleDownloadValidation()
+        scheduleStartupTasks()
         observeFeedbackSettings(preferencesRepository)
         downloadManager.clearCompleted()
         startControllerDetectionPolling()
@@ -148,17 +148,16 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
-    private fun scheduleDownloadValidation() {
+    private fun scheduleStartupTasks() {
         viewModelScope.launch {
             val ready = gameRepository.awaitStorageReady(timeoutMs = 10_000L)
             if (ready) {
-                validateAndRecoverDownloads()
                 syncCollectionsOnStartup()
                 runBuiltinEmulatorMigration()
             } else {
                 android.util.Log.w("ArgosyViewModel", "Storage not ready after timeout, scheduling retry")
                 kotlinx.coroutines.delay(30_000L)
-                scheduleDownloadValidation()
+                scheduleStartupTasks()
             }
         }
     }
@@ -183,20 +182,6 @@ class ArgosyViewModel @Inject constructor(
     private suspend fun syncCollectionsOnStartup() {
         if (romMRepository.isConnected()) {
             romMRepository.syncCollections()
-        }
-    }
-
-    private suspend fun validateAndRecoverDownloads() {
-        val discovered = gameRepository.discoverLocalFiles()
-        if (discovered > 0) {
-            android.util.Log.d("ArgosyViewModel", "Discovered $discovered local files")
-        }
-
-        val invalidated = gameRepository.validateLocalFiles()
-        if (invalidated > 0) {
-            android.util.Log.d("ArgosyViewModel", "Validation: $invalidated games had missing files, attempting recovery")
-            val recovered = gameRepository.recoverDownloadPaths()
-            android.util.Log.d("ArgosyViewModel", "Recovery: $recovered paths restored")
         }
     }
 

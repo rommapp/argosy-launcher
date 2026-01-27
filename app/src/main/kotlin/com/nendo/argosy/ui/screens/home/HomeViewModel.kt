@@ -815,20 +815,45 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private suspend fun discoverGamesIfNeeded(games: List<com.nendo.argosy.data.local.entity.GameEntity>): Boolean {
+        val gamesNeedingDiscovery = games.filter { game ->
+            game.source != GameSource.STEAM &&
+            game.source != GameSource.ANDROID_APP &&
+            game.rommId != null &&
+            (game.localPath == null || !File(game.localPath).exists())
+        }
+        if (gamesNeedingDiscovery.isEmpty()) return false
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            gamesNeedingDiscovery.take(20).forEach { game ->
+                gameRepository.validateAndDiscoverGame(game.id)
+            }
+        }
+        return true
+    }
+
     private fun loadData() {
         viewModelScope.launch {
             gameRepository.awaitStorageReady()
             val allPlatforms = platformDao.getPlatformsWithGames()
             val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
             cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
-            val favorites = gameDao.getFavorites()
+            var favorites = gameDao.getFavorites()
             val androidGames = gameDao.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
             val steamGames = gameDao.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
 
             val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
-            val recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-            val newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
-            val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+            var recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
+            var newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+            var allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+
+            // Run discovery for displayed games
+            val allDisplayed = (favorites + allCandidates).distinctBy { it.id }
+            if (discoverGamesIfNeeded(allDisplayed)) {
+                favorites = gameDao.getFavorites()
+                recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
+                newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+                allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+            }
 
             val playableGames = allCandidates.filter { game ->
                 when {
@@ -933,9 +958,16 @@ class HomeViewModel @Inject constructor(
             currentCache.games
         } else {
             val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
-            val recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-            val newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
-            val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+            var recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
+            var newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+            var allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+
+            // Run discovery for displayed games
+            if (discoverGamesIfNeeded(allCandidates)) {
+                recentlyPlayed = gameDao.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
+                newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+                allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+            }
 
             val playableGames = allCandidates.filter { game ->
                 when {
@@ -973,7 +1005,10 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun loadFavorites() {
-        val games = gameDao.getFavorites()
+        var games = gameDao.getFavorites()
+        if (discoverGamesIfNeeded(games)) {
+            games = gameDao.getFavorites()
+        }
         val gameUis = games.map { it.toUi(cachedPlatformDisplayNames) }
         _uiState.update { state ->
             val newState = state.copy(favoriteGames = gameUis)
@@ -1222,7 +1257,10 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun loadGamesForPlatformInternal(platformId: Long, platformIndex: Int) {
-        val games = gameDao.getByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT)
+        var games = gameDao.getByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT)
+        if (discoverGamesIfNeeded(games)) {
+            games = gameDao.getByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT)
+        }
         val platform = _uiState.value.platforms.getOrNull(platformIndex)
         val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi(cachedPlatformDisplayNames)) }
         val items: List<HomeRowItem> = if (platform != null) {
@@ -1242,7 +1280,10 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun loadGamesForPinnedCollection(pinId: Long) {
         val pinned = _uiState.value.pinnedCollections.find { it.id == pinId } ?: return
-        val games = getGamesForPinnedCollectionUseCase(pinned).first()
+        var games = getGamesForPinnedCollectionUseCase(pinned).first()
+        if (discoverGamesIfNeeded(games)) {
+            games = getGamesForPinnedCollectionUseCase(pinned).first()
+        }
         val gameUis = games.map { it.toUi(cachedPlatformDisplayNames) }
         _uiState.update { state ->
             state.copy(
@@ -1886,6 +1927,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = gameActions.queueDownload(gameId)) {
                 is DownloadResult.Queued -> { }
+                is DownloadResult.AlreadyDownloaded -> {
+                    notificationManager.showSuccess("Game already downloaded")
+                }
                 is DownloadResult.MultiDiscQueued -> {
                     notificationManager.showSuccess("Downloading ${result.discCount} discs")
                 }

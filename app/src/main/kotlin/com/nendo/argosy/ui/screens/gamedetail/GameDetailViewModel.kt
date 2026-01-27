@@ -303,7 +303,7 @@ class GameDetailViewModel @Inject constructor(
             val steamLauncherName = if (isSteamGame) {
                 game.steamLauncher?.let { SteamLaunchers.getByPackage(it)?.displayName } ?: "Auto"
             } else null
-            val fileExists = gameRepository.checkGameFileExists(gameId)
+            val fileExists = gameRepository.validateAndDiscoverGame(gameId)
 
             val canPlay = when {
                 game.source == GameSource.ANDROID_APP -> true
@@ -817,6 +817,10 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = gameActions.queueDownload(currentGameId)) {
                 is DownloadResult.Queued -> { }
+                is DownloadResult.AlreadyDownloaded -> {
+                    notificationManager.showSuccess("Game already downloaded")
+                    refreshGameData()
+                }
                 is DownloadResult.MultiDiscQueued -> {
                     notificationManager.showSuccess("Downloading ${result.discCount} discs")
                 }
@@ -1614,6 +1618,7 @@ class GameDetailViewModel @Inject constructor(
                     notificationManager.showSuccess("Downloading ${result.discCount} missing discs")
                 }
                 is DownloadResult.Queued -> { }
+                is DownloadResult.AlreadyDownloaded -> { }
                 is DownloadResult.Error -> notificationManager.showError(result.message)
                 is DownloadResult.ExtractionFailed -> { }
             }

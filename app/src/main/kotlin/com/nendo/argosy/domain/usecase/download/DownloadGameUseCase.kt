@@ -9,12 +9,14 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.repository.GameRepository
 import javax.inject.Inject
 
 private const val TAG = "DownloadGameUseCase"
 
 sealed class DownloadResult {
     data object Queued : DownloadResult()
+    data object AlreadyDownloaded : DownloadResult()
     data class MultiDiscQueued(val discCount: Int) : DownloadResult()
     data class Error(val message: String) : DownloadResult()
     data class ExtractionFailed(
@@ -30,7 +32,8 @@ class DownloadGameUseCase @Inject constructor(
     private val romMRepository: RomMRepository,
     private val downloadManager: DownloadManager,
     private val emulatorConfigDao: EmulatorConfigDao,
-    private val downloadQueueDao: DownloadQueueDao
+    private val downloadQueueDao: DownloadQueueDao,
+    private val gameRepository: GameRepository
 ) {
     suspend operator fun invoke(gameId: Long): DownloadResult {
         val game = gameDao.getById(gameId)
@@ -38,6 +41,12 @@ class DownloadGameUseCase @Inject constructor(
 
         val rommId = game.rommId
             ?: return DownloadResult.Error("Game not synced from RomM")
+
+        // Check if game is already downloaded (validates path and tries discovery)
+        if (gameRepository.validateAndDiscoverGame(gameId)) {
+            Log.d(TAG, "Game already downloaded: ${game.title}")
+            return DownloadResult.AlreadyDownloaded
+        }
 
         val failedEntry = downloadQueueDao.getByGameId(gameId)
         if (failedEntry != null &&

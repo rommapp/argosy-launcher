@@ -140,11 +140,25 @@ object GameCubeHeaderParser {
             val regionDir = File(saveDir, region)
             if (!regionDir.exists()) continue
 
-            regionDir.listFiles()?.forEach { file ->
-                if (file.isFile && file.extension.equals("gci", ignoreCase = true)) {
-                    // Check if filename starts with game ID
-                    if (file.name.startsWith(gameId, ignoreCase = true)) {
-                        results.add(file)
+            // Search directly in region folder and in Card A/Card B subfolders
+            val dirsToSearch = mutableListOf(regionDir)
+            regionDir.listFiles()?.filter { it.isDirectory && it.name.startsWith("Card", ignoreCase = true) }
+                ?.let { dirsToSearch.addAll(it) }
+
+            for (dir in dirsToSearch) {
+                dir.listFiles()?.forEach { file ->
+                    if (file.isFile && file.extension.equals("gci", ignoreCase = true) && !file.name.contains(".deleted")) {
+                        // Dolphin names files as "XX-GAMEID-name.gci" or traditional "GAMEIDMAKER_name.gci"
+                        // Check if filename contains game ID anywhere, or parse header to verify
+                        if (file.name.contains(gameId, ignoreCase = true)) {
+                            results.add(file)
+                        } else {
+                            // Fallback: parse GCI header to check game ID
+                            val gciInfo = parseGciHeader(file)
+                            if (gciInfo?.gameId.equals(gameId, ignoreCase = true)) {
+                                results.add(file)
+                            }
+                        }
                     }
                 }
             }

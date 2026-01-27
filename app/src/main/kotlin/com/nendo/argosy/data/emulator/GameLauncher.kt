@@ -389,6 +389,7 @@ class GameLauncher @Inject constructor(
             setDataAndType(uri, getMimeType(romFile))
             setPackage(emulator.packageName)
             addCategory(Intent.CATEGORY_DEFAULT)
+            addCategory(Intent.CATEGORY_BROWSABLE)
             clipData = ClipData.newRawUri(null, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             if (forResume) {

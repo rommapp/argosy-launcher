@@ -143,7 +143,9 @@ object EmulatorRegistry {
             displayName = "Mupen64Plus FZ",
             supportedPlatforms = setOf("n64"),
             launchAction = Intent.ACTION_VIEW,
-            launchConfig = LaunchConfig.FileUri,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "paulscode.android.mupen64plusae.SplashActivity"
+            ),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita"
         ),
         EmulatorDef(
@@ -152,7 +154,9 @@ object EmulatorRegistry {
             displayName = "M64Pro FZX Plus+",
             supportedPlatforms = setOf("n64"),
             launchAction = Intent.ACTION_VIEW,
-            launchConfig = LaunchConfig.FileUri,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "paulscode.android.mupen64plusae.SplashActivity"
+            ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.m64.fx.plus.emulate"
         ),
 

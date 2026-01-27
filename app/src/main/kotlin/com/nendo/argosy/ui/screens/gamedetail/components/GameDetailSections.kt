@@ -508,7 +508,7 @@ fun AchievementsSection(
         val achievementColumns = achievements.chunked(3)
         val currentSnapStateForAchievements by rememberUpdatedState(currentSnapState)
 
-        LaunchedEffect(achievementColumns) {
+        LaunchedEffect(achievements.size) {
             if (achievementColumns.size <= 1) return@LaunchedEffect
 
             var scrollDirection = 1
@@ -544,9 +544,12 @@ fun AchievementsSection(
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
             ) {
-                items(achievementColumns) { columnAchievements ->
+                items(
+                    count = achievementColumns.size,
+                    key = { index -> index }
+                ) { index ->
                     AchievementColumn(
-                        achievements = columnAchievements,
+                        achievements = achievementColumns[index],
                         modifier = Modifier.width(columnWidth - Dimens.spacingMd)
                     )
                 }

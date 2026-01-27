@@ -110,7 +110,7 @@ object EmulatorRegistry {
                 "msx", "msx2",
                 "wonderswan", "wonderswancolor",
                 "arcade",
-                "c64", "vic20"
+                "c64", "vic20", "dos"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -130,7 +130,7 @@ object EmulatorRegistry {
                 "msx", "msx2",
                 "wonderswan", "wonderswancolor",
                 "arcade",
-                "c64", "vic20"
+                "c64", "vic20", "dos"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -637,6 +637,7 @@ object EmulatorRegistry {
         "ngpc" to "mednafen_ngp",
         "neogeo" to "fbneo",
         "arcade" to "fbneo",
+        "dos" to "dosbox_pure",
         "msx" to "bluemsx",
         "msx2" to "bluemsx",
         "wonderswan" to "mednafen_wswan",
@@ -678,6 +679,7 @@ object EmulatorRegistry {
         "ngpc" to listOf("mednafen_ngp"),
         "neogeo" to listOf("fbneo", "fbalpha"),
         "arcade" to listOf("fbneo", "mame", "fbalpha"),
+        "dos" to listOf("dosbox_pure", "dosbox_core", "dosbox_svn"),
         "msx" to listOf("bluemsx", "fmsx"),
         "msx2" to listOf("bluemsx", "fmsx"),
         "wonderswan" to listOf("mednafen_wswan"),
@@ -795,6 +797,11 @@ object EmulatorRegistry {
         "atari5200" to listOf(
             RetroArchCore("atari800", "Atari800"),
             RetroArchCore("a5200", "a5200")
+        ),
+        "dos" to listOf(
+            RetroArchCore("dosbox_pure", "DOSBox Pure"),
+            RetroArchCore("dosbox_core", "DOSBox-core"),
+            RetroArchCore("dosbox_svn", "DOSBox-SVN")
         ),
         "atari7800" to listOf(
             RetroArchCore("prosystem", "ProSystem")

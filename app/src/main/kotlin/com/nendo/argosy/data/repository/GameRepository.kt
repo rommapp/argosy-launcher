@@ -90,6 +90,30 @@ class GameRepository @Inject constructor(
         }
     }
 
+    private fun isGamePathValid(path: String): Boolean {
+        val file = File(path)
+        if (file.exists()) return true
+
+        // If file doesn't exist, check if parent folder exists with content
+        // This handles folder-based ROMs where the specific file path may have changed
+        val parentFolder = file.parentFile ?: return false
+        if (!parentFolder.exists() || !parentFolder.isDirectory) return false
+
+        // Check if the parent is a game folder (not the platform root)
+        // Game folders are inside platform folders, so parent of parent should exist
+        val platformFolder = parentFolder.parentFile
+        if (platformFolder == null || !platformFolder.exists()) return false
+
+        // Parent folder has files - the game folder is still valid
+        val hasFiles = parentFolder.listFiles()?.any { it.isFile } ?: false
+        if (hasFiles) {
+            Log.d(TAG, "Folder-based game valid: ${parentFolder.name} (specific file missing but folder exists with content)")
+            return true
+        }
+
+        return false
+    }
+
     suspend fun discoverLocalFiles(): Int = withContext(Dispatchers.IO) {
         if (!isStorageReady()) {
             Log.w(TAG, "discoverLocalFiles: storage not ready, skipping")
@@ -104,18 +128,40 @@ class GameRepository @Inject constructor(
             val platformDir = getDownloadDir(game.platformSlug)
             if (!platformDir.exists()) continue
 
-            val candidates = platformDir.listFiles { f -> f.isFile && !f.name.endsWith(".tmp") } ?: continue
             val titleLower = game.title.lowercase()
+            val allEntries = platformDir.listFiles() ?: continue
 
-            val match = candidates.find { file ->
-                val name = file.nameWithoutExtension.lowercase()
-                name == titleLower || name.contains(titleLower) || titleLower.contains(name)
+            // First, check for direct file matches
+            val fileMatch = allEntries
+                .filter { it.isFile && !it.name.endsWith(".tmp") }
+                .find { file ->
+                    val name = file.nameWithoutExtension.lowercase()
+                    name == titleLower || name.contains(titleLower) || titleLower.contains(name)
+                }
+
+            if (fileMatch != null) {
+                gameDao.updateLocalPath(game.id, fileMatch.absolutePath, GameSource.ROMM_SYNCED)
+                discovered++
+                Log.d(TAG, "Discovered file: ${game.title} -> ${fileMatch.name}")
+                continue
             }
 
-            if (match != null) {
-                gameDao.updateLocalPath(game.id, match.absolutePath, GameSource.ROMM_SYNCED)
-                discovered++
-                Log.d(TAG, "Discovered: ${game.title} -> ${match.name}")
+            // Then, check for folder matches (folder-based ROMs)
+            val folderMatch = allEntries
+                .filter { it.isDirectory }
+                .find { folder ->
+                    val name = folder.name.lowercase()
+                    name == titleLower || name.contains(titleLower) || titleLower.contains(name)
+                }
+
+            if (folderMatch != null) {
+                // Find a game file inside the folder
+                val gameFile = folderMatch.listFiles()?.firstOrNull { it.isFile }
+                if (gameFile != null) {
+                    gameDao.updateLocalPath(game.id, gameFile.absolutePath, GameSource.ROMM_SYNCED)
+                    discovered++
+                    Log.d(TAG, "Discovered folder: ${game.title} -> ${folderMatch.name}/${gameFile.name}")
+                }
             }
         }
 
@@ -133,9 +179,10 @@ class GameRepository @Inject constructor(
         var invalidated = 0
         gamesWithPaths.forEach { game ->
             game.localPath?.let { path ->
-                if (!File(path).exists()) {
+                if (!isGamePathValid(path)) {
                     gameDao.clearLocalPath(game.id)
                     invalidated++
+                    Log.d(TAG, "Invalidated: ${game.title} (path no longer valid: $path)")
                 }
             }
         }
@@ -177,7 +224,7 @@ class GameRepository @Inject constructor(
     suspend fun checkGameFileExists(gameId: Long): Boolean = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext false
         val path = game.localPath ?: return@withContext false
-        File(path).exists()
+        isGamePathValid(path)
     }
 
     suspend fun getDownloadedGamesSize(): Long = withContext(Dispatchers.IO) {

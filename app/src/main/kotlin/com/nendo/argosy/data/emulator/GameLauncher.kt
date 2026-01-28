@@ -152,7 +152,16 @@ class GameLauncher @Inject constructor(
             gameDao.recordPlayStart(gameId, Instant.now())
         }
 
-        Logger.info(TAG, "Launching ${romFile.name} with ${emulator.displayName}")
+        Logger.info(TAG, buildString {
+            append("[Launch] ${romFile.name} via ${emulator.displayName}")
+            append(" | gameId=$gameId")
+            append(" | platform=${game.platformSlug}")
+            append(" | size=${romFile.length()}b")
+            append(" | ext=${romFile.extension}")
+            if (emulator.launchConfig is LaunchConfig.BuiltIn || emulator.launchConfig is LaunchConfig.RetroArch) {
+                append(" | config=${emulator.launchConfig::class.simpleName}")
+            }
+        })
         return LaunchResult.Success(intent)
     }
 
@@ -238,7 +247,14 @@ class GameLauncher @Inject constructor(
             gameDao.recordPlayStart(game.id, Instant.now())
         }
 
-        Logger.info(TAG, "Launching multi-disc: ${launchFile.name} with ${emulator.displayName}")
+        Logger.info(TAG, buildString {
+            append("[Launch] ${launchFile.name} via ${emulator.displayName}")
+            append(" | gameId=${game.id}")
+            append(" | platform=${game.platformSlug}")
+            append(" | multiDisc=true")
+            append(" | size=${launchFile.length()}b")
+            append(" | ext=${launchFile.extension}")
+        })
         return LaunchResult.Success(intent)
     }
 
@@ -297,24 +313,29 @@ class GameLauncher @Inject constructor(
     }
 
     private suspend fun buildBuiltInIntent(romFile: File, game: GameEntity): Intent? {
+        Logger.debug(TAG, "[BuiltIn] Preparing launch: rom=${romFile.name}, platform=${game.platformSlug}")
+
         var corePath = libretroCoreMgr.getCorePathForPlatform(game.platformSlug)
         if (corePath == null) {
-            Logger.info(TAG, "Core not downloaded for ${game.platformSlug}, attempting download...")
+            Logger.info(TAG, "[BuiltIn] Core not downloaded for ${game.platformSlug}, attempting download...")
             corePath = libretroCoreMgr.downloadCoreForPlatform(game.platformSlug)
             if (corePath == null) {
-                Logger.warn(TAG, "Failed to download core for platform: ${game.platformSlug}")
+                Logger.error(TAG, "[BuiltIn] Failed to download core for platform: ${game.platformSlug}")
                 return null
             }
-            Logger.info(TAG, "Successfully downloaded core for ${game.platformSlug}")
+            Logger.info(TAG, "[BuiltIn] Successfully downloaded core for ${game.platformSlug}")
         }
+
+        val coreFile = File(corePath)
+        Logger.debug(TAG, "[BuiltIn] Core: ${coreFile.name}, exists=${coreFile.exists()}, size=${coreFile.length()}b")
 
         biosRepository.distributeBiosToEmulator(game.platformSlug, EmulatorRegistry.BUILTIN_PACKAGE)
         val systemDir = biosRepository.getLibretroSystemDir()
 
-        val coreName = File(corePath).nameWithoutExtension
+        val coreName = coreFile.nameWithoutExtension
             .removeSuffix("_libretro_android")
 
-        Logger.info(TAG, "Launching via built-in libretro: ${romFile.name}")
+        Logger.info(TAG, "[BuiltIn] Launching: rom=${romFile.name}, core=$coreName, romSize=${romFile.length()}b")
         return Intent(context, LibretroActivity::class.java).apply {
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
             putExtra(LibretroActivity.EXTRA_CORE_PATH, corePath)

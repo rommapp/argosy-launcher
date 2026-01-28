@@ -69,6 +69,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
+import com.swordfish.libretrodroid.LibretroDroid
 import com.swordfish.libretrodroid.ShaderConfig
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
@@ -126,6 +127,7 @@ class LibretroActivity : ComponentActivity() {
     private val frameIntervalMs = 16L
     private val rewindSpeed = 2
     private val memoryScanner = MemoryScanner()
+    private var firstFrameRendered = false
     private var swapAB by mutableStateOf(false)
     private var swapXY by mutableStateOf(false)
     private var swapStartSelect by mutableStateOf(false)
@@ -168,6 +170,22 @@ class LibretroActivity : ComponentActivity() {
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
         launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
         hardcoreMode = launchMode.isHardcore
+
+        // Validate ROM file exists and is accessible
+        val romFile = File(romPath)
+        if (!romFile.exists()) {
+            Log.e("LibretroActivity", "ROM file not found: $romPath")
+            Toast.makeText(this, "Game file not found", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        if (!romFile.canRead()) {
+            Log.e("LibretroActivity", "ROM file not readable: $romPath")
+            Toast.makeText(this, "Cannot access game file", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        Log.d("LibretroActivity", "ROM validated: exists=${romFile.exists()}, size=${romFile.length()}, path=$romPath")
 
         val systemDir = if (systemPath != null) File(systemPath) else File(filesDir, "libretro/system")
         systemDir.mkdirs()
@@ -226,6 +244,7 @@ class LibretroActivity : ComponentActivity() {
 
         Log.d("LibretroActivity", "Core: $coreName, isHeavyCore: $isHeavyCore, rewindEnabled: $rewindEnabled")
 
+        Log.d("LibretroActivity", "[Startup] Creating GLRetroView: core=$coreName, shader=${settings.shaderConfig}")
         retroView = GLRetroView(
             this,
             GLRetroViewData(this).apply {
@@ -240,8 +259,47 @@ class LibretroActivity : ComponentActivity() {
                 rumbleEventsEnabled = settings.rumbleEnabled
             }
         )
+        Log.d("LibretroActivity", "[Startup] GLRetroView created, adding lifecycle observer")
 
         lifecycle.addObserver(retroView)
+        Log.d("LibretroActivity", "[Startup] Lifecycle observer added, setting up error/event listeners")
+
+        // Observe game load errors from GLRetroView
+        lifecycleScope.launch {
+            retroView.getGLRetroErrors().collect { errorCode ->
+                val errorMessage = when (errorCode) {
+                    LibretroDroid.ERROR_LOAD_LIBRARY -> "Emulator core failed to load"
+                    LibretroDroid.ERROR_LOAD_GAME -> "Game file could not be loaded"
+                    LibretroDroid.ERROR_GL_NOT_COMPATIBLE -> "Device graphics not supported"
+                    LibretroDroid.ERROR_SERIALIZATION -> "Save file is corrupted"
+                    LibretroDroid.ERROR_CHEAT -> "Cheat system error"
+                    else -> "An unexpected error occurred"
+                }
+                Log.e("LibretroActivity", "GLRetroView error: code=$errorCode, message=$errorMessage")
+                Log.e("LibretroActivity", "Context: gameId=$gameId, core=$coreName, rom=$romPath")
+                Toast.makeText(this@LibretroActivity, errorMessage, Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
+
+        // Track startup milestones (surface creation and first frame)
+        lifecycleScope.launch {
+            retroView.getGLRetroEvents().collect { event ->
+                when (event) {
+                    is GLRetroView.GLRetroEvents.SurfaceCreated -> {
+                        Log.i("LibretroActivity", "[Startup] GL surface created - render pipeline ready")
+                    }
+                    is GLRetroView.GLRetroEvents.FrameRendered -> {
+                        if (!firstFrameRendered) {
+                            firstFrameRendered = true
+                            Log.i("LibretroActivity", "[Startup] First frame rendered - emulation running successfully")
+                            Log.d("LibretroActivity", "[Startup] gameId=$gameId, core=$coreName, hardcore=$hardcoreMode")
+                        }
+                    }
+                }
+            }
+        }
+
         retroView.audioEnabled = true
         retroView.filterMode = settings.filterMode
         retroView.blackFrameInsertion = settings.blackFrameInsertion

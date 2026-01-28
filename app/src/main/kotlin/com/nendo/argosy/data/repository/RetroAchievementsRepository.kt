@@ -80,7 +80,7 @@ class RetroAchievementsRepository @Inject constructor(
     }
 
     suspend fun login(username: String, password: String): RALoginResult {
-        Logger.debug(TAG, "Logging in as $username")
+        Logger.debug(TAG, "Logging in to RetroAchievements")
         return try {
             val response = api.login(username = username, password = password)
 
@@ -103,7 +103,7 @@ class RetroAchievementsRepository @Inject constructor(
             }
 
             prefsRepository.setRACredentials(username, token)
-            Logger.info(TAG, "Login successful for $username")
+            Logger.info(TAG, "Login successful")
             RALoginResult.Success(username)
         } catch (e: Exception) {
             Logger.error(TAG, "Login exception: ${e.message}")
@@ -257,7 +257,7 @@ class RetroAchievementsRepository @Inject constructor(
             Logger.warn(TAG, "Cannot start RA session - not logged in to RetroAchievements")
             return RASessionResult(false)
         }
-        Logger.debug(TAG, "Starting RA session for game $gameRaId with user ${credentials.username}")
+        Logger.debug(TAG, "Starting RA session for game $gameRaId")
 
         return try {
             val response = api.startSession(

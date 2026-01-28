@@ -23,6 +23,8 @@ object LogSanitizer {
     private val DOMAIN_PATTERN = Regex("""\b[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+\b""")
     private val EMAIL_PATTERN = Regex("""\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b""")
     private val AUTH_URL_PATTERN = Regex("""(https?://)([^:]+):([^@]+)@""", RegexOption.IGNORE_CASE)
+    private val STORAGE_PATH_PATTERN = Regex("""/storage/emulated/\d+/""")
+    private val DATA_PATH_PATTERN = Regex("""/data/(data|user/\d+)/[^/]+/""")
 
     fun sanitize(message: String): String {
         var result = message
@@ -31,9 +33,12 @@ object LogSanitizer {
         result = IPV4_PATTERN.replace(result, "[ip]")
         result = IPV6_PATTERN.replace(result, "[ipv6]")
         result = EMAIL_PATTERN.replace(result, "[email]")
+        result = STORAGE_PATH_PATTERN.replace(result, "/[storage]/")
+        result = DATA_PATH_PATTERN.replace(result, "/[app]/")
         result = DOMAIN_PATTERN.replace(result) { match ->
             val domain = match.value.lowercase()
-            if (domain.endsWith(".so") || domain.endsWith(".cfg") || domain.endsWith(".log")) {
+            if (domain.endsWith(".so") || domain.endsWith(".cfg") || domain.endsWith(".log") ||
+                domain.endsWith(".srm") || domain.endsWith(".sav") || domain.endsWith(".zip")) {
                 match.value
             } else {
                 "[domain]"
@@ -160,6 +165,9 @@ object Logger {
 
         val writer = fileWriter ?: return
 
+        // Sanitize sensitive data before writing to file
+        val sanitizedMessage = LogSanitizer.sanitize(entry.message)
+
         val line = buildString {
             append(entry.timestamp.format(timestampFormat))
             append(" ")
@@ -167,7 +175,7 @@ object Logger {
             append(" [")
             append(entry.tag)
             append("] ")
-            append(entry.message)
+            append(sanitizedMessage)
         }
 
         writer.appendLine(line)
@@ -175,7 +183,8 @@ object Logger {
         entry.throwable?.let { t ->
             val sw = StringWriter()
             t.printStackTrace(PrintWriter(sw))
-            writer.appendLine(sw.toString())
+            // Sanitize stack traces too (may contain paths)
+            writer.appendLine(LogSanitizer.sanitize(sw.toString()))
         }
 
         writer.flush()

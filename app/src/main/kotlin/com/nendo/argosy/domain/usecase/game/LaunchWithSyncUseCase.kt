@@ -92,6 +92,9 @@ class LaunchWithSyncUseCase @Inject constructor(
                     is SaveSyncResult.Error -> {
                         emit(SyncState.Error(downloadResult.message))
                     }
+                    is SaveSyncResult.NeedsHardcoreResolution -> {
+                        emit(SyncState.HardcoreConflict(downloadResult.gameId, downloadResult.gameName))
+                    }
                     else -> {
                         emit(SyncState.Complete)
                     }
@@ -183,6 +186,18 @@ class LaunchWithSyncUseCase @Inject constructor(
                     is SaveSyncResult.Error -> {
                         emit(SyncProgress.PreLaunch.Downloading(channelName, success = false))
                         emit(SyncProgress.Error(downloadResult.message))
+                    }
+                    is SaveSyncResult.NeedsHardcoreResolution -> {
+                        emit(SyncProgress.PreLaunch.Downloading(channelName, success = false))
+                        emit(SyncProgress.HardcoreConflict(
+                            gameId = downloadResult.gameId,
+                            gameName = downloadResult.gameName,
+                            tempFilePath = downloadResult.tempFilePath,
+                            emulatorId = downloadResult.emulatorId,
+                            targetPath = downloadResult.targetPath,
+                            isFolderBased = downloadResult.isFolderBased,
+                            channelName = downloadResult.channelName
+                        ))
                     }
                     else -> {
                         emit(SyncProgress.PreLaunch.Downloading(channelName, success = true))

@@ -72,6 +72,15 @@ sealed class SaveSyncResult {
         val localTimestamp: Instant,
         val serverTimestamp: Instant
     ) : SaveSyncResult()
+    data class NeedsHardcoreResolution(
+        val tempFilePath: String,
+        val gameId: Long,
+        val gameName: String,
+        val emulatorId: String,
+        val targetPath: String,
+        val isFolderBased: Boolean,
+        val channelName: String?
+    ) : SaveSyncResult()
     data class Error(val message: String) : SaveSyncResult()
     data object NoSaveFound : SaveSyncResult()
     data object NotConfigured : SaveSyncResult()
@@ -1084,7 +1093,8 @@ class SaveSyncRepository @Inject constructor(
         gameId: Long,
         emulatorId: String,
         channelName: String? = null,
-        forceOverwrite: Boolean = false
+        forceOverwrite: Boolean = false,
+        isHardcore: Boolean = false
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId emulator=$emulatorId channel=$channelName | Starting upload")
         val api = this@SaveSyncRepository.api
@@ -1177,6 +1187,7 @@ class SaveSyncRepository @Inject constructor(
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Local modified time | localModified=$localModified")
 
         var tempZipFile: File? = null
+        var tempTrailerFile: File? = null
 
         try {
             val fileToUpload = if (isFolderBased) {
@@ -1185,6 +1196,10 @@ class SaveSyncRepository @Inject constructor(
                 if (!saveArchiver.zipFolder(saveLocation, tempZipFile)) {
                     Logger.error(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Zip failed | source=$localPath")
                     return@withContext SaveSyncResult.Error("Failed to zip save folder")
+                }
+                if (isHardcore) {
+                    saveArchiver.appendHardcoreTrailer(tempZipFile)
+                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Appended hardcore trailer to zip")
                 }
                 val zipSize = tempZipFile.length()
                 Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Zip complete | output=${tempZipFile.absolutePath}, size=${zipSize}bytes")
@@ -1199,13 +1214,22 @@ class SaveSyncRepository @Inject constructor(
                     Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Rejecting empty save upload | fileSize=${saveLocation.length()}bytes, minRequired=$MIN_VALID_SAVE_SIZE_BYTES")
                     return@withContext SaveSyncResult.NoSaveFound
                 }
-                saveLocation
+                if (isHardcore) {
+                    tempTrailerFile = File(context.cacheDir, "upload_${saveLocation.name}")
+                    saveLocation.copyTo(tempTrailerFile, overwrite = true)
+                    saveArchiver.appendHardcoreTrailer(tempTrailerFile)
+                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Appended hardcore trailer to save")
+                    tempTrailerFile
+                } else {
+                    saveLocation
+                }
             }
 
             val contentHash = saveArchiver.calculateFileHash(fileToUpload)
             if (syncEntity?.lastUploadedHash == contentHash) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 tempZipFile?.delete()
+                tempTrailerFile?.delete()
                 return@withContext SaveSyncResult.Success
             }
 
@@ -1309,6 +1333,7 @@ class SaveSyncRepository @Inject constructor(
             SaveSyncResult.Error(e.message ?: "Upload failed")
         } finally {
             tempZipFile?.delete()
+            tempTrailerFile?.delete()
         }
     }
 
@@ -1505,6 +1530,24 @@ class SaveSyncRepository @Inject constructor(
                     }
                 }
 
+                val hasLocalHardcore = saveCacheManager.get().hasHardcoreSlot(gameId)
+                val downloadedHasTrailer = saveArchiver.hasHardcoreTrailer(tempZipFile)
+                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Hardcore check | localHardcore=$hasLocalHardcore, downloadedTrailer=$downloadedHasTrailer")
+                if (hasLocalHardcore && !downloadedHasTrailer) {
+                    Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | NEEDS_HARDCORE_RESOLUTION | Server save missing trailer")
+                    val tempPath = tempZipFile.absolutePath
+                    tempZipFile = null
+                    return@withContext SaveSyncResult.NeedsHardcoreResolution(
+                        tempFilePath = tempPath,
+                        gameId = gameId,
+                        gameName = game.title,
+                        emulatorId = resolvedEmulatorId,
+                        targetPath = targetPath,
+                        isFolderBased = true,
+                        channelName = channelName ?: syncEntity.channelName
+                    )
+                }
+
                 val existingTarget = File(targetPath)
                 if (existingTarget.exists() && !skipBackup) {
                     try {
@@ -1548,30 +1591,65 @@ class SaveSyncRepository @Inject constructor(
                     return@withContext SaveSyncResult.Error("Insufficient disk space")
                 }
 
-                val existingTarget = File(targetPath)
-                if (existingTarget.exists() && !skipBackup) {
-                    try {
-                        saveCacheManager.get().cacheCurrentSave(gameId, resolvedEmulatorId, targetPath)
-                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached existing save before overwrite")
-                    } catch (e: Exception) {
-                        Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Backup failed, aborting download to prevent data loss", e)
-                        return@withContext SaveSyncResult.Error("Failed to backup existing save before overwrite")
-                    }
-                }
-                val targetFile = File(targetPath)
-                targetFile.parentFile?.mkdirs()
-
                 val body = response.body()
                 if (body == null) {
                     Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Response body is null for file save")
                     return@withContext SaveSyncResult.Error("Empty response body")
                 }
-                body.byteStream().use { input ->
-                    targetFile.outputStream().use { output ->
-                        input.copyTo(output)
+
+                var tempSaveFile: File? = File(context.cacheDir, "temp_save_${System.currentTimeMillis()}.tmp")
+                try {
+                    body.byteStream().use { input ->
+                        tempSaveFile!!.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
                     }
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Saved temp file | path=${tempSaveFile!!.absolutePath}, size=${tempSaveFile!!.length()}bytes")
+
+                    val hasLocalHardcore = saveCacheManager.get().hasHardcoreSlot(gameId)
+                    val downloadedHasTrailer = saveArchiver.hasHardcoreTrailer(tempSaveFile!!)
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Hardcore check | localHardcore=$hasLocalHardcore, downloadedTrailer=$downloadedHasTrailer")
+                    if (hasLocalHardcore && !downloadedHasTrailer) {
+                        Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | NEEDS_HARDCORE_RESOLUTION | Server save missing trailer")
+                        val tempPath = tempSaveFile!!.absolutePath
+                        tempSaveFile = null
+                        return@withContext SaveSyncResult.NeedsHardcoreResolution(
+                            tempFilePath = tempPath,
+                            gameId = gameId,
+                            gameName = game.title,
+                            emulatorId = resolvedEmulatorId,
+                            targetPath = targetPath,
+                            isFolderBased = false,
+                            channelName = channelName ?: syncEntity.channelName
+                        )
+                    }
+
+                    val existingTarget = File(targetPath)
+                    if (existingTarget.exists() && !skipBackup) {
+                        try {
+                            saveCacheManager.get().cacheCurrentSave(gameId, resolvedEmulatorId, targetPath)
+                            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached existing save before overwrite")
+                        } catch (e: Exception) {
+                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Backup failed, aborting download to prevent data loss", e)
+                            tempSaveFile?.delete()
+                            return@withContext SaveSyncResult.Error("Failed to backup existing save before overwrite")
+                        }
+                    }
+
+                    val targetFile = File(targetPath)
+                    targetFile.parentFile?.mkdirs()
+
+                    val bytesWithoutTrailer = saveArchiver.readBytesWithoutTrailer(tempSaveFile!!)
+                    if (bytesWithoutTrailer != null) {
+                        targetFile.writeBytes(bytesWithoutTrailer)
+                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save written (trailer stripped) | path=$targetPath, size=${targetFile.length()}bytes")
+                    } else {
+                        tempSaveFile!!.copyTo(targetFile, overwrite = true)
+                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save written | path=$targetPath, size=${targetFile.length()}bytes")
+                    }
+                } finally {
+                    tempSaveFile?.delete()
                 }
-                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save written | path=$targetPath, size=${targetFile.length()}bytes")
             }
 
             saveSyncDao.upsert(
@@ -2279,6 +2357,89 @@ class SaveSyncRepository @Inject constructor(
             cacheResult.success
         } finally {
             tempFile.delete()
+        }
+    }
+
+    enum class HardcoreResolutionChoice {
+        KEEP_HARDCORE,
+        DOWNGRADE_TO_CASUAL,
+        KEEP_LOCAL
+    }
+
+    suspend fun resolveHardcoreConflict(
+        resolution: SaveSyncResult.NeedsHardcoreResolution,
+        choice: HardcoreResolutionChoice
+    ): SaveSyncResult = withContext(Dispatchers.IO) {
+        val tempFile = File(resolution.tempFilePath)
+
+        try {
+            when (choice) {
+                HardcoreResolutionChoice.KEEP_HARDCORE -> {
+                    Logger.info(TAG, "[SaveSync] RESOLVE gameId=${resolution.gameId} | KEEP_HARDCORE | Uploading local save")
+                    tempFile.delete()
+                    uploadSave(
+                        gameId = resolution.gameId,
+                        emulatorId = resolution.emulatorId,
+                        channelName = resolution.channelName,
+                        forceOverwrite = true,
+                        isHardcore = true
+                    )
+                }
+
+                HardcoreResolutionChoice.DOWNGRADE_TO_CASUAL -> {
+                    Logger.info(TAG, "[SaveSync] RESOLVE gameId=${resolution.gameId} | DOWNGRADE_TO_CASUAL | Applying server save")
+
+                    saveCacheManager.get().deleteHardcoreSlot(resolution.gameId)
+
+                    val targetFile = File(resolution.targetPath)
+                    if (resolution.isFolderBased) {
+                        targetFile.mkdirs()
+                        val unzipSuccess = saveArchiver.unzipSingleFolder(tempFile, targetFile)
+                        if (!unzipSuccess) {
+                            return@withContext SaveSyncResult.Error("Failed to unzip save")
+                        }
+                    } else {
+                        targetFile.parentFile?.mkdirs()
+                        val bytesWithoutTrailer = saveArchiver.readBytesWithoutTrailer(tempFile)
+                        if (bytesWithoutTrailer != null) {
+                            targetFile.writeBytes(bytesWithoutTrailer)
+                        } else {
+                            tempFile.copyTo(targetFile, overwrite = true)
+                        }
+                    }
+
+                    saveCacheManager.get().cacheCurrentSave(
+                        gameId = resolution.gameId,
+                        emulatorId = resolution.emulatorId,
+                        savePath = resolution.targetPath,
+                        channelName = resolution.channelName,
+                        isHardcore = false
+                    )
+
+                    val syncEntity = saveSyncDao.getByGameAndEmulator(resolution.gameId, resolution.emulatorId)
+                    if (syncEntity != null) {
+                        saveSyncDao.upsert(
+                            syncEntity.copy(
+                                localSavePath = resolution.targetPath,
+                                localUpdatedAt = Instant.now(),
+                                lastSyncedAt = Instant.now(),
+                                syncStatus = SaveSyncEntity.STATUS_SYNCED
+                            )
+                        )
+                    }
+
+                    SaveSyncResult.Success
+                }
+
+                HardcoreResolutionChoice.KEEP_LOCAL -> {
+                    Logger.info(TAG, "[SaveSync] RESOLVE gameId=${resolution.gameId} | KEEP_LOCAL | Skipping sync")
+                    SaveSyncResult.Success
+                }
+            }
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
         }
     }
 

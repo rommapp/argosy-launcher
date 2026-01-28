@@ -1,20 +1,16 @@
-package com.nendo.argosy.libretro.ui
+package com.nendo.argosy.data.sync
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -28,31 +24,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
 
-sealed class TaintedSaveAction {
-    data object StartFresh : TaintedSaveAction()
-    data object ContinueAnyway : TaintedSaveAction()
-    data object Cancel : TaintedSaveAction()
+sealed class HardcoreSyncConflictAction {
+    data object KeepHardcore : HardcoreSyncConflictAction()
+    data object DowngradeToCasual : HardcoreSyncConflictAction()
+    data object KeepLocal : HardcoreSyncConflictAction()
 }
 
 @Composable
-fun TaintedSaveWarningDialog(
-    onAction: (TaintedSaveAction) -> Unit
+fun HardcoreSyncConflictDialog(
+    gameName: String,
+    onAction: (HardcoreSyncConflictAction) -> Unit
 ) {
     val warningColor = Color(0xFFFF9800)
 
     AlertDialog(
-        onDismissRequest = { onAction(TaintedSaveAction.Cancel) },
+        onDismissRequest = { onAction(HardcoreSyncConflictAction.KeepLocal) },
         icon = {
             Icon(
                 Icons.Default.Warning,
-                contentDescription = null,
+                contentDescription = "Warning",
                 modifier = Modifier.size(48.dp),
                 tint = warningColor
             )
         },
         title = {
             Text(
-                text = "Tainted Save Detected",
+                text = "Hardcore Save Conflict",
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center
             )
@@ -63,13 +60,13 @@ fun TaintedSaveWarningDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "This save was created with cheats enabled.",
+                    text = "The server version of this save no longer meets the requirements for hardcore mode.",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 Text(
-                    text = "Hardcore achievements may be invalidated by RetroAchievements if detected.",
+                    text = "This can happen if the save was modified outside of Argosy.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -77,22 +74,27 @@ fun TaintedSaveWarningDialog(
             }
         },
         confirmButton = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
-                TextButton(onClick = { onAction(TaintedSaveAction.Cancel) }) {
-                    Text("Cancel")
+                Button(
+                    onClick = { onAction(HardcoreSyncConflictAction.KeepHardcore) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Keep Hardcore (Upload Local)")
                 }
                 OutlinedButton(
-                    onClick = { onAction(TaintedSaveAction.ContinueAnyway) },
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = warningColor
-                    )
+                    onClick = { onAction(HardcoreSyncConflictAction.DowngradeToCasual) },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Continue Anyway")
+                    Text("Downgrade to Casual (Use Server)")
                 }
-                Button(onClick = { onAction(TaintedSaveAction.StartFresh) }) {
-                    Text("Start Fresh")
+                TextButton(
+                    onClick = { onAction(HardcoreSyncConflictAction.KeepLocal) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Keep Local (Skip Sync)")
                 }
             }
         },

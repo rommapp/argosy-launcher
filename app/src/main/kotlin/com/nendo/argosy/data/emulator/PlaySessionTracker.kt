@@ -205,7 +205,8 @@ class PlaySessionTracker @Inject constructor(
                 session.gameId,
                 session.emulatorPackage,
                 session.startTime.toEpochMilli(),
-                session.coreName
+                session.coreName,
+                session.isHardcore
             )
 
             cacheCurrentSave(session)

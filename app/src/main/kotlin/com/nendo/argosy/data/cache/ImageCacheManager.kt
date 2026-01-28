@@ -256,12 +256,12 @@ class ImageCacheManager @Inject constructor(
             connection.connectTimeout = 10_000
             connection.readTimeout = 30_000
 
-            val inputStream = connection.getInputStream()
-
             val tempFile = File.createTempFile("img_", ".tmp", cacheDir)
             try {
-                tempFile.outputStream().use { out ->
-                    inputStream.copyTo(out)
+                connection.getInputStream().use { inputStream ->
+                    tempFile.outputStream().use { out ->
+                        inputStream.copyTo(out)
+                    }
                 }
 
                 val options = BitmapFactory.Options().apply {

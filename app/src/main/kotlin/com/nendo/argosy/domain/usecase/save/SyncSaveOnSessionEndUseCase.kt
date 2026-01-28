@@ -67,9 +67,10 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         gameId: Long,
         emulatorPackage: String,
         sessionStartTime: Long = 0L,
-        coreName: String? = null
+        coreName: String? = null,
+        isHardcore: Boolean = false
     ): Result {
-        Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session end sync starting | emulatorPackage=$emulatorPackage, core=$coreName, sessionStart=$sessionStartTime")
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session end sync starting | emulatorPackage=$emulatorPackage, core=$coreName, sessionStart=$sessionStartTime, hardcore=$isHardcore")
 
         val prefs = preferencesRepository.userPreferences.first()
         if (!prefs.saveSyncEnabled) {
@@ -170,7 +171,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             channelName = activeChannel
         )
 
-        return when (val syncResult = saveSyncRepository.uploadSave(gameId, emulatorId, activeChannel)) {
+        return when (val syncResult = saveSyncRepository.uploadSave(gameId, emulatorId, activeChannel, isHardcore = isHardcore)) {
             is SaveSyncResult.Success -> {
                 Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=UPLOADED | Save synced successfully")
                 Result.Uploaded
@@ -195,6 +196,10 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             }
             is SaveSyncResult.NotConfigured -> {
                 Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=NOT_CONFIGURED | Sync not configured")
+                Result.NotConfigured
+            }
+            is SaveSyncResult.NeedsHardcoreResolution -> {
+                Logger.warn(TAG, "[SaveSync] SESSION gameId=$gameId | Result=NEEDS_HARDCORE_RESOLUTION | Unexpected during upload")
                 Result.NotConfigured
             }
         }

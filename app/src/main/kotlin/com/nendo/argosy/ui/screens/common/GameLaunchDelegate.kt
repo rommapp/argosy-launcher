@@ -15,6 +15,8 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdDetector
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.SaveSyncRepository
+import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
@@ -29,9 +31,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
+
+enum class HardcoreConflictChoice { KEEP_HARDCORE, DOWNGRADE_TO_CASUAL, KEEP_LOCAL }
 
 data class SyncOverlayState(
     val gameTitle: String,
@@ -41,7 +46,10 @@ data class SyncOverlayState(
     val onGrantPermission: (() -> Unit)? = null,
     val onDisableSync: (() -> Unit)? = null,
     val onOpenSettings: (() -> Unit)? = null,
-    val onSkip: (() -> Unit)? = null
+    val onSkip: (() -> Unit)? = null,
+    val onKeepHardcore: (() -> Unit)? = null,
+    val onDowngradeToCasual: (() -> Unit)? = null,
+    val onKeepLocal: (() -> Unit)? = null
 )
 
 data class DiscPickerState(
@@ -62,7 +70,8 @@ class GameLaunchDelegate @Inject constructor(
     private val gameLauncher: GameLauncher,
     private val soundManager: SoundFeedbackManager,
     private val notificationManager: NotificationManager,
-    private val titleIdDetector: TitleIdDetector
+    private val titleIdDetector: TitleIdDetector,
+    private val saveSyncRepository: SaveSyncRepository
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -150,6 +159,7 @@ class GameLaunchDelegate @Inject constructor(
                     prefs.saveSyncEnabled,
                     prefs.experimentalFolderSaveSync
                 )
+                android.util.Log.d("GameLaunchDelegate", "launchGame: emulatorPackage=$emulatorPackage, emulatorId=$emulatorId, canSync=$canSync")
 
                 val syncStartTime = if (canSync) {
                     _syncOverlayState.value = SyncOverlayState(
@@ -159,10 +169,51 @@ class GameLaunchDelegate @Inject constructor(
                     System.currentTimeMillis()
                 } else null
 
+                var hardcoreConflictInfo: SyncProgress.HardcoreConflict? = null
+                var hardcoreConflictChoice: HardcoreConflictChoice? = null
+
                 launchWithSyncUseCase.invokeWithProgress(gameId, channelName).collect { progress ->
+                    android.util.Log.d("GameLaunchDelegate", "collect: progress=$progress, canSync=$canSync")
                     if (canSync && progress != SyncProgress.Skipped && progress != SyncProgress.Idle) {
-                        _syncOverlayState.value = SyncOverlayState(gameTitle, progress)
+                        when (progress) {
+                            is SyncProgress.HardcoreConflict -> {
+                                android.util.Log.d("GameLaunchDelegate", "HardcoreConflict received - showing dialog and waiting for user choice")
+                                hardcoreConflictInfo = progress
+                                val choiceDeferred = CompletableDeferred<HardcoreConflictChoice>()
+                                _syncOverlayState.value = SyncOverlayState(
+                                    gameTitle = gameTitle,
+                                    syncProgress = progress,
+                                    onKeepHardcore = { choiceDeferred.complete(HardcoreConflictChoice.KEEP_HARDCORE) },
+                                    onDowngradeToCasual = { choiceDeferred.complete(HardcoreConflictChoice.DOWNGRADE_TO_CASUAL) },
+                                    onKeepLocal = { choiceDeferred.complete(HardcoreConflictChoice.KEEP_LOCAL) }
+                                )
+                                hardcoreConflictChoice = choiceDeferred.await()
+                                android.util.Log.d("GameLaunchDelegate", "Hardcore conflict resolved: $hardcoreConflictChoice")
+                            }
+                            else -> {
+                                _syncOverlayState.value = SyncOverlayState(gameTitle, progress)
+                            }
+                        }
                     }
+                }
+
+                if (hardcoreConflictInfo != null && hardcoreConflictChoice != null) {
+                    val resolution = SaveSyncResult.NeedsHardcoreResolution(
+                        tempFilePath = hardcoreConflictInfo!!.tempFilePath,
+                        gameId = hardcoreConflictInfo!!.gameId,
+                        gameName = hardcoreConflictInfo!!.gameName,
+                        emulatorId = hardcoreConflictInfo!!.emulatorId,
+                        targetPath = hardcoreConflictInfo!!.targetPath,
+                        isFolderBased = hardcoreConflictInfo!!.isFolderBased,
+                        channelName = hardcoreConflictInfo!!.channelName
+                    )
+                    val repoChoice = when (hardcoreConflictChoice!!) {
+                        HardcoreConflictChoice.KEEP_HARDCORE -> SaveSyncRepository.HardcoreResolutionChoice.KEEP_HARDCORE
+                        HardcoreConflictChoice.DOWNGRADE_TO_CASUAL -> SaveSyncRepository.HardcoreResolutionChoice.DOWNGRADE_TO_CASUAL
+                        HardcoreConflictChoice.KEEP_LOCAL -> SaveSyncRepository.HardcoreResolutionChoice.KEEP_LOCAL
+                    }
+                    val resolveResult = saveSyncRepository.resolveHardcoreConflict(resolution, repoChoice)
+                    android.util.Log.d("GameLaunchDelegate", "Resolution result: $resolveResult")
                 }
 
                 syncStartTime?.let { startTime ->

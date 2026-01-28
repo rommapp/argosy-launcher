@@ -472,9 +472,132 @@ class SaveArchiver @Inject constructor() {
         return md.digest().joinToString("") { "%02x".format(it) }
     }
 
+    data class HardcoreTrailer(val version: Int)
+
+    fun appendHardcoreTrailer(file: File): Boolean {
+        if (!file.exists() || !file.isFile) {
+            Logger.warn(TAG, "[SaveSync] TRAILER | Cannot append trailer - file invalid: ${file.absolutePath}")
+            return false
+        }
+
+        return try {
+            val json = """{"h":true,"v":1}"""
+            val jsonBytes = json.toByteArray(Charsets.UTF_8)
+            val lenBytes = ByteBuffer.allocate(4)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(jsonBytes.size)
+                .array()
+
+            file.appendBytes(jsonBytes)
+            file.appendBytes(lenBytes)
+            file.appendBytes(TRAILER_MAGIC)
+
+            Logger.debug(TAG, "[SaveSync] TRAILER | Appended hardcore trailer to ${file.name} (${jsonBytes.size + 12} bytes)")
+            true
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] TRAILER | Failed to append trailer to ${file.absolutePath}", e)
+            false
+        }
+    }
+
+    fun readHardcoreTrailer(file: File): HardcoreTrailer? {
+        if (!file.exists() || !file.isFile) return null
+        if (file.length() < TRAILER_MIN_SIZE) return null
+
+        return try {
+            java.io.RandomAccessFile(file, "r").use { raf ->
+                val fileLen = raf.length()
+                if (fileLen < TRAILER_MIN_SIZE) return null
+
+                raf.seek(fileLen - TRAILER_MAGIC.size)
+                val magic = ByteArray(TRAILER_MAGIC.size)
+                raf.readFully(magic)
+                if (!magic.contentEquals(TRAILER_MAGIC)) return null
+
+                raf.seek(fileLen - TRAILER_MAGIC.size - 4)
+                val lenBytes = ByteArray(4)
+                raf.readFully(lenBytes)
+                val jsonLen = ByteBuffer.wrap(lenBytes).order(ByteOrder.LITTLE_ENDIAN).getInt()
+
+                if (jsonLen < 0 || jsonLen > 1024) return null
+                if (fileLen < TRAILER_MIN_SIZE + jsonLen) return null
+
+                raf.seek(fileLen - TRAILER_MAGIC.size - 4 - jsonLen)
+                val jsonBytes = ByteArray(jsonLen)
+                raf.readFully(jsonBytes)
+
+                val json = String(jsonBytes, Charsets.UTF_8)
+                if (!json.contains("\"h\":true")) return null
+
+                val version = Regex("\"v\":(\\d+)").find(json)?.groupValues?.get(1)?.toIntOrNull() ?: 1
+                Logger.debug(TAG, "[SaveSync] TRAILER | Read hardcore trailer from ${file.name}: version=$version")
+                HardcoreTrailer(version = version)
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] TRAILER | Failed to read trailer from ${file.absolutePath}", e)
+            null
+        }
+    }
+
+    fun hasHardcoreTrailer(file: File): Boolean = readHardcoreTrailer(file) != null
+
+    fun getTrailerSize(file: File): Long {
+        if (!file.exists() || !file.isFile) return 0
+        if (file.length() < TRAILER_MIN_SIZE) return 0
+
+        return try {
+            java.io.RandomAccessFile(file, "r").use { raf ->
+                val fileLen = raf.length()
+
+                raf.seek(fileLen - TRAILER_MAGIC.size)
+                val magic = ByteArray(TRAILER_MAGIC.size)
+                raf.readFully(magic)
+                if (!magic.contentEquals(TRAILER_MAGIC)) return 0
+
+                raf.seek(fileLen - TRAILER_MAGIC.size - 4)
+                val lenBytes = ByteArray(4)
+                raf.readFully(lenBytes)
+                val jsonLen = ByteBuffer.wrap(lenBytes).order(ByteOrder.LITTLE_ENDIAN).getInt()
+
+                if (jsonLen < 0 || jsonLen > 1024) return 0
+                if (fileLen < TRAILER_MIN_SIZE + jsonLen) return 0
+
+                (TRAILER_MAGIC.size + 4 + jsonLen).toLong()
+            }
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    fun readBytesWithoutTrailer(file: File): ByteArray? {
+        if (!file.exists() || !file.isFile) return null
+
+        return try {
+            val trailerSize = getTrailerSize(file)
+            val contentSize = file.length() - trailerSize
+
+            if (contentSize <= 0) return null
+
+            java.io.RandomAccessFile(file, "r").use { raf ->
+                val bytes = ByteArray(contentSize.toInt())
+                raf.readFully(bytes)
+                bytes
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] TRAILER | Failed to read bytes without trailer: ${file.absolutePath}", e)
+            null
+        }
+    }
+
     companion object {
         private const val JKSV_META_FILE = ".nx_save_meta.bin"
         private const val JKSV_MAGIC = "JKSV"
         private val JKSV_TITLE_ID_OFFSETS = listOf(5, 4, 6)
+
+        private val TRAILER_MAGIC = byteArrayOf(
+            'A'.code.toByte(), 'R'.code.toByte(), 'G'.code.toByte(), 'O'.code.toByte(),
+            'S'.code.toByte(), 'Y'.code.toByte(), 0x01, 0x00
+        )
+        private const val TRAILER_MIN_SIZE = 12L
     }
 }

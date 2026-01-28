@@ -63,25 +63,26 @@ class CheatsService @Inject constructor(
             .build()
 
         try {
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                if (response.code == 404) {
-                    Logger.debug(TAG, "No cheats found for name=$name, platform=$platform")
-                } else {
-                    Logger.debug(TAG, "Lookup failed: ${response.code} for name=$name, platform=$platform")
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    if (response.code == 404) {
+                        Logger.debug(TAG, "No cheats found for name=$name, platform=$platform")
+                    } else {
+                        Logger.debug(TAG, "Lookup failed: ${response.code} for name=$name, platform=$platform")
+                    }
+                    return@withContext null
                 }
-                return@withContext null
-            }
 
-            val body = response.body?.string()
-            if (body == null) {
-                Logger.debug(TAG, "Empty response body")
-                return@withContext null
-            }
+                val body = response.body?.string()
+                if (body == null) {
+                    Logger.debug(TAG, "Empty response body")
+                    return@withContext null
+                }
 
-            val result = resultAdapter.fromJson(body)
-            Logger.debug(TAG, "Cheats lookup: game=${result?.gameName}, cheats=${result?.cheats?.size}, score=${result?.score}")
-            result
+                val result = resultAdapter.fromJson(body)
+                Logger.debug(TAG, "Cheats lookup: game=${result?.gameName}, cheats=${result?.cheats?.size}, score=${result?.score}")
+                result
+            }
         } catch (e: Exception) {
             Logger.error(TAG, "Cheats lookup error for name=$name: ${e.message}")
             null

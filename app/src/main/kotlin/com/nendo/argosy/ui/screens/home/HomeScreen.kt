@@ -736,7 +736,10 @@ fun HomeScreen(
             onGrantPermission = uiState.syncOverlayState?.onGrantPermission,
             onDisableSync = uiState.syncOverlayState?.onDisableSync,
             onOpenSettings = uiState.syncOverlayState?.onOpenSettings,
-            onSkip = uiState.syncOverlayState?.onSkip
+            onSkip = uiState.syncOverlayState?.onSkip,
+            onKeepHardcore = uiState.syncOverlayState?.onKeepHardcore,
+            onDowngradeToCasual = uiState.syncOverlayState?.onDowngradeToCasual,
+            onKeepLocal = uiState.syncOverlayState?.onKeepLocal
         )
 
         uiState.discPickerState?.let { pickerState ->

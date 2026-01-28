@@ -95,7 +95,7 @@ class SaveCacheManager @Inject constructor(
             val gameDir = File(cacheBaseDir, "$gameId/$timestamp")
             gameDir.mkdirs()
 
-            val (cachePath, saveSize) = if (saveFile.isDirectory) {
+            val (cachePath, cachedFile) = if (saveFile.isDirectory) {
                 val finalZip = File(gameDir, "save.zip")
                 tempOrSource.renameTo(finalZip).let { renamed ->
                     if (!renamed) {
@@ -104,12 +104,18 @@ class SaveCacheManager @Inject constructor(
                     }
                 }
                 tempFile = null
-                "$gameId/$timestamp/save.zip" to finalZip.length()
+                "$gameId/$timestamp/save.zip" to finalZip
             } else {
-                val cachedFile = File(gameDir, saveFile.name)
-                saveFile.copyTo(cachedFile, overwrite = true)
-                "$gameId/$timestamp/${saveFile.name}" to cachedFile.length()
+                val destFile = File(gameDir, saveFile.name)
+                saveFile.copyTo(destFile, overwrite = true)
+                "$gameId/$timestamp/${saveFile.name}" to destFile
             }
+
+            if (isHardcore) {
+                saveArchiver.appendHardcoreTrailer(cachedFile)
+            }
+
+            val saveSize = cachedFile.length()
 
             // For hardcore slots, replace existing instead of creating new entries
             if (effectiveSlotName != null) {
@@ -177,7 +183,12 @@ class SaveCacheManager @Inject constructor(
                 saveArchiver.unzipSingleFolder(cacheFile, targetFile)
             } else {
                 targetFile.parentFile?.mkdirs()
-                cacheFile.copyTo(targetFile, overwrite = true)
+                val bytesWithoutTrailer = saveArchiver.readBytesWithoutTrailer(cacheFile)
+                if (bytesWithoutTrailer != null) {
+                    targetFile.writeBytes(bytesWithoutTrailer)
+                } else {
+                    cacheFile.copyTo(targetFile, overwrite = true)
+                }
             }
 
             Log.d(TAG, "Restored save from cache $cacheId to $targetPath")
@@ -309,6 +320,13 @@ class SaveCacheManager @Inject constructor(
     suspend fun hasHardcoreSlot(gameId: Long): Boolean =
         saveCacheDao.getHardcoreSlot(gameId) != null
 
+    suspend fun isValidHardcoreSave(entity: SaveCacheEntity): Boolean = withContext(Dispatchers.IO) {
+        if (!entity.isHardcore) return@withContext false
+        val cacheFile = File(cacheBaseDir, entity.cachePath)
+        if (!cacheFile.exists()) return@withContext false
+        saveArchiver.hasHardcoreTrailer(cacheFile)
+    }
+
     suspend fun getLatestCasualSave(gameId: Long, channelName: String?): SaveCacheEntity? {
         return if (channelName != null) {
             saveCacheDao.getLatestCasualSaveInChannel(gameId, channelName)
@@ -344,7 +362,7 @@ class SaveCacheManager @Inject constructor(
                     null
                 }
             } else {
-                cacheFile.readBytes()
+                saveArchiver.readBytesWithoutTrailer(cacheFile) ?: cacheFile.readBytes()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to read cache file: ${entity.cachePath}", e)

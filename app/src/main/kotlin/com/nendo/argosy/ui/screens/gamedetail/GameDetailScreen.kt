@@ -42,6 +42,8 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SyncOverlay
+import com.nendo.argosy.domain.model.SyncProgress
+import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.gamedetail.components.AchievementsSection
@@ -71,8 +73,6 @@ import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
-import com.nendo.argosy.libretro.ui.AchievementPopup
-import com.nendo.argosy.libretro.ui.AchievementUnlock
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -131,21 +131,6 @@ fun GameDetailScreen(
             if (hasDescription) add(SnapState.DESCRIPTION)
             if (hasScreenshots) add(SnapState.SCREENSHOTS)
             if (hasAchievements) add(SnapState.ACHIEVEMENTS)
-        }
-    }
-
-    // TEST MODE: Show fake achievement every 30 seconds when game has achievements
-    LaunchedEffect(hasAchievements) {
-        if (hasAchievements) {
-            viewModel.startTestAchievementMode()
-        } else {
-            viewModel.stopTestAchievementMode()
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.stopTestAchievementMode()
         }
     }
 
@@ -253,6 +238,33 @@ fun GameDetailScreen(
         inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_GAME_DETAIL)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val hardcoreConflictInputHandler = remember(viewModel) {
+        HardcoreConflictInputHandler(
+            getFocusIndex = { uiState.hardcoreConflictFocusIndex },
+            onFocusChange = viewModel::setHardcoreConflictFocusIndex,
+            onKeepHardcore = viewModel::onKeepHardcore,
+            onDowngradeToCasual = viewModel::onDowngradeToCasual,
+            onKeepLocal = viewModel::onKeepLocal
+        )
+    }
+
+    val isHardcoreConflict = uiState.isSyncing && uiState.syncProgress is SyncProgress.HardcoreConflict
+
+    LaunchedEffect(isHardcoreConflict) {
+        if (isHardcoreConflict) {
+            viewModel.setHardcoreConflictFocusIndex(0)
+            inputDispatcher.pushModal(hardcoreConflictInputHandler)
+        }
+    }
+
+    DisposableEffect(isHardcoreConflict) {
+        onDispose {
+            if (isHardcoreConflict) {
+                inputDispatcher.popModal()
+            }
         }
     }
 
@@ -640,7 +652,11 @@ private fun GameDetailModals(
 
     SyncOverlay(
         syncProgress = if (uiState.isSyncing) uiState.syncProgress else null,
-        gameTitle = game.title
+        gameTitle = game.title,
+        onKeepHardcore = viewModel::onKeepHardcore,
+        onDowngradeToCasual = viewModel::onDowngradeToCasual,
+        onKeepLocal = viewModel::onKeepLocal,
+        hardcoreConflictFocusIndex = uiState.hardcoreConflictFocusIndex
     )
 
     AnimatedVisibility(
@@ -681,25 +697,5 @@ private fun GameDetailModals(
                 viewModel.hideCreateCollectionDialog()
             }
         )
-    }
-
-    // Test achievement popup
-    uiState.testAchievement?.let { testAch ->
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            AchievementPopup(
-                achievement = AchievementUnlock(
-                    id = testAch.id,
-                    title = testAch.title,
-                    description = testAch.description,
-                    points = testAch.points,
-                    badgeUrl = testAch.badgeUrl,
-                    isHardcore = testAch.isHardcore
-                ),
-                onDismiss = viewModel::dismissTestAchievement
-            )
-        }
     }
 }

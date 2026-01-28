@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,9 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -66,14 +70,19 @@ fun SyncOverlay(
     onGrantPermission: (() -> Unit)? = null,
     onDisableSync: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
-    onSkip: (() -> Unit)? = null
+    onSkip: (() -> Unit)? = null,
+    onKeepHardcore: (() -> Unit)? = null,
+    onDowngradeToCasual: (() -> Unit)? = null,
+    onKeepLocal: (() -> Unit)? = null,
+    hardcoreConflictFocusIndex: Int = 0
 ) {
     val isVisible = syncProgress != null &&
         syncProgress != SyncProgress.Idle &&
         syncProgress != SyncProgress.Skipped
 
     val isBlocked = syncProgress is SyncProgress.BlockedReason
-    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error && !isBlocked
+    val isHardcoreConflict = syncProgress is SyncProgress.HardcoreConflict
+    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error && !isBlocked && !isHardcoreConflict
 
     val infiniteTransition = rememberInfiniteTransition(label = "sync_rotation")
     val rotation by infiniteTransition.animateFloat(
@@ -117,22 +126,34 @@ fun SyncOverlay(
                 .background(overlayColor),
             contentAlignment = Alignment.Center
         ) {
-            if (isBlocked) {
-                BlockedSyncContent(
-                    syncProgress = syncProgress as SyncProgress.BlockedReason,
-                    gameTitle = gameTitle,
-                    onGrantPermission = onGrantPermission,
-                    onDisableSync = onDisableSync,
-                    onOpenSettings = onOpenSettings,
-                    onSkip = onSkip
-                )
-            } else {
-                ActiveSyncContent(
-                    channelName = channelName,
-                    statusMessage = debouncedStatusMessage,
-                    gameTitle = gameTitle,
-                    rotation = displayRotation
-                )
+            when {
+                isHardcoreConflict && syncProgress is SyncProgress.HardcoreConflict -> {
+                    HardcoreConflictContent(
+                        gameName = syncProgress.gameName,
+                        focusIndex = hardcoreConflictFocusIndex,
+                        onKeepHardcore = onKeepHardcore,
+                        onDowngradeToCasual = onDowngradeToCasual,
+                        onKeepLocal = onKeepLocal
+                    )
+                }
+                isBlocked -> {
+                    BlockedSyncContent(
+                        syncProgress = syncProgress as SyncProgress.BlockedReason,
+                        gameTitle = gameTitle,
+                        onGrantPermission = onGrantPermission,
+                        onDisableSync = onDisableSync,
+                        onOpenSettings = onOpenSettings,
+                        onSkip = onSkip
+                    )
+                }
+                else -> {
+                    ActiveSyncContent(
+                        channelName = channelName,
+                        statusMessage = debouncedStatusMessage,
+                        gameTitle = gameTitle,
+                        rotation = displayRotation
+                    )
+                }
             }
         }
     }
@@ -296,6 +317,134 @@ private fun BlockedSyncContent(
                 Text("Skip for Now")
             }
         }
+    }
+}
+
+@Composable
+private fun HardcoreConflictContent(
+    gameName: String,
+    focusIndex: Int,
+    onKeepHardcore: (() -> Unit)?,
+    onDowngradeToCasual: (() -> Unit)?,
+    onKeepLocal: (() -> Unit)?
+) {
+    val warningColor = Color(0xFFFF9800)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(horizontal = Dimens.spacingXl)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Warning,
+            contentDescription = null,
+            tint = warningColor,
+            modifier = Modifier.size(Dimens.iconXl + Dimens.spacingSm)
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Text(
+            text = "Hardcore Save Conflict",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Text(
+            text = "The server version of \"$gameName\" no longer meets the requirements for hardcore mode.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Text(
+            text = "This can happen if the save was modified outside of Argosy.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(0.85f)
+        ) {
+            if (onKeepHardcore != null) {
+                HardcoreConflictOption(
+                    label = "Keep Hardcore",
+                    subtitle = "Upload local save to server",
+                    isFocused = focusIndex == 0,
+                    onClick = onKeepHardcore
+                )
+            }
+
+            if (onDowngradeToCasual != null) {
+                HardcoreConflictOption(
+                    label = "Downgrade to Casual",
+                    subtitle = "Use server save, lose hardcore status",
+                    isFocused = focusIndex == 1,
+                    onClick = onDowngradeToCasual
+                )
+            }
+
+            if (onKeepLocal != null) {
+                HardcoreConflictOption(
+                    label = "Keep Local",
+                    subtitle = "Skip sync for now",
+                    isFocused = focusIndex == 2,
+                    onClick = onKeepLocal
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HardcoreConflictOption(
+    label: String,
+    subtitle: String,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+    val contentColor = if (isFocused) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val subtitleColor = if (isFocused) {
+        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(backgroundColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = contentColor
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = subtitleColor
+        )
     }
 }
 

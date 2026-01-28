@@ -35,7 +35,10 @@ import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.repository.SaveSyncRepository
+import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.usecase.save.CheckSaveSyncPermissionUseCase
+import kotlinx.coroutines.CompletableDeferred
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
@@ -111,7 +114,8 @@ class GameDetailViewModel @Inject constructor(
     private val removeGameFromCollectionUseCase: com.nendo.argosy.domain.usecase.collection.RemoveGameFromCollectionUseCase,
     private val createCollectionUseCase: com.nendo.argosy.domain.usecase.collection.CreateCollectionUseCase,
     private val saveCacheManager: com.nendo.argosy.data.repository.SaveCacheManager,
-    private val raRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository
+    private val raRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository,
+    private val saveSyncRepository: SaveSyncRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -128,51 +132,27 @@ class GameDetailViewModel @Inject constructor(
 
     private var backgroundRepairPending = false
     private var gameFilesObserverJob: kotlinx.coroutines.Job? = null
-    private var testAchievementJob: kotlinx.coroutines.Job? = null
+    private var _hardcoreConflictDeferred: CompletableDeferred<SaveSyncRepository.HardcoreResolutionChoice>? = null
 
     override fun onCleared() {
         super.onCleared()
         imageCacheManager.resumeBackgroundCaching()
-        testAchievementJob?.cancel()
     }
 
-    fun startTestAchievementMode() {
-        testAchievementJob?.cancel()
-        testAchievementJob = viewModelScope.launch {
-            while (true) {
-                delay(30_000L)
-                triggerTestAchievement()
-            }
-        }
+    fun onKeepHardcore() {
+        _hardcoreConflictDeferred?.complete(SaveSyncRepository.HardcoreResolutionChoice.KEEP_HARDCORE)
     }
 
-    fun stopTestAchievementMode() {
-        testAchievementJob?.cancel()
-        testAchievementJob = null
+    fun onDowngradeToCasual() {
+        _hardcoreConflictDeferred?.complete(SaveSyncRepository.HardcoreResolutionChoice.DOWNGRADE_TO_CASUAL)
     }
 
-    private fun triggerTestAchievement() {
-        val achievements = _uiState.value.game?.achievements ?: return
-        if (achievements.isEmpty()) return
-
-        val randomAch = achievements.random()
-
-        _uiState.update {
-            it.copy(
-                testAchievement = TestAchievementUi(
-                    id = randomAch.raId,
-                    title = randomAch.title,
-                    description = randomAch.description,
-                    points = randomAch.points,
-                    badgeUrl = randomAch.badgeUrl,
-                    isHardcore = listOf(true, false).random()
-                )
-            )
-        }
+    fun onKeepLocal() {
+        _hardcoreConflictDeferred?.complete(SaveSyncRepository.HardcoreResolutionChoice.KEEP_LOCAL)
     }
 
-    fun dismissTestAchievement() {
-        _uiState.update { it.copy(testAchievement = null) }
+    fun setHardcoreConflictFocusIndex(index: Int) {
+        _uiState.update { it.copy(hardcoreConflictFocusIndex = index) }
     }
 
     fun repairBackgroundImage(gameId: Long, failedPath: String) {
@@ -1054,9 +1034,34 @@ class GameDetailViewModel @Inject constructor(
                 System.currentTimeMillis()
             } else null
 
+            var hardcoreConflictInfo: SyncProgress.HardcoreConflict? = null
+
             launchWithSyncUseCase.invokeWithProgress(currentGameId).collect { progress ->
                 if (canSync && progress != SyncProgress.Skipped && progress != SyncProgress.Idle) {
-                    _uiState.update { it.copy(isSyncing = true, syncProgress = progress) }
+                    when (progress) {
+                        is SyncProgress.HardcoreConflict -> {
+                            hardcoreConflictInfo = progress
+                            _hardcoreConflictDeferred = CompletableDeferred()
+                            _uiState.update { it.copy(isSyncing = true, syncProgress = progress) }
+                            val choice = _hardcoreConflictDeferred?.await()
+                            if (choice != null && hardcoreConflictInfo != null) {
+                                val resolution = SaveSyncResult.NeedsHardcoreResolution(
+                                    tempFilePath = hardcoreConflictInfo!!.tempFilePath,
+                                    gameId = hardcoreConflictInfo!!.gameId,
+                                    gameName = hardcoreConflictInfo!!.gameName,
+                                    emulatorId = hardcoreConflictInfo!!.emulatorId,
+                                    targetPath = hardcoreConflictInfo!!.targetPath,
+                                    isFolderBased = hardcoreConflictInfo!!.isFolderBased,
+                                    channelName = hardcoreConflictInfo!!.channelName
+                                )
+                                saveSyncRepository.resolveHardcoreConflict(resolution, choice)
+                            }
+                            _hardcoreConflictDeferred = null
+                        }
+                        else -> {
+                            _uiState.update { it.copy(isSyncing = true, syncProgress = progress) }
+                        }
+                    }
                 }
             }
 
@@ -1170,8 +1175,8 @@ class GameDetailViewModel @Inject constructor(
             var optionCount = 1  // New Game (Casual) - always present
 
             if (state.hasCasualSaves) optionCount++  // Resume
+            if (state.hasHardcoreSave) optionCount++  // Resume Hardcore
             if (state.isRALoggedIn) optionCount++  // New Game (Hardcore)
-            if (state.hasHardcoreSave && state.isRALoggedIn) optionCount++  // Resume Hardcore
 
             val maxIndex = (optionCount - 1).coerceAtLeast(0)
             val newIndex = (it.playOptionsFocusIndex + delta).coerceIn(0, maxIndex)
@@ -1185,18 +1190,18 @@ class GameDetailViewModel @Inject constructor(
 
         var currentIdx = 0
         val resumeIdx = if (state.hasCasualSaves) currentIdx++ else -1
+        val resumeHardcoreIdx = if (state.hasHardcoreSave) currentIdx++ else -1
         val newCasualIdx = currentIdx++
-        val newHardcoreIdx = if (state.isRALoggedIn) currentIdx++ else -1
-        val resumeHardcoreIdx = if (state.hasHardcoreSave && state.isRALoggedIn) currentIdx else -1
+        val newHardcoreIdx = if (state.isRALoggedIn) currentIdx else -1
 
         val action = when (focusIndex) {
             resumeIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.Resume
+            resumeHardcoreIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.ResumeHardcore
             newCasualIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewCasual
             newHardcoreIdx -> {
                 if (!state.isOnline) return
                 com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewHardcore
             }
-            resumeHardcoreIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.ResumeHardcore
             else -> return
         }
         handlePlayOption(action)

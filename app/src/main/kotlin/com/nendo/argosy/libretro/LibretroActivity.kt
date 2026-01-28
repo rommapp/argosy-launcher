@@ -644,16 +644,25 @@ class LibretroActivity : ComponentActivity() {
         return when (launchMode) {
             LaunchMode.NEW_HARDCORE, LaunchMode.NEW_CASUAL -> {
                 Log.d("LibretroActivity", "New game mode - starting fresh (no save)")
+                val sramFile = getSramFile()
+                if (sramFile.exists()) {
+                    sramFile.delete()
+                    Log.d("LibretroActivity", "Deleted existing save file for fresh start")
+                }
                 null
             }
             LaunchMode.RESUME_HARDCORE -> {
                 Log.d("LibretroActivity", "Resuming hardcore - restoring hardcore save")
                 val hardcoreSave = saveCacheManager.getHardcoreSlot(gameId)
                 if (hardcoreSave != null) {
+                    val isValid = saveCacheManager.isValidHardcoreSave(hardcoreSave)
+                    if (!isValid) {
+                        Log.w("LibretroActivity", "Hardcore save missing trailer - save may have been modified externally")
+                    }
                     val bytes = saveCacheManager.getSaveBytesFromEntity(hardcoreSave)
                     if (bytes != null) {
                         getSramFile().writeBytes(bytes)
-                        Log.d("LibretroActivity", "Restored hardcore save (${bytes.size} bytes)")
+                        Log.d("LibretroActivity", "Restored hardcore save (${bytes.size} bytes, valid=$isValid)")
                     }
                     bytes
                 } else {
@@ -677,14 +686,31 @@ class LibretroActivity : ComponentActivity() {
                 }
 
                 if (useHardcore && hardcoreSave != null) {
-                    hardcoreMode = true
-                    Log.d("LibretroActivity", "RESUME: Hardcore save is most recent, switching to hardcore mode")
-                    val bytes = saveCacheManager.getSaveBytesFromEntity(hardcoreSave)
-                    if (bytes != null) {
-                        getSramFile().writeBytes(bytes)
-                        Log.d("LibretroActivity", "Restored hardcore save (${bytes.size} bytes)")
+                    val isValid = saveCacheManager.isValidHardcoreSave(hardcoreSave)
+                    if (!isValid) {
+                        Log.w("LibretroActivity", "RESUME: Hardcore save missing trailer, falling back to casual")
                     }
-                    bytes
+                    if (isValid) {
+                        hardcoreMode = true
+                        Log.d("LibretroActivity", "RESUME: Hardcore save is most recent, switching to hardcore mode")
+                        val bytes = saveCacheManager.getSaveBytesFromEntity(hardcoreSave)
+                        if (bytes != null) {
+                            getSramFile().writeBytes(bytes)
+                            Log.d("LibretroActivity", "Restored hardcore save (${bytes.size} bytes)")
+                        }
+                        bytes
+                    } else if (casualSave != null) {
+                        Log.d("LibretroActivity", "RESUME: Using casual save instead")
+                        val bytes = saveCacheManager.getSaveBytesFromEntity(casualSave)
+                        if (bytes != null) {
+                            getSramFile().writeBytes(bytes)
+                            Log.d("LibretroActivity", "Restored casual save (${bytes.size} bytes)")
+                        }
+                        bytes
+                    } else {
+                        Log.d("LibretroActivity", "RESUME: No valid saves, starting fresh")
+                        null
+                    }
                 } else if (casualSave != null) {
                     Log.d("LibretroActivity", "RESUME: Restoring casual save from ${channelName ?: "latest"}")
                     val bytes = saveCacheManager.getSaveBytesFromEntity(casualSave)
@@ -910,6 +936,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun applyAllEnabledCheats() {
+        if (hardcoreMode) return
         cheats.filter { it.enabled }.forEachIndexed { _, cheat ->
             retroView.setCheat(cheat.cheatIndex, true, cheat.code)
             Log.d("LibretroActivity", "Applied enabled cheat ${cheat.cheatIndex}: ${cheat.description}")

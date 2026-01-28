@@ -80,6 +80,7 @@ fun SaveChannelModal(
         focusRequester.requestFocus()
     }
 
+    // Handle focus changes (including centering)
     FocusedScroll(
         listState = listState,
         focusedIndex = state.focusIndex
@@ -148,7 +149,8 @@ fun SaveChannelModal(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(itemHeight * 3),
+                        .weight(1f, fill = false)
+                        .heightIn(min = itemHeight * 2, max = itemHeight * maxVisibleItems),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -158,7 +160,8 @@ fun SaveChannelModal(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(itemHeight * 2),
+                            .weight(1f, fill = false)
+                            .heightIn(min = itemHeight * 2, max = itemHeight * maxVisibleItems),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -171,6 +174,7 @@ fun SaveChannelModal(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier
+                            .weight(1f, fill = false)
                             .heightIn(max = itemHeight * maxVisibleItems)
                             .clip(RoundedCornerShape(8.dp))
                     ) {
@@ -195,7 +199,8 @@ fun SaveChannelModal(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(itemHeight * 2),
+                        .weight(1f, fill = false)
+                        .heightIn(min = itemHeight * 2, max = itemHeight * maxVisibleItems),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -208,6 +213,7 @@ fun SaveChannelModal(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
+                        .weight(1f, fill = false)
                         .heightIn(max = itemHeight * maxVisibleItems)
                         .clip(RoundedCornerShape(Dimens.radiusMd))
                 ) {
@@ -253,10 +259,6 @@ fun SaveChannelModal(
 
         if (state.showDeleteConfirmation && state.deleteSelectedEntry != null) {
             DeleteConfirmationOverlay(channelName = state.deleteSelectedEntry.channelName ?: "")
-        }
-
-        if (state.showResetConfirmation) {
-            ResetConfirmationOverlay()
         }
 
         if (state.showVersionMismatchDialog && state.versionMismatchState != null) {
@@ -396,7 +398,6 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
             if (state.canCreateChannel) {
                 hints.add(FooterHintItem(InputButton.Y, "Lock"))
             }
-            hints.add(FooterHintItem(InputButton.SELECT, "Reset"))
         }
         SaveTab.STATES -> {
             val focusedState = state.focusedStateEntry
@@ -477,14 +478,6 @@ private fun SaveCacheEntryRow(
         horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
     ) {
         when {
-            isHardcore -> {
-                Icon(
-                    imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = "Hardcore",
-                    tint = goldColor,
-                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
-                )
-            }
             entry.cheatsUsed -> {
                 Icon(
                     imageVector = Icons.Default.Warning,
@@ -505,7 +498,7 @@ private fun SaveCacheEntryRow(
                 Icon(
                     imageVector = Icons.Default.Save,
                     contentDescription = "Active",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (isHardcore) goldColor else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
                 )
             }
@@ -519,8 +512,16 @@ private fun SaveCacheEntryRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
+                if (isHardcore) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = "Hardcore",
+                        tint = goldColor,
+                        modifier = Modifier.size(Dimens.iconSm)
+                    )
+                }
                 Text(
-                    text = if (isHardcore) "HARDCORE" else entry.displayName,
+                    text = entry.displayName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = contentColor,
                     maxLines = 1,
@@ -636,32 +637,6 @@ private fun DeleteConfirmationOverlay(channelName: String) {
         )
         Text(
             text = "This will remove it from local storage.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-    }
-}
-
-@Composable
-private fun ResetConfirmationOverlay() {
-    NestedModal(
-        title = "RESET SAVE",
-        footerHints = listOf(
-            InputButton.A to "Reset",
-            InputButton.B to "Cancel"
-        )
-    ) {
-        Text(
-            text = "Start fresh?",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-        Text(
-            text = "This will delete your local save file. Your saved slots and server saves will not be affected.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

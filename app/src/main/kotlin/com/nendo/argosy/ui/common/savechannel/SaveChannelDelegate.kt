@@ -535,7 +535,7 @@ class SaveChannelDelegate @Inject constructor(
     fun secondaryAction(scope: CoroutineScope, onSaveStatusChanged: (SaveStatusEvent) -> Unit) {
         val state = _state.value
         if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation ||
-            state.showResetConfirmation || state.showStateDeleteConfirmation || state.showStateReplaceAutoConfirmation) return
+            state.showStateDeleteConfirmation || state.showStateReplaceAutoConfirmation) return
 
         when (state.selectedTab) {
             SaveTab.SLOTS -> showDeleteConfirmation()
@@ -547,50 +547,12 @@ class SaveChannelDelegate @Inject constructor(
     fun tertiaryAction() {
         val state = _state.value
         if (state.showRestoreConfirmation || state.showRenameDialog || state.showDeleteConfirmation ||
-            state.showResetConfirmation || state.showStateDeleteConfirmation || state.showStateReplaceAutoConfirmation) return
+            state.showStateDeleteConfirmation || state.showStateReplaceAutoConfirmation) return
 
         when (state.selectedTab) {
             SaveTab.SLOTS -> showRenameChannelDialog()
             SaveTab.STATES -> showStateReplaceAutoConfirmation()
             else -> {}
-        }
-    }
-
-    fun showResetConfirmation() {
-        _state.update { it.copy(showResetConfirmation = true) }
-    }
-
-    fun dismissResetConfirmation() {
-        _state.update { it.copy(showResetConfirmation = false) }
-    }
-
-    fun confirmReset(scope: CoroutineScope, onSaveStatusChanged: (SaveStatusEvent) -> Unit) {
-        scope.launch {
-            val state = _state.value
-
-            if (state.emulatorPackage != null && state.supportsStates) {
-                val stateResult = restoreCachedStatesUseCase(
-                    gameId = currentGameId,
-                    channelName = null,
-                    emulatorPackage = state.emulatorPackage,
-                    coreId = state.currentCoreId,
-                    skipAutoState = false
-                )
-                android.util.Log.d("SaveChannelDelegate", "Reset to latest - restored states: $stateResult")
-            }
-
-            gameDao.updateActiveSaveChannel(currentGameId, null)
-            gameDao.updateActiveSaveTimestamp(currentGameId, null)
-            _state.update {
-                it.copy(
-                    activeChannel = null,
-                    activeSaveTimestamp = null,
-                    showResetConfirmation = false,
-                    isVisible = false
-                )
-            }
-            onSaveStatusChanged(SaveStatusEvent(channelName = null, timestamp = null))
-            notificationManager.showSuccess("Reset to latest save")
         }
     }
 

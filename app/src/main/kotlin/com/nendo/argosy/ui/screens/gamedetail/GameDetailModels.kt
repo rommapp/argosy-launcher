@@ -136,6 +136,7 @@ data class GameDetailUiState(
     val playOptionsFocusIndex: Int = 0,
     val hasCasualSaves: Boolean = false,
     val hasHardcoreSave: Boolean = false,
+    val hasRASupport: Boolean = false,
     val isRALoggedIn: Boolean = false,
     val isOnline: Boolean = false,
     val isLoading: Boolean = true,

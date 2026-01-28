@@ -43,12 +43,14 @@ fun PlayOptionsModal(
     focusIndex: Int,
     hasSaves: Boolean,
     hasHardcoreSave: Boolean,
+    hasRASupport: Boolean,
     isRALoggedIn: Boolean,
     isOnline: Boolean,
     onAction: (PlayOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
     var currentIndex = 0
+    val showHardcoreOptions = hasRASupport && isRALoggedIn
 
     Modal(title = "START GAME", onDismiss = onDismiss) {
         val hasContinueSection = hasSaves || hasHardcoreSave
@@ -88,12 +90,12 @@ fun PlayOptionsModal(
         PlayOptionRow(
             icon = Icons.Default.SportsEsports,
             label = "Casual",
-            subtext = "Save states and cheats available",
+            subtext = if (hasRASupport) "Save states and cheats available" else null,
             isFocused = focusIndex == casualIdx,
             onClick = { onAction(PlayOptionAction.NewCasual) }
         )
 
-        if (isRALoggedIn) {
+        if (showHardcoreOptions) {
             val hardcoreIdx = currentIndex++
             PlayOptionRow(
                 icon = Icons.Default.EmojiEvents,

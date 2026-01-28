@@ -28,7 +28,6 @@ data class SaveChannelState(
     val renameText: String = "",
     val showDeleteConfirmation: Boolean = false,
     val deleteSelectedEntry: UnifiedSaveEntry? = null,
-    val showResetConfirmation: Boolean = false,
     val showVersionMismatchDialog: Boolean = false,
     val versionMismatchState: UnifiedStateEntry? = null,
     val showStateDeleteConfirmation: Boolean = false,

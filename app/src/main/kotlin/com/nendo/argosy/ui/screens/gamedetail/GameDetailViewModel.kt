@@ -255,6 +255,10 @@ class GameDetailViewModel @Inject constructor(
         pageLoadTime = System.currentTimeMillis()
         imageCacheManager.pauseBackgroundCaching()
         viewModelScope.launch {
+            if (emulatorDetector.installedEmulators.value.isEmpty()) {
+                emulatorDetector.detectEmulators()
+            }
+
             val game = gameDao.getById(gameId) ?: return@launch
             val platform = platformDao.getById(game.platformId)
 
@@ -1155,6 +1159,7 @@ class GameDetailViewModel @Inject constructor(
             val hasCasualSaves = saveCacheManager.getCachesForGameOnce(currentGameId)
                 .any { !it.isHardcore }
             val hasHardcoreSave = saveCacheManager.hasHardcoreSave(currentGameId)
+            val hasRASupport = _uiState.value.game?.achievements?.isNotEmpty() == true
             val isRALoggedIn = raRepository.isLoggedIn()
             val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
 
@@ -1164,6 +1169,7 @@ class GameDetailViewModel @Inject constructor(
                     playOptionsFocusIndex = 0,
                     hasCasualSaves = hasCasualSaves,
                     hasHardcoreSave = hasHardcoreSave,
+                    hasRASupport = hasRASupport,
                     isRALoggedIn = isRALoggedIn,
                     isOnline = isOnline
                 )
@@ -1186,7 +1192,7 @@ class GameDetailViewModel @Inject constructor(
 
             if (state.hasCasualSaves) optionCount++  // Resume
             if (state.hasHardcoreSave) optionCount++  // Resume Hardcore
-            if (state.isRALoggedIn) optionCount++  // New Game (Hardcore)
+            if (state.hasRASupport && state.isRALoggedIn) optionCount++  // New Game (Hardcore)
 
             val maxIndex = (optionCount - 1).coerceAtLeast(0)
             val newIndex = (it.playOptionsFocusIndex + delta).coerceIn(0, maxIndex)
@@ -1202,7 +1208,7 @@ class GameDetailViewModel @Inject constructor(
         val resumeIdx = if (state.hasCasualSaves) currentIdx++ else -1
         val resumeHardcoreIdx = if (state.hasHardcoreSave) currentIdx++ else -1
         val newCasualIdx = currentIdx++
-        val newHardcoreIdx = if (state.isRALoggedIn) currentIdx else -1
+        val newHardcoreIdx = if (state.hasRASupport && state.isRALoggedIn) currentIdx else -1
 
         val action = when (focusIndex) {
             resumeIdx -> com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.Resume
@@ -1940,18 +1946,6 @@ class GameDetailViewModel @Inject constructor(
         saveChannelDelegate.confirmDeleteChannel(viewModelScope, ::handleSaveStatusChanged)
     }
 
-    fun showResetConfirmation() {
-        saveChannelDelegate.showResetConfirmation()
-    }
-
-    fun dismissResetConfirmation() {
-        saveChannelDelegate.dismissResetConfirmation()
-    }
-
-    fun confirmReset() {
-        saveChannelDelegate.confirmReset(viewModelScope, ::handleSaveStatusChanged)
-    }
-
     fun refreshGameData() {
         if (_uiState.value.isRefreshingGameData) return
         viewModelScope.launch {
@@ -2140,7 +2134,6 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showRenameDialog -> InputResult.UNHANDLED
                 saveState.showRestoreConfirmation -> InputResult.UNHANDLED
                 saveState.showDeleteConfirmation -> InputResult.UNHANDLED
-                saveState.showResetConfirmation -> InputResult.UNHANDLED
                 saveState.isVisible -> {
                     moveSaveCacheFocus(-1)
                     InputResult.HANDLED
@@ -2202,7 +2195,6 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showRenameDialog -> InputResult.UNHANDLED
                 saveState.showRestoreConfirmation -> InputResult.UNHANDLED
                 saveState.showDeleteConfirmation -> InputResult.UNHANDLED
-                saveState.showResetConfirmation -> InputResult.UNHANDLED
                 saveState.isVisible -> {
                     moveSaveCacheFocus(1)
                     InputResult.HANDLED
@@ -2379,7 +2371,6 @@ class GameDetailViewModel @Inject constructor(
             when {
                 saveState.showRenameDialog -> confirmRename()
                 saveState.showDeleteConfirmation -> confirmDeleteChannel()
-                saveState.showResetConfirmation -> confirmReset()
                 saveState.showRestoreConfirmation -> restoreSave(syncToServer = false)
                 saveState.isVisible -> confirmSaveCacheSelection()
                 state.showScreenshotViewer -> closeScreenshotViewer()
@@ -2409,7 +2400,6 @@ class GameDetailViewModel @Inject constructor(
             when {
                 saveState.showRenameDialog -> dismissRenameDialog()
                 saveState.showDeleteConfirmation -> dismissDeleteConfirmation()
-                saveState.showResetConfirmation -> dismissResetConfirmation()
                 saveState.showRestoreConfirmation -> dismissRestoreConfirmation()
                 saveState.isVisible -> dismissSaveCacheDialog()
                 state.showScreenshotViewer -> closeScreenshotViewer()
@@ -2441,10 +2431,6 @@ class GameDetailViewModel @Inject constructor(
             }
             if (saveState.showDeleteConfirmation) {
                 dismissDeleteConfirmation()
-                return InputResult.UNHANDLED
-            }
-            if (saveState.showResetConfirmation) {
-                dismissResetConfirmation()
                 return InputResult.UNHANDLED
             }
             if (saveState.showRestoreConfirmation) {
@@ -2501,7 +2487,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onSecondaryAction(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
-            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showResetConfirmation) {
+            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation) {
                 saveChannelSecondaryAction()
                 return InputResult.HANDLED
             }
@@ -2512,7 +2498,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onContextMenu(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
-            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showResetConfirmation) {
+            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation) {
                 saveChannelTertiaryAction()
                 return InputResult.HANDLED
             }
@@ -2521,8 +2507,7 @@ class GameDetailViewModel @Inject constructor(
                 return InputResult.HANDLED
             }
             if (state.downloadStatus == GameDownloadStatus.DOWNLOADED &&
-                state.game?.isBuiltInEmulator == true &&
-                state.game.achievements.isNotEmpty()) {
+                state.game?.isBuiltInEmulator == true) {
                 showPlayOptions()
                 return InputResult.HANDLED
             }
@@ -2574,8 +2559,7 @@ class GameDetailViewModel @Inject constructor(
                     isVisible = false,
                     showRestoreConfirmation = false,
                     showRenameDialog = false,
-                    showDeleteConfirmation = false,
-                    showResetConfirmation = false
+                    showDeleteConfirmation = false
                 )
             )
         }

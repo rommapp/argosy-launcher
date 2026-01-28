@@ -427,7 +427,7 @@ private fun GameDetailContent(
             ) {
                 val isInScreenshots = currentSnapState == SnapState.SCREENSHOTS && game.screenshots.isNotEmpty()
                 val canShowPlayOptions = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED &&
-                    game.isBuiltInEmulator && game.achievements.isNotEmpty()
+                    game.isBuiltInEmulator
                 FooterBar(
                     hints = buildList {
                         add(InputButton.LB_RB to "Prev/Next Game")
@@ -489,6 +489,7 @@ private fun GameDetailModals(
             focusIndex = uiState.playOptionsFocusIndex,
             hasSaves = uiState.hasCasualSaves,
             hasHardcoreSave = uiState.hasHardcoreSave,
+            hasRASupport = uiState.hasRASupport,
             isRALoggedIn = uiState.isRALoggedIn,
             isOnline = uiState.isOnline,
             onAction = viewModel::handlePlayOption,

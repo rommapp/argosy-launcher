@@ -20,30 +20,25 @@ object LogSanitizer {
     private val IPV4_PATTERN = Regex("""\b(\d{1,3}\.){3}\d{1,3}\b""")
     private val IPV6_PATTERN = Regex("""\b([0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b""")
     private val URL_PATTERN = Regex("""https?://[^\s<>"{}|\\^`\[\]]+""", RegexOption.IGNORE_CASE)
-    private val DOMAIN_PATTERN = Regex("""\b[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+\b""")
     private val EMAIL_PATTERN = Regex("""\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b""")
     private val AUTH_URL_PATTERN = Regex("""(https?://)([^:]+):([^@]+)@""", RegexOption.IGNORE_CASE)
-    private val STORAGE_PATH_PATTERN = Regex("""/storage/emulated/\d+/""")
-    private val DATA_PATH_PATTERN = Regex("""/data/(data|user/\d+)/[^/]+/""")
 
     fun sanitize(message: String): String {
         var result = message
         result = AUTH_URL_PATTERN.replace(result) { "${it.groupValues[1]}[user]:[pass]@" }
-        result = URL_PATTERN.replace(result) { "[url]" }
+        result = URL_PATTERN.replace(result) { match ->
+            val url = match.value
+            val pathStart = url.indexOf('/', 8)
+            if (pathStart > 0) {
+                val scheme = if (url.startsWith("https")) "https" else "http"
+                "$scheme://[host]${url.substring(pathStart)}"
+            } else {
+                "[url]"
+            }
+        }
         result = IPV4_PATTERN.replace(result, "[ip]")
         result = IPV6_PATTERN.replace(result, "[ipv6]")
         result = EMAIL_PATTERN.replace(result, "[email]")
-        result = STORAGE_PATH_PATTERN.replace(result, "/[storage]/")
-        result = DATA_PATH_PATTERN.replace(result, "/[app]/")
-        result = DOMAIN_PATTERN.replace(result) { match ->
-            val domain = match.value.lowercase()
-            if (domain.endsWith(".so") || domain.endsWith(".cfg") || domain.endsWith(".log") ||
-                domain.endsWith(".srm") || domain.endsWith(".sav") || domain.endsWith(".zip")) {
-                match.value
-            } else {
-                "[domain]"
-            }
-        }
         return result
     }
 

@@ -2182,6 +2182,7 @@ class SaveSyncRepository @Inject constructor(
                 val selectedChannel = serverSave.fileNameNoExt
                 val existing = if (selectedChannel != null) {
                     saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, selectedChannel)
+                        ?: saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, selectedChannel)
                 } else {
                     saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
                 }

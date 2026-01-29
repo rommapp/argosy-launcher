@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.preferences.AmbientLedColorMode
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.CyclePreference
@@ -55,8 +54,6 @@ internal sealed class DisplayItem(
     data object BoxArt : DisplayItem("boxArt", "appearance")
     data object HomeScreen : DisplayItem("homeScreen", "appearance")
 
-    data object DefaultView : DisplayItem("defaultView", "default")
-
     data object ScreenDimmer : DisplayItem("screenDimmer", "screenSafety")
     data object DimAfter : DisplayItem("dimAfter", "screenSafety")
     data object DimLevel : DisplayItem("dimLevel", "screenSafety")
@@ -89,7 +86,6 @@ internal sealed class DisplayItem(
 
     companion object {
         private val AppearanceHeader = Header("appearanceHeader", "appearance", "Appearance")
-        private val DefaultHeader = Header("defaultHeader", "default", "Default")
         private val ScreenSafetyHeader = Header("screenSafetyHeader", "screenSafety", "Screen Safety")
         private val AmbientLedHeader = Header(
             key = "ambientLedHeader",
@@ -101,8 +97,6 @@ internal sealed class DisplayItem(
         val ALL: List<DisplayItem> = listOf(
             AppearanceHeader,
             Theme, AccentColor, SecondaryColor, GridDensity, UiScale, BoxArt, HomeScreen,
-            DefaultHeader,
-            DefaultView,
             ScreenSafetyHeader,
             ScreenDimmer, DimAfter, DimLevel,
             AmbientLedHeader,
@@ -238,16 +232,6 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     subtitle = "Background and footer settings",
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToHomeScreen() }
-                )
-
-                DisplayItem.DefaultView -> CyclePreference(
-                    title = "Default View",
-                    value = when (display.defaultView) {
-                        DefaultView.HOME -> "Home"
-                        DefaultView.LIBRARY -> "Library"
-                    },
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleDefaultView() }
                 )
 
                 DisplayItem.ScreenDimmer -> SwitchPreference(

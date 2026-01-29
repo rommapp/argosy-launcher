@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Switch
@@ -336,7 +338,9 @@ private fun RommLoginStep(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
+        modifier = Modifier
+            .padding(Dimens.spacingXl)
+            .verticalScroll(rememberScrollState())
     ) {
         StepHeader(step = 1, title = "Rom Manager Login", totalSteps = 4)
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
@@ -1028,6 +1032,14 @@ private fun CoreDownloadStep(
 
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
+            Text(
+                text = "Skip if you prefer to use standalone emulators",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
             Row(
                 modifier = Modifier.fillMaxWidth(0.9f),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
@@ -1043,15 +1055,6 @@ private fun CoreDownloadStep(
                     isFocused = focusedIndex == 0,
                     enabled = isComplete,
                     onClick = onContinue
-                )
-            }
-
-            if (!isComplete) {
-                Spacer(modifier = Modifier.height(Dimens.spacingSm))
-                Text(
-                    text = "You can skip and download cores later from Settings",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

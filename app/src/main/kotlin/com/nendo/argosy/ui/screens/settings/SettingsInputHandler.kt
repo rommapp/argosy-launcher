@@ -161,6 +161,8 @@ class SettingsInputHandler(
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> { viewModel.adjustHue(-HUE_STEP); return InputResult.HANDLED }
                 InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(-HUE_STEP); return InputResult.HANDLED }
+                InterfaceItem.GridDensity -> { viewModel.cycleGridDensity(-1); return InputResult.HANDLED }
+                InterfaceItem.Theme -> { viewModel.cycleThemeMode(-1); return InputResult.HANDLED }
                 InterfaceItem.UiScale -> { viewModel.adjustUiScale(-5); return InputResult.HANDLED }
                 InterfaceItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(-1); return InputResult.HANDLED }
                 InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(-1); return InputResult.HANDLED }
@@ -355,6 +357,8 @@ class SettingsInputHandler(
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> { viewModel.adjustHue(HUE_STEP); return InputResult.HANDLED }
                 InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(HUE_STEP); return InputResult.HANDLED }
+                InterfaceItem.GridDensity -> { viewModel.cycleGridDensity(1); return InputResult.HANDLED }
+                InterfaceItem.Theme -> { viewModel.cycleThemeMode(1); return InputResult.HANDLED }
                 InterfaceItem.UiScale -> { viewModel.adjustUiScale(5); return InputResult.HANDLED }
                 InterfaceItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(1); return InputResult.HANDLED }
                 InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(1); return InputResult.HANDLED }

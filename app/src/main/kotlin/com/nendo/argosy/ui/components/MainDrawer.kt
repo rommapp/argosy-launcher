@@ -13,8 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,12 +66,19 @@ fun MainDrawer(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
+            val listState = rememberLazyListState()
+
+            LaunchedEffect(focusedIndex) {
+                if (items.isNotEmpty() && focusedIndex in items.indices) {
+                    listState.animateScrollToItem(focusedIndex)
+                }
+            }
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f)
             ) {
-                items.forEachIndexed { index, item ->
+                itemsIndexed(items, key = { _, item -> item.route }) { index, item ->
                     if (index == items.lastIndex) {
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),

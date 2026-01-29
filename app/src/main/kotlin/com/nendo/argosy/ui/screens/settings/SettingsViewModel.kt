@@ -1236,7 +1236,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun navigateToSection(section: SettingsSection) {
-        _uiState.update { it.copy(currentSection = section, focusedIndex = 0) }
+        val currentState = _uiState.value
+        val parentIndex = if (currentState.currentSection == SettingsSection.MAIN) {
+            currentState.focusedIndex
+        } else {
+            currentState.parentFocusIndex
+        }
+        _uiState.update { it.copy(currentSection = section, focusedIndex = 0, parentFocusIndex = parentIndex) }
         when (section) {
             SettingsSection.EMULATORS -> refreshEmulators()
             SettingsSection.SERVER -> {
@@ -1396,7 +1402,7 @@ class SettingsViewModel @Inject constructor(
                 true
             }
             state.currentSection == SettingsSection.RETRO_ACHIEVEMENTS -> {
-                _uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = 2) }
+                _uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex) }
                 true
             }
             state.currentSection == SettingsSection.BOX_ART -> {
@@ -1420,7 +1426,7 @@ class SettingsViewModel @Inject constructor(
                 true
             }
             state.currentSection != SettingsSection.MAIN -> {
-                _uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = 0) }
+                _uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex) }
                 true
             }
             else -> false
@@ -1534,6 +1540,14 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.setThemeMode(viewModelScope, mode)
     }
 
+    fun cycleThemeMode(direction: Int = 1) {
+        val modes = com.nendo.argosy.data.preferences.ThemeMode.entries
+        val current = uiState.value.display.themeMode
+        val currentIndex = modes.indexOf(current)
+        val nextIndex = (currentIndex + direction).mod(modes.size)
+        setThemeMode(modes[nextIndex])
+    }
+
     fun setPrimaryColor(color: Int?) {
         displayDelegate.setPrimaryColor(viewModelScope, color)
     }
@@ -1560,6 +1574,14 @@ class SettingsViewModel @Inject constructor(
 
     fun setGridDensity(density: GridDensity) {
         displayDelegate.setGridDensity(viewModelScope, density)
+    }
+
+    fun cycleGridDensity(direction: Int = 1) {
+        val densities = GridDensity.entries
+        val current = uiState.value.display.gridDensity
+        val currentIndex = densities.indexOf(current)
+        val nextIndex = (currentIndex + direction).mod(densities.size)
+        setGridDensity(densities[nextIndex])
     }
 
     fun setUiScale(scale: Int) {
@@ -2888,7 +2910,6 @@ class SettingsViewModel @Inject constructor(
                     InterfaceItem.UiScale -> cycleUiScale()
                     InterfaceItem.BoxArt -> navigateToBoxArt()
                     InterfaceItem.HomeScreen -> navigateToHomeScreen()
-                    InterfaceItem.DefaultView -> cycleDefaultView()
                     InterfaceItem.ScreenDimmer -> toggleScreenDimmer()
                     InterfaceItem.DimAfter -> cycleScreenDimmerTimeout()
                     InterfaceItem.DimLevel -> cycleScreenDimmerLevel()

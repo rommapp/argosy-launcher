@@ -521,6 +521,7 @@ data class BiosState(
 data class SettingsUiState(
     val currentSection: SettingsSection = SettingsSection.MAIN,
     val focusedIndex: Int = 0,
+    val parentFocusIndex: Int = 0,
     val colorFocusIndex: Int = 0,
     val display: DisplayState = DisplayState(),
     val controls: ControlsState = ControlsState(),

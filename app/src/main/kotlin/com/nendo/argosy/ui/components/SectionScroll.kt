@@ -20,7 +20,8 @@ fun FocusedScroll(
         val layoutInfo = listState.layoutInfo
         val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val visibleItems = layoutInfo.visibleItemsInfo
-        val itemHeight = visibleItems.firstOrNull()?.size ?: 60
+        val targetItem = visibleItems.find { it.index == focusedIndex }
+        val itemHeight = targetItem?.size ?: visibleItems.maxOfOrNull { it.size } ?: 80
         val centerOffset = (viewportHeight - itemHeight) / 2
         listState.animateScrollToItem(focusedIndex, -centerOffset)
     }
@@ -44,7 +45,8 @@ fun SectionFocusedScroll(
         val visibleItems = layoutInfo.visibleItemsInfo
         val listIndex = focusToListIndex(focusedIndex)
 
-        val itemHeight = visibleItems.firstOrNull()?.size ?: 60
+        val targetItem = visibleItems.find { it.index == listIndex }
+        val itemHeight = targetItem?.size ?: visibleItems.maxOfOrNull { it.size } ?: 80
         val centerOffset = (viewportHeight - itemHeight) / 2
         listState.animateScrollToItem(listIndex, -centerOffset)
     }

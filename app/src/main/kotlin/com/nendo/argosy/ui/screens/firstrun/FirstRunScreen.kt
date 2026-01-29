@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -155,7 +156,12 @@ fun FirstRunScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer(
+                scaleX = 0.85f,
+                scaleY = 0.85f
+            ),
         contentAlignment = Alignment.Center
     ) {
         AnimatedContent(
@@ -227,6 +233,12 @@ fun FirstRunScreen(
                     onToggle = { viewModel.togglePlatform(it) },
                     onToggleAll = { viewModel.toggleAllPlatforms() },
                     onContinue = { viewModel.proceedFromPlatformSelect() }
+                )
+                FirstRunStep.CORE_PROMPT -> CorePromptStep(
+                    missingCoreCount = uiState.missingCoreCount,
+                    focusedIndex = uiState.focusedIndex,
+                    onDownload = { viewModel.nextStep() },
+                    onSkip = { viewModel.skipCorePrompt() }
                 )
                 FirstRunStep.CORE_DOWNLOAD -> CoreDownloadStep(
                     coreDownloads = uiState.coreDownloads,
@@ -956,6 +968,82 @@ private fun PlatformToggleItem(
             modifier = Modifier.focusProperties { canFocus = false },
             interactionSource = remember { MutableInteractionSource() }
         )
+    }
+}
+
+@Composable
+private fun CorePromptStep(
+    missingCoreCount: Int,
+    focusedIndex: Int,
+    onDownload: () -> Unit,
+    onSkip: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(Dimens.spacingXl)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Download,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        Text(
+            text = "Download Emulator Cores?",
+            style = MaterialTheme.typography.headlineSmall
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        if (missingCoreCount > 0) {
+            Text(
+                text = "$missingCoreCount libretro cores are available for your selected platforms.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            Text(
+                text = "These enable built-in emulation without needing separate emulator apps.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Text(
+                text = "All cores for your selected platforms are already installed.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingXl))
+
+        if (missingCoreCount > 0) {
+            FocusableButton(
+                text = "Download Cores",
+                isFocused = focusedIndex == 0,
+                icon = Icons.Default.Download,
+                onClick = onDownload
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        }
+
+        FocusableOutlinedButton(
+            text = if (missingCoreCount > 0) "Skip (Use Standalone Emulators)" else "Continue",
+            isFocused = if (missingCoreCount > 0) focusedIndex == 1 else focusedIndex == 0,
+            onClick = onSkip
+        )
+
+        if (missingCoreCount > 0) {
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+            Text(
+                text = "You can download cores later from Settings.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

@@ -31,6 +31,7 @@ enum class FirstRunStep {
     SAVE_SYNC,
     USAGE_STATS,
     PLATFORM_SELECT,
+    CORE_PROMPT,
     CORE_DOWNLOAD,
     COMPLETE
 }
@@ -68,6 +69,7 @@ data class FirstRunUiState(
     val rommFocusField: Int? = null,
     val platforms: List<PlatformEntity> = emptyList(),
     val platformButtonFocus: Int = 1,
+    val missingCoreCount: Int = 0,
     val coreDownloads: List<CoreDownloadState> = emptyList(),
     val coreDownloadComplete: Boolean = false
 )
@@ -96,9 +98,10 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.SAVE_SYNC -> FirstRunStep.USAGE_STATS
                 FirstRunStep.USAGE_STATS -> {
                     if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
-                    else FirstRunStep.CORE_DOWNLOAD
+                    else FirstRunStep.CORE_PROMPT
                 }
-                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.CORE_DOWNLOAD
+                FirstRunStep.PLATFORM_SELECT -> FirstRunStep.CORE_PROMPT
+                FirstRunStep.CORE_PROMPT -> FirstRunStep.CORE_DOWNLOAD
                 FirstRunStep.CORE_DOWNLOAD -> FirstRunStep.COMPLETE
                 FirstRunStep.COMPLETE -> FirstRunStep.COMPLETE
             }
@@ -107,6 +110,7 @@ class FirstRunViewModel @Inject constructor(
         }
         when (_uiState.value.currentStep) {
             FirstRunStep.PLATFORM_SELECT -> loadPlatformsForSelection()
+            FirstRunStep.CORE_PROMPT -> checkMissingCores()
             FirstRunStep.CORE_DOWNLOAD -> prepareCoreDownloads()
             else -> {}
         }
@@ -123,10 +127,11 @@ class FirstRunViewModel @Inject constructor(
                 FirstRunStep.SAVE_SYNC -> FirstRunStep.IMAGE_CACHE
                 FirstRunStep.USAGE_STATS -> FirstRunStep.SAVE_SYNC
                 FirstRunStep.PLATFORM_SELECT -> FirstRunStep.USAGE_STATS
-                FirstRunStep.CORE_DOWNLOAD -> {
+                FirstRunStep.CORE_PROMPT -> {
                     if (state.rommPlatformCount > 10) FirstRunStep.PLATFORM_SELECT
                     else FirstRunStep.USAGE_STATS
                 }
+                FirstRunStep.CORE_DOWNLOAD -> FirstRunStep.CORE_PROMPT
                 FirstRunStep.COMPLETE -> FirstRunStep.CORE_DOWNLOAD
             }
             val initialFocus = if (prevStep == FirstRunStep.IMAGE_CACHE) 1 else 0
@@ -145,6 +150,22 @@ class FirstRunViewModel @Inject constructor(
                     _uiState.update { it.copy(platforms = platforms) }
                 }
             }
+        }
+    }
+
+    private fun checkMissingCores() {
+        val enabledPlatforms = _uiState.value.platforms
+            .filter { it.syncEnabled }
+            .map { it.slug }
+            .toSet()
+
+        val missingCores = coreManager.getMissingCoresForPlatforms(enabledPlatforms)
+        _uiState.update { it.copy(missingCoreCount = missingCores.size) }
+    }
+
+    fun skipCorePrompt() {
+        _uiState.update { state ->
+            state.copy(currentStep = FirstRunStep.COMPLETE, focusedIndex = 0)
         }
     }
 
@@ -278,6 +299,7 @@ class FirstRunViewModel @Inject constructor(
             FirstRunStep.SAVE_SYNC -> 1
             FirstRunStep.USAGE_STATS -> 0
             FirstRunStep.PLATFORM_SELECT -> state.platforms.size
+            FirstRunStep.CORE_PROMPT -> 1
             FirstRunStep.CORE_DOWNLOAD -> 1
             FirstRunStep.COMPLETE -> 0
         }
@@ -537,6 +559,10 @@ class FirstRunViewModel @Inject constructor(
                     val platform = state.platforms.getOrNull(state.focusedIndex)
                     if (platform != null) togglePlatform(platform.id)
                 }
+            }
+            FirstRunStep.CORE_PROMPT -> {
+                if (state.focusedIndex == 0) nextStep()
+                else skipCorePrompt()
             }
             FirstRunStep.CORE_DOWNLOAD -> {
                 if (state.focusedIndex == 0 && state.coreDownloadComplete) nextStep()

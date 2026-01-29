@@ -140,6 +140,9 @@ class GameLaunchDelegate @Inject constructor(
                             val discText = result.missingDiscNumbers.joinToString(", ")
                             notificationManager.showError("Missing discs: $discText. View game details to repair.")
                         }
+                        is LaunchResult.NoScummVMGameId -> {
+                            notificationManager.showError("Missing .scummvm file for ${result.gameName}")
+                        }
                         is LaunchResult.Error -> {
                             notificationManager.showError(result.message)
                         }
@@ -269,6 +272,9 @@ class GameLaunchDelegate @Inject constructor(
                     is LaunchResult.MissingDiscs -> {
                         val discText = result.missingDiscNumbers.joinToString(", ")
                         notificationManager.showError("Missing discs: $discText. View game details to repair.")
+                    }
+                    is LaunchResult.NoScummVMGameId -> {
+                        notificationManager.showError("Missing .scummvm file for ${result.gameName}")
                     }
                     is LaunchResult.Error -> {
                         notificationManager.showError(result.message)

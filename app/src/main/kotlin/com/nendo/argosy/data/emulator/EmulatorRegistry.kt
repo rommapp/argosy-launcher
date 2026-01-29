@@ -55,6 +55,8 @@ sealed class LaunchConfig {
     ) : LaunchConfig()
 
     object BuiltIn : LaunchConfig()
+
+    object ScummVM : LaunchConfig()
 }
 
 sealed class ExtraValue {
@@ -503,6 +505,7 @@ object EmulatorRegistry {
             packageName = "org.scummvm.scummvm",
             displayName = "ScummVM",
             supportedPlatforms = setOf("scummvm"),
+            launchConfig = LaunchConfig.ScummVM,
             downloadUrl = "https://play.google.com/store/apps/details?id=org.scummvm.scummvm"
         ),
         EmulatorDef(

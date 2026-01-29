@@ -1014,6 +1014,9 @@ class GameDetailViewModel @Inject constructor(
                             )
                         }
                     }
+                    is LaunchResult.NoScummVMGameId -> {
+                        notificationManager.showError("Missing .scummvm file for ${result.gameName}")
+                    }
                     is LaunchResult.Error -> {
                         notificationManager.showError(result.message)
                     }
@@ -1121,6 +1124,9 @@ class GameDetailViewModel @Inject constructor(
                             missingDiscNumbers = result.missingDiscNumbers
                         )
                     }
+                }
+                is LaunchResult.NoScummVMGameId -> {
+                    notificationManager.showError("Missing .scummvm file for ${result.gameName}")
                 }
                 is LaunchResult.Error -> {
                     notificationManager.showError(result.message)
@@ -1292,6 +1298,7 @@ class GameDetailViewModel @Inject constructor(
             is LaunchResult.NoRomFile,
             is LaunchResult.NoSteamLauncher,
             is LaunchResult.NoAndroidApp,
+            is LaunchResult.NoScummVMGameId,
             is LaunchResult.Error -> {
                 // Handle error silently for now
             }

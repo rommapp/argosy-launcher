@@ -43,6 +43,7 @@ sealed class LaunchResult {
     data class NoAndroidApp(val packageName: String) : LaunchResult()
     data class NoCore(val platformSlug: String) : LaunchResult()
     data class MissingDiscs(val missingDiscNumbers: List<Int>) : LaunchResult()
+    data class NoScummVMGameId(val gameName: String) : LaunchResult()
     data class Error(val message: String) : LaunchResult()
 }
 
@@ -143,6 +144,11 @@ class GameLauncher @Inject constructor(
                 is LaunchConfig.RetroArch, is LaunchConfig.BuiltIn -> {
                     LaunchResult.NoCore(game.platformSlug).also {
                         Logger.warn(TAG, "launch() failed: no core for platform=${game.platformSlug}")
+                    }
+                }
+                is LaunchConfig.ScummVM -> {
+                    LaunchResult.NoScummVMGameId(game.title).also {
+                        Logger.warn(TAG, "launch() failed: no .scummvm file for game=${game.title}")
                     }
                 }
                 else -> {
@@ -396,6 +402,7 @@ class GameLauncher @Inject constructor(
             is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config, forResume)
             is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config, forResume)
             is LaunchConfig.BuiltIn -> buildBuiltInIntent(romFile, game)
+            is LaunchConfig.ScummVM -> buildScummVMIntent(emulator, romFile, forResume)
         }.also { intent ->
             Logger.debug(TAG, "Intent built: ${LogSanitizer.describeIntent(intent)}")
         }
@@ -711,6 +718,97 @@ class GameLauncher @Inject constructor(
             }
         } catch (e: Exception) {
             Logger.warn(TAG, "Failed to read zip for titleId: ${zipFile.name}", e)
+            null
+        }
+    }
+
+    private fun buildScummVMIntent(emulator: EmulatorDef, romFile: File, forResume: Boolean): Intent? {
+        val gameId = findScummVMGameId(romFile)
+        if (gameId == null) {
+            Logger.error(TAG, "[ScummVM] No .scummvm file found for: ${romFile.name}")
+            return null
+        }
+
+        Logger.debug(TAG, "[ScummVM] Found game ID: $gameId")
+
+        return Intent(Intent.ACTION_MAIN).apply {
+            component = ComponentName(
+                emulator.packageName,
+                "org.scummvm.scummvm.SplashActivity"
+            )
+            addCategory(Intent.CATEGORY_LAUNCHER)
+            data = Uri.parse(gameId)
+
+            if (forResume) {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            } else {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            }
+        }
+    }
+
+    private fun findScummVMGameId(romFile: File): String? {
+        if (romFile.extension.equals("scummvm", ignoreCase = true)) {
+            return readScummVMFile(romFile)
+        }
+
+        if (romFile.isDirectory) {
+            val scummvmFile = romFile.listFiles()?.find {
+                it.extension.equals("scummvm", ignoreCase = true)
+            }
+            if (scummvmFile != null) {
+                return readScummVMFile(scummvmFile)
+            }
+        }
+
+        val parentDir = romFile.parentFile
+        if (parentDir != null) {
+            val scummvmFile = parentDir.listFiles()?.find {
+                it.extension.equals("scummvm", ignoreCase = true)
+            }
+            if (scummvmFile != null) {
+                return readScummVMFile(scummvmFile)
+            }
+        }
+
+        if (romFile.extension.equals("zip", ignoreCase = true)) {
+            val fromZip = findScummVMGameIdInZip(romFile)
+            if (fromZip != null) {
+                Logger.debug(TAG, "[ScummVM] Found game ID in zip: $fromZip")
+                return fromZip
+            }
+            val fallback = romFile.nameWithoutExtension.lowercase()
+            Logger.debug(TAG, "[ScummVM] Using zip filename as game ID: $fallback")
+            return fallback
+        }
+
+        return null
+    }
+
+    private fun findScummVMGameIdInZip(zipFile: File): String? {
+        return try {
+            java.util.zip.ZipFile(zipFile).use { zip ->
+                val scummvmEntry = zip.entries().asSequence().find { entry ->
+                    entry.name.endsWith(".scummvm", ignoreCase = true)
+                }
+                if (scummvmEntry != null) {
+                    zip.getInputStream(scummvmEntry).bufferedReader().readText().trim()
+                        .takeIf { it.isNotEmpty() }
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[ScummVM] Failed to read .scummvm from zip: ${zipFile.name}", e)
+            null
+        }
+    }
+
+    private fun readScummVMFile(file: File): String? {
+        return try {
+            file.readText().trim().takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[ScummVM] Failed to read .scummvm file: ${file.name}", e)
             null
         }
     }

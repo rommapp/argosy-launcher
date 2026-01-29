@@ -1,5 +1,7 @@
 package com.nendo.argosy.libretro
 
+import com.nendo.argosy.data.platform.PlatformDefinitions
+
 object LibretroCoreRegistry {
 
     data class CoreInfo(
@@ -459,8 +461,10 @@ object LibretroCoreRegistry {
 
     fun getCoreByFileName(fileName: String): CoreInfo? = cores.find { it.fileName == fileName }
 
-    fun getCoresForPlatform(platformSlug: String): List<CoreInfo> =
-        cores.filter { platformSlug in it.platforms }
+    fun getCoresForPlatform(platformSlug: String): List<CoreInfo> {
+        val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug)
+        return cores.filter { canonical in it.platforms }
+    }
 
     fun getDefaultCoreForPlatform(platformSlug: String): CoreInfo? =
         getCoresForPlatform(platformSlug).find { it.isDefault }
@@ -474,6 +478,8 @@ object LibretroCoreRegistry {
 
     fun getSupportedPlatforms(): Set<String> = cores.flatMap { it.platforms }.toSet()
 
-    fun isPlatformSupported(platformSlug: String): Boolean =
-        cores.any { platformSlug in it.platforms }
+    fun isPlatformSupported(platformSlug: String): Boolean {
+        val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug)
+        return cores.any { canonical in it.platforms }
+    }
 }

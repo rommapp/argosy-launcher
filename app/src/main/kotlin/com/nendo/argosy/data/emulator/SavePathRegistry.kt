@@ -319,7 +319,7 @@ object SavePathRegistry {
         "vita3k" to SavePathConfig(
             emulatorId = "vita3k",
             defaultPaths = listOf(
-                "{extStorage}/Android/data/org.vita3k.emulator/files/ux0/user/00/savedata"
+                "{extStorage}/Android/data/org.vita3k.emulator/files/VITA/ux0/user/00/savedata"
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true
@@ -327,7 +327,7 @@ object SavePathRegistry {
         "vita3k-zx" to SavePathConfig(
             emulatorId = "vita3k-zx",
             defaultPaths = listOf(
-                "{extStorage}/Android/data/org.vita3k.emulator.ikhoeyZX/files/ux0/user/00/savedata"
+                "{extStorage}/Android/data/org.vita3k.emulator.ikhoeyZX/files/VITA/ux0/user/00/savedata"
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true

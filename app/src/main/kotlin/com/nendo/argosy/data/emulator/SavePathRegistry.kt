@@ -95,6 +95,28 @@ object SavePathRegistry {
             supported = true
         ),
 
+        // Wii - NAND folder-based saves (game ID as hex)
+        "dolphin_wii" to SavePathConfig(
+            emulatorId = "dolphin_wii",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/org.dolphinemu.dolphinemu/files/Wii/title/00010000",
+                "{extStorage}/dolphin-emu/Wii/title/00010000"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            supported = true
+        ),
+        "dolphin_mmjr_wii" to SavePathConfig(
+            emulatorId = "dolphin_mmjr_wii",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/org.dolphinemu.mmjr/files/Wii/title/00010000",
+                "{extStorage}/mmjr/Wii/title/00010000"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            supported = true
+        ),
+
         // 3DS - folder-based saves
         "citra" to SavePathConfig(
             emulatorId = "citra",

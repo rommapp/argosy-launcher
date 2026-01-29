@@ -154,6 +154,7 @@ class TitleIdDetector @Inject constructor(
             "psp" -> scanPspSaves(baseDir, sessionStartTime)
             "3ds" -> scan3dsSaves(baseDir, sessionStartTime)
             "wiiu" -> scanWiiUSaves(baseDir, sessionStartTime)
+            "wii" -> scanWiiSaves(baseDir, sessionStartTime)
             else -> null
         }
     }
@@ -328,6 +329,32 @@ class TitleIdDetector @Inject constructor(
         return mostRecent
     }
 
+    private fun scanWiiSaves(baseDir: File, sessionStartTime: Long): DetectedTitleId? {
+        var mostRecent: DetectedTitleId? = null
+
+        // Wii NAND structure: 00010000/<titleId-hex>/data/
+        baseDir.listFiles()?.forEach { titleFolder ->
+            if (!titleFolder.isDirectory) return@forEach
+            if (!isValidWiiTitleId(titleFolder.name)) return@forEach
+
+            val dataFolder = File(titleFolder, "data")
+            val folderToCheck = if (dataFolder.exists()) dataFolder else titleFolder
+
+            val modified = findNewestFileTime(folderToCheck)
+            Logger.debug(TAG, "[SaveSync] DETECT | Wii found titleId=${titleFolder.name} | modified=$modified, sessionStart=$sessionStartTime, isNewer=${modified > sessionStartTime}")
+            if (modified > sessionStartTime && (mostRecent == null || modified > mostRecent!!.modifiedAt)) {
+                mostRecent = DetectedTitleId(
+                    titleId = titleFolder.name.uppercase(),
+                    modifiedAt = modified,
+                    savePath = titleFolder.absolutePath
+                )
+            }
+        }
+
+        Logger.debug(TAG, "[SaveSync] DETECT | Wii scan complete | basePath=${baseDir.absolutePath}, selected=${mostRecent?.titleId}")
+        return mostRecent
+    }
+
     private fun isValidSwitchTitleId(name: String): Boolean {
         return name.length == 16 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
     }
@@ -337,6 +364,10 @@ class TitleIdDetector @Inject constructor(
     }
 
     private fun isValidWiiUTitleId(name: String): Boolean {
+        return name.length == 8 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
+    }
+
+    private fun isValidWiiTitleId(name: String): Boolean {
         return name.length == 8 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
     }
 

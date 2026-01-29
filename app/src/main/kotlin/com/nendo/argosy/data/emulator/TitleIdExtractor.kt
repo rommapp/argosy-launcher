@@ -20,6 +20,7 @@ class TitleIdExtractor @Inject constructor() {
             "switch" -> extractSwitchTitleId(romFile)
             "3ds" -> extract3DSTitleId(romFile)
             "wiiu" -> extractWiiUTitleId(romFile)
+            "wii" -> extractWiiTitleId(romFile)
             else -> null
         }
         Logger.debug(TAG, "[SaveSync] DETECT | Title ID extraction result | file=${romFile.name}, platform=$platformId, titleId=$result")
@@ -167,6 +168,17 @@ class TitleIdExtractor @Inject constructor() {
         parenPattern.find(filename)?.let { return it.groupValues[1].uppercase() }
 
         return null
+    }
+
+    fun extractWiiTitleId(romFile: File): String? {
+        val gameInfo = GameCubeHeaderParser.parseRomHeader(romFile)
+        if (gameInfo == null) {
+            Logger.debug(TAG, "[SaveSync] DETECT | Failed to parse Wii ROM header | file=${romFile.name}")
+            return null
+        }
+        val hexId = GameCubeHeaderParser.gameIdToHex(gameInfo.gameId)
+        Logger.debug(TAG, "[SaveSync] DETECT | Wii game ID converted to hex | gameId=${gameInfo.gameId}, hexId=$hexId")
+        return hexId
     }
 
     private fun extractTitleIdFromZip(zipFile: File, pattern: Regex): String? {

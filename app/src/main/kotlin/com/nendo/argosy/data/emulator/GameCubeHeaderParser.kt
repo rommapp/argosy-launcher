@@ -132,6 +132,11 @@ object GameCubeHeaderParser {
         return "$baseDir/$region/$gciFilename"
     }
 
+    fun gameIdToHex(gameId: String): String {
+        return gameId.toByteArray(Charsets.US_ASCII)
+            .joinToString("") { "%02X".format(it) }
+    }
+
     fun findGciForGame(saveDir: File, gameId: String): List<File> {
         val regions = listOf("USA", "EUR", "JAP", "KOR")
         val results = mutableListOf<File>()

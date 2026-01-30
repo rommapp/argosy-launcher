@@ -65,6 +65,7 @@ object SavePathRegistry {
             emulatorId = "dolphin",
             defaultPaths = listOf(
                 "{extStorage}/Android/data/org.dolphinemu.dolphinemu/files/GC",
+                "{extStorage}/Android/data/org.dolphinemu.handheld/files/GC",
                 "{extStorage}/dolphin-emu/GC"
             ),
             saveExtensions = listOf("gci"),
@@ -100,6 +101,7 @@ object SavePathRegistry {
             emulatorId = "dolphin_wii",
             defaultPaths = listOf(
                 "{extStorage}/Android/data/org.dolphinemu.dolphinemu/files/Wii/title/00010000",
+                "{extStorage}/Android/data/org.dolphinemu.handheld/files/Wii/title/00010000",
                 "{extStorage}/dolphin-emu/Wii/title/00010000"
             ),
             saveExtensions = listOf("*"),
@@ -110,7 +112,8 @@ object SavePathRegistry {
             emulatorId = "dolphin_mmjr_wii",
             defaultPaths = listOf(
                 "{extStorage}/Android/data/org.dolphinemu.mmjr/files/Wii/title/00010000",
-                "{extStorage}/mmjr/Wii/title/00010000"
+                "{extStorage}/mmjr/Wii/title/00010000",
+                "{extStorage}/mmjr2-vbi/Wii/title/00010000"
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true,
@@ -457,12 +460,51 @@ object SavePathRegistry {
         )
     )
 
+    private val packageToConfigId = mapOf(
+        "org.dolphinemu.dolphinemu" to "dolphin",
+        "org.dolphinemu.mmjr" to "dolphin_mmjr",
+        "org.dolphinemu.handheld" to "dolphin",
+        "com.retroarch" to "retroarch",
+        "com.retroarch.aarch64" to "retroarch_64",
+        "org.ppsspp.ppsspp" to "ppsspp",
+        "org.ppsspp.ppssppgold" to "ppsspp_gold",
+        "org.mupen64plusae.v3.fzurita" to "mupen64plus_fz",
+        "com.m64.fx.plus.emulate" to "m64pro_fzx_plus",
+        "me.magnum.melonds" to "melonds",
+        "com.dsemu.drastic" to "drastic",
+        "it.dbtecno.pizzaboygba" to "pizza_boy_gba",
+        "it.dbtecno.pizzaboy" to "pizza_boy_gb",
+        "info.cemu.cemu" to "cemu",
+        "org.vita3k.emulator" to "vita3k",
+        "org.vita3k.emulator.ikhoeyZX" to "vita3k-zx"
+    )
+
+    private val packagePrefixToConfigId = mapOf(
+        "org.dolphinemu.mmjr" to "dolphin_mmjr",
+        "org.dolphinemu" to "dolphin"
+    )
+
     fun getConfig(emulatorId: String): SavePathConfig? {
         val config = configs[emulatorId] ?: return null
         return if (config.supported) config else null
     }
 
+    fun getConfigByPackage(packageName: String): SavePathConfig? {
+        val configId = resolveConfigIdForPackage(packageName) ?: return null
+        return getConfig(configId)
+    }
+
+    fun resolveConfigIdForPackage(packageName: String): String? {
+        return packageToConfigId[packageName]
+            ?: packagePrefixToConfigId.entries.firstOrNull { packageName.startsWith(it.key) }?.value
+    }
+
     fun getConfigIncludingUnsupported(emulatorId: String): SavePathConfig? = configs[emulatorId]
+
+    fun getConfigIncludingUnsupportedByPackage(packageName: String): SavePathConfig? {
+        val configId = resolveConfigIdForPackage(packageName) ?: return null
+        return getConfigIncludingUnsupported(configId)
+    }
 
     fun getAllConfigs(): Map<String, SavePathConfig> = configs.filterValues { it.supported }
 

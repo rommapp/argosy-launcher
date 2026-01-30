@@ -311,14 +311,16 @@ class SaveSyncRepository @Inject constructor(
             return@withContext null
         }
 
-        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
+        val config = emulatorPackage?.let { SavePathRegistry.getConfigIncludingUnsupportedByPackage(it) }
+            ?: SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
         if (config == null) {
-            Logger.warn(TAG, "[SaveSync] DISCOVER | No save path config for emulator | emulatorId=$emulatorId, game=$gameTitle, platform=$platformSlug")
+            Logger.warn(TAG, "[SaveSync] DISCOVER | No save path config for emulator | emulatorId=$emulatorId, emulatorPackage=$emulatorPackage, game=$gameTitle, platform=$platformSlug")
             return@withContext null
         }
 
-        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
-        val isRetroArch = emulatorId == "retroarch" || emulatorId == "retroarch_64"
+        val effectiveEmulatorId = config.emulatorId
+        val userConfig = emulatorSaveConfigDao.getByEmulator(effectiveEmulatorId)
+        val isRetroArch = effectiveEmulatorId == "retroarch" || effectiveEmulatorId == "retroarch_64"
 
         if (userConfig?.isUserOverride == true && !isRetroArch) {
             if (config.usesFolderBasedSaves && romPath != null) {
@@ -372,7 +374,7 @@ class SaveSyncRepository @Inject constructor(
         } else null
 
         val paths = if (isRetroArch) {
-            val packageName = if (emulatorId == "retroarch_64") "com.retroarch.aarch64" else "com.retroarch"
+            val packageName = if (effectiveEmulatorId == "retroarch_64") "com.retroarch.aarch64" else "com.retroarch"
             val contentDir = romPath?.let { File(it).parent }
             if (coreName != null) {
                 Logger.debug(TAG, "discoverSavePath: RetroArch using known core=$coreName (baseOverride=$basePathOverride)")
@@ -397,7 +399,7 @@ class SaveSyncRepository @Inject constructor(
                     Logger.debug(TAG, "discoverSavePath: ROM-based match found at $savePath")
                     emulatorSaveConfigDao.upsert(
                         EmulatorSaveConfigEntity(
-                            emulatorId = emulatorId,
+                            emulatorId = effectiveEmulatorId,
                             savePathPattern = File(savePath).parent ?: basePath,
                             isAutoDetected = true,
                             lastVerifiedAt = Instant.now()
@@ -415,7 +417,7 @@ class SaveSyncRepository @Inject constructor(
                 Logger.debug(TAG, "discoverSavePath: found save at $saveFile")
                 emulatorSaveConfigDao.upsert(
                     EmulatorSaveConfigEntity(
-                        emulatorId = emulatorId,
+                        emulatorId = effectiveEmulatorId,
                         savePathPattern = basePath,
                         isAutoDetected = true,
                         lastVerifiedAt = Instant.now()

@@ -384,23 +384,25 @@ class SettingsViewModel @Inject constructor(
                 }
 
                 val emulatorId = effectiveEmulatorDef?.id
-                val savePathConfig = emulatorId?.let { SavePathRegistry.getConfig(it) }
+                val emulatorPackage = effectiveEmulatorDef?.packageName
+                val savePathConfig = emulatorPackage?.let { SavePathRegistry.getConfigByPackage(it) }
+                    ?: emulatorId?.let { SavePathRegistry.getConfig(it) }
                 val showSavePath = savePathConfig != null
+                val effectiveSaveConfigId = savePathConfig?.emulatorId
 
                 val computedSavePath = when {
-                    emulatorId == null -> null
+                    savePathConfig == null -> null
                     isRetroArch -> {
-                        val packageName = effectiveEmulatorDef.packageName
                         retroArchConfigParser.resolveSavePaths(
-                            packageName = packageName,
+                            packageName = emulatorPackage ?: "com.retroarch",
                             systemName = platform.slug,
                             coreName = selectedCore
                         ).firstOrNull()
                     }
-                    else -> savePathConfig?.defaultPaths?.firstOrNull()
+                    else -> savePathConfig.defaultPaths.firstOrNull()
                 }
 
-                val userSaveConfig = emulatorId?.let { emulatorDelegate.getEmulatorSaveConfig(it) }
+                val userSaveConfig = effectiveSaveConfigId?.let { emulatorDelegate.getEmulatorSaveConfig(it) }
                 val isUserSavePathOverride = userSaveConfig?.isUserOverride == true
                 val effectiveSavePath = when {
                     !isUserSavePathOverride -> computedSavePath
@@ -1188,9 +1190,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun showSavePathModal(config: PlatformEmulatorConfig) {
-        val emulatorId = config.availableEmulators
+        val installedEmulator = config.availableEmulators
             .find { it.def.displayName == config.selectedEmulator || it.def.displayName == config.effectiveEmulatorName }
-            ?.def?.id ?: return
+            ?: return
+        val emulatorId = SavePathRegistry.resolveConfigIdForPackage(installedEmulator.def.packageName)
+            ?: installedEmulator.def.id
         emulatorDelegate.showSavePathModal(
             emulatorId = emulatorId,
             emulatorName = config.effectiveEmulatorName ?: config.selectedEmulator ?: "Unknown",

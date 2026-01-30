@@ -87,7 +87,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PendingAchievementEntity::class,
         PendingStateSyncEntity::class
     ],
-    version = 62,
+    version = 63,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1014,6 +1014,21 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_61_62 = object : Migration(61, 62) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_state_cache_gameId_emulatorId ON state_cache(gameId, emulatorId)")
+            }
+        }
+
+        val MIGRATION_62_63 = object : Migration(62, 63) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    DELETE FROM emulator_configs
+                    WHERE gameId IN (SELECT id FROM games WHERE platformSlug = 'scummvm')
+                    AND packageName = 'argosy.builtin.libretro'
+                """)
+                db.execSQL("""
+                    DELETE FROM emulator_configs
+                    WHERE platformId IN (SELECT id FROM platforms WHERE slug = 'scummvm')
+                    AND packageName = 'argosy.builtin.libretro'
+                """)
             }
         }
     }

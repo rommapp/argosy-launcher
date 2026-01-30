@@ -57,8 +57,12 @@ import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
+import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.GameUpdateBus
+import com.nendo.argosy.ui.screens.gamedetail.delegates.AchievementDelegate
+import com.nendo.argosy.ui.screens.gamedetail.delegates.GameRatingDelegate
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
@@ -94,6 +98,10 @@ class GameDetailViewModel @Inject constructor(
     private val romMRepository: RomMRepository,
     private val soundManager: SoundFeedbackManager,
     private val gameActions: GameActionsDelegate,
+    private val gameLaunchDelegate: GameLaunchDelegate,
+    private val achievementDelegate: AchievementDelegate,
+    private val gameRatingDelegate: GameRatingDelegate,
+    private val collectionModalDelegate: CollectionModalDelegate,
     private val achievementDao: com.nendo.argosy.data.local.dao.AchievementDao,
     private val imageCacheManager: ImageCacheManager,
     private val playSessionTracker: PlaySessionTracker,
@@ -179,6 +187,23 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             saveChannelDelegate.state.collect { saveState ->
                 _uiState.update { it.copy(saveChannel = saveState) }
+            }
+        }
+        viewModelScope.launch {
+            gameLaunchDelegate.syncOverlayState.collect { overlayState ->
+                _uiState.update { it.copy(syncOverlayState = overlayState) }
+            }
+        }
+        viewModelScope.launch {
+            collectionModalDelegate.state.collect { modalState ->
+                _uiState.update {
+                    it.copy(
+                        showAddToCollectionModal = modalState.isVisible,
+                        collections = modalState.collections,
+                        collectionModalFocusIndex = modalState.focusIndex,
+                        showCreateCollectionDialog = modalState.showCreateDialog
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -882,44 +907,8 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun onResume() {
-        val session = playSessionTracker.activeSession.value ?: return
-        if (_uiState.value.isSyncing) return
-
-        val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage) ?: return
-
-        viewModelScope.launch {
-            val prefs = preferencesRepository.preferences.first()
-            if (!SavePathRegistry.canSyncWithSettings(
-                    emulatorId,
-                    prefs.saveSyncEnabled,
-                    prefs.experimentalFolderSaveSync
-                )
-            ) {
-                playSessionTracker.endSession()
-                return@launch
-            }
-
-            val game = gameDao.getById(session.gameId)
-            val channelName = game?.activeSaveChannel
-            _uiState.update {
-                it.copy(
-                    isSyncing = true,
-                    syncProgress = SyncProgress.PostSession.Uploading(channelName)
-                )
-            }
-
-            val syncStartTime = System.currentTimeMillis()
-
-            playSessionTracker.endSession()
-
-            val elapsed = System.currentTimeMillis() - syncStartTime
-            val minDisplayTime = 2000L
-            if (elapsed < minDisplayTime) {
-                delay(minDisplayTime - elapsed)
-            }
-
-            _uiState.update { it.copy(isSyncing = false, syncProgress = SyncProgress.Idle) }
-        }
+        if (gameLaunchDelegate.isSyncing) return
+        gameLaunchDelegate.handleSessionEnd(viewModelScope)
     }
 
     fun primaryAction() {
@@ -2628,121 +2617,41 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun showAddToCollectionModal() {
-        viewModelScope.launch {
-            val gameId = currentGameId
-            if (gameId == 0L) return@launch
-
-            val allCollections = collectionDao.getAllCollections()
-            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
-
-            val collectionItems = allCollections.map { collection ->
-                CollectionItemUi(
-                    id = collection.id,
-                    name = collection.name,
-                    isInCollection = collection.id in gameCollectionIds
-                )
-            }
-
-            _uiState.update {
-                it.copy(
-                    showMoreOptions = false,
-                    showAddToCollectionModal = true,
-                    collections = collectionItems,
-                    collectionModalFocusIndex = 0
-                )
-            }
-        }
+        val gameId = currentGameId
+        if (gameId == 0L) return
+        _uiState.update { it.copy(showMoreOptions = false) }
+        collectionModalDelegate.show(viewModelScope, gameId)
     }
 
     fun dismissAddToCollectionModal() {
-        _uiState.update {
-            it.copy(
-                showAddToCollectionModal = false,
-                showCreateCollectionDialog = false
-            )
-        }
-        soundManager.play(SoundType.CLOSE_MODAL)
+        collectionModalDelegate.dismiss()
     }
 
     fun moveCollectionFocusUp() {
-        _uiState.update {
-            val minIndex = 0
-            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex - 1).coerceAtLeast(minIndex))
-        }
+        collectionModalDelegate.moveFocusUp()
     }
 
     fun moveCollectionFocusDown() {
-        _uiState.update {
-            val filtered = it.collections.filter { c -> c.name.isNotBlank() }
-            val maxIndex = filtered.size
-            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex + 1).coerceAtMost(maxIndex))
-        }
+        collectionModalDelegate.moveFocusDown()
     }
 
     fun confirmCollectionSelection() {
-        val state = _uiState.value
-        val index = state.collectionModalFocusIndex
-        val filtered = state.collections.filter { it.name.isNotBlank() }
-
-        if (index == filtered.size) {
-            _uiState.update { it.copy(showCreateCollectionDialog = true) }
-            return
-        }
-
-        val collection = filtered.getOrNull(index) ?: return
-        toggleGameInCollection(collection.id)
+        collectionModalDelegate.confirmSelection(viewModelScope)
     }
 
     fun toggleGameInCollection(collectionId: Long) {
-        val gameId = currentGameId
-        if (gameId == 0L) return
-
-        viewModelScope.launch {
-            val collection = _uiState.value.collections.find { it.id == collectionId } ?: return@launch
-
-            if (collection.isInCollection) {
-                removeGameFromCollectionUseCase(collectionId, gameId)
-            } else {
-                addGameToCollectionUseCase(gameId, collectionId)
-            }
-
-            val updatedCollections = _uiState.value.collections.map {
-                if (it.id == collectionId) it.copy(isInCollection = !it.isInCollection) else it
-            }
-            _uiState.update { it.copy(collections = updatedCollections) }
-        }
+        collectionModalDelegate.toggleCollection(viewModelScope, collectionId)
     }
 
     fun showCreateCollectionFromModal() {
-        _uiState.update { it.copy(showCreateCollectionDialog = true) }
+        collectionModalDelegate.showCreateDialog()
     }
 
     fun hideCreateCollectionDialog() {
-        _uiState.update { it.copy(showCreateCollectionDialog = false) }
+        collectionModalDelegate.hideCreateDialog()
     }
 
     fun createCollectionFromModal(name: String) {
-        viewModelScope.launch {
-            createCollectionUseCase(name)
-
-            val gameId = currentGameId
-            val allCollections = collectionDao.getAllCollections()
-            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
-
-            val collectionItems = allCollections.map { collection ->
-                CollectionItemUi(
-                    id = collection.id,
-                    name = collection.name,
-                    isInCollection = collection.id in gameCollectionIds
-                )
-            }
-
-            _uiState.update {
-                it.copy(
-                    showCreateCollectionDialog = false,
-                    collections = collectionItems
-                )
-            }
-        }
+        collectionModalDelegate.createAndAdd(viewModelScope, name)
     }
 }

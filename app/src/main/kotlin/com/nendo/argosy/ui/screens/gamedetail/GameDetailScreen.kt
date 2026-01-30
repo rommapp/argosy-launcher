@@ -275,7 +275,10 @@ fun GameDetailScreen(
         )
     }
 
-    val isHardcoreConflict = uiState.isSyncing && uiState.syncProgress is SyncProgress.HardcoreConflict
+    val delegateSyncProgress = uiState.syncOverlayState?.syncProgress
+    val isAnySyncing = uiState.isSyncing || uiState.syncOverlayState != null
+    val effectiveSyncProgress = delegateSyncProgress ?: if (uiState.isSyncing) uiState.syncProgress else null
+    val isHardcoreConflict = effectiveSyncProgress is SyncProgress.HardcoreConflict
 
     LaunchedEffect(isHardcoreConflict) {
         if (isHardcoreConflict) {
@@ -327,9 +330,10 @@ private fun GameDetailContent(
     onAchievementPositioned: (Int) -> Unit,
     onBack: () -> Unit
 ) {
+    val isAnySyncing = uiState.isSyncing || uiState.syncOverlayState != null
     val showAnyOverlay = uiState.showMoreOptions || uiState.showPlayOptions ||
         uiState.showRatingsStatusMenu || uiState.showEmulatorPicker || uiState.showCorePicker ||
-        uiState.showRatingPicker || uiState.showMissingDiscPrompt || uiState.isSyncing ||
+        uiState.showRatingPicker || uiState.showMissingDiscPrompt || isAnySyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
         uiState.showExtractionFailedPrompt || uiState.showDiscPicker
     val modalBlur by animateDpAsState(
@@ -457,7 +461,7 @@ private fun GameDetailContent(
                         add(InputButton.LB_RB to "Prev/Next Game")
                         add(InputButton.A to when {
                             isInScreenshots -> "View"
-                            uiState.isSyncing -> "Syncing..."
+                            isAnySyncing -> "Syncing..."
                             uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
                             uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> "Install"
                             uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
@@ -681,12 +685,20 @@ private fun GameDetailModals(
         onDismiss = viewModel::dismissPermissionModal
     )
 
+    val delegateOverlay = uiState.syncOverlayState
+    val effectiveSyncProgress = delegateOverlay?.syncProgress
+        ?: if (uiState.isSyncing) uiState.syncProgress else null
+
     SyncOverlay(
-        syncProgress = if (uiState.isSyncing) uiState.syncProgress else null,
-        gameTitle = game.title,
-        onKeepHardcore = viewModel::onKeepHardcore,
-        onDowngradeToCasual = viewModel::onDowngradeToCasual,
-        onKeepLocal = viewModel::onKeepLocal,
+        syncProgress = effectiveSyncProgress,
+        gameTitle = delegateOverlay?.gameTitle ?: game.title,
+        onGrantPermission = delegateOverlay?.onGrantPermission,
+        onDisableSync = delegateOverlay?.onDisableSync,
+        onOpenSettings = delegateOverlay?.onOpenSettings,
+        onSkip = delegateOverlay?.onSkip,
+        onKeepHardcore = delegateOverlay?.onKeepHardcore ?: viewModel::onKeepHardcore,
+        onDowngradeToCasual = delegateOverlay?.onDowngradeToCasual ?: viewModel::onDowngradeToCasual,
+        onKeepLocal = delegateOverlay?.onKeepLocal ?: viewModel::onKeepLocal,
         hardcoreConflictFocusIndex = uiState.hardcoreConflictFocusIndex
     )
 

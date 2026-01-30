@@ -8,6 +8,7 @@ import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.common.savechannel.SaveChannelState
+import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 
 data class ScreenshotPair(
@@ -177,6 +178,7 @@ data class GameDetailUiState(
     @Deprecated("Use syncProgress instead")
     val syncState: SyncState = SyncState.Idle,
     val isSyncing: Boolean = false,
+    val syncOverlayState: SyncOverlayState? = null,
     val hardcoreConflictFocusIndex: Int = 0,
     val saveChannel: SaveChannelState = SaveChannelState(),
     val saveStatusInfo: SaveStatusInfo? = null,

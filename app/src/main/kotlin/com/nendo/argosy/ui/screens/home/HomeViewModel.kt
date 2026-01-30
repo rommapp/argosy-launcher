@@ -43,6 +43,7 @@ import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.DiscPickerState
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
@@ -343,6 +344,7 @@ class HomeViewModel @Inject constructor(
     private val soundManager: SoundFeedbackManager,
     private val gameActions: GameActionsDelegate,
     private val gameLaunchDelegate: GameLaunchDelegate,
+    private val collectionModalDelegate: CollectionModalDelegate,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
     private val achievementUpdateBus: AchievementUpdateBus,
     private val generateRecommendationsUseCase: GenerateRecommendationsUseCase,
@@ -396,6 +398,7 @@ class HomeViewModel @Inject constructor(
         observePinnedCollections()
         observeRecentlyPlayedChanges()
         observeFocusedGameForLed()
+        observeCollectionModal()
     }
 
     private fun resetMenus() {
@@ -524,6 +527,22 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             gameLaunchDelegate.discPickerState.collect { pickerState ->
                 _uiState.update { it.copy(discPickerState = pickerState) }
+            }
+        }
+    }
+
+    private fun observeCollectionModal() {
+        viewModelScope.launch {
+            collectionModalDelegate.state.collect { modalState ->
+                _uiState.update {
+                    it.copy(
+                        showAddToCollectionModal = modalState.isVisible,
+                        collectionGameId = if (modalState.gameId != 0L) modalState.gameId else null,
+                        collections = modalState.collections,
+                        collectionModalFocusIndex = modalState.focusIndex,
+                        showCreateCollectionDialog = modalState.showCreateDialog
+                    )
+                }
             }
         }
     }
@@ -1577,138 +1596,39 @@ class HomeViewModel @Inject constructor(
     }
 
     fun showAddToCollectionModal(gameId: Long) {
-        viewModelScope.launch {
-            val allCollections = collectionDao.getAllCollections()
-                .filter { it.name.isNotBlank() }
-            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
-
-            val collectionItems = allCollections.map { collection ->
-                CollectionItemUi(
-                    id = collection.id,
-                    name = collection.name,
-                    isInCollection = gameCollectionIds.contains(collection.id)
-                )
-            }
-
-            _uiState.update {
-                it.copy(
-                    showAddToCollectionModal = true,
-                    collectionGameId = gameId,
-                    collections = collectionItems,
-                    collectionModalFocusIndex = 0
-                )
-            }
-            soundManager.play(SoundType.OPEN_MODAL)
-        }
+        collectionModalDelegate.show(viewModelScope, gameId)
     }
 
     fun dismissAddToCollectionModal() {
-        _uiState.update {
-            it.copy(
-                showAddToCollectionModal = false,
-                showCreateCollectionDialog = false
-            )
-        }
-        soundManager.play(SoundType.CLOSE_MODAL)
+        collectionModalDelegate.dismiss()
     }
 
     fun moveCollectionFocusUp() {
-        _uiState.update {
-            val minIndex = 0
-            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex - 1).coerceAtLeast(minIndex))
-        }
+        collectionModalDelegate.moveFocusUp()
     }
 
     fun moveCollectionFocusDown() {
-        _uiState.update {
-            val filtered = it.collections.filter { c -> c.name.isNotBlank() }
-            val maxIndex = filtered.size
-            it.copy(collectionModalFocusIndex = (it.collectionModalFocusIndex + 1).coerceAtMost(maxIndex))
-        }
+        collectionModalDelegate.moveFocusDown()
     }
 
     fun confirmCollectionSelection() {
-        val state = _uiState.value
-        val gameId = state.collectionGameId ?: return
-        val index = state.collectionModalFocusIndex
-        val filtered = state.collections.filter { it.name.isNotBlank() }
-
-        if (index == filtered.size) {
-            showCreateCollectionFromModal()
-            return
-        }
-
-        val collection = filtered.getOrNull(index) ?: return
-        toggleGameInCollection(collection.id)
+        collectionModalDelegate.confirmSelection(viewModelScope)
     }
 
     fun toggleGameInCollection(collectionId: Long) {
-        val state = _uiState.value
-        val gameId = state.collectionGameId ?: return
-
-        viewModelScope.launch {
-            val isInCollection = state.collections.find { it.id == collectionId }?.isInCollection ?: false
-            if (isInCollection) {
-                collectionDao.removeGameFromCollection(collectionId, gameId)
-                romMRepository.removeGameFromCollectionWithSync(gameId, collectionId)
-            } else {
-                collectionDao.addGameToCollection(
-                    com.nendo.argosy.data.local.entity.CollectionGameEntity(
-                        collectionId = collectionId,
-                        gameId = gameId
-                    )
-                )
-                romMRepository.addGameToCollectionWithSync(gameId, collectionId)
-            }
-
-            val updatedCollections = state.collections.map {
-                if (it.id == collectionId) it.copy(isInCollection = !isInCollection) else it
-            }
-            _uiState.update { it.copy(collections = updatedCollections) }
-        }
+        collectionModalDelegate.toggleCollection(viewModelScope, collectionId)
     }
 
     fun showCreateCollectionFromModal() {
-        _uiState.update { it.copy(showCreateCollectionDialog = true) }
+        collectionModalDelegate.showCreateDialog()
     }
 
     fun hideCreateCollectionDialog() {
-        _uiState.update { it.copy(showCreateCollectionDialog = false) }
+        collectionModalDelegate.hideCreateDialog()
     }
 
     fun createCollectionFromModal(name: String) {
-        val gameId = _uiState.value.collectionGameId ?: return
-        viewModelScope.launch {
-            val collectionId = collectionDao.insertCollection(
-                com.nendo.argosy.data.local.entity.CollectionEntity(name = name)
-            )
-            collectionDao.addGameToCollection(
-                com.nendo.argosy.data.local.entity.CollectionGameEntity(
-                    collectionId = collectionId,
-                    gameId = gameId
-                )
-            )
-            romMRepository.createCollectionWithSync(name)
-
-            val allCollections = collectionDao.getAllCollections()
-                .filter { it.name.isNotBlank() }
-            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
-
-            val collectionItems = allCollections.map { collection ->
-                CollectionItemUi(
-                    id = collection.id,
-                    name = collection.name,
-                    isInCollection = gameCollectionIds.contains(collection.id)
-                )
-            }
-
-            _uiState.update {
-                it.copy(
-                    showCreateCollectionDialog = false,
-                    collections = collectionItems
-                )
-            }
-        }
+        collectionModalDelegate.createAndAdd(viewModelScope, name)
     }
 
     fun refreshGameData(gameId: Long) {

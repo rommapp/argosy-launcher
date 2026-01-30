@@ -655,7 +655,12 @@ class RomMRepository @Inject constructor(
             lastPlayed = localDataSource?.lastPlayed,
             addedAt = localDataSource?.addedAt ?: java.time.Instant.now(),
             achievementCount = rom.raMetadata?.achievements?.size ?: localDataSource?.achievementCount ?: 0,
-            youtubeVideoId = rom.youtubeVideoId
+            youtubeVideoId = rom.youtubeVideoId,
+            fileSizeBytes = rom.files
+                ?.filter { it.category == null && !it.fileName.startsWith(".") }
+                ?.maxByOrNull { it.fileSizeBytes }
+                ?.fileSizeBytes
+                ?: rom.fileSize.takeIf { it > 0 }
         )
 
         val isNew = existing == null

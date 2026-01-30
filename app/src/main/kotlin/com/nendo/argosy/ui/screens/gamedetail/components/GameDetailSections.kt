@@ -303,7 +303,16 @@ fun ActionButtons(
                     GameDownloadStatus.NOT_DOWNLOADED -> {
                         Icon(Icons.Default.Download, contentDescription = null)
                         Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                        Text("DOWNLOAD")
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("DOWNLOAD")
+                            uiState.downloadSizeBytes?.let { size ->
+                                Text(
+                                    text = formatFileSize(size),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
                     }
                     GameDownloadStatus.NEEDS_INSTALL -> {
                         Icon(Icons.Default.InstallMobile, contentDescription = null)
@@ -555,5 +564,14 @@ fun AchievementsSection(
                 }
             }
         }
+    }
+}
+
+private fun formatFileSize(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
+        else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
     }
 }

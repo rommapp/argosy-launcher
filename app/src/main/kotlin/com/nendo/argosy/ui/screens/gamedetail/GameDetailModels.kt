@@ -1,10 +1,6 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
 import android.content.Intent
-import com.nendo.argosy.data.emulator.DiscOption
-import com.nendo.argosy.data.emulator.InstalledEmulator
-import com.nendo.argosy.data.emulator.RetroArchCore
-import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.common.savechannel.SaveChannelState
@@ -146,16 +142,8 @@ data class GameDetailUiState(
     val isRefreshingGameData: Boolean = false,
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,
     val downloadProgress: Float = 0f,
-    val showEmulatorPicker: Boolean = false,
-    val availableEmulators: List<InstalledEmulator> = emptyList(),
-    val emulatorPickerFocusIndex: Int = 0,
-    val showCorePicker: Boolean = false,
-    val availableCores: List<RetroArchCore> = emptyList(),
-    val corePickerFocusIndex: Int = 0,
+    val downloadSizeBytes: Long? = null,
     val selectedCoreId: String? = null,
-    val showSteamLauncherPicker: Boolean = false,
-    val availableSteamLaunchers: List<SteamLauncher> = emptyList(),
-    val steamLauncherPickerFocusIndex: Int = 0,
     val siblingGameIds: List<Long> = emptyList(),
     val currentGameIndex: Int = -1,
     val showRatingPicker: Boolean = false,
@@ -167,13 +155,8 @@ data class GameDetailUiState(
     val ratingsStatusFocusIndex: Int = 0,
     val showMissingDiscPrompt: Boolean = false,
     val missingDiscNumbers: List<Int> = emptyList(),
-    val showDiscPicker: Boolean = false,
-    val discPickerOptions: List<DiscOption> = emptyList(),
-    val discPickerFocusIndex: Int = 0,
     val updateFiles: List<UpdateFileUi> = emptyList(),
     val dlcFiles: List<UpdateFileUi> = emptyList(),
-    val showUpdatesPicker: Boolean = false,
-    val updatesPickerFocusIndex: Int = 0,
     val syncProgress: SyncProgress = SyncProgress.Idle,
     @Deprecated("Use syncProgress instead")
     val syncState: SyncState = SyncState.Idle,

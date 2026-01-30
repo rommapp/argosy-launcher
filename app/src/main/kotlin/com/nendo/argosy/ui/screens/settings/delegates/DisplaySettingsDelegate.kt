@@ -259,9 +259,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtShape(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtShape
-        val values = BoxArtShape.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtShape, direction)
         scope.launch {
             preferencesRepository.setBoxArtShape(next)
             _state.update { it.copy(boxArtShape = next) }
@@ -269,9 +267,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtCornerRadius(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtCornerRadius
-        val values = BoxArtCornerRadius.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtCornerRadius, direction)
         scope.launch {
             preferencesRepository.setBoxArtCornerRadius(next)
             _state.update { it.copy(boxArtCornerRadius = next) }
@@ -279,9 +275,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtBorderThickness(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtBorderThickness
-        val values = BoxArtBorderThickness.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtBorderThickness, direction)
         scope.launch {
             preferencesRepository.setBoxArtBorderThickness(next)
             _state.update { it.copy(boxArtBorderThickness = next) }
@@ -289,9 +283,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtBorderStyle(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtBorderStyle
-        val values = BoxArtBorderStyle.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtBorderStyle, direction)
         scope.launch {
             preferencesRepository.setBoxArtBorderStyle(next)
             _state.update { it.copy(boxArtBorderStyle = next) }
@@ -299,9 +291,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleGlassBorderTint(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.glassBorderTint
-        val values = GlassBorderTint.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.glassBorderTint, direction)
         scope.launch {
             preferencesRepository.setGlassBorderTint(next)
             _state.update { it.copy(glassBorderTint = next) }
@@ -309,9 +299,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtGlowStrength(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtGlowStrength
-        val values = BoxArtGlowStrength.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtGlowStrength, direction)
         scope.launch {
             preferencesRepository.setBoxArtGlowStrength(next)
             _state.update { it.copy(boxArtGlowStrength = next) }
@@ -319,9 +307,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtOuterEffect(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtOuterEffect
-        val values = BoxArtOuterEffect.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtOuterEffect, direction)
         scope.launch {
             preferencesRepository.setBoxArtOuterEffect(next)
             _state.update { it.copy(boxArtOuterEffect = next) }
@@ -329,9 +315,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtOuterEffectThickness(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtOuterEffectThickness
-        val values = BoxArtOuterEffectThickness.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtOuterEffectThickness, direction)
         scope.launch {
             preferencesRepository.setBoxArtOuterEffectThickness(next)
             _state.update { it.copy(boxArtOuterEffectThickness = next) }
@@ -339,9 +323,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleSystemIconPosition(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.systemIconPosition
-        val values = SystemIconPosition.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.systemIconPosition, direction)
         scope.launch {
             preferencesRepository.setSystemIconPosition(next)
             _state.update { it.copy(systemIconPosition = next) }
@@ -349,9 +331,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleSystemIconPadding(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.systemIconPadding
-        val values = SystemIconPadding.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.systemIconPadding, direction)
         scope.launch {
             preferencesRepository.setSystemIconPadding(next)
             _state.update { it.copy(systemIconPadding = next) }
@@ -359,9 +339,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtInnerEffect(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtInnerEffect
-        val values = BoxArtInnerEffect.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtInnerEffect, direction)
         scope.launch {
             preferencesRepository.setBoxArtInnerEffect(next)
             _state.update { it.copy(boxArtInnerEffect = next) }
@@ -369,9 +347,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleBoxArtInnerEffectThickness(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.boxArtInnerEffectThickness
-        val values = BoxArtInnerEffectThickness.entries
-        val next = values[(values.indexOf(current) + direction).mod(values.size)]
+        val next = cycleEnum(_state.value.boxArtInnerEffectThickness, direction)
         scope.launch {
             preferencesRepository.setBoxArtInnerEffectThickness(next)
             _state.update { it.copy(boxArtInnerEffectThickness = next) }
@@ -413,10 +389,8 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleVideoWallpaperDelay(scope: CoroutineScope) {
-        val current = _state.value.videoWallpaperDelaySeconds
         val options = listOf(0, 1, 3, 5, 10)
-        val currentIndex = options.indexOf(current).takeIf { it >= 0 } ?: 2
-        val next = options[(currentIndex + 1) % options.size]
+        val next = cycleInList(_state.value.videoWallpaperDelaySeconds, options)
         scope.launch {
             preferencesRepository.setVideoWallpaperDelaySeconds(next)
             _state.update { it.copy(videoWallpaperDelaySeconds = next) }
@@ -472,10 +446,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleAmbientLedColorMode(scope: CoroutineScope, direction: Int = 1) {
-        val current = _state.value.ambientLedColorMode
-        val values = AmbientLedColorMode.entries
-        val currentIndex = values.indexOf(current)
-        val next = values[(currentIndex + direction + values.size) % values.size]
+        val next = cycleEnum(_state.value.ambientLedColorMode, direction)
         scope.launch {
             preferencesRepository.setAmbientLedColorMode(next)
             _state.update { it.copy(ambientLedColorMode = next) }

@@ -87,7 +87,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PendingAchievementEntity::class,
         PendingStateSyncEntity::class
     ],
-    version = 63,
+    version = 64,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1029,6 +1029,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     WHERE platformId IN (SELECT id FROM platforms WHERE slug = 'scummvm')
                     AND packageName = 'argosy.builtin.libretro'
                 """)
+            }
+        }
+
+        val MIGRATION_63_64 = object : Migration(63, 64) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN fileSizeBytes INTEGER DEFAULT NULL")
             }
         }
     }

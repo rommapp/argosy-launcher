@@ -330,12 +330,13 @@ private fun GameDetailContent(
     onAchievementPositioned: (Int) -> Unit,
     onBack: () -> Unit
 ) {
+    val pickerState by viewModel.pickerModalDelegate.state.collectAsState()
     val isAnySyncing = uiState.isSyncing || uiState.syncOverlayState != null
     val showAnyOverlay = uiState.showMoreOptions || uiState.showPlayOptions ||
-        uiState.showRatingsStatusMenu || uiState.showEmulatorPicker || uiState.showCorePicker ||
+        uiState.showRatingsStatusMenu || pickerState.hasAnyPickerOpen ||
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || isAnySyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
-        uiState.showExtractionFailedPrompt || uiState.showDiscPicker
+        uiState.showExtractionFailedPrompt
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -493,6 +494,8 @@ private fun GameDetailModals(
     viewModel: GameDetailViewModel,
     onBack: () -> Unit
 ) {
+    val pickerState by viewModel.pickerModalDelegate.state.collectAsState()
+
     AnimatedVisibility(
         visible = uiState.showMoreOptions,
         enter = fadeIn(),
@@ -539,70 +542,70 @@ private fun GameDetailModals(
     }
 
     AnimatedVisibility(
-        visible = uiState.showUpdatesPicker,
+        visible = pickerState.showUpdatesPicker,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
         UpdatesPickerModal(
             files = uiState.updateFiles + uiState.dlcFiles,
-            focusIndex = uiState.updatesPickerFocusIndex,
+            focusIndex = pickerState.updatesPickerFocusIndex,
             onDownload = viewModel::downloadUpdateFile,
-            onDismiss = viewModel::dismissUpdatesPicker
+            onDismiss = viewModel.pickerModalDelegate::dismissUpdatesPicker
         )
     }
 
     AnimatedVisibility(
-        visible = uiState.showEmulatorPicker,
+        visible = pickerState.showEmulatorPicker,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
         EmulatorPickerModal(
-            availableEmulators = uiState.availableEmulators,
+            availableEmulators = pickerState.availableEmulators,
             currentEmulatorName = game.emulatorName,
-            focusIndex = uiState.emulatorPickerFocusIndex,
-            onSelectEmulator = viewModel::selectEmulator,
-            onDismiss = viewModel::dismissEmulatorPicker
+            focusIndex = pickerState.emulatorPickerFocusIndex,
+            onSelectEmulator = viewModel.pickerModalDelegate::selectEmulator,
+            onDismiss = viewModel.pickerModalDelegate::dismissEmulatorPicker
         )
     }
 
     AnimatedVisibility(
-        visible = uiState.showSteamLauncherPicker,
+        visible = pickerState.showSteamLauncherPicker,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
         SteamLauncherPickerModal(
-            availableLaunchers = uiState.availableSteamLaunchers,
+            availableLaunchers = pickerState.availableSteamLaunchers,
             currentLauncherName = game.steamLauncherName,
-            focusIndex = uiState.steamLauncherPickerFocusIndex,
-            onSelectLauncher = viewModel::selectSteamLauncher,
-            onDismiss = viewModel::dismissSteamLauncherPicker
+            focusIndex = pickerState.steamLauncherPickerFocusIndex,
+            onSelectLauncher = viewModel.pickerModalDelegate::selectSteamLauncher,
+            onDismiss = viewModel.pickerModalDelegate::dismissSteamLauncherPicker
         )
     }
 
     AnimatedVisibility(
-        visible = uiState.showCorePicker,
+        visible = pickerState.showCorePicker,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
         CorePickerModal(
-            availableCores = uiState.availableCores,
+            availableCores = pickerState.availableCores,
             selectedCoreId = uiState.selectedCoreId,
-            focusIndex = uiState.corePickerFocusIndex,
-            onSelectCore = viewModel::selectCore,
-            onDismiss = viewModel::dismissCorePicker
+            focusIndex = pickerState.corePickerFocusIndex,
+            onSelectCore = viewModel.pickerModalDelegate::selectCore,
+            onDismiss = viewModel.pickerModalDelegate::dismissCorePicker
         )
     }
 
     AnimatedVisibility(
-        visible = uiState.showDiscPicker,
+        visible = pickerState.showDiscPicker,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
         DiscPickerModal(
-            discs = uiState.discPickerOptions,
-            focusIndex = uiState.discPickerFocusIndex,
-            onSelectDisc = viewModel::selectDisc,
-            onDismiss = viewModel::dismissDiscPicker
+            discs = pickerState.discPickerOptions,
+            focusIndex = pickerState.discPickerFocusIndex,
+            onSelectDisc = viewModel.pickerModalDelegate::selectDisc,
+            onDismiss = viewModel.pickerModalDelegate::dismissDiscPicker
         )
     }
 

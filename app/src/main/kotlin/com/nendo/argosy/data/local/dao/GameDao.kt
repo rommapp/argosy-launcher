@@ -414,6 +414,9 @@ interface GameDao {
     @Query("SELECT achievementsFetchedAt FROM games WHERE id = :gameId")
     suspend fun getAchievementsFetchedAt(gameId: Long): Long?
 
+    @Query("UPDATE games SET fileSizeBytes = :sizeBytes WHERE id = :gameId")
+    suspend fun updateFileSize(gameId: Long, sizeBytes: Long)
+
     @Query("UPDATE games SET romHash = :hash WHERE id = :gameId")
     suspend fun updateRomHash(gameId: Long, hash: String)
 

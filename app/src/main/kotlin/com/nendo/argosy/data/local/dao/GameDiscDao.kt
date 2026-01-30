@@ -32,6 +32,9 @@ interface GameDiscDao {
     @Query("SELECT COUNT(*) FROM game_discs WHERE gameId = :gameId")
     suspend fun getTotalDiscCount(gameId: Long): Int
 
+    @Query("SELECT SUM(fileSize) FROM game_discs WHERE gameId = :gameId")
+    suspend fun getTotalFileSize(gameId: Long): Long?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(disc: GameDiscEntity): Long
 

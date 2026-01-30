@@ -217,10 +217,19 @@ class SaveChannelDelegate @Inject constructor(
 
         when (state.selectedTab) {
             SaveTab.SLOTS -> {
-                val entry = state.focusedEntry ?: return
+                val entry = state.focusedEntry
+                if (entry == null) {
+                    _state.update { it.copy(isVisible = false) }
+                    return
+                }
                 val emulatorPackage = state.emulatorPackage
                 scope.launch {
-                    val channelName = entry.channelName ?: return@launch
+                    val channelName = entry.channelName
+                    if (channelName == null) {
+                        notificationManager.showError("Invalid save slot")
+                        _state.update { it.copy(isVisible = false) }
+                        return@launch
+                    }
                     gameDao.updateActiveSaveChannel(currentGameId, channelName)
                     gameDao.updateActiveSaveTimestamp(currentGameId, null)
                     _state.update { it.copy(activeChannel = channelName, activeSaveTimestamp = null) }
@@ -245,12 +254,17 @@ class SaveChannelDelegate @Inject constructor(
                         }
                         is RestoreCachedSaveUseCase.Result.Error -> {
                             notificationManager.showError(result.message)
+                            _state.update { it.copy(isVisible = false) }
                         }
                     }
                 }
             }
             SaveTab.TIMELINE -> {
-                val entry = state.focusedEntry ?: return
+                val entry = state.focusedEntry
+                if (entry == null) {
+                    _state.update { it.copy(isVisible = false) }
+                    return
+                }
                 _state.update {
                     it.copy(
                         showRestoreConfirmation = true,
@@ -259,8 +273,11 @@ class SaveChannelDelegate @Inject constructor(
                 }
             }
             SaveTab.STATES -> {
-                val stateEntry = state.focusedStateEntry ?: return
-                if (stateEntry.localCacheId == null) return
+                val stateEntry = state.focusedStateEntry
+                if (stateEntry == null || stateEntry.localCacheId == null) {
+                    _state.update { it.copy(isVisible = false) }
+                    return
+                }
 
                 if (stateEntry.versionStatus == UnifiedStateEntry.VersionStatus.MISMATCH) {
                     _state.update {
@@ -293,7 +310,11 @@ class SaveChannelDelegate @Inject constructor(
         onRestored: () -> Unit = {}
     ) {
         val state = _state.value
-        val entry = state.restoreSelectedEntry ?: return
+        val entry = state.restoreSelectedEntry
+        if (entry == null) {
+            _state.update { it.copy(isVisible = false, showRestoreConfirmation = false) }
+            return
+        }
         val targetChannel = entry.channelName
         val targetTimestamp = entry.timestamp.toEpochMilli()
         val emulatorPackage = state.emulatorPackage

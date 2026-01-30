@@ -100,7 +100,9 @@ data class GameEntity(
 
     val achievementsFetchedAt: Long? = null,
 
-    val romHash: String? = null
+    val romHash: String? = null,
+
+    val fileSizeBytes: Long? = null
 )
 
 data class GameListItem(

@@ -8,13 +8,11 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.domain.usecase.collection.IsPinnedUseCase
 import com.nendo.argosy.domain.usecase.collection.PinCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.RefreshAllCollectionsUseCase
-import com.nendo.argosy.domain.usecase.collection.RemoveGameFromCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.UnpinCollectionUseCase
-import com.nendo.argosy.domain.usecase.collection.UpdateCollectionUseCase
-import com.nendo.argosy.domain.usecase.collection.DeleteCollectionUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
 import com.nendo.argosy.ui.notification.NotificationDuration
 import com.nendo.argosy.ui.notification.NotificationManager
@@ -76,9 +74,7 @@ class CollectionDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val collectionDao: CollectionDao,
     private val platformDao: PlatformDao,
-    private val updateCollectionUseCase: UpdateCollectionUseCase,
-    private val deleteCollectionUseCase: DeleteCollectionUseCase,
-    private val removeGameFromCollectionUseCase: RemoveGameFromCollectionUseCase,
+    private val romMRepository: RomMRepository,
     private val isPinnedUseCase: IsPinnedUseCase,
     private val pinCollectionUseCase: PinCollectionUseCase,
     private val unpinCollectionUseCase: UnpinCollectionUseCase,
@@ -294,7 +290,7 @@ class CollectionDetailViewModel @Inject constructor(
     fun confirmRemoveGame() {
         val game = _modalState.value.gameToRemove ?: return
         viewModelScope.launch {
-            removeGameFromCollectionUseCase(game.id, collectionId)
+            romMRepository.removeGameFromCollectionWithSync(game.id, collectionId)
             hideRemoveGameDialog()
             _refreshTrigger.value++
         }
@@ -302,14 +298,14 @@ class CollectionDetailViewModel @Inject constructor(
 
     fun updateCollectionName(name: String) {
         viewModelScope.launch {
-            updateCollectionUseCase(collectionId, name)
+            romMRepository.updateCollectionWithSync(collectionId, name, null)
             hideEditDialog()
         }
     }
 
     fun deleteCollection(onDeleted: () -> Unit) {
         viewModelScope.launch {
-            deleteCollectionUseCase(collectionId)
+            romMRepository.deleteCollectionWithSync(collectionId)
             hideDeleteDialog()
             onDeleted()
         }
@@ -317,7 +313,7 @@ class CollectionDetailViewModel @Inject constructor(
 
     fun removeGameFromCollection(gameId: Long) {
         viewModelScope.launch {
-            removeGameFromCollectionUseCase(gameId, collectionId)
+            romMRepository.removeGameFromCollectionWithSync(gameId, collectionId)
         }
     }
 

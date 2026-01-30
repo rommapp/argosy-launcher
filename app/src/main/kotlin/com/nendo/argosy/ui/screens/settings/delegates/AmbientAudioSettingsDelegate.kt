@@ -59,14 +59,7 @@ class AmbientAudioSettingsDelegate @Inject constructor(
     }
 
     fun adjustVolume(scope: CoroutineScope, delta: Int) {
-        val volumeLevels = listOf(2, 5, 10, 20, 35)
-        val current = _state.value.volume
-        val currentIndex = volumeLevels.indexOfFirst { it >= current }.takeIf { it >= 0 } ?: 0
-        val newIndex = (currentIndex + delta).coerceIn(0, volumeLevels.lastIndex)
-        val newVolume = volumeLevels[newIndex]
-        if (newVolume != current) {
-            setVolume(scope, newVolume)
-        }
+        adjustInList(_state.value.volume, VolumeLevels.AMBIENT_AUDIO, delta)?.let { setVolume(scope, it) }
     }
 
     fun openFilePicker(scope: CoroutineScope) {

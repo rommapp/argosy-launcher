@@ -119,9 +119,7 @@ class StorageSettingsDelegate @Inject constructor(
     fun cycleInstantDownloadThreshold(scope: CoroutineScope) {
         scope.launch {
             val thresholds = listOf(50, 100, 250, 500)
-            val current = _state.value.instantDownloadThresholdMb
-            val currentIndex = thresholds.indexOf(current).coerceAtLeast(0)
-            val next = thresholds[(currentIndex + 1).mod(thresholds.size)]
+            val next = cycleInList(_state.value.instantDownloadThresholdMb, thresholds)
             preferencesRepository.setInstantDownloadThresholdMb(next)
             _state.update { it.copy(instantDownloadThresholdMb = next) }
         }
@@ -600,9 +598,7 @@ class StorageSettingsDelegate @Inject constructor(
     fun cycleScreenDimmerLevel(scope: CoroutineScope) {
         scope.launch {
             val levels = listOf(40, 50, 60, 70)
-            val current = _state.value.screenDimmerLevel
-            val currentIndex = levels.indexOf(current).coerceAtLeast(0)
-            val next = levels[(currentIndex + 1).mod(levels.size)]
+            val next = cycleInList(_state.value.screenDimmerLevel, levels)
             preferencesRepository.setScreenDimmerLevel(next)
             _state.update { it.copy(screenDimmerLevel = next) }
         }

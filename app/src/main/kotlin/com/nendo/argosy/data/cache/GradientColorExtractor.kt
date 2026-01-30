@@ -121,79 +121,115 @@ class GradientColorExtractor @Inject constructor() {
     ): GradientExtractionResult {
         val startTime = System.nanoTime()
 
-        val samplesX = config.samplesX
-        val samplesY = config.samplesY
-        val radius = config.radius
-        val minValue = config.minValue
-        val minHueDistance = config.minHueDistance
-        val saturationBump = config.saturationBump
-        val valueClamp = config.valueClamp
+        val sampleData = sampleBitmapColors(bitmap, config)
+        val effectiveThreshold = calculateEffectiveThreshold(sampleData, config)
+        val familyData = groupIntoFamilies(sampleData, effectiveThreshold)
+        val primaryColor = selectPrimaryColor(familyData, config)
+        val secondaryColor = selectSecondaryColor(familyData, primaryColor, config)
 
-        val colorFamilies = 36
-        val colorResolution = 360 / colorFamilies
+        return GradientExtractionResult(
+            primary = primaryColor,
+            secondary = secondaryColor,
+            extractionTimeMs = (System.nanoTime() - startTime) / 1_000_000,
+            sampleCount = config.samplesX * config.samplesY,
+            colorFamiliesUsed = familyData.familiesUsed,
+            effectiveSaturationThreshold = effectiveThreshold
+        )
+    }
+
+    private fun sampleBitmapColors(
+        bitmap: Bitmap,
+        config: GradientExtractionConfig
+    ): List<SamplePoint> {
         val hsv = FloatArray(3)
-
+        val colorResolution = 360 / COLOR_FAMILIES
         val sampleData = mutableListOf<SamplePoint>()
-        for (iy in 1..samplesY) {
-            for (ix in 1..samplesX) {
-                val centerX = (bitmap.width * ix / (samplesX + 1))
-                val centerY = (bitmap.height * iy / (samplesY + 1))
 
-                var red = 0L
-                var green = 0L
-                var blue = 0L
-                var count = 0
-                for (dy in -radius..radius) {
-                    for (dx in -radius..radius) {
-                        val x = (centerX + dx).coerceIn(0, bitmap.width - 1)
-                        val y = (centerY + dy).coerceIn(0, bitmap.height - 1)
-                        val pixel = bitmap.getPixel(x, y)
-                        red += AndroidColor.red(pixel)
-                        green += AndroidColor.green(pixel)
-                        blue += AndroidColor.blue(pixel)
-                        count++
-                    }
-                }
+        for (iy in 1..config.samplesY) {
+            for (ix in 1..config.samplesX) {
+                val centerX = bitmap.width * ix / (config.samplesX + 1)
+                val centerY = bitmap.height * iy / (config.samplesY + 1)
+                val color = averagePixelRegion(bitmap, centerX, centerY, config.radius)
 
-                if (count > 0) {
-                    val color = AndroidColor.rgb(
-                        (red / count).toInt(),
-                        (green / count).toInt(),
-                        (blue / count).toInt()
-                    )
-                    AndroidColor.colorToHSV(color, hsv)
-
-                    if (hsv[2] >= minValue) {
-                        sampleData.add(SamplePoint(
-                            color = color,
-                            hue = hsv[0],
-                            saturation = hsv[1],
-                            family = (hsv[0].toInt() % 360) / colorResolution
-                        ))
-                    }
+                AndroidColor.colorToHSV(color, hsv)
+                if (hsv[2] >= config.minValue) {
+                    sampleData.add(SamplePoint(
+                        color = color,
+                        hue = hsv[0],
+                        saturation = hsv[1],
+                        family = (hsv[0].toInt() % 360) / colorResolution
+                    ))
                 }
             }
         }
+        return sampleData
+    }
 
-        var effectiveThreshold = config.minSaturation
-        if (config.safeLimits && sampleData.isNotEmpty()) {
-            val minThreshold = 0.15f
-            val targetQualifyRate = 0.15f
+    private fun averagePixelRegion(bitmap: Bitmap, centerX: Int, centerY: Int, radius: Int): Int {
+        var red = 0L
+        var green = 0L
+        var blue = 0L
+        var count = 0
 
-            while (effectiveThreshold > minThreshold) {
-                val qualifyingCount = sampleData.count { it.saturation >= effectiveThreshold }
-                val qualifyRate = qualifyingCount.toFloat() / sampleData.size
-                if (qualifyRate >= targetQualifyRate) break
-                effectiveThreshold -= 0.05f
+        for (dy in -radius..radius) {
+            for (dx in -radius..radius) {
+                val x = (centerX + dx).coerceIn(0, bitmap.width - 1)
+                val y = (centerY + dy).coerceIn(0, bitmap.height - 1)
+                val pixel = bitmap.getPixel(x, y)
+                red += AndroidColor.red(pixel)
+                green += AndroidColor.green(pixel)
+                blue += AndroidColor.blue(pixel)
+                count++
             }
-            effectiveThreshold = effectiveThreshold.coerceAtLeast(minThreshold)
         }
+        return if (count > 0) {
+            AndroidColor.rgb((red / count).toInt(), (green / count).toInt(), (blue / count).toInt())
+        } else {
+            AndroidColor.BLACK
+        }
+    }
 
-        val chosenCounts = IntArray(colorFamilies)
-        val colors = Array(colorFamilies) { mutableListOf<Long>() }
+    private fun calculateEffectiveThreshold(
+        samples: List<SamplePoint>,
+        config: GradientExtractionConfig
+    ): Float {
+        if (!config.safeLimits || samples.isEmpty()) return config.minSaturation
 
-        for (sample in sampleData) {
-            val chosen = sample.saturation >= effectiveThreshold
+        val minThreshold = 0.15f
+        val targetQualifyRate = 0.15f
+        var threshold = config.minSaturation
+
+        while (threshold > minThreshold) {
+            val qualifyRate = samples.count { it.saturation >= threshold }.toFloat() / samples.size
+            if (qualifyRate >= targetQualifyRate) break
+            threshold -= 0.05f
+        }
+        return threshold.coerceAtLeast(minThreshold)
+    }
+
+    private data class FamilyData(
+        val sortedIndices: List<Int>,
+        val colors: Array<MutableList<Long>>,
+        val chosenCounts: IntArray,
+        val hasSaturated: Boolean,
+        val familiesUsed: Int
+    ) {
+        fun unpackColors(idx: Int): List<Int> {
+            val bucket = colors[idx]
+            return if (hasSaturated) {
+                bucket.filter { (it shr 32) == 1L }.map { it.toInt() }
+            } else {
+                bucket.map { it.toInt() }
+            }
+        }
+    }
+
+    private fun groupIntoFamilies(samples: List<SamplePoint>, threshold: Float): FamilyData {
+        val chosenCounts = IntArray(COLOR_FAMILIES)
+        val colors = Array(COLOR_FAMILIES) { mutableListOf<Long>() }
+
+        for (sample in samples) {
+            val chosen = sample.saturation >= threshold
             val packed = (sample.color.toLong() and 0xFFFFFFFFL) or (if (chosen) 1L shl 32 else 0L)
             colors[sample.family].add(packed)
             if (chosen) chosenCounts[sample.family]++
@@ -204,55 +240,53 @@ class GradientColorExtractor @Inject constructor() {
             if (hasSaturated) chosenCounts[i] else colors[i].size
         }
 
-        fun unpackColors(idx: Int): List<Int> {
-            val bucket = colors[idx]
-            return if (hasSaturated) {
-                bucket.filter { (it shr 32) == 1L }.map { it.toInt() }
-            } else {
-                bucket.map { it.toInt() }
+        return FamilyData(
+            sortedIndices = sortedIndices,
+            colors = colors,
+            chosenCounts = chosenCounts,
+            hasSaturated = hasSaturated,
+            familiesUsed = colors.count { it.isNotEmpty() }
+        )
+    }
+
+    private fun selectPrimaryColor(familyData: FamilyData, config: GradientExtractionConfig): Color {
+        val primaryFamily = familyData.sortedIndices.firstOrNull() ?: 0
+        val primaryColorRaw = averageColorGroup(familyData.unpackColors(primaryFamily))
+        return adjustColorHsv(primaryColorRaw, config.saturationBump, config.valueClamp)
+    }
+
+    private fun selectSecondaryColor(
+        familyData: FamilyData,
+        primaryColor: Color,
+        config: GradientExtractionConfig
+    ): Color {
+        val colorResolution = 360 / COLOR_FAMILIES
+        val primaryFamily = familyData.sortedIndices.firstOrNull() ?: 0
+
+        for (i in 1 until familyData.sortedIndices.size) {
+            val currentFamily = familyData.sortedIndices[i]
+            if (familyData.colors[currentFamily].isEmpty()) continue
+
+            val diff = kotlin.math.abs(currentFamily - primaryFamily)
+            val distance = kotlin.math.min(diff, COLOR_FAMILIES - diff) * colorResolution
+            if (distance >= config.minHueDistance) {
+                val secondaryColorRaw = averageColorGroup(familyData.unpackColors(currentFamily))
+                return adjustColorHsv(secondaryColorRaw, config.saturationBump, config.valueClamp)
             }
         }
+        return getComplementaryColor(primaryColor)
+    }
 
-        val primaryFamily = if (sortedIndices.isNotEmpty()) sortedIndices[0] else 0
-        val primaryColorRaw = averageColorGroup(unpackColors(primaryFamily))
-        AndroidColor.colorToHSV(primaryColorRaw.toArgb(), hsv)
+    private fun adjustColorHsv(color: Color, saturationBump: Float, valueClamp: Float): Color {
+        val hsv = FloatArray(3)
+        AndroidColor.colorToHSV(color.toArgb(), hsv)
         hsv[1] = (hsv[1] + saturationBump).coerceIn(0f, 1f)
         hsv[2] = hsv[2].coerceIn(valueClamp, 1f)
-        val primaryColor = Color(AndroidColor.HSVToColor(hsv))
+        return Color(AndroidColor.HSVToColor(hsv))
+    }
 
-        var secondaryFamily = -1
-        for (i in 1 until sortedIndices.size) {
-            val currentFamily = sortedIndices[i]
-            if (colors[currentFamily].isEmpty()) continue
-            val diff = kotlin.math.abs(currentFamily - primaryFamily)
-            val distance = kotlin.math.min(diff, colorFamilies - diff) * colorResolution
-            if (distance >= minHueDistance) {
-                secondaryFamily = currentFamily
-                break
-            }
-        }
-
-        val secondaryColor = if (secondaryFamily != -1) {
-            val secondaryColorRaw = averageColorGroup(unpackColors(secondaryFamily))
-            AndroidColor.colorToHSV(secondaryColorRaw.toArgb(), hsv)
-            hsv[1] = (hsv[1] + saturationBump).coerceIn(0f, 1f)
-            hsv[2] = hsv[2].coerceIn(valueClamp, 1f)
-            Color(AndroidColor.HSVToColor(hsv))
-        } else {
-            getComplementaryColor(primaryColor)
-        }
-
-        val elapsedMs = (System.nanoTime() - startTime) / 1_000_000
-        val familiesUsed = colors.count { it.isNotEmpty() }
-
-        return GradientExtractionResult(
-            primary = primaryColor,
-            secondary = secondaryColor,
-            extractionTimeMs = elapsedMs,
-            sampleCount = samplesX * samplesY,
-            colorFamiliesUsed = familiesUsed,
-            effectiveSaturationThreshold = effectiveThreshold
-        )
+    companion object {
+        private const val COLOR_FAMILIES = 36
     }
 
     private data class SamplePoint(

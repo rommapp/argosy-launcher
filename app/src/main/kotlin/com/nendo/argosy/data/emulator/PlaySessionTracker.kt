@@ -151,135 +151,152 @@ class PlaySessionTracker @Inject constructor(
         }
         _activeSession.value = null
 
+        val finalScreenOnDuration = calculateFinalScreenOnDuration()
+        val sessionDuration = Duration.between(session.startTime, Instant.now())
+
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulator=${session.emulatorPackage}")
+
+        scope.launch {
+            recordPlayTime(session, finalScreenOnDuration)
+            markGameIncompleteIfNeeded(session, sessionDuration)
+            syncAndCacheSave(session)
+        }
+
+        scope.launch {
+            syncStateData(session)
+        }
+    }
+
+    private fun calculateFinalScreenOnDuration(): Duration {
         val elapsedSinceScreenOn = if (isScreenOn && lastScreenOnTime != null) {
             Duration.between(lastScreenOnTime, Instant.now())
         } else {
             Duration.ZERO
         }
         screenOnDuration = screenOnDuration.plus(elapsedSinceScreenOn)
+        return screenOnDuration
+    }
 
-        val sessionDuration = Duration.between(session.startTime, Instant.now())
-        val finalScreenOnDuration = screenOnDuration
+    private suspend fun recordPlayTime(session: ActiveSession, screenOnDuration: Duration) {
+        val prefs = preferencesRepository.userPreferences.first()
+        val hasPermission = permissionHelper.hasUsageStatsPermission(application)
+        val canTrackAccurately = prefs.accuratePlayTimeEnabled && hasPermission
 
-        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulator=${session.emulatorPackage}")
+        Logger.debug(TAG, "Time tracking check: enabled=${prefs.accuratePlayTimeEnabled}, hasPermission=$hasPermission, canTrack=$canTrackAccurately")
 
-        scope.launch {
-            val prefs = preferencesRepository.userPreferences.first()
-            val hasPermission = permissionHelper.hasUsageStatsPermission(application)
-            val canTrackAccurately = prefs.accuratePlayTimeEnabled && hasPermission
-
-            Logger.debug(TAG, "Time tracking check: enabled=${prefs.accuratePlayTimeEnabled}, hasPermission=$hasPermission, canTrack=$canTrackAccurately")
-
-            if (canTrackAccurately) {
-                val seconds = finalScreenOnDuration.toMillis() / 1000
-                val minutes = ((seconds + 30) / 60).toInt()
-                if (minutes > 0) {
-                    gameDao.addPlayTime(session.gameId, minutes)
-                    val updatedGame = gameDao.getById(session.gameId)
-                    updatedGame?.let {
-                        gameUpdateBus.emit(GameUpdateBus.GameUpdate(
-                            gameId = session.gameId,
-                            playTimeMinutes = it.playTimeMinutes
-                        ))
-                    }
-                    Logger.debug(TAG, "Added $minutes minutes of active play time for game ${session.gameId} (${seconds}s)")
-                } else {
-                    Logger.debug(TAG, "Session too short to record: ${seconds}s")
-                }
-            } else {
-                Logger.debug(TAG, "Skipping play time recording - accurate tracking not enabled or permission missing")
-            }
-
-            if (sessionDuration.seconds >= MIN_PLAY_SECONDS_FOR_COMPLETION) {
-                val game = gameDao.getById(session.gameId)
-                if (game?.rommId != null && game.status == null) {
-                    romMRepository.get().updateUserStatus(session.gameId, "incomplete")
-                    gameUpdateBus.emit(GameUpdateBus.GameUpdate(
-                        gameId = session.gameId,
-                        status = "incomplete"
-                    ))
-                    Logger.debug(TAG, "Marked game ${session.gameId} as Incomplete after ${sessionDuration.seconds}s session")
-                }
-            }
-
-            val syncGame = gameDao.getById(session.gameId)
-            val result = syncSaveOnSessionEndUseCase.get()(
-                session.gameId,
-                session.emulatorPackage,
-                session.startTime.toEpochMilli(),
-                session.coreName,
-                session.isHardcore
-            )
-
-            cacheCurrentSave(session)
-            when (result) {
-                is SyncSaveOnSessionEndUseCase.Result.Conflict -> {
-                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: CONFLICT | local=${result.localTimestamp}, server=${result.serverTimestamp}")
-                    _conflictEvents.emit(
-                        SaveConflictEvent(
-                            gameId = result.gameId,
-                            emulatorId = result.emulatorId,
-                            localTimestamp = result.localTimestamp,
-                            serverTimestamp = result.serverTimestamp
-                        )
-                    )
-                }
-                is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
-                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: UPLOADED")
-                    notificationManager.show(
-                        title = "Save Uploaded",
-                        subtitle = syncGame?.title,
-                        type = NotificationType.SUCCESS,
-                        imagePath = syncGame?.coverPath,
-                        duration = NotificationDuration.MEDIUM,
-                        key = "sync-${session.gameId}",
-                        immediate = true
-                    )
-                }
-                is SyncSaveOnSessionEndUseCase.Result.Queued -> {
-                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: QUEUED")
-                }
-                is SyncSaveOnSessionEndUseCase.Result.NoSaveFound -> {
-                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NO_SAVE_FOUND")
-                }
-                is SyncSaveOnSessionEndUseCase.Result.NotConfigured -> {
-                    Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NOT_CONFIGURED")
-                }
-                is SyncSaveOnSessionEndUseCase.Result.Error -> {
-                    Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: ERROR | ${result.message}")
-                    notificationManager.show(
-                        title = "Upload Failed",
-                        subtitle = "${syncGame?.title ?: "Save"}: ${result.message}",
-                        type = NotificationType.ERROR,
-                        imagePath = syncGame?.coverPath,
-                        duration = NotificationDuration.MEDIUM,
-                        key = "sync-${session.gameId}",
-                        immediate = true
-                    )
-                }
-            }
-
+        if (!canTrackAccurately) {
+            Logger.debug(TAG, "Skipping play time recording - accurate tracking not enabled or permission missing")
+            return
         }
 
-        scope.launch {
-            val stateResult = syncStatesOnSessionEndUseCase.get()(
-                session.gameId,
-                session.emulatorPackage
-            )
-            when (stateResult) {
-                is StateSyncResult.Cached -> {
-                    Logger.debug(TAG, "Cached ${stateResult.count} states for game ${session.gameId}")
-                }
-                is StateSyncResult.NoStatesFound -> {
-                    Logger.debug(TAG, "No states found for game ${session.gameId}")
-                }
-                is StateSyncResult.NotConfigured -> {
-                    Logger.debug(TAG, "State caching not configured for game ${session.gameId}")
-                }
-                is StateSyncResult.Error -> {
-                    Logger.error(TAG, "State sync error: ${stateResult.message}")
-                }
+        val seconds = screenOnDuration.toMillis() / 1000
+        val minutes = ((seconds + 30) / 60).toInt()
+        if (minutes <= 0) {
+            Logger.debug(TAG, "Session too short to record: ${seconds}s")
+            return
+        }
+
+        gameDao.addPlayTime(session.gameId, minutes)
+        gameDao.getById(session.gameId)?.let { updatedGame ->
+            gameUpdateBus.emit(GameUpdateBus.GameUpdate(
+                gameId = session.gameId,
+                playTimeMinutes = updatedGame.playTimeMinutes
+            ))
+        }
+        Logger.debug(TAG, "Added $minutes minutes of active play time for game ${session.gameId} (${seconds}s)")
+    }
+
+    private suspend fun markGameIncompleteIfNeeded(session: ActiveSession, sessionDuration: Duration) {
+        if (sessionDuration.seconds < MIN_PLAY_SECONDS_FOR_COMPLETION) return
+
+        val game = gameDao.getById(session.gameId) ?: return
+        if (game.rommId == null || game.status != null) return
+
+        romMRepository.get().updateUserStatus(session.gameId, "incomplete")
+        gameUpdateBus.emit(GameUpdateBus.GameUpdate(
+            gameId = session.gameId,
+            status = "incomplete"
+        ))
+        Logger.debug(TAG, "Marked game ${session.gameId} as Incomplete after ${sessionDuration.seconds}s session")
+    }
+
+    private suspend fun syncAndCacheSave(session: ActiveSession) {
+        val game = gameDao.getById(session.gameId)
+        val result = syncSaveOnSessionEndUseCase.get()(
+            session.gameId,
+            session.emulatorPackage,
+            session.startTime.toEpochMilli(),
+            session.coreName,
+            session.isHardcore
+        )
+
+        cacheCurrentSave(session)
+        handleSaveSyncResult(session, game, result)
+    }
+
+    private suspend fun handleSaveSyncResult(
+        session: ActiveSession,
+        game: com.nendo.argosy.data.local.entity.GameEntity?,
+        result: SyncSaveOnSessionEndUseCase.Result
+    ) {
+        when (result) {
+            is SyncSaveOnSessionEndUseCase.Result.Conflict -> {
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: CONFLICT | local=${result.localTimestamp}, server=${result.serverTimestamp}")
+                _conflictEvents.emit(
+                    SaveConflictEvent(
+                        gameId = result.gameId,
+                        emulatorId = result.emulatorId,
+                        localTimestamp = result.localTimestamp,
+                        serverTimestamp = result.serverTimestamp
+                    )
+                )
             }
+            is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: UPLOADED")
+                notificationManager.show(
+                    title = "Save Uploaded",
+                    subtitle = game?.title,
+                    type = NotificationType.SUCCESS,
+                    imagePath = game?.coverPath,
+                    duration = NotificationDuration.MEDIUM,
+                    key = "sync-${session.gameId}",
+                    immediate = true
+                )
+            }
+            is SyncSaveOnSessionEndUseCase.Result.Queued -> {
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: QUEUED")
+            }
+            is SyncSaveOnSessionEndUseCase.Result.NoSaveFound -> {
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NO_SAVE_FOUND")
+            }
+            is SyncSaveOnSessionEndUseCase.Result.NotConfigured -> {
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NOT_CONFIGURED")
+            }
+            is SyncSaveOnSessionEndUseCase.Result.Error -> {
+                Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: ERROR | ${result.message}")
+                notificationManager.show(
+                    title = "Upload Failed",
+                    subtitle = "${game?.title ?: "Save"}: ${result.message}",
+                    type = NotificationType.ERROR,
+                    imagePath = game?.coverPath,
+                    duration = NotificationDuration.MEDIUM,
+                    key = "sync-${session.gameId}",
+                    immediate = true
+                )
+            }
+        }
+    }
+
+    private suspend fun syncStateData(session: ActiveSession) {
+        val result = syncStatesOnSessionEndUseCase.get()(
+            session.gameId,
+            session.emulatorPackage
+        )
+        when (result) {
+            is StateSyncResult.Cached -> Logger.debug(TAG, "Cached ${result.count} states for game ${session.gameId}")
+            is StateSyncResult.NoStatesFound -> Logger.debug(TAG, "No states found for game ${session.gameId}")
+            is StateSyncResult.NotConfigured -> Logger.debug(TAG, "State caching not configured for game ${session.gameId}")
+            is StateSyncResult.Error -> Logger.error(TAG, "State sync error: ${result.message}")
         }
     }
 

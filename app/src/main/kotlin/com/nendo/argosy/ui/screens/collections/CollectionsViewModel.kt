@@ -3,17 +3,15 @@ package com.nendo.argosy.ui.screens.collections
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.util.Log
+import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.domain.usecase.collection.CategoryWithCount
 import com.nendo.argosy.domain.usecase.collection.CollectionWithCount
-import com.nendo.argosy.domain.usecase.collection.CreateCollectionUseCase
-import com.nendo.argosy.domain.usecase.collection.DeleteCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.GetCollectionsUseCase
 import com.nendo.argosy.domain.usecase.collection.GetVirtualCollectionCategoriesUseCase
 import com.nendo.argosy.domain.usecase.collection.IsPinnedUseCase
 import com.nendo.argosy.domain.usecase.collection.PinCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.RefreshAllCollectionsUseCase
 import com.nendo.argosy.domain.usecase.collection.UnpinCollectionUseCase
-import com.nendo.argosy.domain.usecase.collection.UpdateCollectionUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -84,9 +82,7 @@ private data class DialogState(
 class CollectionsViewModel @Inject constructor(
     private val getCollectionsUseCase: GetCollectionsUseCase,
     private val getVirtualCollectionCategoriesUseCase: GetVirtualCollectionCategoriesUseCase,
-    private val createCollectionUseCase: CreateCollectionUseCase,
-    private val updateCollectionUseCase: UpdateCollectionUseCase,
-    private val deleteCollectionUseCase: DeleteCollectionUseCase,
+    private val romMRepository: RomMRepository,
     private val refreshAllCollectionsUseCase: RefreshAllCollectionsUseCase,
     private val isPinnedUseCase: IsPinnedUseCase,
     private val pinCollectionUseCase: PinCollectionUseCase,
@@ -298,14 +294,14 @@ class CollectionsViewModel @Inject constructor(
 
     fun createCollection(name: String) {
         viewModelScope.launch {
-            createCollectionUseCase(name)
+            romMRepository.createCollectionWithSync(name)
             hideCreateDialog()
         }
     }
 
     fun updateCollection(collectionId: Long, name: String) {
         viewModelScope.launch {
-            updateCollectionUseCase(collectionId, name)
+            romMRepository.updateCollectionWithSync(collectionId, name, null)
             hideCreateDialog()
             _editingCollection.value = null
         }
@@ -313,7 +309,7 @@ class CollectionsViewModel @Inject constructor(
 
     fun deleteCollection(collectionId: Long) {
         viewModelScope.launch {
-            deleteCollectionUseCase(collectionId)
+            romMRepository.deleteCollectionWithSync(collectionId)
             hideDeleteDialog()
         }
     }

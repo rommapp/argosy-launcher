@@ -2,8 +2,8 @@ package com.nendo.argosy.data.download
 
 import android.util.Log
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
+import org.apache.commons.compress.archivers.zip.ZipFile
 import java.io.File
-import java.util.zip.ZipFile
 
 private const val TAG = "ZipExtractor"
 
@@ -173,14 +173,10 @@ object ZipExtractor {
         }
     }
 
-    @Deprecated("Use validateArchive instead", ReplaceWith("validateArchive(file, expectedSize)"))
-    fun validateZip(file: File, expectedSize: Long = 0): ArchiveValidationResult =
-        validateArchive(file, expectedSize)
-
     private fun validateZipInternal(file: File): ArchiveValidationResult {
         return try {
-            ZipFile(file).use { zip ->
-                val entries = zip.entries()
+            ZipFile.builder().setFile(file).get().use { zip ->
+                val entries = zip.entries
                 var entryCount = 0
                 while (entries.hasMoreElements()) {
                     val entry = entries.nextElement()
@@ -241,13 +237,10 @@ object ZipExtractor {
         }
     }
 
-    @Deprecated("Use shouldExtractArchive instead", ReplaceWith("shouldExtractArchive(zipFile, null)"))
-    fun shouldExtractZip(zipFile: File): Boolean = shouldExtractArchive(zipFile, null)
-
     private fun shouldExtractZipInternal(zipFile: File): Boolean {
         return try {
-            ZipFile(zipFile).use { zip ->
-                val entries = zip.entries().toList().filter { !it.isDirectory }
+            ZipFile.builder().setFile(zipFile).get().use { zip ->
+                val entries = zip.entries.toList().filter { !it.isDirectory }
                 val hasMultipleFiles = entries.size > 1
                 val hasFolderStructure = entries.any { it.name.contains("/") || it.name.contains("\\") }
                 hasMultipleFiles || hasFolderStructure
@@ -518,8 +511,8 @@ object ZipExtractor {
         var primaryFile: File? = null
         var existingM3u: File? = null
 
-        ZipFile(zipFile).use { zip ->
-            val entries = zip.entries().toList().filter { !it.isDirectory }
+        ZipFile.builder().setFile(zipFile).get().use { zip ->
+            val entries = zip.entries.toList().filter { !it.isDirectory }
             val totalBytes = entries.sumOf { it.size }
             var bytesWritten = 0L
             var lastReportedBytes = 0L

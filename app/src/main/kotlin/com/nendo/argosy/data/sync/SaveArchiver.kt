@@ -13,9 +13,10 @@ import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
+import org.apache.commons.compress.archivers.zip.Zip64Mode
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -185,7 +186,8 @@ class SaveArchiver @Inject constructor(
 
         return try {
             targetZip.parentFile?.mkdirs()
-            ZipOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
+            ZipArchiveOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
+                zos.setUseZip64(Zip64Mode.AsNeeded)
                 zipFolderRecursive(sourceFolder, sourceFolder.name, zos)
             }
             val ratio = if (totalSize > 0) (targetZip.length() * 100 / totalSize) else 100
@@ -198,18 +200,18 @@ class SaveArchiver @Inject constructor(
         }
     }
 
-    private fun zipFolderRecursive(folder: File, parentPath: String, zos: ZipOutputStream) {
+    private fun zipFolderRecursive(folder: File, parentPath: String, zos: ZipArchiveOutputStream) {
         val files = folder.listFiles() ?: return
 
         for (file in files) {
             val entryPath = "$parentPath/${file.name}"
 
             if (file.isDirectory) {
-                zos.putNextEntry(ZipEntry("$entryPath/"))
-                zos.closeEntry()
+                zos.putArchiveEntry(ZipArchiveEntry("$entryPath/"))
+                zos.closeArchiveEntry()
                 zipFolderRecursive(file, entryPath, zos)
             } else {
-                zos.putNextEntry(ZipEntry(entryPath))
+                zos.putArchiveEntry(ZipArchiveEntry(entryPath))
                 BufferedInputStream(FileInputStream(file), BUFFER_SIZE).use { bis ->
                     val buffer = ByteArray(BUFFER_SIZE)
                     var count: Int
@@ -217,7 +219,7 @@ class SaveArchiver @Inject constructor(
                         zos.write(buffer, 0, count)
                     }
                 }
-                zos.closeEntry()
+                zos.closeArchiveEntry()
             }
         }
     }
@@ -230,8 +232,8 @@ class SaveArchiver @Inject constructor(
 
         return try {
             targetFolder.mkdirs()
-            ZipInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
-                var entry: ZipEntry?
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
+                var entry: ZipArchiveEntry?
                 val buffer = ByteArray(BUFFER_SIZE)
 
                 while (zis.nextEntry.also { entry = it } != null) {
@@ -253,7 +255,6 @@ class SaveArchiver @Inject constructor(
                             }
                         }
                     }
-                    zis.closeEntry()
                 }
             }
             Logger.debug(TAG, "Successfully unzipped ${sourceZip.absolutePath} to ${targetFolder.absolutePath}")
@@ -271,7 +272,7 @@ class SaveArchiver @Inject constructor(
         }
 
         return try {
-            ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
                 val firstEntry = zis.nextEntry ?: return null
                 val entryName = firstEntry.name
                 val rootFolder = entryName.substringBefore('/').takeIf {
@@ -300,8 +301,8 @@ class SaveArchiver @Inject constructor(
             createDirectoryForPath(targetPath)
             var fileCount = 0
             var totalSize = 0L
-            ZipInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
-                var entry: ZipEntry?
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
+                var entry: ZipArchiveEntry?
                 val buffer = ByteArray(BUFFER_SIZE)
                 var rootFolder: String? = null
 
@@ -321,7 +322,6 @@ class SaveArchiver @Inject constructor(
                     }
 
                     if (relativePath.isEmpty()) {
-                        zis.closeEntry()
                         continue
                     }
 
@@ -357,7 +357,6 @@ class SaveArchiver @Inject constructor(
                         }
                         fileCount++
                     }
-                    zis.closeEntry()
                 }
                 Logger.debug(TAG, "[SaveSync] ARCHIVE | Detected root folder | rootFolder=$rootFolder")
             }
@@ -373,13 +372,12 @@ class SaveArchiver @Inject constructor(
         if (!zipFile.exists() || !zipFile.isFile) return false
 
         return try {
-            ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
-                var entry: ZipEntry?
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+                var entry: ZipArchiveEntry?
                 while (zis.nextEntry.also { entry = it } != null) {
                     if (entry!!.name == JKSV_META_FILE) {
                         return@use true
                     }
-                    zis.closeEntry()
                 }
                 false
             }
@@ -393,15 +391,13 @@ class SaveArchiver @Inject constructor(
         if (!zipFile.exists() || !zipFile.isFile) return null
 
         return try {
-            ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
-                var entry: ZipEntry?
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+                var entry: ZipArchiveEntry?
                 while (zis.nextEntry.also { entry = it } != null) {
                     if (entry!!.name == JKSV_META_FILE) {
                         val metaBytes = zis.readBytes()
-                        zis.closeEntry()
                         return@use parseTitleIdFromMeta(metaBytes)
                     }
-                    zis.closeEntry()
                 }
                 null
             }
@@ -459,8 +455,8 @@ class SaveArchiver @Inject constructor(
             var fileCount = 0
             var totalSize = 0L
             var skippedCount = 0
-            ZipInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
-                var entry: ZipEntry?
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
+                var entry: ZipArchiveEntry?
                 val buffer = ByteArray(BUFFER_SIZE)
                 var rootFolder: String? = null
 
@@ -480,7 +476,6 @@ class SaveArchiver @Inject constructor(
                     }
 
                     if (relativePath.isEmpty()) {
-                        zis.closeEntry()
                         continue
                     }
 
@@ -488,7 +483,6 @@ class SaveArchiver @Inject constructor(
                     if (excludeFiles.contains(fileName)) {
                         Logger.debug(TAG, "[SaveSync] ARCHIVE | Skipping excluded file | entry=$entryName")
                         skippedCount++
-                        zis.closeEntry()
                         continue
                     }
 
@@ -524,7 +518,6 @@ class SaveArchiver @Inject constructor(
                         }
                         fileCount++
                     }
-                    zis.closeEntry()
                 }
             }
             Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip complete | files=$fileCount, skipped=$skippedCount, size=${totalSize}bytes")
@@ -554,8 +547,8 @@ class SaveArchiver @Inject constructor(
             var fileCount = 0
             var totalSize = 0L
             var skippedCount = 0
-            ZipInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
-                var entry: ZipEntry?
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
+                var entry: ZipArchiveEntry?
                 val buffer = ByteArray(BUFFER_SIZE)
 
                 while (zis.nextEntry.also { entry = it } != null) {
@@ -565,7 +558,6 @@ class SaveArchiver @Inject constructor(
                     if (excludeFiles.contains(fileName)) {
                         Logger.debug(TAG, "[SaveSync] ARCHIVE | Skipping excluded file | entry=$entryName")
                         skippedCount++
-                        zis.closeEntry()
                         continue
                     }
 
@@ -601,7 +593,6 @@ class SaveArchiver @Inject constructor(
                         }
                         fileCount++
                     }
-                    zis.closeEntry()
                 }
             }
             Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip complete | files=$fileCount, skipped=$skippedCount, size=${totalSize}bytes")

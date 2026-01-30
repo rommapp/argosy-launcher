@@ -64,6 +64,7 @@ data class DiscPickerState(
 class GameLaunchDelegate @Inject constructor(
     private val application: Application,
     private val gameDao: GameDao,
+    private val saveCacheDao: com.nendo.argosy.data.local.dao.SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
     private val launchGameUseCase: LaunchGameUseCase,
@@ -77,6 +78,12 @@ class GameLaunchDelegate @Inject constructor(
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
+    }
+
+    private suspend fun isActiveSaveHardcore(gameId: Long): Boolean {
+        val activeChannel = gameDao.getActiveSaveChannel(gameId) ?: return false
+        val save = saveCacheDao.getMostRecentInChannel(gameId, activeChannel)
+        return save?.isHardcore == true
     }
 
     private val _syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)
@@ -231,8 +238,9 @@ class GameLaunchDelegate @Inject constructor(
 
                 _syncOverlayState.value = null
 
-                val launchMode = when (hardcoreConflictChoice) {
-                    HardcoreConflictChoice.KEEP_HARDCORE -> LaunchMode.RESUME_HARDCORE
+                val launchMode = when {
+                    hardcoreConflictChoice == HardcoreConflictChoice.KEEP_HARDCORE -> LaunchMode.RESUME_HARDCORE
+                    isActiveSaveHardcore(gameId) -> LaunchMode.RESUME_HARDCORE
                     else -> null
                 }
 

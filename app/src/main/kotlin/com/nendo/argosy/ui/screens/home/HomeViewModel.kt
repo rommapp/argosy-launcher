@@ -46,6 +46,9 @@ import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.DiscPickerState
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
+import com.nendo.argosy.ui.screens.common.GameGradientRequest
+import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
+import com.nendo.argosy.ui.screens.common.RefreshAndroidResult
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
@@ -356,7 +359,7 @@ class HomeViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val playStoreService: com.nendo.argosy.data.remote.playstore.PlayStoreService,
     private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
-    private val gradientColorExtractor: com.nendo.argosy.data.cache.GradientColorExtractor,
+    private val gradientExtractionDelegate: GradientExtractionDelegate,
     private val ambientLedManager: AmbientLedManager,
     private val ambientAudioManager: AmbientAudioManager
 ) : ViewModel() {
@@ -376,13 +379,7 @@ class HomeViewModel @Inject constructor(
     private val recentGamesCache = AtomicReference(RecentGamesCache(null, 0L))
     private val _pinnedGamesLoading = MutableStateFlow<Set<Long>>(emptySet())
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
-    private var currentGradientPreset: GradientPreset = GradientPreset.BALANCED
     private var currentBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID
-    private var gradientExtractionJob: Job? = null
-    private val extractedGradients = mutableMapOf<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>()
-    private val pendingExtractions = mutableSetOf<Long>()
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private val extractionDispatcher = Dispatchers.IO.limitedParallelism(2)
 
     init {
         modalResetSignal.signal.onEach {
@@ -399,6 +396,7 @@ class HomeViewModel @Inject constructor(
         observeRecentlyPlayedChanges()
         observeFocusedGameForLed()
         observeCollectionModal()
+        observeGradientChanges()
     }
 
     private fun resetMenus() {
@@ -562,8 +560,8 @@ class HomeViewModel @Inject constructor(
     private fun observeBackgroundSettings() {
         viewModelScope.launch {
             preferencesRepository.preferences.collect { prefs ->
-                currentGradientPreset = prefs.gradientPreset
                 currentBorderStyle = prefs.boxArtBorderStyle
+                gradientExtractionDelegate.updatePreferences(prefs.gradientPreset, prefs.boxArtBorderStyle)
 
                 val wasMuted = _uiState.value.muteVideoPreview
                 val nowMuted = prefs.videoWallpaperMuted
@@ -667,63 +665,45 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun extractGradientsForVisibleGames(focusedIndex: Int) {
-        if (currentBorderStyle != BoxArtBorderStyle.GRADIENT) return
+        val state = _uiState.value
+        val games = state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game }
+        if (games.isEmpty()) return
 
-        gradientExtractionJob?.cancel()
-        gradientExtractionJob = viewModelScope.launch {
-            val state = _uiState.value
-            val games = state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game }
-            if (games.isEmpty()) return@launch
+        val requests = games.map { GameGradientRequest(it.id, it.coverPath) }
+        gradientExtractionDelegate.extractForVisibleGames(viewModelScope, requests, focusedIndex)
+    }
 
-            val buffer = 5
-            val startIndex = (focusedIndex - buffer).coerceAtLeast(0)
-            val endIndex = (focusedIndex + buffer).coerceAtMost(games.size - 1)
-
-            val gamesToExtract = games.subList(startIndex, endIndex + 1)
-                .filter { it.coverPath != null && it.gradientColors == null && !extractedGradients.containsKey(it.id) }
-
-            if (gamesToExtract.isEmpty()) return@launch
-
-            val extracted = withContext(Dispatchers.IO) {
-                gamesToExtract.mapNotNull { game ->
-                    game.coverPath?.let { path ->
-                        gradientColorExtractor.getGradientColors(path, currentGradientPreset)?.let { colors ->
-                            game.id to colors
-                        }
-                    }
-                }
+    private fun observeGradientChanges() {
+        viewModelScope.launch {
+            gradientExtractionDelegate.gradients.collect { gradients ->
+                if (gradients.isEmpty()) return@collect
+                applyExtractedGradientsToState(gradients)
             }
-
-            extracted.forEach { (id, colors) ->
-                extractedGradients[id] = colors
-            }
-
-            applyExtractedGradientsToState()
         }
     }
 
-    private fun applyExtractedGradientsToState() {
+    private fun applyExtractedGradientsToState(gradients: Map<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>) {
         _uiState.update { state ->
             state.copy(
                 recentGames = state.recentGames.map { game ->
-                    extractedGradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
+                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
                 },
                 favoriteGames = state.favoriteGames.map { game ->
-                    extractedGradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
+                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
                 },
                 recommendedGames = state.recommendedGames.map { game ->
-                    extractedGradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
+                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
                 },
                 androidGames = state.androidGames.map { game ->
-                    extractedGradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
+                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
                 },
                 steamGames = state.steamGames.map { game ->
-                    extractedGradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
+                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
                 },
                 platformItems = state.platformItems.map { item ->
                     when (item) {
                         is HomeRowItem.Game -> {
-                            val colors = extractedGradients[item.game.id]
+                            val colors = gradients[item.game.id]
                             if (colors != null) HomeRowItem.Game(item.game.copy(gradientColors = colors)) else item
                         }
                         is HomeRowItem.ViewAll -> item
@@ -731,7 +711,7 @@ class HomeViewModel @Inject constructor(
                 },
                 pinnedGames = state.pinnedGames.mapValues { (_, games) ->
                     games.map { game ->
-                        extractedGradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
+                        gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
                     }
                 }
             )
@@ -741,32 +721,13 @@ class HomeViewModel @Inject constructor(
 
     private fun updateHoverColorsForFocusedGame() {
         val focusedGame = _uiState.value.focusedGame ?: return
-        val colors = extractedGradients[focusedGame.id] ?: return
+        val colors = gradientExtractionDelegate.getGradient(focusedGame.id) ?: return
         ambientLedManager.setHoverColors(colors.first, colors.second)
     }
 
     fun extractGradientForGame(gameId: Long, coverPath: String) {
-        if (currentBorderStyle != BoxArtBorderStyle.GRADIENT) return
-        if (extractedGradients.containsKey(gameId)) return
-        if (pendingExtractions.contains(gameId)) return
-
         val isFocusedGame = _uiState.value.focusedGame?.id == gameId
-        val dispatcher = if (isFocusedGame) Dispatchers.IO else extractionDispatcher
-
-        pendingExtractions.add(gameId)
-        viewModelScope.launch(dispatcher) {
-            try {
-                val colors = gradientColorExtractor.getGradientColors(coverPath, currentGradientPreset)
-                if (colors != null) {
-                    extractedGradients[gameId] = colors
-                    withContext(Dispatchers.Main) {
-                        applyExtractedGradientsToState()
-                    }
-                }
-            } finally {
-                pendingExtractions.remove(gameId)
-            }
-        }
+        gradientExtractionDelegate.extractForGame(viewModelScope, gameId, coverPath, prioritize = isFocusedGame)
     }
 
     private fun restoreInitialState(): HomeUiState {
@@ -1648,46 +1609,16 @@ class HomeViewModel @Inject constructor(
 
     fun refreshAndroidGameData(gameId: Long) {
         viewModelScope.launch {
-            try {
-                val game = gameDao.getById(gameId)
-                val packageName = game?.packageName
-
-                when {
-                    game == null -> notificationManager.showError("Game not found")
-                    packageName == null -> notificationManager.showError("Package name not available")
-                    else -> {
-                        val details = playStoreService.getAppDetails(packageName).getOrNull()
-                        if (details != null) {
-                            val updated = game.copy(
-                                description = details.description ?: game.description,
-                                developer = details.developer ?: game.developer,
-                                genre = details.genre ?: game.genre,
-                                rating = details.ratingPercent ?: game.rating,
-                                screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
-                                    ?.joinToString(",") ?: game.screenshotPaths,
-                                backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
-                            )
-                            gameDao.update(updated)
-
-                            details.coverUrl?.let { url ->
-                                imageCacheManager.queueCoverCacheByGameId(url, gameId)
-                            }
-                            if (details.screenshotUrls.isNotEmpty()) {
-                                imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
-                            }
-
-                            notificationManager.showSuccess("Game data refreshed")
-                            refreshCurrentRowInternal()
-                        } else {
-                            notificationManager.showError("App not found on Play Store")
-                        }
-                    }
+            when (val result = gameActions.refreshAndroidGameData(gameId)) {
+                is RefreshAndroidResult.Success -> {
+                    notificationManager.showSuccess("Game data refreshed")
+                    refreshCurrentRowInternal()
                 }
-            } catch (e: Exception) {
-                notificationManager.showError("Failed to refresh: ${e.message}")
-            } finally {
-                toggleGameMenu()
+                is RefreshAndroidResult.Error -> {
+                    notificationManager.showError(result.message)
+                }
             }
+            toggleGameMenu()
         }
     }
 
@@ -1939,7 +1870,7 @@ class HomeViewModel @Inject constructor(
             platformSlug = platformSlug,
             platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
             coverPath = coverPath,
-            gradientColors = extractedGradients[id],
+            gradientColors = gradientExtractionDelegate.getGradient(id),
             backgroundPath = effectiveBackground,
             developer = developer,
             releaseYear = releaseYear,

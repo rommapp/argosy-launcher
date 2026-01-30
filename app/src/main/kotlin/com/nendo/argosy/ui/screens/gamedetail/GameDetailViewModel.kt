@@ -38,16 +38,13 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.usecase.save.CheckSaveSyncPermissionUseCase
-import kotlinx.coroutines.CompletableDeferred
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
-import com.nendo.argosy.domain.usecase.game.LaunchWithSyncUseCase
 import com.nendo.argosy.ui.common.savechannel.SaveChannelDelegate
-import kotlinx.coroutines.delay
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -93,7 +90,6 @@ class GameDetailViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val gameNavigationContext: GameNavigationContext,
     private val launchGameUseCase: LaunchGameUseCase,
-    private val launchWithSyncUseCase: LaunchWithSyncUseCase,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val romMRepository: RomMRepository,
     private val soundManager: SoundFeedbackManager,
@@ -140,24 +136,20 @@ class GameDetailViewModel @Inject constructor(
 
     private var backgroundRepairPending = false
     private var gameFilesObserverJob: kotlinx.coroutines.Job? = null
-    private var _hardcoreConflictDeferred: CompletableDeferred<SaveSyncRepository.HardcoreResolutionChoice>? = null
 
     override fun onCleared() {
         super.onCleared()
         imageCacheManager.resumeBackgroundCaching()
     }
 
-    fun onKeepHardcore() {
-        _hardcoreConflictDeferred?.complete(SaveSyncRepository.HardcoreResolutionChoice.KEEP_HARDCORE)
-    }
+    @Deprecated("Hardcore conflict is now handled by GameLaunchDelegate callbacks")
+    fun onKeepHardcore() { }
 
-    fun onDowngradeToCasual() {
-        _hardcoreConflictDeferred?.complete(SaveSyncRepository.HardcoreResolutionChoice.DOWNGRADE_TO_CASUAL)
-    }
+    @Deprecated("Hardcore conflict is now handled by GameLaunchDelegate callbacks")
+    fun onDowngradeToCasual() { }
 
-    fun onKeepLocal() {
-        _hardcoreConflictDeferred?.complete(SaveSyncRepository.HardcoreResolutionChoice.KEEP_LOCAL)
-    }
+    @Deprecated("Hardcore conflict is now handled by GameLaunchDelegate callbacks")
+    fun onKeepLocal() { }
 
     fun setHardcoreConflictFocusIndex(index: Int) {
         _uiState.update { it.copy(hardcoreConflictFocusIndex = index) }
@@ -941,7 +933,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun playGame(discId: Long? = null) {
-        if (_uiState.value.isSyncing) return
+        if (gameLaunchDelegate.isSyncing) return
 
         viewModelScope.launch {
             val currentGame = _uiState.value.game ?: return@launch
@@ -968,54 +960,7 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
 
-            val canResume = playSessionTracker.canResumeSession(currentGameId)
-            if (canResume) {
-                when (val result = launchGameUseCase(currentGameId, discId, forResume = true)) {
-                    is LaunchResult.Success -> {
-                        soundManager.play(SoundType.LAUNCH_GAME)
-                        _launchEvents.emit(LaunchEvent.Launch(result.intent))
-                    }
-                    is LaunchResult.SelectDisc -> {
-                        _uiState.update {
-                            it.copy(
-                                showDiscPicker = true,
-                                discPickerOptions = result.discs
-                            )
-                        }
-                    }
-                    is LaunchResult.NoEmulator -> {
-                        notificationManager.showError("No emulator installed for ${currentGame.platformName}")
-                    }
-                    is LaunchResult.NoRomFile -> {
-                        notificationManager.showError("ROM file not found. Download required.")
-                    }
-                    is LaunchResult.NoSteamLauncher -> {
-                        notificationManager.showError("Steam launcher not installed")
-                    }
-                    is LaunchResult.NoCore -> {
-                        notificationManager.showError("No core available for ${result.platformSlug}")
-                    }
-                    is LaunchResult.MissingDiscs -> {
-                        _uiState.update {
-                            it.copy(
-                                showMissingDiscPrompt = true,
-                                missingDiscNumbers = result.missingDiscNumbers
-                            )
-                        }
-                    }
-                    is LaunchResult.NoScummVMGameId -> {
-                        notificationManager.showError("Missing .scummvm file for ${result.gameName}")
-                    }
-                    is LaunchResult.Error -> {
-                        notificationManager.showError(result.message)
-                    }
-                    is LaunchResult.NoAndroidApp -> {
-                        notificationManager.showError("Android app not installed: ${result.packageName}")
-                    }
-                }
-                return@launch
-            }
-
+            // Check permissions before sync (GameDetail-specific modals)
             val permissionResult = checkSaveSyncPermissionUseCase()
             when (permissionResult) {
                 is CheckSaveSyncPermissionUseCase.Result.MissingStoragePermission -> {
@@ -1029,107 +974,9 @@ class GameDetailViewModel @Inject constructor(
                 else -> { /* Permission granted, continue */ }
             }
 
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, currentGame.platformId, currentGame.platformSlug)
-            val prefs = preferencesRepository.preferences.first()
-            val canSync = emulatorId != null && SavePathRegistry.canSyncWithSettings(
-                emulatorId,
-                prefs.saveSyncEnabled,
-                prefs.experimentalFolderSaveSync
-            )
-
-            val syncStartTime = if (canSync) {
-                _uiState.update {
-                    it.copy(
-                        isSyncing = true,
-                        syncProgress = SyncProgress.PreLaunch.CheckingSave(null)
-                    )
-                }
-                System.currentTimeMillis()
-            } else null
-
-            var hardcoreConflictInfo: SyncProgress.HardcoreConflict? = null
-
-            launchWithSyncUseCase.invokeWithProgress(currentGameId).collect { progress ->
-                if (canSync && progress != SyncProgress.Skipped && progress != SyncProgress.Idle) {
-                    when (progress) {
-                        is SyncProgress.HardcoreConflict -> {
-                            hardcoreConflictInfo = progress
-                            _hardcoreConflictDeferred = CompletableDeferred()
-                            _uiState.update { it.copy(isSyncing = true, syncProgress = progress) }
-                            val choice = _hardcoreConflictDeferred?.await()
-                            if (choice != null && hardcoreConflictInfo != null) {
-                                val resolution = SaveSyncResult.NeedsHardcoreResolution(
-                                    tempFilePath = hardcoreConflictInfo!!.tempFilePath,
-                                    gameId = hardcoreConflictInfo!!.gameId,
-                                    gameName = hardcoreConflictInfo!!.gameName,
-                                    emulatorId = hardcoreConflictInfo!!.emulatorId,
-                                    targetPath = hardcoreConflictInfo!!.targetPath,
-                                    isFolderBased = hardcoreConflictInfo!!.isFolderBased,
-                                    channelName = hardcoreConflictInfo!!.channelName
-                                )
-                                saveSyncRepository.resolveHardcoreConflict(resolution, choice)
-                            }
-                            _hardcoreConflictDeferred = null
-                        }
-                        else -> {
-                            _uiState.update { it.copy(isSyncing = true, syncProgress = progress) }
-                        }
-                    }
-                }
-            }
-
-            syncStartTime?.let { startTime ->
-                val elapsed = System.currentTimeMillis() - startTime
-                val minDisplayTime = 1500L
-                if (elapsed < minDisplayTime) {
-                    delay(minDisplayTime - elapsed)
-                }
-            }
-
-            _uiState.update { it.copy(isSyncing = false, syncProgress = SyncProgress.Idle) }
-
-            when (val result = launchGameUseCase(currentGameId, discId)) {
-                is LaunchResult.Success -> {
-                    soundManager.play(SoundType.LAUNCH_GAME)
-                    _launchEvents.emit(LaunchEvent.Launch(result.intent))
-                }
-                is LaunchResult.SelectDisc -> {
-                    _uiState.update {
-                        it.copy(
-                            showDiscPicker = true,
-                            discPickerOptions = result.discs
-                        )
-                    }
-                }
-                is LaunchResult.NoEmulator -> {
-                    notificationManager.showError("No emulator installed for ${currentGame.platformName}")
-                }
-                is LaunchResult.NoRomFile -> {
-                    notificationManager.showError("ROM file not found. Download required.")
-                }
-                is LaunchResult.NoSteamLauncher -> {
-                    notificationManager.showError("Steam launcher not installed")
-                }
-                is LaunchResult.NoCore -> {
-                    notificationManager.showError("No core available for ${result.platformSlug}")
-                }
-                is LaunchResult.MissingDiscs -> {
-                    _uiState.update {
-                        it.copy(
-                            showMissingDiscPrompt = true,
-                            missingDiscNumbers = result.missingDiscNumbers
-                        )
-                    }
-                }
-                is LaunchResult.NoScummVMGameId -> {
-                    notificationManager.showError("Missing .scummvm file for ${result.gameName}")
-                }
-                is LaunchResult.Error -> {
-                    notificationManager.showError(result.message)
-                }
-                is LaunchResult.NoAndroidApp -> {
-                    notificationManager.showError("Android app not installed: ${result.packageName}")
-                }
+            // Delegate handles: resume check, sync, launch, all error cases
+            gameLaunchDelegate.launchGame(viewModelScope, currentGameId, discId) { intent ->
+                viewModelScope.launch { _launchEvents.emit(LaunchEvent.Launch(intent)) }
             }
         }
     }

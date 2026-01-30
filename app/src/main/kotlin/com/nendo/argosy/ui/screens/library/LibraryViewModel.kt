@@ -11,8 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.cache.GradientColorExtractor
-import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -42,6 +40,9 @@ import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
+import com.nendo.argosy.ui.screens.common.GameGradientRequest
+import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
+import com.nendo.argosy.ui.screens.common.RefreshAndroidResult
 import com.nendo.argosy.ui.screens.common.DiscPickerState
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
@@ -49,13 +50,11 @@ import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -279,7 +278,7 @@ class LibraryViewModel @Inject constructor(
     private val syncPlatformUseCase: SyncPlatformUseCase,
     private val repairImageCacheUseCase: RepairImageCacheUseCase,
     private val modalResetSignal: ModalResetSignal,
-    private val gradientColorExtractor: GradientColorExtractor
+    private val gradientExtractionDelegate: GradientExtractionDelegate
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -292,10 +291,6 @@ class LibraryViewModel @Inject constructor(
     private var pendingInitialPlatformId: Long? = null
     private var pendingInitialSourceFilter: SourceFilter? = null
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
-    private var currentGradientPreset: GradientPreset = GradientPreset.BALANCED
-    private var currentBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID
-    private var gradientExtractionJob: Job? = null
-    private val extractedGradients = mutableMapOf<Long, Pair<Color, Color>>()
 
     private val pendingCoverRepairs = mutableSetOf<Long>()
 
@@ -326,6 +321,7 @@ class LibraryViewModel @Inject constructor(
         observeGridDensity()
         observeSyncOverlay()
         observeCollectionModal()
+        observeGradientChanges()
     }
 
     private fun resetMenus() {
@@ -368,6 +364,22 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    private fun observeGradientChanges() {
+        viewModelScope.launch {
+            gradientExtractionDelegate.gradients.collect { gradients ->
+                _uiState.update { state ->
+                    state.copy(
+                        games = state.games.map { game ->
+                            gradients[game.id]?.let { colors ->
+                                game.copy(gradientColors = colors)
+                            } ?: game
+                        }
+                    )
+                }
+            }
+        }
+    }
+
     fun selectDisc(discPath: String) {
         gameLaunchDelegate.selectDisc(viewModelScope, discPath)
     }
@@ -383,8 +395,7 @@ class LibraryViewModel @Inject constructor(
     private fun observeGridDensity() {
         viewModelScope.launch {
             preferencesRepository.userPreferences.collectLatest { prefs ->
-                currentGradientPreset = prefs.gradientPreset
-                currentBorderStyle = prefs.boxArtBorderStyle
+                gradientExtractionDelegate.updatePreferences(prefs.gradientPreset, prefs.boxArtBorderStyle)
                 _uiState.update {
                     it.copy(
                         gridDensity = prefs.gridDensity,
@@ -396,45 +407,12 @@ class LibraryViewModel @Inject constructor(
     }
 
     private fun extractGradientsForVisibleGames(focusedIndex: Int) {
-        if (currentBorderStyle != BoxArtBorderStyle.GRADIENT) return
-
-        gradientExtractionJob?.cancel()
-        gradientExtractionJob = viewModelScope.launch {
-            val games = _uiState.value.games
-            val cols = _uiState.value.columnsCount
-            val buffer = cols * 3
-            val startIndex = (focusedIndex - buffer).coerceAtLeast(0)
-            val endIndex = (focusedIndex + buffer).coerceAtMost(games.size - 1)
-
-            val gamesToExtract = games.subList(startIndex, endIndex + 1)
-                .filter { it.coverPath != null && it.gradientColors == null && !extractedGradients.containsKey(it.id) }
-
-            if (gamesToExtract.isEmpty()) return@launch
-
-            val extracted = withContext(Dispatchers.IO) {
-                gamesToExtract.mapNotNull { game ->
-                    game.coverPath?.let { path ->
-                        gradientColorExtractor.getGradientColors(path, currentGradientPreset)?.let { colors ->
-                            game.id to colors
-                        }
-                    }
-                }
-            }
-
-            extracted.forEach { (id, colors) ->
-                extractedGradients[id] = colors
-            }
-
-            _uiState.update { state ->
-                state.copy(
-                    games = state.games.map { game ->
-                        extractedGradients[game.id]?.let { colors ->
-                            game.copy(gradientColors = colors)
-                        } ?: game
-                    }
-                )
-            }
-        }
+        val games = _uiState.value.games
+        if (games.isEmpty()) return
+        val cols = _uiState.value.columnsCount
+        val buffer = cols * 3
+        val requests = games.map { GameGradientRequest(it.id, it.coverPath) }
+        gradientExtractionDelegate.extractForVisibleGames(viewModelScope, requests, focusedIndex, buffer)
     }
 
     private fun loadPlatforms() {
@@ -945,36 +923,14 @@ class LibraryViewModel @Inject constructor(
 
     fun refreshAndroidGameData(gameId: Long) {
         viewModelScope.launch {
-            val game = gameDao.getById(gameId) ?: return@launch
-            val packageName = game.packageName ?: return@launch
-
-            try {
-                val details = playStoreService.getAppDetails(packageName).getOrNull()
-                if (details != null) {
-                    val updated = game.copy(
-                        description = details.description ?: game.description,
-                        developer = details.developer ?: game.developer,
-                        genre = details.genre ?: game.genre,
-                        rating = details.ratingPercent ?: game.rating,
-                        screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }?.joinToString(",") ?: game.screenshotPaths,
-                        backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
-                    )
-                    gameDao.update(updated)
-
-                    details.coverUrl?.let { url ->
-                        imageCacheManager.queueCoverCacheByGameId(url, gameId)
-                    }
-                    if (details.screenshotUrls.isNotEmpty()) {
-                        imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
-                    }
-
+            when (val result = gameActions.refreshAndroidGameData(gameId)) {
+                is RefreshAndroidResult.Success -> {
                     notificationManager.showSuccess("Game data refreshed")
                     loadGames()
-                } else {
-                    notificationManager.showError("Could not fetch app data")
                 }
-            } catch (e: Exception) {
-                notificationManager.showError("Failed to refresh: ${e.message}")
+                is RefreshAndroidResult.Error -> {
+                    notificationManager.showError(result.message)
+                }
             }
             toggleQuickMenu()
         }
@@ -1085,7 +1041,7 @@ class LibraryViewModel @Inject constructor(
             platformSlug = platformSlug,
             platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
             coverPath = coverPath,
-            gradientColors = extractedGradients[id],
+            gradientColors = gradientExtractionDelegate.getGradient(id),
             source = source,
             isFavorite = isFavorite,
             isDownloaded = localPath != null || source == GameSource.STEAM || source == GameSource.ANDROID_APP,
@@ -1105,7 +1061,7 @@ class LibraryViewModel @Inject constructor(
             platformSlug = platformSlug,
             platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
             coverPath = coverPath,
-            gradientColors = extractedGradients[id],
+            gradientColors = gradientExtractionDelegate.getGradient(id),
             source = source,
             isFavorite = isFavorite,
             isDownloaded = isDownloaded || source == GameSource.STEAM || source == GameSource.ANDROID_APP,

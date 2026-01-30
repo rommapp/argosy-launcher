@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.common
 
+import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
@@ -11,13 +13,20 @@ import com.nendo.argosy.ui.input.SoundType
 import javax.inject.Inject
 import javax.inject.Singleton
 
+sealed class RefreshAndroidResult {
+    data object Success : RefreshAndroidResult()
+    data class Error(val message: String) : RefreshAndroidResult()
+}
+
 @Singleton
 class GameActionsDelegate @Inject constructor(
     private val gameDao: GameDao,
     private val deleteGameUseCase: DeleteGameUseCase,
     private val downloadGameUseCase: DownloadGameUseCase,
     private val soundManager: SoundFeedbackManager,
-    private val romMRepository: RomMRepository
+    private val romMRepository: RomMRepository,
+    private val playStoreService: PlayStoreService,
+    private val imageCacheManager: ImageCacheManager
 ) {
     suspend fun toggleFavorite(gameId: Long): Boolean? {
         val game = gameDao.getById(gameId) ?: return null
@@ -64,5 +73,41 @@ class GameActionsDelegate @Inject constructor(
 
     suspend fun refreshGameData(gameId: Long): RomMResult<Unit> {
         return romMRepository.refreshGameData(gameId)
+    }
+
+    suspend fun refreshAndroidGameData(gameId: Long): RefreshAndroidResult {
+        val game = gameDao.getById(gameId)
+            ?: return RefreshAndroidResult.Error("Game not found")
+        val packageName = game.packageName
+            ?: return RefreshAndroidResult.Error("Package name not available")
+
+        return try {
+            val details = playStoreService.getAppDetails(packageName).getOrNull()
+            if (details != null) {
+                val updated = game.copy(
+                    description = details.description ?: game.description,
+                    developer = details.developer ?: game.developer,
+                    genre = details.genre ?: game.genre,
+                    rating = details.ratingPercent ?: game.rating,
+                    screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
+                        ?.joinToString(",") ?: game.screenshotPaths,
+                    backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+                )
+                gameDao.update(updated)
+
+                details.coverUrl?.let { url ->
+                    imageCacheManager.queueCoverCacheByGameId(url, gameId)
+                }
+                if (details.screenshotUrls.isNotEmpty()) {
+                    imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+                }
+
+                RefreshAndroidResult.Success
+            } else {
+                RefreshAndroidResult.Error("App not found on Play Store")
+            }
+        } catch (e: Exception) {
+            RefreshAndroidResult.Error("Failed to refresh: ${e.message}")
+        }
     }
 }

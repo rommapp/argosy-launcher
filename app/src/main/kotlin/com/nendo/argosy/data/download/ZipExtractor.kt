@@ -128,7 +128,7 @@ object ZipExtractor {
     }
 
     fun isZipFile(file: File): Boolean {
-        if (!file.exists() || file.length() < 4) return false
+        if (!file.isFile || file.length() < 4) return false
         return file.inputStream().use { stream ->
             val header = ByteArray(4)
             stream.read(header) == 4 && header.contentEquals(ZIP_MAGIC_BYTES)
@@ -136,7 +136,7 @@ object ZipExtractor {
     }
 
     fun isSevenZFile(file: File): Boolean {
-        if (!file.exists() || file.length() < 6) return false
+        if (!file.isFile || file.length() < 6) return false
         return file.inputStream().use { stream ->
             val header = ByteArray(6)
             stream.read(header) == 6 && header.contentEquals(SEVEN_Z_MAGIC_BYTES)

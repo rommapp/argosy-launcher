@@ -737,7 +737,7 @@ class GameLauncher @Inject constructor(
                 "org.scummvm.scummvm.SplashActivity"
             )
             addCategory(Intent.CATEGORY_LAUNCHER)
-            data = Uri.parse(gameId)
+            data = Uri.fromParts("scummvm", gameId, null)
 
             if (forResume) {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -792,8 +792,8 @@ class GameLauncher @Inject constructor(
                     entry.name.endsWith(".scummvm", ignoreCase = true)
                 }
                 if (scummvmEntry != null) {
-                    zip.getInputStream(scummvmEntry).bufferedReader().readText().trim()
-                        .takeIf { it.isNotEmpty() }
+                    val content = zip.getInputStream(scummvmEntry).bufferedReader().readText().trim()
+                    if (content.isNotEmpty()) parseScummVMGameId(content) else null
                 } else {
                     null
                 }
@@ -806,11 +806,18 @@ class GameLauncher @Inject constructor(
 
     private fun readScummVMFile(file: File): String? {
         return try {
-            file.readText().trim().takeIf { it.isNotEmpty() }
+            val content = file.readText().trim()
+            if (content.isEmpty()) return null
+            parseScummVMGameId(content)
         } catch (e: Exception) {
             Logger.warn(TAG, "[ScummVM] Failed to read .scummvm file: ${file.name}", e)
             null
         }
+    }
+
+    private fun parseScummVMGameId(content: String): String {
+        val colonIndex = content.indexOf(':')
+        return if (colonIndex != -1) content.substring(colonIndex + 1) else content
     }
 
     private fun getFileUri(file: File): Uri {

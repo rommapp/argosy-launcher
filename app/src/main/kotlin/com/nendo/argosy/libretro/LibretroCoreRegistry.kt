@@ -394,16 +394,6 @@ object LibretroCoreRegistry {
             isDefault = true
         ),
 
-        // ScummVM
-        CoreInfo(
-            coreId = "scummvm",
-            fileName = "scummvm_libretro_android.so",
-            displayName = "ScummVM",
-            platforms = setOf("scummvm"),
-            estimatedSizeBytes = 20_000_000L,
-            isDefault = true
-        ),
-
         // ZX Spectrum
         CoreInfo(
             coreId = "fuse",

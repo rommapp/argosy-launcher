@@ -71,6 +71,7 @@ import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
 import com.swordfish.libretrodroid.ShaderConfig
+import com.swordfish.libretrodroid.Variable
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -245,6 +246,7 @@ class LibretroActivity : ComponentActivity() {
         Log.d("LibretroActivity", "Core: $coreName, isHeavyCore: $isHeavyCore, rewindEnabled: $rewindEnabled")
 
         Log.d("LibretroActivity", "[Startup] Creating GLRetroView: core=$coreName, shader=${settings.shaderConfig}")
+        val coreVariables = getCoreVariables(coreName)
         retroView = GLRetroView(
             this,
             GLRetroViewData(this).apply {
@@ -257,6 +259,7 @@ class LibretroActivity : ComponentActivity() {
                 skipDuplicateFrames = settings.skipDuplicateFrames
                 preferLowLatencyAudio = settings.lowLatencyAudio
                 rumbleEventsEnabled = settings.rumbleEnabled
+                variables = coreVariables
             }
         )
         Log.d("LibretroActivity", "[Startup] GLRetroView created, adding lifecycle observer")
@@ -1203,6 +1206,10 @@ class LibretroActivity : ComponentActivity() {
 
     private fun getControllerId(device: android.view.InputDevice): String {
         return "${device.vendorId}:${device.productId}:${device.descriptor}"
+    }
+
+    private fun getCoreVariables(coreName: String?): Array<Variable> {
+        return emptyArray()
     }
 
     companion object {

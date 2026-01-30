@@ -105,6 +105,8 @@ enum class GameDownloadStatus {
 
 enum class RatingType { OPINION, DIFFICULTY }
 
+enum class PermissionModalType { STORAGE, SAF }
+
 sealed class MoreOptionAction {
     data object ManageSaves : MoreOptionAction()
     data object RatingsStatus : MoreOptionAction()
@@ -179,6 +181,7 @@ data class GameDetailUiState(
     val saveChannel: SaveChannelState = SaveChannelState(),
     val saveStatusInfo: SaveStatusInfo? = null,
     val showPermissionModal: Boolean = false,
+    val permissionModalType: PermissionModalType = PermissionModalType.STORAGE,
     val focusedScreenshotIndex: Int = 0,
     val showScreenshotViewer: Boolean = false,
     val viewerScreenshotIndex: Int = 0,

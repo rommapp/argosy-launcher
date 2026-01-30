@@ -1028,9 +1028,16 @@ class GameDetailViewModel @Inject constructor(
             }
 
             val permissionResult = checkSaveSyncPermissionUseCase()
-            if (permissionResult is CheckSaveSyncPermissionUseCase.Result.MissingPermission) {
-                _uiState.update { it.copy(showPermissionModal = true) }
-                return@launch
+            when (permissionResult) {
+                is CheckSaveSyncPermissionUseCase.Result.MissingStoragePermission -> {
+                    _uiState.update { it.copy(showPermissionModal = true, permissionModalType = PermissionModalType.STORAGE) }
+                    return@launch
+                }
+                is CheckSaveSyncPermissionUseCase.Result.MissingSafGrant -> {
+                    _uiState.update { it.copy(showPermissionModal = true, permissionModalType = PermissionModalType.SAF) }
+                    return@launch
+                }
+                else -> { /* Permission granted, continue */ }
             }
 
             val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, currentGame.platformId, currentGame.platformSlug)
@@ -2584,6 +2591,33 @@ class GameDetailViewModel @Inject constructor(
         }
         context.startActivity(intent)
     }
+
+    fun requestSafGrant() {
+        _uiState.update { it.copy(showPermissionModal = false) }
+        _requestSafGrant.value = true
+    }
+
+    fun onSafGrantResult(uri: android.net.Uri?) {
+        _requestSafGrant.value = false
+        if (uri == null) return
+
+        viewModelScope.launch {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                preferencesRepository.setAndroidDataSafUri(uri.toString())
+                playGame()
+            } catch (e: Exception) {
+                android.util.Log.e("GameDetailViewModel", "Failed to persist SAF permission: ${e.message}")
+            }
+        }
+    }
+
+    private val _requestSafGrant = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val requestSafGrant: kotlinx.coroutines.flow.StateFlow<Boolean> = _requestSafGrant.asStateFlow()
 
     fun disableSaveSync() {
         viewModelScope.launch {

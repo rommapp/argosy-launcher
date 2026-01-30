@@ -2,12 +2,14 @@ package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.storage.ManagedStorageAccessor
 import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
 import com.nendo.argosy.domain.usecase.PurgePlatformUseCase
@@ -30,6 +32,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val TAG = "StorageSettingsDelegate"
+
 class StorageSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val gameRepository: GameRepository,
@@ -40,7 +44,8 @@ class StorageSettingsDelegate @Inject constructor(
     private val purgePlatformUseCase: PurgePlatformUseCase,
     private val syncPlatformUseCase: SyncPlatformUseCase,
     private val database: ALauncherDatabase,
-    private val imageCacheManager: ImageCacheManager
+    private val imageCacheManager: ImageCacheManager,
+    private val managedStorageAccessor: ManagedStorageAccessor
 ) {
     private val _state = MutableStateFlow(StorageState())
     val state: StateFlow<StorageState> = _state.asStateFlow()
@@ -642,6 +647,55 @@ class StorageSettingsDelegate @Inject constructor(
             }
             _state.update { it.copy(isPurgingAll = false, platformConfigs = emptyList()) }
             refreshCollectionStats(scope)
+        }
+    }
+
+    fun testManagedStorageAccess(scope: CoroutineScope) {
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                Log.i(TAG, "=== Testing ManagedStorageAccessor ===")
+                Log.i(TAG, "Managed access supported: ${managedStorageAccessor.isManagedAccessSupported()}")
+
+                val testPackages = listOf(
+                    "dev.eden.eden_emulator",
+                    "com.retroarch",
+                    "com.retroarch.aarch64"
+                )
+
+                for (pkg in testPackages) {
+                    Log.i(TAG, "--- Testing package: $pkg ---")
+
+                    val exists = managedStorageAccessor.exists(pkg)
+                    Log.i(TAG, "  exists(): $exists")
+
+                    if (exists) {
+                        val files = managedStorageAccessor.listAndroidDataFiles(pkg)
+                        if (files != null) {
+                            Log.i(TAG, "  listAndroidDataFiles(): ${files.size} files")
+                            files.take(5).forEach { file ->
+                                Log.i(TAG, "    - ${file.displayName} (dir=${file.isDirectory}, size=${file.size})")
+                            }
+                            if (files.size > 5) {
+                                Log.i(TAG, "    ... and ${files.size - 5} more")
+                            }
+                        } else {
+                            Log.i(TAG, "  listAndroidDataFiles(): NULL (access denied or not found)")
+                        }
+
+                        val filesSubPath = managedStorageAccessor.listAndroidDataFiles(pkg, "files")
+                        if (filesSubPath != null) {
+                            Log.i(TAG, "  listAndroidDataFiles(files/): ${filesSubPath.size} files")
+                            filesSubPath.take(5).forEach { file ->
+                                Log.i(TAG, "    - ${file.displayName} (dir=${file.isDirectory})")
+                            }
+                        } else {
+                            Log.i(TAG, "  listAndroidDataFiles(files/): NULL")
+                        }
+                    }
+                }
+
+                Log.i(TAG, "=== Test Complete ===")
+            }
         }
     }
 }

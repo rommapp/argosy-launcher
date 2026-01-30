@@ -2,8 +2,10 @@ package com.nendo.argosy.ui.filebrowser
 
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.storage.ManagedStorageAccessor
 import com.nendo.argosy.data.storage.StorageVolumeDetector
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,9 +21,12 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
+private const val TAG = "FileBrowserViewModel"
+
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
-    private val volumeDetector: StorageVolumeDetector
+    private val volumeDetector: StorageVolumeDetector,
+    private val managedStorageAccessor: ManagedStorageAccessor
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FileBrowserState())
@@ -115,12 +120,48 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     private fun loadDirectory(path: String): List<FileEntry> {
-        val dir = File(path)
-        if (!dir.canRead()) throw SecurityException("Cannot read directory")
-
         val entries = mutableListOf<FileEntry>()
         val isVolumeRoot = _state.value.volumes.any { it.path == path }
         val fileFilter = _state.value.fileFilter
+
+        // Check if this is an Android/data or Android/obb path that needs managed access
+        val managedResult = tryManagedAccess(path)
+
+        if (managedResult != null) {
+            // Using managed storage access for Android/data paths
+            if (!isVolumeRoot) {
+                val parentPath = File(path).parent
+                if (parentPath != null) {
+                    entries.add(
+                        FileEntry(
+                            name = "..",
+                            path = parentPath,
+                            isDirectory = true,
+                            isParentLink = true
+                        )
+                    )
+                }
+            }
+
+            val sortedDirs = managedResult
+                .filter { it.isDirectory && !it.displayName.startsWith(".") }
+                .sortedBy { it.displayName.lowercase() }
+                .map { it.toFileEntry(path) }
+
+            val sortedFiles = managedResult
+                .filter { !it.isDirectory && !it.displayName.startsWith(".") }
+                .filter { fileFilter?.matches(it.displayName) ?: true }
+                .sortedBy { it.displayName.lowercase() }
+                .map { it.toFileEntry(path) }
+
+            entries.addAll(sortedDirs)
+            entries.addAll(sortedFiles)
+            return entries
+        }
+
+        // Standard file access for non-restricted paths
+        val dir = File(path)
+        if (!dir.canRead()) throw SecurityException("Cannot read directory")
 
         if (!isVolumeRoot && dir.parent != null) {
             entries.add(
@@ -152,6 +193,49 @@ class FileBrowserViewModel @Inject constructor(
         entries.addAll(sortedFiles)
 
         return entries
+    }
+
+    private fun tryManagedAccess(path: String): List<ManagedStorageAccessor.DocumentFile>? {
+        // Extract volume and relative path from absolute path
+        val primaryRoot = "/storage/emulated/0"
+        val sdcardPattern = Regex("^/storage/([A-F0-9-]+)")
+
+        val (volumeId, relativePath) = when {
+            path.startsWith(primaryRoot) -> {
+                val rel = path.removePrefix(primaryRoot).trimStart('/')
+                "primary" to rel
+            }
+            path.matches(Regex("^/storage/[A-F0-9-]+.*")) -> {
+                val match = sdcardPattern.find(path)
+                if (match != null) {
+                    val volId = match.groupValues[1]
+                    val rel = path.removePrefix("/storage/$volId").trimStart('/')
+                    volId to rel
+                } else {
+                    return null
+                }
+            }
+            else -> return null
+        }
+
+        // Only use managed access for Android/data and Android/obb paths
+        if (!relativePath.startsWith("Android/data") && !relativePath.startsWith("Android/obb")) {
+            return null
+        }
+
+        Log.d(TAG, "Attempting managed access: volumeId=$volumeId, relativePath=$relativePath")
+        return managedStorageAccessor.listFiles(volumeId, relativePath)
+    }
+
+    private fun ManagedStorageAccessor.DocumentFile.toFileEntry(parentPath: String): FileEntry {
+        return FileEntry(
+            name = displayName,
+            path = "$parentPath/$displayName",
+            isDirectory = isDirectory,
+            isParentLink = false,
+            size = size,
+            lastModified = lastModified
+        )
     }
 
     fun goUp() {

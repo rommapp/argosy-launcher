@@ -185,6 +185,9 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.loadPreviewGame(viewModelScope)
         displayDelegate.observeScreenCapturePermission(viewModelScope)
         startControllerDetectionPolling()
+
+        // TODO: Remove after testing manage=true Android/data access
+        storageDelegate.testManagedStorageAccess(viewModelScope)
     }
 
     private fun startControllerDetectionPolling() {

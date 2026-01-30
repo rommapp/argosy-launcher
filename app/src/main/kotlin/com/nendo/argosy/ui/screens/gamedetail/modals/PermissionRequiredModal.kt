@@ -26,12 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.screens.gamedetail.PermissionModalType
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 @Composable
 fun PermissionRequiredModal(
     isVisible: Boolean,
+    permissionType: PermissionModalType = PermissionModalType.STORAGE,
     onGrantPermission: () -> Unit,
     onDisableSync: () -> Unit,
     onDismiss: () -> Unit,
@@ -41,6 +43,21 @@ fun PermissionRequiredModal(
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
+    val (title, description, buttonText) = when (permissionType) {
+        PermissionModalType.STORAGE -> Triple(
+            "Permission Required",
+            "Save sync is enabled but file access permission is not granted. " +
+                "Grant permission to sync saves, or disable save sync to continue.",
+            "Grant Permission"
+        )
+        PermissionModalType.SAF -> Triple(
+            "Folder Access Required",
+            "Save sync needs access to the Android/data folder to sync saves from other emulators. " +
+                "Select the Android folder when prompted, or disable save sync to continue.",
+            "Select Folder"
+        )
+    }
 
     Box(
         modifier = modifier
@@ -70,7 +87,7 @@ fun PermissionRequiredModal(
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
                 Text(
-                    text = "Permission Required",
+                    text = title,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -78,8 +95,7 @@ fun PermissionRequiredModal(
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
                 Text(
-                    text = "Save sync is enabled but file access permission is not granted. " +
-                        "Grant permission to sync saves, or disable save sync to continue.",
+                    text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -95,7 +111,7 @@ fun PermissionRequiredModal(
                         onClick = onGrantPermission,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Grant Permission")
+                        Text(buttonText)
                     }
 
                     OutlinedButton(

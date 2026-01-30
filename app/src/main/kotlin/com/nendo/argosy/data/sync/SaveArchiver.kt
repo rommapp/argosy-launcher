@@ -1,11 +1,15 @@
 package com.nendo.argosy.data.sync
 
+import com.nendo.argosy.data.storage.AndroidDataAccessor
+import com.nendo.argosy.data.storage.ManagedStorageAccessor
 import com.nendo.argosy.util.Logger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
@@ -16,10 +20,158 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SaveArchiver @Inject constructor() {
+class SaveArchiver @Inject constructor(
+    private val androidDataAccessor: AndroidDataAccessor,
+    private val managedStorageAccessor: ManagedStorageAccessor
+) {
 
     private val TAG = "SaveArchiver"
     private val BUFFER_SIZE = 8192
+
+    private fun isRestrictedPath(path: String): Boolean {
+        return androidDataAccessor.isRestrictedAndroidPath(path)
+    }
+
+    private fun extractVolumeAndPath(path: String): Pair<String, String>? {
+        val primaryRoot = "/storage/emulated/0"
+        val sdcardPattern = Regex("^/storage/([A-F0-9-]+)")
+
+        return when {
+            path.startsWith(primaryRoot) -> {
+                val rel = path.removePrefix(primaryRoot).trimStart('/')
+                "primary" to rel
+            }
+            path.matches(Regex("^/storage/[A-F0-9-]+.*")) -> {
+                val match = sdcardPattern.find(path)
+                if (match != null) {
+                    val volId = match.groupValues[1]
+                    val rel = path.removePrefix("/storage/$volId").trimStart('/')
+                    volId to rel
+                } else null
+            }
+            else -> null
+        }
+    }
+
+    private fun openOutputStreamForPath(path: String): OutputStream? {
+        // For restricted paths, try Unicode trick first (most reliable on supported devices)
+        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+            val stream = androidDataAccessor.getOutputStream(path)
+            if (stream != null) {
+                Logger.debug(TAG, "[UnicodeAccess] Opened output stream for $path")
+                return stream
+            }
+        }
+
+        // Fallback to ManagedStorageAccessor (DocumentsContract approach)
+        if (isRestrictedPath(path)) {
+            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
+            Logger.debug(TAG, "[ManagedAccess] Opening output stream for $path (vol=$volumeId, rel=$relativePath)")
+            return managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)
+        }
+
+        // Standard file I/O for non-restricted paths
+        val file = File(path)
+        file.parentFile?.mkdirs()
+        return FileOutputStream(file)
+    }
+
+    private fun openInputStreamForPath(path: String): InputStream? {
+        // For restricted paths, try Unicode trick first
+        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+            val stream = androidDataAccessor.getInputStream(path)
+            if (stream != null) {
+                Logger.debug(TAG, "[UnicodeAccess] Opened input stream for $path")
+                return stream
+            }
+        }
+
+        // Fallback to ManagedStorageAccessor
+        if (isRestrictedPath(path)) {
+            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
+            Logger.debug(TAG, "[ManagedAccess] Opening input stream for $path (vol=$volumeId, rel=$relativePath)")
+            return managedStorageAccessor.openInputStreamAtPath(volumeId, relativePath)
+        }
+
+        // Standard file I/O
+        val file = File(path)
+        return if (file.exists() && file.canRead()) file.inputStream() else null
+    }
+
+    private fun createDirectoryForPath(path: String): Boolean {
+        // For restricted paths, try Unicode trick first
+        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+            val result = androidDataAccessor.mkdirs(path)
+            if (result) {
+                Logger.debug(TAG, "[UnicodeAccess] Created directory: $path")
+                return true
+            }
+        }
+
+        if (isRestrictedPath(path)) {
+            // For restricted paths without Unicode support, rely on output stream creation
+            Logger.debug(TAG, "[ManagedAccess] Directory creation for restricted path: $path (handled via output stream)")
+            return true
+        }
+
+        return File(path).mkdirs()
+    }
+
+    /**
+     * Get a File object for the given path, using Unicode trick if applicable.
+     * Use this for file operations that need direct File access.
+     */
+    fun getFileForPath(path: String): File {
+        return if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+            androidDataAccessor.getFile(path)
+        } else {
+            File(path)
+        }
+    }
+
+    /**
+     * Check if a file/directory exists at the given path, handling restricted paths.
+     */
+    fun existsAtPath(path: String): Boolean {
+        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+            return androidDataAccessor.exists(path)
+        }
+        if (isRestrictedPath(path)) {
+            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
+            return managedStorageAccessor.existsAtPath(volumeId, relativePath)
+        }
+        return File(path).exists()
+    }
+
+    /**
+     * List files at the given path, handling restricted paths.
+     */
+    fun listFilesAtPath(path: String): Array<File>? {
+        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+            return androidDataAccessor.listFiles(path)
+        }
+        // For restricted paths without Unicode support, we can't easily return File objects
+        // from DocumentsContract, so just try direct access
+        return File(path).listFiles()
+    }
+
+    /**
+     * Get last modified time for a file, handling restricted paths.
+     */
+    fun lastModifiedAtPath(path: String): Long {
+        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+            return androidDataAccessor.lastModified(path)
+        }
+        return File(path).lastModified()
+    }
+
+    /**
+     * Zip a folder at the given path, handling restricted Android/data paths.
+     */
+    fun zipFolderAtPath(sourcePath: String, targetZip: File): Boolean {
+        val sourceFolder = getFileForPath(sourcePath)
+        return zipFolder(sourceFolder, targetZip)
+    }
 
     fun zipFolder(sourceFolder: File, targetZip: File): Boolean {
         if (!sourceFolder.exists() || !sourceFolder.isDirectory) {
@@ -140,10 +292,12 @@ class SaveArchiver @Inject constructor() {
             return false
         }
 
-        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping | source=${sourceZip.name}, size=${sourceZip.length()}bytes, target=${targetFolder.absolutePath}")
+        val targetPath = targetFolder.absolutePath
+        val useManaged = isRestrictedPath(targetPath)
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping | source=${sourceZip.name}, size=${sourceZip.length()}bytes, target=$targetPath, managedAccess=$useManaged")
 
         return try {
-            targetFolder.mkdirs()
+            createDirectoryForPath(targetPath)
             var fileCount = 0
             var totalSize = 0L
             ZipInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
@@ -172,6 +326,7 @@ class SaveArchiver @Inject constructor() {
                     }
 
                     val entryFile = File(targetFolder, relativePath)
+                    val entryPath = entryFile.absolutePath
 
                     if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
                         Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
@@ -179,22 +334,25 @@ class SaveArchiver @Inject constructor() {
                     }
 
                     if (entry!!.isDirectory) {
-                        entryFile.mkdirs()
+                        createDirectoryForPath(entryPath)
                     } else {
-                        entryFile.parentFile?.mkdirs()
-                        FileOutputStream(entryFile).use { fos ->
-                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
+                        val parentPath = entryFile.parentFile?.absolutePath
+                        if (parentPath != null) createDirectoryForPath(parentPath)
+
+                        val outputStream = openOutputStreamForPath(entryPath)
+                        if (outputStream == null) {
+                            Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to open output stream | path=$entryPath")
+                            return false
+                        }
+
+                        outputStream.use { os ->
+                            BufferedOutputStream(os, BUFFER_SIZE).use { bos ->
                                 var count: Int
                                 while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
                                     bos.write(buffer, 0, count)
                                     totalSize += count
                                 }
                                 bos.flush()
-                            }
-                            try {
-                                fos.fd.sync()
-                            } catch (e: Exception) {
-                                Logger.debug(TAG, "[SaveSync] ARCHIVE | fsync not supported for ${entryFile.name}, relying on flush")
                             }
                         }
                         fileCount++
@@ -292,10 +450,12 @@ class SaveArchiver @Inject constructor() {
             return false
         }
 
-        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping (excluding ${excludeFiles.size} patterns) | source=${sourceZip.name}")
+        val targetPath = targetFolder.absolutePath
+        val useManaged = isRestrictedPath(targetPath)
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping (excluding ${excludeFiles.size} patterns) | source=${sourceZip.name}, managedAccess=$useManaged")
 
         return try {
-            targetFolder.mkdirs()
+            createDirectoryForPath(targetPath)
             var fileCount = 0
             var totalSize = 0L
             var skippedCount = 0
@@ -333,6 +493,7 @@ class SaveArchiver @Inject constructor() {
                     }
 
                     val entryFile = File(targetFolder, relativePath)
+                    val entryPath = entryFile.absolutePath
 
                     if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
                         Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
@@ -340,22 +501,25 @@ class SaveArchiver @Inject constructor() {
                     }
 
                     if (entry!!.isDirectory) {
-                        entryFile.mkdirs()
+                        createDirectoryForPath(entryPath)
                     } else {
-                        entryFile.parentFile?.mkdirs()
-                        FileOutputStream(entryFile).use { fos ->
-                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
+                        val parentPath = entryFile.parentFile?.absolutePath
+                        if (parentPath != null) createDirectoryForPath(parentPath)
+
+                        val outputStream = openOutputStreamForPath(entryPath)
+                        if (outputStream == null) {
+                            Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to open output stream | path=$entryPath")
+                            return false
+                        }
+
+                        outputStream.use { os ->
+                            BufferedOutputStream(os, BUFFER_SIZE).use { bos ->
                                 var count: Int
                                 while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
                                     bos.write(buffer, 0, count)
                                     totalSize += count
                                 }
                                 bos.flush()
-                            }
-                            try {
-                                fos.fd.sync()
-                            } catch (e: Exception) {
-                                Logger.debug(TAG, "[SaveSync] ARCHIVE | fsync not supported for ${entryFile.name}")
                             }
                         }
                         fileCount++
@@ -381,10 +545,12 @@ class SaveArchiver @Inject constructor() {
             return false
         }
 
-        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping (preserving structure) | source=${sourceZip.name}")
+        val targetPath = targetFolder.absolutePath
+        val useManaged = isRestrictedPath(targetPath)
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping (preserving structure) | source=${sourceZip.name}, managedAccess=$useManaged")
 
         return try {
-            targetFolder.mkdirs()
+            createDirectoryForPath(targetPath)
             var fileCount = 0
             var totalSize = 0L
             var skippedCount = 0
@@ -404,6 +570,7 @@ class SaveArchiver @Inject constructor() {
                     }
 
                     val entryFile = File(targetFolder, entryName)
+                    val entryPath = entryFile.absolutePath
 
                     if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
                         Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
@@ -411,22 +578,25 @@ class SaveArchiver @Inject constructor() {
                     }
 
                     if (entry!!.isDirectory) {
-                        entryFile.mkdirs()
+                        createDirectoryForPath(entryPath)
                     } else {
-                        entryFile.parentFile?.mkdirs()
-                        FileOutputStream(entryFile).use { fos ->
-                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
+                        val parentPath = entryFile.parentFile?.absolutePath
+                        if (parentPath != null) createDirectoryForPath(parentPath)
+
+                        val outputStream = openOutputStreamForPath(entryPath)
+                        if (outputStream == null) {
+                            Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to open output stream | path=$entryPath")
+                            return false
+                        }
+
+                        outputStream.use { os ->
+                            BufferedOutputStream(os, BUFFER_SIZE).use { bos ->
                                 var count: Int
                                 while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
                                     bos.write(buffer, 0, count)
                                     totalSize += count
                                 }
                                 bos.flush()
-                            }
-                            try {
-                                fos.fd.sync()
-                            } catch (e: Exception) {
-                                Logger.debug(TAG, "[SaveSync] ARCHIVE | fsync not supported for ${entryFile.name}")
                             }
                         }
                         fileCount++
@@ -442,6 +612,14 @@ class SaveArchiver @Inject constructor() {
         }
     }
 
+    /**
+     * Calculate file hash at a path, handling restricted Android/data paths.
+     */
+    fun calculateFileHashAtPath(path: String): String {
+        val file = getFileForPath(path)
+        return calculateFileHash(file)
+    }
+
     fun calculateFileHash(file: File): String {
         val md = MessageDigest.getInstance("MD5")
         file.inputStream().buffered().use { input ->
@@ -452,6 +630,14 @@ class SaveArchiver @Inject constructor() {
             }
         }
         return md.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    /**
+     * Calculate folder hash at a path, handling restricted Android/data paths.
+     */
+    fun calculateFolderHashAtPath(path: String): String {
+        val folder = getFileForPath(path)
+        return calculateFolderHash(folder)
     }
 
     fun calculateFolderHash(folder: File): String {

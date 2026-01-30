@@ -138,6 +138,7 @@ class UserPreferencesRepository @Inject constructor(
         val BUILTIN_OVERSCAN_CROP = intPreferencesKey("builtin_overscan_crop")
         val BUILTIN_REWIND_ENABLED = booleanPreferencesKey("builtin_rewind_enabled")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
+        val ANDROID_DATA_SAF_URI = stringPreferencesKey("android_data_saf_uri")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -256,7 +257,8 @@ class UserPreferencesRepository @Inject constructor(
             ambientLedBrightness = prefs[Keys.AMBIENT_LED_BRIGHTNESS] ?: 100,
             ambientLedAudioBrightness = prefs[Keys.AMBIENT_LED_AUDIO_BRIGHTNESS] ?: true,
             ambientLedAudioColors = prefs[Keys.AMBIENT_LED_AUDIO_COLORS] ?: false,
-            ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE])
+            ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE]),
+            androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI]
         )
     }
 
@@ -1033,6 +1035,13 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.BUILTIN_MIGRATION_V1] = true
         }
     }
+
+    suspend fun setAndroidDataSafUri(uri: String?) {
+        dataStore.edit { prefs ->
+            if (uri != null) prefs[Keys.ANDROID_DATA_SAF_URI] = uri
+            else prefs.remove(Keys.ANDROID_DATA_SAF_URI)
+        }
+    }
 }
 
 data class BuiltinEmulatorSettings(
@@ -1175,7 +1184,8 @@ data class UserPreferences(
     val ambientLedBrightness: Int = 100,
     val ambientLedAudioBrightness: Boolean = true,
     val ambientLedAudioColors: Boolean = false,
-    val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3
+    val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,
+    val androidDataSafUri: String? = null
 )
 
 enum class ThemeMode(val displayName: String) {

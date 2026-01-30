@@ -37,8 +37,34 @@ data class VersionInfo(
             prerelease == null && other.prerelease == null -> 0
             prerelease == null -> 1
             other.prerelease == null -> -1
-            else -> prerelease.compareTo(other.prerelease)
+            else -> comparePrereleases(prerelease, other.prerelease)
         }
+    }
+
+    private fun comparePrereleases(a: String, b: String): Int {
+        val partsA = a.split(".")
+        val partsB = b.split(".")
+        val maxLen = maxOf(partsA.size, partsB.size)
+        for (i in 0 until maxLen) {
+            val partA = partsA.getOrNull(i)
+            val partB = partsB.getOrNull(i)
+            when {
+                partA == null -> return -1
+                partB == null -> return 1
+                else -> {
+                    val numA = partA.toIntOrNull()
+                    val numB = partB.toIntOrNull()
+                    val cmp = when {
+                        numA != null && numB != null -> numA.compareTo(numB)
+                        numA != null -> -1
+                        numB != null -> 1
+                        else -> partA.compareTo(partB)
+                    }
+                    if (cmp != 0) return cmp
+                }
+            }
+        }
+        return 0
     }
 
     companion object {

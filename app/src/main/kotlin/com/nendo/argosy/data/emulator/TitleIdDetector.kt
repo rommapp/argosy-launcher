@@ -3,6 +3,7 @@ package com.nendo.argosy.data.emulator
 import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
+import com.nendo.argosy.data.storage.AndroidDataAccessor
 import com.nendo.argosy.util.Logger
 import java.io.File
 import javax.inject.Inject
@@ -10,7 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class TitleIdDetector @Inject constructor(
-    private val emulatorSaveConfigDao: EmulatorSaveConfigDao
+    private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
+    private val androidDataAccessor: AndroidDataAccessor
 ) {
 
     companion object {
@@ -51,7 +53,8 @@ class TitleIdDetector @Inject constructor(
         val resolvedPaths = resolvePathsWithUserOverride(emulatorId, config, emulatorPackage)
 
         for (path in resolvedPaths) {
-            val dir = File(path)
+            // Use AndroidDataAccessor to handle Unicode path trick for restricted paths
+            val dir = androidDataAccessor.getFile(path)
             if (!dir.exists() || !dir.isDirectory) continue
 
             val canRead = try {
@@ -145,7 +148,8 @@ class TitleIdDetector @Inject constructor(
         platformSlug: String,
         sessionStartTime: Long
     ): DetectedTitleId? {
-        val baseDir = File(basePath)
+        // Use AndroidDataAccessor to handle Unicode path trick for restricted paths
+        val baseDir = androidDataAccessor.getFile(basePath)
         if (!baseDir.exists()) return null
 
         return when (platformSlug) {

@@ -1,5 +1,10 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.DocumentsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
@@ -83,7 +88,26 @@ fun GameDetailScreen(
     viewModel: GameDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val requestSafGrant by viewModel.requestSafGrant.collectAsState()
     val context = LocalContext.current
+
+    val safPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        viewModel.onSafGrantResult(uri)
+    }
+
+    LaunchedEffect(requestSafGrant) {
+        if (requestSafGrant) {
+            // Request access to storage ROOT, not Android/data
+            // The manage=true parameter will extend this to Android/data
+            val rootUri = DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents",
+                "primary:"
+            )
+            safPickerLauncher.launch(rootUri)
+        }
+    }
 
     LaunchedEffect(gameId) {
         viewModel.loadGame(gameId)
@@ -646,7 +670,13 @@ private fun GameDetailModals(
 
     PermissionRequiredModal(
         isVisible = uiState.showPermissionModal,
-        onGrantPermission = viewModel::openAllFilesAccessSettings,
+        permissionType = uiState.permissionModalType,
+        onGrantPermission = {
+            when (uiState.permissionModalType) {
+                PermissionModalType.STORAGE -> viewModel.openAllFilesAccessSettings()
+                PermissionModalType.SAF -> viewModel.requestSafGrant()
+            }
+        },
         onDisableSync = viewModel::disableSaveSync,
         onDismiss = viewModel::dismissPermissionModal
     )

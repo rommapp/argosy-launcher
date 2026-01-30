@@ -39,6 +39,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.nendo.argosy.data.storage.ManagedStorageAccessor
 import java.io.File
 import java.time.Instant
 import javax.inject.Inject
@@ -124,7 +125,8 @@ class SaveSyncRepository @Inject constructor(
     private val titleDbRepository: TitleDbRepository,
     private val saveArchiver: SaveArchiver,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val saveCacheManager: dagger.Lazy<SaveCacheManager>
+    private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
+    private val managedStorageAccessor: ManagedStorageAccessor
 ) {
     private var api: RomMApi? = null
 
@@ -196,6 +198,93 @@ class SaveSyncRepository @Inject constructor(
     private fun resolveSavePaths(config: SavePathConfig, platformSlug: String): List<String> {
         val filesDir = if (config.usesInternalStorage) context.filesDir.absolutePath else null
         return SavePathRegistry.resolvePath(config, platformSlug, filesDir)
+    }
+
+    private fun listFilesAtPath(path: String): List<File>? {
+        // Try Unicode trick first (via saveArchiver) - most reliable on supported devices
+        val unicodeResult = saveArchiver.listFilesAtPath(path)
+        if (unicodeResult != null && unicodeResult.isNotEmpty()) {
+            Logger.debug(TAG, "[UnicodeAccess] Listed ${unicodeResult.size} files at $path")
+            return unicodeResult.toList()
+        }
+
+        // Fallback to ManagedStorageAccessor (DocumentsContract approach)
+        val managedResult = tryManagedListFiles(path)
+        if (managedResult != null) {
+            Logger.debug(TAG, "[ManagedAccess] Listed ${managedResult.size} files at $path")
+            return managedResult
+        }
+
+        // Standard file I/O fallback
+        val dir = File(path)
+        return if (dir.exists() && dir.isDirectory) dir.listFiles()?.toList() else null
+    }
+
+    private fun directoryExists(path: String): Boolean {
+        // Try Unicode trick first (via saveArchiver)
+        if (saveArchiver.existsAtPath(path)) {
+            Logger.debug(TAG, "[UnicodeAccess] Directory exists: $path")
+            return true
+        }
+
+        // Fallback to ManagedStorageAccessor for restricted paths
+        if (isRestrictedPath(path)) {
+            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
+            val exists = managedStorageAccessor.existsAtPath(volumeId, relativePath)
+            if (exists) {
+                Logger.debug(TAG, "[ManagedAccess] Directory exists (via managed): $path")
+                return true
+            }
+        }
+
+        return File(path).exists()
+    }
+
+    private fun tryManagedListFiles(path: String): List<File>? {
+        if (!isRestrictedPath(path)) return null
+
+        val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
+
+        val result = managedStorageAccessor.listFiles(volumeId, relativePath)
+        if (result != null) {
+            return result.map { doc ->
+                object : File("$path/${doc.displayName}") {
+                    override fun isDirectory(): Boolean = doc.isDirectory
+                    override fun isFile(): Boolean = !doc.isDirectory
+                    override fun getName(): String = doc.displayName
+                    override fun lastModified(): Long = doc.lastModified
+                    override fun length(): Long = doc.size
+                    override fun exists(): Boolean = true
+                    override fun canRead(): Boolean = true
+                }
+            }
+        }
+        return null
+    }
+
+    private fun isRestrictedPath(path: String): Boolean {
+        return path.contains("/Android/data/") || path.contains("/Android/obb/")
+    }
+
+    private fun extractVolumeAndPath(path: String): Pair<String, String>? {
+        val primaryRoot = "/storage/emulated/0"
+        val sdcardPattern = Regex("^/storage/([A-F0-9-]+)")
+
+        return when {
+            path.startsWith(primaryRoot) -> {
+                val rel = path.removePrefix(primaryRoot).trimStart('/')
+                "primary" to rel
+            }
+            path.matches(Regex("^/storage/[A-F0-9-]+.*")) -> {
+                val match = sdcardPattern.find(path)
+                if (match != null) {
+                    val volId = match.groupValues[1]
+                    val rel = path.removePrefix("/storage/$volId").trimStart('/')
+                    volId to rel
+                } else null
+            }
+            else -> null
+        }
     }
 
     private suspend fun isFolderSaveSyncEnabled(): Boolean {
@@ -526,8 +615,7 @@ class SaveSyncRepository @Inject constructor(
         titleId: String,
         platformSlug: String
     ): String? {
-        val baseDir = File(basePath)
-        if (!baseDir.exists()) {
+        if (!directoryExists(basePath)) {
             Logger.debug(TAG, "[SaveSync] DISCOVER | Base path does not exist | path=$basePath")
             return null
         }
@@ -536,7 +624,7 @@ class SaveSyncRepository @Inject constructor(
 
         when (platformSlug) {
             "vita", "psvita" -> {
-                val match = baseDir.listFiles()?.firstOrNull {
+                val match = listFilesAtPath(basePath)?.firstOrNull {
                     it.isDirectory && it.name.equals(titleId, ignoreCase = true)
                 }
                 if (match != null) return match.absolutePath
@@ -544,9 +632,9 @@ class SaveSyncRepository @Inject constructor(
             "switch" -> {
                 var bestMatch: File? = null
                 var bestModTime = 0L
-                baseDir.listFiles()?.forEach { userFolder ->
+                listFilesAtPath(basePath)?.forEach { userFolder ->
                     if (userFolder.isDirectory) {
-                        val saveFolder = userFolder.listFiles()?.firstOrNull {
+                        val saveFolder = listFilesAtPath(userFolder.absolutePath)?.firstOrNull {
                             it.isDirectory && it.name.equals(normalizedTitleId, ignoreCase = true)
                         }
                         if (saveFolder != null) {
@@ -556,9 +644,9 @@ class SaveSyncRepository @Inject constructor(
                                 bestMatch = saveFolder
                             }
                         }
-                        userFolder.listFiles()?.forEach { profileFolder ->
+                        listFilesAtPath(userFolder.absolutePath)?.forEach { profileFolder ->
                             if (profileFolder.isDirectory) {
-                                val nestedSave = profileFolder.listFiles()?.firstOrNull {
+                                val nestedSave = listFilesAtPath(profileFolder.absolutePath)?.firstOrNull {
                                     it.isDirectory && it.name.equals(normalizedTitleId, ignoreCase = true)
                                 }
                                 if (nestedSave != null) {
@@ -586,19 +674,20 @@ class SaveSyncRepository @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS lookup | baseDir=$basePath, fullId=$normalizedTitleId, shortId=$shortTitleId")
                 var bestMatch: File? = null
                 var bestModTime = 0L
-                baseDir.listFiles()?.filter { it.isDirectory }?.forEach { id0Folder ->
-                    id0Folder.listFiles()?.filter { it.isDirectory }?.forEach { id1Folder ->
-                        val titleBaseDir = File(id1Folder, "title")
-                        if (!titleBaseDir.exists()) return@forEach
-                        titleBaseDir.listFiles()?.filter { it.isDirectory }?.forEach { categoryDir ->
-                            val matchingFolder = categoryDir.listFiles()?.firstOrNull {
+                listFilesAtPath(basePath)?.filter { it.isDirectory }?.forEach { id0Folder ->
+                    listFilesAtPath(id0Folder.absolutePath)?.filter { it.isDirectory }?.forEach { id1Folder ->
+                        val titleBasePath = "${id1Folder.absolutePath}/title"
+                        if (!directoryExists(titleBasePath)) return@forEach
+                        listFilesAtPath(titleBasePath)?.filter { it.isDirectory }?.forEach { categoryDir ->
+                            val matchingFolder = listFilesAtPath(categoryDir.absolutePath)?.firstOrNull {
                                 it.isDirectory && it.name.equals(shortTitleId, ignoreCase = true)
                             }
                             if (matchingFolder != null) {
-                                val dataDir = File(matchingFolder, "data")
-                                if (dataDir.exists() && dataDir.isDirectory) {
+                                val dataPath = "${matchingFolder.absolutePath}/data"
+                                if (directoryExists(dataPath)) {
+                                    val dataDir = File(dataPath)
                                     val modTime = findNewestFileTime(dataDir)
-                                    Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS candidate | path=${dataDir.absolutePath}, modTime=$modTime")
+                                    Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS candidate | path=$dataPath, modTime=$modTime")
                                     if (modTime > bestModTime) {
                                         bestModTime = modTime
                                         bestMatch = dataDir
@@ -614,14 +703,14 @@ class SaveSyncRepository @Inject constructor(
                 }
             }
             "psp" -> {
-                baseDir.listFiles()?.forEach { folder ->
+                listFilesAtPath(basePath)?.forEach { folder ->
                     if (folder.isDirectory && folder.name.startsWith(titleId, ignoreCase = true)) {
                         return folder.absolutePath
                     }
                 }
             }
             "wiiu" -> {
-                val match = baseDir.listFiles()?.firstOrNull {
+                val match = listFilesAtPath(basePath)?.firstOrNull {
                     it.isDirectory && it.name.equals(titleId, ignoreCase = true)
                 }
                 if (match != null) return match.absolutePath
@@ -635,8 +724,7 @@ class SaveSyncRepository @Inject constructor(
             return basePath
         }
 
-        val baseDir = File(basePath)
-        if (!baseDir.exists()) {
+        if (!directoryExists(basePath)) {
             Logger.debug(TAG, "findActiveProfileFolder: baseDir doesn't exist, cannot determine profile")
             return basePath
         }
@@ -645,11 +733,11 @@ class SaveSyncRepository @Inject constructor(
         var mostRecentTime = 0L
         var firstNonZeroProfile: String? = null
 
-        baseDir.listFiles()?.forEach { userFolder ->
+        listFilesAtPath(basePath)?.forEach { userFolder ->
             if (!userFolder.isDirectory) return@forEach
             if (!isValidSwitchUserFolderId(userFolder.name)) return@forEach
 
-            userFolder.listFiles()?.forEach { profileFolder ->
+            listFilesAtPath(userFolder.absolutePath)?.forEach { profileFolder ->
                 if (!profileFolder.isDirectory) return@forEach
                 if (!isValidSwitchProfileFolderId(profileFolder.name)) return@forEach
 
@@ -674,7 +762,7 @@ class SaveSyncRepository @Inject constructor(
 
     private fun findNewestFileTime(folder: File): Long {
         var newest = 0L
-        folder.listFiles()?.forEach { child ->
+        listFilesAtPath(folder.absolutePath)?.forEach { child ->
             if (child.isFile) {
                 if (child.lastModified() > newest) {
                     newest = child.lastModified()
@@ -799,13 +887,12 @@ class SaveSyncRepository @Inject constructor(
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
         val baseDir = if (userConfig?.isUserOverride == true) {
             val userPath = userConfig.savePathPattern
-            val userDir = File(userPath)
-            if (userDir.exists() || userDir.mkdirs()) userPath else null
+            if (directoryExists(userPath) || saveArchiver.getFileForPath(userPath).mkdirs()) userPath else null
         } else {
             null
         } ?: run {
             val resolvedPaths = resolveSavePaths(config, platformSlug)
-            resolvedPaths.firstOrNull { File(it).exists() }
+            resolvedPaths.firstOrNull { directoryExists(it) }
                 ?: resolvedPaths.firstOrNull()
         } ?: return null
 
@@ -845,7 +932,7 @@ class SaveSyncRepository @Inject constructor(
             }
             else -> {
                 val defaultPaths = resolveSavePaths(saveConfig, platformSlug)
-                defaultPaths.firstOrNull { File(it).exists() }
+                defaultPaths.firstOrNull { directoryExists(it) }
                     ?: defaultPaths.firstOrNull()
             }
         } ?: return null
@@ -898,8 +985,7 @@ class SaveSyncRepository @Inject constructor(
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
         if (userConfig?.isUserOverride == true) {
             val userPath = userConfig.savePathPattern
-            val userDir = File(userPath)
-            if (userDir.exists() || userDir.mkdirs()) {
+            if (directoryExists(userPath) || saveArchiver.getFileForPath(userPath).mkdirs()) {
                 return userPath
             }
         }
@@ -909,7 +995,7 @@ class SaveSyncRepository @Inject constructor(
         }
 
         val resolvedPaths = resolveSavePaths(config, platformSlug)
-        return resolvedPaths.firstOrNull { File(it).exists() }
+        return resolvedPaths.firstOrNull { directoryExists(it) }
             ?: resolvedPaths.firstOrNull()
     }
 
@@ -940,7 +1026,7 @@ class SaveSyncRepository @Inject constructor(
             }
             else -> {
                 val defaultPaths = resolveSavePaths(saveConfig, platformSlug)
-                defaultPaths.firstOrNull { File(it).exists() }
+                defaultPaths.firstOrNull { directoryExists(it) }
                     ?: defaultPaths.firstOrNull()
             }
         }
@@ -1803,7 +1889,7 @@ class SaveSyncRepository @Inject constructor(
         }
 
         val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
-        val basePath = resolvedPaths.firstOrNull { File(it).exists() }
+        val basePath = resolvedPaths.firstOrNull { directoryExists(it) }
             ?: resolvedPaths.firstOrNull()
             ?: return null
 
@@ -1888,7 +1974,7 @@ class SaveSyncRepository @Inject constructor(
         val romFile = File(romPath)
         val titleId = titleIdExtractor.extractTitleId(romFile, platformSlug) ?: return null
 
-        val baseDir = config.defaultPaths.firstOrNull { File(it).exists() }
+        val baseDir = config.defaultPaths.firstOrNull { directoryExists(it) }
             ?: config.defaultPaths.firstOrNull()
             ?: return null
 
@@ -1947,12 +2033,11 @@ class SaveSyncRepository @Inject constructor(
                 else -> userConfig.savePathPattern
             }
         } else {
-            config.defaultPaths.firstOrNull { File(it).exists() }
+            config.defaultPaths.firstOrNull { directoryExists(it) }
                 ?: config.defaultPaths.firstOrNull()
         } ?: return null
 
-        val baseDirFile = File(baseDir)
-        if (!baseDirFile.exists()) {
+        if (!directoryExists(baseDir)) {
             Logger.debug(TAG, "[SaveSync] CONSTRUCT | Base dir does not exist | path=$baseDir")
             return null
         }
@@ -1973,6 +2058,7 @@ class SaveSyncRepository @Inject constructor(
             "3ds" -> {
                 val category = if (titleId.length >= 16) titleId.take(8) else "00040000"
                 val shortTitleId = if (titleId.length > 8) titleId.takeLast(8) else titleId
+                val baseDirFile = saveArchiver.getFileForPath(baseDir)
                 val userFolders = baseDirFile.listFiles()?.filter { it.isDirectory }
                 val folder1 = userFolders?.firstOrNull()
                 val folder2 = folder1?.listFiles()?.firstOrNull { it.isDirectory }

@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings.delegates
 
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.ALauncherDatabase
+import com.nendo.argosy.data.storage.ManagedStorageAccessor
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -42,6 +43,7 @@ class StorageSettingsDelegateTest {
     private lateinit var syncPlatformUseCase: SyncPlatformUseCase
     private lateinit var database: ALauncherDatabase
     private lateinit var imageCacheManager: ImageCacheManager
+    private lateinit var managedStorageAccessor: ManagedStorageAccessor
     private lateinit var delegate: StorageSettingsDelegate
 
     @Before
@@ -58,6 +60,7 @@ class StorageSettingsDelegateTest {
         syncPlatformUseCase = mockk(relaxed = true)
         database = mockk(relaxed = true)
         imageCacheManager = mockk(relaxed = true)
+        managedStorageAccessor = mockk(relaxed = true)
 
         delegate = StorageSettingsDelegate(
             preferencesRepository = preferencesRepository,
@@ -69,7 +72,8 @@ class StorageSettingsDelegateTest {
             purgePlatformUseCase = purgePlatformUseCase,
             syncPlatformUseCase = syncPlatformUseCase,
             database = database,
-            imageCacheManager = imageCacheManager
+            imageCacheManager = imageCacheManager,
+            managedStorageAccessor = managedStorageAccessor
         )
     }
 

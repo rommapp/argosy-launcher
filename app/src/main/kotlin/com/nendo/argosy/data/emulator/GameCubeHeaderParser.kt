@@ -141,31 +141,36 @@ object GameCubeHeaderParser {
         val regions = listOf("USA", "EUR", "JAP", "KOR")
         val results = mutableListOf<File>()
 
+        fun searchDirectory(dir: File) {
+            dir.listFiles()?.forEach { file ->
+                if (file.isFile && file.extension.equals("gci", ignoreCase = true) && !file.name.contains(".deleted")) {
+                    if (file.name.contains(gameId, ignoreCase = true)) {
+                        results.add(file)
+                    } else {
+                        val gciInfo = parseGciHeader(file)
+                        if (gciInfo?.gameId.equals(gameId, ignoreCase = true)) {
+                            results.add(file)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Search the provided directory directly (for user overrides that point to card folder)
+        searchDirectory(saveDir)
+        if (results.isNotEmpty()) return results
+
+        // Search standard Dolphin structure: {saveDir}/{region}/[Card A|B/]
         for (region in regions) {
             val regionDir = File(saveDir, region)
             if (!regionDir.exists()) continue
 
-            // Search directly in region folder and in Card A/Card B subfolders
             val dirsToSearch = mutableListOf(regionDir)
             regionDir.listFiles()?.filter { it.isDirectory && it.name.startsWith("Card", ignoreCase = true) }
                 ?.let { dirsToSearch.addAll(it) }
 
             for (dir in dirsToSearch) {
-                dir.listFiles()?.forEach { file ->
-                    if (file.isFile && file.extension.equals("gci", ignoreCase = true) && !file.name.contains(".deleted")) {
-                        // Dolphin names files as "XX-GAMEID-name.gci" or traditional "GAMEIDMAKER_name.gci"
-                        // Check if filename contains game ID anywhere, or parse header to verify
-                        if (file.name.contains(gameId, ignoreCase = true)) {
-                            results.add(file)
-                        } else {
-                            // Fallback: parse GCI header to check game ID
-                            val gciInfo = parseGciHeader(file)
-                            if (gciInfo?.gameId.equals(gameId, ignoreCase = true)) {
-                                results.add(file)
-                            }
-                        }
-                    }
-                }
+                searchDirectory(dir)
             }
         }
 

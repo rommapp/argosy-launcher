@@ -338,6 +338,13 @@ class SaveSyncRepository @Inject constructor(
                     basePathOverride = userConfig.savePathPattern
                 )
             }
+            if (config.usesGciFormat && romPath != null) {
+                val gciSave = discoverGciSavePath(config, romPath, userConfig.savePathPattern)
+                if (gciSave != null) {
+                    Logger.debug(TAG, "discoverSavePath: GCI save found (user override) at $gciSave")
+                    return@withContext gciSave
+                }
+            }
             if (romPath != null) {
                 val savePath = findSaveByRomName(userConfig.savePathPattern, romPath, config.saveExtensions)
                 if (savePath != null) return@withContext savePath
@@ -574,7 +581,8 @@ class SaveSyncRepository @Inject constructor(
 
     private fun discoverGciSavePath(
         config: SavePathConfig,
-        romPath: String
+        romPath: String,
+        basePathOverride: String? = null
     ): String? {
         val romFile = File(romPath)
         if (!romFile.exists()) {
@@ -590,8 +598,12 @@ class SaveSyncRepository @Inject constructor(
 
         Logger.debug(TAG, "[SaveSync] GCI | Parsed ROM: gameId=${gameInfo.gameId}, region=${gameInfo.region}, name=${gameInfo.gameName}")
 
-        val resolvedPaths = SavePathRegistry.resolvePath(config, "ngc", null)
-        Logger.debug(TAG, "[SaveSync] GCI | Searching ${resolvedPaths.size} paths for GCI saves")
+        val resolvedPaths = if (basePathOverride != null) {
+            listOf(basePathOverride)
+        } else {
+            SavePathRegistry.resolvePath(config, "ngc", null)
+        }
+        Logger.debug(TAG, "[SaveSync] GCI | Searching ${resolvedPaths.size} paths for GCI saves${if (basePathOverride != null) " (user override)" else ""}")
 
         for (basePath in resolvedPaths) {
             val saveDir = File(basePath)

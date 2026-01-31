@@ -9,6 +9,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.launcher.SteamLaunchers
+import com.nendo.argosy.data.storage.AndroidDataAccessor
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.libretro.LibretroActivity
@@ -56,7 +57,8 @@ class GameLauncher @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager,
     private val libretroCoreMgr: LibretroCoreManager,
-    private val biosRepository: BiosRepository
+    private val biosRepository: BiosRepository,
+    private val androidDataAccessor: AndroidDataAccessor
 ) {
     suspend fun launch(
         gameId: Long,
@@ -501,8 +503,24 @@ class GameLauncher @Inject constructor(
             Logger.warn(TAG, "No core found for platform: ${game.platformSlug}")
             return null
         }
-        val corePath = "/data/data/$retroArchPackage/cores/${coreName}_libretro_android.so"
-        return corePath
+
+        val coreFileName = "${coreName}_libretro_android.so"
+        val searchPaths = listOf(
+            "/data/data/$retroArchPackage/cores/$coreFileName",
+            "/storage/emulated/0/Android/data/$retroArchPackage/files/cores/$coreFileName",
+            "/storage/emulated/0/RetroArch/cores/$coreFileName"
+        )
+
+        for (path in searchPaths) {
+            val file = androidDataAccessor.getFile(path)
+            if (file.exists()) {
+                Logger.debug(TAG, "Core found at: $path")
+                return path
+            }
+        }
+
+        Logger.warn(TAG, "Core not found: $coreFileName (searched ${searchPaths.size} locations)")
+        return searchPaths.first()
     }
 
     private suspend fun resolveCoreName(game: GameEntity): String? {

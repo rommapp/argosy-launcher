@@ -3,6 +3,7 @@ package com.nendo.argosy.data.storage
 import android.content.Context
 import android.os.Build
 import android.os.Environment
+import android.system.Os
 import android.util.Log
 import com.nendo.argosy.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,35 +26,66 @@ class AndroidDataAccessor @Inject constructor(
     @Volatile
     private var altPathSupported: Boolean? = null
 
-    fun isUnicodeTrickSupported(): Boolean {
+    fun resetAltAccessCache() {
+        altPathSupported = null
+    }
+
+    fun isAltAccessSupported(): Boolean {
         if (ALT_PATH == null) return false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
 
-        altPathSupported?.let { return it }
+        val hasStoragePermission = Environment.isExternalStorageManager()
+        if (hasStoragePermission) {
+            altPathSupported?.let { return it }
+        }
 
         synchronized(this) {
-            altPathSupported?.let { return it }
+            if (hasStoragePermission) {
+                altPathSupported?.let { return it }
+            }
 
             val extStorage = Environment.getExternalStorageDirectory().absolutePath
-            val altAndroidPath = extStorage + ALT_PATH.dropLast(1) // Remove trailing slash
+            val altAndroidPath = extStorage + ALT_PATH.dropLast(1)
 
             val supported = try {
                 val dir = File(altAndroidPath)
-                dir.exists() && File(dir, "data").canRead()
+                val dataLink = File(dir, "data")
+
+                if (hasStoragePermission && !dataLink.exists()) {
+                    setupAltAccess(extStorage, dir, dataLink)
+                }
+
+                val dirExists = dir.exists()
+                val canRead = dataLink.canRead()
+                Log.i(TAG, "Alt access: $dirExists/$canRead")
+                dirExists && canRead
             } catch (e: Exception) {
                 Log.w(TAG, "Alt path check failed", e)
                 false
             }
 
-            Log.i(TAG, "Alt path supported: $supported")
-            altPathSupported = supported
+            if (hasStoragePermission) {
+                altPathSupported = supported
+            }
             return supported
+        }
+    }
+
+    private fun setupAltAccess(extStorage: String, altDir: File, dataLink: File) {
+        try {
+            if (!altDir.exists()) altDir.mkdirs()
+            if (!dataLink.exists()) Os.symlink("$extStorage/Android/data", dataLink.absolutePath)
+
+            val obbLink = File(altDir, "obb")
+            if (!obbLink.exists()) Os.symlink("$extStorage/Android/obb", obbLink.absolutePath)
+        } catch (e: Exception) {
+            Log.w(TAG, "Alt setup failed: ${e.message}")
         }
     }
 
     fun transformPath(path: String): String {
         val altPath = ALT_PATH ?: return path
-        if (!isUnicodeTrickSupported()) return path
+        if (!isAltAccessSupported()) return path
         if (!isRestrictedAndroidPath(path)) return path
         if (path.contains(altPath)) return path
 
@@ -73,9 +105,6 @@ class AndroidDataAccessor @Inject constructor(
             path.endsWith("/Android/obb") ||
             (altPath != null && path.contains(altPath))
     }
-
-    // --- File Operations ---
-    // These methods automatically apply the Unicode trick when supported
 
     fun listFiles(path: String): Array<File>? {
         val transformedPath = transformPath(path)

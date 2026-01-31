@@ -53,7 +53,6 @@ class TitleIdDetector @Inject constructor(
         val resolvedPaths = resolvePathsWithUserOverride(emulatorId, config, emulatorPackage)
 
         for (path in resolvedPaths) {
-            // Use AndroidDataAccessor to handle Unicode path trick for restricted paths
             val dir = androidDataAccessor.getFile(path)
             if (!dir.exists() || !dir.isDirectory) continue
 
@@ -148,7 +147,6 @@ class TitleIdDetector @Inject constructor(
         platformSlug: String,
         sessionStartTime: Long
     ): DetectedTitleId? {
-        // Use AndroidDataAccessor to handle Unicode path trick for restricted paths
         val baseDir = androidDataAccessor.getFile(basePath)
         if (!baseDir.exists()) return null
 

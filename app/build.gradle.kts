@@ -50,7 +50,6 @@ android {
         buildConfigField("String", "CHEATSDB_API_SECRET", "\"${envString("CHEATSDB_API_SECRET")}\"")
         buildConfigField("String", "RA_API_KEY", "\"${envString("RA_API_KEY")}\"")
         val ucdataPath = envString("UCDATA_PATH").ifEmpty { null }?.let {
-            // Decode escaped unicode if present (e.g., \\u2066 -> actual char)
             it.replace(Regex("\\\\u([0-9A-Fa-f]{4})")) { match ->
                 match.groupValues[1].toInt(16).toChar().toString()
             }

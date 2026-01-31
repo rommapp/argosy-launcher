@@ -201,11 +201,11 @@ class SaveSyncRepository @Inject constructor(
     }
 
     private fun listFilesAtPath(path: String): List<File>? {
-        // Try Unicode trick first (via saveArchiver) - most reliable on supported devices
-        val unicodeResult = saveArchiver.listFilesAtPath(path)
-        if (unicodeResult != null && unicodeResult.isNotEmpty()) {
-            Logger.debug(TAG, "[UnicodeAccess] Listed ${unicodeResult.size} files at $path")
-            return unicodeResult.toList()
+        // Try alt access first (via saveArchiver) - most reliable on supported devices
+        val altResult = saveArchiver.listFilesAtPath(path)
+        if (altResult != null && altResult.isNotEmpty()) {
+            Logger.debug(TAG, "[AltAccess] Listed ${altResult.size} files at $path")
+            return altResult.toList()
         }
 
         // Fallback to ManagedStorageAccessor (DocumentsContract approach)
@@ -221,9 +221,9 @@ class SaveSyncRepository @Inject constructor(
     }
 
     private fun directoryExists(path: String): Boolean {
-        // Try Unicode trick first (via saveArchiver)
+        // Try alt access first (via saveArchiver)
         if (saveArchiver.existsAtPath(path)) {
-            Logger.debug(TAG, "[UnicodeAccess] Directory exists: $path")
+            Logger.debug(TAG, "[AltAccess] Directory exists: $path")
             return true
         }
 

@@ -34,12 +34,10 @@ class CheckSaveSyncPermissionUseCase @Inject constructor(
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Check if Unicode path trick works (preferred method - no prompts)
-            if (androidDataAccessor.isUnicodeTrickSupported()) {
+            if (androidDataAccessor.isAltAccessSupported()) {
                 return Result.Granted
             }
 
-            // Fallback: check SAF grant for devices where Unicode trick doesn't work
             managedStorageAccessor.setTreeUri(prefs.androidDataSafUri)
             val hasValidGrant = managedStorageAccessor.hasValidSafGrant()
             if (!hasValidGrant) {

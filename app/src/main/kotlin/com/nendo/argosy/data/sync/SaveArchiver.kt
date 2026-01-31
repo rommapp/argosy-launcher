@@ -55,11 +55,11 @@ class SaveArchiver @Inject constructor(
     }
 
     private fun openOutputStreamForPath(path: String): OutputStream? {
-        // For restricted paths, try Unicode trick first (most reliable on supported devices)
-        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+        // For restricted paths, try alt access first (most reliable on supported devices)
+        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
             val stream = androidDataAccessor.getOutputStream(path)
             if (stream != null) {
-                Logger.debug(TAG, "[UnicodeAccess] Opened output stream for $path")
+                Logger.debug(TAG, "[AltAccess] Opened output stream for $path")
                 return stream
             }
         }
@@ -78,11 +78,11 @@ class SaveArchiver @Inject constructor(
     }
 
     private fun openInputStreamForPath(path: String): InputStream? {
-        // For restricted paths, try Unicode trick first
-        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+        // For restricted paths, try alt access first
+        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
             val stream = androidDataAccessor.getInputStream(path)
             if (stream != null) {
-                Logger.debug(TAG, "[UnicodeAccess] Opened input stream for $path")
+                Logger.debug(TAG, "[AltAccess] Opened input stream for $path")
                 return stream
             }
         }
@@ -100,17 +100,17 @@ class SaveArchiver @Inject constructor(
     }
 
     private fun createDirectoryForPath(path: String): Boolean {
-        // For restricted paths, try Unicode trick first
-        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+        // For restricted paths, try alt access first
+        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
             val result = androidDataAccessor.mkdirs(path)
             if (result) {
-                Logger.debug(TAG, "[UnicodeAccess] Created directory: $path")
+                Logger.debug(TAG, "[AltAccess] Created directory: $path")
                 return true
             }
         }
 
         if (isRestrictedPath(path)) {
-            // For restricted paths without Unicode support, rely on output stream creation
+            // For restricted paths without alt access support, rely on output stream creation
             Logger.debug(TAG, "[ManagedAccess] Directory creation for restricted path: $path (handled via output stream)")
             return true
         }
@@ -119,11 +119,11 @@ class SaveArchiver @Inject constructor(
     }
 
     /**
-     * Get a File object for the given path, using Unicode trick if applicable.
+     * Get a File object for the given path, using alt access if applicable.
      * Use this for file operations that need direct File access.
      */
     fun getFileForPath(path: String): File {
-        return if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+        return if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
             androidDataAccessor.getFile(path)
         } else {
             File(path)
@@ -134,7 +134,7 @@ class SaveArchiver @Inject constructor(
      * Check if a file/directory exists at the given path, handling restricted paths.
      */
     fun existsAtPath(path: String): Boolean {
-        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
             return androidDataAccessor.exists(path)
         }
         if (isRestrictedPath(path)) {
@@ -148,10 +148,10 @@ class SaveArchiver @Inject constructor(
      * List files at the given path, handling restricted paths.
      */
     fun listFilesAtPath(path: String): Array<File>? {
-        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
             return androidDataAccessor.listFiles(path)
         }
-        // For restricted paths without Unicode support, we can't easily return File objects
+        // For restricted paths without alt access support, we can't easily return File objects
         // from DocumentsContract, so just try direct access
         return File(path).listFiles()
     }
@@ -160,7 +160,7 @@ class SaveArchiver @Inject constructor(
      * Get last modified time for a file, handling restricted paths.
      */
     fun lastModifiedAtPath(path: String): Long {
-        if (isRestrictedPath(path) && androidDataAccessor.isUnicodeTrickSupported()) {
+        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
             return androidDataAccessor.lastModified(path)
         }
         return File(path).lastModified()

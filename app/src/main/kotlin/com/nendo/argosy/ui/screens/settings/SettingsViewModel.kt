@@ -821,10 +821,10 @@ class SettingsViewModel @Inject constructor(
 
     fun getConnectedControllers() = inputConfigRepository.getConnectedControllers()
 
-    suspend fun getControllerMapping(controller: com.nendo.argosy.data.repository.ControllerInfo): Pair<Map<Int, Int>, String?> {
+    suspend fun getControllerMapping(controller: com.nendo.argosy.data.repository.ControllerInfo): Pair<Map<com.nendo.argosy.data.repository.InputSource, Int>, String?> {
         val device = android.view.InputDevice.getDevice(controller.deviceId)
             ?: return Pair(emptyMap(), null)
-        val mapping = inputConfigRepository.getOrCreateMappingForDevice(device)
+        val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device)
         val entity = inputConfigRepository.observeControllerMappings().first()
             .find { it.controllerId == controller.controllerId }
         return Pair(mapping, entity?.presetName)
@@ -832,12 +832,12 @@ class SettingsViewModel @Inject constructor(
 
     suspend fun saveControllerMapping(
         controller: com.nendo.argosy.data.repository.ControllerInfo,
-        mapping: Map<Int, Int>,
+        mapping: Map<com.nendo.argosy.data.repository.InputSource, Int>,
         presetName: String?,
         isAutoDetected: Boolean
     ) {
         val device = android.view.InputDevice.getDevice(controller.deviceId) ?: return
-        inputConfigRepository.saveMapping(device, mapping, presetName, isAutoDetected)
+        inputConfigRepository.saveExtendedMapping(device, mapping, presetName, isAutoDetected)
     }
 
     suspend fun applyControllerPreset(controller: com.nendo.argosy.data.repository.ControllerInfo, presetName: String) {

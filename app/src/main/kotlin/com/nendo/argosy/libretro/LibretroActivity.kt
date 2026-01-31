@@ -94,7 +94,7 @@ class LibretroActivity : ComponentActivity() {
 
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
-    private val keyMapper = ControllerKeyMapper()
+    private val inputMapper = ControllerInputMapper()
     private lateinit var hotkeyManager: HotkeyManager
     private var vibrator: Vibrator? = null
     private lateinit var statesDir: File
@@ -307,7 +307,7 @@ class LibretroActivity : ComponentActivity() {
         retroView.filterMode = settings.filterMode
         retroView.blackFrameInsertion = settings.blackFrameInsertion
         retroView.portResolver = portResolver
-        retroView.keyMapper = keyMapper
+        retroView.keyMapper = inputMapper
 
         setupInputConfig()
 
@@ -803,18 +803,27 @@ class LibretroActivity : ComponentActivity() {
             val controllerOrder = inputConfigRepository.getControllerOrder()
             portResolver.setControllerOrder(controllerOrder)
 
-            val mappings = mutableMapOf<String, Map<Int, Int>>()
+            val mappings = mutableMapOf<String, Map<com.nendo.argosy.data.repository.InputSource, Int>>()
             for (controller in inputConfigRepository.getConnectedControllers()) {
-                val mapping = inputConfigRepository.getOrCreateMappingForDevice(
+                val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(
                     android.view.InputDevice.getDevice(controller.deviceId)!!
                 )
                 mappings[controller.controllerId] = mapping
             }
-            keyMapper.setMappings(mappings)
+            inputMapper.setExtendedMappings(mappings)
+            inputMapper.setPortResolver { device -> portResolver.getPort(device) }
+
+            val mappedButtons = mappings.mapValues { (_, mapping) ->
+                mapping.keys
+                    .filterIsInstance<com.nendo.argosy.data.repository.InputSource.Button>()
+                    .map { it.keyCode }
+                    .toSet()
+            }
 
             inputConfigRepository.initializeDefaultHotkeys()
             val hotkeys = inputConfigRepository.getEnabledHotkeys()
             hotkeyManager.setHotkeys(hotkeys)
+            hotkeyManager.setControllerMappedButtons(mappedButtons)
             hotkeyManager.setLimitToPlayer1(limitHotkeysToPlayer1)
 
             if (controllerOrder.isNotEmpty()) {
@@ -1145,6 +1154,12 @@ class LibretroActivity : ComponentActivity() {
         if (menuVisible || cheatsMenuVisible) {
             return super.onGenericMotionEvent(event)
         }
+
+        val syntheticEvents = inputMapper.processMotionEvent(event)
+        for (synthetic in syntheticEvents) {
+            retroView.sendKeyEvent(synthetic.action, synthetic.keyCode, synthetic.port)
+        }
+
         return retroView.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
     }
 

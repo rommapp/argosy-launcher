@@ -22,6 +22,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "InputConfigRepository"
+private const val MAPPING_FORMAT_VERSION = 2
 
 data class ControllerInfo(
     val deviceId: Int,
@@ -156,6 +157,82 @@ class InputConfigRepository @Inject constructor(
 
     suspend fun clearMappingForController(controllerId: String) = withContext(Dispatchers.IO) {
         controllerMappingDao.deleteByControllerId(controllerId)
+    }
+
+    suspend fun getExtendedMappingForController(controllerId: String): Map<InputSource, Int>? =
+        withContext(Dispatchers.IO) {
+            val entity = controllerMappingDao.getByControllerId(controllerId) ?: return@withContext null
+            parseExtendedMappingJson(entity.mappingJson)
+        }
+
+    suspend fun getExtendedMappingForDevice(device: InputDevice): Map<InputSource, Int>? =
+        getExtendedMappingForController(getControllerId(device))
+
+    suspend fun getOrCreateExtendedMappingForDevice(device: InputDevice): Map<InputSource, Int> =
+        withContext(Dispatchers.IO) {
+            val controllerId = getControllerId(device)
+            val existing = controllerMappingDao.getByControllerId(controllerId)
+
+            if (existing != null) {
+                return@withContext parseExtendedMappingJson(existing.mappingJson)
+            }
+
+            val detectionResult = ControllerDetector.detectFromDevice(device)
+            val layout = detectionResult.layout ?: DetectedLayout.XBOX
+            val defaultMapping = InputPresets.getDefaultMappingForLayout(layout)
+            val extendedMapping: Map<InputSource, Int> = defaultMapping.map { (keyCode, retroButton) ->
+                InputSource.Button(keyCode) as InputSource to retroButton
+            }.toMap()
+
+            saveExtendedMapping(
+                device = device,
+                mapping = extendedMapping,
+                presetName = layout.name,
+                isAutoDetected = true
+            )
+
+            extendedMapping
+        }
+
+    suspend fun saveExtendedMapping(
+        device: InputDevice,
+        mapping: Map<InputSource, Int>,
+        presetName: String?,
+        isAutoDetected: Boolean
+    ) = withContext(Dispatchers.IO) {
+        val controllerId = getControllerId(device)
+        val mappingJson = encodeExtendedMappingJson(mapping)
+
+        val existing = controllerMappingDao.getByControllerId(controllerId)
+        if (existing != null) {
+            controllerMappingDao.updateMapping(
+                controllerId = controllerId,
+                mappingJson = mappingJson,
+                presetName = presetName,
+                isAutoDetected = isAutoDetected,
+                updatedAt = Instant.now()
+            )
+        } else {
+            controllerMappingDao.upsert(
+                ControllerMappingEntity(
+                    controllerId = controllerId,
+                    controllerName = device.name ?: "Unknown",
+                    vendorId = device.vendorId,
+                    productId = device.productId,
+                    mappingJson = mappingJson,
+                    presetName = presetName,
+                    isAutoDetected = isAutoDetected,
+                    createdAt = Instant.now(),
+                    updatedAt = Instant.now()
+                )
+            )
+        }
+        Logger.info(TAG, "Saved extended mapping for ${device.name} (preset: $presetName)")
+    }
+
+    fun groupMappingByRetroButton(mapping: Map<InputSource, Int>): Map<Int, List<InputSource>> {
+        return mapping.entries
+            .groupBy({ it.value }, { it.key })
     }
 
     fun observeHotkeys(): Flow<List<HotkeyEntity>> = hotkeyDao.observeAll()
@@ -322,6 +399,86 @@ class InputConfigRepository @Inject constructor(
             jsonArray.put(keyCode)
         }
         return jsonArray.toString()
+    }
+
+    private fun parseExtendedMappingJson(jsonStr: String): Map<InputSource, Int> {
+        return try {
+            val trimmed = jsonStr.trim()
+            if (trimmed.startsWith("[")) {
+                parseLegacyMappingToExtended(trimmed)
+            } else {
+                parseVersionedMappingJson(trimmed)
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "Failed to parse extended mapping JSON: ${e.message}")
+            emptyMap()
+        }
+    }
+
+    private fun parseLegacyMappingToExtended(jsonStr: String): Map<InputSource, Int> {
+        val result = mutableMapOf<InputSource, Int>()
+        val jsonArray = JSONArray(jsonStr)
+        for (i in 0 until jsonArray.length()) {
+            val obj = jsonArray.getJSONObject(i)
+            val androidKeyCode = obj.getInt("androidKeyCode")
+            val retroButton = obj.getInt("retroButton")
+            result[InputSource.Button(androidKeyCode)] = retroButton
+        }
+        return result
+    }
+
+    private fun parseVersionedMappingJson(jsonStr: String): Map<InputSource, Int> {
+        val result = mutableMapOf<InputSource, Int>()
+        val root = JSONObject(jsonStr)
+        val mappings = root.getJSONArray("mappings")
+
+        for (i in 0 until mappings.length()) {
+            val obj = mappings.getJSONObject(i)
+            val retroButton = obj.getInt("retroButton")
+            val type = obj.getString("type")
+
+            val source = when (type) {
+                "button" -> InputSource.Button(obj.getInt("keyCode"))
+                "analog" -> InputSource.AnalogDirection(
+                    axis = obj.getInt("axis"),
+                    positive = obj.getBoolean("positive")
+                )
+                else -> continue
+            }
+            result[source] = retroButton
+        }
+        return result
+    }
+
+    private fun encodeExtendedMappingJson(mapping: Map<InputSource, Int>): String {
+        val root = JSONObject()
+        root.put("version", MAPPING_FORMAT_VERSION)
+
+        val mappingsArray = JSONArray()
+        for ((source, retroButton) in mapping) {
+            val obj = JSONObject()
+            obj.put("retroButton", retroButton)
+            when (source) {
+                is InputSource.Button -> {
+                    obj.put("type", "button")
+                    obj.put("keyCode", source.keyCode)
+                }
+                is InputSource.AnalogDirection -> {
+                    obj.put("type", "analog")
+                    obj.put("axis", source.axis)
+                    obj.put("positive", source.positive)
+                }
+            }
+            mappingsArray.put(obj)
+        }
+        root.put("mappings", mappingsArray)
+        return root.toString()
+    }
+
+    fun extendedMappingToLegacy(mapping: Map<InputSource, Int>): Map<Int, Int> {
+        return mapping.entries
+            .filter { it.key is InputSource.Button }
+            .associate { (it.key as InputSource.Button).keyCode to it.value }
     }
 
     companion object {

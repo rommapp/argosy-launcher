@@ -14,6 +14,7 @@ class HotkeyManager(
     private var triggeredAction: HotkeyAction? = null
     private var limitToPlayer1 = true
     private var player1ControllerId: String? = null
+    private var controllerMappedButtons: Map<String, Set<Int>> = emptyMap()
 
     data class HotkeyConfig(
         val action: HotkeyAction,
@@ -41,6 +42,10 @@ class HotkeyManager(
         player1ControllerId = controllerId
     }
 
+    fun setControllerMappedButtons(mappings: Map<String, Set<Int>>) {
+        controllerMappedButtons = mappings
+    }
+
     fun onKeyDown(keyCode: Int, controllerId: String?): HotkeyAction? {
         if (!isHotkeyKey(keyCode)) return null
 
@@ -55,6 +60,12 @@ class HotkeyManager(
             if (!hotkey.isEnabled) continue
             if (hotkey.controllerId != null && hotkey.controllerId != controllerId) continue
             if (hotkey.keyCodes.isNotEmpty() && pressedKeys.containsAll(hotkey.keyCodes)) {
+                if (hotkey.keyCodes.size == 1 && controllerId != null) {
+                    val mappedButtons = controllerMappedButtons[controllerId] ?: emptySet()
+                    if (hotkey.keyCodes.first() in mappedButtons) {
+                        continue
+                    }
+                }
                 triggeredAction = hotkey.action
                 return hotkey.action
             }

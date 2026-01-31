@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.input
 
 import android.view.KeyEvent
+import android.view.MotionEvent
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +45,7 @@ class GamepadInputHandler @Inject constructor(
     private var swapStartSelect = false
 
     private var rawKeyEventListener: ((KeyEvent) -> Boolean)? = null
+    private var rawMotionEventListener: ((MotionEvent) -> Boolean)? = null
 
     init {
         scope.launch {
@@ -67,6 +69,17 @@ class GamepadInputHandler @Inject constructor(
 
     fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
         rawKeyEventListener = listener
+    }
+
+    fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?) {
+        rawMotionEventListener = listener
+    }
+
+    fun handleMotionEvent(event: MotionEvent): Boolean {
+        rawMotionEventListener?.let { listener ->
+            return listener(event)
+        }
+        return false
     }
 
     fun handleKeyEvent(event: KeyEvent): Boolean {

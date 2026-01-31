@@ -2,12 +2,15 @@ package com.nendo.argosy.ui.screens.settings.components
 
 import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -18,7 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.data.repository.ControllerInfo
 import com.nendo.argosy.data.repository.InputPresets
+import com.nendo.argosy.data.repository.InputSource
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -52,22 +56,23 @@ private sealed class InputMappingState {
     data class PlatformMapping(
         val controller: ControllerInfo,
         val platformIndex: Int,
-        val currentMapping: Map<Int, Int>,
+        val currentMapping: Map<InputSource, Int>,
         val focusedButtonIndex: Int = 0
     ) : InputMappingState()
     data class Recording(
         val controller: ControllerInfo,
         val platformIndex: Int,
         val targetRetroButton: Int,
-        val currentMapping: Map<Int, Int>
+        val currentMapping: Map<InputSource, Int>,
+        val replaceMode: Boolean = true
     ) : InputMappingState()
 }
 
 @Composable
 fun InputMappingModal(
     controllers: List<ControllerInfo>,
-    onGetMapping: suspend (ControllerInfo) -> Pair<Map<Int, Int>, String?>,
-    onSaveMapping: suspend (ControllerInfo, Map<Int, Int>, String?, Boolean) -> Unit,
+    onGetMapping: suspend (ControllerInfo) -> Pair<Map<InputSource, Int>, String?>,
+    onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean) -> Unit,
     onApplyPreset: suspend (ControllerInfo, String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -79,7 +84,7 @@ fun InputMappingModal(
     val gamepadInputHandler = LocalGamepadInputHandler.current
 
     DisposableEffect(state, gamepadInputHandler) {
-        val listener: (KeyEvent) -> Boolean = { event ->
+        val keyListener: (KeyEvent) -> Boolean = { event ->
             val device = event.device
             when (val currentState = state) {
                 is InputMappingState.ControllerList -> {
@@ -121,8 +126,31 @@ fun InputMappingModal(
                                         controller = currentState.controller,
                                         platformIndex = currentState.platformIndex,
                                         targetRetroButton = platform.buttons[currentState.focusedButtonIndex],
-                                        currentMapping = currentState.currentMapping
+                                        currentMapping = currentState.currentMapping,
+                                        replaceMode = true
                                     )
+                                }
+                            }
+                            KeyEvent.KEYCODE_BUTTON_X -> {
+                                if (currentState.focusedButtonIndex < platform.buttons.size) {
+                                    backPressedAt = 0L
+                                    state = InputMappingState.Recording(
+                                        controller = currentState.controller,
+                                        platformIndex = currentState.platformIndex,
+                                        targetRetroButton = platform.buttons[currentState.focusedButtonIndex],
+                                        currentMapping = currentState.currentMapping,
+                                        replaceMode = false
+                                    )
+                                }
+                            }
+                            KeyEvent.KEYCODE_BUTTON_Y -> {
+                                if (currentState.focusedButtonIndex < platform.buttons.size) {
+                                    val targetButton = platform.buttons[currentState.focusedButtonIndex]
+                                    val newMapping = currentState.currentMapping.filterValues { it != targetButton }
+                                    scope.launch {
+                                        onSaveMapping(currentState.controller, newMapping, null, false)
+                                        state = currentState.copy(currentMapping = newMapping)
+                                    }
                                 }
                             }
                             KeyEvent.KEYCODE_BUTTON_L1 -> {
@@ -158,9 +186,12 @@ fun InputMappingModal(
                         if (isBackButton) {
                             backPressedAt = System.currentTimeMillis()
                         } else if (device != null && isGamepadDevice(device) && isMappableButton(event.keyCode)) {
+                            val inputSource = InputSource.Button(event.keyCode)
                             val newMapping = currentState.currentMapping.toMutableMap()
-                            newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
-                            newMapping[event.keyCode] = currentState.targetRetroButton
+                            if (currentState.replaceMode) {
+                                newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
+                            }
+                            newMapping[inputSource] = currentState.targetRetroButton
 
                             scope.launch {
                                 onSaveMapping(currentState.controller, newMapping, null, false)
@@ -187,9 +218,12 @@ fun InputMappingModal(
                                 focusedButtonIndex = buttonIndex.coerceAtLeast(0)
                             )
                         } else if (device != null && isGamepadDevice(device)) {
+                            val inputSource = InputSource.Button(event.keyCode)
                             val newMapping = currentState.currentMapping.toMutableMap()
-                            newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
-                            newMapping[event.keyCode] = currentState.targetRetroButton
+                            if (currentState.replaceMode) {
+                                newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
+                            }
+                            newMapping[inputSource] = currentState.targetRetroButton
 
                             scope.launch {
                                 onSaveMapping(currentState.controller, newMapping, null, false)
@@ -209,10 +243,44 @@ fun InputMappingModal(
             true
         }
 
-        gamepadInputHandler?.setRawKeyEventListener(listener)
+        val motionListener: (MotionEvent) -> Boolean = { event ->
+            when (val currentState = state) {
+                is InputMappingState.Recording -> {
+                    val device = event.device
+                    if (device != null && isGamepadDevice(device)) {
+                        val analogInput = detectAnalogInput(event)
+                        if (analogInput != null) {
+                            val newMapping = currentState.currentMapping.toMutableMap()
+                            if (currentState.replaceMode) {
+                                newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
+                            }
+                            newMapping[analogInput] = currentState.targetRetroButton
+
+                            scope.launch {
+                                onSaveMapping(currentState.controller, newMapping, null, false)
+                                val platform = MappingPlatforms.getByIndex(currentState.platformIndex)
+                                val buttonIndex = platform.buttons.indexOf(currentState.targetRetroButton)
+                                state = InputMappingState.PlatformMapping(
+                                    controller = currentState.controller,
+                                    platformIndex = currentState.platformIndex,
+                                    currentMapping = newMapping,
+                                    focusedButtonIndex = buttonIndex.coerceAtLeast(0)
+                                )
+                            }
+                        }
+                    }
+                }
+                else -> {}
+            }
+            false
+        }
+
+        gamepadInputHandler?.setRawKeyEventListener(keyListener)
+        gamepadInputHandler?.setRawMotionEventListener(motionListener)
 
         onDispose {
             gamepadInputHandler?.setRawKeyEventListener(null)
+            gamepadInputHandler?.setRawMotionEventListener(null)
         }
     }
 
@@ -372,7 +440,7 @@ private fun ControllerRow(
 private fun PlatformMappingContent(
     controller: ControllerInfo,
     platformIndex: Int,
-    mapping: Map<Int, Int>,
+    mapping: Map<InputSource, Int>,
     focusedIndex: Int,
     onSelectButton: (Int) -> Unit,
     onDismiss: () -> Unit
@@ -393,9 +461,11 @@ private fun PlatformMappingContent(
         onDismiss = onDismiss,
         footerHints = listOf(
             InputButton.A to "Remap",
+            InputButton.X to "Add",
+            InputButton.Y to "Clear",
             InputButton.B to "Back",
-            InputButton.LB to "Prev Platform",
-            InputButton.RB to "Next Platform"
+            InputButton.LB to "Prev",
+            InputButton.RB to "Next"
         )
     ) {
         LazyColumn(
@@ -404,10 +474,12 @@ private fun PlatformMappingContent(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
             itemsIndexed(platform.buttons) { index, retroButton ->
-                val boundKey = mapping.entries.find { it.value == retroButton }?.key
+                val boundSources = mapping.entries
+                    .filter { it.value == retroButton }
+                    .map { it.key }
                 ButtonMappingRow(
                     retroButtonName = InputPresets.getRetroButtonName(retroButton),
-                    boundKeyName = boundKey?.let { InputPresets.getAndroidButtonName(it) },
+                    boundSources = boundSources,
                     isFocused = index == focusedIndex,
                     onClick = { onSelectButton(retroButton) }
                 )
@@ -416,10 +488,11 @@ private fun PlatformMappingContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ButtonMappingRow(
     retroButtonName: String,
-    boundKeyName: String?,
+    boundSources: List<InputSource>,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
@@ -453,30 +526,63 @@ private fun ButtonMappingRow(
         Text(
             text = retroButtonName,
             style = MaterialTheme.typography.bodyMedium,
-            color = contentColor
+            color = contentColor,
+            modifier = Modifier.weight(0.35f)
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = boundKeyName ?: "Not bound",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (boundKeyName != null) {
-                    contentColor.copy(alpha = 0.7f)
-                } else {
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                }
-            )
-            if (isFocused) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = contentColor.copy(alpha = 0.5f)
+        if (boundSources.isEmpty()) {
+            Row(
+                modifier = Modifier.weight(0.65f),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Not bound",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                 )
+                if (isFocused) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.padding(start = Dimens.spacingXs).size(16.dp),
+                        tint = contentColor.copy(alpha = 0.5f)
+                    )
+                }
+            }
+        } else {
+            FlowRow(
+                modifier = Modifier.weight(0.65f),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+            ) {
+                boundSources.forEach { source ->
+                    InputSourceChip(
+                        source = source,
+                        contentColor = contentColor
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun InputSourceChip(
+    source: InputSource,
+    contentColor: Color
+) {
+    val displayName = InputSource.getInputSourceDisplayName(source)
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(contentColor.copy(alpha = 0.1f))
+            .padding(horizontal = Dimens.spacingSm, vertical = 2.dp)
+    ) {
+        Text(
+            text = displayName,
+            style = MaterialTheme.typography.labelSmall,
+            color = contentColor.copy(alpha = 0.8f)
+        )
     }
 }
 
@@ -545,4 +651,27 @@ private fun isMappableButton(keyCode: Int): Boolean {
         KeyEvent.KEYCODE_DPAD_LEFT,
         KeyEvent.KEYCODE_DPAD_RIGHT
     )
+}
+
+private val MAPPABLE_AXES = listOf(
+    MotionEvent.AXIS_X,
+    MotionEvent.AXIS_Y,
+    MotionEvent.AXIS_Z,
+    MotionEvent.AXIS_RZ,
+    MotionEvent.AXIS_HAT_X,
+    MotionEvent.AXIS_HAT_Y,
+    MotionEvent.AXIS_LTRIGGER,
+    MotionEvent.AXIS_RTRIGGER
+)
+
+private fun detectAnalogInput(event: MotionEvent): InputSource.AnalogDirection? {
+    for (axis in MAPPABLE_AXES) {
+        val value = event.getAxisValue(axis)
+        if (value > InputSource.ANALOG_THRESHOLD) {
+            return InputSource.AnalogDirection(axis, positive = true)
+        } else if (value < -InputSource.ANALOG_THRESHOLD) {
+            return InputSource.AnalogDirection(axis, positive = false)
+        }
+    }
+    return null
 }

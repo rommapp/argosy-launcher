@@ -3,8 +3,11 @@ package com.nendo.argosy.data.remote.romm
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
+import com.nendo.argosy.util.Logger
 
 object RomMSyncFilter {
+
+    private const val TAG = "RomMSyncFilter"
 
     private val NO_INTRO_HACK_REGEX = Regex("\\[h[0-9a-z ]*\\]")
     private val HACK_BRACKET_REGEX = Regex("\\[.*\\bhack\\b.*\\]")
@@ -12,10 +15,22 @@ object RomMSyncFilter {
     private val BAD_DUMP_REGEX = Regex("\\[[bopBOP][0-9]*\\]")
 
     fun shouldSyncRom(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
-        if (!passesExtensionFilter(rom)) return false
-        if (!passesBadDumpFilter(rom)) return false
-        if (!passesRegionFilter(rom, filters)) return false
-        if (!passesRevisionFilter(rom, filters)) return false
+        if (!passesExtensionFilter(rom)) {
+            Logger.debug(TAG, "Filtered by extension: ${rom.name} (file: ${rom.fileName}, platform: ${rom.platformSlug})")
+            return false
+        }
+        if (!passesBadDumpFilter(rom)) {
+            Logger.debug(TAG, "Filtered as bad dump: ${rom.name} (file: ${rom.fileName})")
+            return false
+        }
+        if (!passesRegionFilter(rom, filters)) {
+            Logger.debug(TAG, "Filtered by region: ${rom.name} (regions: ${rom.regions})")
+            return false
+        }
+        if (!passesRevisionFilter(rom, filters)) {
+            Logger.debug(TAG, "Filtered by revision: ${rom.name} (revision: ${rom.revision}, tags: ${rom.tags})")
+            return false
+        }
         return true
     }
 

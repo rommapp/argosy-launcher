@@ -230,8 +230,8 @@ class LibretroActivity : ComponentActivity() {
         // Disable rewind for heavy cores (32/64-bit systems) - state capture causes lag
         val heavyCorePatterns = listOf(
             "mupen64plus", "parallel_n64",  // N64
-            "pcsx", "duckstation", "beetle_psx", "swanstation",  // PlayStation
-            "beetle_saturn", "yabause", "kronos",  // Saturn
+            "mednafen_psx", "pcsx", "duckstation", "swanstation",  // PlayStation
+            "mednafen_saturn", "yabause", "kronos",  // Saturn
             "flycast", "redream",  // Dreamcast
             "ppsspp",  // PSP
             "desmume", "melonds",  // DS

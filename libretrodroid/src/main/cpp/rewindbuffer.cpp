@@ -20,7 +20,8 @@
 
 namespace libretrodroid {
 
-RewindBuffer::RewindBuffer(size_t slotCount, size_t maxStateSize) : capacity(slotCount) {
+RewindBuffer::RewindBuffer(size_t slotCount, size_t maxStateSize)
+    : capacity(slotCount), maxSize(maxStateSize) {
     slots.resize(slotCount);
     for (auto& slot : slots) {
         slot.reserve(maxStateSize);
@@ -31,7 +32,11 @@ RewindBuffer::~RewindBuffer() {
     clear();
 }
 
-void RewindBuffer::push(const uint8_t* data, size_t size) {
+bool RewindBuffer::push(const uint8_t* data, size_t size) {
+    if (size > maxSize) {
+        return false;
+    }
+
     auto& slot = slots[writeIndex];
     slot.resize(size);
     std::copy(data, data + size, slot.begin());
@@ -40,6 +45,7 @@ void RewindBuffer::push(const uint8_t* data, size_t size) {
     if (validCount < capacity) {
         validCount++;
     }
+    return true;
 }
 
 bool RewindBuffer::pop(uint8_t* outData, size_t* outSize) {

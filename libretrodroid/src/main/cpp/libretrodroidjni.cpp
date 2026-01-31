@@ -717,9 +717,12 @@ JNIEXPORT jboolean JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_captur
 
     try {
         auto [data, size] = LibretroDroid::getInstance().serializeState();
-        rewindBuffer->push(reinterpret_cast<uint8_t*>(data), size);
+        bool pushed = rewindBuffer->push(reinterpret_cast<uint8_t*>(data), size);
         delete[] data;
-        return JNI_TRUE;
+        if (!pushed) {
+            LOGW("Rewind state too large (%zu bytes), skipping capture", size);
+        }
+        return pushed ? JNI_TRUE : JNI_FALSE;
     } catch (std::exception &exception) {
         LOGE("Error in captureRewindState: %s", exception.what());
         return JNI_FALSE;

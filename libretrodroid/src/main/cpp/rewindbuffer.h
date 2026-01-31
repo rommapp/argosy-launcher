@@ -29,12 +29,13 @@ public:
     RewindBuffer(size_t slotCount, size_t maxStateSize);
     ~RewindBuffer();
 
-    void push(const uint8_t* data, size_t size);
+    bool push(const uint8_t* data, size_t size);
     bool pop(uint8_t* outData, size_t* outSize);
     void clear();
 
     size_t getValidCount() const { return validCount; }
     size_t getCapacity() const { return capacity; }
+    size_t getMaxStateSize() const { return maxSize; }
     float getUsage() const { return capacity > 0 ? (float)validCount / (float)capacity : 0.0f; }
 
 private:
@@ -42,6 +43,7 @@ private:
     size_t writeIndex = 0;
     size_t validCount = 0;
     size_t capacity;
+    size_t maxSize;
 };
 
 }

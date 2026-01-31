@@ -4,8 +4,8 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.system.Os
-import android.util.Log
 import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.InputStream
@@ -55,12 +55,9 @@ class AndroidDataAccessor @Inject constructor(
                     setupAltAccess(extStorage, dir, dataLink)
                 }
 
-                val dirExists = dir.exists()
-                val canRead = dataLink.canRead()
-                Log.i(TAG, "Alt access: $dirExists/$canRead")
-                dirExists && canRead
+                dir.exists() && dataLink.canRead()
             } catch (e: Exception) {
-                Log.w(TAG, "Alt path check failed", e)
+                Logger.warn(TAG, "[AltAccess] Path check failed: ${e.message}")
                 false
             }
 
@@ -79,7 +76,7 @@ class AndroidDataAccessor @Inject constructor(
             val obbLink = File(altDir, "obb")
             if (!obbLink.exists()) Os.symlink("$extStorage/Android/obb", obbLink.absolutePath)
         } catch (e: Exception) {
-            Log.w(TAG, "Alt setup failed: ${e.message}")
+            Logger.warn(TAG, "[AltAccess] Setup failed: ${e.message}")
         }
     }
 
@@ -127,12 +124,7 @@ class AndroidDataAccessor @Inject constructor(
     fun readBytes(path: String): ByteArray? {
         val file = File(transformPath(path))
         return if (file.exists() && file.canRead()) {
-            try {
-                file.readBytes()
-            } catch (e: Exception) {
-                Log.e(TAG, "Read failed: $path", e)
-                null
-            }
+            try { file.readBytes() } catch (e: Exception) { null }
         } else null
     }
 
@@ -142,28 +134,15 @@ class AndroidDataAccessor @Inject constructor(
             file.parentFile?.mkdirs()
             file.writeBytes(data)
             true
-        } catch (e: Exception) {
-            Log.e(TAG, "Write failed: $path", e)
-            false
-        }
+        } catch (e: Exception) { false }
     }
 
     fun delete(path: String): Boolean {
-        return try {
-            File(transformPath(path)).delete()
-        } catch (e: Exception) {
-            Log.e(TAG, "Delete failed: $path", e)
-            false
-        }
+        return try { File(transformPath(path)).delete() } catch (e: Exception) { false }
     }
 
     fun deleteRecursively(path: String): Boolean {
-        return try {
-            File(transformPath(path)).deleteRecursively()
-        } catch (e: Exception) {
-            Log.e(TAG, "Recursive delete failed: $path", e)
-            false
-        }
+        return try { File(transformPath(path)).deleteRecursively() } catch (e: Exception) { false }
     }
 
     /**
@@ -177,22 +156,18 @@ class AndroidDataAccessor @Inject constructor(
     fun getInputStream(path: String): InputStream? {
         val file = File(transformPath(path))
         return if (file.exists() && file.canRead()) {
-            try {
-                file.inputStream()
-            } catch (e: Exception) {
-                Log.e(TAG, "Open input stream failed: $path", e)
-                null
-            }
+            try { file.inputStream() } catch (e: Exception) { null }
         } else null
     }
 
     fun getOutputStream(path: String): OutputStream? {
+        val transformedPath = transformPath(path)
         return try {
-            val file = File(transformPath(path))
+            val file = File(transformedPath)
             file.parentFile?.mkdirs()
             file.outputStream()
         } catch (e: Exception) {
-            Log.e(TAG, "Open output stream failed: $path", e)
+            Logger.error(TAG, "[AltAccess] getOutputStream failed | path=$transformedPath, error=${e.message}")
             null
         }
     }
@@ -214,12 +189,8 @@ class AndroidDataAccessor @Inject constructor(
     }
 
     fun mkdirs(path: String): Boolean {
-        return try {
-            File(transformPath(path)).mkdirs()
-        } catch (e: Exception) {
-            Log.e(TAG, "mkdirs failed: $path", e)
-            false
-        }
+        val file = File(transformPath(path))
+        return try { file.mkdirs() || file.exists() } catch (e: Exception) { false }
     }
 
     /**
@@ -229,9 +200,6 @@ class AndroidDataAccessor @Inject constructor(
         return File(transformPath(path)).walkTopDown()
     }
 
-    /**
-     * Copy a file from source to destination, handling restricted paths.
-     */
     fun copyFile(sourcePath: String, destPath: String): Boolean {
         return try {
             val sourceFile = File(transformPath(sourcePath))
@@ -239,23 +207,33 @@ class AndroidDataAccessor @Inject constructor(
             destFile.parentFile?.mkdirs()
             sourceFile.copyTo(destFile, overwrite = true)
             true
-        } catch (e: Exception) {
-            Log.e(TAG, "Copy failed: $sourcePath -> $destPath", e)
-            false
-        }
+        } catch (e: Exception) { false }
     }
 
-    /**
-     * Copy a directory recursively, handling restricted paths.
-     */
     fun copyDirectory(sourcePath: String, destPath: String): Boolean {
         return try {
-            val sourceDir = File(transformPath(sourcePath))
-            val destDir = File(transformPath(destPath))
-            sourceDir.copyRecursively(destDir, overwrite = true)
-            true
+            File(transformPath(sourcePath)).copyRecursively(File(transformPath(destPath)), overwrite = true)
+        } catch (e: Exception) { false }
+    }
+
+    fun moveDirectory(sourcePath: String, destPath: String): Boolean {
+        val sourceDir = File(sourcePath) // Source is always unrestricted (cache)
+        val destDir = File(transformPath(destPath))
+
+        return try {
+            destDir.parentFile?.mkdirs()
+
+            // Try atomic rename first
+            if (sourceDir.renameTo(destDir)) return true
+
+            // Fallback: copy then delete
+            if (sourceDir.copyRecursively(destDir, overwrite = true)) {
+                sourceDir.deleteRecursively()
+                return true
+            }
+            false
         } catch (e: Exception) {
-            Log.e(TAG, "Directory copy failed: $sourcePath -> $destPath", e)
+            Logger.error(TAG, "[AltAccess] moveDirectory failed | dest=$destPath, error=${e.message}")
             false
         }
     }

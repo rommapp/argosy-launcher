@@ -56,16 +56,20 @@ class SaveArchiver @Inject constructor(
 
     private fun openOutputStreamForPath(path: String): OutputStream? {
         // For restricted paths, try alt access first (most reliable on supported devices)
-        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
+        val isRestricted = isRestrictedPath(path)
+        val altAccessSupported = isRestricted && androidDataAccessor.isAltAccessSupported()
+
+        if (altAccessSupported) {
             val stream = androidDataAccessor.getOutputStream(path)
             if (stream != null) {
                 Logger.debug(TAG, "[AltAccess] Opened output stream for $path")
                 return stream
             }
+            Logger.debug(TAG, "[AltAccess] Failed to open output stream, falling back to ManagedAccess | path=$path")
         }
 
         // Fallback to ManagedStorageAccessor (DocumentsContract approach)
-        if (isRestrictedPath(path)) {
+        if (isRestricted) {
             val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
             Logger.debug(TAG, "[ManagedAccess] Opening output stream for $path (vol=$volumeId, rel=$relativePath)")
             return managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)
@@ -100,19 +104,28 @@ class SaveArchiver @Inject constructor(
     }
 
     private fun createDirectoryForPath(path: String): Boolean {
+        val isRestricted = isRestrictedPath(path)
+        val altAccessSupported = isRestricted && androidDataAccessor.isAltAccessSupported()
+
         // For restricted paths, try alt access first
-        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
+        if (altAccessSupported) {
             val result = androidDataAccessor.mkdirs(path)
             if (result) {
                 Logger.debug(TAG, "[AltAccess] Created directory: $path")
                 return true
             }
+            Logger.debug(TAG, "[AltAccess] Failed to create directory, falling back to ManagedAccess | path=$path")
         }
 
-        if (isRestrictedPath(path)) {
-            // For restricted paths without alt access support, rely on output stream creation
-            Logger.debug(TAG, "[ManagedAccess] Directory creation for restricted path: $path (handled via output stream)")
-            return true
+        // Fallback to ManagedStorageAccessor (DocumentsContract approach)
+        if (isRestricted) {
+            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
+            Logger.debug(TAG, "[ManagedAccess] Creating directory | path=$path (vol=$volumeId, rel=$relativePath)")
+            val result = managedStorageAccessor.createDirectoryAtPath(volumeId, relativePath)
+            if (!result) {
+                Logger.error(TAG, "[ManagedAccess] Failed to create directory: $path")
+            }
+            return result
         }
 
         return File(path).mkdirs()
@@ -289,16 +302,54 @@ class SaveArchiver @Inject constructor(
 
     fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean {
         if (!sourceZip.exists() || !sourceZip.isFile) {
-            Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}, exists=${sourceZip.exists()}, isFile=${sourceZip.isFile}")
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}")
             return false
         }
 
         val targetPath = targetFolder.absolutePath
-        val useManaged = isRestrictedPath(targetPath)
-        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping | source=${sourceZip.name}, size=${sourceZip.length()}bytes, target=$targetPath, managedAccess=$useManaged")
+        val isRestricted = isRestrictedPath(targetPath)
 
+        // For restricted paths, extract to temp then copy via UC Data path
+        if (isRestricted) {
+            return unzipViaTemp(sourceZip, targetFolder)
+        }
+
+        // Non-restricted paths: extract directly
+        return unzipDirect(sourceZip, targetFolder)
+    }
+
+    private fun unzipViaTemp(sourceZip: File, targetFolder: File): Boolean {
+        val tempDir = File(sourceZip.parentFile, "extract_${System.currentTimeMillis()}")
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Extracting to temp | temp=${tempDir.name}, target=${targetFolder.absolutePath}")
+
+        try {
+            // Step 1: Extract to temp directory (unrestricted cache)
+            if (!unzipDirect(sourceZip, tempDir)) {
+                Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to extract to temp")
+                tempDir.deleteRecursively()
+                return false
+            }
+
+            // Step 2: Move from temp to target via UC Data path
+            val moved = androidDataAccessor.moveDirectory(tempDir.absolutePath, targetFolder.absolutePath)
+            if (!moved) {
+                Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move to target via AltAccess | target=${targetFolder.absolutePath}")
+                tempDir.deleteRecursively()
+                return false
+            }
+
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip via temp complete | target=${targetFolder.name}")
+            return true
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | unzipViaTemp failed | ${e.message}")
+            tempDir.deleteRecursively()
+            return false
+        }
+    }
+
+    private fun unzipDirect(sourceZip: File, targetFolder: File): Boolean {
         return try {
-            createDirectoryForPath(targetPath)
+            targetFolder.mkdirs()
             var fileCount = 0
             var totalSize = 0L
             ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
@@ -310,9 +361,7 @@ class SaveArchiver @Inject constructor(
                     val entryName = entry!!.name
 
                     if (rootFolder == null) {
-                        rootFolder = entryName.substringBefore('/').takeIf {
-                            entryName.contains('/')
-                        }
+                        rootFolder = entryName.substringBefore('/').takeIf { entryName.contains('/') }
                     }
 
                     val relativePath = if (rootFolder != null && entryName.startsWith("$rootFolder/")) {
@@ -321,49 +370,35 @@ class SaveArchiver @Inject constructor(
                         entryName
                     }
 
-                    if (relativePath.isEmpty()) {
-                        continue
-                    }
+                    if (relativePath.isEmpty()) continue
 
                     val entryFile = File(targetFolder, relativePath)
-                    val entryPath = entryFile.absolutePath
-
                     if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
                         Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
                         return false
                     }
 
                     if (entry!!.isDirectory) {
-                        createDirectoryForPath(entryPath)
+                        entryFile.mkdirs()
                     } else {
-                        val parentPath = entryFile.parentFile?.absolutePath
-                        if (parentPath != null) createDirectoryForPath(parentPath)
-
-                        val outputStream = openOutputStreamForPath(entryPath)
-                        if (outputStream == null) {
-                            Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to open output stream | path=$entryPath")
-                            return false
-                        }
-
-                        outputStream.use { os ->
-                            BufferedOutputStream(os, BUFFER_SIZE).use { bos ->
+                        entryFile.parentFile?.mkdirs()
+                        FileOutputStream(entryFile).use { fos ->
+                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
                                 var count: Int
                                 while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
                                     bos.write(buffer, 0, count)
                                     totalSize += count
                                 }
-                                bos.flush()
                             }
                         }
                         fileCount++
                     }
                 }
-                Logger.debug(TAG, "[SaveSync] ARCHIVE | Detected root folder | rootFolder=$rootFolder")
             }
-            Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip complete | target=${targetFolder.name}, files=$fileCount, extractedSize=${totalSize}bytes")
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Extracted | files=$fileCount, size=${totalSize}bytes")
             true
         } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Unzip failed | source=${sourceZip.absolutePath}", e)
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.message}")
             false
         }
     }
@@ -446,15 +481,38 @@ class SaveArchiver @Inject constructor(
             return false
         }
 
-        val targetPath = targetFolder.absolutePath
-        val useManaged = isRestrictedPath(targetPath)
-        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping (excluding ${excludeFiles.size} patterns) | source=${sourceZip.name}, managedAccess=$useManaged")
+        val isRestricted = isRestrictedPath(targetFolder.absolutePath)
+        if (isRestricted) {
+            return unzipViaTempExcluding(sourceZip, targetFolder, excludeFiles)
+        }
+        return unzipDirectExcluding(sourceZip, targetFolder, excludeFiles)
+    }
 
+    private fun unzipViaTempExcluding(sourceZip: File, targetFolder: File, excludeFiles: Set<String>): Boolean {
+        val tempDir = File(sourceZip.parentFile, "extract_${System.currentTimeMillis()}")
+        try {
+            if (!unzipDirectExcluding(sourceZip, tempDir, excludeFiles)) {
+                tempDir.deleteRecursively()
+                return false
+            }
+            val moved = androidDataAccessor.moveDirectory(tempDir.absolutePath, targetFolder.absolutePath)
+            if (!moved) {
+                Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move to target | target=${targetFolder.absolutePath}")
+                tempDir.deleteRecursively()
+                return false
+            }
+            return true
+        } catch (e: Exception) {
+            tempDir.deleteRecursively()
+            return false
+        }
+    }
+
+    private fun unzipDirectExcluding(sourceZip: File, targetFolder: File, excludeFiles: Set<String>): Boolean {
         return try {
-            createDirectoryForPath(targetPath)
+            targetFolder.mkdirs()
             var fileCount = 0
             var totalSize = 0L
-            var skippedCount = 0
             ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
                 var entry: ZipArchiveEntry?
                 val buffer = ByteArray(BUFFER_SIZE)
@@ -464,9 +522,7 @@ class SaveArchiver @Inject constructor(
                     val entryName = entry!!.name
 
                     if (rootFolder == null) {
-                        rootFolder = entryName.substringBefore('/').takeIf {
-                            entryName.contains('/')
-                        }
+                        rootFolder = entryName.substringBefore('/').takeIf { entryName.contains('/') }
                     }
 
                     val relativePath = if (rootFolder != null && entryName.startsWith("$rootFolder/")) {
@@ -475,55 +531,34 @@ class SaveArchiver @Inject constructor(
                         entryName
                     }
 
-                    if (relativePath.isEmpty()) {
-                        continue
-                    }
+                    if (relativePath.isEmpty()) continue
 
                     val fileName = relativePath.substringAfterLast('/')
-                    if (excludeFiles.contains(fileName)) {
-                        Logger.debug(TAG, "[SaveSync] ARCHIVE | Skipping excluded file | entry=$entryName")
-                        skippedCount++
-                        continue
-                    }
+                    if (excludeFiles.contains(fileName)) continue
 
                     val entryFile = File(targetFolder, relativePath)
-                    val entryPath = entryFile.absolutePath
-
-                    if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
-                        Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
-                        return false
-                    }
+                    if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) return false
 
                     if (entry!!.isDirectory) {
-                        createDirectoryForPath(entryPath)
+                        entryFile.mkdirs()
                     } else {
-                        val parentPath = entryFile.parentFile?.absolutePath
-                        if (parentPath != null) createDirectoryForPath(parentPath)
-
-                        val outputStream = openOutputStreamForPath(entryPath)
-                        if (outputStream == null) {
-                            Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to open output stream | path=$entryPath")
-                            return false
-                        }
-
-                        outputStream.use { os ->
-                            BufferedOutputStream(os, BUFFER_SIZE).use { bos ->
+                        entryFile.parentFile?.mkdirs()
+                        FileOutputStream(entryFile).use { fos ->
+                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
                                 var count: Int
                                 while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
                                     bos.write(buffer, 0, count)
                                     totalSize += count
                                 }
-                                bos.flush()
                             }
                         }
                         fileCount++
                     }
                 }
             }
-            Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip complete | files=$fileCount, skipped=$skippedCount, size=${totalSize}bytes")
             true
         } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Unzip failed | source=${sourceZip.absolutePath}", e)
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.message}")
             false
         }
     }
@@ -538,15 +573,38 @@ class SaveArchiver @Inject constructor(
             return false
         }
 
-        val targetPath = targetFolder.absolutePath
-        val useManaged = isRestrictedPath(targetPath)
-        Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzipping (preserving structure) | source=${sourceZip.name}, managedAccess=$useManaged")
+        val isRestricted = isRestrictedPath(targetFolder.absolutePath)
+        if (isRestricted) {
+            return unzipViaTempPreserving(sourceZip, targetFolder, excludeFiles)
+        }
+        return unzipDirectPreserving(sourceZip, targetFolder, excludeFiles)
+    }
 
+    private fun unzipViaTempPreserving(sourceZip: File, targetFolder: File, excludeFiles: Set<String>): Boolean {
+        val tempDir = File(sourceZip.parentFile, "extract_${System.currentTimeMillis()}")
+        try {
+            if (!unzipDirectPreserving(sourceZip, tempDir, excludeFiles)) {
+                tempDir.deleteRecursively()
+                return false
+            }
+            val moved = androidDataAccessor.moveDirectory(tempDir.absolutePath, targetFolder.absolutePath)
+            if (!moved) {
+                Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move to target | target=${targetFolder.absolutePath}")
+                tempDir.deleteRecursively()
+                return false
+            }
+            return true
+        } catch (e: Exception) {
+            tempDir.deleteRecursively()
+            return false
+        }
+    }
+
+    private fun unzipDirectPreserving(sourceZip: File, targetFolder: File, excludeFiles: Set<String>): Boolean {
         return try {
-            createDirectoryForPath(targetPath)
+            targetFolder.mkdirs()
             var fileCount = 0
             var totalSize = 0L
-            var skippedCount = 0
             ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
                 var entry: ZipArchiveEntry?
                 val buffer = ByteArray(BUFFER_SIZE)
@@ -555,51 +613,64 @@ class SaveArchiver @Inject constructor(
                     val entryName = entry!!.name
 
                     val fileName = entryName.substringAfterLast('/')
-                    if (excludeFiles.contains(fileName)) {
-                        Logger.debug(TAG, "[SaveSync] ARCHIVE | Skipping excluded file | entry=$entryName")
-                        skippedCount++
-                        continue
-                    }
+                    if (excludeFiles.contains(fileName)) continue
 
                     val entryFile = File(targetFolder, entryName)
-                    val entryPath = entryFile.absolutePath
-
-                    if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
-                        Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
-                        return false
-                    }
+                    if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) return false
 
                     if (entry!!.isDirectory) {
-                        createDirectoryForPath(entryPath)
+                        entryFile.mkdirs()
                     } else {
-                        val parentPath = entryFile.parentFile?.absolutePath
-                        if (parentPath != null) createDirectoryForPath(parentPath)
-
-                        val outputStream = openOutputStreamForPath(entryPath)
-                        if (outputStream == null) {
-                            Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to open output stream | path=$entryPath")
-                            return false
-                        }
-
-                        outputStream.use { os ->
-                            BufferedOutputStream(os, BUFFER_SIZE).use { bos ->
+                        entryFile.parentFile?.mkdirs()
+                        FileOutputStream(entryFile).use { fos ->
+                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
                                 var count: Int
                                 while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
                                     bos.write(buffer, 0, count)
                                     totalSize += count
                                 }
-                                bos.flush()
                             }
                         }
                         fileCount++
                     }
                 }
             }
-            Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip complete | files=$fileCount, skipped=$skippedCount, size=${totalSize}bytes")
             true
         } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Unzip failed | source=${sourceZip.absolutePath}", e)
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.message}")
             false
+        }
+    }
+
+    /**
+     * Write bytes to a file, using UC Data path for restricted locations.
+     */
+    fun writeBytesToPath(path: String, data: ByteArray): Boolean {
+        return if (isRestrictedPath(path)) {
+            androidDataAccessor.writeBytes(path, data)
+        } else {
+            try {
+                val file = File(path)
+                file.parentFile?.mkdirs()
+                file.writeBytes(data)
+                true
+            } catch (e: Exception) { false }
+        }
+    }
+
+    /**
+     * Copy a file to target path, using UC Data path for restricted locations.
+     */
+    fun copyFileToPath(source: File, targetPath: String): Boolean {
+        return if (isRestrictedPath(targetPath)) {
+            androidDataAccessor.copyFile(source.absolutePath, targetPath)
+        } else {
+            try {
+                val target = File(targetPath)
+                target.parentFile?.mkdirs()
+                source.copyTo(target, overwrite = true)
+                true
+            } catch (e: Exception) { false }
         }
     }
 

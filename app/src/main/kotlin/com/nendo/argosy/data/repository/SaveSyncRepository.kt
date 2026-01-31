@@ -1727,17 +1727,17 @@ class SaveSyncRepository @Inject constructor(
                         }
                     }
 
-                    val targetFile = File(targetPath)
-                    targetFile.parentFile?.mkdirs()
-
                     val bytesWithoutTrailer = saveArchiver.readBytesWithoutTrailer(tempSaveFile!!)
-                    if (bytesWithoutTrailer != null) {
-                        targetFile.writeBytes(bytesWithoutTrailer)
-                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save written (trailer stripped) | path=$targetPath, size=${targetFile.length()}bytes")
+                    val written = if (bytesWithoutTrailer != null) {
+                        saveArchiver.writeBytesToPath(targetPath, bytesWithoutTrailer)
                     } else {
-                        tempSaveFile!!.copyTo(targetFile, overwrite = true)
-                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save written | path=$targetPath, size=${targetFile.length()}bytes")
+                        saveArchiver.copyFileToPath(tempSaveFile!!, targetPath)
                     }
+                    if (!written) {
+                        Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Failed to write file save | path=$targetPath")
+                        return@withContext SaveSyncResult.Error("Failed to write save file")
+                    }
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save written | path=$targetPath")
                 } finally {
                     tempSaveFile?.delete()
                 }
@@ -2483,18 +2483,19 @@ class SaveSyncRepository @Inject constructor(
 
                     val targetFile = File(resolution.targetPath)
                     if (resolution.isFolderBased) {
-                        targetFile.mkdirs()
                         val unzipSuccess = saveArchiver.unzipSingleFolder(tempFile, targetFile)
                         if (!unzipSuccess) {
                             return@withContext SaveSyncResult.Error("Failed to unzip save")
                         }
                     } else {
-                        targetFile.parentFile?.mkdirs()
                         val bytesWithoutTrailer = saveArchiver.readBytesWithoutTrailer(tempFile)
-                        if (bytesWithoutTrailer != null) {
-                            targetFile.writeBytes(bytesWithoutTrailer)
+                        val written = if (bytesWithoutTrailer != null) {
+                            saveArchiver.writeBytesToPath(resolution.targetPath, bytesWithoutTrailer)
                         } else {
-                            tempFile.copyTo(targetFile, overwrite = true)
+                            saveArchiver.copyFileToPath(tempFile, resolution.targetPath)
+                        }
+                        if (!written) {
+                            return@withContext SaveSyncResult.Error("Failed to write save file")
                         }
                     }
 

@@ -15,8 +15,9 @@ object RomMSyncFilter {
     private val BAD_DUMP_REGEX = Regex("\\[[bopBOP][0-9]*\\]")
 
     fun shouldSyncRom(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
-        if (!passesExtensionFilter(rom)) {
-            Logger.debug(TAG, "Filtered by extension: ${rom.name} (file: ${rom.fileName}, platform: ${rom.platformSlug})")
+        val extension = extractExtension(rom)
+        if (!passesExtensionFilter(rom, extension)) {
+            Logger.debug(TAG, "Filtered by extension: ${rom.name} (ext: $extension, platform: ${rom.platformSlug})")
             return false
         }
         if (!passesBadDumpFilter(rom)) {
@@ -34,15 +35,46 @@ object RomMSyncFilter {
         return true
     }
 
-    private fun passesExtensionFilter(rom: RomMRom): Boolean {
-        val fileName = rom.fileName ?: return true
-        val extension = fileName.substringAfterLast('.', "").lowercase()
-        if (extension.isEmpty()) return true
+    private fun passesExtensionFilter(rom: RomMRom, extension: String?): Boolean {
+        if (extension == null) return true
 
         val platformDef = PlatformDefinitions.getBySlug(rom.platformSlug) ?: return true
         if (platformDef.extensions.isEmpty()) return true
 
         return extension in platformDef.extensions
+    }
+
+    private fun extractExtension(rom: RomMRom): String? {
+        // Try files list first - only root-level files (skip subdirs like updates/, dlc/)
+        rom.files
+            ?.filter { !it.filePath.contains('/') }
+            ?.firstOrNull()
+            ?.fileName
+            ?.let { fileName ->
+                extractValidExtension(fileName)?.let { return it }
+            }
+
+        // Try full path
+        rom.filePath?.let { path ->
+            extractValidExtension(path)?.let { return it }
+        }
+
+        // Fall back to fs_name
+        rom.fileName?.let { fileName ->
+            extractValidExtension(fileName)?.let { return it }
+        }
+
+        return null
+    }
+
+    private fun extractValidExtension(name: String): String? {
+        val ext = name.substringAfterLast('.', "").lowercase()
+        // Valid extension: non-empty, short, no spaces, alphanumeric
+        return if (ext.isNotEmpty() && ext.length <= 10 && !ext.contains(' ') && ext.all { it.isLetterOrDigit() }) {
+            ext
+        } else {
+            null
+        }
     }
 
     private fun passesBadDumpFilter(rom: RomMRom): Boolean {

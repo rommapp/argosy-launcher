@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.sync.platform
 
+import android.content.Context
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SwitchProfileParser
@@ -7,16 +8,20 @@ import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.util.Logger
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class SwitchSaveHandler @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val fal: FileAccessLayer,
     private val saveArchiver: SaveArchiver,
     private val switchProfileParser: SwitchProfileParser
-) {
+) : PlatformSaveHandler {
     companion object {
         private const val TAG = "SwitchSaveHandler"
 
@@ -33,6 +38,67 @@ class SwitchSaveHandler @Inject constructor(
         )
 
         val JKSV_EXCLUDE_FILES = setOf(".nx_save_meta.bin")
+    }
+
+    override suspend fun prepareForUpload(localPath: String, context: SaveContext): PreparedSave? =
+        withContext(Dispatchers.IO) {
+            val saveFolder = fal.getTransformedFile(localPath)
+            if (!saveFolder.exists() || !saveFolder.isDirectory) {
+                Logger.debug(TAG, "prepareForUpload: Save folder does not exist or is not a directory | path=$localPath")
+                return@withContext null
+            }
+
+            val outputFile = File(this@SwitchSaveHandler.context.cacheDir, "${saveFolder.name}.zip")
+            if (!saveArchiver.zipFolder(saveFolder, outputFile)) {
+                Logger.error(TAG, "prepareForUpload: Failed to zip folder | source=$localPath")
+                return@withContext null
+            }
+
+            Logger.debug(TAG, "prepareForUpload: Created ZIP | path=${outputFile.absolutePath}, size=${outputFile.length()}")
+            PreparedSave(outputFile, isTemporary = true, listOf(localPath))
+        }
+
+    override suspend fun extractDownload(tempFile: File, context: SaveContext): ExtractResult =
+        withContext(Dispatchers.IO) {
+            // Use cached path if available, otherwise resolve from ZIP or construct
+            val targetPath = context.localSavePath
+                ?: resolveSaveTargetPath(tempFile, context.config, context.emulatorPackage)
+                ?: run {
+                    val basePath = resolveBasePath(context.config, context.emulatorPackage)
+                    if (basePath == null) {
+                        return@withContext ExtractResult(false, null, "No base path for Switch saves")
+                    }
+                    val titleId = context.titleId
+                    if (titleId == null) {
+                        return@withContext ExtractResult(false, null, "No title ID for Switch save")
+                    }
+                    constructSavePath(basePath, titleId, context.emulatorPackage)
+                }
+
+            val targetFolder = File(targetPath)
+            targetFolder.mkdirs()
+
+            // Detect JKSV format and extract appropriately
+            val success = if (saveArchiver.isJksvFormat(tempFile)) {
+                Logger.debug(TAG, "extractDownload: JKSV format detected, preserving structure")
+                saveArchiver.unzipPreservingStructure(tempFile, targetFolder, JKSV_EXCLUDE_FILES)
+            } else {
+                saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+            }
+
+            if (!success) {
+                Logger.error(TAG, "extractDownload: Unzip failed | target=$targetPath")
+                return@withContext ExtractResult(false, null, "Failed to extract Switch save")
+            }
+
+            Logger.debug(TAG, "extractDownload: Complete | target=$targetPath")
+            ExtractResult(true, targetPath)
+        }
+
+    fun resolveBasePath(config: SavePathConfig, emulatorPackage: String?): String? {
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+        return resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
+            ?: resolvedPaths.firstOrNull()
     }
 
     fun isValidHexId(name: String): Boolean {
@@ -54,6 +120,26 @@ class SwitchSaveHandler @Inject constructor(
 
     fun isDeviceSave(titleId: String): Boolean {
         return titleId.uppercase() in DEVICE_SAVE_TITLE_IDS
+    }
+
+    fun isValidCachedSavePath(path: String): Boolean {
+        // Expected structure: <base>/save/<userFolder>/<profileFolder>/<titleId>
+        // Where userFolder=16 hex, profileFolder=16|32 hex, titleId=16 hex starting with 01
+        val parts = path.split("/")
+        if (parts.size < 4) return false
+
+        val titleId = parts.last().takeIf { it.isNotEmpty() } ?: parts[parts.size - 2]
+        val profileFolder = if (parts.last().isEmpty()) parts[parts.size - 3] else parts[parts.size - 2]
+        val userFolder = if (parts.last().isEmpty()) parts[parts.size - 4] else parts[parts.size - 3]
+
+        val isValid = isValidUserFolderId(userFolder) &&
+            isValidProfileFolderId(profileFolder) &&
+            isValidTitleId(titleId)
+
+        if (!isValid) {
+            Logger.debug(TAG, "isValidCachedSavePath: invalid | path=$path, user=$userFolder, profile=$profileFolder, titleId=$titleId")
+        }
+        return isValid
     }
 
     fun resolveSaveTargetPath(
@@ -163,28 +249,43 @@ class SwitchSaveHandler @Inject constructor(
         var bestMatchPath: String? = null
         var bestModTime = 0L
 
-        fal.listFiles(basePath)?.forEach { userFolder ->
+        val topLevelFolders = fal.listFiles(basePath)
+        Logger.debug(TAG, "findSaveFolderByTitleId: top-level folders=${topLevelFolders?.map { it.name }}")
+
+        topLevelFolders?.forEach { userFolder ->
             if (!userFolder.isDirectory) return@forEach
 
-            val saveFolder = fal.listFiles(userFolder.path)?.firstOrNull {
-                it.isDirectory && it.name.equals(normalizedTitleId, ignoreCase = true)
-            }
-            if (saveFolder != null) {
-                val modTime = findNewestFileTime(saveFolder.path)
-                if (modTime > bestModTime) {
-                    bestModTime = modTime
-                    bestMatchPath = saveFolder.path
-                }
+            // Skip device save folders (titleId directly under /save/) - we only support nested structure
+            if (userFolder.name.equals(normalizedTitleId, ignoreCase = true)) {
+                Logger.debug(TAG, "findSaveFolderByTitleId: skipping device save format | path=${userFolder.path}")
+                return@forEach
             }
 
-            fal.listFiles(userFolder.path)?.forEach { profileFolder ->
+            // Only process valid user folders (16 hex chars, typically 0000000000000000)
+            if (!isValidUserFolderId(userFolder.name)) {
+                Logger.debug(TAG, "findSaveFolderByTitleId: skipping non-user folder | name=${userFolder.name}")
+                return@forEach
+            }
+
+            val userChildren = fal.listFiles(userFolder.path)
+            Logger.debug(TAG, "findSaveFolderByTitleId: userFolder=${userFolder.name}, children=${userChildren?.map { it.name }}")
+
+            userChildren?.forEach { profileFolder ->
                 if (!profileFolder.isDirectory) return@forEach
-                val nestedSaveFolder = fal.listFiles(profileFolder.path)?.firstOrNull {
+                // Only process valid profile folders (16 or 32 hex chars)
+                if (!isValidProfileFolderId(profileFolder.name)) {
+                    return@forEach
+                }
+                val profileChildren = fal.listFiles(profileFolder.path)
+                Logger.debug(TAG, "findSaveFolderByTitleId: profileFolder=${profileFolder.name}, children=${profileChildren?.map { it.name }}")
+
+                val nestedSaveFolder = profileChildren?.firstOrNull {
                     it.isDirectory && it.name.equals(normalizedTitleId, ignoreCase = true)
                 }
                 if (nestedSaveFolder != null) {
                     val modTime = findNewestFileTime(nestedSaveFolder.path)
-                    if (modTime > bestModTime) {
+                    Logger.debug(TAG, "findSaveFolderByTitleId: found nested match | path=${nestedSaveFolder.path}, modTime=$modTime")
+                    if (bestMatchPath == null || modTime > bestModTime) {
                         bestModTime = modTime
                         bestMatchPath = nestedSaveFolder.path
                     }

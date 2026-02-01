@@ -21,11 +21,52 @@ class GciSaveHandler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val fal: FileAccessLayer,
     private val saveArchiver: SaveArchiver
-) {
+) : PlatformSaveHandler {
     companion object {
         private const val TAG = "GciSaveHandler"
         private val REGIONS = listOf("USA", "EUR", "JAP", "KOR")
     }
+
+    override suspend fun prepareForUpload(localPath: String, context: SaveContext): PreparedSave? =
+        withContext(Dispatchers.IO) {
+            val romPath = context.romPath ?: return@withContext null
+
+            val gciPaths = discoverAllSavePaths(context.config, romPath)
+            if (gciPaths.isEmpty()) {
+                Logger.debug(TAG, "prepareForUpload: No GCI files found | romPath=$romPath")
+                return@withContext null
+            }
+
+            val outputFile = File(this@GciSaveHandler.context.cacheDir, "gci_bundle_${System.currentTimeMillis()}.zip")
+            if (!createBundle(gciPaths, outputFile)) {
+                Logger.error(TAG, "prepareForUpload: Bundle creation failed")
+                return@withContext null
+            }
+
+            PreparedSave(outputFile, isTemporary = true, gciPaths)
+        }
+
+    override suspend fun extractDownload(tempFile: File, context: SaveContext): ExtractResult =
+        withContext(Dispatchers.IO) {
+            val romPath = context.romPath
+            if (romPath == null) {
+                return@withContext ExtractResult(false, null, "ROM path required for GCI extraction")
+            }
+
+            if (isZipBundle(tempFile)) {
+                val paths = extractBundle(tempFile, context.config, romPath, context.gameId)
+                if (paths.isEmpty()) {
+                    return@withContext ExtractResult(false, null, "GCI bundle extraction failed")
+                }
+                ExtractResult(true, paths.first())
+            } else {
+                val path = extractSingleGci(tempFile, romPath, context.config)
+                if (path == null) {
+                    return@withContext ExtractResult(false, null, "Single GCI extraction failed")
+                }
+                ExtractResult(true, path)
+            }
+        }
 
     fun parseRomHeader(romPath: String): GameCubeGameInfo? {
         val romFile = fal.getTransformedFile(romPath)

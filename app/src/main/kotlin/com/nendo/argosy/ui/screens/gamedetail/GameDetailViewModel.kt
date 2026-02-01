@@ -119,7 +119,8 @@ class GameDetailViewModel @Inject constructor(
     private val saveCacheManager: com.nendo.argosy.data.repository.SaveCacheManager,
     private val raRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository,
     private val saveSyncRepository: SaveSyncRepository,
-    val pickerModalDelegate: PickerModalDelegate
+    val pickerModalDelegate: PickerModalDelegate,
+    private val titleIdDownloadObserver: com.nendo.argosy.data.emulator.TitleIdDownloadObserver
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -136,6 +137,7 @@ class GameDetailViewModel @Inject constructor(
 
     private var backgroundRepairPending = false
     private var gameFilesObserverJob: kotlinx.coroutines.Job? = null
+    private var gameEntityObserverJob: kotlinx.coroutines.Job? = null
 
     override fun onCleared() {
         super.onCleared()
@@ -447,6 +449,13 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
 
+            // Extract title ID for Switch games if not already set
+            if (game.platformSlug == "switch" && game.titleId == null && game.localPath != null) {
+                viewModelScope.launch {
+                    titleIdDownloadObserver.extractTitleIdForGame(gameId)
+                }
+            }
+
             gameFilesObserverJob?.cancel()
             gameFilesObserverJob = viewModelScope.launch {
                 gameFileDao.observeFilesForGame(gameId).collect { files ->
@@ -525,6 +534,21 @@ class GameDetailViewModel @Inject constructor(
                             updateFiles = dbUpdates + localUpdates,
                             dlcFiles = dbDlc + localDlc
                         )
+                    }
+                }
+            }
+
+            gameEntityObserverJob?.cancel()
+            gameEntityObserverJob = viewModelScope.launch {
+                gameDao.observeById(gameId).collect { updatedGame ->
+                    if (updatedGame == null) return@collect
+                    _uiState.update { state ->
+                        val currentGame = state.game ?: return@update state
+                        if (currentGame.titleId != updatedGame.titleId) {
+                            state.copy(game = currentGame.copy(titleId = updatedGame.titleId))
+                        } else {
+                            state
+                        }
                     }
                 }
             }

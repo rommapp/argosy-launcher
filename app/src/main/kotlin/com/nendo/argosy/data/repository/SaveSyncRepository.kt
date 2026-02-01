@@ -9,12 +9,27 @@ import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
-import com.nendo.argosy.data.emulator.SwitchProfileParser
 import com.nendo.argosy.data.emulator.TitleIdExtractor
+import com.nendo.argosy.data.sync.SyncDirection
+import com.nendo.argosy.data.sync.SyncOperation
+import com.nendo.argosy.data.sync.SyncQueueManager
+import com.nendo.argosy.data.sync.SyncQueueState
+import com.nendo.argosy.data.sync.SyncStatus
+import com.nendo.argosy.data.sync.platform.DefaultSaveHandler
+import com.nendo.argosy.data.sync.platform.GciSaveHandler
+import com.nendo.argosy.data.sync.platform.N3dsSaveHandler
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandler
+import com.nendo.argosy.data.sync.platform.PspSaveHandler
+import com.nendo.argosy.data.sync.platform.RetroArchSaveHandler
+import com.nendo.argosy.data.sync.platform.SaveContext
+import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
+import com.nendo.argosy.data.sync.platform.VitaSaveHandler
+import com.nendo.argosy.data.sync.platform.WiiUSaveHandler
 import com.nendo.argosy.data.emulator.TitleIdResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.titledb.TitleDbRepository
 import com.nendo.argosy.data.sync.SaveArchiver
+import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -29,12 +44,9 @@ import com.nendo.argosy.data.remote.romm.RomMSave
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaType
@@ -54,21 +66,6 @@ private const val DEFAULT_SAVE_NAME = "argosy-latest"
 private const val MIN_VALID_SAVE_SIZE_BYTES = 100L
 private val TIMESTAMP_ONLY_PATTERN = Regex("""^\d{4}-\d{2}-\d{2}[_-]\d{2}[_-]\d{2}[_-]\d{2}$""")
 
-private val SWITCH_DEVICE_SAVE_TITLE_IDS = setOf(
-    "01006F8002326000", // Animal Crossing: New Horizons
-    // Note: MK8D has both user save (P1 progression) and device save (guest players)
-    // We sync the user save, not device save
-    "0100D2F00D5C0000", // Nintendo Switch Sports
-    "01000320000CC000", // 1-2-Switch
-    "01002FF008C24000", // Ring Fit Adventure
-    "0100C4B0034B2000", // Nintendo Labo Toy-Con 01: Variety Kit
-    "01009AB0034E0000", // Nintendo Labo Toy-Con 02: Robot Kit
-    "01001E9003502000", // Nintendo Labo Toy-Con 03: Vehicle Kit
-    "0100165003504000", // Nintendo Labo Toy-Con 04: VR Kit
-    "0100C1800A9B6000", // Go Vacation
-)
-
-private val JKSV_EXCLUDE_FILES = setOf(".nx_save_meta.bin")
 
 sealed class SaveSyncResult {
     data object Success : SaveSyncResult()
@@ -91,30 +88,6 @@ sealed class SaveSyncResult {
     data object NotConfigured : SaveSyncResult()
 }
 
-enum class SyncDirection { UPLOAD, DOWNLOAD }
-enum class SyncStatus { PENDING, IN_PROGRESS, COMPLETED, FAILED }
-
-data class SyncOperation(
-    val gameId: Long,
-    val gameName: String,
-    val coverPath: String?,
-    val direction: SyncDirection,
-    val status: SyncStatus,
-    val progress: Float = 0f,
-    val error: String? = null
-)
-
-data class SyncQueueState(
-    val operations: List<SyncOperation> = emptyList(),
-    val isActive: Boolean = false,
-    val currentOperation: SyncOperation? = null
-) {
-    val hasOperations: Boolean get() = operations.isNotEmpty()
-    val pendingCount: Int get() = operations.count { it.status == SyncStatus.PENDING }
-    val completedCount: Int get() = operations.count { it.status == SyncStatus.COMPLETED }
-    val inProgressCount: Int get() = operations.count { it.status == SyncStatus.IN_PROGRESS }
-}
-
 @Singleton
 class SaveSyncRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -128,15 +101,23 @@ class SaveSyncRepository @Inject constructor(
     private val titleIdExtractor: TitleIdExtractor,
     private val titleDbRepository: TitleDbRepository,
     private val saveArchiver: SaveArchiver,
+    private val savePathResolver: SavePathResolver,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val fal: FileAccessLayer,
-    private val switchProfileParser: SwitchProfileParser
+    private val switchSaveHandler: SwitchSaveHandler,
+    private val gciSaveHandler: GciSaveHandler,
+    private val n3dsSaveHandler: N3dsSaveHandler,
+    private val vitaSaveHandler: VitaSaveHandler,
+    private val pspSaveHandler: PspSaveHandler,
+    private val wiiUSaveHandler: WiiUSaveHandler,
+    private val retroArchSaveHandler: RetroArchSaveHandler,
+    private val defaultSaveHandler: DefaultSaveHandler,
+    private val syncQueueManager: SyncQueueManager
 ) {
     private var api: RomMApi? = null
 
-    private val _syncQueueState = MutableStateFlow(SyncQueueState())
-    val syncQueueState: StateFlow<SyncQueueState> = _syncQueueState.asStateFlow()
+    val syncQueueState: StateFlow<SyncQueueState> = syncQueueManager.state
 
     fun setApi(api: RomMApi?) {
         this.api = api
@@ -144,61 +125,7 @@ class SaveSyncRepository @Inject constructor(
 
     fun getApi(): RomMApi? = api
 
-    private fun updateSyncQueue(transform: (SyncQueueState) -> SyncQueueState) {
-        _syncQueueState.update(transform)
-    }
-
-    private fun addOperation(operation: SyncOperation) {
-        updateSyncQueue { state ->
-            val existingIndex = state.operations.indexOfFirst { it.gameId == operation.gameId }
-            val updatedOps = if (existingIndex >= 0) {
-                state.operations.toMutableList().apply { set(existingIndex, operation) }
-            } else {
-                state.operations + operation
-            }
-            state.copy(operations = updatedOps, isActive = true)
-        }
-    }
-
-    private fun updateOperation(gameId: Long, transform: (SyncOperation) -> SyncOperation) {
-        updateSyncQueue { state ->
-            val updatedOps = state.operations.map { op ->
-                if (op.gameId == gameId) transform(op) else op
-            }
-            val current = updatedOps.find { it.status == SyncStatus.IN_PROGRESS }
-            state.copy(operations = updatedOps, currentOperation = current)
-        }
-    }
-
-    private fun completeOperation(gameId: Long, error: String? = null) {
-        updateSyncQueue { state ->
-            val updatedOps = state.operations.map { op ->
-                if (op.gameId == gameId) {
-                    op.copy(
-                        status = if (error == null) SyncStatus.COMPLETED else SyncStatus.FAILED,
-                        error = error,
-                        progress = if (error == null) 1f else op.progress
-                    )
-                } else op
-            }
-            val remaining = updatedOps.filter { it.status != SyncStatus.COMPLETED && it.status != SyncStatus.FAILED }
-            val current = updatedOps.find { it.status == SyncStatus.IN_PROGRESS }
-            state.copy(
-                operations = updatedOps,
-                currentOperation = current,
-                isActive = remaining.isNotEmpty()
-            )
-        }
-    }
-
-    fun clearCompletedOperations() {
-        updateSyncQueue { state ->
-            val remaining = state.operations.filter {
-                it.status != SyncStatus.COMPLETED && it.status != SyncStatus.FAILED
-            }
-            state.copy(operations = remaining, isActive = remaining.isNotEmpty())
-        }
-    }
+    fun clearCompletedOperations() = syncQueueManager.clearCompletedOperations()
 
     private fun resolveSavePaths(config: SavePathConfig, platformSlug: String): List<String> {
         val filesDir = if (config.usesInternalStorage) context.filesDir.absolutePath else null
@@ -214,6 +141,19 @@ class SaveSyncRepository @Inject constructor(
         return prefs.saveSyncEnabled && prefs.experimentalFolderSaveSync
     }
 
+    private fun getHandler(config: SavePathConfig?, platformSlug: String, emulatorId: String): PlatformSaveHandler {
+        return when {
+            emulatorId in listOf("retroarch", "retroarch_64") -> retroArchSaveHandler
+            config?.usesGciFormat == true -> gciSaveHandler
+            platformSlug == "switch" -> switchSaveHandler
+            platformSlug == "3ds" -> n3dsSaveHandler
+            platformSlug in listOf("vita", "psvita") -> vitaSaveHandler
+            platformSlug == "psp" -> pspSaveHandler
+            platformSlug == "wiiu" -> wiiUSaveHandler
+            else -> defaultSaveHandler
+        }
+    }
+
     fun observeNewSavesCount(): Flow<Int> = saveSyncDao.observeNewSavesCount()
 
     fun observePendingCount(): Flow<Int> = pendingSaveSyncDao.observePendingCount()
@@ -227,928 +167,35 @@ class SaveSyncRepository @Inject constructor(
         coreName: String? = null,
         emulatorPackage: String? = null,
         gameId: Long? = null
-    ): String? = withContext(Dispatchers.IO) {
-        if (emulatorId == "default" || emulatorId.isBlank()) {
-            Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid emulatorId='$emulatorId' - caller should resolve emulator before calling discoverSavePath | game=$gameTitle, platform=$platformSlug")
-            return@withContext null
-        }
-
-        val config = emulatorPackage?.let { SavePathRegistry.getConfigIncludingUnsupportedByPackage(it) }
-            ?: SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
-        if (config == null) {
-            Logger.warn(TAG, "[SaveSync] DISCOVER | No save path config for emulator | emulatorId=$emulatorId, emulatorPackage=$emulatorPackage, game=$gameTitle, platform=$platformSlug")
-            return@withContext null
-        }
-
-        val effectiveEmulatorId = config.emulatorId
-        val userConfig = emulatorSaveConfigDao.getByEmulator(effectiveEmulatorId)
-        val isRetroArch = effectiveEmulatorId == "retroarch" || effectiveEmulatorId == "retroarch_64"
-
-        if (userConfig?.isUserOverride == true && !isRetroArch) {
-            if (config.usesFolderBasedSaves && romPath != null) {
-                if (!isFolderSaveSyncEnabled()) {
-                    return@withContext null
-                }
-                return@withContext discoverFolderSavePath(
-                    config = config,
-                    platformSlug = platformSlug,
-                    romPath = romPath,
-                    cachedTitleId = cachedTitleId,
-                    emulatorPackage = emulatorPackage,
-                    gameId = gameId,
-                    gameTitle = gameTitle,
-                    basePathOverride = userConfig.savePathPattern
-                )
-            }
-            if (config.usesGciFormat && romPath != null) {
-                val gciSave = discoverGciSavePath(config, romPath, userConfig.savePathPattern)
-                if (gciSave != null) {
-                    Logger.debug(TAG, "discoverSavePath: GCI save found (user override) at $gciSave")
-                    return@withContext gciSave
-                }
-            }
-            if (romPath != null) {
-                val savePath = findSaveByRomName(userConfig.savePathPattern, romPath, config.saveExtensions)
-                if (savePath != null) return@withContext savePath
-            }
-            return@withContext findSaveInPath(userConfig.savePathPattern, gameTitle, config.saveExtensions)
-        }
-
-        if (config.usesFolderBasedSaves && romPath != null) {
-            if (!isFolderSaveSyncEnabled()) {
-                return@withContext null
-            }
-            return@withContext discoverFolderSavePath(
-                config = config,
-                platformSlug = platformSlug,
-                romPath = romPath,
-                cachedTitleId = cachedTitleId,
-                emulatorPackage = emulatorPackage,
-                gameId = gameId,
-                gameTitle = gameTitle
-            )
-        }
-
-        // GameCube GCI format - uses game ID from ROM header
-        if (config.usesGciFormat && romPath != null) {
-            val gciSave = discoverGciSavePath(config, romPath)
-            if (gciSave != null) {
-                Logger.debug(TAG, "discoverSavePath: GCI save found at $gciSave")
-                return@withContext gciSave
-            }
-        }
-
-        val basePathOverride = if (isRetroArch && userConfig?.isUserOverride == true) {
-            userConfig.savePathPattern
-        } else null
-
-        val paths = if (isRetroArch) {
-            val packageName = if (effectiveEmulatorId == "retroarch_64") "com.retroarch.aarch64" else "com.retroarch"
-            val contentDir = romPath?.let { File(it).parent }
-            if (coreName != null) {
-                Logger.debug(TAG, "discoverSavePath: RetroArch using known core=$coreName (baseOverride=$basePathOverride)")
-                retroArchConfigParser.resolveSavePaths(packageName, platformSlug, coreName, contentDir, basePathOverride)
-            } else {
-                val corePatterns = EmulatorRegistry.getRetroArchCorePatterns()[platformSlug] ?: emptyList()
-                Logger.debug(TAG, "discoverSavePath: RetroArch trying all cores=$corePatterns (baseOverride=$basePathOverride)")
-                corePatterns.flatMap { core ->
-                    retroArchConfigParser.resolveSavePaths(packageName, platformSlug, core, contentDir, basePathOverride)
-                } + retroArchConfigParser.resolveSavePaths(packageName, platformSlug, null, contentDir, basePathOverride)
-            }
-        } else {
-            resolveSavePaths(config, platformSlug)
-        }
-
-        Logger.debug(TAG, "discoverSavePath: searching ${paths.size} paths for '$gameTitle' (romPath=$romPath)")
-
-        if (romPath != null) {
-            for (basePath in paths) {
-                val savePath = findSaveByRomName(basePath, romPath, config.saveExtensions)
-                if (savePath != null) {
-                    Logger.debug(TAG, "discoverSavePath: ROM-based match found at $savePath")
-                    emulatorSaveConfigDao.upsert(
-                        EmulatorSaveConfigEntity(
-                            emulatorId = effectiveEmulatorId,
-                            savePathPattern = File(savePath).parent ?: basePath,
-                            isAutoDetected = true,
-                            lastVerifiedAt = Instant.now()
-                        )
-                    )
-                    return@withContext savePath
-                }
-            }
-            Logger.debug(TAG, "discoverSavePath: ROM-based lookup found nothing, trying title match")
-        }
-
-        for (basePath in paths) {
-            val saveFile = findSaveInPath(basePath, gameTitle, config.saveExtensions)
-            if (saveFile != null) {
-                Logger.debug(TAG, "discoverSavePath: found save at $saveFile")
-                emulatorSaveConfigDao.upsert(
-                    EmulatorSaveConfigEntity(
-                        emulatorId = effectiveEmulatorId,
-                        savePathPattern = basePath,
-                        isAutoDetected = true,
-                        lastVerifiedAt = Instant.now()
-                    )
-                )
-                return@withContext saveFile
-            }
-        }
-
-        Logger.verbose(TAG) {
-            "discoverSavePath: FAILED - no save found for '$gameTitle' (romPath=$romPath) " +
-                "after checking ${paths.size} paths"
-        }
-        null
-    }
-
-    private suspend fun discoverFolderSavePath(
-        config: SavePathConfig,
-        platformSlug: String,
-        romPath: String,
-        cachedTitleId: String? = null,
-        emulatorPackage: String? = null,
-        gameId: Long? = null,
-        gameTitle: String? = null,
-        basePathOverride: String? = null,
-        allowCacheRefresh: Boolean = true
-    ): String? {
-        val romFile = File(romPath)
-        val resolvedPaths = if (basePathOverride != null) {
-            val effectivePath = when (platformSlug) {
-                "3ds" -> {
-                    if (basePathOverride.endsWith("/sdmc/Nintendo 3DS") || basePathOverride.endsWith("/sdmc/Nintendo 3DS/")) {
-                        basePathOverride.trimEnd('/')
-                    } else {
-                        "$basePathOverride/sdmc/Nintendo 3DS"
-                    }
-                }
-                else -> basePathOverride
-            }
-            listOf(effectivePath)
-        } else {
-            SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
-        }
-        val triedTitleIds = mutableSetOf<String>()
-        val isSwitchPlatform = platformSlug == "switch"
-
-        // 1. Try confirmed titleId first (validate for Switch)
-        val validatedCachedTitleId = if (cachedTitleId != null && isSwitchPlatform) {
-            if (isValidSwitchTitleId(cachedTitleId)) {
-                cachedTitleId
-            } else {
-                Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid cached titleId=$cachedTitleId (doesn't start with 01), clearing")
-                if (gameId != null) {
-                    gameDao.updateTitleId(gameId, null)
-                }
-                null
-            }
-        } else {
-            cachedTitleId
-        }
-
-        if (validatedCachedTitleId != null) {
-            triedTitleIds.add(validatedCachedTitleId.uppercase())
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying cached titleId=$validatedCachedTitleId")
-            for (basePath in resolvedPaths) {
-                val saveFolder = findSaveFolderByTitleId(basePath, validatedCachedTitleId, platformSlug)
-                if (saveFolder != null) return saveFolder
-            }
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Cached titleId=$validatedCachedTitleId found no save")
-        }
-
-        // 2. Try ROM extraction (binary or filename)
-        val extractionResult = titleIdExtractor.extractTitleIdWithSource(romFile, platformSlug, emulatorPackage)
-        if (extractionResult != null && extractionResult.titleId.uppercase() !in triedTitleIds) {
-            val extractedTitleId = extractionResult.titleId
-            triedTitleIds.add(extractedTitleId.uppercase())
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId (fromBinary=${extractionResult.fromBinary})")
-
-            // Cache valid extracted ID immediately for future use (validate for Switch)
-            val shouldCacheExtracted = gameId != null && validatedCachedTitleId == null &&
-                (!isSwitchPlatform || isValidSwitchTitleId(extractedTitleId))
-            if (shouldCacheExtracted) {
-                Logger.debug(TAG, "[SaveSync] DISCOVER | Caching extracted titleId=$extractedTitleId for gameId=$gameId, locked=${extractionResult.fromBinary}")
-                gameDao.setTitleIdWithLock(gameId, extractedTitleId, extractionResult.fromBinary)
-            } else if (gameId != null && isSwitchPlatform && !isValidSwitchTitleId(extractedTitleId)) {
-                Logger.warn(TAG, "[SaveSync] DISCOVER | Skipping cache of invalid extracted titleId=$extractedTitleId (doesn't start with 01)")
-            }
-
-            for (basePath in resolvedPaths) {
-                val saveFolder = findSaveFolderByTitleId(basePath, extractedTitleId, platformSlug)
-                if (saveFolder != null) {
-                    return saveFolder
-                }
-            }
-        }
-
-        // 3. Collect all candidates (cached + remote)
-        val allCandidates = mutableListOf<String>()
-        if (gameId != null) {
-            allCandidates.addAll(titleDbRepository.getCachedCandidates(gameId))
-        }
-        if (gameId != null && gameTitle != null) {
-            val remoteCandidates = titleDbRepository.resolveTitleIdCandidates(gameId, gameTitle, platformSlug)
-            allCandidates.addAll(remoteCandidates.filter { it !in allCandidates })
-        }
-
-        // 4. Find all matching saves and pick the most recently modified
-        data class SaveMatch(val path: String, val titleId: String, val modTime: Long)
-        val matches = mutableListOf<SaveMatch>()
-
-        for (candidate in allCandidates) {
-            if (candidate.uppercase() in triedTitleIds) continue
-            triedTitleIds.add(candidate.uppercase())
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying candidate titleId=$candidate")
-            for (basePath in resolvedPaths) {
-                val saveFolder = findSaveFolderByTitleId(basePath, candidate, platformSlug)
-                if (saveFolder != null) {
-                    val modTime = findNewestFileTime(saveFolder)
-                    Logger.debug(TAG, "[SaveSync] DISCOVER | Found match | titleId=$candidate, path=$saveFolder, modTime=$modTime")
-                    matches.add(SaveMatch(saveFolder, candidate, modTime))
-                }
-            }
-        }
-
-        if (matches.isNotEmpty()) {
-            val best = matches.maxByOrNull { it.modTime }!!
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Selected best match | titleId=${best.titleId}, path=${best.path}, modTime=${best.modTime}")
-            if (gameId != null && (!isSwitchPlatform || isValidSwitchTitleId(best.titleId))) {
-                gameDao.updateTitleId(gameId, best.titleId)
-            } else if (gameId != null && isSwitchPlatform && !isValidSwitchTitleId(best.titleId)) {
-                Logger.warn(TAG, "[SaveSync] DISCOVER | Skipping cache of invalid best match titleId=${best.titleId} (doesn't start with 01)")
-            }
-            return best.path
-        }
-
-        if (allowCacheRefresh && gameId != null) {
-            Logger.debug(TAG, "[SaveSync] DISCOVER | No match found, clearing cache and retrying once")
-            titleDbRepository.clearTitleIdCache(gameId)
-            return discoverFolderSavePath(
-                config = config,
-                platformSlug = platformSlug,
-                romPath = romPath,
-                cachedTitleId = null,
-                emulatorPackage = emulatorPackage,
-                gameId = gameId,
-                gameTitle = gameTitle,
-                basePathOverride = basePathOverride,
-                allowCacheRefresh = false
-            )
-        }
-
-        Logger.debug(TAG, "[SaveSync] DISCOVER | No save folder found after trying ${triedTitleIds.size} titleIds")
-        return null
-    }
-
-    private fun discoverGciSavePath(
-        config: SavePathConfig,
-        romPath: String,
-        basePathOverride: String? = null
-    ): String? {
-        val romFile = File(romPath)
-        if (!romFile.exists()) {
-            Logger.debug(TAG, "[SaveSync] GCI | ROM file does not exist: $romPath")
-            return null
-        }
-
-        val gameInfo = GameCubeHeaderParser.parseRomHeader(romFile)
-        if (gameInfo == null) {
-            Logger.debug(TAG, "[SaveSync] GCI | Failed to parse ROM header: $romPath")
-            return null
-        }
-
-        Logger.debug(TAG, "[SaveSync] GCI | Parsed ROM: gameId=${gameInfo.gameId}, region=${gameInfo.region}, name=${gameInfo.gameName}")
-
-        val resolvedPaths = if (basePathOverride != null) {
-            listOf(basePathOverride)
-        } else {
-            SavePathRegistry.resolvePath(config, "ngc", null)
-        }
-        Logger.debug(TAG, "[SaveSync] GCI | Searching ${resolvedPaths.size} paths for GCI saves${if (basePathOverride != null) " (user override)" else ""}")
-
-        for (basePath in resolvedPaths) {
-            if (!directoryExists(basePath)) {
-                Logger.verbose(TAG) { "[SaveSync] GCI | Save dir does not exist: $basePath" }
-                continue
-            }
-
-            val gciFiles = findGciFilesInPath(basePath, gameInfo.gameId)
-            if (gciFiles.isNotEmpty()) {
-                val firstGci = gciFiles.first()
-                Logger.debug(TAG, "[SaveSync] GCI | Found ${gciFiles.size} GCI file(s), using: $firstGci")
-                return firstGci
-            }
-        }
-
-        Logger.debug(TAG, "[SaveSync] GCI | No GCI saves found for gameId=${gameInfo.gameId}")
-        return null
-    }
-
-    private fun discoverAllGciSavePaths(
-        config: SavePathConfig,
-        romPath: String,
-        basePathOverride: String? = null
-    ): List<String> {
-        val romFile = File(romPath)
-        if (!romFile.exists()) {
-            Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | ROM file does not exist: $romPath")
-            return emptyList()
-        }
-
-        val gameInfo = GameCubeHeaderParser.parseRomHeader(romFile)
-        if (gameInfo == null) {
-            Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Failed to parse ROM header: $romPath")
-            return emptyList()
-        }
-
-        Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Parsed ROM: gameId=${gameInfo.gameId}, region=${gameInfo.region}")
-
-        val resolvedPaths = if (basePathOverride != null) {
-            listOf(basePathOverride)
-        } else {
-            SavePathRegistry.resolvePath(config, "ngc", null)
-        }
-
-        val allGciFiles = mutableListOf<String>()
-        for (basePath in resolvedPaths) {
-            if (!directoryExists(basePath)) continue
-            allGciFiles.addAll(findGciFilesInPath(basePath, gameInfo.gameId))
-        }
-
-        Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Found ${allGciFiles.size} total GCI file(s) for gameId=${gameInfo.gameId}")
-        return allGciFiles
-    }
-
-    private suspend fun createGciBundle(
-        gciPaths: List<String>,
-        outputFile: File
-    ): Boolean = withContext(Dispatchers.IO) {
-        if (gciPaths.isEmpty()) {
-            Logger.warn(TAG, "[SaveSync] GCI_BUNDLE | No GCI files to bundle")
-            return@withContext false
-        }
-
-        try {
-            Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Creating bundle with ${gciPaths.size} file(s)")
-            saveArchiver.zipFiles(gciPaths.map { File(it) }, outputFile)
-            Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Bundle created: ${outputFile.absolutePath}, size=${outputFile.length()}")
-            true
-        } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] GCI_BUNDLE | Failed to create bundle", e)
-            false
-        }
-    }
+    ): String? = savePathResolver.discoverSavePath(
+        emulatorId = emulatorId,
+        gameTitle = gameTitle,
+        platformSlug = platformSlug,
+        romPath = romPath,
+        cachedTitleId = cachedTitleId,
+        coreName = coreName,
+        emulatorPackage = emulatorPackage,
+        gameId = gameId,
+        isFolderSaveSyncEnabled = isFolderSaveSyncEnabled()
+    )
 
     private suspend fun extractGciBundle(
         zipFile: File,
         config: SavePathConfig,
         romPath: String,
         gameId: Long
-    ): List<String> = withContext(Dispatchers.IO) {
-        val extractedPaths = mutableListOf<String>()
+    ): List<String> = gciSaveHandler.extractBundle(zipFile, config, romPath, gameId)
 
-        val romInfo = GameCubeHeaderParser.parseRomHeader(File(romPath))
-        if (romInfo == null) {
-            Logger.error(TAG, "[SaveSync] GCI_BUNDLE | Failed to parse ROM header for extraction | romPath=$romPath")
-            return@withContext emptyList()
-        }
+    private fun isValidSwitchHexId(name: String): Boolean = switchSaveHandler.isValidHexId(name)
 
-        val basePaths = SavePathRegistry.resolvePath(config, "ngc", null)
-        val baseDir = basePaths.firstOrNull { directoryExists(it) }
-            ?: basePaths.firstOrNull()
-            ?: run {
-                Logger.error(TAG, "[SaveSync] GCI_BUNDLE | No valid base path for GCI extraction")
-                return@withContext emptyList()
-            }
-
-        Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Extracting bundle | zipFile=${zipFile.name}, baseDir=$baseDir, region=${romInfo.region}, gameId=${romInfo.gameId}")
-
-        try {
-            // Delete existing GCI files matching this game prefix before extracting
-            val existingFiles = findGciFilesInPath(baseDir, romInfo.gameId)
-            if (existingFiles.isNotEmpty()) {
-                Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Deleting ${existingFiles.size} existing GCI file(s) for prefix ${romInfo.gameId}")
-                for (path in existingFiles) {
-                    if (fal.delete(path)) {
-                        Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Deleted existing | path=$path")
-                    }
-                }
-            }
-
-            ZipFile(zipFile).use { zip ->
-                val entries = zip.entries.toList().filter { !it.isDirectory && it.name.endsWith(".gci", ignoreCase = true) }
-                Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Found ${entries.size} GCI entries in bundle")
-
-                for (entry in entries) {
-                    val tempGciFile = File(context.cacheDir, "temp_${entry.name}")
-                    try {
-                        zip.getInputStream(entry).use { input ->
-                            tempGciFile.outputStream().use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-
-                        // Build target path: preserve original filename from ZIP
-                        val targetPath = GameCubeHeaderParser.buildGciPath(baseDir, romInfo.region, entry.name)
-
-                        // Use FileAccessLayer for proper scoped storage handling
-                        val parentDir = File(targetPath).parent
-                        if (parentDir != null) fal.mkdirs(parentDir)
-
-                        if (fal.copyFile(tempGciFile.absolutePath, targetPath)) {
-                            extractedPaths.add(targetPath)
-                            Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Extracted | entry=${entry.name} -> $targetPath")
-                        } else {
-                            Logger.error(TAG, "[SaveSync] GCI_BUNDLE | Failed to copy | entry=${entry.name} -> $targetPath")
-                        }
-                    } finally {
-                        tempGciFile.delete()
-                    }
-                }
-            }
-
-            Logger.debug(TAG, "[SaveSync] GCI_BUNDLE | Extraction complete | extractedFiles=${extractedPaths.size}")
-            extractedPaths
-        } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] GCI_BUNDLE | Extraction failed", e)
-            emptyList()
-        }
-    }
-
-    private fun findGciFilesInPath(basePath: String, gameId: String): List<String> {
-        val results = mutableListOf<String>()
-        val regions = listOf("USA", "EUR", "JAP", "KOR")
-
-        // Search proper Dolphin structure first: {region}/Card A/
-        for (region in regions) {
-            val regionPath = "$basePath/$region"
-            if (!directoryExists(regionPath)) continue
-
-            listFilesAtPath(regionPath)
-                ?.filter { it.isDirectory && it.name.startsWith("Card", ignoreCase = true) }
-                ?.forEach { cardDir -> searchGciInDirectory(cardDir.path, gameId, results) }
-
-            // Also check region folder directly (less common but valid)
-            searchGciInDirectory(regionPath, gameId, results)
-        }
-
-        // Only search base path as fallback, and only return if results have valid structure
-        if (results.isEmpty()) {
-            searchGciInDirectory(basePath, gameId, results)
-            // Filter out results that don't follow proper GCI path structure
-            results.removeAll { !GameCubeHeaderParser.isValidGciPath(it) }
-        }
-
-        return results
-    }
-
-    private fun searchGciInDirectory(dirPath: String, gameId: String, results: MutableList<String>) {
-        listFilesAtPath(dirPath)?.forEach { file ->
-            if (!file.isFile) return@forEach
-            if (!file.extension.equals("gci", ignoreCase = true)) return@forEach
-            if (file.name.contains(".deleted")) return@forEach
-
-            val matches = file.name.contains(gameId, ignoreCase = true) ||
-                GameCubeHeaderParser.parseGciHeader(fal.getTransformedFile(file.path))?.gameId.equals(gameId, ignoreCase = true)
-            if (matches) results.add(file.path)
-        }
-    }
-
-    private fun findSaveFolderByTitleId(
-        basePath: String,
-        titleId: String,
-        platformSlug: String
-    ): String? {
-        if (!directoryExists(basePath)) {
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Base path does not exist | path=$basePath")
-            return null
-        }
-        val normalizedTitleId = titleId.uppercase()
-        Logger.debug(TAG, "[SaveSync] DISCOVER | Scanning base path | path=$basePath, titleId=$normalizedTitleId")
-
-        when (platformSlug) {
-            "vita", "psvita" -> {
-                val match = listFilesAtPath(basePath)?.firstOrNull {
-                    it.isDirectory && it.name.equals(titleId, ignoreCase = true)
-                }
-                if (match != null) return match.path
-            }
-            "switch" -> {
-                var bestMatchPath: String? = null
-                var bestModTime = 0L
-                listFilesAtPath(basePath)?.forEach { userFolder ->
-                    if (userFolder.isDirectory) {
-                        val saveFolder = listFilesAtPath(userFolder.path)?.firstOrNull {
-                            it.isDirectory && it.name.equals(normalizedTitleId, ignoreCase = true)
-                        }
-                        if (saveFolder != null) {
-                            val modTime = findNewestFileTime(saveFolder.path)
-                            if (modTime > bestModTime) {
-                                bestModTime = modTime
-                                bestMatchPath = saveFolder.path
-                            }
-                        }
-                        listFilesAtPath(userFolder.path)?.forEach { profileFolder ->
-                            if (profileFolder.isDirectory) {
-                                val nestedSave = listFilesAtPath(profileFolder.path)?.firstOrNull {
-                                    it.isDirectory && it.name.equals(normalizedTitleId, ignoreCase = true)
-                                }
-                                if (nestedSave != null) {
-                                    val modTime = findNewestFileTime(nestedSave.path)
-                                    if (modTime > bestModTime) {
-                                        bestModTime = modTime
-                                        bestMatchPath = nestedSave.path
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (bestMatchPath != null) {
-                    Logger.debug(TAG, "[SaveSync] DISCOVER | Switch save folder found | path=$bestMatchPath, newestFileTime=$bestModTime")
-                    return bestMatchPath
-                }
-            }
-            "3ds" -> {
-                val shortTitleId = if (normalizedTitleId.length > 8) {
-                    normalizedTitleId.takeLast(8)
-                } else {
-                    normalizedTitleId
-                }
-                Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS lookup | baseDir=$basePath, fullId=$normalizedTitleId, shortId=$shortTitleId")
-                var bestMatchPath: String? = null
-                var bestModTime = 0L
-                listFilesAtPath(basePath)?.filter { it.isDirectory }?.forEach { id0Folder ->
-                    listFilesAtPath(id0Folder.path)?.filter { it.isDirectory }?.forEach { id1Folder ->
-                        val titleBasePath = "${id1Folder.path}/title"
-                        if (!directoryExists(titleBasePath)) return@forEach
-                        listFilesAtPath(titleBasePath)?.filter { it.isDirectory }?.forEach { categoryDir ->
-                            val matchingFolder = listFilesAtPath(categoryDir.path)?.firstOrNull {
-                                it.isDirectory && it.name.equals(shortTitleId, ignoreCase = true)
-                            }
-                            if (matchingFolder != null) {
-                                val dataPath = "${matchingFolder.path}/data"
-                                if (directoryExists(dataPath)) {
-                                    val modTime = findNewestFileTime(dataPath)
-                                    Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS candidate | path=$dataPath, modTime=$modTime")
-                                    if (modTime > bestModTime) {
-                                        bestModTime = modTime
-                                        bestMatchPath = dataPath
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (bestMatchPath != null) {
-                    Logger.debug(TAG, "[SaveSync] DISCOVER | 3DS save found | path=$bestMatchPath")
-                    return bestMatchPath
-                }
-            }
-            "psp" -> {
-                listFilesAtPath(basePath)?.forEach { folder ->
-                    if (folder.isDirectory && folder.name.startsWith(titleId, ignoreCase = true)) {
-                        return folder.path
-                    }
-                }
-            }
-            "wiiu" -> {
-                val match = listFilesAtPath(basePath)?.firstOrNull {
-                    it.isDirectory && it.name.equals(titleId, ignoreCase = true)
-                }
-                if (match != null) return match.path
-            }
-        }
-        return null
-    }
-
-    private fun findActiveProfileFolder(basePath: String, platformSlug: String, emulatorPackage: String? = null): String {
-        if (platformSlug != "switch") {
-            return basePath
-        }
-
-        if (!directoryExists(basePath)) {
-            Logger.debug(TAG, "findActiveProfileFolder: baseDir doesn't exist, cannot determine profile")
-            return basePath
-        }
-
-        // Try emulator-specific profile detection first (Eden profiles.dat)
-        if (emulatorPackage != null) {
-            val dataPath = basePath.substringBefore("/nand/user/save")
-            switchProfileParser.parseActiveProfile(emulatorPackage, dataPath)?.let { profileUuid ->
-                val profilePath = "$basePath/0000000000000000/$profileUuid"
-                if (directoryExists(profilePath)) {
-                    Logger.debug(TAG, "findActiveProfileFolder: using profile from emulator config | pkg=$emulatorPackage, uuid=$profileUuid")
-                    return profilePath
-                } else {
-                    Logger.debug(TAG, "findActiveProfileFolder: parsed profile path doesn't exist | path=$profilePath")
-                }
-            }
-        }
-
-        // Fallback to timestamp-based detection
-        var mostRecentPath: String? = null
-        var mostRecentTime = 0L
-        var firstNonZeroProfile: String? = null
-
-        listFilesAtPath(basePath)?.forEach { userFolder ->
-            if (!userFolder.isDirectory) return@forEach
-            if (!isValidSwitchUserFolderId(userFolder.name)) return@forEach
-
-            listFilesAtPath(userFolder.path)?.forEach { profileFolder ->
-                if (!profileFolder.isDirectory) return@forEach
-                if (!isValidSwitchProfileFolderId(profileFolder.name)) return@forEach
-
-                val isZeroProfile = profileFolder.name.all { it == '0' }
-                if (!isZeroProfile && firstNonZeroProfile == null) {
-                    firstNonZeroProfile = profileFolder.path
-                }
-
-                val newestFileTime = findNewestFileTime(profileFolder.path)
-                if (!isZeroProfile && newestFileTime > mostRecentTime) {
-                    mostRecentTime = newestFileTime
-                    mostRecentPath = profileFolder.path
-                }
-            }
-        }
-
-        val result = mostRecentPath ?: firstNonZeroProfile ?: basePath
-        Logger.debug(TAG, "findActiveProfileFolder: selected=$result (byFileTime=${mostRecentPath != null}, firstNonZero=$firstNonZeroProfile)")
-
-        return result
-    }
-
-    private fun findNewestFileTime(folderPath: String): Long {
-        var newest = 0L
-        listFilesAtPath(folderPath)?.forEach { child ->
-            if (child.isFile) {
-                if (child.lastModified > newest) {
-                    newest = child.lastModified
-                }
-            } else if (child.isDirectory) {
-                val childNewest = findNewestFileTime(child.path)
-                if (childNewest > newest) {
-                    newest = childNewest
-                }
-            }
-        }
-        return newest
-    }
-
-    private fun isValidSwitchUserFolderId(name: String): Boolean {
-        return name.length == 16 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
-    }
-
-    private fun isValidSwitchProfileFolderId(name: String): Boolean {
-        return (name.length == 16 || name.length == 32) &&
-            name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
-    }
-
-    private fun isValidSwitchHexId(name: String): Boolean {
-        return name.length == 16 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
-    }
-
-    private fun isValidSwitchTitleId(titleId: String): Boolean {
-        return isValidSwitchHexId(titleId) && titleId.uppercase().startsWith("01")
-    }
-
-    private fun findSaveByRomName(
-        basePath: String,
-        romPath: String,
-        extensions: List<String>
-    ): String? {
-        if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
-            Logger.verbose(TAG) { "findSaveByRomName: dir does not exist: $basePath" }
-            return null
-        }
-
-        val romFile = File(romPath)
-        val romName = romFile.nameWithoutExtension
-        val isZipContainer = romFile.extension.equals("zip", ignoreCase = true)
-
-        Logger.verbose(TAG) {
-            "findSaveByRomName: romPath=${romFile.name}, romName=$romName, " +
-                "isZip=$isZipContainer, extensions=$extensions, searchDir=$basePath"
-        }
-
-        if (isZipContainer) {
-            Logger.verbose(TAG) {
-                "findSaveByRomName: WARNING - ROM is in ZIP container, " +
-                    "save filename may differ from container name '$romName'"
-            }
-        }
-
-        for (ext in extensions) {
-            if (ext == "*") continue
-            val savePath = "$basePath/$romName.$ext"
-            Logger.verbose(TAG) { "findSaveByRomName: checking $romName.$ext -> exists=${fal.exists(savePath)}" }
-            if (fal.exists(savePath) && fal.isFile(savePath)) {
-                Logger.debug(TAG, "findSaveByRomName: found $savePath")
-                return savePath
-            }
-        }
-
-        if (Logger.isVerbose) {
-            val existingFiles = listFilesAtPath(basePath)?.filter { it.isFile }?.map { it.name } ?: emptyList()
-            Logger.verbose(TAG) {
-                "findSaveByRomName: no match for '$romName' in $basePath, " +
-                    "existing files (${existingFiles.size}): ${existingFiles.take(10).joinToString()}" +
-                    if (existingFiles.size > 10) "..." else ""
-            }
-        }
-
-        return null
-    }
-
-    private fun findSaveInPath(
-        basePath: String,
-        gameTitle: String,
-        extensions: List<String> = listOf("*")
-    ): String? {
-        if (!fal.exists(basePath) || !fal.isDirectory(basePath)) return null
-
-        val sanitizedTitle = sanitizeFileName(gameTitle).lowercase()
-        val files = listFilesAtPath(basePath) ?: return null
-
-        return files.firstOrNull { file ->
-            val name = file.nameWithoutExtension.lowercase()
-            val ext = file.extension.lowercase()
-            val matchesName = name == sanitizedTitle ||
-                name.contains(sanitizedTitle) ||
-                sanitizedTitle.contains(name)
-            val matchesExt = extensions.contains("*") || extensions.contains(ext)
-            file.isFile && matchesName && matchesExt
-        }?.path
-    }
-
-    private fun sanitizeFileName(name: String): String {
-        return name
-            .replace(Regex("[^a-zA-Z0-9\\s-]"), "")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-    }
+    private fun isValidSwitchTitleId(titleId: String): Boolean = switchSaveHandler.isValidTitleId(titleId)
 
     suspend fun constructSavePath(
         emulatorId: String,
         gameTitle: String,
         platformSlug: String,
         romPath: String?
-    ): String? {
-        val config = SavePathRegistry.getConfig(emulatorId) ?: return null
-
-        if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
-            return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath)
-        }
-
-        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
-        val baseDir = if (userConfig?.isUserOverride == true) {
-            val userPath = userConfig.savePathPattern
-            if (directoryExists(userPath) || saveArchiver.getFileForPath(userPath).mkdirs()) userPath else null
-        } else {
-            null
-        } ?: run {
-            val resolvedPaths = resolveSavePaths(config, platformSlug)
-            resolvedPaths.firstOrNull { directoryExists(it) }
-                ?: resolvedPaths.firstOrNull()
-        } ?: return null
-
-        val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
-        val sanitizedName = sanitizeFileName(gameTitle)
-        val fileName = "$sanitizedName.$extension"
-
-        return "$baseDir/$fileName"
-    }
-
-    private fun constructRetroArchSavePath(
-        emulatorId: String,
-        gameTitle: String,
-        platformSlug: String,
-        romPath: String?
-    ): String? {
-        val packageName = when (emulatorId) {
-            "retroarch_64" -> "com.retroarch.aarch64"
-            else -> "com.retroarch"
-        }
-
-        val raConfig = retroArchConfigParser.parse(packageName)
-        val coreName = SavePathRegistry.getRetroArchCore(platformSlug) ?: return null
-        val saveConfig = SavePathRegistry.getConfig(emulatorId) ?: return null
-        val extension = saveConfig.saveExtensions.firstOrNull() ?: "srm"
-
-        val baseDir = when {
-            raConfig?.savefilesInContentDir == true && romPath != null -> {
-                File(romPath).parent
-            }
-            raConfig?.savefileDirectory != null -> {
-                if (raConfig.sortByCore) {
-                    "${raConfig.savefileDirectory}/$coreName"
-                } else {
-                    raConfig.savefileDirectory
-                }
-            }
-            else -> {
-                val defaultPaths = resolveSavePaths(saveConfig, platformSlug)
-                defaultPaths.firstOrNull { directoryExists(it) }
-                    ?: defaultPaths.firstOrNull()
-            }
-        } ?: return null
-
-        val fileName = buildRetroArchFileName(gameTitle, romPath, extension)
-        return "$baseDir/$fileName"
-    }
-
-    private fun buildRetroArchFileName(
-        gameTitle: String,
-        romPath: String?,
-        extension: String
-    ): String {
-        if (romPath != null) {
-            val romFile = File(romPath)
-            val romName = romFile.nameWithoutExtension
-            val isZipContainer = romFile.extension.equals("zip", ignoreCase = true)
-            val result = "$romName.$extension"
-
-            Logger.verbose(TAG) {
-                "buildRetroArchFileName: romPath=${romFile.name}, derived=$result, isZip=$isZipContainer"
-            }
-
-            if (isZipContainer) {
-                Logger.verbose(TAG) {
-                    "buildRetroArchFileName: WARNING - using ZIP container name '$romName', " +
-                        "but RetroArch may use inner ROM filename for saves"
-                }
-            }
-
-            return result
-        }
-
-        val sanitized = gameTitle
-            .replace(Regex("[^a-zA-Z0-9\\s]"), "")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-        val result = "$sanitized.$extension"
-        Logger.verbose(TAG) { "buildRetroArchFileName: no romPath, using sanitized title -> $result" }
-        return result
-    }
-
-    private suspend fun getSaveDirectory(
-        emulatorId: String,
-        platformSlug: String,
-        romPath: String?
-    ): String? {
-        val config = SavePathRegistry.getConfig(emulatorId) ?: return null
-
-        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
-        if (userConfig?.isUserOverride == true) {
-            val userPath = userConfig.savePathPattern
-            if (directoryExists(userPath) || saveArchiver.getFileForPath(userPath).mkdirs()) {
-                return userPath
-            }
-        }
-
-        if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
-            return getRetroArchSaveDirectory(emulatorId, platformSlug, romPath)
-        }
-
-        val resolvedPaths = resolveSavePaths(config, platformSlug)
-        return resolvedPaths.firstOrNull { directoryExists(it) }
-            ?: resolvedPaths.firstOrNull()
-    }
-
-    private fun getRetroArchSaveDirectory(
-        emulatorId: String,
-        platformSlug: String,
-        romPath: String?
-    ): String? {
-        val packageName = when (emulatorId) {
-            "retroarch_64" -> "com.retroarch.aarch64"
-            else -> "com.retroarch"
-        }
-
-        val raConfig = retroArchConfigParser.parse(packageName)
-        val coreName = SavePathRegistry.getRetroArchCore(platformSlug)
-        val saveConfig = SavePathRegistry.getConfig(emulatorId) ?: return null
-
-        return when {
-            raConfig?.savefilesInContentDir == true && romPath != null -> {
-                File(romPath).parent
-            }
-            raConfig?.savefileDirectory != null -> {
-                if (raConfig.sortByCore && coreName != null) {
-                    "${raConfig.savefileDirectory}/$coreName"
-                } else {
-                    raConfig.savefileDirectory
-                }
-            }
-            else -> {
-                val defaultPaths = resolveSavePaths(saveConfig, platformSlug)
-                defaultPaths.firstOrNull { directoryExists(it) }
-                    ?: defaultPaths.firstOrNull()
-            }
-        }
-    }
+    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath)
 
     suspend fun getSyncStatus(gameId: Long, emulatorId: String): SaveSyncEntity? {
         return saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
@@ -1338,29 +385,38 @@ class SaveSyncRepository @Inject constructor(
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
 
-        var localPath = syncEntity?.localSavePath
-            ?: discoverSavePath(
+        val folderSyncEnabled = isFolderSaveSyncEnabled()
+        val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
+            if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
+        }
+        if (syncEntity?.localSavePath != null && cachedPath == null) {
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Rejecting invalid cached Switch path=${syncEntity.localSavePath}")
+        }
+        var localPath = cachedPath
+            ?: savePathResolver.discoverSavePath(
                 emulatorId = resolvedEmulatorId,
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
                 cachedTitleId = game.titleId,
                 emulatorPackage = emulatorPackage,
-                gameId = gameId
+                gameId = gameId,
+                isFolderSaveSyncEnabled = folderSyncEnabled
             )
 
         // If no path found and we had cached titleId data, clear it and retry with fresh lookup
         if (localPath == null && (game.titleId != null || titleDbRepository.getCachedCandidates(gameId).isNotEmpty())) {
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Clearing stale titleId cache and retrying")
             titleDbRepository.clearTitleIdCache(gameId)
-            localPath = discoverSavePath(
+            localPath = savePathResolver.discoverSavePath(
                 emulatorId = resolvedEmulatorId,
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
                 cachedTitleId = null,
                 emulatorPackage = emulatorPackage,
-                gameId = gameId
+                gameId = gameId,
+                isFolderSaveSyncEnabled = folderSyncEnabled
             )
         }
 
@@ -1377,104 +433,75 @@ class SaveSyncRepository @Inject constructor(
         val config = SavePathRegistry.getConfigIncludingUnsupported(resolvedEmulatorId)
         val isDirectory = fal.isDirectory(localPath)
         val isFolderBased = config?.usesFolderBasedSaves == true && isDirectory
-
-        // Check for GCI bundle (GameCube saves)
-        val isGciBundle = config?.usesGciFormat == true && game.localPath != null
-        val gciFiles = if (isGciBundle) {
-            discoverAllGciSavePaths(config, game.localPath!!)
-        } else {
-            emptyList()
-        }
-
-        val saveSize = when {
-            isGciBundle && gciFiles.isNotEmpty() -> gciFiles.sumOf { File(it).length() }
-            isDirectory -> fal.walk(localPath).filter { it.isFile }.sumOf { it.size }
-            else -> fal.length(localPath)
-        }
-        Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Save found | path=$localPath, isFolderBased=$isFolderBased, isGciBundle=$isGciBundle, gciFiles=${gciFiles.size}, size=${saveSize}bytes")
+        val isGciBundle = config?.usesGciFormat == true
 
         if (isFolderBased && !isFolderSaveSyncEnabled()) {
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Folder save sync disabled, skipping")
             return@withContext SaveSyncResult.NotConfigured
         }
 
-        val localModified = when {
-            isGciBundle && gciFiles.isNotEmpty() -> {
-                Instant.ofEpochMilli(gciFiles.maxOf { File(it).lastModified() })
-            }
-            isDirectory -> {
-                Instant.ofEpochMilli(findNewestFileTime(localPath))
-            }
-            else -> {
-                Instant.ofEpochMilli(fal.lastModified(localPath))
-            }
+        val localModified = if (isDirectory) {
+            Instant.ofEpochMilli(savePathResolver.findNewestFileTime(localPath))
+        } else {
+            Instant.ofEpochMilli(fal.lastModified(localPath))
         }
-        val saveLocation = fal.getTransformedFile(localPath)
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Local modified time | localModified=$localModified")
 
-        var tempZipFile: File? = null
+        val handler = getHandler(config, game.platformSlug, resolvedEmulatorId)
+        val saveContext = SaveContext(
+            config = config ?: SavePathConfig(
+                emulatorId = resolvedEmulatorId,
+                defaultPaths = emptyList(),
+                saveExtensions = listOf("sav", "srm")
+            ),
+            romPath = game.localPath,
+            titleId = game.titleId,
+            emulatorPackage = emulatorPackage,
+            gameId = gameId,
+            gameTitle = game.title,
+            platformSlug = game.platformSlug,
+            emulatorId = resolvedEmulatorId,
+            localSavePath = localPath
+        )
+
+        val prepared = handler.prepareForUpload(localPath, saveContext)
+        if (prepared == null) {
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Handler returned no prepared save")
+            return@withContext SaveSyncResult.NoSaveFound
+        }
+
+        val fileToUpload = prepared.file
+        Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Save prepared | file=${fileToUpload.absolutePath}, size=${fileToUpload.length()}bytes, isTemporary=${prepared.isTemporary}")
+
+        if (fileToUpload.length() <= MIN_VALID_SAVE_SIZE_BYTES) {
+            Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Rejecting empty save | size=${fileToUpload.length()}bytes, minRequired=$MIN_VALID_SAVE_SIZE_BYTES")
+            if (prepared.isTemporary) fileToUpload.delete()
+            return@withContext SaveSyncResult.NoSaveFound
+        }
+
         var tempTrailerFile: File? = null
 
         try {
-            val fileToUpload = if (isGciBundle && gciFiles.isNotEmpty()) {
-                // GCI bundle: zip all matching GCI files
-                tempZipFile = File(context.cacheDir, "${game.title.replace(Regex("[^a-zA-Z0-9 ]"), "")}.gci.zip")
-                Logger.debug(TAG, "[SaveSync] GCI_BUNDLE gameId=$gameId | Creating bundle with ${gciFiles.size} file(s)")
-                if (!createGciBundle(gciFiles, tempZipFile)) {
-                    Logger.error(TAG, "[SaveSync] GCI_BUNDLE gameId=$gameId | Bundle creation failed")
-                    return@withContext SaveSyncResult.Error("Failed to create GCI bundle")
-                }
-                if (isHardcore) {
-                    saveArchiver.appendHardcoreTrailer(tempZipFile)
-                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Appended hardcore trailer to GCI bundle")
-                }
-                val zipSize = tempZipFile.length()
-                Logger.debug(TAG, "[SaveSync] GCI_BUNDLE gameId=$gameId | Bundle complete | output=${tempZipFile.absolutePath}, size=${zipSize}bytes")
-                if (zipSize <= MIN_VALID_SAVE_SIZE_BYTES) {
-                    Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Rejecting empty GCI bundle | zipSize=${zipSize}bytes")
-                    tempZipFile.delete()
-                    return@withContext SaveSyncResult.NoSaveFound
-                }
-                tempZipFile
-            } else if (isFolderBased) {
-                tempZipFile = File(context.cacheDir, "${saveLocation.name}.zip")
-                Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Zipping folder | source=$localPath")
-                if (!saveArchiver.zipFolder(saveLocation, tempZipFile)) {
-                    Logger.error(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Zip failed | source=$localPath")
-                    return@withContext SaveSyncResult.Error("Failed to zip save folder")
-                }
-                if (isHardcore) {
-                    saveArchiver.appendHardcoreTrailer(tempZipFile)
-                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Appended hardcore trailer to zip")
-                }
-                val zipSize = tempZipFile.length()
-                Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Zip complete | output=${tempZipFile.absolutePath}, size=${zipSize}bytes")
-                if (zipSize <= MIN_VALID_SAVE_SIZE_BYTES) {
-                    Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Rejecting empty save upload | zipSize=${zipSize}bytes, minRequired=$MIN_VALID_SAVE_SIZE_BYTES")
-                    tempZipFile.delete()
-                    return@withContext SaveSyncResult.NoSaveFound
-                }
-                tempZipFile
-            } else {
-                if (saveLocation.length() <= MIN_VALID_SAVE_SIZE_BYTES) {
-                    Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Rejecting empty save upload | fileSize=${saveLocation.length()}bytes, minRequired=$MIN_VALID_SAVE_SIZE_BYTES")
-                    return@withContext SaveSyncResult.NoSaveFound
-                }
-                if (isHardcore) {
-                    tempTrailerFile = File(context.cacheDir, "upload_${saveLocation.name}")
-                    saveLocation.copyTo(tempTrailerFile, overwrite = true)
-                    saveArchiver.appendHardcoreTrailer(tempTrailerFile)
-                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Appended hardcore trailer to save")
-                    tempTrailerFile
+            val uploadFile = if (isHardcore) {
+                if (prepared.isTemporary) {
+                    saveArchiver.appendHardcoreTrailer(fileToUpload)
+                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Appended hardcore trailer to prepared file")
+                    fileToUpload
                 } else {
-                    saveLocation
+                    tempTrailerFile = File(context.cacheDir, "upload_${fileToUpload.name}")
+                    fileToUpload.copyTo(tempTrailerFile, overwrite = true)
+                    saveArchiver.appendHardcoreTrailer(tempTrailerFile)
+                    Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Appended hardcore trailer to copy")
+                    tempTrailerFile
                 }
+            } else {
+                fileToUpload
             }
 
-            val contentHash = saveArchiver.calculateFileHash(fileToUpload)
+            val contentHash = saveArchiver.calculateFileHash(uploadFile)
             if (syncEntity?.lastUploadedHash == contentHash) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
-                tempZipFile?.delete()
+                if (prepared.isTemporary) fileToUpload.delete()
                 tempTrailerFile?.delete()
                 return@withContext SaveSyncResult.Success
             }
@@ -1568,9 +595,9 @@ class SaveSyncRepository @Inject constructor(
                 syncEntity?.rommSaveId
             }
             val isUpdate = serverSaveIdToUpdate != null
-            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | HTTP request | isUpdate=$isUpdate, saveIdToUpdate=$serverSaveIdToUpdate, fileName=$uploadFileName, size=${fileToUpload.length()}bytes, serverSavesCount=${serverSaves.size}")
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | HTTP request | isUpdate=$isUpdate, saveIdToUpdate=$serverSaveIdToUpdate, fileName=$uploadFileName, size=${uploadFile.length()}bytes, serverSavesCount=${serverSaves.size}")
 
-            val requestBody = fileToUpload.asRequestBody("application/octet-stream".toMediaType())
+            val requestBody = uploadFile.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
             var response = if (serverSaveIdToUpdate != null) {
@@ -1581,7 +608,7 @@ class SaveSyncRepository @Inject constructor(
 
             if (!response.isSuccessful && serverSaveIdToUpdate != null) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Update failed, retrying as new upload | status=${response.code()}")
-                val retryRequestBody = fileToUpload.asRequestBody("application/octet-stream".toMediaType())
+                val retryRequestBody = uploadFile.asRequestBody("application/octet-stream".toMediaType())
                 val retryFilePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, retryRequestBody)
                 response = api.uploadSave(rommId, resolvedEmulatorId, retryFilePart)
             }
@@ -1617,7 +644,7 @@ class SaveSyncRepository @Inject constructor(
             Logger.error(TAG, "[SaveSync] UPLOAD gameId=$gameId | Exception during upload", e)
             SaveSyncResult.Error(e.message ?: "Upload failed")
         } finally {
-            tempZipFile?.delete()
+            if (prepared.isTemporary) fileToUpload.delete()
             tempTrailerFile?.delete()
         }
     }
@@ -1689,7 +716,8 @@ class SaveSyncRepository @Inject constructor(
         val isSwitchEmulator = resolvedEmulatorId in SWITCH_EMULATOR_IDS
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Save info | fileName=${serverSave.fileName}, isFolderBased=$isFolderBased, isGciFormat=$isGciFormat, isSwitchEmulator=$isSwitchEmulator")
 
-        if (isFolderBased && !isFolderSaveSyncEnabled()) {
+        val folderSyncEnabled = isFolderSaveSyncEnabled()
+        if (isFolderBased && !folderSyncEnabled) {
             Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Folder save sync disabled, skipping")
             return@withContext SaveSyncResult.NotConfigured
         }
@@ -1707,18 +735,19 @@ class SaveSyncRepository @Inject constructor(
             } else {
                 val cached = syncEntity.localSavePath
                 val discovered = if (cached == null) {
-                    discoverSavePath(
+                    savePathResolver.discoverSavePath(
                         emulatorId = resolvedEmulatorId,
                         gameTitle = game.title,
                         platformSlug = game.platformSlug,
                         romPath = game.localPath,
                         cachedTitleId = game.titleId,
                         emulatorPackage = emulatorPackage,
-                        gameId = gameId
+                        gameId = gameId,
+                        isFolderSaveSyncEnabled = folderSyncEnabled
                     )
                 } else null
                 val constructed = if (cached == null && discovered == null) {
-                    constructFolderSavePathWithOverride(resolvedEmulatorId, game.platformSlug, game.localPath, gameId, game.title, game.titleId, emulatorPackage)
+                    savePathResolver.constructFolderSavePathWithOverride(resolvedEmulatorId, game.platformSlug, game.localPath, gameId, game.title, game.titleId, emulatorPackage)
                 } else null
                 (cached ?: discovered ?: constructed).also {
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Folder save path | cached=${cached != null}, discovered=${discovered != null}, constructed=${constructed != null}, path=$it")
@@ -1726,32 +755,34 @@ class SaveSyncRepository @Inject constructor(
             }
         } else {
             val discovered = syncEntity.localSavePath
-                ?: discoverSavePath(
+                ?: savePathResolver.discoverSavePath(
                     emulatorId = resolvedEmulatorId,
                     gameTitle = game.title,
                     platformSlug = game.platformSlug,
                     romPath = game.localPath,
                     cachedTitleId = game.titleId,
                     emulatorPackage = emulatorPackage,
-                    gameId = gameId
+                    gameId = gameId,
+                    isFolderSaveSyncEnabled = folderSyncEnabled
                 )
 
             // If discovery failed and we had cached titleId data, clear it and retry
             val retried = if (discovered == null && (game.titleId != null || titleDbRepository.getCachedCandidates(gameId).isNotEmpty())) {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Clearing stale titleId cache and retrying")
                 titleDbRepository.clearTitleIdCache(gameId)
-                discoverSavePath(
+                savePathResolver.discoverSavePath(
                     emulatorId = resolvedEmulatorId,
                     gameTitle = game.title,
                     platformSlug = game.platformSlug,
                     romPath = game.localPath,
                     cachedTitleId = null,
                     emulatorPackage = emulatorPackage,
-                    gameId = gameId
+                    gameId = gameId,
+                    isFolderSaveSyncEnabled = folderSyncEnabled
                 )
             } else discovered
 
-            (retried ?: constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)).also {
+            (retried ?: savePathResolver.constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)).also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, discovered=${retried != null}, path=$it")
             }
         }
@@ -1808,8 +839,8 @@ class SaveSyncRepository @Inject constructor(
 
                 targetPath = if (isSwitchEmulator && config != null) {
                     val resolved = preDownloadTargetPath
-                        ?: resolveSwitchSaveTargetPath(tempZipFile, config, emulatorPackage)
-                        ?: constructFolderSavePath(resolvedEmulatorId, game.platformSlug, game.localPath, emulatorPackage)
+                        ?: savePathResolver.resolveSwitchSaveTargetPath(tempZipFile, config, emulatorPackage)
+                        ?: savePathResolver.constructFolderSavePath(resolvedEmulatorId, game.platformSlug, game.localPath, emulatorPackage)
                     if (resolved == null) {
                         Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine Switch save path from ZIP or ROM")
                         return@withContext SaveSyncResult.Error("Cannot determine save path from ZIP or ROM")
@@ -1852,32 +883,40 @@ class SaveSyncRepository @Inject constructor(
                     }
                 }
 
-                val targetFolder = File(targetPath)
                 val extractedSize = tempZipFile.length() * 3
                 if (!hasEnoughDiskSpace(targetPath, extractedSize)) {
                     Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Insufficient disk space for extracted save")
                     return@withContext SaveSyncResult.Error("Insufficient disk space")
                 }
-                targetFolder.mkdirs()
 
-                Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Unzipping to | target=$targetPath")
-                val isJksv = saveArchiver.isJksvFormat(tempZipFile)
-                val unzipSuccess = if (isJksv) {
-                    Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Detected JKSV format, preserving structure")
-                    saveArchiver.unzipPreservingStructure(tempZipFile, targetFolder, JKSV_EXCLUDE_FILES)
-                } else {
-                    saveArchiver.unzipSingleFolder(tempZipFile, targetFolder)
+                val saveContext = SaveContext(
+                    config = config!!,
+                    romPath = game.localPath,
+                    titleId = game.titleId,
+                    emulatorPackage = emulatorPackage,
+                    gameId = gameId,
+                    gameTitle = game.title,
+                    platformSlug = game.platformSlug,
+                    emulatorId = resolvedEmulatorId,
+                    localSavePath = targetPath
+                )
+                val handler = getHandler(config, game.platformSlug, resolvedEmulatorId)
+                val result = handler.extractDownload(tempZipFile, saveContext)
+                if (!result.success) {
+                    Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Extraction failed | error=${result.error}")
+                    return@withContext SaveSyncResult.Error(result.error ?: "Failed to extract save")
                 }
-                if (!unzipSuccess) {
-                    Logger.error(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Unzip failed | source=${tempZipFile.absolutePath}, target=$targetPath")
-                    return@withContext SaveSyncResult.Error("Failed to unzip save")
-                }
-                Logger.debug(TAG, "[SaveSync] ARCHIVE gameId=$gameId | Unzip complete | target=$targetPath")
+                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Extraction complete | target=${result.targetPath}")
             } else if (isGciFormat) {
-                // GCI format: download to temp, then detect if bundle (ZIP) or single file
+                // GCI format: download to temp, then delegate extraction to handler
                 if (!hasEnoughDiskSpace(context.cacheDir.absolutePath, contentLength)) {
                     Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Insufficient cache disk space for GCI save")
                     return@withContext SaveSyncResult.Error("Insufficient disk space")
+                }
+
+                if (game.localPath == null) {
+                    Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot extract GCI without ROM path")
+                    return@withContext SaveSyncResult.Error("Cannot determine save path without ROM")
                 }
 
                 val body = response.body()
@@ -1895,72 +934,25 @@ class SaveSyncRepository @Inject constructor(
                     }
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Saved GCI temp file | path=${tempGciFile.absolutePath}, size=${tempGciFile.length()}bytes")
 
-                    // Detect if this is a ZIP bundle by checking magic bytes (PK = 0x50 0x4B)
-                    val isZipBundle = tempGciFile.inputStream().use { input ->
-                        val magic = ByteArray(2)
-                        input.read(magic) == 2 && magic[0] == 0x50.toByte() && magic[1] == 0x4B.toByte()
+                    val saveContext = SaveContext(
+                        config = config!!,
+                        romPath = game.localPath,
+                        titleId = game.titleId,
+                        emulatorPackage = emulatorPackage,
+                        gameId = gameId,
+                        gameTitle = game.title,
+                        platformSlug = game.platformSlug,
+                        emulatorId = resolvedEmulatorId
+                    )
+                    val result = gciSaveHandler.extractDownload(tempGciFile, saveContext)
+                    if (!result.success) {
+                        Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI extraction failed | error=${result.error}")
+                        return@withContext SaveSyncResult.Error(result.error ?: "Failed to extract GCI save")
                     }
-                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI content detection | isZipBundle=$isZipBundle")
-
-                    if (isZipBundle) {
-                        // It's a bundle - extract all GCI files
-                        if (game.localPath == null) {
-                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot extract GCI bundle without ROM path")
-                            return@withContext SaveSyncResult.Error("Cannot determine save path without ROM")
-                        }
-
-                        tempZipFile = tempGciFile
-                        val extractedPaths = extractGciBundle(tempGciFile, config!!, game.localPath, gameId)
-                        if (extractedPaths.isEmpty()) {
-                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI bundle extraction failed")
-                            return@withContext SaveSyncResult.Error("Failed to extract GCI bundle")
-                        }
-
-                        targetPath = extractedPaths.first()
-                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI bundle extracted | paths=${extractedPaths.size}, primary=$targetPath")
-                    } else {
-                        // It's a single GCI file - resolve path from headers and write
-                        if (game.localPath == null) {
-                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine GCI path without ROM")
-                            return@withContext SaveSyncResult.Error("Cannot determine save path without ROM")
-                        }
-
-                        val gciInfo = GameCubeHeaderParser.parseGciHeader(tempGciFile)
-                        val romInfo = GameCubeHeaderParser.parseRomHeader(File(game.localPath))
-                        if (gciInfo != null && romInfo != null) {
-                            val gciFilename = GameCubeHeaderParser.buildGciFilename(
-                                gciInfo.makerCode,
-                                gciInfo.gameId,
-                                gciInfo.internalFilename
-                            )
-                            val basePaths = SavePathRegistry.resolvePath(config!!, game.platformSlug, null)
-                            val baseDir = basePaths.firstOrNull { directoryExists(it) } ?: basePaths.firstOrNull()
-                            if (baseDir != null) {
-                                targetPath = GameCubeHeaderParser.buildGciPath(baseDir, romInfo.region, gciFilename)
-                                val parentDir = File(targetPath).parent
-                                if (parentDir != null) fal.mkdirs(parentDir)
-                                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI single file path resolved | path=$targetPath")
-                            } else {
-                                Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No base path found for GCI")
-                                return@withContext SaveSyncResult.Error("Cannot determine GCI save path")
-                            }
-                        } else {
-                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Failed to parse GCI/ROM headers")
-                            return@withContext SaveSyncResult.Error("Cannot determine GCI save path")
-                        }
-
-                        // Copy temp file to target using FileAccessLayer for scoped storage
-                        if (fal.copyFile(tempGciFile.absolutePath, targetPath)) {
-                            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI single file written | path=$targetPath")
-                        } else {
-                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Failed to copy GCI file | path=$targetPath")
-                            return@withContext SaveSyncResult.Error("Failed to write GCI file")
-                        }
-                        tempGciFile.delete()
-                    }
-                } catch (e: Exception) {
+                    targetPath = result.targetPath!!
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI extraction complete | target=$targetPath")
+                } finally {
                     tempGciFile.delete()
-                    throw e
                 }
             } else {
                 // Regular file saves (non-GCI)
@@ -2185,7 +1177,7 @@ class SaveSyncRepository @Inject constructor(
                 }
 
                 val resolvedTargetPath = if (isSwitchEmulator && config != null) {
-                    resolveSwitchSaveTargetPath(tempZipFile, config, emulatorPackage) ?: targetPath
+                    savePathResolver.resolveSwitchSaveTargetPath(tempZipFile, config, emulatorPackage) ?: targetPath
                 } else {
                     targetPath
                 }
@@ -2195,7 +1187,7 @@ class SaveSyncRepository @Inject constructor(
 
                 val isJksv = saveArchiver.isJksvFormat(tempZipFile)
                 val unzipSuccess = if (isJksv) {
-                    saveArchiver.unzipPreservingStructure(tempZipFile, targetFolder, JKSV_EXCLUDE_FILES)
+                    saveArchiver.unzipPreservingStructure(tempZipFile, targetFolder, SwitchSaveHandler.JKSV_EXCLUDE_FILES)
                 } else {
                     saveArchiver.unzipSingleFolder(tempZipFile, targetFolder)
                 }
@@ -2225,48 +1217,6 @@ class SaveSyncRepository @Inject constructor(
         } finally {
             tempZipFile?.delete()
         }
-    }
-
-    private fun resolveSwitchSaveTargetPath(zipFile: File, config: SavePathConfig, emulatorPackage: String?): String? {
-        val titleId = saveArchiver.peekRootFolderName(zipFile)
-            ?.takeIf { isValidSwitchHexId(it) }
-            ?: saveArchiver.parseTitleIdFromJksvMeta(zipFile)
-
-        if (titleId == null) {
-            Logger.debug(TAG, "resolveSwitchSaveTargetPath: no valid titleId from ZIP (tried Argosy and JKSV formats)")
-            return null
-        }
-
-        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
-        val basePath = resolvedPaths.firstOrNull { directoryExists(it) }
-            ?: resolvedPaths.firstOrNull()
-            ?: return null
-
-        val normalizedTitleId = titleId.uppercase()
-        val isDeviceSave = normalizedTitleId in SWITCH_DEVICE_SAVE_TITLE_IDS
-
-        val profileFolder = if (isDeviceSave) {
-            findOrCreateZeroProfileFolder(basePath)
-        } else {
-            findActiveProfileFolder(basePath, "switch", emulatorPackage)
-        }
-        val targetPath = "$profileFolder/$normalizedTitleId"
-
-        Logger.debug(TAG, "resolveSwitchSaveTargetPath: resolved to $targetPath (titleId=$normalizedTitleId, isDeviceSave=$isDeviceSave)")
-        return targetPath
-    }
-
-    private fun findOrCreateZeroProfileFolder(basePath: String): String {
-        val baseDir = File(basePath)
-        val zeroUserFolder = File(baseDir, "0000000000000000")
-        val zeroProfileFolder = File(zeroUserFolder, "00000000000000000000000000000000")
-
-        if (!zeroProfileFolder.exists()) {
-            zeroProfileFolder.mkdirs()
-            Logger.debug(TAG, "findOrCreateZeroProfileFolder: created $zeroProfileFolder")
-        }
-
-        return zeroProfileFolder.absolutePath
     }
 
     private suspend fun <T> withRetry(
@@ -2310,121 +1260,6 @@ class SaveSyncRepository @Inject constructor(
         }
     }
 
-    private fun constructFolderSavePath(
-        emulatorId: String,
-        platformSlug: String,
-        romPath: String?,
-        emulatorPackage: String? = null
-    ): String? {
-        if (romPath == null) return null
-
-        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId) ?: return null
-        if (!config.usesFolderBasedSaves) return null
-
-        val romFile = File(romPath)
-        val titleId = titleIdExtractor.extractTitleId(romFile, platformSlug, emulatorPackage) ?: return null
-
-        val baseDir = config.defaultPaths.firstOrNull { directoryExists(it) }
-            ?: config.defaultPaths.firstOrNull()
-            ?: return null
-
-        return when (platformSlug) {
-            "vita", "psvita" -> "$baseDir/$titleId"
-            "switch" -> {
-                val normalizedTitleId = titleId.uppercase()
-                val isDeviceSave = normalizedTitleId in SWITCH_DEVICE_SAVE_TITLE_IDS
-                val profileFolder = if (isDeviceSave) {
-                    findOrCreateZeroProfileFolder(baseDir)
-                } else {
-                    findActiveProfileFolder(baseDir, platformSlug, emulatorPackage)
-                }
-                "$profileFolder/$normalizedTitleId"
-            }
-            "3ds" -> {
-                val category = if (titleId.length >= 16) titleId.take(8) else "00040000"
-                val shortTitleId = if (titleId.length > 8) titleId.takeLast(8) else titleId
-                val nintendo3dsDir = File(baseDir)
-                val userFolders = nintendo3dsDir.listFiles()?.filter { it.isDirectory }
-                val folder1 = userFolders?.firstOrNull()
-                val folder2 = folder1?.listFiles()?.firstOrNull { it.isDirectory }
-                if (folder2 != null) {
-                    "${folder2.absolutePath}/title/$category/$shortTitleId/data"
-                } else {
-                    null
-                }
-            }
-            "psp" -> "$baseDir/$titleId"
-            else -> null
-        }
-    }
-
-    private suspend fun constructFolderSavePathWithOverride(
-        emulatorId: String,
-        platformSlug: String,
-        romPath: String?,
-        gameId: Long,
-        gameTitle: String,
-        cachedTitleId: String? = null,
-        emulatorPackage: String? = null
-    ): String? {
-        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId) ?: return null
-        if (!config.usesFolderBasedSaves) return null
-
-        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
-        val baseDir = if (userConfig?.isUserOverride == true) {
-            when (platformSlug) {
-                "3ds" -> {
-                    val basePath = userConfig.savePathPattern
-                    if (basePath.endsWith("/sdmc/Nintendo 3DS") || basePath.endsWith("/sdmc/Nintendo 3DS/")) {
-                        basePath.trimEnd('/')
-                    } else {
-                        "$basePath/sdmc/Nintendo 3DS"
-                    }
-                }
-                else -> userConfig.savePathPattern
-            }
-        } else {
-            config.defaultPaths.firstOrNull { directoryExists(it) }
-                ?: config.defaultPaths.firstOrNull()
-        } ?: return null
-
-        if (!directoryExists(baseDir)) {
-            Logger.debug(TAG, "[SaveSync] CONSTRUCT | Base dir does not exist | path=$baseDir")
-            return null
-        }
-
-        val titleId = cachedTitleId
-            ?: (romPath?.let { titleIdExtractor.extractTitleId(File(it), platformSlug, emulatorPackage) })
-            ?: titleDbRepository.resolveTitleId(gameId, gameTitle, platformSlug)
-
-        if (titleId == null) {
-            Logger.debug(TAG, "[SaveSync] CONSTRUCT | Cannot determine titleId | gameId=$gameId")
-            return null
-        }
-
-        Logger.debug(TAG, "[SaveSync] CONSTRUCT | Building path | baseDir=$baseDir, titleId=$titleId, platform=$platformSlug")
-
-        return when (platformSlug) {
-            "vita", "psvita" -> "$baseDir/$titleId"
-            "3ds" -> {
-                val category = if (titleId.length >= 16) titleId.take(8) else "00040000"
-                val shortTitleId = if (titleId.length > 8) titleId.takeLast(8) else titleId
-                val baseDirFile = saveArchiver.getFileForPath(baseDir)
-                val userFolders = baseDirFile.listFiles()?.filter { it.isDirectory }
-                val folder1 = userFolders?.firstOrNull()
-                val folder2 = folder1?.listFiles()?.firstOrNull { it.isDirectory }
-                if (folder2 != null) {
-                    "${folder2.absolutePath}/title/$category/$shortTitleId/data"
-                } else {
-                    Logger.debug(TAG, "[SaveSync] CONSTRUCT | 3DS folder structure not found | baseDir=$baseDir")
-                    null
-                }
-            }
-            "psp" -> "$baseDir/$titleId"
-            else -> null
-        }
-    }
-
     suspend fun queueUpload(gameId: Long, emulatorId: String, localPath: String) {
         val game = gameDao.getById(gameId) ?: return
         val rommId = game.rommId ?: return
@@ -2450,7 +1285,7 @@ class SaveSyncRepository @Inject constructor(
 
         for (item in pending) {
             val game = gameDao.getById(item.gameId) ?: continue
-            addOperation(
+            syncQueueManager.addOperation(
                 SyncOperation(
                     gameId = item.gameId,
                     gameName = game.title,
@@ -2465,25 +1300,25 @@ class SaveSyncRepository @Inject constructor(
 
         for (item in pending) {
             Logger.debug(TAG, "Processing pending upload: gameId=${item.gameId}, emulator=${item.emulatorId}")
-            updateOperation(item.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
+            syncQueueManager.updateOperation(item.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
 
             when (val result = uploadSave(item.gameId, item.emulatorId)) {
                 is SaveSyncResult.Success -> {
                     pendingSaveSyncDao.delete(item.id)
-                    completeOperation(item.gameId)
+                    syncQueueManager.completeOperation(item.gameId)
                     processed++
                 }
                 is SaveSyncResult.Conflict -> {
                     Logger.debug(TAG, "Pending upload conflict for gameId=${item.gameId}, leaving in queue")
-                    completeOperation(item.gameId, "Server has newer save")
+                    syncQueueManager.completeOperation(item.gameId, "Server has newer save")
                 }
                 is SaveSyncResult.Error -> {
                     Logger.debug(TAG, "Pending upload failed for gameId=${item.gameId}: ${result.message}")
                     pendingSaveSyncDao.incrementRetry(item.id, result.message)
-                    completeOperation(item.gameId, result.message)
+                    syncQueueManager.completeOperation(item.gameId, result.message)
                 }
                 else -> {
-                    completeOperation(item.gameId, "Sync not available")
+                    syncQueueManager.completeOperation(item.gameId, "Sync not available")
                 }
             }
         }
@@ -2500,7 +1335,7 @@ class SaveSyncRepository @Inject constructor(
 
         for (syncEntity in pendingDownloads) {
             val game = gameDao.getById(syncEntity.gameId) ?: continue
-            addOperation(
+            syncQueueManager.addOperation(
                 SyncOperation(
                     gameId = syncEntity.gameId,
                     gameName = game.title,
@@ -2514,18 +1349,18 @@ class SaveSyncRepository @Inject constructor(
         var downloaded = 0
 
         for (syncEntity in pendingDownloads) {
-            updateOperation(syncEntity.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
+            syncQueueManager.updateOperation(syncEntity.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
 
             when (val result = downloadSave(syncEntity.gameId, syncEntity.emulatorId, syncEntity.channelName)) {
                 is SaveSyncResult.Success -> {
-                    completeOperation(syncEntity.gameId)
+                    syncQueueManager.completeOperation(syncEntity.gameId)
                     downloaded++
                 }
                 is SaveSyncResult.Error -> {
-                    completeOperation(syncEntity.gameId, result.message)
+                    syncQueueManager.completeOperation(syncEntity.gameId, result.message)
                 }
                 else -> {
-                    completeOperation(syncEntity.gameId, "Download failed")
+                    syncQueueManager.completeOperation(syncEntity.gameId, "Download failed")
                 }
             }
         }
@@ -2636,9 +1471,15 @@ class SaveSyncRepository @Inject constructor(
                     saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
                 }
 
-                val localFile = existing?.localSavePath?.let { File(it) }?.takeIf { it.exists() }
+                val validatedPath = existing?.localSavePath?.takeIf { path ->
+                    if (game?.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
+                }
+                if (existing?.localSavePath != null && validatedPath == null) {
+                    Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Rejecting invalid cached Switch path=${existing.localSavePath}")
+                }
+                val localFile = validatedPath?.let { File(it) }?.takeIf { it.exists() }
                 val localFileTime = localFile?.let { Instant.ofEpochMilli(it.lastModified()) }
-                val localDbTime = existing?.localUpdatedAt
+                val localDbTime = if (validatedPath != null) existing?.localUpdatedAt else null
                 val localTime = localDbTime ?: localFileTime
 
                 val deltaMs = if (localTime != null) serverTime.toEpochMilli() - localTime.toEpochMilli() else null

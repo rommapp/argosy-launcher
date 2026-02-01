@@ -205,6 +205,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?
 
+    @Query("SELECT * FROM games WHERE id = :id")
+    fun observeById(id: Long): Flow<GameEntity?>
+
     @Query("SELECT * FROM games WHERE rommId = :rommId")
     suspend fun getByRommId(rommId: Long): GameEntity?
 

@@ -1,9 +1,10 @@
 package com.nendo.argosy.ui.notification
 
 import com.nendo.argosy.data.repository.SaveSyncRepository
-import com.nendo.argosy.data.repository.SyncDirection
-import com.nendo.argosy.data.repository.SyncQueueState
-import com.nendo.argosy.data.repository.SyncStatus
+import com.nendo.argosy.data.sync.SyncDirection
+import com.nendo.argosy.data.sync.SyncOperation
+import com.nendo.argosy.data.sync.SyncQueueState
+import com.nendo.argosy.data.sync.SyncStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -58,7 +59,7 @@ class SyncNotificationObserver @Inject constructor(
         }
     }
 
-    private fun showNotificationFor(operation: com.nendo.argosy.data.repository.SyncOperation) {
+    private fun showNotificationFor(operation: SyncOperation) {
         if (isInitialLoad && operation.status != SyncStatus.COMPLETED && operation.status != SyncStatus.FAILED) {
             return
         }

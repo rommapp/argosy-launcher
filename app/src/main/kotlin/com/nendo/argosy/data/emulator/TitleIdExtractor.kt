@@ -79,13 +79,13 @@ class TitleIdExtractor @Inject constructor(
         val ext = romFile.extension.lowercase()
 
         // Try binary extraction first (high confidence, locked)
+        val prodKeysPath = emulatorPackage?.let { switchKeyManager.findProdKeysPath(it) }
         when (ext) {
-            "nsp" -> extractSwitchTitleIdFromNSP(romFile)?.let {
+            "nsp" -> extractSwitchTitleIdFromNSP(romFile, prodKeysPath)?.let {
                 Logger.debug(TAG, "[SaveSync] DETECT | Switch title ID from NSP binary | file=${romFile.name}, titleId=$it")
                 return TitleIdResult(it, fromBinary = true)
             }
             "xci" -> {
-                val prodKeysPath = emulatorPackage?.let { switchKeyManager.findProdKeysPath(it) }
                 extractSwitchTitleIdFromXCI(romFile, prodKeysPath)?.let {
                     Logger.debug(TAG, "[SaveSync] DETECT | Switch title ID from XCI binary | file=${romFile.name}, titleId=$it")
                     return TitleIdResult(it, fromBinary = true)
@@ -111,7 +111,7 @@ class TitleIdExtractor @Inject constructor(
         return null
     }
 
-    private fun extractSwitchTitleIdFromNSP(romFile: File): String? {
+    private fun extractSwitchTitleIdFromNSP(romFile: File, prodKeysPath: String?): String? {
         return try {
             RandomAccessFile(romFile, "r").use { raf ->
                 if (raf.length() < 0x100) return null
@@ -129,20 +129,50 @@ class TitleIdExtractor @Inject constructor(
                 val stringTableSize = readLittleEndianInt(raf)
                 raf.skipBytes(4) // reserved
 
-                // Skip file entries (24 bytes each)
-                val stringTableOffset = 0x10 + (fileCount * 24)
-                raf.seek(stringTableOffset.toLong())
-
-                // Read string table and find NCA filename with title ID
-                val readSize = minOf(stringTableSize, 0x1000)
-                val stringTable = ByteArray(readSize)
+                // Read file entries (24 bytes each) and string table
+                val fileEntries = ByteArray(fileCount * 24)
+                raf.readFully(fileEntries)
+                val stringTable = ByteArray(stringTableSize)
                 raf.readFully(stringTable)
-                val tableStr = String(stringTable, Charsets.US_ASCII)
 
-                // NCA filenames contain title ID: "0100f2c0115b6000.nca"
+                val dataStart = 0x10L + fileCount * 24 + stringTableSize
+
+                // First try: look for 16-char title ID filenames
+                val tableStr = String(stringTable, Charsets.US_ASCII)
                 val ncaPattern = Regex("([0-9a-fA-F]{16})\\.nca")
                 ncaPattern.find(tableStr)?.groupValues?.get(1)?.uppercase()
-                    ?.takeIf { it.startsWith("01") }
+                    ?.takeIf { it.startsWith("01") }?.let { return it }
+
+                // Second try: decrypt NCA headers to get program_id (for content ID filenames)
+                val headerKey = prodKeysPath?.let { switchKeyManager.getHeaderKey(it) }
+                    ?: return null
+
+                for (i in 0 until fileCount) {
+                    val entryOffset = i * 24
+                    val fileOffset = ByteBuffer.wrap(fileEntries, entryOffset, 8)
+                        .order(ByteOrder.LITTLE_ENDIAN).long
+                    val fileSize = ByteBuffer.wrap(fileEntries, entryOffset + 8, 8)
+                        .order(ByteOrder.LITTLE_ENDIAN).long
+                    val nameOffset = ByteBuffer.wrap(fileEntries, entryOffset + 16, 4)
+                        .order(ByteOrder.LITTLE_ENDIAN).int
+
+                    var nameEnd = nameOffset
+                    while (nameEnd < stringTable.size && stringTable[nameEnd] != 0.toByte()) nameEnd++
+                    val name = String(stringTable, nameOffset, nameEnd - nameOffset)
+
+                    if (!name.endsWith(".nca", ignoreCase = true)) continue
+                    if (fileSize < NCA_HEADER_SIZE) continue
+
+                    val ncaAbsoluteOffset = dataStart + fileOffset
+                    raf.seek(ncaAbsoluteOffset)
+                    val ncaHeader = ByteArray(NCA_HEADER_SIZE)
+                    raf.readFully(ncaHeader)
+
+                    val titleId = extractTitleIdFromNcaHeader(ncaHeader, headerKey, romFile.name, name)
+                    if (titleId != null) return titleId
+                }
+
+                null
             }
         } catch (e: Exception) {
             Logger.warn(TAG, "[SaveSync] DETECT | Failed to parse NSP | file=${romFile.name}", e)
@@ -151,40 +181,159 @@ class TitleIdExtractor @Inject constructor(
     }
 
     private fun extractSwitchTitleIdFromXCI(romFile: File, prodKeysPath: String?): String? {
-        if (prodKeysPath == null) {
-            Logger.debug(TAG, "[SaveSync] DETECT | No prod.keys for XCI decryption | file=${romFile.name}")
-            return null
-        }
-        val headerKey = switchKeyManager.getHeaderKey(prodKeysPath) ?: return null
-
         return try {
             RandomAccessFile(romFile, "r").use { raf ->
-                if (raf.length() < 0x200) return null
+                if (raf.length() < 0x10000) return null
 
-                // Read encrypted CardHeader at 0x100 (one sector)
-                raf.seek(0x100)
-                val encryptedHeader = ByteArray(0x100)
-                raf.readFully(encryptedHeader)
-
-                // Decrypt with AES-XTS (sector 0)
-                val decryptedHeader = AesXts.decrypt(encryptedHeader, headerKey, 0, 0x200)
-
-                // Verify "HEAD" magic at start of decrypted data
-                if (String(decryptedHeader, 0, 4) != "HEAD") {
-                    Logger.debug(TAG, "[SaveSync] DETECT | XCI decryption failed (no HEAD magic) | file=${romFile.name}")
+                // Root HFS0 is at offset 0xF000
+                raf.seek(0xF000)
+                val rootMagic = ByteArray(4)
+                raf.readFully(rootMagic)
+                if (String(rootMagic) != "HFS0") {
+                    Logger.debug(TAG, "[SaveSync] DETECT | XCI missing root HFS0 | file=${romFile.name}")
                     return null
                 }
 
-                // PackageId (title ID) at offset 0x10 in decrypted header (8 bytes LE)
-                val titleIdBytes = decryptedHeader.copyOfRange(0x10, 0x18)
-                val titleId = titleIdBytes.reversed().joinToString("") { "%02X".format(it) }
+                // Parse root HFS0 header
+                val rootFileCount = readLittleEndianInt(raf)
+                val rootStringTableSize = readLittleEndianInt(raf)
+                raf.skipBytes(4) // reserved
 
-                titleId.takeIf { it.startsWith("01") && it.length == 16 }
+                // Read file entries (64 bytes each) and string table
+                val rootEntries = ByteArray(rootFileCount * 64)
+                raf.readFully(rootEntries)
+                val rootStringTable = ByteArray(rootStringTableSize)
+                raf.readFully(rootStringTable)
+
+                val rootDataStart = 0xF000L + 16 + rootFileCount * 64 + rootStringTableSize
+
+                // Find "secure" partition
+                var secureOffset = -1L
+                for (i in 0 until rootFileCount) {
+                    val entryOffset = i * 64
+                    val fileOffset = ByteBuffer.wrap(rootEntries, entryOffset, 8).order(ByteOrder.LITTLE_ENDIAN).long
+                    val nameOffset = ByteBuffer.wrap(rootEntries, entryOffset + 16, 4).order(ByteOrder.LITTLE_ENDIAN).int
+
+                    var nameEnd = nameOffset
+                    while (nameEnd < rootStringTable.size && rootStringTable[nameEnd] != 0.toByte()) nameEnd++
+                    val name = String(rootStringTable, nameOffset, nameEnd - nameOffset)
+
+                    if (name == "secure") {
+                        secureOffset = rootDataStart + fileOffset
+                        break
+                    }
+                }
+
+                if (secureOffset < 0) {
+                    Logger.debug(TAG, "[SaveSync] DETECT | XCI missing secure partition | file=${romFile.name}")
+                    return null
+                }
+
+                // Parse secure HFS0
+                raf.seek(secureOffset)
+                val secureMagic = ByteArray(4)
+                raf.readFully(secureMagic)
+                if (String(secureMagic) != "HFS0") {
+                    Logger.debug(TAG, "[SaveSync] DETECT | XCI secure partition not HFS0 | file=${romFile.name}")
+                    return null
+                }
+
+                val secureFileCount = readLittleEndianInt(raf)
+                val secureStringTableSize = readLittleEndianInt(raf)
+                raf.skipBytes(4)
+
+                val secureEntries = ByteArray(secureFileCount * 64)
+                raf.readFully(secureEntries)
+                val secureStringTable = ByteArray(secureStringTableSize)
+                raf.readFully(secureStringTable)
+
+                val secureDataStart = secureOffset + 16 + secureFileCount * 64 + secureStringTableSize
+
+                // Try to extract title ID from NCA headers
+                val headerKey = prodKeysPath?.let { switchKeyManager.getHeaderKey(it) }
+
+                for (i in 0 until secureFileCount) {
+                    val entryOffset = i * 64
+                    val ncaOffset = ByteBuffer.wrap(secureEntries, entryOffset, 8).order(ByteOrder.LITTLE_ENDIAN).long
+                    val ncaSize = ByteBuffer.wrap(secureEntries, entryOffset + 8, 8).order(ByteOrder.LITTLE_ENDIAN).long
+                    val nameOffset = ByteBuffer.wrap(secureEntries, entryOffset + 16, 4).order(ByteOrder.LITTLE_ENDIAN).int
+
+                    var nameEnd = nameOffset
+                    while (nameEnd < secureStringTable.size && secureStringTable[nameEnd] != 0.toByte()) nameEnd++
+                    val name = String(secureStringTable, nameOffset, nameEnd - nameOffset)
+
+                    // Only process .nca files
+                    if (!name.endsWith(".nca", ignoreCase = true)) continue
+                    if (ncaSize < NCA_HEADER_SIZE) continue
+
+                    val ncaAbsoluteOffset = secureDataStart + ncaOffset
+
+                    // Read NCA header (0xC00 bytes)
+                    raf.seek(ncaAbsoluteOffset)
+                    val ncaHeader = ByteArray(NCA_HEADER_SIZE)
+                    raf.readFully(ncaHeader)
+
+                    // Try to decrypt and parse NCA header
+                    val titleId = if (headerKey != null) {
+                        extractTitleIdFromNcaHeader(ncaHeader, headerKey, romFile.name, name)
+                    } else null
+
+                    if (titleId != null) return titleId
+                }
+
+                Logger.debug(TAG, "[SaveSync] DETECT | XCI no title ID found | file=${romFile.name}")
+                null
             }
         } catch (e: Exception) {
             Logger.warn(TAG, "[SaveSync] DETECT | Failed to parse XCI | file=${romFile.name}", e)
             null
         }
+    }
+
+    private fun extractTitleIdFromNcaHeader(
+        encryptedHeader: ByteArray,
+        headerKey: ByteArray,
+        fileName: String,
+        ncaName: String
+    ): String? {
+        return try {
+            val decrypted = AesXts.decrypt(encryptedHeader, headerKey, 0)
+
+            // Check for NCA3 magic at offset 0x200
+            val magic = String(decrypted, NCA_MAGIC_OFFSET, 4)
+            if (magic != "NCA3") {
+                return null
+            }
+
+            // Try program_id at 0x210 first (8 bytes, little-endian) - works for all NCAs
+            val programIdBytes = decrypted.copyOfRange(NCA_PROGRAM_ID_OFFSET, NCA_PROGRAM_ID_OFFSET + 8)
+            val programId = programIdBytes.reversed().joinToString("") { "%02X".format(it) }
+            if (programId.startsWith("01") && programId.length == 16) {
+                Logger.debug(TAG, "[SaveSync] DETECT | XCI title ID from NCA program_id | file=$fileName, nca=$ncaName, titleId=$programId")
+                return programId
+            }
+
+            // Fall back to rights_id at 0x230 (16 bytes, first 8 are title ID) - titlekey-encrypted NCAs
+            val rightsId = decrypted.copyOfRange(NCA_RIGHTS_ID_OFFSET, NCA_RIGHTS_ID_OFFSET + 16)
+            if (!rightsId.all { it == 0.toByte() }) {
+                val titleId = rightsId.copyOfRange(0, 8).joinToString("") { "%02X".format(it) }
+                if (titleId.startsWith("01") && titleId.length == 16) {
+                    Logger.debug(TAG, "[SaveSync] DETECT | XCI title ID from NCA rights_id | file=$fileName, nca=$ncaName, titleId=$titleId")
+                    return titleId
+                }
+            }
+
+            null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    companion object {
+        private const val NCA_HEADER_SIZE = 0xC00
+        private const val NCA_MAGIC_OFFSET = 0x200
+        private const val NCA_PROGRAM_ID_OFFSET = 0x210
+        private const val NCA_RIGHTS_ID_OFFSET = 0x230
     }
 
     private fun readLittleEndianInt(raf: RandomAccessFile): Int {

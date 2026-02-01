@@ -606,22 +606,54 @@ class SaveSyncRepository @Inject constructor(
         Logger.debug(TAG, "[SaveSync] GCI | Searching ${resolvedPaths.size} paths for GCI saves${if (basePathOverride != null) " (user override)" else ""}")
 
         for (basePath in resolvedPaths) {
-            val saveDir = File(basePath)
-            if (!saveDir.exists()) {
+            if (!directoryExists(basePath)) {
                 Logger.verbose(TAG) { "[SaveSync] GCI | Save dir does not exist: $basePath" }
                 continue
             }
 
-            val gciFiles = GameCubeHeaderParser.findGciForGame(saveDir, gameInfo.gameId)
+            val gciFiles = findGciFilesInPath(basePath, gameInfo.gameId)
             if (gciFiles.isNotEmpty()) {
                 val firstGci = gciFiles.first()
-                Logger.debug(TAG, "[SaveSync] GCI | Found ${gciFiles.size} GCI file(s), using: ${firstGci.absolutePath}")
-                return firstGci.absolutePath
+                Logger.debug(TAG, "[SaveSync] GCI | Found ${gciFiles.size} GCI file(s), using: $firstGci")
+                return firstGci
             }
         }
 
         Logger.debug(TAG, "[SaveSync] GCI | No GCI saves found for gameId=${gameInfo.gameId}")
         return null
+    }
+
+    private fun findGciFilesInPath(basePath: String, gameId: String): List<String> {
+        val results = mutableListOf<String>()
+        val regions = listOf("USA", "EUR", "JAP", "KOR")
+
+        searchGciInDirectory(basePath, gameId, results)
+        if (results.isNotEmpty()) return results
+
+        for (region in regions) {
+            val regionPath = "$basePath/$region"
+            if (!directoryExists(regionPath)) continue
+
+            searchGciInDirectory(regionPath, gameId, results)
+
+            listFilesAtPath(regionPath)
+                ?.filter { it.isDirectory && it.name.startsWith("Card", ignoreCase = true) }
+                ?.forEach { cardDir -> searchGciInDirectory(cardDir.absolutePath, gameId, results) }
+        }
+
+        return results
+    }
+
+    private fun searchGciInDirectory(dirPath: String, gameId: String, results: MutableList<String>) {
+        listFilesAtPath(dirPath)?.forEach { file ->
+            if (!file.isFile) return@forEach
+            if (!file.extension.equals("gci", ignoreCase = true)) return@forEach
+            if (file.name.contains(".deleted")) return@forEach
+
+            val matches = file.name.contains(gameId, ignoreCase = true) ||
+                GameCubeHeaderParser.parseGciHeader(file)?.gameId.equals(gameId, ignoreCase = true)
+            if (matches) results.add(file.absolutePath)
+        }
     }
 
     private fun findSaveFolderByTitleId(

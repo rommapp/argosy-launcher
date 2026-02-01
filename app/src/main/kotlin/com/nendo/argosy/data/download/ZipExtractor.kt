@@ -60,7 +60,8 @@ private val ZIP_AS_ROM_PLATFORMS = setOf(
     "naomi", "naomi2", "atomiswave",
     "model2", "model3",
     "hyperneogeo64",
-    "vita", "psvita"
+    "vita", "psvita",
+    "dos"
 )
 
 data class PlatformExtractConfig(

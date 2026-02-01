@@ -505,22 +505,54 @@ class GameLauncher @Inject constructor(
         }
 
         val coreFileName = "${coreName}_libretro_android.so"
-        val searchPaths = listOf(
-            "/data/data/$retroArchPackage/cores/$coreFileName",
-            "/storage/emulated/0/Android/data/$retroArchPackage/files/cores/$coreFileName",
-            "/storage/emulated/0/RetroArch/cores/$coreFileName"
+        val coreDirs = listOf(
+            "/storage/emulated/0/RetroArch/cores",
+            "/storage/emulated/0/Android/data/$retroArchPackage/files/cores",
+            "/data/data/$retroArchPackage/cores"
         )
 
-        for (path in searchPaths) {
-            val file = androidDataAccessor.getFile(path)
-            if (file.exists()) {
+        for (dir in coreDirs) {
+            val path = "$dir/$coreFileName"
+            if (androidDataAccessor.exists(path)) {
                 Logger.debug(TAG, "Core found at: $path")
                 return path
             }
         }
 
-        Logger.warn(TAG, "Core not found: $coreFileName (searched ${searchPaths.size} locations)")
-        return searchPaths.first()
+        val fuzzyMatch = findCoreByShortName(coreName, coreDirs)
+        if (fuzzyMatch != null) {
+            Logger.info(TAG, "Core fuzzy match: $coreName -> ${fuzzyMatch.name}")
+            return fuzzyMatch.absolutePath
+        }
+
+        Logger.warn(TAG, "Core not found: $coreFileName")
+        logAvailableCores(coreDirs)
+        return "${coreDirs.first()}/$coreFileName"
+    }
+
+    private fun findCoreByShortName(coreName: String, coreDirs: List<String>): java.io.File? {
+        for (dir in coreDirs) {
+            val files = androidDataAccessor.listFiles(dir) ?: continue
+            val match = files.find { file ->
+                file.name.contains(coreName) && file.name.endsWith("_libretro_android.so")
+            }
+            if (match != null) return match
+        }
+        return null
+    }
+
+    private fun logAvailableCores(coreDirs: List<String>) {
+        for (dir in coreDirs) {
+            val files = androidDataAccessor.listFiles(dir)
+            if (files != null && files.isNotEmpty()) {
+                val coreNames = files
+                    .filter { it.name.endsWith(".so") }
+                    .take(10)
+                    .joinToString(", ") { it.name.removeSuffix("_libretro_android.so") }
+                val more = if (files.size > 10) " (+${files.size - 10} more)" else ""
+                Logger.debug(TAG, "Available cores in $dir: $coreNames$more")
+            }
+        }
     }
 
     private suspend fun resolveCoreName(game: GameEntity): String? {

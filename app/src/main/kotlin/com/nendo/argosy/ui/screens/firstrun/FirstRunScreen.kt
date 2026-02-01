@@ -265,16 +265,17 @@ fun FirstRunScreen(
                 )
                 FirstRunStep.PLATFORM_SELECT -> PlatformSelectStep(
                     platforms = uiState.platforms,
-                    hasGames = uiState.platformFilterHasGames,
+                    filterMode = uiState.platformFilterMode,
                     searchQuery = uiState.platformFilterSearchQuery,
+                    sortMode = uiState.platformFilterSortMode,
                     focusedIndex = uiState.focusedIndex,
                     buttonFocusIndex = uiState.platformButtonFocus,
-                    onToggle = { viewModel.togglePlatform(it) },
-                    onToggleAll = { viewModel.toggleAllPlatforms() },
-                    onSortModeChange = { viewModel.setPlatformFilterSortMode(it) },
-                    onHasGamesChange = { viewModel.setPlatformFilterHasGames(it) },
-                    onSearchQueryChange = { viewModel.setPlatformFilterSearchQuery(it) },
-                    onContinue = { viewModel.proceedFromPlatformSelect() }
+                    onToggle = viewModel::togglePlatform,
+                    onToggleAll = viewModel::toggleAllPlatforms,
+                    onSortModeChange = viewModel::setPlatformFilterSortMode,
+                    onFilterModeChange = { viewModel.cyclePlatformFilterMode() },
+                    onSearchQueryChange = viewModel::setPlatformFilterSearchQuery,
+                    onContinue = viewModel::proceedFromPlatformSelect
                 )
                 FirstRunStep.CORE_PROMPT -> CorePromptStep(
                     missingCoreCount = uiState.missingCoreCount,
@@ -806,14 +807,15 @@ private fun ImageCacheStep(
 @Composable
 private fun PlatformSelectStep(
     platforms: List<PlatformEntity>,
-    hasGames: Boolean,
+    filterMode: PlatformFilterLogic.FilterMode,
     searchQuery: String,
+    sortMode: PlatformFilterLogic.SortMode,
     focusedIndex: Int,
     buttonFocusIndex: Int,
     onToggle: (Long) -> Unit,
     onToggleAll: () -> Unit,
     onSortModeChange: (PlatformFilterLogic.SortMode) -> Unit,
-    onHasGamesChange: (Boolean) -> Unit,
+    onFilterModeChange: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onContinue: () -> Unit
 ) {
@@ -828,8 +830,8 @@ private fun PlatformSelectStep(
         }
     }
 
-    // Scroll to top when the filtered list changes (e.g. search, sort, filter)
-    LaunchedEffect(platforms) {
+    // Scroll to top when the filtered list criteria changes (e.g. search, sort, filter)
+    LaunchedEffect(searchQuery, filterMode, sortMode) {
         if (platforms.isNotEmpty()) {
             listState.scrollToItem(0)
         }
@@ -952,11 +954,17 @@ private fun PlatformSelectStep(
                     }
                 }
 
-                if (hasGames) {
+                val filterLabel = when (filterMode) {
+                    PlatformFilterLogic.FilterMode.ALL -> "All"
+                    PlatformFilterLogic.FilterMode.HAS_GAMES -> "Has Games"
+                    PlatformFilterLogic.FilterMode.ENABLED -> "Enabled"
+                }
+
+                if (filterMode != PlatformFilterLogic.FilterMode.ALL) {
                     FilterChip(
                         selected = true,
-                        onClick = { onHasGamesChange(false) },
-                        label = { Text("Has Games") },
+                        onClick = onFilterModeChange,
+                        label = { Text(filterLabel) },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.FilterList,
@@ -967,11 +975,11 @@ private fun PlatformSelectStep(
                     )
                 } else {
                     IconButton(
-                        onClick = { onHasGamesChange(true) }
+                        onClick = onFilterModeChange
                     ) {
                         Icon(
                             Icons.Default.FilterList,
-                            "Show platforms with games"
+                            "Filter platforms"
                         )
                     }
                 }

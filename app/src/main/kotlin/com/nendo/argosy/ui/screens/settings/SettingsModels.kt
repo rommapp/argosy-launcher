@@ -666,7 +666,7 @@ data class SyncSettingsState(
     val platformFiltersList: List<PlatformFilterItem> = emptyList(),
     val platformFiltersAllPlatforms: List<PlatformFilterItem> = emptyList(),
     val platformFilterSortMode: PlatformFilterLogic.SortMode = PlatformFilterLogic.SortMode.DEFAULT,
-    val platformFilterHasGames: Boolean = false,
+    val platformFilterMode: PlatformFilterLogic.FilterMode = PlatformFilterLogic.FilterMode.ALL,
     val platformFilterSearchQuery: String = "",
     val isLoadingPlatforms: Boolean = false,
     val enabledPlatformCount: Int = 0,

@@ -27,7 +27,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.DEFAULT,
             nameSelector = { it.name },
             countSelector = { it.gameCount },
@@ -42,7 +42,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.NAME_ASC,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -58,7 +58,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.NAME_DESC,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -74,7 +74,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -88,7 +88,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.LEAST_GAMES,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -102,7 +102,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "playstation",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.DEFAULT,
             nameSelector = { it.name },
             countSelector = { it.gameCount },
@@ -118,7 +118,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "boy",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.DEFAULT,
             nameSelector = { it.name },
             countSelector = { it.gameCount },
@@ -134,7 +134,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "",
-            hasGames = true,
+            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
             sortMode = PlatformFilterLogic.SortMode.DEFAULT,
             nameSelector = { it.name },
             countSelector = { it.gameCount },
@@ -152,7 +152,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "play",
-            hasGames = true,
+            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
             sortMode = PlatformFilterLogic.SortMode.DEFAULT,
             nameSelector = { it.name },
             countSelector = { it.gameCount },
@@ -168,7 +168,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "play",
-            hasGames = true,
+            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
             sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -184,7 +184,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "   ",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.DEFAULT,
             nameSelector = { it.name },
             countSelector = { it.gameCount },
@@ -199,7 +199,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = testPlatforms,
             searchQuery = "nonexistent",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.DEFAULT,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -219,7 +219,7 @@ class PlatformFilterLogicTest {
         val mostGames = PlatformFilterLogic.filterAndSort(
             items = platforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -231,7 +231,7 @@ class PlatformFilterLogicTest {
         val leastGames = PlatformFilterLogic.filterAndSort(
             items = platforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.LEAST_GAMES,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -252,7 +252,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = platforms,
             searchQuery = "",
-            hasGames = false,
+            filterMode = PlatformFilterLogic.FilterMode.ALL,
             sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
             nameSelector = { it.name },
             countSelector = { it.gameCount }
@@ -266,7 +266,7 @@ class PlatformFilterLogicTest {
         val result = PlatformFilterLogic.filterAndSort(
             items = emptyList<TestPlatform>(),
             searchQuery = "test",
-            hasGames = true,
+            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
             sortMode = PlatformFilterLogic.SortMode.NAME_ASC,
             nameSelector = { it.name },
             countSelector = { it.gameCount }

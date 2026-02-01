@@ -438,11 +438,12 @@ class SyncSettingsDelegate @Inject constructor(
             val currentState = _state.value
             val filtered = PlatformFilterLogic.filterAndSort(
                 items = allPlatforms,
-                searchQuery = currentState.platformFilterSearchQuery,
-                hasGames = currentState.platformFilterHasGames,
-                sortMode = currentState.platformFilterSortMode,
+                searchQuery = _state.value.platformFilterSearchQuery,
+                filterMode = _state.value.platformFilterMode,
+                sortMode = _state.value.platformFilterSortMode,
                 nameSelector = { it.name },
-                countSelector = { it.romCount }
+                countSelector = { it.romCount },
+                enabledSelector = { it.syncEnabled }
             )
             val enabledCount = allPlatforms.count { it.syncEnabled }
             _state.update {
@@ -460,6 +461,46 @@ class SyncSettingsDelegate @Inject constructor(
 
     fun dismissPlatformFiltersModal() {
         _state.update { it.copy(showPlatformFiltersModal = false) }
+    }
+
+    fun applyPlatformFilters(resetFocus: Boolean = false) {
+        _state.update { state ->
+            val filtered = PlatformFilterLogic.filterAndSort(
+                items = state.platformFiltersAllPlatforms,
+                searchQuery = state.platformFilterSearchQuery,
+                filterMode = state.platformFilterMode,
+                sortMode = state.platformFilterSortMode,
+                nameSelector = { it.name },
+                countSelector = { it.romCount },
+                enabledSelector = { it.syncEnabled }
+            )
+            state.copy(
+                platformFiltersList = filtered,
+                platformFiltersModalFocusIndex = if (resetFocus) 0 else state.platformFiltersModalFocusIndex.coerceIn(0, (filtered.size - 1).coerceAtLeast(0))
+            )
+        }
+    }
+
+    fun setPlatformFilterSortMode(mode: PlatformFilterLogic.SortMode) {
+        _state.update { it.copy(platformFilterSortMode = mode) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    fun setPlatformFilterSearchQuery(query: String) {
+        _state.update { it.copy(platformFilterSearchQuery = query) }
+        applyPlatformFilters(resetFocus = true)
+    }
+
+    fun cyclePlatformFilterMode() {
+        _state.update {
+            val nextMode = when (it.platformFilterMode) {
+                PlatformFilterLogic.FilterMode.ALL -> PlatformFilterLogic.FilterMode.HAS_GAMES
+                PlatformFilterLogic.FilterMode.HAS_GAMES -> PlatformFilterLogic.FilterMode.ENABLED
+                PlatformFilterLogic.FilterMode.ENABLED -> PlatformFilterLogic.FilterMode.ALL
+            }
+            it.copy(platformFilterMode = nextMode)
+        }
+        applyPlatformFilters(resetFocus = true)
     }
 
     fun movePlatformFiltersModalFocus(delta: Int) {
@@ -483,15 +524,17 @@ class SyncSettingsDelegate @Inject constructor(
             platformRepository.updateSyncEnabled(platformId, newEnabled)
 
             _state.update { state ->
-                val updatedList = state.platformFiltersList.map { item ->
+                // Update the master list
+                val updatedAllPlatforms = state.platformFiltersAllPlatforms.map { item ->
                     if (item.id == platformId) item.copy(syncEnabled = newEnabled) else item
                 }
-                val enabledCount = updatedList.count { it.syncEnabled }
+
                 state.copy(
-                    platformFiltersList = updatedList,
-                    enabledPlatformCount = enabledCount
+                    platformFiltersAllPlatforms = updatedAllPlatforms
                 )
             }
+            // Re-apply filters to ensure view remains consistent (e.g. removing disabled items if in ENABLED mode)
+            applyPlatformFilters()
         }
     }
 

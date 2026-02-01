@@ -9,19 +9,31 @@ object PlatformFilterLogic {
         LEAST_GAMES
     }
 
+    enum class FilterMode {
+        ALL,
+        HAS_GAMES,
+        ENABLED
+    }
+
     fun <T> filterAndSort(
         items: List<T>,
         searchQuery: String,
-        hasGames: Boolean,
+        filterMode: FilterMode,
         sortMode: SortMode,
         nameSelector: (T) -> String,
         countSelector: (T) -> Int,
+        enabledSelector: ((T) -> Boolean)? = null,
         defaultSortSelector: ((T) -> Comparable<*>?)? = null
     ): List<T> {
         val query = searchQuery.trim()
+        val queryLower = query.lowercase()
         return items.filter { item ->
-            if (hasGames && countSelector(item) <= 0) return@filter false
-            if (query.isNotEmpty() && !nameSelector(item).contains(query, ignoreCase = true)) return@filter false
+            when (filterMode) {
+                FilterMode.HAS_GAMES -> if (countSelector(item) <= 0) return@filter false
+                FilterMode.ENABLED -> if (enabledSelector != null && !enabledSelector(item)) return@filter false
+                FilterMode.ALL -> {}
+            }
+            if (query.isNotEmpty() && !nameSelector(item).contains(queryLower, ignoreCase = true)) return@filter false
             true
         }.sortedWith { a, b ->
             when (sortMode) {

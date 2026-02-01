@@ -54,13 +54,14 @@ import com.nendo.argosy.util.PlatformFilterLogic
 @Composable
 fun PlatformFiltersModal(
     platforms: List<PlatformFilterItem>,
-    hasGames: Boolean,
+    filterMode: PlatformFilterLogic.FilterMode,
     searchQuery: String,
+    sortMode: PlatformFilterLogic.SortMode,
     focusIndex: Int,
     isLoading: Boolean,
     onTogglePlatform: (Long) -> Unit,
     onSortModeChange: (PlatformFilterLogic.SortMode) -> Unit,
-    onHasGamesChange: (Boolean) -> Unit,
+    onFilterModeChange: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -73,8 +74,8 @@ fun PlatformFiltersModal(
         focusedIndex = focusIndex
     )
 
-    // Scroll to top when the filtered list changes (e.g. search, sort, filter)
-    LaunchedEffect(platforms) {
+    // Scroll to top when the filtered list criteria changes (search, sort, filter)
+    LaunchedEffect(searchQuery, filterMode, sortMode) {
         if (platforms.isNotEmpty()) {
             listState.scrollToItem(0)
         }
@@ -202,11 +203,17 @@ fun PlatformFiltersModal(
                         }
                     }
 
-                    if (hasGames) {
+                    val filterLabel = when (filterMode) {
+                        PlatformFilterLogic.FilterMode.ALL -> "All"
+                        PlatformFilterLogic.FilterMode.HAS_GAMES -> "Has Games"
+                        PlatformFilterLogic.FilterMode.ENABLED -> "Enabled"
+                    }
+
+                    if (filterMode != PlatformFilterLogic.FilterMode.ALL) {
                         FilterChip(
                             selected = true,
-                            onClick = { onHasGamesChange(false) },
-                            label = { Text("Has Games") },
+                            onClick = onFilterModeChange,
+                            label = { Text(filterLabel) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.FilterList,
@@ -217,11 +224,11 @@ fun PlatformFiltersModal(
                         )
                     } else {
                         IconButton(
-                            onClick = { onHasGamesChange(true) }
+                            onClick = onFilterModeChange
                         ) {
                             Icon(
                                 Icons.Default.FilterList,
-                                "Show platforms with games"
+                                "Filter platforms"
                             )
                         }
                     }
@@ -268,7 +275,10 @@ fun PlatformFiltersModal(
                     modifier = Modifier.height(Dimens.headerHeightLg + Dimens.headerHeightLg + Dimens.iconSm),
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                 ) {
-                    itemsIndexed(platforms) { index, platform ->
+                    itemsIndexed(
+                        items = platforms,
+                        key = { _, item -> item.id }
+                    ) { index, platform ->
                         val subtitle = if (platform.romCount > 0) {
                             "${platform.romCount} games"
                         } else {

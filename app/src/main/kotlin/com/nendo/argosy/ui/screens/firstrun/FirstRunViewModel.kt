@@ -80,7 +80,7 @@ data class FirstRunUiState(
     val platforms: List<PlatformEntity> = emptyList(),
     val platformsAll: List<PlatformEntity> = emptyList(),
     val platformFilterSortMode: PlatformFilterLogic.SortMode = PlatformFilterLogic.SortMode.DEFAULT,
-    val platformFilterHasGames: Boolean = false,
+    val platformFilterMode: PlatformFilterLogic.FilterMode = PlatformFilterLogic.FilterMode.ALL,
     val platformFilterSearchQuery: String = "",
     val platformButtonFocus: Int = 1,
     val missingCoreCount: Int = 0,
@@ -166,10 +166,11 @@ class FirstRunViewModel @Inject constructor(
                     val filtered = PlatformFilterLogic.filterAndSort(
                         items = allPlatforms,
                         searchQuery = _uiState.value.platformFilterSearchQuery,
-                        hasGames = _uiState.value.platformFilterHasGames,
+                        filterMode = _uiState.value.platformFilterMode,
                         sortMode = _uiState.value.platformFilterSortMode,
                         nameSelector = { it.name },
-                        countSelector = { it.gameCount }
+                        countSelector = { it.gameCount },
+                        enabledSelector = { it.syncEnabled }
                     )
                     _uiState.update { it.copy(platformsAll = allPlatforms, platforms = filtered) }
                 }
@@ -305,8 +306,6 @@ class FirstRunViewModel @Inject constructor(
             if (platformIndex == -1) return@launch
 
             val platform = currentAll[platformIndex]
-            val newEnabled = !platform.syncEnabled
-
             // Update repository
             platformRepository.updateSyncEnabled(platformId, newEnabled)
 
@@ -343,8 +342,15 @@ class FirstRunViewModel @Inject constructor(
         applyPlatformFilters(resetFocus = true)
     }
 
-    fun setPlatformFilterHasGames(enabled: Boolean) {
-        _uiState.update { it.copy(platformFilterHasGames = enabled) }
+    fun cyclePlatformFilterMode() {
+        _uiState.update {
+            val nextMode = when (it.platformFilterMode) {
+                PlatformFilterLogic.FilterMode.ALL -> PlatformFilterLogic.FilterMode.HAS_GAMES
+                PlatformFilterLogic.FilterMode.HAS_GAMES -> PlatformFilterLogic.FilterMode.ENABLED
+                PlatformFilterLogic.FilterMode.ENABLED -> PlatformFilterLogic.FilterMode.ALL
+            }
+            it.copy(platformFilterMode = nextMode)
+        }
         applyPlatformFilters(resetFocus = true)
     }
 
@@ -354,24 +360,24 @@ class FirstRunViewModel @Inject constructor(
     }
 
     private fun applyPlatformFilters(resetFocus: Boolean = false) {
-        viewModelScope.launch {
-            val allPlatforms = platformDao.observeAllPlatforms().first()
-            val filtered = PlatformFilterLogic.filterAndSort(
-                items = allPlatforms,
-                searchQuery = _uiState.value.platformFilterSearchQuery,
-                hasGames = _uiState.value.platformFilterHasGames,
-                sortMode = _uiState.value.platformFilterSortMode,
-                nameSelector = { it.name },
-                countSelector = { it.gameCount }
+        val state = _uiState.value
+        val allPlatforms = state.platformsAll
+
+        val filtered = PlatformFilterLogic.filterAndSort(
+            items = allPlatforms,
+            searchQuery = state.platformFilterSearchQuery,
+            filterMode = state.platformFilterMode,
+            sortMode = state.platformFilterSortMode,
+            nameSelector = { it.name },
+            countSelector = { it.gameCount },
+            enabledSelector = { it.syncEnabled }
+        )
+
+        _uiState.update {
+            it.copy(
+                platforms = filtered,
+                focusedIndex = if (resetFocus) 0 else it.focusedIndex.coerceIn(0, (filtered.size - 1).coerceAtLeast(0))
             )
-            _uiState.update {
-                it.copy(
-                    platformsAll = allPlatforms,
-                    platforms = filtered,
-                    focusedIndex = if (resetFocus) 0 else it.focusedIndex
-                )
-            }
->>>>>>> 875e1e71 (feat(platform filters): implement sort, search, and 'Has Games' filtering - Add PlatformFilterLogic for searching, sorting, and filtering - Refactor platform filter modals to include small header with controls - Implement expandable search, sort dropdown, and FilterChip - Add test coverage for filter/sort scenarios)
         }
     }
 

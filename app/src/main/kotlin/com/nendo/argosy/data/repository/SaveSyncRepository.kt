@@ -9,7 +9,9 @@ import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.emulator.SwitchProfileParser
 import com.nendo.argosy.data.emulator.TitleIdExtractor
+import com.nendo.argosy.data.emulator.TitleIdResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.titledb.TitleDbRepository
 import com.nendo.argosy.data.sync.SaveArchiver
@@ -128,7 +130,8 @@ class SaveSyncRepository @Inject constructor(
     private val saveArchiver: SaveArchiver,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
-    private val fal: FileAccessLayer
+    private val fal: FileAccessLayer,
+    private val switchProfileParser: SwitchProfileParser
 ) {
     private var api: RomMApi? = null
 
@@ -416,17 +419,18 @@ class SaveSyncRepository @Inject constructor(
         }
 
         // 2. Try ROM extraction (binary or filename)
-        val extractedTitleId = titleIdExtractor.extractTitleId(romFile, platformSlug)
-        if (extractedTitleId != null && extractedTitleId.uppercase() !in triedTitleIds) {
+        val extractionResult = titleIdExtractor.extractTitleIdWithSource(romFile, platformSlug, emulatorPackage)
+        if (extractionResult != null && extractionResult.titleId.uppercase() !in triedTitleIds) {
+            val extractedTitleId = extractionResult.titleId
             triedTitleIds.add(extractedTitleId.uppercase())
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId")
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId (fromBinary=${extractionResult.fromBinary})")
 
             // Cache valid extracted ID immediately for future use (validate for Switch)
             val shouldCacheExtracted = gameId != null && validatedCachedTitleId == null &&
                 (!isSwitchPlatform || isValidSwitchTitleId(extractedTitleId))
             if (shouldCacheExtracted) {
-                Logger.debug(TAG, "[SaveSync] DISCOVER | Caching extracted titleId=$extractedTitleId for gameId=$gameId")
-                gameDao.updateTitleId(gameId, extractedTitleId)
+                Logger.debug(TAG, "[SaveSync] DISCOVER | Caching extracted titleId=$extractedTitleId for gameId=$gameId, locked=${extractionResult.fromBinary}")
+                gameDao.setTitleIdWithLock(gameId, extractedTitleId, extractionResult.fromBinary)
             } else if (gameId != null && isSwitchPlatform && !isValidSwitchTitleId(extractedTitleId)) {
                 Logger.warn(TAG, "[SaveSync] DISCOVER | Skipping cache of invalid extracted titleId=$extractedTitleId (doesn't start with 01)")
             }
@@ -820,7 +824,7 @@ class SaveSyncRepository @Inject constructor(
         return null
     }
 
-    private fun findActiveProfileFolder(basePath: String, platformSlug: String): String {
+    private fun findActiveProfileFolder(basePath: String, platformSlug: String, emulatorPackage: String? = null): String {
         if (platformSlug != "switch") {
             return basePath
         }
@@ -830,6 +834,21 @@ class SaveSyncRepository @Inject constructor(
             return basePath
         }
 
+        // Try emulator-specific profile detection first (Eden profiles.dat)
+        if (emulatorPackage != null) {
+            val dataPath = basePath.substringBefore("/nand/user/save")
+            switchProfileParser.parseActiveProfile(emulatorPackage, dataPath)?.let { profileUuid ->
+                val profilePath = "$basePath/0000000000000000/$profileUuid"
+                if (directoryExists(profilePath)) {
+                    Logger.debug(TAG, "findActiveProfileFolder: using profile from emulator config | pkg=$emulatorPackage, uuid=$profileUuid")
+                    return profilePath
+                } else {
+                    Logger.debug(TAG, "findActiveProfileFolder: parsed profile path doesn't exist | path=$profilePath")
+                }
+            }
+        }
+
+        // Fallback to timestamp-based detection
         var mostRecentPath: String? = null
         var mostRecentTime = 0L
         var firstNonZeroProfile: String? = null
@@ -1699,7 +1718,7 @@ class SaveSyncRepository @Inject constructor(
                     )
                 } else null
                 val constructed = if (cached == null && discovered == null) {
-                    constructFolderSavePathWithOverride(resolvedEmulatorId, game.platformSlug, game.localPath, gameId, game.title, game.titleId)
+                    constructFolderSavePathWithOverride(resolvedEmulatorId, game.platformSlug, game.localPath, gameId, game.title, game.titleId, emulatorPackage)
                 } else null
                 (cached ?: discovered ?: constructed).also {
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Folder save path | cached=${cached != null}, discovered=${discovered != null}, constructed=${constructed != null}, path=$it")
@@ -1790,7 +1809,7 @@ class SaveSyncRepository @Inject constructor(
                 targetPath = if (isSwitchEmulator && config != null) {
                     val resolved = preDownloadTargetPath
                         ?: resolveSwitchSaveTargetPath(tempZipFile, config, emulatorPackage)
-                        ?: constructFolderSavePath(resolvedEmulatorId, game.platformSlug, game.localPath)
+                        ?: constructFolderSavePath(resolvedEmulatorId, game.platformSlug, game.localPath, emulatorPackage)
                     if (resolved == null) {
                         Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine Switch save path from ZIP or ROM")
                         return@withContext SaveSyncResult.Error("Cannot determine save path from ZIP or ROM")
@@ -2229,7 +2248,7 @@ class SaveSyncRepository @Inject constructor(
         val profileFolder = if (isDeviceSave) {
             findOrCreateZeroProfileFolder(basePath)
         } else {
-            findActiveProfileFolder(basePath, "switch")
+            findActiveProfileFolder(basePath, "switch", emulatorPackage)
         }
         val targetPath = "$profileFolder/$normalizedTitleId"
 
@@ -2294,7 +2313,8 @@ class SaveSyncRepository @Inject constructor(
     private fun constructFolderSavePath(
         emulatorId: String,
         platformSlug: String,
-        romPath: String?
+        romPath: String?,
+        emulatorPackage: String? = null
     ): String? {
         if (romPath == null) return null
 
@@ -2302,7 +2322,7 @@ class SaveSyncRepository @Inject constructor(
         if (!config.usesFolderBasedSaves) return null
 
         val romFile = File(romPath)
-        val titleId = titleIdExtractor.extractTitleId(romFile, platformSlug) ?: return null
+        val titleId = titleIdExtractor.extractTitleId(romFile, platformSlug, emulatorPackage) ?: return null
 
         val baseDir = config.defaultPaths.firstOrNull { directoryExists(it) }
             ?: config.defaultPaths.firstOrNull()
@@ -2316,7 +2336,7 @@ class SaveSyncRepository @Inject constructor(
                 val profileFolder = if (isDeviceSave) {
                     findOrCreateZeroProfileFolder(baseDir)
                 } else {
-                    findActiveProfileFolder(baseDir, platformSlug)
+                    findActiveProfileFolder(baseDir, platformSlug, emulatorPackage)
                 }
                 "$profileFolder/$normalizedTitleId"
             }
@@ -2344,7 +2364,8 @@ class SaveSyncRepository @Inject constructor(
         romPath: String?,
         gameId: Long,
         gameTitle: String,
-        cachedTitleId: String? = null
+        cachedTitleId: String? = null,
+        emulatorPackage: String? = null
     ): String? {
         val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId) ?: return null
         if (!config.usesFolderBasedSaves) return null
@@ -2373,7 +2394,7 @@ class SaveSyncRepository @Inject constructor(
         }
 
         val titleId = cachedTitleId
-            ?: (romPath?.let { titleIdExtractor.extractTitleId(File(it), platformSlug) })
+            ?: (romPath?.let { titleIdExtractor.extractTitleId(File(it), platformSlug, emulatorPackage) })
             ?: titleDbRepository.resolveTitleId(gameId, gameTitle, platformSlug)
 
         if (titleId == null) {

@@ -87,7 +87,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PendingAchievementEntity::class,
         PendingStateSyncEntity::class
     ],
-    version = 64,
+    version = 65,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1035,6 +1035,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_63_64 = object : Migration(63, 64) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN fileSizeBytes INTEGER DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_64_65 = object : Migration(64, 65) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN titleIdLocked INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

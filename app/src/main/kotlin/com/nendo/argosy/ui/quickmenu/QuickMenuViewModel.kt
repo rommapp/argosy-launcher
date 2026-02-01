@@ -38,7 +38,8 @@ data class GameRowUi(
     val coverPath: String?,
     val metadata: String,
     val metadataType: MetadataType = MetadataType.NONE,
-    val isDownloaded: Boolean
+    val isDownloaded: Boolean,
+    val titleId: String? = null
 )
 
 data class GameCardUi(
@@ -348,7 +349,8 @@ class QuickMenuViewModel @Inject constructor(
             coverPath = coverPath,
             metadata = metadataProvider(),
             metadataType = metadataType,
-            isDownloaded = localPath != null
+            isDownloaded = localPath != null,
+            titleId = titleId
         )
     }
 

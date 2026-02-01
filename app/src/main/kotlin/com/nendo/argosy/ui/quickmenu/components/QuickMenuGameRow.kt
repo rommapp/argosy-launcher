@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import java.io.File
+import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.quickmenu.GameRowUi
 import com.nendo.argosy.ui.quickmenu.MetadataType
 import com.nendo.argosy.ui.theme.Dimens
@@ -76,10 +77,10 @@ fun QuickMenuGameRow(
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = game.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+            GameTitle(
+                title = game.title,
+                titleStyle = MaterialTheme.typography.titleMedium,
+                titleColor = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

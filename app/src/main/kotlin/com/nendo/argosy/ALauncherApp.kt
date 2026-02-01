@@ -8,6 +8,7 @@ import coil.ImageLoaderFactory
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.cheats.CheatsDownloadObserver
+import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
 import com.nendo.argosy.data.sync.SaveSyncDownloadObserver
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.download.DownloadServiceController
@@ -38,6 +39,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var cheatsDownloadObserver: CheatsDownloadObserver
 
     @Inject
+    lateinit var titleIdDownloadObserver: TitleIdDownloadObserver
+
+    @Inject
     lateinit var platformDao: PlatformDao
 
     @Inject
@@ -56,6 +60,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         CoreUpdateCheckWorker.schedule(this)
         saveSyncDownloadObserver.start()
         cheatsDownloadObserver.start()
+        titleIdDownloadObserver.start()
         downloadServiceController.start()
         syncServiceController.start()
         syncPlatformSortOrders()

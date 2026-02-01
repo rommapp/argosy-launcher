@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.game
 
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -21,7 +22,8 @@ class LaunchWithSyncUseCase @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
-    private val saveSyncRepository: SaveSyncRepository
+    private val saveSyncRepository: SaveSyncRepository,
+    private val titleIdDownloadObserver: TitleIdDownloadObserver
 ) {
     @Deprecated("Use invokeWithProgress instead", ReplaceWith("invokeWithProgress(gameId)"))
     fun invoke(gameId: Long): Flow<SyncState> = flow {
@@ -157,6 +159,8 @@ class LaunchWithSyncUseCase @Inject constructor(
         }
 
         emit(SyncProgress.PreLaunch.Connecting(channelName, success = true))
+
+        titleIdDownloadObserver.extractTitleIdForGame(gameId)
 
         val syncResult = saveSyncRepository.preLaunchSync(gameId, game.rommId, emulatorId)
 

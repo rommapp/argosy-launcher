@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.icons.InputIcons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -921,11 +922,12 @@ private fun GameInfo(
             .padding(horizontal = Dimens.spacingXxl),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = titleColor,
-            textAlign = TextAlign.Center
+        GameTitle(
+            title = title,
+            titleStyle = MaterialTheme.typography.headlineMedium,
+            titleColor = titleColor,
+            textAlign = TextAlign.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         )
 
         if (developer != null) {

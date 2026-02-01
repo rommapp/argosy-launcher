@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import java.io.File
+import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 
@@ -130,10 +131,10 @@ fun WideGameCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                 ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                    GameTitle(
+                        title = title,
+                        titleStyle = MaterialTheme.typography.titleMedium,
+                        titleColor = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )

@@ -16,9 +16,9 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.MoreOptionAction
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
@@ -37,7 +37,18 @@ fun MoreOptionsModal(
     val hasUpdates = updateCount > 0
     var currentIndex = 0
 
-    Modal(title = "MORE OPTIONS", onDismiss = onDismiss) {
+    Modal(
+        title = game.title,
+        titleContent = {
+            GameTitle(
+                title = game.title,
+                titleStyle = MaterialTheme.typography.titleMedium,
+                titleId = game.titleId,
+                titleIdColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+            )
+        },
+        onDismiss = onDismiss
+    ) {
         if (game.canManageSaves) {
             val idx = currentIndex++
             OptionItem(

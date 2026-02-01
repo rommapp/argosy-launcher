@@ -31,6 +31,8 @@ fun Modal(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    subtitleColor: Color? = null,
+    titleContent: (@Composable () -> Unit)? = null,
     baseWidth: Dp = 350.dp,
     onDismiss: (() -> Unit)? = null,
     footerHints: List<Pair<InputButton, String>>? = null,
@@ -61,17 +63,21 @@ fun Modal(
                 .then(if (onDismiss != null) Modifier.clickableNoFocus {} else Modifier)
                 .padding(Dimens.spacingLg)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (subtitle != null) {
+            if (titleContent != null) {
+                titleContent()
+            } else {
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 

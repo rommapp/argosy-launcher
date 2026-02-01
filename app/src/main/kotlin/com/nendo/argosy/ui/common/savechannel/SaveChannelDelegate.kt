@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.common.savechannel
 
+import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
@@ -37,7 +38,8 @@ class SaveChannelDelegate @Inject constructor(
     private val stateCacheManager: StateCacheManager,
     private val gameDao: GameDao,
     private val notificationManager: NotificationManager,
-    private val soundManager: SoundFeedbackManager
+    private val soundManager: SoundFeedbackManager,
+    private val titleIdDownloadObserver: TitleIdDownloadObserver
 ) {
     private val _state = MutableStateFlow(SaveChannelState())
     val state: StateFlow<SaveChannelState> = _state.asStateFlow()
@@ -235,6 +237,8 @@ class SaveChannelDelegate @Inject constructor(
                     _state.update { it.copy(activeChannel = channelName, activeSaveTimestamp = null) }
                     onSaveStatusChanged(SaveStatusEvent(channelName = channelName, timestamp = null))
 
+                    titleIdDownloadObserver.extractTitleIdForGame(currentGameId)
+
                     if (emulatorPackage != null && state.supportsStates) {
                         val stateResult = restoreCachedStatesUseCase(
                             gameId = currentGameId,
@@ -367,6 +371,8 @@ class SaveChannelDelegate @Inject constructor(
                 )
             }
             onSaveStatusChanged(SaveStatusEvent(channelName = targetChannel, timestamp = newTimestamp))
+
+            titleIdDownloadObserver.extractTitleIdForGame(currentGameId)
 
             when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, syncToServer)) {
                 is RestoreCachedSaveUseCase.Result.Restored -> {

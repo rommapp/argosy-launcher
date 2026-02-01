@@ -93,6 +93,7 @@ data class GameEntity(
     val activeSaveTimestamp: Long? = null,
 
     val titleId: String? = null,
+    val titleIdLocked: Boolean = false,
     val titleIdCandidates: String? = null,
     val youtubeVideoId: String? = null,
 

@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.nendo.argosy.ui.components.GameTitle
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -100,10 +101,10 @@ fun GameHeader(
         )
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = game.title,
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onSurface
+            GameTitle(
+                title = game.title,
+                titleStyle = MaterialTheme.typography.displaySmall,
+                titleColor = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(Dimens.spacingSm))

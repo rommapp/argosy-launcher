@@ -32,7 +32,7 @@ class TitleIdExtractor @Inject constructor(
             "psp" -> extractPSPTitleId(romFile)?.let { TitleIdResult(it, false) }
             "switch" -> extractSwitchTitleIdWithSource(romFile, emulatorPackage)
             "3ds" -> extract3DSTitleId(romFile)?.let { TitleIdResult(it, true) }
-            "wiiu" -> extractWiiUTitleId(romFile)?.let { TitleIdResult(it, false) }
+            "wiiu" -> extractWiiUTitleIdWithSource(romFile)
             "wii" -> extractWiiTitleId(romFile)?.let { TitleIdResult(it, true) }
             else -> null
         }
@@ -423,17 +423,50 @@ class TitleIdExtractor @Inject constructor(
     }
 
     fun extractWiiUTitleId(romFile: File): String? {
+        return extractWiiUTitleIdWithSource(romFile)?.titleId
+    }
+
+    fun extractWiiUTitleIdWithSource(romFile: File): TitleIdResult? {
+        val ext = romFile.extension.lowercase()
+
+        if (ext == "wua") {
+            extractWiiUTitleIdFromWUA(romFile)?.let {
+                Logger.debug(TAG, "[SaveSync] DETECT | Wii U title ID from WUA binary | file=${romFile.name}, titleId=$it")
+                return TitleIdResult(it, fromBinary = true)
+            }
+        }
+
         val filename = romFile.nameWithoutExtension
 
-        // Pattern: [10118300] - 8 hex characters
         val bracketPattern = Regex("""\[([0-9A-Fa-f]{8})\]""")
-        bracketPattern.find(filename)?.let { return it.groupValues[1].uppercase() }
+        bracketPattern.find(filename)?.let {
+            return TitleIdResult(it.groupValues[1].uppercase(), fromBinary = false)
+        }
 
-        // Parentheses variant
         val parenPattern = Regex("""\(([0-9A-Fa-f]{8})\)""")
-        parenPattern.find(filename)?.let { return it.groupValues[1].uppercase() }
+        parenPattern.find(filename)?.let {
+            return TitleIdResult(it.groupValues[1].uppercase(), fromBinary = false)
+        }
 
         return null
+    }
+
+    private fun extractWiiUTitleIdFromWUA(romFile: File): String? {
+        return try {
+            // WUA files have a root folder named like "0005000010143500_v0" containing the title ID
+            val titleId = ZArchiveReader.findWiiUTitleIdFolder(romFile)
+            if (titleId != null) {
+                val shortTitleId = titleId.takeLast(8)
+                Logger.debug(TAG, "[SaveSync] DETECT | WUA title ID from folder | file=${romFile.name}, full=$titleId, short=$shortTitleId")
+                return shortTitleId
+            }
+
+            Logger.debug(TAG, "[SaveSync] DETECT | WUA no title ID folder found | file=${romFile.name}")
+            null
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[SaveSync] DETECT | Failed to extract WUA title ID | file=${romFile.name}", e)
+            null
+        }
     }
 
     fun extractWiiTitleId(romFile: File): String? {

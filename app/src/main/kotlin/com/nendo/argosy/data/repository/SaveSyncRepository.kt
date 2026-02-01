@@ -889,10 +889,13 @@ class SaveSyncRepository @Inject constructor(
                     return@withContext SaveSyncResult.Error("Insufficient disk space")
                 }
 
+                // Re-fetch title ID as it may have been resolved during path discovery
+                val resolvedTitleId = game.titleId ?: gameDao.getTitleId(gameId)
+
                 val saveContext = SaveContext(
                     config = config!!,
                     romPath = game.localPath,
-                    titleId = game.titleId,
+                    titleId = resolvedTitleId,
                     emulatorPackage = emulatorPackage,
                     gameId = gameId,
                     gameTitle = game.title,

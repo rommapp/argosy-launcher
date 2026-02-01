@@ -166,9 +166,10 @@ dependencies {
     // Color extraction
     implementation(libs.androidx.palette)
 
-    // Archive extraction (7z, tar, etc.)
+    // Archive extraction (7z, tar, zstd, etc.)
     implementation(libs.commons.compress)
     implementation(libs.xz)
+    implementation(libs.zstd.jni)
 
     // Libretro (built-in emulation) - local module for customization
     implementation(project(":libretrodroid"))

@@ -306,25 +306,8 @@ class SavePathResolver @Inject constructor(
             return best.path
         }
 
-        if (allowCacheRefresh && gameId != null) {
-            val cachedCandidates = titleDbRepository.getCachedCandidates(gameId)
-            if (cachedCandidates.isNotEmpty()) {
-                Logger.debug(TAG, "[SaveSync] DISCOVER | Clearing stale titleId cache for gameId=$gameId")
-                titleDbRepository.clearTitleIdCache(gameId)
-                return discoverFolderSavePath(
-                    config = config,
-                    platformSlug = platformSlug,
-                    romPath = romPath,
-                    cachedTitleId = cachedTitleId,
-                    emulatorPackage = emulatorPackage,
-                    gameId = gameId,
-                    gameTitle = gameTitle,
-                    basePathOverride = basePathOverride,
-                    allowCacheRefresh = false,
-                    isFolderSaveSyncEnabled = isFolderSaveSyncEnabled
-                )
-            }
-        }
+        // Don't clear title ID cache here - the title ID may be correct even if no save exists yet
+        // (e.g., downloading a save for the first time). Let the caller handle construction.
 
         Logger.debug(TAG, "[SaveSync] DISCOVER | No save found | title=$gameTitle, tried=${triedTitleIds.size} titleIds")
         return null

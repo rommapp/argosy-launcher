@@ -449,8 +449,9 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
 
-            // Extract title ID for Switch games if not already set
-            if (game.platformSlug == "switch" && game.titleId == null && game.localPath != null) {
+            // Extract title ID for folder-based save platforms if not already set
+            val needsTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp")
+            if (needsTitleId && game.titleId == null && game.localPath != null) {
                 viewModelScope.launch {
                     titleIdDownloadObserver.extractTitleIdForGame(gameId)
                 }
@@ -1285,6 +1286,7 @@ class GameDetailViewModel @Inject constructor(
             MoreOptionAction.SelectDisc -> showDiscPicker()
             MoreOptionAction.UpdatesDlc -> showUpdatesPicker()
             MoreOptionAction.RefreshData -> refreshAndroidOrRommData()
+            MoreOptionAction.RefreshTitleId -> refreshTitleId()
             MoreOptionAction.AddToCollection -> showAddToCollectionModal()
             MoreOptionAction.Delete -> {
                 toggleMoreOptions()
@@ -1306,6 +1308,8 @@ class GameDetailViewModel @Inject constructor(
         val canTrackProgress = isRommGame || isAndroidApp
         val isEmulatedGame = !isSteamGame && !isAndroidApp
         val hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty()
+        val platformSlug = state.game?.platformSlug
+        val usesTitleId = platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii")
         val index = state.moreOptionsFocusIndex
 
         var currentIdx = 0
@@ -1313,6 +1317,7 @@ class GameDetailViewModel @Inject constructor(
         val ratingsStatusIdx = if (canTrackProgress) currentIdx++ else -1
         val emulatorOrLauncherIdx = if (isSteamGame || isEmulatedGame) currentIdx++ else -1
         val coreIdx = if (isRetroArch && isEmulatedGame) currentIdx++ else -1
+        val titleIdIdx = if (usesTitleId && isEmulatedGame) currentIdx++ else -1
         val discIdx = if (isMultiDisc) currentIdx++ else -1
         val updatesIdx = if (hasUpdates) currentIdx++ else -1
         val refreshIdx = if (canTrackProgress) currentIdx++ else -1
@@ -1325,6 +1330,7 @@ class GameDetailViewModel @Inject constructor(
             ratingsStatusIdx -> MoreOptionAction.RatingsStatus
             emulatorOrLauncherIdx -> if (isSteamGame) MoreOptionAction.ChangeSteamLauncher else MoreOptionAction.ChangeEmulator
             coreIdx -> MoreOptionAction.ChangeCore
+            titleIdIdx -> MoreOptionAction.RefreshTitleId
             discIdx -> MoreOptionAction.SelectDisc
             updatesIdx -> MoreOptionAction.UpdatesDlc
             refreshIdx -> MoreOptionAction.RefreshData
@@ -1742,6 +1748,14 @@ class GameDetailViewModel @Inject constructor(
             refreshAndroidAppData()
         } else {
             refreshGameData()
+        }
+    }
+
+    private fun refreshTitleId() {
+        val gameId = _uiState.value.game?.id ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(showMoreOptions = false) }
+            titleIdDownloadObserver.extractTitleIdForGame(gameId)
         }
     }
 

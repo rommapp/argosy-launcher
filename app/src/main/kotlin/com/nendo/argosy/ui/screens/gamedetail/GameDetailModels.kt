@@ -118,6 +118,7 @@ sealed class MoreOptionAction {
     data object UpdatesDlc : MoreOptionAction()
     data object RefreshData : MoreOptionAction()
     data object AddToCollection : MoreOptionAction()
+    data object RefreshTitleId : MoreOptionAction()
     data object Delete : MoreOptionAction()
     data object ToggleHide : MoreOptionAction()
 }

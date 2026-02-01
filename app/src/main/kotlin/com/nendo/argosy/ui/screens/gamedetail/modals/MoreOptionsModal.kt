@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
@@ -91,6 +92,17 @@ fun MoreOptionsModal(
                 value = game.selectedCoreName ?: "Default",
                 isFocused = focusIndex == idx,
                 onClick = { onAction(MoreOptionAction.ChangeCore) }
+            )
+        }
+        val usesTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii")
+        if (usesTitleId && isEmulatedGame) {
+            val idx = currentIndex++
+            OptionItem(
+                icon = Icons.Default.Tag,
+                label = "Title ID",
+                value = game.titleId ?: "Not detected",
+                isFocused = focusIndex == idx,
+                onClick = { onAction(MoreOptionAction.RefreshTitleId) }
             )
         }
         if (game.isMultiDisc) {

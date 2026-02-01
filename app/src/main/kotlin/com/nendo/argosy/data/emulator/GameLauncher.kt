@@ -526,14 +526,16 @@ class GameLauncher @Inject constructor(
     private suspend fun resolveCoreName(game: GameEntity): String? {
         val gameConfig = emulatorConfigDao.getByGameId(game.id)
         if (gameConfig?.coreName != null) {
-            Logger.debug(TAG, "Core selection: game-specific override -> ${gameConfig.coreName}")
-            return gameConfig.coreName
+            val corrected = normalizeLegacyCoreName(gameConfig.coreName, game.platformSlug)
+            Logger.debug(TAG, "Core selection: game-specific override -> $corrected")
+            return corrected
         }
 
         val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
         if (platformConfig?.coreName != null) {
-            Logger.debug(TAG, "Core selection: platform default -> ${platformConfig.coreName}")
-            return platformConfig.coreName
+            val corrected = normalizeLegacyCoreName(platformConfig.coreName, game.platformSlug)
+            Logger.debug(TAG, "Core selection: platform default -> $corrected")
+            return corrected
         }
 
         val defaultCore = EmulatorRegistry.getDefaultCore(game.platformSlug)
@@ -545,6 +547,19 @@ class GameLauncher @Inject constructor(
         val preferredCore = EmulatorRegistry.getPreferredCore(game.platformSlug)
         Logger.debug(TAG, "Core selection: registry preferred -> $preferredCore")
         return preferredCore
+    }
+
+    private fun normalizeLegacyCoreName(coreName: String, platformSlug: String): String {
+        val validCores = EmulatorRegistry.getCoresForPlatform(platformSlug)
+        if (validCores.any { it.id == coreName }) {
+            return coreName
+        }
+        val match = validCores.find { it.id.startsWith(coreName) }
+        if (match != null) {
+            Logger.debug(TAG, "Core name corrected: $coreName -> ${match.id}")
+            return match.id
+        }
+        return coreName
     }
 
     private fun buildCustomIntent(

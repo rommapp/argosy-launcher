@@ -18,7 +18,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = gameId,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getRetroArchCorePatterns()[platformSlug]?.firstOrNull(),
+                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
                 isDefault = false
             )
             emulatorConfigDao.insert(config)
@@ -34,7 +34,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = null,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getRetroArchCorePatterns()[platformSlug]?.firstOrNull(),
+                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
                 isDefault = true
             )
             emulatorConfigDao.insert(config)

@@ -127,6 +127,11 @@ interface RomMApi {
         @Part saveFile: MultipartBody.Part
     ): Response<RomMSave>
 
+    @DELETE("api/saves/{id}")
+    suspend fun deleteSave(
+        @Path("id") saveId: Long
+    ): Response<Unit>
+
     @Streaming
     @GET("api/saves/{id}/content/{fileName}")
     suspend fun downloadSaveContent(

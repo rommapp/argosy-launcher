@@ -124,12 +124,19 @@ object GameCubeHeaderParser {
         }
     }
 
-    fun buildGciFilename(gameId: String, makerCode: String, internalFilename: String): String {
-        return "${gameId}${makerCode}_${internalFilename}.gci"
+    fun buildGciFilename(makerCode: String, gameId: String, internalFilename: String): String {
+        return "$makerCode-$gameId-$internalFilename.gci"
     }
 
     fun buildGciPath(baseDir: String, region: String, gciFilename: String): String {
-        return "$baseDir/$region/$gciFilename"
+        return "$baseDir/$region/Card A/$gciFilename"
+    }
+
+    private val VALID_REGIONS = listOf("USA", "EUR", "JAP", "KOR")
+
+    fun isValidGciPath(path: String): Boolean {
+        if (!path.endsWith(".gci", ignoreCase = true)) return false
+        return VALID_REGIONS.any { region -> path.contains("/$region/Card A/") }
     }
 
     fun gameIdToHex(gameId: String): String {

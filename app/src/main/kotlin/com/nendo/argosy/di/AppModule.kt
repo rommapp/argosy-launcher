@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.storage.FileAccessLayerImpl
 import com.nendo.argosy.hardware.LEDController
 import com.nendo.argosy.hardware.OdinLEDController
 import com.squareup.moshi.Moshi
@@ -44,4 +46,8 @@ object AppModule {
     fun provideLEDController(): LEDController {
         return OdinLEDController()
     }
+
+    @Provides
+    @Singleton
+    fun provideFileAccessLayer(impl: FileAccessLayerImpl): FileAccessLayer = impl
 }

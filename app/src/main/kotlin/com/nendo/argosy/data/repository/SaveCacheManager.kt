@@ -5,6 +5,7 @@ import android.util.Log
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,8 @@ class SaveCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveCacheDao: SaveCacheDao,
     private val preferencesRepository: UserPreferencesRepository,
-    private val saveArchiver: SaveArchiver
+    private val saveArchiver: SaveArchiver,
+    private val fal: FileAccessLayer
 ) {
     private val TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
         .withZone(ZoneId.systemDefault())
@@ -55,16 +57,16 @@ class SaveCacheManager @Inject constructor(
         slotName: String? = null,
         skipDuplicateCheck: Boolean = false
     ): CacheResult = withContext(Dispatchers.IO) {
-        val saveFile = File(savePath)
-        if (!saveFile.exists()) {
+        if (!fal.exists(savePath)) {
             Log.w(TAG, "Save file does not exist: $savePath")
             return@withContext CacheResult.Failed
         }
 
+        val saveFile = fal.getTransformedFile(savePath)
         var tempFile: File? = null
 
         try {
-            val (contentHash, tempOrSource) = if (saveFile.isDirectory) {
+            val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
                 val folderHash = saveArchiver.calculateFolderHash(saveFile)
                 tempFile = File(context.cacheDir, "temp_save_${System.currentTimeMillis()}.zip")
                 if (!saveArchiver.zipFolder(saveFile, tempFile)) {
@@ -91,7 +93,7 @@ class SaveCacheManager @Inject constructor(
             val gameDir = File(cacheBaseDir, "$gameId/$timestamp")
             gameDir.mkdirs()
 
-            val (cachePath, cachedFile) = if (saveFile.isDirectory) {
+            val (cachePath, cachedFile) = if (fal.isDirectory(savePath)) {
                 val finalZip = File(gameDir, "save.zip")
                 tempOrSource.renameTo(finalZip).let { renamed ->
                     if (!renamed) {
@@ -169,21 +171,23 @@ class SaveCacheManager @Inject constructor(
         }
 
         try {
-            val targetFile = File(targetPath)
-
             if (entity.cachePath.endsWith(".zip")) {
-                if (targetFile.exists()) {
-                    targetFile.deleteRecursively()
+                if (fal.exists(targetPath)) {
+                    fal.deleteRecursively(targetPath)
                 }
-                targetFile.mkdirs()
+                fal.mkdirs(targetPath)
+                val targetFile = fal.getTransformedFile(targetPath)
                 saveArchiver.unzipSingleFolder(cacheFile, targetFile)
             } else {
-                targetFile.parentFile?.mkdirs()
+                val parentPath = targetPath.substringBeforeLast('/')
+                if (parentPath.isNotEmpty() && parentPath != targetPath) {
+                    fal.mkdirs(parentPath)
+                }
                 val bytesWithoutTrailer = saveArchiver.readBytesWithoutTrailer(cacheFile)
                 if (bytesWithoutTrailer != null) {
-                    targetFile.writeBytes(bytesWithoutTrailer)
+                    fal.writeBytes(targetPath, bytesWithoutTrailer)
                 } else {
-                    cacheFile.copyTo(targetFile, overwrite = true)
+                    fal.copyFile(cacheFile.absolutePath, targetPath)
                 }
             }
 

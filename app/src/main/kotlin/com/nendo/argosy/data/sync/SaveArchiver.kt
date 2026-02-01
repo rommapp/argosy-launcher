@@ -1,7 +1,8 @@
 package com.nendo.argosy.data.sync
 
 import com.nendo.argosy.data.storage.AndroidDataAccessor
-import com.nendo.argosy.data.storage.ManagedStorageAccessor
+import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.storage.FileInfo
 import com.nendo.argosy.util.Logger
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -23,161 +24,30 @@ import javax.inject.Singleton
 @Singleton
 class SaveArchiver @Inject constructor(
     private val androidDataAccessor: AndroidDataAccessor,
-    private val managedStorageAccessor: ManagedStorageAccessor
+    private val fal: FileAccessLayer
 ) {
 
     private val TAG = "SaveArchiver"
     private val BUFFER_SIZE = 8192
 
-    private fun isRestrictedPath(path: String): Boolean {
-        return androidDataAccessor.isRestrictedAndroidPath(path)
-    }
+    private fun isRestrictedPath(path: String): Boolean = fal.isRestrictedPath(path)
 
-    private fun extractVolumeAndPath(path: String): Pair<String, String>? {
-        val primaryRoot = "/storage/emulated/0"
-        val sdcardPattern = Regex("^/storage/([A-F0-9-]+)")
+    private fun openOutputStreamForPath(path: String): OutputStream? = fal.getOutputStream(path)
 
-        return when {
-            path.startsWith(primaryRoot) -> {
-                val rel = path.removePrefix(primaryRoot).trimStart('/')
-                "primary" to rel
-            }
-            path.matches(Regex("^/storage/[A-F0-9-]+.*")) -> {
-                val match = sdcardPattern.find(path)
-                if (match != null) {
-                    val volId = match.groupValues[1]
-                    val rel = path.removePrefix("/storage/$volId").trimStart('/')
-                    volId to rel
-                } else null
-            }
-            else -> null
-        }
-    }
+    private fun openInputStreamForPath(path: String): InputStream? = fal.getInputStream(path)
 
-    private fun openOutputStreamForPath(path: String): OutputStream? {
-        // For restricted paths, try alt access first (most reliable on supported devices)
-        val isRestricted = isRestrictedPath(path)
-        val altAccessSupported = isRestricted && androidDataAccessor.isAltAccessSupported()
+    private fun createDirectoryForPath(path: String): Boolean = fal.mkdirs(path)
 
-        if (altAccessSupported) {
-            val stream = androidDataAccessor.getOutputStream(path)
-            if (stream != null) {
-                Logger.debug(TAG, "[AltAccess] Opened output stream for $path")
-                return stream
-            }
-            Logger.debug(TAG, "[AltAccess] Failed to open output stream, falling back to ManagedAccess | path=$path")
-        }
+    fun getFileForPath(path: String): File = fal.getTransformedFile(path)
 
-        // Fallback to ManagedStorageAccessor (DocumentsContract approach)
-        if (isRestricted) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
-            Logger.debug(TAG, "[ManagedAccess] Opening output stream for $path (vol=$volumeId, rel=$relativePath)")
-            return managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)
-        }
+    fun existsAtPath(path: String): Boolean = fal.exists(path)
 
-        // Standard file I/O for non-restricted paths
-        val file = File(path)
-        file.parentFile?.mkdirs()
-        return FileOutputStream(file)
-    }
-
-    private fun openInputStreamForPath(path: String): InputStream? {
-        // For restricted paths, try alt access first
-        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
-            val stream = androidDataAccessor.getInputStream(path)
-            if (stream != null) {
-                Logger.debug(TAG, "[AltAccess] Opened input stream for $path")
-                return stream
-            }
-        }
-
-        // Fallback to ManagedStorageAccessor
-        if (isRestrictedPath(path)) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
-            Logger.debug(TAG, "[ManagedAccess] Opening input stream for $path (vol=$volumeId, rel=$relativePath)")
-            return managedStorageAccessor.openInputStreamAtPath(volumeId, relativePath)
-        }
-
-        // Standard file I/O
-        val file = File(path)
-        return if (file.exists() && file.canRead()) file.inputStream() else null
-    }
-
-    private fun createDirectoryForPath(path: String): Boolean {
-        val isRestricted = isRestrictedPath(path)
-        val altAccessSupported = isRestricted && androidDataAccessor.isAltAccessSupported()
-
-        // For restricted paths, try alt access first
-        if (altAccessSupported) {
-            val result = androidDataAccessor.mkdirs(path)
-            if (result) {
-                Logger.debug(TAG, "[AltAccess] Created directory: $path")
-                return true
-            }
-            Logger.debug(TAG, "[AltAccess] Failed to create directory, falling back to ManagedAccess | path=$path")
-        }
-
-        // Fallback to ManagedStorageAccessor (DocumentsContract approach)
-        if (isRestricted) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
-            Logger.debug(TAG, "[ManagedAccess] Creating directory | path=$path (vol=$volumeId, rel=$relativePath)")
-            val result = managedStorageAccessor.createDirectoryAtPath(volumeId, relativePath)
-            if (!result) {
-                Logger.error(TAG, "[ManagedAccess] Failed to create directory: $path")
-            }
-            return result
-        }
-
-        return File(path).mkdirs()
-    }
-
-    /**
-     * Get a File object for the given path, using alt access if applicable.
-     * Use this for file operations that need direct File access.
-     */
-    fun getFileForPath(path: String): File {
-        return if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
-            androidDataAccessor.getFile(path)
-        } else {
-            File(path)
-        }
-    }
-
-    /**
-     * Check if a file/directory exists at the given path, handling restricted paths.
-     */
-    fun existsAtPath(path: String): Boolean {
-        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
-            return androidDataAccessor.exists(path)
-        }
-        if (isRestrictedPath(path)) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
-            return managedStorageAccessor.existsAtPath(volumeId, relativePath)
-        }
-        return File(path).exists()
-    }
-
-    /**
-     * List files at the given path, handling restricted paths.
-     */
     fun listFilesAtPath(path: String): Array<File>? {
-        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
-            return androidDataAccessor.listFiles(path)
-        }
-        // For restricted paths without alt access support, we can't easily return File objects
-        // from DocumentsContract, so just try direct access
-        return File(path).listFiles()
+        val files = fal.listFiles(path) ?: return null
+        return files.map { fal.getTransformedFile(it.path) }.toTypedArray()
     }
 
-    /**
-     * Get last modified time for a file, handling restricted paths.
-     */
-    fun lastModifiedAtPath(path: String): Long {
-        if (isRestrictedPath(path) && androidDataAccessor.isAltAccessSupported()) {
-            return androidDataAccessor.lastModified(path)
-        }
-        return File(path).lastModified()
-    }
+    fun lastModifiedAtPath(path: String): Long = fal.lastModified(path)
 
     /**
      * Zip a folder at the given path, handling restricted Android/data paths.
@@ -208,6 +78,47 @@ class SaveArchiver @Inject constructor(
             true
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ARCHIVE | Zip failed | source=${sourceFolder.absolutePath}", e)
+            targetZip.delete()
+            false
+        }
+    }
+
+    fun zipFiles(files: List<File>, targetZip: File): Boolean {
+        if (files.isEmpty()) {
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | No files to zip")
+            return false
+        }
+
+        val existingFiles = files.filter { it.exists() && it.isFile }
+        if (existingFiles.isEmpty()) {
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | No valid files to zip")
+            return false
+        }
+
+        val totalSize = existingFiles.sumOf { it.length() }
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Zipping ${existingFiles.size} file(s) | totalSize=${totalSize}bytes")
+
+        return try {
+            targetZip.parentFile?.mkdirs()
+            ZipArchiveOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
+                zos.setUseZip64(Zip64Mode.AsNeeded)
+                for (file in existingFiles) {
+                    zos.putArchiveEntry(ZipArchiveEntry(file.name))
+                    BufferedInputStream(FileInputStream(file), BUFFER_SIZE).use { bis ->
+                        val buffer = ByteArray(BUFFER_SIZE)
+                        var count: Int
+                        while (bis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
+                            zos.write(buffer, 0, count)
+                        }
+                    }
+                    zos.closeArchiveEntry()
+                }
+            }
+            val ratio = if (totalSize > 0) (targetZip.length() * 100 / totalSize) else 100
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Zip complete | files=${existingFiles.size}, output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
+            true
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Zip files failed", e)
             targetZip.delete()
             false
         }
@@ -642,37 +553,9 @@ class SaveArchiver @Inject constructor(
         }
     }
 
-    /**
-     * Write bytes to a file, using UC Data path for restricted locations.
-     */
-    fun writeBytesToPath(path: String, data: ByteArray): Boolean {
-        return if (isRestrictedPath(path)) {
-            androidDataAccessor.writeBytes(path, data)
-        } else {
-            try {
-                val file = File(path)
-                file.parentFile?.mkdirs()
-                file.writeBytes(data)
-                true
-            } catch (e: Exception) { false }
-        }
-    }
+    fun writeBytesToPath(path: String, data: ByteArray): Boolean = fal.writeBytes(path, data)
 
-    /**
-     * Copy a file to target path, using UC Data path for restricted locations.
-     */
-    fun copyFileToPath(source: File, targetPath: String): Boolean {
-        return if (isRestrictedPath(targetPath)) {
-            androidDataAccessor.copyFile(source.absolutePath, targetPath)
-        } else {
-            try {
-                val target = File(targetPath)
-                target.parentFile?.mkdirs()
-                source.copyTo(target, overwrite = true)
-                true
-            } catch (e: Exception) { false }
-        }
-    }
+    fun copyFileToPath(source: File, targetPath: String): Boolean = fal.copyFile(source.absolutePath, targetPath)
 
     /**
      * Calculate file hash at a path, handling restricted Android/data paths.

@@ -56,7 +56,14 @@ class RestoreCachedSaveUseCase @Inject constructor(
             UnifiedSaveEntry.Source.SERVER -> {
                 val serverSaveId = entry.serverSaveId
                     ?: return Result.Error("No server save ID")
-                saveSyncRepository.downloadSaveById(serverSaveId, targetPath, emulatorId, emulatorPackage)
+                saveSyncRepository.downloadSaveById(
+                    serverSaveId = serverSaveId,
+                    targetPath = targetPath,
+                    emulatorId = emulatorId,
+                    emulatorPackage = emulatorPackage,
+                    gameId = gameId,
+                    romPath = game.localPath
+                )
             }
         }
 

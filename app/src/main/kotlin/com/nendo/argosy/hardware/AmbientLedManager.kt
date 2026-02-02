@@ -249,6 +249,36 @@ class AmbientLedManager @Inject constructor(
         )
     }
 
+    private var flashJob: Job? = null
+
+    fun flashAchievement(isHardcore: Boolean) {
+        if (!ledController.isAvailable) return
+
+        flashJob?.cancel()
+        flashJob = scope.launch {
+            val flashColor = if (isHardcore) {
+                Color(0xFFFFE566) // Bright gold/yellow for hardcore
+            } else {
+                Color(0xFFFFAA44) // Bright orange for casual
+            }
+
+            repeat(3) {
+                ledController.setColor(flashColor)
+                ledController.setBrightness(1f)
+                delay(150)
+                ledController.setBrightness(0.2f)
+                delay(100)
+            }
+
+            ledController.setBrightness(1f)
+            delay(50)
+
+            if (isEnabled) {
+                updateLeds()
+            }
+        }
+    }
+
     private fun updateLeds() {
         val currentState = _state.value
         val (leftColor, rightColor) = when (currentState.context) {

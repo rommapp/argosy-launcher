@@ -40,6 +40,7 @@ import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.data.cheats.CheatsRepository
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -91,6 +92,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var raRepository: RetroAchievementsRepository
     @Inject lateinit var achievementUpdateBus: AchievementUpdateBus
     @Inject lateinit var saveCacheManager: com.nendo.argosy.data.repository.SaveCacheManager
+    @Inject lateinit var ambientLedManager: AmbientLedManager
 
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
@@ -602,6 +604,7 @@ class LibretroActivity : ComponentActivity() {
         )
 
         achievementUnlockQueue.add(unlock)
+        ambientLedManager.flashAchievement(hardcoreMode)
         if (currentAchievementUnlock == null) {
             showNextAchievementUnlock()
         }

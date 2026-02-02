@@ -527,7 +527,10 @@ class GameLauncher @Inject constructor(
 
         Logger.warn(TAG, "Core not found: $coreFileName")
         logAvailableCores(coreDirs)
-        return "${coreDirs.first()}/$coreFileName"
+
+        val privateCorePath = "/data/data/$retroArchPackage/cores/$coreFileName"
+        Logger.debug(TAG, "Falling back to private core path: $privateCorePath")
+        return privateCorePath
     }
 
     private fun findCoreByShortName(coreName: String, coreDirs: List<String>): java.io.File? {

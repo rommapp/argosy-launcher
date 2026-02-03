@@ -99,8 +99,17 @@ class GameLauncher @Inject constructor(
             }
         }
 
-        // Extract ZIP/7z archives for platforms that don't use ZIP as ROM format
-        romFile = extractArchiveIfNeeded(romFile, game)
+        val emulator = resolveEmulator(game)
+            ?: return LaunchResult.NoEmulator(game.platformSlug).also {
+                Logger.warn(TAG, "launch() failed: no emulator found for platform=${game.platformSlug}")
+            }
+
+        Logger.debug(TAG, "Emulator resolved: ${emulator.displayName} (${emulator.packageName})")
+
+        // Extract ZIP/7z archives only for built-in emulator (RetroArch handles archives natively)
+        if (emulator.launchConfig is LaunchConfig.BuiltIn) {
+            romFile = extractArchiveIfNeeded(romFile, game)
+        }
 
         // For m3u files on platforms that don't support m3u launching, prompt for disc selection
         if (romFile.extension.lowercase() == "m3u" && !M3uManager.supportsM3u(game.platformSlug)) {
@@ -131,13 +140,6 @@ class GameLauncher @Inject constructor(
 
         // Apply extension preference if needed (lazy rename on launch)
         romFile = applyExtensionPreferenceIfNeeded(game, romFile)
-
-        val emulator = resolveEmulator(game)
-            ?: return LaunchResult.NoEmulator(game.platformSlug).also {
-                Logger.warn(TAG, "launch() failed: no emulator found for platform=${game.platformSlug}")
-            }
-
-        Logger.debug(TAG, "Emulator resolved: ${emulator.displayName} (${emulator.packageName})")
 
         val intent = buildIntent(emulator, romFile, game, forResume)
             ?: return when (emulator.launchConfig) {

@@ -9,7 +9,6 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.launcher.SteamLaunchers
-import com.nendo.argosy.data.storage.AndroidDataAccessor
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.libretro.LibretroActivity
@@ -57,8 +56,7 @@ class GameLauncher @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager,
     private val libretroCoreMgr: LibretroCoreManager,
-    private val biosRepository: BiosRepository,
-    private val androidDataAccessor: AndroidDataAccessor
+    private val biosRepository: BiosRepository
 ) {
     suspend fun launch(
         gameId: Long,
@@ -466,19 +464,23 @@ class GameLauncher @Inject constructor(
 
         Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}, forResume=$forResume")
 
-        val corePath = getCorePath(game, retroArchPackage)
-        if (corePath == null) {
+        val coreName = resolveCoreName(game)
+        if (coreName == null) {
             Logger.error(TAG, "No compatible core found for platform: ${game.platformSlug}")
             return null
         }
 
-        val coreName = corePath.substringAfterLast("/").removeSuffix("_libretro_android.so")
-        Logger.debug(TAG, "RetroArch core: $coreName for platform: ${game.platformSlug}")
+        // NOTE: We send just the core filename and let RetroArch resolve the path internally.
+        // This avoids Android 16 security restrictions on referencing paths in other apps' data dirs.
+        // If this breaks on some RetroArch versions, we may need to revert to Argosy-managed cores
+        // using LibretroCoreManager and passing paths within our own app directory.
+        val coreFileName = "${coreName}_libretro_android.so"
+        Logger.debug(TAG, "RetroArch core: $coreFileName for platform: ${game.platformSlug}")
 
         return Intent(emulator.launchAction).apply {
             component = ComponentName(retroArchPackage, config.activityClass)
             putExtra("ROM", romFile.absolutePath)
-            putExtra("LIBRETRO", corePath)
+            putExtra("LIBRETRO", coreFileName)
             putExtra("CONFIGFILE", configPath)
             putExtra("IME", "com.android.inputmethod.latin/.LatinIME")
             putExtra("DATADIR", dataDir)
@@ -494,67 +496,6 @@ class GameLauncher @Inject constructor(
             Logger.debug(TAG, "Force stopped via am: $packageName")
         } catch (e: Exception) {
             Logger.warn(TAG, "Failed to force stop $packageName", e)
-        }
-    }
-
-    private suspend fun getCorePath(game: GameEntity, retroArchPackage: String): String? {
-        val coreName = resolveCoreName(game)
-        if (coreName == null) {
-            Logger.warn(TAG, "No core found for platform: ${game.platformSlug}")
-            return null
-        }
-
-        val coreFileName = "${coreName}_libretro_android.so"
-        val coreDirs = listOf(
-            "/storage/emulated/0/RetroArch/cores",
-            "/storage/emulated/0/Android/data/$retroArchPackage/files/cores",
-            "/data/data/$retroArchPackage/cores"
-        )
-
-        for (dir in coreDirs) {
-            val path = "$dir/$coreFileName"
-            if (androidDataAccessor.exists(path)) {
-                Logger.debug(TAG, "Core found at: $path")
-                return path
-            }
-        }
-
-        val fuzzyMatch = findCoreByShortName(coreName, coreDirs)
-        if (fuzzyMatch != null) {
-            Logger.info(TAG, "Core fuzzy match: $coreName -> ${fuzzyMatch.name}")
-            return fuzzyMatch.absolutePath
-        }
-
-        Logger.warn(TAG, "Core not found: $coreFileName")
-        logAvailableCores(coreDirs)
-
-        val privateCorePath = "/data/data/$retroArchPackage/cores/$coreFileName"
-        Logger.debug(TAG, "Falling back to private core path: $privateCorePath")
-        return privateCorePath
-    }
-
-    private fun findCoreByShortName(coreName: String, coreDirs: List<String>): java.io.File? {
-        for (dir in coreDirs) {
-            val files = androidDataAccessor.listFiles(dir) ?: continue
-            val match = files.find { file ->
-                file.name.contains(coreName) && file.name.endsWith("_libretro_android.so")
-            }
-            if (match != null) return match
-        }
-        return null
-    }
-
-    private fun logAvailableCores(coreDirs: List<String>) {
-        for (dir in coreDirs) {
-            val files = androidDataAccessor.listFiles(dir)
-            if (files != null && files.isNotEmpty()) {
-                val coreNames = files
-                    .filter { it.name.endsWith(".so") }
-                    .take(10)
-                    .joinToString(", ") { it.name.removeSuffix("_libretro_android.so") }
-                val more = if (files.size > 10) " (+${files.size - 10} more)" else ""
-                Logger.debug(TAG, "Available cores in $dir: $coreNames$more")
-            }
         }
     }
 

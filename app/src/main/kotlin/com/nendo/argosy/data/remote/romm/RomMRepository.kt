@@ -620,6 +620,7 @@ class RomMRepository @Inject constructor(
             sortTitle = RomMUtils.createSortTitle(rom.name),
             localPath = localDataSource?.localPath,
             rommId = rom.id,
+            rommFileName = rom.fileName,
             igdbId = rom.igdbId,
             raId = rom.raId,
             source = if (localDataSource?.localPath != null) GameSource.ROMM_SYNCED else GameSource.ROMM_REMOTE,

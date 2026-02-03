@@ -7,6 +7,7 @@ import android.os.UserManager
 import android.util.Log
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
+import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.model.GameSource
@@ -99,12 +100,18 @@ class GameRepository @Inject constructor(
     }
 
     private fun titlesMatch(a: String, b: String): Boolean {
-        val normA = normalizeForMatch(a)
-        val normB = normalizeForMatch(b)
-        return normA == normB || normA.contains(normB) || normB.contains(normA)
+        return normalizeForMatch(a) == normalizeForMatch(b)
     }
 
-    private suspend fun findLargestRomInFolder(folder: File, platformSlug: String): File? {
+    private suspend fun findPrimaryRomInFolder(folder: File, platformSlug: String): File? {
+        val rootFiles = folder.listFiles()?.filter { it.isFile } ?: return null
+        if (rootFiles.isEmpty()) return null
+
+        val m3uFile = rootFiles.find { it.extension.lowercase() == "m3u" }
+        if (m3uFile != null) {
+            return M3uManager.parseFirstDisc(m3uFile)
+        }
+
         val platform = platformDao.getBySlug(platformSlug) ?: return null
         val validExtensions = platform.romExtensions
             .split(",")
@@ -112,40 +119,67 @@ class GameRepository @Inject constructor(
             .filter { it.isNotEmpty() }
             .toSet()
 
-        // Only look at root files (no subdirectories), filter by valid ROM extensions
-        val romFiles = folder.listFiles()
-            ?.filter { it.isFile }
-            ?.filter { file ->
-                val ext = file.extension.lowercase()
-                ext in validExtensions
-            }
-            ?: return null
-
-        // Return largest file
-        return romFiles.maxByOrNull { it.length() }
+        return rootFiles
+            .filter { it.extension.lowercase() in validExtensions }
+            .maxByOrNull { it.length() }
     }
 
-    private fun isGamePathValid(path: String): Boolean {
+    private suspend fun isGamePathValid(path: String, platformSlug: String): Boolean {
         val file = File(path)
         if (file.exists()) return true
 
-        // If file doesn't exist, check if parent folder exists with content
-        // This handles folder-based ROMs where the specific file path may have changed
         val parentFolder = file.parentFile ?: return false
         if (!parentFolder.exists() || !parentFolder.isDirectory) return false
 
-        // Check if the parent is a game folder (not the platform root)
-        // Game folders are inside platform folders, so parent of parent should exist
         val platformFolder = parentFolder.parentFile
         if (platformFolder == null || !platformFolder.exists()) return false
 
-        // Parent folder has files - the game folder is still valid
-        val hasFiles = parentFolder.listFiles()?.any { it.isFile } ?: false
-        if (hasFiles) {
-            Log.d(TAG, "Folder-based game valid: ${parentFolder.name} (specific file missing but folder exists with content)")
+        return isFolderValid(parentFolder, platformSlug)
+    }
+
+    private suspend fun isFolderValid(folder: File, platformSlug: String): Boolean {
+        val rootFiles = folder.listFiles()?.filter { it.isFile } ?: return false
+        if (rootFiles.isEmpty()) {
+            Log.d(TAG, "Folder empty: ${folder.name}")
+            return false
+        }
+
+        val m3uFile = rootFiles.find { it.extension.lowercase() == "m3u" }
+        if (m3uFile != null) {
+            val isComplete = M3uManager.isM3uComplete(m3uFile)
+            if (!isComplete) {
+                Log.d(TAG, "Folder incomplete: ${folder.name} - m3u has missing discs")
+                return false
+            }
+            Log.d(TAG, "Folder valid (m3u): ${folder.name}")
             return true
         }
 
+        val cueFile = rootFiles.find { it.extension.lowercase() == "cue" }
+        if (cueFile != null) {
+            val isComplete = M3uManager.isCueComplete(cueFile)
+            if (!isComplete) {
+                Log.d(TAG, "Folder incomplete: ${folder.name} - cue has missing bins")
+                return false
+            }
+            Log.d(TAG, "Folder valid (cue): ${folder.name}")
+            return true
+        }
+
+        val platform = platformDao.getBySlug(platformSlug) ?: return false
+        val validExtensions = platform.romExtensions
+            .split(",")
+            .map { it.trim().lowercase() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+
+        val hasValidRom = rootFiles.any { it.extension.lowercase() in validExtensions }
+        if (hasValidRom) {
+            Log.d(TAG, "Folder valid (rom): ${folder.name}")
+            return true
+        }
+
+        Log.d(TAG, "Folder invalid: ${folder.name} - no valid ROM files")
         return false
     }
 
@@ -181,14 +215,13 @@ class GameRepository @Inject constructor(
                     continue
                 }
 
-                // Check folder matches (folder-based ROMs like Switch)
                 val folderMatch = folders.find { folder -> titlesMatch(folder.name, game.title) }
                 if (folderMatch != null) {
-                    val gameFile = findLargestRomInFolder(folderMatch, game.platformSlug)
-                    if (gameFile != null) {
-                        gameDao.updateLocalPath(game.id, gameFile.absolutePath, GameSource.ROMM_SYNCED)
+                    val primaryRom = findPrimaryRomInFolder(folderMatch, game.platformSlug)
+                    if (primaryRom != null) {
+                        gameDao.updateLocalPath(game.id, primaryRom.absolutePath, GameSource.ROMM_SYNCED)
                         discovered++
-                        Log.d(TAG, "Discovered folder: ${game.title} -> ${folderMatch.name}/${gameFile.name}")
+                        Log.d(TAG, "Discovered folder: ${game.title} -> ${folderMatch.name}/${primaryRom.name}")
                     }
                 }
             }
@@ -208,13 +241,12 @@ class GameRepository @Inject constructor(
         val startTime = System.currentTimeMillis()
         val gamesWithPaths = gameDao.getGamesWithLocalPath()
         var invalidated = 0
-        gamesWithPaths.forEach { game ->
-            game.localPath?.let { path ->
-                if (!isGamePathValid(path)) {
-                    gameDao.clearLocalPath(game.id)
-                    invalidated++
-                    Log.d(TAG, "Invalidated: ${game.title} (path no longer valid: $path)")
-                }
+        for (game in gamesWithPaths) {
+            val path = game.localPath ?: continue
+            if (!isGamePathValid(path, game.platformSlug)) {
+                gameDao.clearLocalPath(game.id)
+                invalidated++
+                Log.d(TAG, "Invalidated: ${game.title} (path no longer valid: $path)")
             }
         }
         val elapsed = System.currentTimeMillis() - startTime
@@ -252,7 +284,7 @@ class GameRepository @Inject constructor(
                     val folders = platformDir.listFiles()?.filter { it.isDirectory } ?: continue
                     val matchingFolder = folders.find { folder -> titlesMatch(folder.name, game.title) }
                     if (matchingFolder != null) {
-                        val gameFile = findLargestRomInFolder(matchingFolder, game.platformSlug)
+                        val gameFile = findPrimaryRomInFolder(matchingFolder, game.platformSlug)
                         if (gameFile != null) {
                             gameDao.updateLocalPath(game.id, gameFile.absolutePath, GameSource.ROMM_SYNCED)
                             recovered++
@@ -274,51 +306,42 @@ class GameRepository @Inject constructor(
     suspend fun checkGameFileExists(gameId: Long): Boolean = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext false
         val path = game.localPath ?: return@withContext false
-        isGamePathValid(path)
+        isGamePathValid(path, game.platformSlug)
     }
 
     suspend fun validateAndDiscoverGame(gameId: Long): Boolean = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext false
 
-        // If has path, validate it
         if (game.localPath != null) {
-            if (isGamePathValid(game.localPath)) {
+            if (isGamePathValid(game.localPath, game.platformSlug)) {
                 return@withContext true
             }
-            // Path invalid, clear it
             gameDao.clearLocalPath(gameId)
             Log.d(TAG, "Cleared invalid path for: ${game.title}")
         }
 
-        // No valid path - try to discover
         if (game.rommId == null) return@withContext false
 
         val platformDir = getDownloadDir(game.platformSlug)
         if (!platformDir.exists()) return@withContext false
 
         val allEntries = platformDir.listFiles() ?: return@withContext false
+        val files = allEntries.filter { it.isFile && !it.name.endsWith(".tmp") }
+        val folders = allEntries.filter { it.isDirectory }
 
-        // Check for direct file match first
-        val fileMatch = allEntries
-            .filter { it.isFile && !it.name.endsWith(".tmp") }
-            .find { file -> titlesMatch(file.nameWithoutExtension, game.title) }
-
+        val fileMatch = files.find { file -> titlesMatch(file.nameWithoutExtension, game.title) }
         if (fileMatch != null) {
             gameDao.updateLocalPath(gameId, fileMatch.absolutePath, GameSource.ROMM_SYNCED)
             Log.d(TAG, "Discovered file for ${game.title}: ${fileMatch.name}")
             return@withContext true
         }
 
-        // Check for folder match (game organized in subfolder)
-        val folderMatch = allEntries
-            .filter { it.isDirectory }
-            .find { folder -> titlesMatch(folder.name, game.title) }
-
+        val folderMatch = folders.find { folder -> titlesMatch(folder.name, game.title) }
         if (folderMatch != null) {
-            val gameFile = findLargestRomInFolder(folderMatch, game.platformSlug)
-            if (gameFile != null) {
-                gameDao.updateLocalPath(gameId, gameFile.absolutePath, GameSource.ROMM_SYNCED)
-                Log.d(TAG, "Discovered folder for ${game.title}: ${folderMatch.name}/${gameFile.name}")
+            val primaryRom = findPrimaryRomInFolder(folderMatch, game.platformSlug)
+            if (primaryRom != null) {
+                gameDao.updateLocalPath(gameId, primaryRom.absolutePath, GameSource.ROMM_SYNCED)
+                Log.d(TAG, "Discovered folder for ${game.title}: ${folderMatch.name}/${primaryRom.name}")
                 return@withContext true
             }
         }

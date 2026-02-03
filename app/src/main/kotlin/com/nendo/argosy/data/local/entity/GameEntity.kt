@@ -41,6 +41,7 @@ data class GameEntity(
 
     val localPath: String?,
     val rommId: Long?,
+    val rommFileName: String? = null,
     val igdbId: Long?,
     val raId: Long? = null,
     val steamAppId: Long? = null,

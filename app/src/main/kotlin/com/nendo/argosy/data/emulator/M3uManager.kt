@@ -37,17 +37,59 @@ class M3uManager @Inject constructor(
             if (!m3uFile.exists() || m3uFile.extension.lowercase() != "m3u") return emptyList()
             val parentDir = m3uFile.parentFile ?: return emptyList()
 
-            val lines = try {
-                m3uFile.readLines()
-                    .filter { it.isNotBlank() && !it.startsWith("#") }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to parse m3u: ${e.message}")
-                return emptyList()
-            }
-
-            return lines.mapNotNull { line ->
+            return parseM3uLines(m3uFile).mapNotNull { line ->
                 val discFile = File(parentDir, line)
                 if (discFile.exists()) discFile else null
+            }
+        }
+
+        fun isM3uComplete(m3uFile: File): Boolean {
+            if (!m3uFile.exists() || m3uFile.extension.lowercase() != "m3u") return false
+            val parentDir = m3uFile.parentFile ?: return false
+
+            val lines = parseM3uLines(m3uFile)
+            if (lines.isEmpty()) return false
+
+            return lines.all { line -> File(parentDir, line).exists() }
+        }
+
+        private fun parseM3uLines(m3uFile: File): List<String> {
+            return try {
+                m3uFile.readLines()
+                    .filter { it.isNotBlank() && !it.startsWith("#") }
+                    .map { line ->
+                        val commentIndex = line.indexOf('#')
+                        if (commentIndex > 0) line.substring(0, commentIndex).trim()
+                        else line.trim()
+                    }
+                    .filter { it.isNotEmpty() }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse m3u: ${e.message}")
+                emptyList()
+            }
+        }
+
+        fun isCueComplete(cueFile: File): Boolean {
+            if (!cueFile.exists() || cueFile.extension.lowercase() != "cue") return false
+            val parentDir = cueFile.parentFile ?: return false
+
+            val referencedFiles = parseCueFiles(cueFile)
+            if (referencedFiles.isEmpty()) return false
+
+            return referencedFiles.all { fileName -> File(parentDir, fileName).exists() }
+        }
+
+        private fun parseCueFiles(cueFile: File): List<String> {
+            return try {
+                cueFile.readLines()
+                    .filter { it.trim().uppercase().startsWith("FILE ") }
+                    .mapNotNull { line ->
+                        Regex("FILE\\s+\"([^\"]+)\"", RegexOption.IGNORE_CASE)
+                            .find(line)?.groupValues?.getOrNull(1)
+                    }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse cue: ${e.message}")
+                emptyList()
             }
         }
     }
@@ -132,12 +174,7 @@ class M3uManager @Inject constructor(
         }
 
         val m3uDir = m3uFile.parentFile ?: return false
-        val lines = try {
-            m3uFile.readLines().filter { it.isNotBlank() }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to read m3u file", e)
-            return false
-        }
+        val lines = parseM3uLines(m3uFile)
 
         if (lines.size != discs.size) {
             Log.d(TAG, "M3u line count (${lines.size}) doesn't match disc count (${discs.size})")

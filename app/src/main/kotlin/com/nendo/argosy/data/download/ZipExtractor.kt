@@ -575,65 +575,59 @@ object ZipExtractor {
         var existingM3u: File? = null
 
         SevenZFile.builder().setFile(sevenZFile).get().use { sevenZ ->
-            val entries = mutableListOf<org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry>()
+            // getEntries() returns metadata from header without decompressing content
+            val totalBytes = sevenZ.entries.filter { !it.isDirectory }.sumOf { it.size }
+            var bytesWritten = 0L
+            var lastReportedBytes = 0L
+            val progressThreshold = 1024 * 1024L
+            var entryCount = 0
+
+            Log.d(TAG, "7z archive: $totalBytes bytes uncompressed")
+
             var entry = sevenZ.nextEntry
             while (entry != null) {
                 if (!entry.isDirectory) {
-                    entries.add(entry)
+                    entryCount++
+                    val entryPath = entry.name
+                    val fileName = File(entryPath).name
+                    val ext = fileName.substringAfterLast('.', "").lowercase()
+                    val isRootFile = !entryPath.contains("/") && !entryPath.contains("\\")
+
+                    val targetFile = File(gameFolder, entryPath)
+                    targetFile.parentFile?.mkdirs()
+
+                    Log.d(TAG, "Extracting: $entryPath -> ${targetFile.absolutePath}, size: ${entry.size}")
+
+                    targetFile.outputStream().buffered().use { output ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        val inputStream = sevenZ.getInputStream(entry)
+                        var bytes = inputStream.read(buffer)
+                        while (bytes >= 0) {
+                            output.write(buffer, 0, bytes)
+                            bytesWritten += bytes
+                            if (bytesWritten - lastReportedBytes >= progressThreshold) {
+                                onProgress?.invoke(bytesWritten, totalBytes)
+                                lastReportedBytes = bytesWritten
+                            }
+                            bytes = inputStream.read(buffer)
+                        }
+                    }
+
+                    Log.d(TAG, "Extracted: $fileName, expected=${entry.size}, actual=${targetFile.length()}")
+
+                    if (targetFile.length() == 0L && entry.size > 0) {
+                        Log.e(TAG, "ERROR: File $fileName extracted as 0 bytes but expected ${entry.size}")
+                    }
+
+                    allFiles.add(targetFile)
+                    classifyExtractedFile(fileName, ext, isRootFile, targetFile, rootDiscFiles, { primaryFile = it }, { existingM3u = it }) {
+                        primaryFile == null
+                    }
                 }
                 entry = sevenZ.nextEntry
             }
 
-            val totalBytes = entries.sumOf { it.size }
-            var bytesWritten = 0L
-            var lastReportedBytes = 0L
-            val progressThreshold = 1024 * 1024L
-
-            Log.d(TAG, "Total entries found: ${entries.size}, total bytes: $totalBytes")
-
-            SevenZFile.builder().setFile(sevenZFile).get().use { sevenZRead ->
-                var readEntry = sevenZRead.nextEntry
-                while (readEntry != null) {
-                    if (!readEntry.isDirectory) {
-                        val entryPath = readEntry.name
-                        val fileName = File(entryPath).name
-                        val ext = fileName.substringAfterLast('.', "").lowercase()
-                        val isRootFile = !entryPath.contains("/") && !entryPath.contains("\\")
-
-                        val targetFile = File(gameFolder, entryPath)
-                        targetFile.parentFile?.mkdirs()
-
-                        Log.d(TAG, "Extracting: $entryPath -> ${targetFile.absolutePath}, size: ${readEntry.size}")
-
-                        targetFile.outputStream().buffered().use { output ->
-                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                            val inputStream = sevenZRead.getInputStream(readEntry)
-                            var bytes = inputStream.read(buffer)
-                            while (bytes >= 0) {
-                                output.write(buffer, 0, bytes)
-                                bytesWritten += bytes
-                                if (bytesWritten - lastReportedBytes >= progressThreshold) {
-                                    onProgress?.invoke(bytesWritten, totalBytes)
-                                    lastReportedBytes = bytesWritten
-                                }
-                                bytes = inputStream.read(buffer)
-                            }
-                        }
-
-                        Log.d(TAG, "Extracted: $fileName, expected=${readEntry.size}, actual=${targetFile.length()}")
-
-                        if (targetFile.length() == 0L && readEntry.size > 0) {
-                            Log.e(TAG, "ERROR: File $fileName extracted as 0 bytes but expected ${readEntry.size}")
-                        }
-
-                        allFiles.add(targetFile)
-                        classifyExtractedFile(fileName, ext, isRootFile, targetFile, rootDiscFiles, { primaryFile = it }, { existingM3u = it }) {
-                            primaryFile == null
-                        }
-                    }
-                    readEntry = sevenZRead.nextEntry
-                }
-            }
+            Log.d(TAG, "Total entries extracted: $entryCount, bytes written: $bytesWritten")
         }
 
         return RawExtractionResult(allFiles, rootDiscFiles, primaryFile, existingM3u)

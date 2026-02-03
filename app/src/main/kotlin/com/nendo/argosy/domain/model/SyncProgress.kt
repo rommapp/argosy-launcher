@@ -67,6 +67,12 @@ sealed class SyncProgress {
         val channelName: String?
     ) : SyncProgress()
 
+    data class LocalModified(
+        val gameId: Long,
+        val localSavePath: String,
+        val channelName: String?
+    ) : SyncProgress()
+
     sealed class BlockedReason : SyncProgress() {
         abstract val emulatorName: String?
 
@@ -135,6 +141,7 @@ sealed class SyncProgress {
             is Error -> message
             is Skipped -> "Sync skipped"
             is HardcoreConflict -> "Hardcore save conflict"
+            is LocalModified -> "Local save modified"
             is BlockedReason.PermissionRequired -> "File access permission required"
             is BlockedReason.SavePathNotFound -> "Save folder not found"
             is BlockedReason.AccessDenied -> "Save folder access blocked"

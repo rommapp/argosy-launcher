@@ -386,6 +386,7 @@ class PlaySessionTracker @Inject constructor(
                 when (cacheResult) {
                     is SaveCacheManager.CacheResult.Created -> {
                         gameDao.updateActiveSaveTimestamp(session.gameId, null)
+                        gameDao.updateActiveSaveApplied(session.gameId, false)
                         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cached local save | path=$savePath, channel=$activeChannel")
                     }
                     is SaveCacheManager.CacheResult.Duplicate -> {

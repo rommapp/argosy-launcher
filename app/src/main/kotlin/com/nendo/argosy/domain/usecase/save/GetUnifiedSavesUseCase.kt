@@ -86,7 +86,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         isLatest = isLatest,
                         isLocked = isLocked,
                         isHardcore = cache.isHardcore,
-                        cheatsUsed = cache.cheatsUsed
+                        cheatsUsed = cache.cheatsUsed,
+                        isRollback = cache.isRollback
                     )
                 )
             } else {
@@ -102,7 +103,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         source = UnifiedSaveEntry.Source.LOCAL,
                         isLocked = shouldBeLocked,
                         isHardcore = cache.isHardcore,
-                        cheatsUsed = cache.cheatsUsed
+                        cheatsUsed = cache.cheatsUsed,
+                        isRollback = cache.isRollback
                     )
                 )
             }

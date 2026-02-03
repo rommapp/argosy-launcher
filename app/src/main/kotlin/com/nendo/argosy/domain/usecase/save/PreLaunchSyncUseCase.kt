@@ -22,6 +22,7 @@ class PreLaunchSyncUseCase @Inject constructor(
         data object Ready : Result()
         data object NoConnection : Result()
         data class ServerNewer(val serverTimestamp: Instant) : Result()
+        data class LocalModified(val localSavePath: String, val channelName: String?) : Result()
     }
 
     suspend operator fun invoke(gameId: Long, emulatorPackage: String): Result {
@@ -57,6 +58,10 @@ class PreLaunchSyncUseCase @Inject constructor(
             is SaveSyncRepository.PreLaunchSyncResult.LocalIsNewer -> {
                 Logger.debug(TAG, "Local save is newer for ${game.title}")
                 Result.Ready
+            }
+            is SaveSyncRepository.PreLaunchSyncResult.LocalModified -> {
+                Logger.info(TAG, "Local save modified for ${game.title}, prompting user")
+                Result.LocalModified(syncResult.localSavePath, syncResult.channelName)
             }
             is SaveSyncRepository.PreLaunchSyncResult.ServerIsNewer -> {
                 Logger.info(TAG, "Server save is newer for ${game.title} (${syncResult.serverTimestamp})")

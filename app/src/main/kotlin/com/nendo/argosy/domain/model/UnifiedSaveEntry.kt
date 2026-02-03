@@ -14,7 +14,8 @@ data class UnifiedSaveEntry(
     val isActive: Boolean = false,
     val isLocked: Boolean = false,
     val isHardcore: Boolean = false,
-    val cheatsUsed: Boolean = false
+    val cheatsUsed: Boolean = false,
+    val isRollback: Boolean = false
 ) {
     enum class Source { LOCAL, SERVER, BOTH }
 
@@ -25,6 +26,7 @@ data class UnifiedSaveEntry(
 
     val displayName: String
         get() = when {
+            isRollback -> "Rollback"
             channelName != null && isLatest -> "$channelName [Latest]"
             channelName != null -> channelName
             isLatest -> "Latest"

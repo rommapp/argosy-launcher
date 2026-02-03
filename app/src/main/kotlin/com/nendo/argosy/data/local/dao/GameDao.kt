@@ -441,6 +441,12 @@ interface GameDao {
     @Query("SELECT activeSaveTimestamp FROM games WHERE id = :gameId")
     suspend fun getActiveSaveTimestamp(gameId: Long): Long?
 
+    @Query("UPDATE games SET activeSaveApplied = :applied WHERE id = :gameId")
+    suspend fun updateActiveSaveApplied(gameId: Long, applied: Boolean)
+
+    @Query("SELECT activeSaveApplied FROM games WHERE id = :gameId")
+    suspend fun getActiveSaveApplied(gameId: Long): Boolean
+
     @Query("UPDATE games SET titleId = :titleId WHERE id = :gameId AND titleIdLocked = 0")
     suspend fun updateTitleId(gameId: Long, titleId: String?)
 

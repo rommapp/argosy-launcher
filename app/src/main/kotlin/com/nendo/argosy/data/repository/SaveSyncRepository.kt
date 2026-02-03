@@ -1489,6 +1489,33 @@ class SaveSyncRepository @Inject constructor(
                 val deltaStr = deltaMs?.let { if (it >= 0) "+${it/1000}s" else "${it/1000}s" } ?: "N/A"
                 Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Timestamp compare | server=$serverTime, local=$localTime (db=$localDbTime, file=$localFileTime), delta=$deltaStr")
 
+                // Safety check: Compare local save hash against cached save hash to detect unsaved changes
+                // This catches cases where session end didn't trigger (external emulators) and local has changed
+                // Run BEFORE timestamp comparison - filesystem state takes priority
+                if (localFile != null && validatedPath != null) {
+                    val activeSaveTimestamp = gameDao.getActiveSaveTimestamp(gameId)
+                    val cachedSave = if (activeSaveTimestamp != null) {
+                        saveCacheManager.get().getByTimestamp(gameId, activeSaveTimestamp)
+                    } else {
+                        selectedChannel?.let { saveCacheManager.get().getMostRecentInChannel(gameId, it) }
+                    }
+                    val cachedHash = cachedSave?.contentHash
+                    if (cachedHash != null) {
+                        val localHash = saveCacheManager.get().calculateLocalSaveHash(validatedPath)
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Hash compare | local=$localHash, cached=$cachedHash")
+                        if (localHash != null && localHash != cachedHash) {
+                            Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_MODIFIED | Local save differs from cached, prompting user")
+                            return@withContext PreLaunchSyncResult.LocalModified(
+                                localSavePath = validatedPath,
+                                serverTimestamp = serverTime,
+                                channelName = selectedChannel
+                            )
+                        }
+                    } else {
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No cached hash to compare (cachedSave=${cachedSave?.id}, timestamp=$activeSaveTimestamp, channel=$selectedChannel)")
+                    }
+                }
+
                 if (localFile != null && localTime != null && !serverTime.isAfter(localTime)) {
                     Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_NEWER | Local is newer or equal, skipping download")
                     return@withContext PreLaunchSyncResult.LocalIsNewer
@@ -1523,6 +1550,11 @@ class SaveSyncRepository @Inject constructor(
         data object NoServerSave : PreLaunchSyncResult()
         data object LocalIsNewer : PreLaunchSyncResult()
         data class ServerIsNewer(val serverTimestamp: Instant, val channelName: String?) : PreLaunchSyncResult()
+        data class LocalModified(
+            val localSavePath: String,
+            val serverTimestamp: Instant,
+            val channelName: String?
+        ) : PreLaunchSyncResult()
     }
 
     @Suppress("SwallowedException")

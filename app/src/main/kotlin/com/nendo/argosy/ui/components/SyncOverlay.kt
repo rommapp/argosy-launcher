@@ -74,7 +74,10 @@ fun SyncOverlay(
     onKeepHardcore: (() -> Unit)? = null,
     onDowngradeToCasual: (() -> Unit)? = null,
     onKeepLocal: (() -> Unit)? = null,
-    hardcoreConflictFocusIndex: Int = 0
+    onKeepLocalModified: (() -> Unit)? = null,
+    onRestoreSelected: (() -> Unit)? = null,
+    hardcoreConflictFocusIndex: Int = 0,
+    localModifiedFocusIndex: Int = 0
 ) {
     val isVisible = syncProgress != null &&
         syncProgress != SyncProgress.Idle &&
@@ -82,7 +85,8 @@ fun SyncOverlay(
 
     val isBlocked = syncProgress is SyncProgress.BlockedReason
     val isHardcoreConflict = syncProgress is SyncProgress.HardcoreConflict
-    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error && !isBlocked && !isHardcoreConflict
+    val isLocalModified = syncProgress is SyncProgress.LocalModified
+    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error && !isBlocked && !isHardcoreConflict && !isLocalModified
 
     val infiniteTransition = rememberInfiniteTransition(label = "sync_rotation")
     val rotation by infiniteTransition.animateFloat(
@@ -134,6 +138,14 @@ fun SyncOverlay(
                         onKeepHardcore = onKeepHardcore,
                         onDowngradeToCasual = onDowngradeToCasual,
                         onKeepLocal = onKeepLocal
+                    )
+                }
+                isLocalModified && syncProgress is SyncProgress.LocalModified -> {
+                    LocalModifiedContent(
+                        gameTitle = gameTitle ?: "Game",
+                        focusIndex = localModifiedFocusIndex,
+                        onKeepLocal = onKeepLocalModified,
+                        onRestoreSelected = onRestoreSelected
                     )
                 }
                 isBlocked -> {
@@ -374,7 +386,7 @@ private fun HardcoreConflictContent(
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
             if (onKeepHardcore != null) {
-                HardcoreConflictOption(
+                ConflictOption(
                     label = "Keep Hardcore",
                     subtitle = "Upload local save to server",
                     isFocused = focusIndex == 0,
@@ -383,7 +395,7 @@ private fun HardcoreConflictContent(
             }
 
             if (onDowngradeToCasual != null) {
-                HardcoreConflictOption(
+                ConflictOption(
                     label = "Downgrade to Casual",
                     subtitle = "Use server save, lose hardcore status",
                     isFocused = focusIndex == 1,
@@ -392,7 +404,7 @@ private fun HardcoreConflictContent(
             }
 
             if (onKeepLocal != null) {
-                HardcoreConflictOption(
+                ConflictOption(
                     label = "Keep Local",
                     subtitle = "Skip sync for now",
                     isFocused = focusIndex == 2,
@@ -404,7 +416,80 @@ private fun HardcoreConflictContent(
 }
 
 @Composable
-private fun HardcoreConflictOption(
+private fun LocalModifiedContent(
+    gameTitle: String,
+    focusIndex: Int,
+    onKeepLocal: (() -> Unit)?,
+    onRestoreSelected: (() -> Unit)?
+) {
+    val warningColor = Color(0xFFFF9800)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(horizontal = Dimens.spacingXl)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Warning,
+            contentDescription = null,
+            tint = warningColor,
+            modifier = Modifier.size(Dimens.iconXl + Dimens.spacingSm)
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Text(
+            text = "Local Save Modified",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Text(
+            text = "Your local save for \"$gameTitle\" has changes that haven't been backed up.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Text(
+            text = "Would you like to keep your local progress or restore the previously selected save?",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(0.85f)
+        ) {
+            if (onKeepLocal != null) {
+                ConflictOption(
+                    label = "Keep Local",
+                    subtitle = "Continue with your current progress",
+                    isFocused = focusIndex == 0,
+                    onClick = onKeepLocal
+                )
+            }
+
+            if (onRestoreSelected != null) {
+                ConflictOption(
+                    label = "Use Synced Save",
+                    subtitle = "Overwrite local with last synced version (backup created)",
+                    isFocused = focusIndex == 1,
+                    onClick = onRestoreSelected
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConflictOption(
     label: String,
     subtitle: String,
     isFocused: Boolean,

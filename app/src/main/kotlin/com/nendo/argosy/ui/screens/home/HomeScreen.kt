@@ -113,6 +113,7 @@ import com.nendo.argosy.ui.components.YouTubeVideoPlayer
 import com.nendo.argosy.ui.input.ChangelogInputHandler
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
 import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
+import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
 import com.nendo.argosy.ui.theme.Dimens
@@ -273,7 +274,18 @@ fun HomeScreen(
         )
     }
 
+    var localModifiedFocusIndex by remember { mutableStateOf(0) }
+    val localModifiedInputHandler = remember(uiState.syncOverlayState) {
+        LocalModifiedInputHandler(
+            getFocusIndex = { localModifiedFocusIndex },
+            onFocusChange = { localModifiedFocusIndex = it },
+            onKeepLocal = { uiState.syncOverlayState?.onKeepLocalModified?.invoke() },
+            onRestoreSelected = { uiState.syncOverlayState?.onRestoreSelected?.invoke() }
+        )
+    }
+
     val isHardcoreConflict = uiState.syncOverlayState?.syncProgress is SyncProgress.HardcoreConflict
+    val isLocalModified = uiState.syncOverlayState?.syncProgress is SyncProgress.LocalModified
 
     LaunchedEffect(isHardcoreConflict) {
         if (isHardcoreConflict) {
@@ -282,9 +294,24 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(isLocalModified) {
+        if (isLocalModified) {
+            localModifiedFocusIndex = 0
+            inputDispatcher.pushModal(localModifiedInputHandler)
+        }
+    }
+
     DisposableEffect(isHardcoreConflict) {
         onDispose {
             if (isHardcoreConflict) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
+
+    DisposableEffect(isLocalModified) {
+        onDispose {
+            if (isLocalModified) {
                 inputDispatcher.popModal()
             }
         }
@@ -771,7 +798,10 @@ fun HomeScreen(
             onKeepHardcore = uiState.syncOverlayState?.onKeepHardcore,
             onDowngradeToCasual = uiState.syncOverlayState?.onDowngradeToCasual,
             onKeepLocal = uiState.syncOverlayState?.onKeepLocal,
-            hardcoreConflictFocusIndex = hardcoreConflictFocusIndex
+            onKeepLocalModified = uiState.syncOverlayState?.onKeepLocalModified,
+            onRestoreSelected = uiState.syncOverlayState?.onRestoreSelected,
+            hardcoreConflictFocusIndex = hardcoreConflictFocusIndex,
+            localModifiedFocusIndex = localModifiedFocusIndex
         )
 
         uiState.discPickerState?.let { pickerState ->

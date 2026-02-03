@@ -157,6 +157,77 @@ class SaveCacheManager @Inject constructor(
         }
     }
 
+    suspend fun cacheAsRollback(
+        gameId: Long,
+        emulatorId: String,
+        savePath: String
+    ): CacheResult = withContext(Dispatchers.IO) {
+        if (!fal.exists(savePath)) {
+            Log.w(TAG, "Save file does not exist for rollback: $savePath")
+            return@withContext CacheResult.Failed
+        }
+
+        val saveFile = fal.getTransformedFile(savePath)
+        var tempFile: File? = null
+
+        try {
+            val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
+                val folderHash = saveArchiver.calculateFolderHash(saveFile)
+                tempFile = File(context.cacheDir, "temp_rollback_${System.currentTimeMillis()}.zip")
+                if (!saveArchiver.zipFolder(saveFile, tempFile)) {
+                    Log.e(TAG, "Failed to zip save folder for rollback")
+                    return@withContext CacheResult.Failed
+                }
+                folderHash to tempFile
+            } else {
+                saveArchiver.calculateFileHash(saveFile) to saveFile
+            }
+
+            val now = Instant.now()
+            val timestamp = TIMESTAMP_FORMAT.format(now)
+            val gameDir = File(cacheBaseDir, "$gameId/$timestamp")
+            gameDir.mkdirs()
+
+            val (cachePath, cachedFile) = if (fal.isDirectory(savePath)) {
+                val finalZip = File(gameDir, "save.zip")
+                tempOrSource.renameTo(finalZip).let { renamed ->
+                    if (!renamed) {
+                        tempOrSource.copyTo(finalZip, overwrite = true)
+                        tempOrSource.delete()
+                    }
+                }
+                tempFile = null
+                "$gameId/$timestamp/save.zip" to finalZip
+            } else {
+                val destFile = File(gameDir, saveFile.name)
+                saveFile.copyTo(destFile, overwrite = true)
+                "$gameId/$timestamp/${saveFile.name}" to destFile
+            }
+
+            val saveSize = cachedFile.length()
+
+            val entity = SaveCacheEntity(
+                gameId = gameId,
+                emulatorId = emulatorId,
+                cachedAt = now,
+                saveSize = saveSize,
+                cachePath = cachePath,
+                note = "Rollback",
+                isLocked = false,
+                contentHash = contentHash,
+                isRollback = true
+            )
+            saveCacheDao.insert(entity)
+            Log.d(TAG, "Created rollback save for game $gameId at $cachePath")
+
+            CacheResult.Created
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to cache rollback save", e)
+            tempFile?.delete()
+            CacheResult.Failed
+        }
+    }
+
     suspend fun restoreSave(cacheId: Long, targetPath: String): Boolean = withContext(Dispatchers.IO) {
         val entity = saveCacheDao.getById(cacheId)
         if (entity == null) {
@@ -385,5 +456,20 @@ class SaveCacheManager @Inject constructor(
         }
 
         Log.d(TAG, "Deleted all ${caches.size} cached saves for game $gameId")
+    }
+
+    suspend fun calculateLocalSaveHash(savePath: String): String? = withContext(Dispatchers.IO) {
+        if (!fal.exists(savePath)) return@withContext null
+        try {
+            val saveFile = fal.getTransformedFile(savePath)
+            if (fal.isDirectory(savePath)) {
+                saveArchiver.calculateFolderHash(saveFile)
+            } else {
+                saveArchiver.calculateFileHash(saveFile)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to calculate hash for $savePath", e)
+            null
+        }
     }
 }

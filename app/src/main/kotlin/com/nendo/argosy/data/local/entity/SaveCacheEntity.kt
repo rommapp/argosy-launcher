@@ -25,7 +25,8 @@ data class SaveCacheEntity(
     val contentHash: String? = null,
     val cheatsUsed: Boolean = false,
     val isHardcore: Boolean = false,
-    val slotName: String? = null
+    val slotName: String? = null,
+    val isRollback: Boolean = false
 ) {
     companion object {
         @Deprecated("Hardcore saves now use isHardcore flag instead of special slot name")

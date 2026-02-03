@@ -1,11 +1,10 @@
 package com.nendo.argosy.ui.input
 
-class HardcoreConflictInputHandler(
+class LocalModifiedInputHandler(
     private val getFocusIndex: () -> Int,
     private val onFocusChange: (Int) -> Unit,
-    private val onKeepHardcore: () -> Unit,
-    private val onDowngradeToCasual: () -> Unit,
-    private val onKeepLocal: () -> Unit
+    private val onKeepLocal: () -> Unit,
+    private val onRestoreSelected: () -> Unit
 ) : InputHandler {
 
     override fun onUp(): InputResult {
@@ -18,7 +17,7 @@ class HardcoreConflictInputHandler(
 
     override fun onDown(): InputResult {
         val currentIndex = getFocusIndex()
-        if (currentIndex < 2) {
+        if (currentIndex < 1) {
             onFocusChange(currentIndex + 1)
         }
         return InputResult.HANDLED
@@ -26,9 +25,8 @@ class HardcoreConflictInputHandler(
 
     override fun onConfirm(): InputResult {
         when (getFocusIndex()) {
-            0 -> onKeepHardcore()
-            1 -> onDowngradeToCasual()
-            2 -> onKeepLocal()
+            0 -> onKeepLocal()
+            1 -> onRestoreSelected()
         }
         return InputResult.HANDLED
     }

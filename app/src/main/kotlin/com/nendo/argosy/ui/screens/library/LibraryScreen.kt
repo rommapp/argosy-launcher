@@ -81,7 +81,10 @@ import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
+import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
+import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -448,18 +451,6 @@ fun LibraryScreen(
             )
         }
 
-        SyncOverlay(
-            syncProgress = uiState.syncOverlayState?.syncProgress,
-            gameTitle = uiState.syncOverlayState?.gameTitle,
-            onGrantPermission = uiState.syncOverlayState?.onGrantPermission,
-            onDisableSync = uiState.syncOverlayState?.onDisableSync,
-            onOpenSettings = uiState.syncOverlayState?.onOpenSettings,
-            onSkip = uiState.syncOverlayState?.onSkip,
-            onKeepHardcore = uiState.syncOverlayState?.onKeepHardcore,
-            onDowngradeToCasual = uiState.syncOverlayState?.onDowngradeToCasual,
-            onKeepLocal = uiState.syncOverlayState?.onKeepLocal
-        )
-
         uiState.discPickerState?.let { pickerState ->
             DiscPickerModal(
                 discs = pickerState.discs,
@@ -493,6 +484,76 @@ fun LibraryScreen(
                 }
             }
         }
+
+        var hardcoreConflictFocusIndex by remember { mutableStateOf(0) }
+        val hardcoreConflictInputHandler = remember(uiState.syncOverlayState) {
+            HardcoreConflictInputHandler(
+                getFocusIndex = { hardcoreConflictFocusIndex },
+                onFocusChange = { hardcoreConflictFocusIndex = it },
+                onKeepHardcore = { uiState.syncOverlayState?.onKeepHardcore?.invoke() },
+                onDowngradeToCasual = { uiState.syncOverlayState?.onDowngradeToCasual?.invoke() },
+                onKeepLocal = { uiState.syncOverlayState?.onKeepLocal?.invoke() }
+            )
+        }
+
+        var localModifiedFocusIndex by remember { mutableStateOf(0) }
+        val localModifiedInputHandler = remember(uiState.syncOverlayState) {
+            LocalModifiedInputHandler(
+                getFocusIndex = { localModifiedFocusIndex },
+                onFocusChange = { localModifiedFocusIndex = it },
+                onKeepLocal = { uiState.syncOverlayState?.onKeepLocalModified?.invoke() },
+                onRestoreSelected = { uiState.syncOverlayState?.onRestoreSelected?.invoke() }
+            )
+        }
+
+        val isHardcoreConflict = uiState.syncOverlayState?.syncProgress is SyncProgress.HardcoreConflict
+        val isLocalModified = uiState.syncOverlayState?.syncProgress is SyncProgress.LocalModified
+
+        LaunchedEffect(isHardcoreConflict) {
+            if (isHardcoreConflict) {
+                hardcoreConflictFocusIndex = 0
+                inputDispatcher.pushModal(hardcoreConflictInputHandler)
+            }
+        }
+
+        LaunchedEffect(isLocalModified) {
+            if (isLocalModified) {
+                localModifiedFocusIndex = 0
+                inputDispatcher.pushModal(localModifiedInputHandler)
+            }
+        }
+
+        DisposableEffect(isHardcoreConflict) {
+            onDispose {
+                if (isHardcoreConflict) {
+                    inputDispatcher.popModal()
+                }
+            }
+        }
+
+        DisposableEffect(isLocalModified) {
+            onDispose {
+                if (isLocalModified) {
+                    inputDispatcher.popModal()
+                }
+            }
+        }
+
+        SyncOverlay(
+            syncProgress = uiState.syncOverlayState?.syncProgress,
+            gameTitle = uiState.syncOverlayState?.gameTitle,
+            onGrantPermission = uiState.syncOverlayState?.onGrantPermission,
+            onDisableSync = uiState.syncOverlayState?.onDisableSync,
+            onOpenSettings = uiState.syncOverlayState?.onOpenSettings,
+            onSkip = uiState.syncOverlayState?.onSkip,
+            onKeepHardcore = uiState.syncOverlayState?.onKeepHardcore,
+            onDowngradeToCasual = uiState.syncOverlayState?.onDowngradeToCasual,
+            onKeepLocal = uiState.syncOverlayState?.onKeepLocal,
+            onKeepLocalModified = uiState.syncOverlayState?.onKeepLocalModified,
+            onRestoreSelected = uiState.syncOverlayState?.onRestoreSelected,
+            hardcoreConflictFocusIndex = hardcoreConflictFocusIndex,
+            localModifiedFocusIndex = localModifiedFocusIndex
+        )
     }
 }
 

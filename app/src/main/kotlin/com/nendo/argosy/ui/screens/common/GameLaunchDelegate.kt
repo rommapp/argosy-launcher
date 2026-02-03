@@ -15,6 +15,7 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdDetector
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.model.SyncProgress
@@ -38,6 +39,7 @@ import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 
 enum class HardcoreConflictChoice { KEEP_HARDCORE, DOWNGRADE_TO_CASUAL, KEEP_LOCAL }
+enum class LocalModifiedChoice { KEEP_LOCAL, RESTORE_SELECTED }
 
 data class SyncOverlayState(
     val gameTitle: String,
@@ -50,7 +52,9 @@ data class SyncOverlayState(
     val onSkip: (() -> Unit)? = null,
     val onKeepHardcore: (() -> Unit)? = null,
     val onDowngradeToCasual: (() -> Unit)? = null,
-    val onKeepLocal: (() -> Unit)? = null
+    val onKeepLocal: (() -> Unit)? = null,
+    val onKeepLocalModified: (() -> Unit)? = null,
+    val onRestoreSelected: (() -> Unit)? = null
 )
 
 data class DiscPickerState(
@@ -74,7 +78,8 @@ class GameLaunchDelegate @Inject constructor(
     private val soundManager: SoundFeedbackManager,
     private val notificationManager: NotificationManager,
     private val titleIdDetector: TitleIdDetector,
-    private val saveSyncRepository: SaveSyncRepository
+    private val saveSyncRepository: SaveSyncRepository,
+    private val saveCacheManager: SaveCacheManager
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -183,6 +188,8 @@ class GameLaunchDelegate @Inject constructor(
 
                 var hardcoreConflictInfo: SyncProgress.HardcoreConflict? = null
                 var hardcoreConflictChoice: HardcoreConflictChoice? = null
+                var localModifiedInfo: SyncProgress.LocalModified? = null
+                var localModifiedChoice: LocalModifiedChoice? = null
 
                 launchWithSyncUseCase.invokeWithProgress(gameId, channelName).collect { progress ->
                     android.util.Log.d("GameLaunchDelegate", "collect: progress=$progress, canSync=$canSync")
@@ -201,6 +208,19 @@ class GameLaunchDelegate @Inject constructor(
                                 )
                                 hardcoreConflictChoice = choiceDeferred.await()
                                 android.util.Log.d("GameLaunchDelegate", "Hardcore conflict resolved: $hardcoreConflictChoice")
+                            }
+                            is SyncProgress.LocalModified -> {
+                                android.util.Log.d("GameLaunchDelegate", "LocalModified received - showing dialog and waiting for user choice")
+                                localModifiedInfo = progress
+                                val choiceDeferred = CompletableDeferred<LocalModifiedChoice>()
+                                _syncOverlayState.value = SyncOverlayState(
+                                    gameTitle = gameTitle,
+                                    syncProgress = progress,
+                                    onKeepLocalModified = { choiceDeferred.complete(LocalModifiedChoice.KEEP_LOCAL) },
+                                    onRestoreSelected = { choiceDeferred.complete(LocalModifiedChoice.RESTORE_SELECTED) }
+                                )
+                                localModifiedChoice = choiceDeferred.await()
+                                android.util.Log.d("GameLaunchDelegate", "LocalModified resolved: $localModifiedChoice")
                             }
                             else -> {
                                 _syncOverlayState.value = SyncOverlayState(gameTitle, progress)
@@ -226,6 +246,34 @@ class GameLaunchDelegate @Inject constructor(
                     }
                     val resolveResult = saveSyncRepository.resolveHardcoreConflict(resolution, repoChoice)
                     android.util.Log.d("GameLaunchDelegate", "Resolution result: $resolveResult")
+                }
+
+                if (localModifiedInfo != null && localModifiedChoice != null) {
+                    val info = localModifiedInfo!!
+                    when (localModifiedChoice!!) {
+                        LocalModifiedChoice.KEEP_LOCAL -> {
+                            android.util.Log.d("GameLaunchDelegate", "User chose to keep local save - caching as new version")
+                            if (emulatorId != null) {
+                                val cacheResult = saveCacheManager.cacheCurrentSave(
+                                    gameId = gameId,
+                                    emulatorId = emulatorId,
+                                    savePath = info.localSavePath,
+                                    channelName = info.channelName
+                                )
+                                android.util.Log.d("GameLaunchDelegate", "Cache result after LocalModified keep: $cacheResult")
+                                gameDao.updateActiveSaveApplied(gameId, true)
+                            }
+                        }
+                        LocalModifiedChoice.RESTORE_SELECTED -> {
+                            android.util.Log.d("GameLaunchDelegate", "User chose to restore selected save - backing up local first")
+                            if (emulatorId != null) {
+                                saveCacheManager.cacheAsRollback(gameId, emulatorId, info.localSavePath)
+                                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId, info.channelName)
+                                android.util.Log.d("GameLaunchDelegate", "Download result after LocalModified restore: $downloadResult")
+                                gameDao.updateActiveSaveApplied(gameId, true)
+                            }
+                        }
+                    }
                 }
 
                 syncStartTime?.let { startTime ->

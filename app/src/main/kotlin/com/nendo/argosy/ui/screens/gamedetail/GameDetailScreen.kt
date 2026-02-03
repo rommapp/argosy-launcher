@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
+import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.gamedetail.components.AchievementsSection
@@ -275,10 +276,21 @@ fun GameDetailScreen(
         )
     }
 
+    var localModifiedFocusIndex by remember { mutableIntStateOf(0) }
+    val localModifiedInputHandler = remember(uiState.syncOverlayState) {
+        LocalModifiedInputHandler(
+            getFocusIndex = { localModifiedFocusIndex },
+            onFocusChange = { localModifiedFocusIndex = it },
+            onKeepLocal = { uiState.syncOverlayState?.onKeepLocalModified?.invoke() },
+            onRestoreSelected = { uiState.syncOverlayState?.onRestoreSelected?.invoke() }
+        )
+    }
+
     val delegateSyncProgress = uiState.syncOverlayState?.syncProgress
     val isAnySyncing = uiState.isSyncing || uiState.syncOverlayState != null
     val effectiveSyncProgress = delegateSyncProgress ?: if (uiState.isSyncing) uiState.syncProgress else null
     val isHardcoreConflict = effectiveSyncProgress is SyncProgress.HardcoreConflict
+    val isLocalModified = effectiveSyncProgress is SyncProgress.LocalModified
 
     LaunchedEffect(isHardcoreConflict) {
         if (isHardcoreConflict) {
@@ -287,9 +299,24 @@ fun GameDetailScreen(
         }
     }
 
+    LaunchedEffect(isLocalModified) {
+        if (isLocalModified) {
+            localModifiedFocusIndex = 0
+            inputDispatcher.pushModal(localModifiedInputHandler)
+        }
+    }
+
     DisposableEffect(isHardcoreConflict) {
         onDispose {
             if (isHardcoreConflict) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
+
+    DisposableEffect(isLocalModified) {
+        onDispose {
+            if (isLocalModified) {
                 inputDispatcher.popModal()
             }
         }
@@ -310,7 +337,8 @@ fun GameDetailScreen(
                 onDescriptionPositioned = { descriptionTopY = it },
                 onScreenshotPositioned = { screenshotTopY = it },
                 onAchievementPositioned = { achievementTopY = it },
-                onBack = onBack
+                onBack = onBack,
+                localModifiedFocusIndex = localModifiedFocusIndex
             )
         }
     }
@@ -328,7 +356,8 @@ private fun GameDetailContent(
     onDescriptionPositioned: (Int) -> Unit,
     onScreenshotPositioned: (Int) -> Unit,
     onAchievementPositioned: (Int) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    localModifiedFocusIndex: Int
 ) {
     val pickerState by viewModel.pickerModalDelegate.state.collectAsState()
     val isAnySyncing = uiState.isSyncing || uiState.syncOverlayState != null
@@ -483,7 +512,7 @@ private fun GameDetailContent(
             }
         }
 
-        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack)
+        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack, localModifiedFocusIndex = localModifiedFocusIndex)
     }
 }
 
@@ -492,7 +521,8 @@ private fun GameDetailModals(
     game: GameDetailUi,
     uiState: GameDetailUiState,
     viewModel: GameDetailViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    localModifiedFocusIndex: Int
 ) {
     val pickerState by viewModel.pickerModalDelegate.state.collectAsState()
 
@@ -702,7 +732,10 @@ private fun GameDetailModals(
         onKeepHardcore = delegateOverlay?.onKeepHardcore ?: viewModel::onKeepHardcore,
         onDowngradeToCasual = delegateOverlay?.onDowngradeToCasual ?: viewModel::onDowngradeToCasual,
         onKeepLocal = delegateOverlay?.onKeepLocal ?: viewModel::onKeepLocal,
-        hardcoreConflictFocusIndex = uiState.hardcoreConflictFocusIndex
+        onKeepLocalModified = delegateOverlay?.onKeepLocalModified,
+        onRestoreSelected = delegateOverlay?.onRestoreSelected,
+        hardcoreConflictFocusIndex = uiState.hardcoreConflictFocusIndex,
+        localModifiedFocusIndex = localModifiedFocusIndex
     )
 
     AnimatedVisibility(

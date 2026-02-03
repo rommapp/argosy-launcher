@@ -252,6 +252,7 @@ class SaveChannelDelegate @Inject constructor(
                     when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, false)) {
                         is RestoreCachedSaveUseCase.Result.Restored,
                         is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
+                            gameDao.updateActiveSaveApplied(currentGameId, true)
                             notificationManager.showSuccess("Using save slot: $channelName")
                             _state.update { it.copy(isVisible = false) }
                             onRestored()
@@ -376,11 +377,13 @@ class SaveChannelDelegate @Inject constructor(
 
             when (val result = restoreCachedSaveUseCase(entry, currentGameId, emulatorId, syncToServer)) {
                 is RestoreCachedSaveUseCase.Result.Restored -> {
+                    gameDao.updateActiveSaveApplied(currentGameId, true)
                     val msg = if (targetChannel != null) "Restored to $targetChannel" else "Save restored"
                     notificationManager.showSuccess(msg)
                     onRestored()
                 }
                 is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
+                    gameDao.updateActiveSaveApplied(currentGameId, true)
                     val msg = if (targetChannel != null) "Restored to $targetChannel and synced" else "Save restored and synced"
                     notificationManager.showSuccess(msg)
                     onRestored()

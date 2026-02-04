@@ -90,7 +90,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PendingStateSyncEntity::class,
         PlatformLibretroSettingsEntity::class
     ],
-    version = 68,
+    version = 70,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1081,6 +1081,21 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     )
                 """)
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_platform_libretro_settings_platformId ON platform_libretro_settings(platformId)")
+            }
+        }
+
+        val MIGRATION_68_69 = object : Migration(68, 69) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN analogAsDpad INTEGER")
+                db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN dpadAsAnalog INTEGER")
+                db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN rumbleEnabled INTEGER")
+            }
+        }
+
+        val MIGRATION_69_70 = object : Migration(69, 70) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE controller_mappings ADD COLUMN platformId TEXT DEFAULT NULL")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_controller_mappings_controllerPlatform ON controller_mappings(controllerId, platformId)")
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings
 
+import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
@@ -9,6 +10,7 @@ import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
@@ -708,9 +710,26 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.BUILTIN_CONTROLS) {
+            val controlsResetAllIndex = builtinControlsMaxFocusIndex(
+                state.builtinControls, state.builtinVideo, state.platformLibretro.platformSettings
+            )
+            val controlsBaseMax = builtinControlsMaxFocusIndex(state.builtinControls)
+            if (state.focusedIndex == controlsResetAllIndex && controlsResetAllIndex > controlsBaseMax) {
+                viewModel.resetAllPlatformControlSettings()
+                return InputResult.handled(SoundType.SELECT)
+            }
+
             when (builtinControlsItemAtFocusIndex(state.focusedIndex, state.builtinControls)) {
                 BuiltinControlsItem.Rumble -> {
-                    viewModel.setBuiltinRumbleEnabled(!state.builtinControls.rumbleEnabled)
+                    if (state.builtinVideo.isGlobalContext) {
+                        viewModel.setBuiltinRumbleEnabled(!state.builtinControls.rumbleEnabled)
+                    } else {
+                        val ps = state.builtinVideo.currentPlatformContext?.let {
+                            state.platformLibretro.platformSettings[it.platformId]
+                        }
+                        val effective = ps?.rumbleEnabled ?: state.builtinControls.rumbleEnabled
+                        viewModel.updatePlatformControlSetting("rumbleEnabled", !effective)
+                    }
                     return InputResult.handled(SoundType.TOGGLE)
                 }
                 BuiltinControlsItem.LimitHotkeysToPlayer1 -> {
@@ -718,11 +737,28 @@ class SettingsInputHandler(
                     return InputResult.handled(SoundType.TOGGLE)
                 }
                 BuiltinControlsItem.AnalogAsDpad -> {
-                    viewModel.setBuiltinAnalogAsDpad(!state.builtinControls.analogAsDpad)
+                    if (state.builtinVideo.isGlobalContext) {
+                        viewModel.setBuiltinAnalogAsDpad(!state.builtinControls.analogAsDpad)
+                    } else {
+                        val pc = state.builtinVideo.currentPlatformContext
+                        val ps = pc?.let { state.platformLibretro.platformSettings[it.platformId] }
+                        val platformHasAnalog = pc != null && PlatformWeightRegistry.hasAnalogStick(pc.platformSlug)
+                        val effective = ps?.analogAsDpad
+                            ?: !platformHasAnalog
+                        viewModel.updatePlatformControlSetting("analogAsDpad", !effective)
+                    }
                     return InputResult.handled(SoundType.TOGGLE)
                 }
                 BuiltinControlsItem.DpadAsAnalog -> {
-                    viewModel.setBuiltinDpadAsAnalog(!state.builtinControls.dpadAsAnalog)
+                    if (state.builtinVideo.isGlobalContext) {
+                        viewModel.setBuiltinDpadAsAnalog(!state.builtinControls.dpadAsAnalog)
+                    } else {
+                        val ps = state.builtinVideo.currentPlatformContext?.let {
+                            state.platformLibretro.platformSettings[it.platformId]
+                        }
+                        val effective = ps?.dpadAsAnalog ?: false
+                        viewModel.updatePlatformControlSetting("dpadAsAnalog", !effective)
+                    }
                     return InputResult.handled(SoundType.TOGGLE)
                 }
                 BuiltinControlsItem.ControllerOrder -> {
@@ -805,6 +841,31 @@ class SettingsInputHandler(
                 }
             }
         }
+
+        if (state.currentSection == SettingsSection.BUILTIN_CONTROLS && !state.builtinVideo.isGlobalContext) {
+            val item = builtinControlsItemAtFocusIndex(state.focusedIndex, state.builtinControls)
+            val platformContext = state.builtinVideo.currentPlatformContext
+            val ps = platformContext?.let { state.platformLibretro.platformSettings[it.platformId] }
+            val field = when (item) {
+                BuiltinControlsItem.Rumble -> "rumbleEnabled"
+                BuiltinControlsItem.AnalogAsDpad -> "analogAsDpad"
+                BuiltinControlsItem.DpadAsAnalog -> "dpadAsAnalog"
+                else -> null
+            }
+            if (field != null) {
+                val hasOverride = when (item) {
+                    BuiltinControlsItem.Rumble -> ps?.rumbleEnabled != null
+                    BuiltinControlsItem.AnalogAsDpad -> ps?.analogAsDpad != null
+                    BuiltinControlsItem.DpadAsAnalog -> ps?.dpadAsAnalog != null
+                    else -> false
+                }
+                if (hasOverride) {
+                    viewModel.updatePlatformControlSetting(field, null)
+                    return InputResult.HANDLED
+                }
+            }
+        }
+
         return InputResult.UNHANDLED
     }
 
@@ -843,6 +904,12 @@ class SettingsInputHandler(
                     return InputResult.HANDLED
                 }
             }
+            SettingsSection.BUILTIN_CONTROLS -> {
+                if (state.builtinVideo.availablePlatforms.isNotEmpty()) {
+                    viewModel.cyclePlatformContext(-1)
+                    return InputResult.HANDLED
+                }
+            }
             else -> {}
         }
         return InputResult.UNHANDLED
@@ -876,6 +943,12 @@ class SettingsInputHandler(
                 }
             }
             SettingsSection.BUILTIN_VIDEO -> {
+                if (state.builtinVideo.availablePlatforms.isNotEmpty()) {
+                    viewModel.cyclePlatformContext(1)
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.BUILTIN_CONTROLS -> {
                 if (state.builtinVideo.availablePlatforms.isNotEmpty()) {
                     viewModel.cyclePlatformContext(1)
                     return InputResult.HANDLED

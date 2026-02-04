@@ -59,6 +59,7 @@ import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.screens.settings.components.InputMappingModal
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsAccessor
+import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsSection
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
@@ -95,8 +96,8 @@ data class InGameModalCallbacks(
     val connectedControllers: List<ControllerInfo>,
     val onAssignController: (Int, InputDevice) -> Unit,
     val onClearControllerOrder: () -> Unit,
-    val onGetMapping: suspend (ControllerInfo) -> Pair<Map<InputSource, Int>, String?>,
-    val onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean) -> Unit,
+    val onGetMapping: suspend (ControllerInfo, String?) -> Pair<Map<InputSource, Int>, String?>,
+    val onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean, String?) -> Unit,
     val onApplyPreset: suspend (ControllerInfo, String) -> Unit,
     val onSaveHotkey: suspend (HotkeyAction, List<Int>) -> Unit,
     val onClearHotkey: suspend (HotkeyAction) -> Unit
@@ -109,9 +110,9 @@ internal sealed class InGameControlsItem(
     val isFocusable: Boolean get() = this !is Header
 
     class Header(key: String, section: String, val title: String) : InGameControlsItem(key, section)
-    data object Rumble : InGameControlsItem("rumble", "feedback")
     data object ControllerOrder : InGameControlsItem("controllerOrder", "controllers")
     data object InputMapping : InGameControlsItem("inputMapping", "controllers")
+    data object Rumble : InGameControlsItem("rumble", "controllers")
     data object AnalogAsDpad : InGameControlsItem("analogAsDpad", "sticks")
     data object DpadAsAnalog : InGameControlsItem("dpadAsAnalog", "sticks")
     data object Hotkeys : InGameControlsItem("hotkeys", "hotkeys")
@@ -119,11 +120,10 @@ internal sealed class InGameControlsItem(
 
     companion object {
         val ALL = listOf(
-            Header("feedbackHeader", "feedback", "Feedback"),
-            Rumble,
             Header("controllersHeader", "controllers", "Controllers"),
             ControllerOrder,
             InputMapping,
+            Rumble,
             Header("sticksHeader", "sticks", "Analog Sticks"),
             AnalogAsDpad,
             DpadAsAnalog,
@@ -134,16 +134,18 @@ internal sealed class InGameControlsItem(
     }
 }
 
-private val PLATFORMS_WITH_ANALOG = setOf(
-    "n64", "psx", "ps2", "psp", "gc", "wii", "dc", "saturn", "3ds", "nds"
+internal data class InGameControlsVisibility(
+    val hasAnalogStick: Boolean,
+    val hasRumble: Boolean
 )
 
-private val controlsLayout = SettingsLayout<InGameControlsItem, Boolean>(
+private val controlsLayout = SettingsLayout<InGameControlsItem, InGameControlsVisibility>(
     allItems = InGameControlsItem.ALL,
     isFocusable = { it.isFocusable },
-    visibleWhen = { item, hasAnalogStick ->
+    visibleWhen = { item, visibility ->
         when (item) {
-            InGameControlsItem.DpadAsAnalog -> hasAnalogStick
+            InGameControlsItem.Rumble -> visibility.hasRumble
+            InGameControlsItem.DpadAsAnalog -> visibility.hasAnalogStick
             else -> true
         }
     },
@@ -175,12 +177,17 @@ fun InGameSettingsScreen(
     val currentControlsState = rememberUpdatedState(controlsState)
     val currentOnControlsAction = rememberUpdatedState(onControlsAction)
 
-    val hasAnalogStick = remember(platformSlug) { platformSlug in PLATFORMS_WITH_ANALOG }
+    val controlsVisibility = remember(platformSlug) {
+        InGameControlsVisibility(
+            hasAnalogStick = platformSlug != null && PlatformWeightRegistry.hasAnalogStick(platformSlug),
+            hasRumble = platformSlug != null && PlatformWeightRegistry.hasRumble(platformSlug)
+        )
+    }
     val maxVideoFocusIndex = remember(platformSlug, canEnableBFI) {
         libretroSettingsMaxFocusIndex(platformSlug, canEnableBFI)
     }
-    val controlsMaxFocusIndex = remember(hasAnalogStick) {
-        controlsLayout.maxFocusIndex(hasAnalogStick)
+    val controlsMaxFocusIndex = remember(controlsVisibility) {
+        controlsLayout.maxFocusIndex(controlsVisibility)
     }
 
     fun getMaxFocusIndex(): Int = when (currentTab) {
@@ -194,7 +201,7 @@ fun InGameSettingsScreen(
     }
 
     fun handleControlsConfirm() {
-        val item = controlsLayout.itemAtFocusIndex(focusedIndex, hasAnalogStick) ?: return
+        val item = controlsLayout.itemAtFocusIndex(focusedIndex, controlsVisibility) ?: return
         val state = currentControlsState.value
         val action = currentOnControlsAction.value
         when (item) {
@@ -330,7 +337,7 @@ fun InGameSettingsScreen(
                             InGameControlsSection(
                                 state = controlsState,
                                 focusedIndex = focusedIndex,
-                                hasAnalogStick = hasAnalogStick,
+                                visibility = controlsVisibility,
                                 onAction = { action ->
                                     when (action) {
                                         InGameControlsAction.ShowControllerOrder -> showControllerOrderModal = true
@@ -413,22 +420,22 @@ private fun buildSettingsFooterHints(tab: InGameSettingsTab): List<Pair<InputBut
 private fun InGameControlsSection(
     state: InGameControlsState,
     focusedIndex: Int,
-    hasAnalogStick: Boolean,
+    visibility: InGameControlsVisibility,
     onAction: (InGameControlsAction) -> Unit,
     listState: LazyListState
 ) {
-    val visibleItems = remember(hasAnalogStick) { controlsLayout.visibleItems(hasAnalogStick) }
-    val sections = remember(hasAnalogStick) { controlsLayout.buildSections(hasAnalogStick) }
+    val visibleItems = remember(visibility) { controlsLayout.visibleItems(visibility) }
+    val sections = remember(visibility) { controlsLayout.buildSections(visibility) }
 
     SectionFocusedScroll(
         listState = listState,
         focusedIndex = focusedIndex,
-        focusToListIndex = { controlsLayout.focusToListIndex(it, hasAnalogStick) },
+        focusToListIndex = { controlsLayout.focusToListIndex(it, visibility) },
         sections = sections
     )
 
     fun isFocused(item: InGameControlsItem): Boolean =
-        focusedIndex == controlsLayout.focusIndexOf(item, hasAnalogStick)
+        focusedIndex == controlsLayout.focusIndexOf(item, visibility)
 
     LazyColumn(
         state = listState,
@@ -440,7 +447,7 @@ private fun InGameControlsSection(
         items(visibleItems, key = { it.key }) { item ->
             when (item) {
                 is InGameControlsItem.Header -> {
-                    if (item.section != "feedback") {
+                    if (item.section != "controllers") {
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     }
                     Text(

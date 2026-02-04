@@ -9,7 +9,8 @@ import java.time.Instant
     tableName = "controller_mappings",
     indices = [
         Index("controllerId"),
-        Index(value = ["vendorId", "productId"], name = "index_controller_mappings_vendorProduct")
+        Index(value = ["vendorId", "productId"], name = "index_controller_mappings_vendorProduct"),
+        Index(value = ["controllerId", "platformId"], name = "index_controller_mappings_controllerPlatform")
     ]
 )
 data class ControllerMappingEntity(
@@ -19,6 +20,7 @@ data class ControllerMappingEntity(
     val controllerName: String,
     val vendorId: Int,
     val productId: Int,
+    val platformId: String? = null,
     val mappingJson: String,
     val presetName: String? = null,
     val isAutoDetected: Boolean = false,

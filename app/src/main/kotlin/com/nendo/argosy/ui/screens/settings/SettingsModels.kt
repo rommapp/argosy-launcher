@@ -239,7 +239,10 @@ data class BuiltinControlsState(
     val showControllerOrderModal: Boolean = false,
     val showInputMappingModal: Boolean = false,
     val showHotkeysModal: Boolean = false,
-    val controllerOrderCount: Int = 0
+    val controllerOrderCount: Int = 0,
+    val showStickMappings: Boolean = false,
+    val showDpadAsAnalog: Boolean = false,
+    val showRumble: Boolean = true
 )
 
 enum class CoreChipStatus {

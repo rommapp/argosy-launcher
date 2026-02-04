@@ -336,7 +336,8 @@ fun SettingsScreen(
                     SettingsSection.PERMISSIONS -> "PERMISSIONS"
                     SettingsSection.ABOUT -> "ABOUT"
                 },
-                rightContent = if (uiState.currentSection == SettingsSection.BUILTIN_VIDEO &&
+                rightContent = if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
+                    uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
                     uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
                     {
                         val platformName = if (uiState.builtinVideo.isGlobalContext) {
@@ -726,7 +727,8 @@ private fun SettingsFooter(uiState: SettingsUiState) {
             add(InputButton.LB_RB to "Preview Shape")
             add(InputButton.LT_RT to "Preview Game")
         }
-        if (uiState.currentSection == SettingsSection.BUILTIN_VIDEO &&
+        if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
+            uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
             uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
             add(InputButton.LB_RB to "Platform")
         }
@@ -746,6 +748,22 @@ private fun SettingsFooter(uiState: SettingsUiState) {
                 onUpdate = { _, _ -> }
             )
             if (currentSetting != null && accessor.hasOverride(currentSetting)) {
+                add(InputButton.X to "Reset")
+            }
+        }
+        if (uiState.currentSection == SettingsSection.BUILTIN_CONTROLS && !uiState.builtinVideo.isGlobalContext) {
+            val item = com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusIndex(
+                uiState.focusedIndex, uiState.builtinControls
+            )
+            val platformContext = uiState.builtinVideo.currentPlatformContext
+            val ps = platformContext?.let { uiState.platformLibretro.platformSettings[it.platformId] }
+            val hasOverride = when (item) {
+                com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem.Rumble -> ps?.rumbleEnabled != null
+                com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem.AnalogAsDpad -> ps?.analogAsDpad != null
+                com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem.DpadAsAnalog -> ps?.dpadAsAnalog != null
+                else -> false
+            }
+            if (hasOverride) {
                 add(InputButton.X to "Reset")
             }
         }

@@ -17,12 +17,16 @@ class LibretroMenuInputHandler(
         KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> GamepadEvent.Confirm
         KeyEvent.KEYCODE_BUTTON_B -> if (swapAB) GamepadEvent.Confirm else GamepadEvent.Back
         KeyEvent.KEYCODE_ESCAPE, KeyEvent.KEYCODE_BACK -> GamepadEvent.Back
-        KeyEvent.KEYCODE_BUTTON_X -> if (swapXY) GamepadEvent.ContextMenu else GamepadEvent.SecondaryAction
-        KeyEvent.KEYCODE_BUTTON_Y -> if (swapXY) GamepadEvent.SecondaryAction else GamepadEvent.ContextMenu
+        KeyEvent.KEYCODE_BUTTON_X -> if (swapXY) GamepadEvent.SecondaryAction else GamepadEvent.ContextMenu
+        KeyEvent.KEYCODE_BUTTON_Y -> if (swapXY) GamepadEvent.ContextMenu else GamepadEvent.SecondaryAction
         KeyEvent.KEYCODE_BUTTON_L1 -> GamepadEvent.PrevSection
         KeyEvent.KEYCODE_BUTTON_R1 -> GamepadEvent.NextSection
+        KeyEvent.KEYCODE_BUTTON_L2 -> GamepadEvent.PrevTrigger
+        KeyEvent.KEYCODE_BUTTON_R2 -> GamepadEvent.NextTrigger
         KeyEvent.KEYCODE_BUTTON_START -> if (swapStartSelect) GamepadEvent.Select else GamepadEvent.Menu
         KeyEvent.KEYCODE_BUTTON_SELECT -> if (swapStartSelect) GamepadEvent.Menu else GamepadEvent.Select
+        KeyEvent.KEYCODE_BUTTON_THUMBL -> GamepadEvent.LeftStickClick
+        KeyEvent.KEYCODE_BUTTON_THUMBR -> GamepadEvent.RightStickClick
         else -> null
     }
 }

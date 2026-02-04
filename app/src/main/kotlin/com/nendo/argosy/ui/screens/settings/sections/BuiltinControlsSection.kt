@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,10 +21,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
+import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.settings.BuiltinControlsState
+import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.ControllerOrderModal
@@ -39,28 +44,31 @@ internal sealed class BuiltinControlsItem(
 ) {
     val isFocusable: Boolean get() = this !is Header
 
-    class Header(key: String, section: String, val title: String) : BuiltinControlsItem(key, section)
+    class Header(
+        key: String,
+        section: String,
+        val title: String,
+        visibleWhen: (BuiltinControlsState) -> Boolean = { true }
+    ) : BuiltinControlsItem(key, section, visibleWhen)
 
-    data object Rumble : BuiltinControlsItem("rumble", "feedback")
     data object ControllerOrder : BuiltinControlsItem("controllerOrder", "controllers")
     data object InputMapping : BuiltinControlsItem("inputMapping", "controllers")
-    data object AnalogAsDpad : BuiltinControlsItem("analogAsDpad", "sticks")
-    data object DpadAsAnalog : BuiltinControlsItem("dpadAsAnalog", "sticks")
+    data object Rumble : BuiltinControlsItem("rumble", "controllers", { it.showRumble })
+    data object AnalogAsDpad : BuiltinControlsItem("analogAsDpad", "sticks", { it.showStickMappings })
+    data object DpadAsAnalog : BuiltinControlsItem("dpadAsAnalog", "sticks", { it.showStickMappings && it.showDpadAsAnalog })
     data object Hotkeys : BuiltinControlsItem("hotkeys", "hotkeys")
     data object LimitHotkeysToPlayer1 : BuiltinControlsItem("limitHotkeys", "hotkeys")
 
     companion object {
-        private val FeedbackHeader = Header("feedbackHeader", "feedback", "Feedback")
         private val ControllersHeader = Header("controllersHeader", "controllers", "Controllers")
-        private val SticksHeader = Header("sticksHeader", "sticks", "Analog Sticks")
+        private val SticksHeader = Header("sticksHeader", "sticks", "Analog Sticks") { it.showStickMappings }
         private val HotkeysHeader = Header("hotkeysHeader", "hotkeys", "Hotkeys")
 
         val ALL: List<BuiltinControlsItem> = listOf(
-            FeedbackHeader,
-            Rumble,
             ControllersHeader,
             ControllerOrder,
             InputMapping,
+            Rumble,
             SticksHeader,
             AnalogAsDpad,
             DpadAsAnalog,
@@ -78,8 +86,18 @@ private val builtinControlsLayout = SettingsLayout<BuiltinControlsItem, BuiltinC
     sectionOf = { it.section }
 )
 
-internal fun builtinControlsMaxFocusIndex(state: BuiltinControlsState): Int =
-    builtinControlsLayout.maxFocusIndex(state)
+internal fun builtinControlsMaxFocusIndex(
+    state: BuiltinControlsState,
+    videoState: BuiltinVideoState = BuiltinVideoState(),
+    platformSettings: Map<Long, PlatformLibretroSettingsEntity> = emptyMap()
+): Int {
+    val base = builtinControlsLayout.maxFocusIndex(state)
+    val platformContext = videoState.currentPlatformContext
+    val hasControlOverrides = platformContext?.let {
+        platformSettings[it.platformId]?.hasAnyControlOverrides()
+    } == true
+    return if (!videoState.isGlobalContext && hasControlOverrides) base + 1 else base
+}
 
 internal fun builtinControlsItemAtFocusIndex(index: Int, state: BuiltinControlsState): BuiltinControlsItem? =
     builtinControlsLayout.itemAtFocusIndex(index, state)
@@ -97,12 +115,32 @@ fun BuiltinControlsSection(
     val controllerOrder by viewModel.getControllerOrder().collectAsState(initial = emptyList())
     val hotkeys by viewModel.observeHotkeys().collectAsState(initial = emptyList())
 
+    val videoState = uiState.builtinVideo
+    val isGlobal = videoState.isGlobalContext
+    val platformContext = videoState.currentPlatformContext
+    val platformSettings = platformContext?.let {
+        uiState.platformLibretro.platformSettings[it.platformId]
+    }
+    val hasControlOverrides = platformSettings?.hasAnyControlOverrides() == true
+
+    val effectiveRumble = if (isGlobal) controlsState.rumbleEnabled
+        else platformSettings?.rumbleEnabled ?: controlsState.rumbleEnabled
+    val platformSlug = platformContext?.platformSlug
+    val platformHasAnalog = platformSlug != null && PlatformWeightRegistry.hasAnalogStick(platformSlug)
+    val effectiveAnalogAsDpad = if (isGlobal) controlsState.analogAsDpad
+        else platformSettings?.analogAsDpad
+            ?: !platformHasAnalog
+    val effectiveDpadAsAnalog = if (isGlobal) controlsState.dpadAsAnalog
+        else platformSettings?.dpadAsAnalog ?: false
+
     val visibleItems = remember(controlsState) {
         builtinControlsLayout.visibleItems(controlsState)
     }
     val sections = remember(controlsState) {
         builtinControlsLayout.buildSections(controlsState)
     }
+
+    val resetAllFocusIndex = builtinControlsLayout.maxFocusIndex(controlsState) + 1
 
     fun isFocused(item: BuiltinControlsItem): Boolean =
         uiState.focusedIndex == builtinControlsLayout.focusIndexOf(item, controlsState)
@@ -125,7 +163,7 @@ fun BuiltinControlsSection(
         items(visibleItems, key = { it.key }) { item ->
             when (item) {
                 is BuiltinControlsItem.Header -> {
-                    if (item.section != "feedback") {
+                    if (item.section != "controllers") {
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     }
                     Text(
@@ -142,10 +180,14 @@ fun BuiltinControlsSection(
 
                 BuiltinControlsItem.Rumble -> SwitchPreference(
                     title = "Rumble",
-                    subtitle = "Enable controller vibration feedback",
-                    isEnabled = controlsState.rumbleEnabled,
+                    subtitle = if (!isGlobal && platformSettings?.rumbleEnabled != null)
+                        "Platform override" else "Enable controller vibration feedback",
+                    isEnabled = effectiveRumble,
                     isFocused = isFocused(item),
-                    onToggle = { viewModel.setBuiltinRumbleEnabled(it) }
+                    onToggle = {
+                        if (isGlobal) viewModel.setBuiltinRumbleEnabled(it)
+                        else viewModel.updatePlatformControlSetting("rumbleEnabled", it)
+                    }
                 )
 
                 BuiltinControlsItem.ControllerOrder -> NavigationPreference(
@@ -170,18 +212,29 @@ fun BuiltinControlsSection(
 
                 BuiltinControlsItem.AnalogAsDpad -> SwitchPreference(
                     title = "Left Stick as D-Pad",
-                    subtitle = "Map left analog stick to D-pad inputs",
-                    isEnabled = controlsState.analogAsDpad,
+                    subtitle = if (!isGlobal && platformSettings?.analogAsDpad != null)
+                        "Platform override"
+                    else if (!isGlobal && !platformHasAnalog)
+                        "Platform default"
+                    else "Map left analog stick to D-pad inputs",
+                    isEnabled = effectiveAnalogAsDpad,
                     isFocused = isFocused(item),
-                    onToggle = { viewModel.setBuiltinAnalogAsDpad(it) }
+                    onToggle = {
+                        if (isGlobal) viewModel.setBuiltinAnalogAsDpad(it)
+                        else viewModel.updatePlatformControlSetting("analogAsDpad", it)
+                    }
                 )
 
                 BuiltinControlsItem.DpadAsAnalog -> SwitchPreference(
                     title = "D-Pad as Left Stick",
-                    subtitle = "Map D-pad to left analog stick inputs",
-                    isEnabled = controlsState.dpadAsAnalog,
+                    subtitle = if (!isGlobal && platformSettings?.dpadAsAnalog != null)
+                        "Platform override" else "Map D-pad to left analog stick inputs",
+                    isEnabled = effectiveDpadAsAnalog,
                     isFocused = isFocused(item),
-                    onToggle = { viewModel.setBuiltinDpadAsAnalog(it) }
+                    onToggle = {
+                        if (isGlobal) viewModel.setBuiltinDpadAsAnalog(it)
+                        else viewModel.updatePlatformControlSetting("dpadAsAnalog", it)
+                    }
                 )
 
                 BuiltinControlsItem.Hotkeys -> NavigationPreference(
@@ -201,6 +254,20 @@ fun BuiltinControlsSection(
                 )
             }
         }
+
+        if (!isGlobal && hasControlOverrides) {
+            item(key = "resetAllToGlobal") {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                OptionItem(
+                    label = "Reset All to Global",
+                    isFocused = uiState.focusedIndex == resetAllFocusIndex,
+                    isDangerous = true,
+                    onClick = { viewModel.resetAllPlatformControlSettings() }
+                )
+            }
+        }
         }
 
         if (controlsState.showControllerOrderModal) {
@@ -215,9 +282,11 @@ fun BuiltinControlsSection(
         if (controlsState.showInputMappingModal) {
             InputMappingModal(
                 controllers = viewModel.getConnectedControllers(),
-                onGetMapping = { controller -> viewModel.getControllerMapping(controller) },
-                onSaveMapping = { controller, mapping, presetName, isAutoDetected ->
-                    viewModel.saveControllerMapping(controller, mapping, presetName, isAutoDetected)
+                onGetMapping = { controller, platformId ->
+                    viewModel.getControllerMapping(controller, platformId)
+                },
+                onSaveMapping = { controller, mapping, presetName, isAutoDetected, platformId ->
+                    viewModel.saveControllerMapping(controller, mapping, presetName, isAutoDetected, platformId)
                 },
                 onApplyPreset = { controller, presetName ->
                     viewModel.applyControllerPreset(controller, presetName)

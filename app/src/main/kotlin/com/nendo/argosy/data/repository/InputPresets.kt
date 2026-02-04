@@ -101,6 +101,13 @@ object MappingPlatforms {
 
     fun getPrevIndex(currentIndex: Int): Int = if (currentIndex <= 0) ALL.lastIndex else currentIndex - 1
 
+    fun dbPlatformId(platformIndex: Int): String? {
+        val platform = getByIndex(platformIndex)
+        return if (platform.id == "universal") null else platform.id
+    }
+
+    fun dbPlatformIdForSlug(slug: String): String? = dbPlatformId(indexForPlatformSlug(slug))
+
     fun indexForPlatformSlug(slug: String): Int = when (slug) {
         "nes", "fds", "gb", "gbc", "gameandwatch",
         "sg1000", "sms", "gg",
@@ -135,10 +142,10 @@ data class InputPreset(
 
 object InputPresets {
     private val DEFAULT_MAPPING = mapOf(
-        KeyEvent.KEYCODE_BUTTON_A to RetroButton.B,
-        KeyEvent.KEYCODE_BUTTON_B to RetroButton.A,
-        KeyEvent.KEYCODE_BUTTON_X to RetroButton.Y,
-        KeyEvent.KEYCODE_BUTTON_Y to RetroButton.X,
+        KeyEvent.KEYCODE_BUTTON_A to RetroButton.A,
+        KeyEvent.KEYCODE_BUTTON_B to RetroButton.B,
+        KeyEvent.KEYCODE_BUTTON_X to RetroButton.X,
+        KeyEvent.KEYCODE_BUTTON_Y to RetroButton.Y,
         KeyEvent.KEYCODE_BUTTON_START to RetroButton.START,
         KeyEvent.KEYCODE_BUTTON_SELECT to RetroButton.SELECT,
         KeyEvent.KEYCODE_BUTTON_L1 to RetroButton.L,

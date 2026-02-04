@@ -75,19 +75,82 @@ class InputConfigRepository @Inject constructor(
     fun observeControllerMappings(): Flow<List<ControllerMappingEntity>> =
         controllerMappingDao.observeAll()
 
-    suspend fun getMappingForController(controllerId: String): Map<Int, Int>? =
+    private suspend fun findMapping(controllerId: String, platformId: String?): ControllerMappingEntity? {
+        if (platformId != null) {
+            controllerMappingDao.getByControllerIdAndPlatform(controllerId, platformId)?.let { return it }
+        }
+        return controllerMappingDao.getByControllerIdGlobal(controllerId)
+    }
+
+    private suspend fun findExactMapping(controllerId: String, platformId: String?): ControllerMappingEntity? {
+        return if (platformId != null) {
+            controllerMappingDao.getByControllerIdAndPlatform(controllerId, platformId)
+        } else {
+            controllerMappingDao.getByControllerIdGlobal(controllerId)
+        }
+    }
+
+    private suspend fun updateOrInsertMapping(
+        controllerId: String,
+        platformId: String?,
+        controllerName: String,
+        vendorId: Int,
+        productId: Int,
+        mappingJson: String,
+        presetName: String?,
+        isAutoDetected: Boolean
+    ) {
+        val existing = findExactMapping(controllerId, platformId)
+        if (existing != null) {
+            if (platformId != null) {
+                controllerMappingDao.updateMappingForPlatform(
+                    controllerId = controllerId,
+                    platformId = platformId,
+                    mappingJson = mappingJson,
+                    presetName = presetName,
+                    isAutoDetected = isAutoDetected,
+                    updatedAt = Instant.now()
+                )
+            } else {
+                controllerMappingDao.updateMappingGlobal(
+                    controllerId = controllerId,
+                    mappingJson = mappingJson,
+                    presetName = presetName,
+                    isAutoDetected = isAutoDetected,
+                    updatedAt = Instant.now()
+                )
+            }
+        } else {
+            controllerMappingDao.upsert(
+                ControllerMappingEntity(
+                    controllerId = controllerId,
+                    controllerName = controllerName,
+                    vendorId = vendorId,
+                    productId = productId,
+                    platformId = platformId,
+                    mappingJson = mappingJson,
+                    presetName = presetName,
+                    isAutoDetected = isAutoDetected,
+                    createdAt = Instant.now(),
+                    updatedAt = Instant.now()
+                )
+            )
+        }
+    }
+
+    suspend fun getMappingForController(controllerId: String, platformId: String? = null): Map<Int, Int>? =
         withContext(Dispatchers.IO) {
-            val entity = controllerMappingDao.getByControllerId(controllerId) ?: return@withContext null
+            val entity = findMapping(controllerId, platformId) ?: return@withContext null
             parseMappingJson(entity.mappingJson)
         }
 
-    suspend fun getMappingForDevice(device: InputDevice): Map<Int, Int>? =
-        getMappingForController(getControllerId(device))
+    suspend fun getMappingForDevice(device: InputDevice, platformId: String? = null): Map<Int, Int>? =
+        getMappingForController(getControllerId(device), platformId)
 
-    suspend fun getOrCreateMappingForDevice(device: InputDevice): Map<Int, Int> =
+    suspend fun getOrCreateMappingForDevice(device: InputDevice, platformId: String? = null): Map<Int, Int> =
         withContext(Dispatchers.IO) {
             val controllerId = getControllerId(device)
-            val existing = controllerMappingDao.getByControllerId(controllerId)
+            val existing = findMapping(controllerId, platformId)
 
             if (existing != null) {
                 return@withContext parseMappingJson(existing.mappingJson)
@@ -111,36 +174,23 @@ class InputConfigRepository @Inject constructor(
         device: InputDevice,
         mapping: Map<Int, Int>,
         presetName: String?,
-        isAutoDetected: Boolean
+        isAutoDetected: Boolean,
+        platformId: String? = null
     ) = withContext(Dispatchers.IO) {
         val controllerId = getControllerId(device)
         val mappingJson = encodeMappingJson(mapping)
 
-        val existing = controllerMappingDao.getByControllerId(controllerId)
-        if (existing != null) {
-            controllerMappingDao.updateMapping(
-                controllerId = controllerId,
-                mappingJson = mappingJson,
-                presetName = presetName,
-                isAutoDetected = isAutoDetected,
-                updatedAt = Instant.now()
-            )
-        } else {
-            controllerMappingDao.upsert(
-                ControllerMappingEntity(
-                    controllerId = controllerId,
-                    controllerName = device.name ?: "Unknown",
-                    vendorId = device.vendorId,
-                    productId = device.productId,
-                    mappingJson = mappingJson,
-                    presetName = presetName,
-                    isAutoDetected = isAutoDetected,
-                    createdAt = Instant.now(),
-                    updatedAt = Instant.now()
-                )
-            )
-        }
-        Logger.info(TAG, "Saved mapping for ${device.name} (preset: $presetName)")
+        updateOrInsertMapping(
+            controllerId = controllerId,
+            platformId = platformId,
+            controllerName = device.name ?: "Unknown",
+            vendorId = device.vendorId,
+            productId = device.productId,
+            mappingJson = mappingJson,
+            presetName = presetName,
+            isAutoDetected = isAutoDetected
+        )
+        Logger.info(TAG, "Saved mapping for ${device.name} (platform: $platformId, preset: $presetName)")
     }
 
     suspend fun applyPreset(device: InputDevice, presetName: String): Boolean =
@@ -159,19 +209,23 @@ class InputConfigRepository @Inject constructor(
         controllerMappingDao.deleteByControllerId(controllerId)
     }
 
-    suspend fun getExtendedMappingForController(controllerId: String): Map<InputSource, Int>? =
+    suspend fun clearAutoDetectedMappings() = withContext(Dispatchers.IO) {
+        controllerMappingDao.deleteAllAutoDetected()
+    }
+
+    suspend fun getExtendedMappingForController(controllerId: String, platformId: String? = null): Map<InputSource, Int>? =
         withContext(Dispatchers.IO) {
-            val entity = controllerMappingDao.getByControllerId(controllerId) ?: return@withContext null
+            val entity = findMapping(controllerId, platformId) ?: return@withContext null
             parseExtendedMappingJson(entity.mappingJson)
         }
 
-    suspend fun getExtendedMappingForDevice(device: InputDevice): Map<InputSource, Int>? =
-        getExtendedMappingForController(getControllerId(device))
+    suspend fun getExtendedMappingForDevice(device: InputDevice, platformId: String? = null): Map<InputSource, Int>? =
+        getExtendedMappingForController(getControllerId(device), platformId)
 
-    suspend fun getOrCreateExtendedMappingForDevice(device: InputDevice): Map<InputSource, Int> =
+    suspend fun getOrCreateExtendedMappingForDevice(device: InputDevice, platformId: String? = null): Map<InputSource, Int> =
         withContext(Dispatchers.IO) {
             val controllerId = getControllerId(device)
-            val existing = controllerMappingDao.getByControllerId(controllerId)
+            val existing = findMapping(controllerId, platformId)
 
             if (existing != null) {
                 return@withContext parseExtendedMappingJson(existing.mappingJson)
@@ -198,36 +252,23 @@ class InputConfigRepository @Inject constructor(
         device: InputDevice,
         mapping: Map<InputSource, Int>,
         presetName: String?,
-        isAutoDetected: Boolean
+        isAutoDetected: Boolean,
+        platformId: String? = null
     ) = withContext(Dispatchers.IO) {
         val controllerId = getControllerId(device)
         val mappingJson = encodeExtendedMappingJson(mapping)
 
-        val existing = controllerMappingDao.getByControllerId(controllerId)
-        if (existing != null) {
-            controllerMappingDao.updateMapping(
-                controllerId = controllerId,
-                mappingJson = mappingJson,
-                presetName = presetName,
-                isAutoDetected = isAutoDetected,
-                updatedAt = Instant.now()
-            )
-        } else {
-            controllerMappingDao.upsert(
-                ControllerMappingEntity(
-                    controllerId = controllerId,
-                    controllerName = device.name ?: "Unknown",
-                    vendorId = device.vendorId,
-                    productId = device.productId,
-                    mappingJson = mappingJson,
-                    presetName = presetName,
-                    isAutoDetected = isAutoDetected,
-                    createdAt = Instant.now(),
-                    updatedAt = Instant.now()
-                )
-            )
-        }
-        Logger.info(TAG, "Saved extended mapping for ${device.name} (preset: $presetName)")
+        updateOrInsertMapping(
+            controllerId = controllerId,
+            platformId = platformId,
+            controllerName = device.name ?: "Unknown",
+            vendorId = device.vendorId,
+            productId = device.productId,
+            mappingJson = mappingJson,
+            presetName = presetName,
+            isAutoDetected = isAutoDetected
+        )
+        Logger.info(TAG, "Saved extended mapping for ${device.name} (platform: $platformId, preset: $presetName)")
     }
 
     fun groupMappingByRetroButton(mapping: Map<InputSource, Int>): Map<Int, List<InputSource>> {

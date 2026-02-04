@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.graphics.BitmapFactory
+import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.data.cache.GradientColorExtractor
 import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.input.HapticPattern
@@ -251,9 +252,16 @@ class SettingsViewModel @Inject constructor(
         val state = _uiState.value.builtinVideo
         val maxIndex = state.availablePlatforms.size
         val newIndex = (state.platformContextIndex + direction).mod(maxIndex + 1)
+        val isGlobal = newIndex == 0
+        val platformSlug = if (!isGlobal) state.availablePlatforms[newIndex - 1].platformSlug else null
         _uiState.update {
             it.copy(
                 builtinVideo = it.builtinVideo.copy(platformContextIndex = newIndex),
+                builtinControls = it.builtinControls.copy(
+                    showStickMappings = !isGlobal,
+                    showDpadAsAnalog = !isGlobal && platformSlug != null && PlatformWeightRegistry.hasAnalogStick(platformSlug),
+                    showRumble = isGlobal || (platformSlug != null && PlatformWeightRegistry.hasRumble(platformSlug))
+                ),
                 focusedIndex = 0
             )
         }
@@ -863,12 +871,17 @@ class SettingsViewModel @Inject constructor(
 
     fun getConnectedControllers() = inputConfigRepository.getConnectedControllers()
 
-    suspend fun getControllerMapping(controller: com.nendo.argosy.data.repository.ControllerInfo): Pair<Map<com.nendo.argosy.data.repository.InputSource, Int>, String?> {
+    suspend fun getControllerMapping(
+        controller: com.nendo.argosy.data.repository.ControllerInfo,
+        platformId: String? = null
+    ): Pair<Map<com.nendo.argosy.data.repository.InputSource, Int>, String?> {
         val device = android.view.InputDevice.getDevice(controller.deviceId)
             ?: return Pair(emptyMap(), null)
-        val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device)
+        val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, platformId)
         val entity = inputConfigRepository.observeControllerMappings().first()
-            .find { it.controllerId == controller.controllerId }
+            .find { it.controllerId == controller.controllerId && it.platformId == platformId }
+            ?: inputConfigRepository.observeControllerMappings().first()
+                .find { it.controllerId == controller.controllerId && it.platformId == null }
         return Pair(mapping, entity?.presetName)
     }
 
@@ -876,10 +889,11 @@ class SettingsViewModel @Inject constructor(
         controller: com.nendo.argosy.data.repository.ControllerInfo,
         mapping: Map<com.nendo.argosy.data.repository.InputSource, Int>,
         presetName: String?,
-        isAutoDetected: Boolean
+        isAutoDetected: Boolean,
+        platformId: String? = null
     ) {
         val device = android.view.InputDevice.getDevice(controller.deviceId) ?: return
-        inputConfigRepository.saveExtendedMapping(device, mapping, presetName, isAutoDetected)
+        inputConfigRepository.saveExtendedMapping(device, mapping, presetName, isAutoDetected, platformId)
     }
 
     suspend fun applyControllerPreset(controller: com.nendo.argosy.data.repository.ControllerInfo, presetName: String) {
@@ -1043,7 +1057,49 @@ class SettingsViewModel @Inject constructor(
     fun resetAllPlatformLibretroSettings() {
         val platformContext = _uiState.value.builtinVideo.currentPlatformContext ?: return
         viewModelScope.launch {
-            platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            val current = platformLibretroSettingsDao.getByPlatformId(platformContext.platformId) ?: return@launch
+            val updated = current.copy(
+                shader = null, filter = null, aspectRatio = null, rotation = null,
+                overscanCrop = null, blackFrameInsertion = null, fastForwardSpeed = null,
+                rewindEnabled = null, skipDuplicateFrames = null, lowLatencyAudio = null
+            )
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            }
+        }
+    }
+
+    fun updatePlatformControlSetting(field: String, value: Boolean?) {
+        val platformContext = _uiState.value.builtinVideo.currentPlatformContext ?: return
+        viewModelScope.launch {
+            val current = platformLibretroSettingsDao.getByPlatformId(platformContext.platformId)
+                ?: PlatformLibretroSettingsEntity(platformId = platformContext.platformId)
+            val updated = when (field) {
+                "analogAsDpad" -> current.copy(analogAsDpad = value)
+                "dpadAsAnalog" -> current.copy(dpadAsAnalog = value)
+                "rumbleEnabled" -> current.copy(rumbleEnabled = value)
+                else -> return@launch
+            }
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            }
+        }
+    }
+
+    fun resetAllPlatformControlSettings() {
+        val platformContext = _uiState.value.builtinVideo.currentPlatformContext ?: return
+        viewModelScope.launch {
+            val current = platformLibretroSettingsDao.getByPlatformId(platformContext.platformId) ?: return@launch
+            val updated = current.copy(analogAsDpad = null, dpadAsAnalog = null, rumbleEnabled = null)
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            }
         }
     }
 
@@ -1600,7 +1656,11 @@ class SettingsViewModel @Inject constructor(
                     state.emulators.platforms.size
                 )
                 SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
-                SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(state.builtinControls)
+                SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(
+                    state.builtinControls,
+                    state.builtinVideo,
+                    state.platformLibretro.platformSettings
+                )
                 SettingsSection.CORE_MANAGEMENT -> (state.coreManagement.platforms.size - 1).coerceAtLeast(0)
                 SettingsSection.BIOS -> {
                     // Summary card (0), Directory (1), platforms start at 2

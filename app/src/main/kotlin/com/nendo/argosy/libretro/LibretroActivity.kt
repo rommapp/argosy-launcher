@@ -56,6 +56,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.ControllerInfo
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.InputSource
+import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.data.repository.RAAwardResult
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import kotlinx.coroutines.Job
@@ -444,18 +445,18 @@ class LibretroActivity : ComponentActivity() {
                                                     refreshControllerOrder()
                                                 }
                                             },
-                                            onGetMapping = { controller ->
+                                            onGetMapping = { controller, platformId ->
                                                 val device = android.view.InputDevice.getDevice(controller.deviceId)
                                                 if (device != null) {
-                                                    inputConfigRepository.getOrCreateExtendedMappingForDevice(device) to null
+                                                    inputConfigRepository.getOrCreateExtendedMappingForDevice(device, platformId) to null
                                                 } else {
                                                     emptyMap<InputSource, Int>() to null
                                                 }
                                             },
-                                            onSaveMapping = { controller, mapping, presetName, isAutoDetected ->
+                                            onSaveMapping = { controller, mapping, presetName, isAutoDetected, platformId ->
                                                 val device = android.view.InputDevice.getDevice(controller.deviceId)
                                                 if (device != null) {
-                                                    inputConfigRepository.saveExtendedMapping(device, mapping, presetName, isAutoDetected)
+                                                    inputConfigRepository.saveExtendedMapping(device, mapping, presetName, isAutoDetected, platformId)
                                                     refreshInputMappings()
                                                 }
                                             },
@@ -921,15 +922,19 @@ class LibretroActivity : ComponentActivity() {
         hotkeyManager = HotkeyManager(inputConfigRepository)
 
         lifecycleScope.launch {
+            inputConfigRepository.clearAutoDetectedMappings()
+
             val controllerOrder = inputConfigRepository.getControllerOrder()
             controllerOrderList = controllerOrder
             controllerOrderCount = controllerOrder.size
             portResolver.setControllerOrder(controllerOrder)
 
+            val mappingPlatformId = MappingPlatforms.dbPlatformIdForSlug(platformSlug)
             val mappings = mutableMapOf<String, Map<com.nendo.argosy.data.repository.InputSource, Int>>()
             for (controller in inputConfigRepository.getConnectedControllers()) {
                 val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(
-                    android.view.InputDevice.getDevice(controller.deviceId)!!
+                    android.view.InputDevice.getDevice(controller.deviceId)!!,
+                    mappingPlatformId
                 )
                 mappings[controller.controllerId] = mapping
             }
@@ -1205,21 +1210,15 @@ class LibretroActivity : ComponentActivity() {
                 } else {
                     vibrator = null
                 }
-                lifecycleScope.launch {
-                    preferencesRepository.setBuiltinRumbleEnabled(action.enabled)
-                }
+                persistControlSetting("rumbleEnabled", action.enabled)
             }
             is InGameControlsAction.SetAnalogAsDpad -> {
                 currentAnalogAsDpad = action.enabled
-                lifecycleScope.launch {
-                    preferencesRepository.setBuiltinAnalogAsDpad(action.enabled)
-                }
+                persistControlSetting("analogAsDpad", action.enabled)
             }
             is InGameControlsAction.SetDpadAsAnalog -> {
                 currentDpadAsAnalog = action.enabled
-                lifecycleScope.launch {
-                    preferencesRepository.setBuiltinDpadAsAnalog(action.enabled)
-                }
+                persistControlSetting("dpadAsAnalog", action.enabled)
             }
             is InGameControlsAction.SetLimitHotkeys -> {
                 limitHotkeysToPlayer1 = action.enabled
@@ -1234,6 +1233,24 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun persistControlSetting(field: String, value: Boolean) {
+        lifecycleScope.launch {
+            val current = platformLibretroSettingsDao.getByPlatformId(platformId)
+                ?: com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(platformId = platformId)
+            val updated = when (field) {
+                "analogAsDpad" -> current.copy(analogAsDpad = value)
+                "dpadAsAnalog" -> current.copy(dpadAsAnalog = value)
+                "rumbleEnabled" -> current.copy(rumbleEnabled = value)
+                else -> return@launch
+            }
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformId)
+            }
+        }
+    }
+
     private suspend fun refreshControllerOrder() {
         val order = inputConfigRepository.getControllerOrder()
         controllerOrderList = order
@@ -1245,10 +1262,11 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private suspend fun refreshInputMappings() {
+        val mappingPlatformId = MappingPlatforms.dbPlatformIdForSlug(platformSlug)
         val mappings = mutableMapOf<String, Map<InputSource, Int>>()
         for (controller in inputConfigRepository.getConnectedControllers()) {
             val device = android.view.InputDevice.getDevice(controller.deviceId) ?: continue
-            val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device)
+            val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, mappingPlatformId)
             mappings[controller.controllerId] = mapping
         }
         inputMapper.setExtendedMappings(mappings)

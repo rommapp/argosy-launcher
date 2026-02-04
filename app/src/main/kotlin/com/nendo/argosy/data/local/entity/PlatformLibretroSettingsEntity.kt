@@ -30,9 +30,14 @@ data class PlatformLibretroSettingsEntity(
     val fastForwardSpeed: Int? = null,
     val rewindEnabled: Boolean? = null,
     val skipDuplicateFrames: Boolean? = null,
-    val lowLatencyAudio: Boolean? = null
+    val lowLatencyAudio: Boolean? = null,
+    val analogAsDpad: Boolean? = null,
+    val dpadAsAnalog: Boolean? = null,
+    val rumbleEnabled: Boolean? = null
 ) {
-    fun hasAnyOverrides(): Boolean =
+    fun hasAnyOverrides(): Boolean = hasAnyVideoOverrides() || hasAnyControlOverrides()
+
+    fun hasAnyVideoOverrides(): Boolean =
         shader != null ||
         filter != null ||
         aspectRatio != null ||
@@ -43,4 +48,7 @@ data class PlatformLibretroSettingsEntity(
         rewindEnabled != null ||
         skipDuplicateFrames != null ||
         lowLatencyAudio != null
+
+    fun hasAnyControlOverrides(): Boolean =
+        analogAsDpad != null || dpadAsAnalog != null || rumbleEnabled != null
 }

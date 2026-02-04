@@ -22,6 +22,27 @@ object PlatformWeightRegistry {
         return if (canonical in heavyPlatforms) Weight.HEAVY else Weight.LIGHT
     }
 
+    private val platformsWithAnalog = setOf(
+        "n64", "n64dd",
+        "psx", "ps2", "psp", "vita",
+        "gc", "wii",
+        "dreamcast", "saturn",
+        "nds", "dsi", "3ds"
+    )
+
+    private val platformsWithRumble = setOf(
+        "n64", "n64dd",
+        "psx", "ps2",
+        "gc", "wii",
+        "dreamcast"
+    )
+
+    fun hasAnalogStick(platformSlug: String): Boolean =
+        PlatformDefinitions.getCanonicalSlug(platformSlug) in platformsWithAnalog
+
+    fun hasRumble(platformSlug: String): Boolean =
+        PlatformDefinitions.getCanonicalSlug(platformSlug) in platformsWithRumble
+
     fun isSettingVisible(
         setting: LibretroSettingDef,
         platformSlug: String?,

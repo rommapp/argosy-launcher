@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.input
 
+import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -14,8 +15,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 interface RawInputInterceptor {
+    val lastInputDevice: InputDevice?
     fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?)
     fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?)
+    fun mapKeyToEvent(keyCode: Int): GamepadEvent?
 }
 
 sealed interface GamepadEvent {
@@ -48,6 +51,10 @@ class GamepadInputHandler @Inject constructor(
     private var swapAB = false
     private var swapXY = false
     private var swapStartSelect = false
+
+    var onActivity: (() -> Unit)? = null
+    override var lastInputDevice: InputDevice? = null
+        private set
 
     private var rawKeyEventListener: ((KeyEvent) -> Boolean)? = null
     private var rawMotionEventListener: ((MotionEvent) -> Boolean)? = null
@@ -89,6 +96,8 @@ class GamepadInputHandler @Inject constructor(
 
     fun handleKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
+            lastInputDevice = event.device
+            onActivity?.invoke()
             android.util.Log.d("GamepadInput", "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}")
         }
 
@@ -111,7 +120,7 @@ class GamepadInputHandler @Inject constructor(
         return true
     }
 
-    private fun mapKeyToEvent(keyCode: Int): GamepadEvent? = when (keyCode) {
+    override fun mapKeyToEvent(keyCode: Int): GamepadEvent? = when (keyCode) {
         KeyEvent.KEYCODE_DPAD_UP -> GamepadEvent.Up
         KeyEvent.KEYCODE_DPAD_DOWN -> GamepadEvent.Down
         KeyEvent.KEYCODE_DPAD_LEFT -> GamepadEvent.Left

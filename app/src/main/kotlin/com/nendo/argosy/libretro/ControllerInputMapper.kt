@@ -109,15 +109,7 @@ class ControllerInputMapper : KeyMapper {
         return "${device.vendorId}:${device.productId}:${device.descriptor}"
     }
 
-    private fun defaultSwap(keyCode: Int): Int {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_B -> KeyEvent.KEYCODE_BUTTON_A
-            KeyEvent.KEYCODE_BUTTON_A -> KeyEvent.KEYCODE_BUTTON_B
-            KeyEvent.KEYCODE_BUTTON_X -> KeyEvent.KEYCODE_BUTTON_Y
-            KeyEvent.KEYCODE_BUTTON_Y -> KeyEvent.KEYCODE_BUTTON_X
-            else -> keyCode
-        }
-    }
+    private fun defaultSwap(keyCode: Int): Int = keyCode
 
     companion object {
         fun retroButtonToAndroidKeyCode(retroButton: Int): Int {

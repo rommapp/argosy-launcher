@@ -274,10 +274,14 @@ fun ArgosyApp(
         inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
     }
 
+    // Reset dim timer on any gamepad key press (including raw-intercepted events)
+    LaunchedEffect(Unit) {
+        viewModel.gamepadInputHandler.onActivity = { screenDimmerState.recordActivity() }
+    }
+
     // Collect gamepad events (Menu toggles drawer, L3 toggles quick menu, R3 toggles quick settings)
     LaunchedEffect(Unit) {
         viewModel.gamepadInputHandler.eventFlow().collect { event ->
-            screenDimmerState.recordActivity()
             val result = inputDispatcher.dispatch(event)
             if (!result.handled) {
                 when (event) {

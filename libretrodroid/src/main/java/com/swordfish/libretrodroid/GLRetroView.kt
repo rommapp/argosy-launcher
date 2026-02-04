@@ -225,12 +225,15 @@ class GLRetroView(
     fun getSystemRamSize(): Int = getMemorySize(LibretroDroid.MEMORY_SYSTEM_RAM)
 
     fun captureRawFrame(): Bitmap? = runOnGLThread {
-        val data = LibretroDroid.captureRawFrame() ?: return@runOnGLThread null
-        if (data.size < 8) return@runOnGLThread null
+        Log.d(TAG_LOG, "captureRawFrame: calling native")
+        val data = LibretroDroid.captureRawFrame()
+        Log.d(TAG_LOG, "captureRawFrame: native returned ${data?.size ?: "null"} bytes")
+        if (data == null || data.size < 8) return@runOnGLThread null
         val bb = java.nio.ByteBuffer.wrap(data, 0, 8)
             .order(java.nio.ByteOrder.LITTLE_ENDIAN)
         val w = bb.getInt()
         val h = bb.getInt()
+        Log.d(TAG_LOG, "captureRawFrame: w=$w h=$h")
         if (w <= 0 || h <= 0) return@runOnGLThread null
         val pixels = IntArray(w * h)
         for (i in 0 until w * h) {
@@ -239,12 +242,11 @@ class GLRetroView(
             val g = data[offset + 1].toInt() and 0xFF
             val b = data[offset + 2].toInt() and 0xFF
             val a = data[offset + 3].toInt() and 0xFF
-            val srcRow = i / w
-            val dstRow = h - 1 - srcRow
-            val col = i % w
-            pixels[dstRow * w + col] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            pixels[i] = (a shl 24) or (r shl 16) or (g shl 8) or b
         }
-        Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888)
+        val bmp = Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888)
+        Log.d(TAG_LOG, "captureRawFrame: bitmap ${bmp.width}x${bmp.height}")
+        bmp
     }
 
     fun reset() = runOnGLThread {

@@ -1,5 +1,6 @@
 package com.nendo.argosy.libretro
 
+import android.graphics.Bitmap
 import android.graphics.RectF
 import android.os.Bundle
 import android.os.Handler
@@ -136,6 +137,7 @@ class LibretroActivity : ComponentActivity() {
     private var settingsVisible by mutableStateOf(false)
     private var shaderChainEditorVisible by mutableStateOf(false)
     private var inGameShaderChainManager: ShaderChainManager? = null
+    private var capturedGameFrame: Bitmap? = null
     private var lastCheatsTab by mutableStateOf(CheatsTab.CHEATS)
     private var cheatsNeedReset = false
     private var hasQuickSave by mutableStateOf(false)
@@ -1080,6 +1082,12 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun openInGameShaderChainEditor() {
+        Log.d(TAG, "openInGameShaderChainEditor: resuming GL thread for capture")
+        retroView.onResume()
+        capturedGameFrame = retroView.captureRawFrame()
+        retroView.onPause()
+        Log.d(TAG, "openInGameShaderChainEditor: capturedFrame=${capturedGameFrame?.let { "${it.width}x${it.height}" } ?: "null"}")
+
         val registry = ShaderRegistry(this)
         val manager = ShaderChainManager(
             shaderRegistry = registry,
@@ -1087,7 +1095,8 @@ class LibretroActivity : ComponentActivity() {
             previewRenderer = ShaderPreviewRenderer(),
             scope = lifecycleScope,
             previewInputProvider = {
-                retroView.captureRawFrame()
+                val frame = capturedGameFrame
+                frame?.copy(frame.config ?: Bitmap.Config.ARGB_8888, false)
             },
             onChainChanged = { config ->
                 val shaderConfig = ShaderRegistry(this).resolveChain(config)
@@ -1113,6 +1122,8 @@ class LibretroActivity : ComponentActivity() {
         persistInGameShaderChain(config)
         manager.destroy()
         inGameShaderChainManager = null
+        capturedGameFrame?.recycle()
+        capturedGameFrame = null
         shaderChainEditorVisible = false
         settingsVisible = true
     }
@@ -1774,6 +1785,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     companion object {
+        private const val TAG = "LibretroActivity"
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_CORE_PATH = "core_path"
         const val EXTRA_SYSTEM_DIR = "system_dir"

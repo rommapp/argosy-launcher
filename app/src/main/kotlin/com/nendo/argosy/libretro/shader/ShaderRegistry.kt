@@ -382,6 +382,9 @@ class ShaderRegistry(private val context: Context) {
     private val DEFINE_LINE = Regex("""^(\s*#define\s+)(\w+)(\s+)([\d.eE+-]+)(.*)$""")
     private val UNIFORM_PARAM = Regex("""^(\s*)uniform\s+(?:\w+\s+)*float\s+(\w+)\s*;(.*)$""")
 
+    fun prepareForUniformParams(source: String): String =
+        processShaderSource(source, emptyMap())
+
     private fun processShaderSource(
         source: String,
         params: Map<String, Float>

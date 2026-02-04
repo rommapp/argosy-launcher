@@ -70,6 +70,7 @@ import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
 import com.nendo.argosy.ui.screens.settings.sections.RASettingsSection
+import com.nendo.argosy.ui.screens.settings.sections.ShaderStackSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
@@ -316,43 +317,46 @@ fun SettingsScreen(
                 .blur(soundPickerBlur)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            SettingsHeader(
-                title = when (uiState.currentSection) {
-                    SettingsSection.MAIN -> "SETTINGS"
-                    SettingsSection.SERVER -> "GAME DATA"
-                    SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
-                    SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
-                    SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
-                    SettingsSection.STORAGE -> "STORAGE"
-                    SettingsSection.INTERFACE -> "INTERFACE"
-                    SettingsSection.BOX_ART -> "BOX ART"
-                    SettingsSection.HOME_SCREEN -> "HOME SCREEN"
-                    SettingsSection.CONTROLS -> "CONTROLS"
-                    SettingsSection.EMULATORS -> "EMULATORS"
-                    SettingsSection.BUILTIN_VIDEO -> "BUILT-IN VIDEO"
-                    SettingsSection.BUILTIN_CONTROLS -> "BUILT-IN CONTROLS"
-                    SettingsSection.CORE_MANAGEMENT -> "MANAGE CORES"
-                    SettingsSection.BIOS -> "BIOS FILES"
-                    SettingsSection.PERMISSIONS -> "PERMISSIONS"
-                    SettingsSection.ABOUT -> "ABOUT"
-                },
-                rightContent = if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
-                    uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
-                    uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
-                    {
-                        val platformName = if (uiState.builtinVideo.isGlobalContext) {
-                            "Global"
-                        } else {
-                            uiState.builtinVideo.currentPlatformContext?.platformName ?: "Global"
+            if (uiState.currentSection != SettingsSection.SHADER_STACK) {
+                SettingsHeader(
+                    title = when (uiState.currentSection) {
+                        SettingsSection.MAIN -> "SETTINGS"
+                        SettingsSection.SERVER -> "GAME DATA"
+                        SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
+                        SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
+                        SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
+                        SettingsSection.STORAGE -> "STORAGE"
+                        SettingsSection.INTERFACE -> "INTERFACE"
+                        SettingsSection.BOX_ART -> "BOX ART"
+                        SettingsSection.HOME_SCREEN -> "HOME SCREEN"
+                        SettingsSection.CONTROLS -> "CONTROLS"
+                        SettingsSection.EMULATORS -> "EMULATORS"
+                        SettingsSection.BUILTIN_VIDEO -> "BUILT-IN VIDEO"
+                        SettingsSection.BUILTIN_CONTROLS -> "BUILT-IN CONTROLS"
+                        SettingsSection.CORE_MANAGEMENT -> "MANAGE CORES"
+                        SettingsSection.BIOS -> "BIOS FILES"
+                        SettingsSection.SHADER_STACK -> "SHADER CHAIN"
+                        SettingsSection.PERMISSIONS -> "PERMISSIONS"
+                        SettingsSection.ABOUT -> "ABOUT"
+                    },
+                    rightContent = if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
+                        uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
+                        uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
+                        {
+                            val platformName = if (uiState.builtinVideo.isGlobalContext) {
+                                "Global"
+                            } else {
+                                uiState.builtinVideo.currentPlatformContext?.platformName ?: "Global"
+                            }
+                            PlatformContextIndicator(
+                                platformName = platformName,
+                                onPrevious = { viewModel.cyclePlatformContext(-1) },
+                                onNext = { viewModel.cyclePlatformContext(1) }
+                            )
                         }
-                        PlatformContextIndicator(
-                            platformName = platformName,
-                            onPrevious = { viewModel.cyclePlatformContext(-1) },
-                            onNext = { viewModel.cyclePlatformContext(1) }
-                        )
-                    }
-                } else null
-            )
+                    } else null
+                )
+            }
 
             Box(modifier = Modifier.weight(1f)) {
                 when (uiState.currentSection) {
@@ -380,6 +384,7 @@ fun SettingsScreen(
                     SettingsSection.BUILTIN_CONTROLS -> BuiltinControlsSection(uiState, viewModel)
                     SettingsSection.CORE_MANAGEMENT -> CoreManagementSection(uiState, viewModel)
                     SettingsSection.BIOS -> BiosSection(uiState, viewModel)
+                    SettingsSection.SHADER_STACK -> ShaderStackSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                 }
@@ -720,12 +725,32 @@ private fun SettingsFooter(uiState: SettingsUiState) {
     }
 
     val hints = buildList {
-        if (uiState.currentSection != SettingsSection.BOX_ART) {
+        if (uiState.currentSection != SettingsSection.BOX_ART &&
+            uiState.currentSection != SettingsSection.SHADER_STACK) {
             add(InputButton.DPAD to "Navigate")
+        }
+        if (uiState.currentSection == SettingsSection.SHADER_STACK &&
+            uiState.shaderStack.entries.isNotEmpty() &&
+            uiState.shaderStack.selectedShaderParams.isNotEmpty()
+        ) {
+            add(InputButton.DPAD_VERTICAL to "Navigate")
         }
         if (uiState.currentSection == SettingsSection.BOX_ART) {
             add(InputButton.LB_RB to "Preview Shape")
             add(InputButton.LT_RT to "Preview Game")
+        }
+        if (uiState.currentSection == SettingsSection.SHADER_STACK) {
+            if (uiState.shaderStack.entries.isNotEmpty()) {
+                add(InputButton.LB_RB to "Shader")
+                add(InputButton.LT_RT to "Reorder")
+                if (uiState.shaderStack.selectedShaderParams.isNotEmpty()) {
+                    add(InputButton.DPAD_HORIZONTAL to "Adjust")
+                }
+            }
+            add(InputButton.X to "Add")
+            if (uiState.shaderStack.entries.isNotEmpty()) {
+                add(InputButton.Y to "Remove")
+            }
         }
         if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
             uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&

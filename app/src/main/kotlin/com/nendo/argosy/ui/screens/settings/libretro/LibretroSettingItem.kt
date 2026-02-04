@@ -13,7 +13,7 @@ fun LibretroSettingItem(
     isPerPlatform: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val value = accessor.getValue(setting)
+    val value = accessor.getDisplayValue(setting)
     val hasOverride = accessor.hasOverride(setting)
     val globalValue = accessor.getGlobalValue(setting)
 

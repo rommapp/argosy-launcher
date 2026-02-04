@@ -543,6 +543,17 @@ class GLRetroView(
                     LibretroDroid.SHADER_UPSCALE_CUT3_PARAM_HARD_EDGES_SEARCH_MAX_DISTANCE to toParam(config.hardEdgesSearchMaxDistance),
                 )
             )
+            is ShaderConfig.Custom -> GLRetroShader(
+                LibretroDroid.SHADER_CUSTOM,
+                passes = config.passes.map { pass ->
+                    GLRetroShaderPass(
+                        vertex = pass.vertex,
+                        fragment = pass.fragment,
+                        linear = pass.linear,
+                        scale = pass.scale
+                    )
+                }
+            )
         }
     }
 

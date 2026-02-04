@@ -372,6 +372,12 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE screenshotPaths IS NOT NULL AND cachedScreenshotPaths IS NULL AND rommId IS NOT NULL")
     suspend fun getGamesWithUncachedScreenshots(): List<GameEntity>
 
+    @Query("SELECT cachedScreenshotPaths FROM games WHERE id = :gameId")
+    suspend fun getCachedScreenshotPaths(gameId: Long): String?
+
+    @Query("SELECT screenshotPaths FROM games WHERE id = :gameId")
+    suspend fun getScreenshotPaths(gameId: Long): String?
+
     @Query("UPDATE games SET cachedScreenshotPaths = :paths WHERE id = :gameId")
     suspend fun updateCachedScreenshotPaths(gameId: Long, paths: String)
 
@@ -551,11 +557,23 @@ interface GameDao {
                isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName,
                playCount, playTimeMinutes, lastPlayed, genre, gameModes
         FROM games
-        WHERE coverPath LIKE '/%' AND isHidden = 0 AND lastPlayed IS NOT NULL
+        WHERE coverPath LIKE '/%' AND isHidden = 0 AND lastPlayed IS NOT NULL AND localPath IS NOT NULL
         ORDER BY lastPlayed DESC
         LIMIT :limit
     """)
     suspend fun getRecentlyPlayedWithCovers(limit: Int = 10): List<GameListItem>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath,
+               isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName,
+               playCount, playTimeMinutes, lastPlayed, genre, gameModes
+        FROM games
+        WHERE coverPath LIKE '/%' AND isHidden = 0 AND lastPlayed IS NOT NULL
+              AND localPath IS NOT NULL AND platformSlug IN (:platformSlugs)
+        ORDER BY lastPlayed DESC
+        LIMIT :limit
+    """)
+    suspend fun getRecentlyPlayedOnPlatforms(platformSlugs: List<String>, limit: Int = 10): List<GameListItem>
 
     @Query("UPDATE games SET cheatsFetched = :fetched WHERE id = :gameId")
     suspend fun updateCheatsFetched(gameId: Long, fetched: Boolean)

@@ -5,7 +5,9 @@ import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.asImageBitmap
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.data.cache.GradientColorExtractor
 import com.nendo.argosy.ui.input.HapticFeedbackManager
@@ -25,6 +27,7 @@ import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
+import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import com.nendo.argosy.data.preferences.GridDensity
@@ -35,6 +38,8 @@ import com.nendo.argosy.data.remote.github.UpdateState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.update.AppInstaller
 import com.nendo.argosy.libretro.LibretroCoreManager
+import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
+import com.swordfish.libretrodroid.ShaderConfig
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryResult
@@ -82,6 +87,7 @@ import com.nendo.argosy.ui.screens.settings.sections.storageMaxFocusIndex
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -103,6 +109,8 @@ import java.io.File
 import javax.inject.Inject
 
 private const val TAG = "SettingsViewModel"
+private const val PREVIEW_SIM_HEIGHT = 224
+private const val PREVIEW_UPSCALE = 3
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -667,6 +675,7 @@ class SettingsViewModel @Inject constructor(
                     fileLogLevel = prefs.fileLogLevel,
                     builtinVideo = it.builtinVideo.copy(
                         shader = builtinSettings.shader,
+                        shaderChainJson = builtinSettings.shaderChainJson,
                         filter = builtinSettings.filter,
                         aspectRatio = builtinSettings.aspectRatio,
                         skipDuplicateFrames = builtinSettings.skipDuplicateFrames,
@@ -937,11 +946,431 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun cycleBuiltinShader(direction: Int) {
-        val options = listOf("None", "Sharp", "CUT", "CUT2", "CUT3", "CRT", "LCD")
+        val options = listOf("None", "Sharp", "CUT", "CUT2", "CUT3", "CRT", "LCD", "Custom")
         val current = _uiState.value.builtinVideo.shader
         val currentIndex = options.indexOf(current).coerceAtLeast(0)
         val nextIndex = (currentIndex + direction + options.size) % options.size
         setBuiltinShader(options[nextIndex])
+    }
+
+    private val _shaderRegistry by lazy { com.nendo.argosy.libretro.shader.ShaderRegistry(context) }
+    private val _shaderDownloader by lazy {
+        com.nendo.argosy.libretro.shader.ShaderDownloader(_shaderRegistry.getCatalogDir())
+    }
+    private val _shaderPreviewRenderer = ShaderPreviewRenderer()
+    private var _shaderPreviewJob: Job? = null
+
+    fun getShaderRegistry(): com.nendo.argosy.libretro.shader.ShaderRegistry = _shaderRegistry
+
+    fun openShaderChainConfig() {
+        loadShaderStack()
+        loadPreviewGames()
+        navigateToSection(SettingsSection.SHADER_STACK)
+    }
+
+    fun loadShaderStack() {
+        _shaderRegistry.ensureDirectoriesExist()
+        val chainJson = _uiState.value.builtinVideo.shaderChainJson
+        val chain = com.nendo.argosy.libretro.shader.ShaderChainConfig.fromJson(chainJson)
+        val entries = chain.entries.map { entry ->
+            val displayName = _shaderRegistry.findById(entry.shaderId)?.displayName
+                ?: entry.shaderId.removePrefix("custom:").replace('-', ' ')
+                    .split(' ').joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+            ShaderStackEntry(
+                shaderId = entry.shaderId,
+                displayName = displayName,
+                params = entry.params
+            )
+        }
+        _uiState.update {
+            it.copy(shaderStack = it.shaderStack.copy(
+                entries = entries,
+                selectedIndex = 0,
+                paramFocusIndex = 0
+            ))
+        }
+        loadParamsForSelectedShader()
+        syncShaderPreInstalls()
+        renderShaderPreview()
+    }
+
+    private fun syncShaderPreInstalls() {
+        if (_uiState.value.shaderStack.preInstallsSynced) return
+        viewModelScope.launch {
+            val result = _shaderDownloader.syncPreInstalls(_shaderRegistry)
+            _uiState.update {
+                it.copy(shaderStack = it.shaderStack.copy(preInstallsSynced = true))
+            }
+            if (result.downloaded > 0) {
+                _shaderRegistry.invalidateInstalledCache()
+                Log.d("SettingsVM", "Shader sync: ${result.downloaded} downloaded, ${result.failed} failed")
+            }
+        }
+    }
+
+    fun addShaderToStack(shaderId: String, displayName: String) {
+        _uiState.update {
+            val newEntries = it.shaderStack.entries + ShaderStackEntry(shaderId, displayName)
+            it.copy(shaderStack = it.shaderStack.copy(
+                entries = newEntries,
+                selectedIndex = newEntries.size - 1,
+                paramFocusIndex = 0,
+                showShaderPicker = false
+            ))
+        }
+        loadParamsForSelectedShader()
+        persistShaderChain()
+        renderShaderPreview()
+    }
+
+    fun removeShaderFromStack() {
+        val state = _uiState.value.shaderStack
+        if (state.entries.isEmpty()) return
+        _uiState.update {
+            val newEntries = it.shaderStack.entries.toMutableList().apply {
+                removeAt(it.shaderStack.selectedIndex)
+            }
+            val newIndex = it.shaderStack.selectedIndex.coerceAtMost((newEntries.size - 1).coerceAtLeast(0))
+            it.copy(shaderStack = it.shaderStack.copy(
+                entries = newEntries,
+                selectedIndex = newIndex,
+                paramFocusIndex = 0
+            ))
+        }
+        loadParamsForSelectedShader()
+        persistShaderChain()
+        renderShaderPreview()
+    }
+
+    fun reorderShaderInStack(direction: Int) {
+        val state = _uiState.value.shaderStack
+        val fromIndex = state.selectedIndex
+        val toIndex = fromIndex + direction
+        if (toIndex < 0 || toIndex >= state.entries.size) return
+        _uiState.update {
+            val newEntries = it.shaderStack.entries.toMutableList().apply {
+                val item = removeAt(fromIndex)
+                add(toIndex, item)
+            }
+            it.copy(shaderStack = it.shaderStack.copy(
+                entries = newEntries,
+                selectedIndex = toIndex
+            ))
+        }
+        persistShaderChain()
+        renderShaderPreview()
+    }
+
+    fun selectShaderInStack(index: Int) {
+        val state = _uiState.value.shaderStack
+        if (index < 0 || index >= state.entries.size || index == state.selectedIndex) return
+        _uiState.update {
+            it.copy(shaderStack = it.shaderStack.copy(
+                selectedIndex = index,
+                paramFocusIndex = 0
+            ))
+        }
+        loadParamsForSelectedShader()
+    }
+
+    fun cycleShaderTab(direction: Int) {
+        val state = _uiState.value.shaderStack
+        if (state.entries.isEmpty()) return
+        val newIndex = (state.selectedIndex + direction).let {
+            when {
+                it < 0 -> state.entries.size - 1
+                it >= state.entries.size -> 0
+                else -> it
+            }
+        }
+        selectShaderInStack(newIndex)
+    }
+
+    fun showShaderPicker() {
+        _uiState.update {
+            it.copy(shaderStack = it.shaderStack.copy(
+                showShaderPicker = true,
+                shaderPickerFocusIndex = 0,
+                shaderPickerCategory = null
+            ))
+        }
+    }
+
+    fun dismissShaderPicker() {
+        _uiState.update {
+            it.copy(shaderStack = it.shaderStack.copy(showShaderPicker = false))
+        }
+    }
+
+    fun setShaderPickerFocusIndex(index: Int) {
+        _uiState.update {
+            it.copy(shaderStack = it.shaderStack.copy(shaderPickerFocusIndex = index))
+        }
+    }
+
+    fun moveShaderPickerFocus(delta: Int) {
+        val registry = _shaderRegistry
+        val maxIndex = (registry.getShadersForPicker().size - 1).coerceAtLeast(0)
+        _uiState.update {
+            val newIndex = (it.shaderStack.shaderPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            it.copy(shaderStack = it.shaderStack.copy(shaderPickerFocusIndex = newIndex))
+        }
+    }
+
+    fun confirmShaderPickerSelection() {
+        val registry = _shaderRegistry
+        val shaders = registry.getShadersForPicker()
+        val grouped = shaders.groupBy { it.category }
+        val categoryOrdered = buildList {
+            for (category in com.nendo.argosy.libretro.shader.ShaderRegistry.Category.entries) {
+                addAll(grouped[category] ?: continue)
+            }
+        }
+        val selectedIndex = _uiState.value.shaderStack.shaderPickerFocusIndex
+        val entry = categoryOrdered.getOrNull(selectedIndex) ?: return
+
+        if (registry.isInstalled(entry)) {
+            addShaderToStack(entry.id, entry.displayName)
+        } else {
+            downloadAndAddShader(entry)
+        }
+    }
+
+    private fun downloadAndAddShader(entry: com.nendo.argosy.libretro.shader.ShaderRegistry.ShaderEntry) {
+        _uiState.update {
+            it.copy(shaderStack = it.shaderStack.copy(downloadingShaderId = entry.id))
+        }
+        viewModelScope.launch {
+            val result = _shaderDownloader.downloadShader(entry)
+            _uiState.update {
+                it.copy(shaderStack = it.shaderStack.copy(downloadingShaderId = null))
+            }
+            if (result.isSuccess) {
+                _shaderRegistry.invalidateInstalledCache()
+                addShaderToStack(entry.id, entry.displayName)
+            }
+        }
+    }
+
+    private fun persistShaderChain() {
+        val entries = _uiState.value.shaderStack.entries
+        val chain = com.nendo.argosy.libretro.shader.ShaderChainConfig(
+            entries = entries.map { entry ->
+                com.nendo.argosy.libretro.shader.ShaderChainConfig.Entry(
+                    shaderId = entry.shaderId,
+                    params = entry.params
+                )
+            }
+        )
+        val json = chain.toJson()
+        _uiState.update {
+            it.copy(builtinVideo = it.builtinVideo.copy(shaderChainJson = json))
+        }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinShaderChain(json)
+        }
+    }
+
+    private fun loadParamsForSelectedShader() {
+        val state = _uiState.value.shaderStack
+        val entry = state.selectedEntry
+        if (entry == null) {
+            _uiState.update {
+                it.copy(shaderStack = it.shaderStack.copy(selectedShaderParams = emptyList()))
+            }
+            return
+        }
+        val registryEntry = _shaderRegistry.findById(entry.shaderId)
+        val params = if (registryEntry != null) {
+            _shaderRegistry.loadShaderParameters(registryEntry).map { p ->
+                ShaderParamDef(
+                    name = p.name,
+                    description = p.description,
+                    initial = p.initial,
+                    min = p.min,
+                    max = p.max,
+                    step = p.step
+                )
+            }
+        } else {
+            emptyList()
+        }
+        _uiState.update {
+            it.copy(shaderStack = it.shaderStack.copy(selectedShaderParams = params))
+        }
+    }
+
+    fun moveShaderParamFocus(delta: Int) {
+        val state = _uiState.value.shaderStack
+        if (state.selectedShaderParams.isEmpty()) return
+        _uiState.update {
+            val newIndex = (it.shaderStack.paramFocusIndex + delta)
+                .coerceIn(0, it.shaderStack.maxParamFocusIndex)
+            it.copy(shaderStack = it.shaderStack.copy(paramFocusIndex = newIndex))
+        }
+    }
+
+    fun adjustShaderParam(direction: Int) {
+        val state = _uiState.value.shaderStack
+        val entry = state.selectedEntry ?: return
+        val paramDef = state.selectedShaderParams.getOrNull(state.paramFocusIndex) ?: return
+
+        val currentValue = entry.params[paramDef.name]?.toFloatOrNull() ?: paramDef.initial
+        val newValue = (currentValue + direction * paramDef.step)
+            .coerceIn(paramDef.min, paramDef.max)
+
+        val roundedValue = (Math.round(newValue / paramDef.step) * paramDef.step)
+            .coerceIn(paramDef.min, paramDef.max)
+
+        val newParams = entry.params + (paramDef.name to roundedValue.toString())
+        val newEntry = entry.copy(params = newParams)
+
+        _uiState.update {
+            val newEntries = it.shaderStack.entries.toMutableList().apply {
+                set(it.shaderStack.selectedIndex, newEntry)
+            }
+            it.copy(shaderStack = it.shaderStack.copy(entries = newEntries))
+        }
+        persistShaderChain()
+        debouncedRenderPreview()
+    }
+
+    fun resetShaderParam() {
+        val state = _uiState.value.shaderStack
+        val entry = state.selectedEntry ?: return
+        val paramDef = state.selectedShaderParams.getOrNull(state.paramFocusIndex) ?: return
+
+        val newParams = entry.params + (paramDef.name to paramDef.initial.toString())
+        val newEntry = entry.copy(params = newParams)
+
+        _uiState.update {
+            val newEntries = it.shaderStack.entries.toMutableList().apply {
+                set(it.shaderStack.selectedIndex, newEntry)
+            }
+            it.copy(shaderStack = it.shaderStack.copy(entries = newEntries))
+        }
+        persistShaderChain()
+        debouncedRenderPreview()
+    }
+
+    private fun renderShaderPreview() {
+        _shaderPreviewJob?.cancel()
+        _shaderPreviewJob = viewModelScope.launch(Dispatchers.Default) {
+            val state = _uiState.value
+            val game = state.previewGame
+            if (game == null) {
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(shaderPreviewBitmap = null) }
+                }
+                return@launch
+            }
+
+            val imagePath = resolvePreviewImage(game)
+            Log.d(TAG, "renderShaderPreview: imagePath=$imagePath, game=${game.title}, entries=${state.shaderStack.entries.size}")
+            if (imagePath == null) {
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(shaderPreviewBitmap = null) }
+                }
+                return@launch
+            }
+
+            val entries = state.shaderStack.entries
+            if (entries.isEmpty()) {
+                val inputBitmap = BitmapFactory.decodeFile(imagePath)
+                Log.d(TAG, "renderShaderPreview: empty chain, bitmap=${inputBitmap != null}")
+                val imageBitmap = inputBitmap?.asImageBitmap()
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(shaderPreviewBitmap = imageBitmap) }
+                }
+                return@launch
+            }
+
+            val allPasses = mutableListOf<ShaderConfig.Custom.ShaderPass>()
+            val allPassParams = mutableListOf<Map<String, Float>>()
+
+            for (entry in entries) {
+                val registryEntry = _shaderRegistry.findById(entry.shaderId) ?: continue
+                try {
+                    val passes = _shaderRegistry.loadShader(registryEntry).passes
+                    val defaults = _shaderRegistry.loadShaderParameters(registryEntry)
+                        .associate { it.name to it.initial }
+                    val paramMap = defaults + entry.params.mapNotNull { (k, v) ->
+                        v.toFloatOrNull()?.let { k to it }
+                    }.toMap()
+                    for (pass in passes) {
+                        allPasses.add(pass)
+                        allPassParams.add(paramMap)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "renderShaderPreview: failed to load shader ${entry.shaderId}", e)
+                    continue
+                }
+            }
+            Log.d(TAG, "renderShaderPreview: resolved ${allPasses.size} passes")
+
+            val sourceBitmap = BitmapFactory.decodeFile(imagePath)
+            if (sourceBitmap == null) {
+                Log.e(TAG, "renderShaderPreview: failed to decode $imagePath")
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(shaderPreviewBitmap = null) }
+                }
+                return@launch
+            }
+
+            val result = if (allPasses.isNotEmpty()) {
+                val simHeight = PREVIEW_SIM_HEIGHT
+                val aspect = sourceBitmap.width.toFloat() / sourceBitmap.height.toFloat()
+                val simWidth = (simHeight * aspect).toInt().coerceAtLeast(1)
+                val inputBitmap = Bitmap.createScaledBitmap(sourceBitmap, simWidth, simHeight, true)
+                if (inputBitmap !== sourceBitmap) sourceBitmap.recycle()
+
+                val outputWidth = simWidth * PREVIEW_UPSCALE
+                val outputHeight = simHeight * PREVIEW_UPSCALE
+                val shaderConfig = ShaderConfig.Custom(passes = allPasses)
+                val rendered = _shaderPreviewRenderer.render(
+                    inputBitmap = inputBitmap,
+                    shaderConfig = shaderConfig,
+                    passParams = allPassParams,
+                    outputWidth = outputWidth,
+                    outputHeight = outputHeight
+                )
+                inputBitmap.recycle()
+                rendered
+            } else {
+                sourceBitmap
+            }
+            Log.d(TAG, "renderShaderPreview: render result=${result != null}, size=${result?.width}x${result?.height}")
+
+            val imageBitmap = result?.asImageBitmap()
+
+            withContext(Dispatchers.Main) {
+                _uiState.update { it.copy(shaderPreviewBitmap = imageBitmap) }
+            }
+        }
+    }
+
+    private fun debouncedRenderPreview() {
+        _shaderPreviewJob?.cancel()
+        _shaderPreviewJob = viewModelScope.launch {
+            delay(150)
+            renderShaderPreview()
+        }
+    }
+
+    private suspend fun resolvePreviewImage(game: GameListItem): String? {
+        val cached = displayDelegate.getFirstCachedScreenshot(game.id)
+        if (cached != null) return cached
+
+        val remoteUrls = displayDelegate.getScreenshotUrls(game.id)
+        if (remoteUrls.isNotEmpty()) {
+            val targetIndex = if (remoteUrls.size > 1) 1 else 0
+            val path = imageCacheManager.cacheSingleScreenshot(
+                game.id, remoteUrls[targetIndex], targetIndex
+            )
+            if (path != null) return path
+        }
+
+        return game.coverPath
     }
 
     fun cycleBuiltinFilter(direction: Int) {
@@ -1416,6 +1845,7 @@ class SettingsViewModel @Inject constructor(
             SettingsSection.SYNC_SETTINGS -> syncDelegate.loadLibrarySettings(viewModelScope)
             SettingsSection.STEAM_SETTINGS -> steamDelegate.loadSteamSettings(context, viewModelScope)
             SettingsSection.PERMISSIONS -> permissionsDelegate.refreshPermissions()
+            SettingsSection.SHADER_STACK -> loadShaderStack()
             else -> {}
         }
     }
@@ -1577,6 +2007,10 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = 6) }
                 true
             }
+            state.currentSection == SettingsSection.SHADER_STACK -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_VIDEO, focusedIndex = 1) }
+                true
+            }
             state.currentSection == SettingsSection.BUILTIN_VIDEO -> {
                 _uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 0) }
                 true
@@ -1662,6 +2096,7 @@ class SettingsViewModel @Inject constructor(
                     state.platformLibretro.platformSettings
                 )
                 SettingsSection.CORE_MANAGEMENT -> (state.coreManagement.platforms.size - 1).coerceAtLeast(0)
+                SettingsSection.SHADER_STACK -> com.nendo.argosy.ui.screens.settings.sections.shaderStackMaxFocusIndex(state.shaderStack)
                 SettingsSection.BIOS -> {
                     // Summary card (0), Directory (1), platforms start at 2
                     val bios = state.bios
@@ -1951,7 +2386,8 @@ class SettingsViewModel @Inject constructor(
 
     fun loadPreviewGames() {
         viewModelScope.launch {
-            val games = displayDelegate.loadPreviewGames()
+            val supportedPlatforms = LibretroCoreRegistry.getSupportedPlatforms()
+            val games = displayDelegate.loadPreviewGames(supportedPlatforms)
             _uiState.update {
                 it.copy(
                     previewGames = games,
@@ -1961,6 +2397,9 @@ class SettingsViewModel @Inject constructor(
             }
             if (games.isNotEmpty()) {
                 extractGradientForPreview()
+                if (_uiState.value.currentSection == SettingsSection.SHADER_STACK) {
+                    renderShaderPreview()
+                }
             }
         }
     }
@@ -3295,6 +3734,7 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsSection.BUILTIN_VIDEO -> InputResult.HANDLED
             SettingsSection.BUILTIN_CONTROLS -> InputResult.HANDLED
+            SettingsSection.SHADER_STACK -> InputResult.HANDLED
             SettingsSection.CORE_MANAGEMENT -> {
                 selectCoreForPlatform()
                 InputResult.HANDLED
@@ -3399,6 +3839,11 @@ class SettingsViewModel @Inject constructor(
             }
             return -1
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _shaderPreviewRenderer.destroy()
     }
 
     fun createInputHandler(onBack: () -> Unit): InputHandler =

@@ -538,6 +538,23 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
+    suspend fun cacheSingleScreenshot(gameId: Long, url: String, index: Int): String? {
+        val fileName = "ss_g${gameId}_${index}_${url.md5Hash()}.jpg"
+        val cachedFile = File(cacheDir, fileName)
+
+        if (cachedFile.exists() && isValidImageFile(cachedFile)) {
+            return cachedFile.absolutePath
+        }
+
+        val bitmap = downloadAndResize(url, 480) ?: return null
+        FileOutputStream(cachedFile).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, out)
+        }
+        bitmap.recycle()
+
+        return if (isValidImageFile(cachedFile)) cachedFile.absolutePath else null
+    }
+
     private fun startScreenshotProcessingIfNeeded() {
         if (isProcessingScreenshots) return
         isProcessingScreenshots = true

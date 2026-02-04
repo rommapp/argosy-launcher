@@ -22,6 +22,7 @@ class EffectiveLibretroSettingsResolver @Inject constructor(
 
         return BuiltinEmulatorSettings(
             shader = perPlatform?.shader ?: global.shader,
+            shaderChainJson = perPlatform?.shaderChain ?: global.shaderChainJson,
             filter = perPlatform?.filter ?: global.filter,
             aspectRatio = perPlatform?.aspectRatio ?: global.aspectRatio,
             rotation = perPlatform?.rotation ?: global.rotation,

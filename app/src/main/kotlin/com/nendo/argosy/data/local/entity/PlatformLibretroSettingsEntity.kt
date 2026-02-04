@@ -22,6 +22,7 @@ data class PlatformLibretroSettingsEntity(
     val id: Long = 0,
     val platformId: Long,
     val shader: String? = null,
+    val shaderChain: String? = null,
     val filter: String? = null,
     val aspectRatio: String? = null,
     val rotation: Int? = null,
@@ -39,6 +40,7 @@ data class PlatformLibretroSettingsEntity(
 
     fun hasAnyVideoOverrides(): Boolean =
         shader != null ||
+        shaderChain != null ||
         filter != null ||
         aspectRatio != null ||
         rotation != null ||

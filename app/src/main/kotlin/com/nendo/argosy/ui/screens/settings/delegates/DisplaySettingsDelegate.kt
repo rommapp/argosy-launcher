@@ -60,8 +60,27 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
-    suspend fun loadPreviewGames(): List<GameListItem> {
+    suspend fun loadPreviewGames(platformSlugs: Set<String>? = null): List<GameListItem> {
+        if (platformSlugs != null && platformSlugs.isNotEmpty()) {
+            val filtered = gameDao.getRecentlyPlayedOnPlatforms(platformSlugs.toList(), 10)
+            if (filtered.isNotEmpty()) return filtered
+        }
         return gameDao.getRecentlyPlayedWithCovers(10)
+    }
+
+    suspend fun getFirstCachedScreenshot(gameId: Long): String? {
+        val paths = gameDao.getCachedScreenshotPaths(gameId) ?: return null
+        val validPaths = paths.split(",").filter { it.startsWith("/") && java.io.File(it).exists() }
+        return when {
+            validPaths.size > 1 -> validPaths[1]
+            validPaths.isNotEmpty() -> validPaths[0]
+            else -> null
+        }
+    }
+
+    suspend fun getScreenshotUrls(gameId: Long): List<String> {
+        val raw = gameDao.getScreenshotPaths(gameId) ?: return emptyList()
+        return raw.split(",").filter { it.isNotBlank() }
     }
 
     fun updateState(newState: DisplayState) {

@@ -47,7 +47,13 @@ fun BuiltinVideoSection(
                 onCycle = { setting, direction ->
                     when (setting) {
                         LibretroSettingDef.Shader -> viewModel.cycleBuiltinShader(direction)
-                        LibretroSettingDef.Filter -> viewModel.cycleBuiltinFilter(direction)
+                        LibretroSettingDef.Filter -> {
+                            if (videoState.shader == "Custom") {
+                                viewModel.openShaderChainConfig()
+                            } else {
+                                viewModel.cycleBuiltinFilter(direction)
+                            }
+                        }
                         LibretroSettingDef.AspectRatio -> viewModel.cycleBuiltinAspectRatio(direction)
                         LibretroSettingDef.Rotation -> viewModel.cycleBuiltinRotation(direction)
                         LibretroSettingDef.OverscanCrop -> viewModel.cycleBuiltinOverscanCrop(direction)

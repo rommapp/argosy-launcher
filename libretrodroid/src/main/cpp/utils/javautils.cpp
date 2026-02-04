@@ -17,6 +17,7 @@
 
 #include "javautils.h"
 #include "jnistring.h"
+#include "../log.h"
 
 namespace libretrodroid {
 
@@ -93,13 +94,37 @@ ShaderManager::Config JavaUtils::shaderFromJava(JNIEnv *env, jobject obj) {
 
     jfieldID jTypeField = env->GetFieldID(jShaderClass, "type", "I");
     jfieldID jParamsField = env->GetFieldID(jShaderClass, "params", "Ljava/util/Map;");
+    jfieldID jPassesField = env->GetFieldID(jShaderClass, "passes", "Ljava/util/List;");
 
     jobject jParams = env->GetObjectField(obj, jParamsField);
 
     int type = env->GetIntField(obj, jTypeField);
     std::unordered_map<std::string, std::string> params = stringMapFromJava(env, jParams);
 
-    return ShaderManager::Config { ShaderManager::Type(type), params };
+    std::vector<ShaderManager::Pass> customPasses;
+
+    if (type == static_cast<int>(ShaderManager::Type::SHADER_CUSTOM)) {
+        jobject jPasses = env->GetObjectField(obj, jPassesField);
+
+        jclass jPassClass = env->FindClass("com/swordfish/libretrodroid/GLRetroShaderPass");
+        jfieldID jVertexField = env->GetFieldID(jPassClass, "vertex", "Ljava/lang/String;");
+        jfieldID jFragmentField = env->GetFieldID(jPassClass, "fragment", "Ljava/lang/String;");
+        jfieldID jLinearField = env->GetFieldID(jPassClass, "linear", "Z");
+        jfieldID jScaleField = env->GetFieldID(jPassClass, "scale", "F");
+
+        forEachOnJavaIterable(env, jPasses, [&](jobject jPass) {
+            auto vertex = JniString(env, (jstring) env->GetObjectField(jPass, jVertexField));
+            auto fragment = JniString(env, (jstring) env->GetObjectField(jPass, jFragmentField));
+            bool linear = env->GetBooleanField(jPass, jLinearField);
+            float scale = env->GetFloatField(jPass, jScaleField);
+
+            customPasses.push_back(ShaderManager::Pass {
+                vertex.stdString(), fragment.stdString(), linear, scale
+            });
+        });
+    }
+
+    return ShaderManager::Config { ShaderManager::Type(type), params, customPasses };
 }
 
 } //namespace libretrodroid

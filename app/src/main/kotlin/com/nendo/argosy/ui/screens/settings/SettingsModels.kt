@@ -48,6 +48,7 @@ enum class SettingsSection {
     EMULATORS,
     BUILTIN_VIDEO,
     BUILTIN_CONTROLS,
+    SHADER_STACK,
     CORE_MANAGEMENT,
     PERMISSIONS,
     ABOUT
@@ -210,6 +211,7 @@ data class PlatformContext(
 
 data class BuiltinVideoState(
     val shader: String = "None",
+    val shaderChainJson: String = "",
     val filter: String = "Auto",
     val aspectRatio: String = "Core Provided",
     val skipDuplicateFrames: Boolean = false,
@@ -229,7 +231,39 @@ data class BuiltinVideoState(
         if (platformContextIndex > 0 && platformContextIndex <= availablePlatforms.size)
             availablePlatforms[platformContextIndex - 1]
         else null
+    val shaderDisplayValue: String get() = shader
 }
+
+data class ShaderStackState(
+    val entries: List<ShaderStackEntry> = emptyList(),
+    val selectedIndex: Int = 0,
+    val paramFocusIndex: Int = 0,
+    val selectedShaderParams: List<ShaderParamDef> = emptyList(),
+    val showShaderPicker: Boolean = false,
+    val shaderPickerFocusIndex: Int = 0,
+    val shaderPickerCategory: String? = null,
+    val downloadingShaderId: String? = null,
+    val preInstallsSynced: Boolean = false
+) {
+    val isEmpty: Boolean get() = entries.isEmpty()
+    val selectedEntry: ShaderStackEntry? get() = entries.getOrNull(selectedIndex)
+    val maxParamFocusIndex: Int get() = (selectedShaderParams.size - 1).coerceAtLeast(0)
+}
+
+data class ShaderParamDef(
+    val name: String,
+    val description: String,
+    val initial: Float,
+    val min: Float,
+    val max: Float,
+    val step: Float
+)
+
+data class ShaderStackEntry(
+    val shaderId: String,
+    val displayName: String,
+    val params: Map<String, String> = emptyMap()
+)
 
 data class BuiltinControlsState(
     val rumbleEnabled: Boolean = true,
@@ -552,6 +586,7 @@ data class SettingsUiState(
     val emulators: EmulatorState = EmulatorState(),
     val builtinVideo: BuiltinVideoState = BuiltinVideoState(),
     val builtinControls: BuiltinControlsState = BuiltinControlsState(),
+    val shaderStack: ShaderStackState = ShaderStackState(),
     val coreManagement: CoreManagementState = CoreManagementState(),
     val server: ServerState = ServerState(),
     val storage: StorageState = StorageState(),
@@ -576,5 +611,6 @@ data class SettingsUiState(
     val previewGames: List<GameListItem> = emptyList(),
     val previewGameIndex: Int = 0,
     val gradientConfig: GradientExtractionConfig = GradientExtractionConfig(),
-    val gradientExtractionResult: GradientExtractionResult? = null
+    val gradientExtractionResult: GradientExtractionResult? = null,
+    val shaderPreviewBitmap: androidx.compose.ui.graphics.ImageBitmap? = null
 )

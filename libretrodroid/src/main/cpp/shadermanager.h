@@ -51,14 +51,17 @@ public:
         SHADER_UPSCALE_CUT = 4,
         SHADER_UPSCALE_CUT2 = 5,
         SHADER_UPSCALE_CUT3 = 6,
+        SHADER_CUSTOM = 100,
     };
 
     struct Config {
         Type type;
         std::unordered_map<std::string, std::string> params;
+        std::vector<Pass> customPasses;
 
         inline bool operator==(const Config& other) {
-            return type == other.type && params == other.params;
+            return type == other.type && params == other.params
+                && customPasses == other.customPasses;
         }
     };
 

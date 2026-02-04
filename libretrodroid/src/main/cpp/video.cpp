@@ -132,12 +132,21 @@ void Video::updateProgram() {
         shader.gvCoordinateHandle = glGetAttribLocation(shader.gProgram, "vCoordinate");
 
         shader.gTextureHandle = glGetUniformLocation(shader.gProgram, "texture");
+        if (shader.gTextureHandle == -1)
+            shader.gTextureHandle = glGetUniformLocation(shader.gProgram, "Texture");
 
         shader.gPreviousPassTextureHandle = glGetUniformLocation(shader.gProgram, "previousPass");
 
         shader.gTextureSizeHandle = glGetUniformLocation(shader.gProgram, "textureSize");
+        if (shader.gTextureSizeHandle == -1)
+            shader.gTextureSizeHandle = glGetUniformLocation(shader.gProgram, "TextureSize");
 
         shader.gScreenDensityHandle = glGetUniformLocation(shader.gProgram, "screenDensity");
+
+        shader.gInputSizeHandle = glGetUniformLocation(shader.gProgram, "InputSize");
+        shader.gOutputSizeHandle = glGetUniformLocation(shader.gProgram, "OutputSize");
+        shader.gFrameCountHandle = glGetUniformLocation(shader.gProgram, "FrameCount");
+        shader.gFrameDirectionHandle = glGetUniformLocation(shader.gProgram, "FrameDirection");
 
         shadersChain.push_back(shader);
     });
@@ -153,6 +162,7 @@ void Video::renderFrame() {
         return;
     }
     isDirty = false;
+    frameCount++;
 
     glDisable(GL_DEPTH_TEST);
 
@@ -209,6 +219,21 @@ void Video::renderFrame() {
         glUniform2f(shader.gTextureSizeHandle, getTextureWidth(), getTextureHeight());
 
         glUniform1f(shader.gScreenDensityHandle, getScreenDensity());
+
+        if (shader.gInputSizeHandle != -1)
+            glUniform2f(shader.gInputSizeHandle, getTextureWidth(), getTextureHeight());
+
+        auto passWidth = static_cast<float>(passData.width.value_or(videoLayout.getScreenWidth()));
+        auto passHeight = static_cast<float>(passData.height.value_or(videoLayout.getScreenHeight()));
+
+        if (shader.gOutputSizeHandle != -1)
+            glUniform2f(shader.gOutputSizeHandle, passWidth, passHeight);
+
+        if (shader.gFrameCountHandle != -1)
+            glUniform1i(shader.gFrameCountHandle, static_cast<GLint>(frameCount));
+
+        if (shader.gFrameDirectionHandle != -1)
+            glUniform1i(shader.gFrameDirectionHandle, 1);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 

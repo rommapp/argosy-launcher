@@ -16,7 +16,7 @@ sealed class LibretroSettingDef(
         key = "shader",
         section = "shaders",
         title = "Shader",
-        type = SettingType.Cycle(listOf("None", "Sharp", "CUT", "CUT2", "CUT3", "CRT", "LCD"))
+        type = SettingType.Cycle(listOf("None", "Sharp", "CUT", "CUT2", "CUT3", "CRT", "LCD", "Custom"))
     )
 
     data object Filter : LibretroSettingDef(

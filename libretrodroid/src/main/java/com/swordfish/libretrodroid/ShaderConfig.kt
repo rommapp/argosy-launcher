@@ -49,6 +49,15 @@ sealed interface ShaderConfig {
         val hardEdgesSearchMaxError: Float = 0.25f,
     ) : ShaderConfig
 
+    data class Custom(val passes: List<ShaderPass>) : ShaderConfig {
+        data class ShaderPass(
+            val vertex: String,
+            val fragment: String,
+            val linear: Boolean = false,
+            val scale: Float = 1.0f
+        )
+    }
+
     data class CUT3(
         val useDynamicBlend: Boolean = true,
         val blendMinContrastEdge: Float = 0.00f,

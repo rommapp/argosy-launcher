@@ -123,6 +123,7 @@ class UserPreferencesRepository @Inject constructor(
         val AMBIENT_LED_COLOR_MODE = stringPreferencesKey("ambient_led_color_mode")
 
         val BUILTIN_SHADER = stringPreferencesKey("builtin_shader")
+        val BUILTIN_SHADER_CHAIN = stringPreferencesKey("builtin_shader_chain")
         val BUILTIN_FILTER = stringPreferencesKey("builtin_filter")
         val BUILTIN_ASPECT_RATIO = stringPreferencesKey("builtin_aspect_ratio")
         val BUILTIN_SKIP_DUPLICATE_FRAMES = booleanPreferencesKey("builtin_skip_duplicate_frames")
@@ -899,6 +900,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setBuiltinShaderChain(chainJson: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_SHADER_CHAIN] = chainJson
+        }
+    }
+
     suspend fun setBuiltinFilter(filter: String) {
         dataStore.edit { prefs ->
             prefs[Keys.BUILTIN_FILTER] = filter
@@ -962,6 +969,7 @@ class UserPreferencesRepository @Inject constructor(
     fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = dataStore.data.map { prefs ->
         BuiltinEmulatorSettings(
             shader = prefs[Keys.BUILTIN_SHADER] ?: "None",
+            shaderChainJson = prefs[Keys.BUILTIN_SHADER_CHAIN] ?: "",
             filter = prefs[Keys.BUILTIN_FILTER] ?: "Auto",
             aspectRatio = prefs[Keys.BUILTIN_ASPECT_RATIO] ?: "Core Provided",
             skipDuplicateFrames = prefs[Keys.BUILTIN_SKIP_DUPLICATE_FRAMES] ?: false,
@@ -1046,6 +1054,7 @@ class UserPreferencesRepository @Inject constructor(
 
 data class BuiltinEmulatorSettings(
     val shader: String = "None",
+    val shaderChainJson: String = "",
     val filter: String = "Auto",
     val aspectRatio: String = "Core Provided",
     val skipDuplicateFrames: Boolean = false,
@@ -1068,8 +1077,12 @@ data class BuiltinEmulatorSettings(
             "CUT" -> com.swordfish.libretrodroid.ShaderConfig.CUT()
             "CUT2" -> com.swordfish.libretrodroid.ShaderConfig.CUT2()
             "CUT3" -> com.swordfish.libretrodroid.ShaderConfig.CUT3()
+            "Custom" -> com.swordfish.libretrodroid.ShaderConfig.Default
             else -> com.swordfish.libretrodroid.ShaderConfig.Default
         }
+
+    val shaderChainConfig: com.nendo.argosy.libretro.shader.ShaderChainConfig
+        get() = com.nendo.argosy.libretro.shader.ShaderChainConfig.fromJson(shaderChainJson)
 
     val filterMode: Int
         get() = when (filter) {

@@ -1611,6 +1611,10 @@ ShaderManager::Chain ShaderManager::getShader(const ShaderManager::Config& confi
             false
         };
     }
+
+    case Type::SHADER_CUSTOM: {
+        return { config.customPasses, false };
+    }
 }
 }
 

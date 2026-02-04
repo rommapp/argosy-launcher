@@ -84,6 +84,7 @@ import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
+import com.nendo.argosy.libretro.shader.ShaderRegistry
 import com.swordfish.libretrodroid.ShaderConfig
 import com.swordfish.libretrodroid.Variable
 import dagger.hilt.android.AndroidEntryPoint
@@ -146,6 +147,7 @@ class LibretroActivity : ComponentActivity() {
     private var canEnableBFI = false
 
     private var currentShader by mutableStateOf("None")
+    private var resolvedCustomShader: ShaderConfig = ShaderConfig.Default
     private var currentFilter by mutableStateOf("Auto")
     private var currentAspectRatio by mutableStateOf("Core Provided")
     private var currentRotation by mutableStateOf("Auto")
@@ -275,6 +277,9 @@ class LibretroActivity : ComponentActivity() {
         rewindEnabled = settings.rewindEnabled
 
         currentShader = settings.shader
+        if (settings.shader == "Custom") {
+            resolvedCustomShader = ShaderRegistry(this).resolveChain(settings.shaderChainConfig)
+        }
         currentFilter = settings.filter
         currentAspectRatio = settings.aspectRatio
         currentRotation = settings.rotationDisplay
@@ -305,7 +310,7 @@ class LibretroActivity : ComponentActivity() {
                 systemDirectory = systemDir.absolutePath
                 savesDirectory = savesDir.absolutePath
                 saveRAMState = existingSram
-                shader = settings.shaderConfig
+                shader = if (settings.shader == "Custom") resolvedCustomShader else settings.shaderConfig
                 skipDuplicateFrames = settings.skipDuplicateFrames
                 preferLowLatencyAudio = settings.lowLatencyAudio
                 rumbleEventsEnabled = settings.rumbleEnabled
@@ -1113,6 +1118,15 @@ class LibretroActivity : ComponentActivity() {
                     "CUT" -> ShaderConfig.CUT()
                     "CUT2" -> ShaderConfig.CUT2()
                     "CUT3" -> ShaderConfig.CUT3()
+                    "Custom" -> {
+                        if (resolvedCustomShader is ShaderConfig.Default) {
+                            val settings = kotlinx.coroutines.runBlocking {
+                                effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
+                            }
+                            resolvedCustomShader = ShaderRegistry(this).resolveChain(settings.shaderChainConfig)
+                        }
+                        resolvedCustomShader
+                    }
                     else -> ShaderConfig.Default
                 }
                 retroView.shader = shaderConfig

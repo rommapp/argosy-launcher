@@ -5,6 +5,7 @@ import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
 
 interface LibretroSettingsAccessor {
     fun getValue(setting: LibretroSettingDef): String
+    fun getDisplayValue(setting: LibretroSettingDef): String = getValue(setting)
     fun getGlobalValue(setting: LibretroSettingDef): String
     fun hasOverride(setting: LibretroSettingDef): Boolean
     fun cycle(setting: LibretroSettingDef, direction: Int)
@@ -19,6 +20,12 @@ class GlobalLibretroSettingsAccessor(
 ) : LibretroSettingsAccessor {
 
     override fun getValue(setting: LibretroSettingDef): String = getGlobalValue(setting)
+
+    override fun getDisplayValue(setting: LibretroSettingDef): String = when {
+        setting == LibretroSettingDef.Shader -> state.shaderDisplayValue
+        setting == LibretroSettingDef.Filter && state.shader == "Custom" -> "Configure"
+        else -> getValue(setting)
+    }
 
     override fun getGlobalValue(setting: LibretroSettingDef): String = when (setting) {
         LibretroSettingDef.Shader -> state.shader

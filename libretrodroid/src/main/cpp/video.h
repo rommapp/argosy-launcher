@@ -51,6 +51,10 @@ public:
         GLint gPreviousPassTextureHandle = 0;
         GLint gScreenDensityHandle = 0;
         GLint gTextureSizeHandle = 0;
+        GLint gInputSizeHandle = -1;
+        GLint gOutputSizeHandle = -1;
+        GLint gFrameCountHandle = -1;
+        GLint gFrameDirectionHandle = -1;
     };
 
     Video(
@@ -109,6 +113,7 @@ private:
     int filterMode = -1;  // -1 = auto (shader decides), 0 = nearest, 1 = linear
     bool bfiEnabled = false;
     unsigned int bfiFrameCounter = 0;
+    unsigned int frameCount = 0;
 
     std::vector<ShaderChainEntry> shadersChain;
 

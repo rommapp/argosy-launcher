@@ -77,6 +77,14 @@ class SettingsInputHandler(
             viewModel.moveEmulatorPickerFocus(-1)
             return InputResult.HANDLED
         }
+        if (state.shaderStack.showShaderPicker) {
+            viewModel.moveShaderPickerFocus(-1)
+            return InputResult.HANDLED
+        }
+        if (state.currentSection == SettingsSection.SHADER_STACK) {
+            viewModel.moveShaderParamFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.currentSection == SettingsSection.EMULATORS) {
             val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign)
             val config = state.emulators.platforms.getOrNull(platformIndex)
@@ -122,6 +130,14 @@ class SettingsInputHandler(
         }
         if (state.emulators.showEmulatorPicker) {
             viewModel.moveEmulatorPickerFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.shaderStack.showShaderPicker) {
+            viewModel.moveShaderPickerFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.currentSection == SettingsSection.SHADER_STACK) {
+            viewModel.moveShaderParamFocus(1)
             return InputResult.HANDLED
         }
         if (state.currentSection == SettingsSection.EMULATORS) {
@@ -325,7 +341,14 @@ class SettingsInputHandler(
                 if (state.builtinVideo.isGlobalContext) {
                     when (setting) {
                         LibretroSettingDef.Shader -> { viewModel.cycleBuiltinShader(-1); return InputResult.HANDLED }
-                        LibretroSettingDef.Filter -> { viewModel.cycleBuiltinFilter(-1); return InputResult.HANDLED }
+                        LibretroSettingDef.Filter -> {
+                            if (state.builtinVideo.shader == "Custom") {
+                                viewModel.openShaderChainConfig()
+                            } else {
+                                viewModel.cycleBuiltinFilter(-1)
+                            }
+                            return InputResult.HANDLED
+                        }
                         LibretroSettingDef.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(-1); return InputResult.HANDLED }
                         LibretroSettingDef.Rotation -> { viewModel.cycleBuiltinRotation(-1); return InputResult.HANDLED }
                         LibretroSettingDef.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(-1); return InputResult.HANDLED }
@@ -344,6 +367,11 @@ class SettingsInputHandler(
                     return InputResult.HANDLED
                 }
             }
+        }
+
+        if (state.currentSection == SettingsSection.SHADER_STACK && !state.shaderStack.showShaderPicker) {
+            viewModel.adjustShaderParam(-1)
+            return InputResult.HANDLED
         }
 
         return InputResult.UNHANDLED
@@ -535,7 +563,14 @@ class SettingsInputHandler(
                 if (state.builtinVideo.isGlobalContext) {
                     when (setting) {
                         LibretroSettingDef.Shader -> { viewModel.cycleBuiltinShader(1); return InputResult.HANDLED }
-                        LibretroSettingDef.Filter -> { viewModel.cycleBuiltinFilter(1); return InputResult.HANDLED }
+                        LibretroSettingDef.Filter -> {
+                            if (state.builtinVideo.shader == "Custom") {
+                                viewModel.openShaderChainConfig()
+                            } else {
+                                viewModel.cycleBuiltinFilter(1)
+                            }
+                            return InputResult.HANDLED
+                        }
                         LibretroSettingDef.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(1); return InputResult.HANDLED }
                         LibretroSettingDef.Rotation -> { viewModel.cycleBuiltinRotation(1); return InputResult.HANDLED }
                         LibretroSettingDef.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(1); return InputResult.HANDLED }
@@ -554,6 +589,11 @@ class SettingsInputHandler(
                     return InputResult.HANDLED
                 }
             }
+        }
+
+        if (state.currentSection == SettingsSection.SHADER_STACK && !state.shaderStack.showShaderPicker) {
+            viewModel.adjustShaderParam(1)
+            return InputResult.HANDLED
         }
 
         return InputResult.UNHANDLED
@@ -591,6 +631,18 @@ class SettingsInputHandler(
 
         if (state.emulators.showEmulatorPicker) {
             viewModel.confirmEmulatorPickerSelection()
+            return InputResult.HANDLED
+        }
+
+        if (state.shaderStack.showShaderPicker) {
+            viewModel.confirmShaderPickerSelection()
+            return InputResult.HANDLED
+        }
+
+        if (state.currentSection == SettingsSection.SHADER_STACK &&
+            state.shaderStack.selectedShaderParams.isNotEmpty()
+        ) {
+            viewModel.resetShaderParam()
             return InputResult.HANDLED
         }
 
@@ -653,7 +705,11 @@ class SettingsInputHandler(
                             return InputResult.HANDLED
                         }
                         LibretroSettingDef.Filter -> {
-                            viewModel.cycleBuiltinFilter(1)
+                            if (state.builtinVideo.shader == "Custom") {
+                                viewModel.openShaderChainConfig()
+                            } else {
+                                viewModel.cycleBuiltinFilter(1)
+                            }
                             return InputResult.HANDLED
                         }
                         LibretroSettingDef.AspectRatio -> {
@@ -784,6 +840,11 @@ class SettingsInputHandler(
         val state = viewModel.uiState.value
         if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
+        if (state.shaderStack.showShaderPicker) {
+            viewModel.dismissShaderPicker()
+            return InputResult.HANDLED
+        }
+
         return if (!viewModel.navigateBack()) {
             onBackNavigation()
             InputResult.HANDLED
@@ -801,7 +862,13 @@ class SettingsInputHandler(
             state.syncSettings.showPlatformFiltersModal ||
             state.syncSettings.showSyncFiltersModal ||
             state.syncSettings.showRegionPicker ||
-            state.emulators.showEmulatorPicker) {
+            state.emulators.showEmulatorPicker ||
+            state.shaderStack.showShaderPicker) {
+            return InputResult.HANDLED
+        }
+
+        if (state.currentSection == SettingsSection.SHADER_STACK) {
+            viewModel.showShaderPicker()
             return InputResult.HANDLED
         }
 
@@ -869,11 +936,27 @@ class SettingsInputHandler(
         return InputResult.UNHANDLED
     }
 
+    override fun onSecondaryAction(): InputResult {
+        val state = viewModel.uiState.value
+        if (state.shaderStack.showShaderPicker) return InputResult.HANDLED
+        if (state.currentSection == SettingsSection.SHADER_STACK && state.shaderStack.entries.isNotEmpty()) {
+            viewModel.removeShaderFromStack()
+            return InputResult.HANDLED
+        }
+        return InputResult.UNHANDLED
+    }
+
     override fun onMenu(): InputResult = InputResult.UNHANDLED
 
     override fun onPrevSection(): InputResult {
         val state = viewModel.uiState.value
         when (state.currentSection) {
+            SettingsSection.SHADER_STACK -> {
+                if (!state.shaderStack.showShaderPicker && state.shaderStack.entries.isNotEmpty()) {
+                    viewModel.cycleShaderTab(-1)
+                    return InputResult.HANDLED
+                }
+            }
             SettingsSection.BOX_ART -> {
                 viewModel.cycleBoxArtShape(-1)
                 return InputResult.HANDLED
@@ -918,6 +1001,12 @@ class SettingsInputHandler(
     override fun onNextSection(): InputResult {
         val state = viewModel.uiState.value
         when (state.currentSection) {
+            SettingsSection.SHADER_STACK -> {
+                if (!state.shaderStack.showShaderPicker && state.shaderStack.entries.isNotEmpty()) {
+                    viewModel.cycleShaderTab(1)
+                    return InputResult.HANDLED
+                }
+            }
             SettingsSection.BOX_ART -> {
                 viewModel.cycleBoxArtShape(1)
                 return InputResult.HANDLED
@@ -965,6 +1054,10 @@ class SettingsInputHandler(
             viewModel.cyclePrevPreviewGame()
             return InputResult.HANDLED
         }
+        if (state.currentSection == SettingsSection.SHADER_STACK && !state.shaderStack.showShaderPicker) {
+            viewModel.reorderShaderInStack(-1)
+            return InputResult.HANDLED
+        }
         return InputResult.UNHANDLED
     }
 
@@ -972,6 +1065,10 @@ class SettingsInputHandler(
         val state = viewModel.uiState.value
         if (state.currentSection == SettingsSection.BOX_ART) {
             viewModel.cycleNextPreviewGame()
+            return InputResult.HANDLED
+        }
+        if (state.currentSection == SettingsSection.SHADER_STACK && !state.shaderStack.showShaderPicker) {
+            viewModel.reorderShaderInStack(1)
             return InputResult.HANDLED
         }
         return InputResult.UNHANDLED

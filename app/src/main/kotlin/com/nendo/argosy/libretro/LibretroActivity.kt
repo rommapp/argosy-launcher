@@ -1082,11 +1082,9 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun openInGameShaderChainEditor() {
-        Log.d(TAG, "openInGameShaderChainEditor: resuming GL thread for capture")
         retroView.onResume()
         capturedGameFrame = retroView.captureRawFrame()
         retroView.onPause()
-        Log.d(TAG, "openInGameShaderChainEditor: capturedFrame=${capturedGameFrame?.let { "${it.width}x${it.height}" } ?: "null"}")
 
         val registry = ShaderRegistry(this)
         val manager = ShaderChainManager(
@@ -1785,7 +1783,6 @@ class LibretroActivity : ComponentActivity() {
     }
 
     companion object {
-        private const val TAG = "LibretroActivity"
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_CORE_PATH = "core_path"
         const val EXTRA_SYSTEM_DIR = "system_dir"

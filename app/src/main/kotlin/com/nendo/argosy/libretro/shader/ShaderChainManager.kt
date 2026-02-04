@@ -234,16 +234,13 @@ class ShaderChainManager(
         previewJob?.cancel()
         previewJob = scope.launch(Dispatchers.Default) {
             val entries = shaderStack.entries
-            Log.d(TAG, "renderPreview: ${entries.size} entries, calling previewInputProvider")
             val sourceBitmap = previewInputProvider()
-            Log.d(TAG, "renderPreview: sourceBitmap=${sourceBitmap?.let { "${it.width}x${it.height} recycled=${it.isRecycled}" } ?: "null"}")
             if (sourceBitmap == null) {
                 withContext(Dispatchers.Main) { previewBitmap = null }
                 return@launch
             }
 
             if (entries.isEmpty()) {
-                Log.d(TAG, "renderPreview: no entries, showing raw frame")
                 val imageBitmap = sourceBitmap.asImageBitmap()
                 withContext(Dispatchers.Main) { previewBitmap = imageBitmap }
                 return@launch
@@ -304,12 +301,8 @@ class ShaderChainManager(
                 sourceBitmap
             }
 
-            Log.d(TAG, "renderPreview: result=${result?.let { "${it.width}x${it.height}" } ?: "null"}")
             val imageBitmap = result?.asImageBitmap()
-            withContext(Dispatchers.Main) {
-                previewBitmap = imageBitmap
-                Log.d(TAG, "renderPreview: previewBitmap set, isNull=${imageBitmap == null}")
-            }
+            withContext(Dispatchers.Main) { previewBitmap = imageBitmap }
         }
     }
 

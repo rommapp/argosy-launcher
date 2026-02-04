@@ -281,35 +281,16 @@ float Video::getTextureHeight() {
 std::vector<uint8_t> Video::captureRawFrame(int& outWidth, int& outHeight) {
     outWidth = (int)getTextureWidth();
     outHeight = (int)getTextureHeight();
-    LOGD("captureRawFrame: texW=%d texH=%d", outWidth, outHeight);
-    if (outWidth == 0 || outHeight == 0) {
-        LOGD("captureRawFrame: zero dimensions, returning empty");
-        return {};
-    }
-
-    GLuint texId = renderer->getTexture();
-    LOGD("captureRawFrame: texId=%u", texId);
+    if (outWidth == 0 || outHeight == 0) return {};
 
     GLuint fbo;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D, texId, 0);
-
-    GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    LOGD("captureRawFrame: fbo=%u fbStatus=0x%x (complete=0x%x)", fbo, fbStatus, GL_FRAMEBUFFER_COMPLETE);
+        GL_TEXTURE_2D, renderer->getTexture(), 0);
 
     std::vector<uint8_t> pixels(outWidth * outHeight * 4);
     glReadPixels(0, 0, outWidth, outHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-
-    GLenum glErr = glGetError();
-    LOGD("captureRawFrame: glReadPixels done, glError=0x%x, dataSize=%zu", glErr, pixels.size());
-
-    uint32_t nonZero = 0;
-    for (size_t i = 0; i < pixels.size() && i < 1000; i++) {
-        if (pixels[i] != 0) nonZero++;
-    }
-    LOGD("captureRawFrame: first 1000 bytes nonZero=%u", nonZero);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &fbo);

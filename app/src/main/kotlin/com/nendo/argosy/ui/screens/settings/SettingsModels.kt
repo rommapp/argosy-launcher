@@ -586,7 +586,6 @@ data class SettingsUiState(
     val emulators: EmulatorState = EmulatorState(),
     val builtinVideo: BuiltinVideoState = BuiltinVideoState(),
     val builtinControls: BuiltinControlsState = BuiltinControlsState(),
-    val shaderStack: ShaderStackState = ShaderStackState(),
     val coreManagement: CoreManagementState = CoreManagementState(),
     val server: ServerState = ServerState(),
     val storage: StorageState = StorageState(),
@@ -612,5 +611,4 @@ data class SettingsUiState(
     val previewGameIndex: Int = 0,
     val gradientConfig: GradientExtractionConfig = GradientExtractionConfig(),
     val gradientExtractionResult: GradientExtractionResult? = null,
-    val shaderPreviewBitmap: androidx.compose.ui.graphics.ImageBitmap? = null
 )

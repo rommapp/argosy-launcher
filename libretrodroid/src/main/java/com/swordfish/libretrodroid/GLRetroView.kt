@@ -19,6 +19,7 @@ package com.swordfish.libretrodroid
 
 import android.app.ActivityManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.PointF
 import android.graphics.RectF
 import android.opengl.GLSurfaceView
@@ -222,6 +223,29 @@ class GLRetroView(
     fun getSystemRam(): ByteArray? = getMemoryData(LibretroDroid.MEMORY_SYSTEM_RAM)
 
     fun getSystemRamSize(): Int = getMemorySize(LibretroDroid.MEMORY_SYSTEM_RAM)
+
+    fun captureRawFrame(): Bitmap? = runOnGLThread {
+        val data = LibretroDroid.captureRawFrame() ?: return@runOnGLThread null
+        if (data.size < 8) return@runOnGLThread null
+        val bb = java.nio.ByteBuffer.wrap(data, 0, 8)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        val w = bb.getInt()
+        val h = bb.getInt()
+        if (w <= 0 || h <= 0) return@runOnGLThread null
+        val pixels = IntArray(w * h)
+        for (i in 0 until w * h) {
+            val offset = 8 + i * 4
+            val r = data[offset].toInt() and 0xFF
+            val g = data[offset + 1].toInt() and 0xFF
+            val b = data[offset + 2].toInt() and 0xFF
+            val a = data[offset + 3].toInt() and 0xFF
+            val srcRow = i / w
+            val dstRow = h - 1 - srcRow
+            val col = i % w
+            pixels[dstRow * w + col] = (a shl 24) or (r shl 16) or (g shl 8) or b
+        }
+        Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888)
+    }
 
     fun reset() = runOnGLThread {
         LibretroDroid.reset()

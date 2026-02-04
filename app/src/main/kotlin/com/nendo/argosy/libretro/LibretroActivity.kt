@@ -74,6 +74,7 @@ import com.nendo.argosy.libretro.ui.InGameControlsAction
 import com.nendo.argosy.libretro.ui.InGameControlsState
 import com.nendo.argosy.libretro.ui.InGameModalCallbacks
 import com.nendo.argosy.libretro.ui.InGameSettingsScreen
+import com.nendo.argosy.libretro.ui.InGameShaderChainScreen
 import com.nendo.argosy.libretro.ui.LibretroGamepadInputHandler
 import com.nendo.argosy.libretro.ui.LibretroMenuInputHandler
 import com.nendo.argosy.ui.input.InputHandler
@@ -84,6 +85,10 @@ import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
+import com.nendo.argosy.libretro.shader.ShaderChainConfig
+import com.nendo.argosy.libretro.shader.ShaderChainManager
+import com.nendo.argosy.libretro.shader.ShaderDownloader
+import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.libretro.shader.ShaderRegistry
 import com.swordfish.libretrodroid.ShaderConfig
 import com.swordfish.libretrodroid.Variable
@@ -129,6 +134,8 @@ class LibretroActivity : ComponentActivity() {
     private var menuVisible by mutableStateOf(false)
     private var cheatsMenuVisible by mutableStateOf(false)
     private var settingsVisible by mutableStateOf(false)
+    private var shaderChainEditorVisible by mutableStateOf(false)
+    private var inGameShaderChainManager: ShaderChainManager? = null
     private var lastCheatsTab by mutableStateOf(CheatsTab.CHEATS)
     private var cheatsNeedReset = false
     private var hasQuickSave by mutableStateOf(false)
@@ -429,7 +436,13 @@ class LibretroActivity : ComponentActivity() {
                                             globalValue = ::getGlobalVideoSettingValue,
                                             onCycle = ::cycleVideoSetting,
                                             onToggle = ::toggleVideoSetting,
-                                            onReset = ::resetVideoSetting
+                                            onReset = ::resetVideoSetting,
+                                            onActionCallback = { setting ->
+                                                if (setting == LibretroSettingDef.Filter && currentShader == "Custom") {
+                                                    settingsVisible = false
+                                                    openInGameShaderChainEditor()
+                                                }
+                                            }
                                         ),
                                         platformSlug = platformSlug,
                                         canEnableBFI = canEnableBFI,
@@ -494,7 +507,16 @@ class LibretroActivity : ComponentActivity() {
                                         }
                                     )
                                 }
-                                if (!menuVisible && !cheatsMenuVisible && !settingsVisible) {
+                                if (shaderChainEditorVisible) {
+                                    val manager = inGameShaderChainManager
+                                    if (manager != null) {
+                                        activeMenuHandler = InGameShaderChainScreen(
+                                            manager = manager,
+                                            onDismiss = ::closeInGameShaderChainEditor
+                                        )
+                                    }
+                                }
+                                if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible) {
                                     activeMenuHandler = null
                                 }
 
@@ -1057,6 +1079,58 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun openInGameShaderChainEditor() {
+        val registry = ShaderRegistry(this)
+        val manager = ShaderChainManager(
+            shaderRegistry = registry,
+            shaderDownloader = ShaderDownloader(registry.getCatalogDir()),
+            previewRenderer = ShaderPreviewRenderer(),
+            scope = lifecycleScope,
+            previewInputProvider = {
+                retroView.captureRawFrame()
+            },
+            onChainChanged = { config ->
+                val shaderConfig = ShaderRegistry(this).resolveChain(config)
+                resolvedCustomShader = shaderConfig
+                retroView.shader = shaderConfig
+            }
+        )
+
+        val settings = kotlinx.coroutines.runBlocking {
+            effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
+        }
+        manager.loadChain(settings.shaderChainJson)
+        inGameShaderChainManager = manager
+        shaderChainEditorVisible = true
+    }
+
+    private fun closeInGameShaderChainEditor() {
+        val manager = inGameShaderChainManager ?: return
+        val config = manager.getChainConfig()
+        val shaderConfig = ShaderRegistry(this).resolveChain(config)
+        resolvedCustomShader = shaderConfig
+        retroView.shader = shaderConfig
+        persistInGameShaderChain(config)
+        manager.destroy()
+        inGameShaderChainManager = null
+        shaderChainEditorVisible = false
+        settingsVisible = true
+    }
+
+    private fun persistInGameShaderChain(config: ShaderChainConfig) {
+        val json = config.toJson()
+        lifecycleScope.launch {
+            val current = platformLibretroSettingsDao.getByPlatformId(platformId)
+                ?: com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(platformId = platformId)
+            val updated = current.copy(shaderChain = json)
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformId)
+            }
+        }
+    }
+
     private fun getVideoSettingValue(setting: LibretroSettingDef): String = when (setting) {
         LibretroSettingDef.Shader -> currentShader
         LibretroSettingDef.Filter -> currentFilter
@@ -1521,7 +1595,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
             if (gamepadInputBridge.handleKeyEvent(event)) return true
             if (menuInputHandler.mapKeyToEvent(event.keyCode) != null) return true
         }
@@ -1529,7 +1603,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
             return super.onKeyDown(keyCode, event)
         }
 
@@ -1592,7 +1666,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
             return super.onKeyUp(keyCode, event)
         }
 
@@ -1611,7 +1685,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
             if (gamepadInputBridge.handleMotionEvent(event)) return true
             return super.onGenericMotionEvent(event)
         }
@@ -1659,7 +1733,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         enterImmersiveMode()
-        if (!menuVisible && !cheatsMenuVisible && !settingsVisible) {
+        if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible) {
             retroView.onResume()
         }
     }

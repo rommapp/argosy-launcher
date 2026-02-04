@@ -77,6 +77,8 @@ public:
     std::pair<int8_t *, size_t> getMemoryData(unsigned int memoryType);
     size_t getMemorySize(unsigned int memoryType);
 
+    std::vector<uint8_t> captureRawFrame(int& outWidth, int& outHeight);
+
     void onSurfaceCreated();
     void onSurfaceChanged(unsigned int width, unsigned int height);
 

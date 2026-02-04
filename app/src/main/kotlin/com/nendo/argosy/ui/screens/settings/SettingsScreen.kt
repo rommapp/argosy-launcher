@@ -384,13 +384,13 @@ fun SettingsScreen(
                     SettingsSection.BUILTIN_CONTROLS -> BuiltinControlsSection(uiState, viewModel)
                     SettingsSection.CORE_MANAGEMENT -> CoreManagementSection(uiState, viewModel)
                     SettingsSection.BIOS -> BiosSection(uiState, viewModel)
-                    SettingsSection.SHADER_STACK -> ShaderStackSection(uiState, viewModel)
+                    SettingsSection.SHADER_STACK -> ShaderStackSection(viewModel.shaderChainManager)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                 }
             }
 
-            SettingsFooter(uiState)
+            SettingsFooter(uiState, viewModel.shaderChainManager.shaderStack)
         }
 
         AnimatedVisibility(
@@ -719,7 +719,7 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
 }
 
 @Composable
-private fun SettingsFooter(uiState: SettingsUiState) {
+private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackState) {
     if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker) {
         return
     }
@@ -730,8 +730,8 @@ private fun SettingsFooter(uiState: SettingsUiState) {
             add(InputButton.DPAD to "Navigate")
         }
         if (uiState.currentSection == SettingsSection.SHADER_STACK &&
-            uiState.shaderStack.entries.isNotEmpty() &&
-            uiState.shaderStack.selectedShaderParams.isNotEmpty()
+            shaderStack.entries.isNotEmpty() &&
+            shaderStack.selectedShaderParams.isNotEmpty()
         ) {
             add(InputButton.DPAD_VERTICAL to "Navigate")
         }
@@ -740,15 +740,15 @@ private fun SettingsFooter(uiState: SettingsUiState) {
             add(InputButton.LT_RT to "Preview Game")
         }
         if (uiState.currentSection == SettingsSection.SHADER_STACK) {
-            if (uiState.shaderStack.entries.isNotEmpty()) {
+            if (shaderStack.entries.isNotEmpty()) {
                 add(InputButton.LB_RB to "Shader")
                 add(InputButton.LT_RT to "Reorder")
-                if (uiState.shaderStack.selectedShaderParams.isNotEmpty()) {
+                if (shaderStack.selectedShaderParams.isNotEmpty()) {
                     add(InputButton.DPAD_HORIZONTAL to "Adjust")
                 }
             }
             add(InputButton.X to "Add")
-            if (uiState.shaderStack.entries.isNotEmpty()) {
+            if (shaderStack.entries.isNotEmpty()) {
                 add(InputButton.Y to "Remove")
             }
         }

@@ -19,8 +19,10 @@
 #define LIBRETRODROID_VIDEO_H
 
 #include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 #include <optional>
 #include <array>
+#include <vector>
 
 #include "renderers/renderer.h"
 #include "shadermanager.h"
@@ -85,6 +87,8 @@ public:
     void renderBlackFrame();
 
     void onNewFrame(const void *data, unsigned width, unsigned height, size_t pitch);
+
+    std::vector<uint8_t> captureRawFrame(int& outWidth, int& outHeight);
 
     uintptr_t getCurrentFramebuffer() {
         return renderer->getFramebuffer();

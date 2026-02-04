@@ -216,6 +216,23 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
     return nullptr;
 }
 
+JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_captureRawFrame(
+    JNIEnv* env,
+    jclass obj
+) {
+    int w, h;
+    auto pixels = LibretroDroid::getInstance().captureRawFrame(w, h);
+    if (pixels.empty()) return nullptr;
+
+    jsize totalSize = 8 + (jsize)pixels.size();
+    jbyteArray result = env->NewByteArray(totalSize);
+    int32_t dims[2] = { w, h };
+    env->SetByteArrayRegion(result, 0, 8, reinterpret_cast<jbyte*>(dims));
+    env->SetByteArrayRegion(result, 8, (jsize)pixels.size(),
+        reinterpret_cast<const jbyte*>(pixels.data()));
+    return result;
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setCheat(
     JNIEnv* env,
     jclass obj,

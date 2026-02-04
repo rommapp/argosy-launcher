@@ -8,9 +8,11 @@ interface LibretroSettingsAccessor {
     fun getDisplayValue(setting: LibretroSettingDef): String = getValue(setting)
     fun getGlobalValue(setting: LibretroSettingDef): String
     fun hasOverride(setting: LibretroSettingDef): Boolean
+    fun isActionItem(setting: LibretroSettingDef): Boolean = false
     fun cycle(setting: LibretroSettingDef, direction: Int)
     fun toggle(setting: LibretroSettingDef)
     fun reset(setting: LibretroSettingDef)
+    fun onAction(setting: LibretroSettingDef) { cycle(setting, 1) }
 }
 
 class GlobalLibretroSettingsAccessor(
@@ -23,7 +25,7 @@ class GlobalLibretroSettingsAccessor(
 
     override fun getDisplayValue(setting: LibretroSettingDef): String = when {
         setting == LibretroSettingDef.Shader -> state.shaderDisplayValue
-        setting == LibretroSettingDef.Filter && state.shader == "Custom" -> "Configure"
+        isActionItem(setting) -> "Configure Shader Chain"
         else -> getValue(setting)
     }
 
@@ -41,6 +43,9 @@ class GlobalLibretroSettingsAccessor(
     }
 
     override fun hasOverride(setting: LibretroSettingDef): Boolean = false
+
+    override fun isActionItem(setting: LibretroSettingDef): Boolean =
+        setting == LibretroSettingDef.Filter && state.shader == "Custom"
 
     override fun cycle(setting: LibretroSettingDef, direction: Int) {
         onCycle(setting, direction)
@@ -143,13 +148,21 @@ class InGameLibretroSettingsAccessor(
     private val globalValue: (LibretroSettingDef) -> String,
     private val onCycle: (LibretroSettingDef, Int) -> Unit,
     private val onToggle: (LibretroSettingDef) -> Unit,
-    private val onReset: (LibretroSettingDef) -> Unit
+    private val onReset: (LibretroSettingDef) -> Unit,
+    private val onActionCallback: (LibretroSettingDef) -> Unit = {}
 ) : LibretroSettingsAccessor {
     override fun getValue(setting: LibretroSettingDef): String = getCurrentValue(setting)
+    override fun getDisplayValue(setting: LibretroSettingDef): String = when {
+        isActionItem(setting) -> "Configure Shader Chain"
+        else -> getValue(setting)
+    }
     override fun getGlobalValue(setting: LibretroSettingDef): String = globalValue(setting)
     override fun hasOverride(setting: LibretroSettingDef): Boolean =
         getCurrentValue(setting) != globalValue(setting)
+    override fun isActionItem(setting: LibretroSettingDef): Boolean =
+        setting == LibretroSettingDef.Filter && getCurrentValue(LibretroSettingDef.Shader) == "Custom"
     override fun cycle(setting: LibretroSettingDef, direction: Int) = onCycle(setting, direction)
     override fun toggle(setting: LibretroSettingDef) = onToggle(setting)
     override fun reset(setting: LibretroSettingDef) = onReset(setting)
+    override fun onAction(setting: LibretroSettingDef) = onActionCallback(setting)
 }

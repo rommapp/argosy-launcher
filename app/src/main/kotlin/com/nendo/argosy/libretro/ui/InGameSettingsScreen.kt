@@ -240,6 +240,7 @@ fun InGameSettingsScreen(
 
             override fun onLeft(): InputResult {
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
+                if (accessor.isActionItem(setting)) return InputResult.HANDLED
                 if (setting.type is LibretroSettingDef.SettingType.Cycle) {
                     accessor.cycle(setting, -1)
                 }
@@ -248,6 +249,7 @@ fun InGameSettingsScreen(
 
             override fun onRight(): InputResult {
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
+                if (accessor.isActionItem(setting)) return InputResult.HANDLED
                 if (setting.type is LibretroSettingDef.SettingType.Cycle) {
                     accessor.cycle(setting, 1)
                 }
@@ -258,7 +260,9 @@ fun InGameSettingsScreen(
                 when (currentTab) {
                     InGameSettingsTab.VIDEO -> {
                         val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
-                        when (setting.type) {
+                        if (accessor.isActionItem(setting)) {
+                            accessor.onAction(setting)
+                        } else when (setting.type) {
                             is LibretroSettingDef.SettingType.Switch -> accessor.toggle(setting)
                             is LibretroSettingDef.SettingType.Cycle -> accessor.cycle(setting, 1)
                         }

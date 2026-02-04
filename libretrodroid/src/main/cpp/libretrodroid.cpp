@@ -175,6 +175,15 @@ std::pair<int8_t*, size_t> LibretroDroid::serializeSRAM() {
     return std::pair(data, size);
 }
 
+std::vector<uint8_t> LibretroDroid::captureRawFrame(int& outWidth, int& outHeight) {
+    if (video == nullptr) {
+        outWidth = 0;
+        outHeight = 0;
+        return {};
+    }
+    return video->captureRawFrame(outWidth, outHeight);
+}
+
 std::pair<int8_t*, size_t> LibretroDroid::getMemoryData(unsigned int memoryType) {
     size_t size = core->retro_get_memory_size(memoryType);
     if (size == 0) {

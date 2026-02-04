@@ -278,6 +278,25 @@ float Video::getTextureHeight() {
     return renderer->lastFrameSize.second;
 }
 
+std::vector<uint8_t> Video::captureRawFrame(int& outWidth, int& outHeight) {
+    outWidth = (int)getTextureWidth();
+    outHeight = (int)getTextureHeight();
+    if (outWidth == 0 || outHeight == 0) return {};
+
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D, renderer->getTexture(), 0);
+
+    std::vector<uint8_t> pixels(outWidth * outHeight * 4);
+    glReadPixels(0, 0, outWidth, outHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &fbo);
+    return pixels;
+}
+
 void Video::onNewFrame(const void *data, unsigned width, unsigned height, size_t pitch) {
     LOGD("Video::onNewFrame: data=%p width=%u height=%u pitch=%zu", data, width, height, pitch);
     if (data != nullptr) {

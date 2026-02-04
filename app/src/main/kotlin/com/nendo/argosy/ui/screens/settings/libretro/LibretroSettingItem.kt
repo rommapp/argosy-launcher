@@ -1,8 +1,11 @@
 package com.nendo.argosy.ui.screens.settings.libretro
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.ui.components.CyclePreference
+import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 
 @Composable
@@ -20,6 +23,17 @@ fun LibretroSettingItem(
     val subtitle = when {
         isPerPlatform && hasOverride -> "Global: ${formatGlobalHint(setting, globalValue)}"
         else -> setting.subtitle
+    }
+
+    if (accessor.isActionItem(setting)) {
+        NavigationPreference(
+            icon = Icons.Default.Tune,
+            title = value,
+            subtitle = "Configure shader effects",
+            isFocused = isFocused,
+            onClick = { accessor.onAction(setting) }
+        )
+        return
     }
 
     when (setting.type) {

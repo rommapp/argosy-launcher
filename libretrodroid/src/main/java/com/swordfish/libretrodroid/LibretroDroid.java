@@ -123,6 +123,8 @@ public class LibretroDroid {
     public static native byte[] serializeState();
     public static native boolean unserializeState(byte[] state);
 
+    public static native byte[] captureRawFrame();
+
     public static native void setCheat(int index, boolean enable, String code);
     public static native void resetCheat();
 

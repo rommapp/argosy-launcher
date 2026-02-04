@@ -34,11 +34,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.libretro.shader.ShaderChainManager
 import com.nendo.argosy.ui.screens.settings.ShaderParamDef
 import com.nendo.argosy.ui.screens.settings.ShaderStackEntry
 import com.nendo.argosy.ui.screens.settings.ShaderStackState
-import com.nendo.argosy.ui.screens.settings.SettingsUiState
-import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.ShaderPickerModal
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
@@ -46,14 +45,13 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
 fun ShaderStackSection(
-    uiState: SettingsUiState,
-    viewModel: SettingsViewModel
+    manager: ShaderChainManager
 ) {
     val listState = rememberLazyListState()
-    val shaderStack = uiState.shaderStack
+    val shaderStack = manager.shaderStack
     val entries = shaderStack.entries
     val params = shaderStack.selectedShaderParams
-    val previewBitmap = uiState.shaderPreviewBitmap
+    val previewBitmap = manager.previewBitmap
 
     FocusedScroll(
         listState = listState,
@@ -81,7 +79,7 @@ fun ShaderStackSection(
                     ShaderTabBar(
                         entries = entries,
                         selectedIndex = shaderStack.selectedIndex,
-                        onTabTap = { viewModel.selectShaderInStack(it) }
+                        onTabTap = { manager.selectShaderInStack(it) }
                     )
 
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
@@ -107,7 +105,7 @@ fun ShaderStackSection(
                                     paramDef = paramDef,
                                     currentValue = currentValue,
                                     isFocused = shaderStack.paramFocusIndex == index,
-                                    onClick = { viewModel.moveShaderParamFocus(index - shaderStack.paramFocusIndex) }
+                                    onClick = { manager.moveShaderParamFocus(index - shaderStack.paramFocusIndex) }
                                 )
                             }
                         }
@@ -128,7 +126,7 @@ fun ShaderStackSection(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            val registry = viewModel.getShaderRegistry()
+            val registry = manager.getShaderRegistry()
             val allShaders = remember { registry.getShadersForPicker() }
             val installedIds = remember(shaderStack.downloadingShaderId) {
                 registry.getInstalledIds()
@@ -139,10 +137,10 @@ fun ShaderStackSection(
                 installedIds = installedIds,
                 downloadingShaderId = shaderStack.downloadingShaderId,
                 onSelect = { entry ->
-                    viewModel.addShaderToStack(entry.id, entry.displayName)
+                    manager.addShaderToStack(entry.id, entry.displayName)
                 },
-                onDismiss = { viewModel.dismissShaderPicker() },
-                onItemTap = { index -> viewModel.setShaderPickerFocusIndex(index) }
+                onDismiss = { manager.dismissShaderPicker() },
+                onItemTap = { index -> manager.setShaderPickerFocusIndex(index) }
             )
         }
     }

@@ -1,6 +1,7 @@
 package com.nendo.argosy.libretro.shader
 
 import android.content.Context
+import android.util.Log
 import com.swordfish.libretrodroid.ShaderConfig
 import java.io.File
 
@@ -349,16 +350,73 @@ class ShaderRegistry(private val context: Context) {
 
     fun resolveChain(chain: ShaderChainConfig): ShaderConfig {
         if (chain.entries.isEmpty()) return ShaderConfig.Default
+
         val allPasses = chain.entries.flatMap { chainEntry ->
             val entry = findById(chainEntry.shaderId) ?: return@flatMap emptyList()
             try {
-                loadShader(entry).passes
-            } catch (_: Exception) {
+                val passes = loadShader(entry).passes
+                val paramDefs = loadShaderParameters(entry)
+                val defaults = paramDefs.associate { it.name to it.initial }
+                val userParams = chainEntry.params.mapNotNull { (k, v) ->
+                    v.toFloatOrNull()?.let { k to it }
+                }.toMap()
+                val resolved = defaults + userParams
+                passes.map { pass ->
+                    ShaderConfig.Custom.ShaderPass(
+                        vertex = processShaderSource(pass.vertex, resolved),
+                        fragment = processShaderSource(pass.fragment, resolved),
+                        linear = pass.linear
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "resolveChain: failed for ${entry.id}: ${e.message}")
                 emptyList()
             }
         }
+
         if (allPasses.isEmpty()) return ShaderConfig.Default
         return ShaderConfig.Custom(passes = allPasses)
+    }
+
+    private val PRAGMA_LINE = Regex("""^\s*#pragma\s+parameter\s""")
+    private val DEFINE_LINE = Regex("""^(\s*#define\s+)(\w+)(\s+)([\d.eE+-]+)(.*)$""")
+    private val UNIFORM_PARAM = Regex("""^(\s*)uniform\s+(?:\w+\s+)*float\s+(\w+)\s*;(.*)$""")
+
+    private fun processShaderSource(
+        source: String,
+        params: Map<String, Float>
+    ): String {
+        val lines = source.lines().mapNotNull { line ->
+            when {
+                PRAGMA_LINE.containsMatchIn(line) -> null
+                params.isEmpty() -> line
+                else -> {
+                    val um = UNIFORM_PARAM.matchEntire(line)
+                    if (um != null) {
+                        val name = um.groupValues[2]
+                        val resolved = params[name]
+                        if (resolved != null) {
+                            "${um.groupValues[1]}const float $name = ${formatGlslFloat(resolved)};${um.groupValues[3]}"
+                        } else line
+                    } else {
+                        val dm = DEFINE_LINE.matchEntire(line)
+                        if (dm != null) {
+                            val name = dm.groupValues[2]
+                            val resolved = params[name]
+                            if (resolved != null) {
+                                "${dm.groupValues[1]}${name}${dm.groupValues[3]}${formatGlslFloat(resolved)}${dm.groupValues[5]}"
+                            } else line
+                        } else line
+                    }
+                }
+            }
+        }
+        return "#define PARAMETER_UNIFORM 1\n#define PARAMETER_UNIFORMS 1\n" + lines.joinToString("\n")
+    }
+
+    private fun formatGlslFloat(value: Float): String {
+        val s = value.toBigDecimal().stripTrailingZeros().toPlainString()
+        return if ('.' in s) s else "$s.0"
     }
 
     fun loadShaderParameters(entry: ShaderEntry): List<GlslParser.ShaderParameter> {
@@ -467,6 +525,8 @@ class ShaderRegistry(private val context: Context) {
     }
 
     companion object {
+        private const val TAG = "ShaderRegistry"
+
         const val GITHUB_RAW_BASE =
             "https://raw.githubusercontent.com/libretro/glsl-shaders/master/"
 

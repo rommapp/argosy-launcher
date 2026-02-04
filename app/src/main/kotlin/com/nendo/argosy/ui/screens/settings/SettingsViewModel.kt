@@ -1003,7 +1003,6 @@ class SettingsViewModel @Inject constructor(
             }
             if (result.downloaded > 0) {
                 _shaderRegistry.invalidateInstalledCache()
-                Log.d("SettingsVM", "Shader sync: ${result.downloaded} downloaded, ${result.failed} failed")
             }
         }
     }
@@ -1163,10 +1162,15 @@ class SettingsViewModel @Inject constructor(
             }
         )
         val json = chain.toJson()
+        val shaderMode = if (entries.isNotEmpty()) "Custom" else "None"
         _uiState.update {
-            it.copy(builtinVideo = it.builtinVideo.copy(shaderChainJson = json))
+            it.copy(builtinVideo = it.builtinVideo.copy(
+                shader = shaderMode,
+                shaderChainJson = json
+            ))
         }
         viewModelScope.launch {
+            preferencesRepository.setBuiltinShader(shaderMode)
             preferencesRepository.setBuiltinShaderChain(json)
         }
     }
@@ -1266,7 +1270,6 @@ class SettingsViewModel @Inject constructor(
             }
 
             val imagePath = resolvePreviewImage(game)
-            Log.d(TAG, "renderShaderPreview: imagePath=$imagePath, game=${game.title}, entries=${state.shaderStack.entries.size}")
             if (imagePath == null) {
                 withContext(Dispatchers.Main) {
                     _uiState.update { it.copy(shaderPreviewBitmap = null) }
@@ -1277,7 +1280,6 @@ class SettingsViewModel @Inject constructor(
             val entries = state.shaderStack.entries
             if (entries.isEmpty()) {
                 val inputBitmap = BitmapFactory.decodeFile(imagePath)
-                Log.d(TAG, "renderShaderPreview: empty chain, bitmap=${inputBitmap != null}")
                 val imageBitmap = inputBitmap?.asImageBitmap()
                 withContext(Dispatchers.Main) {
                     _uiState.update { it.copy(shaderPreviewBitmap = imageBitmap) }
@@ -1306,8 +1308,6 @@ class SettingsViewModel @Inject constructor(
                     continue
                 }
             }
-            Log.d(TAG, "renderShaderPreview: resolved ${allPasses.size} passes")
-
             val sourceBitmap = BitmapFactory.decodeFile(imagePath)
             if (sourceBitmap == null) {
                 Log.e(TAG, "renderShaderPreview: failed to decode $imagePath")
@@ -1339,8 +1339,6 @@ class SettingsViewModel @Inject constructor(
             } else {
                 sourceBitmap
             }
-            Log.d(TAG, "renderShaderPreview: render result=${result != null}, size=${result?.width}x${result?.height}")
-
             val imageBitmap = result?.asImageBitmap()
 
             withContext(Dispatchers.Main) {

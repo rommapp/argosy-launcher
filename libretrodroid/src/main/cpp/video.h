@@ -55,6 +55,7 @@ public:
         GLint gOutputSizeHandle = -1;
         GLint gFrameCountHandle = -1;
         GLint gFrameDirectionHandle = -1;
+        GLint gMVPMatrixHandle = -1;
     };
 
     Video(

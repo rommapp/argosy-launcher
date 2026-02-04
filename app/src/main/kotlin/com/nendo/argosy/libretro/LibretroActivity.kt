@@ -148,6 +148,7 @@ class LibretroActivity : ComponentActivity() {
 
     private var currentShader by mutableStateOf("None")
     private var resolvedCustomShader: ShaderConfig = ShaderConfig.Default
+    private lateinit var globalSettings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
     private var currentFilter by mutableStateOf("Auto")
     private var currentAspectRatio by mutableStateOf("Core Provided")
     private var currentRotation by mutableStateOf("Auto")
@@ -246,6 +247,9 @@ class LibretroActivity : ComponentActivity() {
         val game = kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }
         platformId = game?.platformId ?: -1L
         platformSlug = game?.platformSlug ?: ""
+        globalSettings = kotlinx.coroutines.runBlocking {
+            preferencesRepository.getBuiltinEmulatorSettings().first()
+        }
         val settings = kotlinx.coroutines.runBlocking {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
@@ -300,7 +304,8 @@ class LibretroActivity : ComponentActivity() {
 
         Log.d("LibretroActivity", "Core: $coreName, platformSlug: $platformSlug, rewindEnabled: $rewindEnabled")
 
-        Log.d("LibretroActivity", "[Startup] Creating GLRetroView: core=$coreName, shader=${settings.shaderConfig}")
+        val effectiveShader = if (settings.shader == "Custom") resolvedCustomShader else settings.shaderConfig
+        Log.d("LibretroActivity", "[Startup] Creating GLRetroView: core=$coreName, effectiveShader=${effectiveShader::class.simpleName}")
         val coreVariables = getCoreVariables(coreName)
         retroView = GLRetroView(
             this,
@@ -310,7 +315,7 @@ class LibretroActivity : ComponentActivity() {
                 systemDirectory = systemDir.absolutePath
                 savesDirectory = savesDir.absolutePath
                 saveRAMState = existingSram
-                shader = if (settings.shader == "Custom") resolvedCustomShader else settings.shaderConfig
+                shader = effectiveShader
                 skipDuplicateFrames = settings.skipDuplicateFrames
                 preferLowLatencyAudio = settings.lowLatencyAudio
                 rumbleEventsEnabled = settings.rumbleEnabled
@@ -421,8 +426,10 @@ class LibretroActivity : ComponentActivity() {
                                     activeMenuHandler = InGameSettingsScreen(
                                         accessor = InGameLibretroSettingsAccessor(
                                             getCurrentValue = ::getVideoSettingValue,
+                                            globalValue = ::getGlobalVideoSettingValue,
                                             onCycle = ::cycleVideoSetting,
-                                            onToggle = ::toggleVideoSetting
+                                            onToggle = ::toggleVideoSetting,
+                                            onReset = ::resetVideoSetting
                                         ),
                                         platformSlug = platformSlug,
                                         canEnableBFI = canEnableBFI,
@@ -1061,6 +1068,71 @@ class LibretroActivity : ComponentActivity() {
         LibretroSettingDef.RewindEnabled -> currentRewindEnabled.toString()
         LibretroSettingDef.SkipDuplicateFrames -> currentSkipDupFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> currentLowLatencyAudio.toString()
+    }
+
+    private fun getGlobalVideoSettingValue(setting: LibretroSettingDef): String = when (setting) {
+        LibretroSettingDef.Shader -> globalSettings.shader
+        LibretroSettingDef.Filter -> globalSettings.filter
+        LibretroSettingDef.AspectRatio -> globalSettings.aspectRatio
+        LibretroSettingDef.Rotation -> globalSettings.rotationDisplay
+        LibretroSettingDef.OverscanCrop -> globalSettings.overscanCropDisplay
+        LibretroSettingDef.BlackFrameInsertion -> globalSettings.blackFrameInsertion.toString()
+        LibretroSettingDef.FastForwardSpeed -> globalSettings.fastForwardSpeedDisplay
+        LibretroSettingDef.RewindEnabled -> globalSettings.rewindEnabled.toString()
+        LibretroSettingDef.SkipDuplicateFrames -> globalSettings.skipDuplicateFrames.toString()
+        LibretroSettingDef.LowLatencyAudio -> globalSettings.lowLatencyAudio.toString()
+    }
+
+    private fun resetVideoSetting(setting: LibretroSettingDef) {
+        val globalValue = getGlobalVideoSettingValue(setting)
+        when (setting) {
+            LibretroSettingDef.Shader -> currentShader = globalValue
+            LibretroSettingDef.Filter -> currentFilter = globalValue
+            LibretroSettingDef.AspectRatio -> currentAspectRatio = globalValue
+            LibretroSettingDef.Rotation -> currentRotation = globalValue
+            LibretroSettingDef.OverscanCrop -> currentOverscanCrop = globalValue
+            LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed = globalValue
+            else -> {}
+        }
+        when (setting) {
+            LibretroSettingDef.BlackFrameInsertion -> {
+                currentBFI = globalSettings.blackFrameInsertion
+                applyVideoSettingChange(setting, currentBFI.toString())
+            }
+            LibretroSettingDef.RewindEnabled -> {
+                currentRewindEnabled = globalSettings.rewindEnabled
+                applyVideoSettingChange(setting, currentRewindEnabled.toString())
+            }
+            LibretroSettingDef.SkipDuplicateFrames -> {
+                currentSkipDupFrames = globalSettings.skipDuplicateFrames
+                applyVideoSettingChange(setting, currentSkipDupFrames.toString())
+            }
+            LibretroSettingDef.LowLatencyAudio -> {
+                currentLowLatencyAudio = globalSettings.lowLatencyAudio
+                applyVideoSettingChange(setting, currentLowLatencyAudio.toString())
+            }
+            else -> applyVideoSettingChange(setting, globalValue)
+        }
+        lifecycleScope.launch {
+            val current = platformLibretroSettingsDao.getByPlatformId(platformId) ?: return@launch
+            val updated = when (setting) {
+                LibretroSettingDef.Shader -> current.copy(shader = null)
+                LibretroSettingDef.Filter -> current.copy(filter = null)
+                LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = null)
+                LibretroSettingDef.Rotation -> current.copy(rotation = null)
+                LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = null)
+                LibretroSettingDef.BlackFrameInsertion -> current.copy(blackFrameInsertion = null)
+                LibretroSettingDef.FastForwardSpeed -> current.copy(fastForwardSpeed = null)
+                LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = null)
+                LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = null)
+                LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = null)
+            }
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformId)
+            }
+        }
     }
 
     private fun cycleVideoSetting(setting: LibretroSettingDef, direction: Int) {

@@ -20,9 +20,12 @@ class EffectiveLibretroSettingsResolver @Inject constructor(
 
         val isHeavyPlatform = PlatformWeightRegistry.getWeight(platformSlug) == PlatformWeightRegistry.Weight.HEAVY
 
+        val effectiveShader = perPlatform?.shader ?: global.shader
+        val effectiveChainJson = perPlatform?.shaderChain ?: global.shaderChainJson
+
         return BuiltinEmulatorSettings(
-            shader = perPlatform?.shader ?: global.shader,
-            shaderChainJson = perPlatform?.shaderChain ?: global.shaderChainJson,
+            shader = effectiveShader,
+            shaderChainJson = effectiveChainJson,
             filter = perPlatform?.filter ?: global.filter,
             aspectRatio = perPlatform?.aspectRatio ?: global.aspectRatio,
             rotation = perPlatform?.rotation ?: global.rotation,

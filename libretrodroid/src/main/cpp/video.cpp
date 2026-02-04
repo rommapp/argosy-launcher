@@ -128,8 +128,12 @@ void Video::updateProgram() {
         }
 
         shader.gvPositionHandle = glGetAttribLocation(shader.gProgram, "vPosition");
+        if (shader.gvPositionHandle == -1)
+            shader.gvPositionHandle = glGetAttribLocation(shader.gProgram, "VertexCoord");
 
         shader.gvCoordinateHandle = glGetAttribLocation(shader.gProgram, "vCoordinate");
+        if (shader.gvCoordinateHandle == -1)
+            shader.gvCoordinateHandle = glGetAttribLocation(shader.gProgram, "TexCoord");
 
         shader.gTextureHandle = glGetUniformLocation(shader.gProgram, "texture");
         if (shader.gTextureHandle == -1)
@@ -147,6 +151,7 @@ void Video::updateProgram() {
         shader.gOutputSizeHandle = glGetUniformLocation(shader.gProgram, "OutputSize");
         shader.gFrameCountHandle = glGetUniformLocation(shader.gProgram, "FrameCount");
         shader.gFrameDirectionHandle = glGetUniformLocation(shader.gProgram, "FrameDirection");
+        shader.gMVPMatrixHandle = glGetUniformLocation(shader.gProgram, "MVPMatrix");
 
         shadersChain.push_back(shader);
     });
@@ -234,6 +239,16 @@ void Video::renderFrame() {
 
         if (shader.gFrameDirectionHandle != -1)
             glUniform1i(shader.gFrameDirectionHandle, 1);
+
+        if (shader.gMVPMatrixHandle != -1) {
+            static const GLfloat identity[16] = {
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            };
+            glUniformMatrix4fv(shader.gMVPMatrixHandle, 1, GL_FALSE, identity);
+        }
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 

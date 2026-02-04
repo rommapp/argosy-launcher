@@ -187,9 +187,7 @@ class ShaderPreviewRenderer {
         val surfaceAttribs = intArrayOf(EGL14.EGL_WIDTH, width, EGL14.EGL_HEIGHT, height, EGL14.EGL_NONE)
         eglSurface = EGL14.eglCreatePbufferSurface(eglDisplay, eglConfig, surfaceAttribs, 0)
 
-        val makeCurrentResult = EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)
-        val glVersion = GLES20.glGetString(GLES20.GL_VERSION)
-        Log.d(TAG, "ensureContext: makeCurrent=$makeCurrentResult, GL_VERSION=$glVersion, eglError=${EGL14.eglGetError()}")
+        EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)
 
         contextWidth = width
         contextHeight = height
@@ -262,8 +260,8 @@ class ShaderPreviewRenderer {
     }
 
     private fun compilePass(pass: ShaderConfig.Custom.ShaderPass): CompiledPass {
-        val vertexShader = compileShader(GLES20.GL_VERTEX_SHADER, injectDefines(pass.vertex))
-        val fragmentShader = compileShader(GLES20.GL_FRAGMENT_SHADER, injectDefines(pass.fragment))
+        val vertexShader = compileShader(GLES20.GL_VERTEX_SHADER, pass.vertex)
+        val fragmentShader = compileShader(GLES20.GL_FRAGMENT_SHADER, pass.fragment)
 
         val program = GLES20.glCreateProgram()
         GLES20.glAttachShader(program, vertexShader)
@@ -311,15 +309,8 @@ class ShaderPreviewRenderer {
         )
     }
 
-    private fun injectDefines(source: String): String {
-        return "#define PARAMETER_UNIFORM\n#define PARAMETER_UNIFORMS\n$source"
-    }
-
     private fun compileShader(type: Int, source: String): Int {
         val typeStr = if (type == GLES20.GL_VERTEX_SHADER) "vertex" else "fragment"
-        val firstLine = source.lines().firstOrNull { it.isNotBlank() } ?: "(empty)"
-        Log.d(TAG, "compileShader: $typeStr, firstLine='$firstLine', length=${source.length}")
-
         val shader = GLES20.glCreateShader(type)
         if (shader == 0) {
             Log.e(TAG, "glCreateShader returned 0, glError=${GLES20.glGetError()}")

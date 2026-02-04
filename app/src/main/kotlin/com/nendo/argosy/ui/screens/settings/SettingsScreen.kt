@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -72,7 +74,9 @@ import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.formatFileSize
+import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
 fun SettingsScreen(
@@ -331,7 +335,22 @@ fun SettingsScreen(
                     SettingsSection.BIOS -> "BIOS FILES"
                     SettingsSection.PERMISSIONS -> "PERMISSIONS"
                     SettingsSection.ABOUT -> "ABOUT"
-                }
+                },
+                rightContent = if (uiState.currentSection == SettingsSection.BUILTIN_VIDEO &&
+                    uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
+                    {
+                        val platformName = if (uiState.builtinVideo.isGlobalContext) {
+                            "Global"
+                        } else {
+                            uiState.builtinVideo.currentPlatformContext?.platformName ?: "Global"
+                        }
+                        PlatformContextIndicator(
+                            platformName = platformName,
+                            onPrevious = { viewModel.cyclePlatformContext(-1) },
+                            onNext = { viewModel.cyclePlatformContext(1) }
+                        )
+                    }
+                } else null
             )
 
             Box(modifier = Modifier.weight(1f)) {
@@ -411,6 +430,7 @@ fun SettingsScreen(
                 }
             }
         }
+
     }
 
     if (uiState.showMigrationDialog) {
@@ -588,19 +608,70 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsHeader(title: String) {
+private fun SettingsHeader(
+    title: String,
+    rightContent: @Composable (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
+        rightContent?.invoke()
+    }
+}
+
+@Composable
+private fun PlatformContextIndicator(
+    platformName: String,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        Row(
+            modifier = Modifier
+                .clickableNoFocus(onClick = onPrevious)
+                .padding(Dimens.spacingXs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = InputIcons.BumperLeft,
+                contentDescription = "Previous context",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+        }
+
+        Text(
+            text = platformName,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Row(
+            modifier = Modifier
+                .clickableNoFocus(onClick = onNext)
+                .padding(Dimens.spacingXs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = InputIcons.BumperRight,
+                contentDescription = "Next context",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+        }
     }
 }
 
@@ -655,9 +726,28 @@ private fun SettingsFooter(uiState: SettingsUiState) {
             add(InputButton.LB_RB to "Preview Shape")
             add(InputButton.LT_RT to "Preview Game")
         }
+        if (uiState.currentSection == SettingsSection.BUILTIN_VIDEO &&
+            uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
+            add(InputButton.LB_RB to "Platform")
+        }
         add(InputButton.A to "Select")
         if (uiState.currentSection == SettingsSection.EMULATORS) {
             add(InputButton.X to "Saves")
+        }
+        if (uiState.currentSection == SettingsSection.BUILTIN_VIDEO && !uiState.builtinVideo.isGlobalContext) {
+            val platformContext = uiState.builtinVideo.currentPlatformContext
+            val platformSettings = platformContext?.let { uiState.platformLibretro.platformSettings[it.platformId] }
+            val currentSetting = com.nendo.argosy.ui.screens.settings.sections.builtinVideoItemAtFocusIndex(
+                uiState.focusedIndex, uiState.builtinVideo
+            )
+            val accessor = com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAccessor(
+                platformSettings = platformSettings,
+                globalState = uiState.builtinVideo,
+                onUpdate = { _, _ -> }
+            )
+            if (currentSetting != null && accessor.hasOverride(currentSetting)) {
+                add(InputButton.X to "Reset")
+            }
         }
         add(InputButton.B to "Back")
     }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -133,8 +134,17 @@ fun CyclePreference(
     value: String,
     isFocused: Boolean,
     onClick: () -> Unit,
-    subtitle: String? = null
+    subtitle: String? = null,
+    isCustom: Boolean = false,
+    showResetButton: Boolean = false,
+    onReset: (() -> Unit)? = null
 ) {
+    val valueColor = when {
+        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
+        isCustom -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.primary
+    }
+
     Row(
         modifier = preferenceModifier(isFocused, onClick = onClick),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -154,12 +164,33 @@ fun CyclePreference(
                 )
             }
         }
-        Text(
-            text = "< $value >",
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.primary
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            if (showResetButton && onReset != null) {
+                Box(
+                    modifier = Modifier
+                        .size(Dimens.iconMd)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                        .clickableNoFocus(onClick = onReset),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Reset to global",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(Dimens.iconSm)
+                    )
+                }
+            }
+            Text(
+                text = "< $value >",
+                style = MaterialTheme.typography.bodyMedium,
+                color = valueColor
+            )
+        }
     }
 }
 
@@ -313,7 +344,10 @@ fun SwitchPreference(
     onToggle: (Boolean) -> Unit,
     icon: ImageVector? = null,
     subtitle: String? = null,
-    onLabelClick: (() -> Unit)? = null
+    onLabelClick: (() -> Unit)? = null,
+    isCustom: Boolean = false,
+    showResetButton: Boolean = false,
+    onReset: (() -> Unit)? = null
 ) {
     val preferenceShape = RoundedCornerShape(Dimens.radiusLg)
     val backgroundColor = if (isFocused) {
@@ -351,11 +385,23 @@ fun SwitchPreference(
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
             }
             Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = preferenceContentColor(isFocused)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = preferenceContentColor(isFocused)
+                    )
+                    if (isCustom && !isFocused) {
+                        Text(
+                            text = "(Custom)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
@@ -364,6 +410,24 @@ fun SwitchPreference(
                     )
                 }
             }
+        }
+        if (showResetButton && onReset != null) {
+            Box(
+                modifier = Modifier
+                    .size(Dimens.iconMd)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                    .clickableNoFocus(onClick = onReset),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Reset to global",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
+            Spacer(modifier = Modifier.width(Dimens.spacingSm))
         }
         Switch(
             checked = isEnabled,

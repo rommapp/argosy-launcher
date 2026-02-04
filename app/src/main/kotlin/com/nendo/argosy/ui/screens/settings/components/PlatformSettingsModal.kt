@@ -79,9 +79,10 @@ fun PlatformSettingsModal(
             onReset = if (config.isUserSavePathOverride) onResetSavePath else null
         )
 
-        val statePathIndex = 3
-        val resyncIndex = if (config.supportsStatePath) 4 else 3
-        val purgeIndex = if (config.supportsStatePath) 5 else 4
+        var nextIndex = 3
+        val statePathIndex = if (config.supportsStatePath) nextIndex++ else -1
+        val resyncIndex = nextIndex++
+        val purgeIndex = nextIndex
 
         if (config.supportsStatePath) {
             PathConfigItem(
@@ -291,3 +292,4 @@ private fun PathConfigItem(
         }
     }
 }
+

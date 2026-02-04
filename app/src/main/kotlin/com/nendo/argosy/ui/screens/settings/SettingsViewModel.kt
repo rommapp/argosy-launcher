@@ -23,6 +23,9 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
+import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
+import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -106,6 +109,7 @@ class SettingsViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val hapticManager: HapticFeedbackManager,
     private val platformDao: PlatformDao,
+    private val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val romMRepository: RomMRepository,
@@ -180,6 +184,8 @@ class SettingsViewModel @Inject constructor(
         observeDelegateEvents()
         observeModalResetSignal()
         observeConnectionState()
+        observePlatformLibretroSettings()
+        loadAvailablePlatformsForLibretro()
         loadSettings()
         raDelegate.initialize(viewModelScope)
         displayDelegate.loadPreviewGame(viewModelScope)
@@ -215,6 +221,42 @@ class SettingsViewModel @Inject constructor(
                 rommVersion = version
             ))
         }.launchIn(viewModelScope)
+    }
+
+    private fun observePlatformLibretroSettings() {
+        platformLibretroSettingsDao.observeAll().onEach { settingsList ->
+            val settingsMap = settingsList.associateBy { it.platformId }
+            _uiState.update { current ->
+                current.copy(
+                    platformLibretro = current.platformLibretro.copy(
+                        platformSettings = settingsMap
+                    )
+                )
+            }
+        }.launchIn(viewModelScope)
+    }
+
+    private fun loadAvailablePlatformsForLibretro() {
+        viewModelScope.launch {
+            val platforms = platformDao.getAllPlatformsOrdered()
+                .filter { it.syncEnabled && LibretroCoreRegistry.isPlatformSupported(it.slug) }
+                .map { PlatformContext(it.id, it.name, it.slug) }
+            _uiState.update {
+                it.copy(builtinVideo = it.builtinVideo.copy(availablePlatforms = platforms))
+            }
+        }
+    }
+
+    fun cyclePlatformContext(direction: Int) {
+        val state = _uiState.value.builtinVideo
+        val maxIndex = state.availablePlatforms.size
+        val newIndex = (state.platformContextIndex + direction).mod(maxIndex + 1)
+        _uiState.update {
+            it.copy(
+                builtinVideo = it.builtinVideo.copy(platformContextIndex = newIndex),
+                focusedIndex = 0
+            )
+        }
     }
 
     private fun observeModalResetSignal() {
@@ -615,7 +657,7 @@ class SettingsViewModel @Inject constructor(
                     fileLoggingEnabled = prefs.fileLoggingEnabled,
                     fileLoggingPath = prefs.fileLoggingPath,
                     fileLogLevel = prefs.fileLogLevel,
-                    builtinVideo = BuiltinVideoState(
+                    builtinVideo = it.builtinVideo.copy(
                         shader = builtinSettings.shader,
                         filter = builtinSettings.filter,
                         aspectRatio = builtinSettings.aspectRatio,
@@ -969,6 +1011,65 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setBuiltinOverscanCrop(crop)
         }
+    }
+
+    fun updatePlatformLibretroSetting(setting: LibretroSettingDef, value: String?) {
+        val platformContext = _uiState.value.builtinVideo.currentPlatformContext ?: return
+        viewModelScope.launch {
+            val current = platformLibretroSettingsDao.getByPlatformId(platformContext.platformId)
+                ?: PlatformLibretroSettingsEntity(platformId = platformContext.platformId)
+
+            val updated = when (setting) {
+                LibretroSettingDef.Shader -> current.copy(shader = value)
+                LibretroSettingDef.Filter -> current.copy(filter = value)
+                LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
+                LibretroSettingDef.Rotation -> current.copy(rotation = parseRotationValue(value))
+                LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = parseOverscanValue(value))
+                LibretroSettingDef.BlackFrameInsertion -> current.copy(blackFrameInsertion = value?.toBooleanStrictOrNull())
+                LibretroSettingDef.FastForwardSpeed -> current.copy(fastForwardSpeed = parseFastForwardValue(value))
+                LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = value?.toBooleanStrictOrNull())
+                LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = value?.toBooleanStrictOrNull())
+                LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = value?.toBooleanStrictOrNull())
+            }
+
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            }
+        }
+    }
+
+    fun resetAllPlatformLibretroSettings() {
+        val platformContext = _uiState.value.builtinVideo.currentPlatformContext ?: return
+        viewModelScope.launch {
+            platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+        }
+    }
+
+    private fun parseRotationValue(value: String?): Int? {
+        if (value == null) return null
+        return when (value) {
+            "Auto" -> -1
+            "0°" -> 0
+            "90°" -> 90
+            "180°" -> 180
+            "270°" -> 270
+            else -> value.removeSuffix("°").toIntOrNull() ?: -1
+        }
+    }
+
+    private fun parseOverscanValue(value: String?): Int? {
+        if (value == null) return null
+        return when (value) {
+            "Off" -> 0
+            else -> value.removeSuffix("px").toIntOrNull() ?: 0
+        }
+    }
+
+    private fun parseFastForwardValue(value: String?): Int? {
+        if (value == null) return null
+        return value.removeSuffix("x").toIntOrNull()
     }
 
     fun loadCoreManagementState(preserveFocus: Boolean = false) {
@@ -1498,7 +1599,7 @@ class SettingsViewModel @Inject constructor(
                     state.emulators.canAutoAssign,
                     state.emulators.platforms.size
                 )
-                SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo)
+                SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
                 SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(state.builtinControls)
                 SettingsSection.CORE_MANAGEMENT -> (state.coreManagement.platforms.size - 1).coerceAtLeast(0)
                 SettingsSection.BIOS -> {

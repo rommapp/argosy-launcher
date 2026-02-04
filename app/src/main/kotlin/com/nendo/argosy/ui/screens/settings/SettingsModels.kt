@@ -9,6 +9,7 @@ import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
@@ -201,6 +202,12 @@ data class EmulatorState(
     val coreUpdatesAvailable: Int = 0
 )
 
+data class PlatformContext(
+    val platformId: Long,
+    val platformName: String,
+    val platformSlug: String
+)
+
 data class BuiltinVideoState(
     val shader: String = "None",
     val filter: String = "Auto",
@@ -212,9 +219,16 @@ data class BuiltinVideoState(
     val rotation: String = "Auto",
     val overscanCrop: String = "Off",
     val lowLatencyAudio: Boolean = true,
-    val rewindEnabled: Boolean = true
+    val rewindEnabled: Boolean = true,
+    val platformContextIndex: Int = 0,
+    val availablePlatforms: List<PlatformContext> = emptyList()
 ) {
     val canEnableBlackFrameInsertion: Boolean get() = displayRefreshRate >= 120f
+    val isGlobalContext: Boolean get() = platformContextIndex == 0
+    val currentPlatformContext: PlatformContext? get() =
+        if (platformContextIndex > 0 && platformContextIndex <= availablePlatforms.size)
+            availablePlatforms[platformContextIndex - 1]
+        else null
 }
 
 data class BuiltinControlsState(
@@ -273,6 +287,7 @@ data class SavePathModalInfo(
 data class PlatformStorageConfig(
     val platformId: Long,
     val platformName: String,
+    val platformSlug: String,
     val gameCount: Int,
     val downloadedCount: Int = 0,
     val syncEnabled: Boolean,
@@ -328,6 +343,10 @@ data class PlatformMigrationInfo(
     val oldPath: String,
     val newPath: String,
     val isResetToGlobal: Boolean
+)
+
+data class PlatformLibretroState(
+    val platformSettings: Map<Long, PlatformLibretroSettingsEntity> = emptyMap()
 )
 
 data class ServerState(
@@ -533,6 +552,7 @@ data class SettingsUiState(
     val coreManagement: CoreManagementState = CoreManagementState(),
     val server: ServerState = ServerState(),
     val storage: StorageState = StorageState(),
+    val platformLibretro: PlatformLibretroState = PlatformLibretroState(),
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
     val retroAchievements: RASettingsState = RASettingsState(),

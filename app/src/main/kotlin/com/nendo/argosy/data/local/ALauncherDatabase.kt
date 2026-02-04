@@ -28,6 +28,7 @@ import com.nendo.argosy.data.local.dao.PendingStateSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
@@ -54,6 +55,7 @@ import com.nendo.argosy.data.local.entity.PendingStateSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PinnedCollectionEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.StateCacheEntity
@@ -85,9 +87,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         HotkeyEntity::class,
         CheatEntity::class,
         PendingAchievementEntity::class,
-        PendingStateSyncEntity::class
+        PendingStateSyncEntity::class,
+        PlatformLibretroSettingsEntity::class
     ],
-    version = 67,
+    version = 68,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -117,6 +120,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun cheatDao(): CheatDao
     abstract fun pendingAchievementDao(): PendingAchievementDao
     abstract fun pendingStateSyncDao(): PendingStateSyncDao
+    abstract fun platformLibretroSettingsDao(): PlatformLibretroSettingsDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -1054,6 +1058,29 @@ abstract class ALauncherDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN activeSaveApplied INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE save_cache ADD COLUMN isRollback INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_67_68 = object : Migration(67, 68) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS platform_libretro_settings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        platformId INTEGER NOT NULL,
+                        shader TEXT,
+                        filter TEXT,
+                        aspectRatio TEXT,
+                        rotation INTEGER,
+                        overscanCrop INTEGER,
+                        blackFrameInsertion INTEGER,
+                        fastForwardSpeed INTEGER,
+                        rewindEnabled INTEGER,
+                        skipDuplicateFrames INTEGER,
+                        lowLatencyAudio INTEGER,
+                        FOREIGN KEY (platformId) REFERENCES platforms(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_platform_libretro_settings_platformId ON platform_libretro_settings(platformId)")
             }
         }
     }

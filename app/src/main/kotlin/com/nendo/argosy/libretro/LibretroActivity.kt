@@ -48,6 +48,7 @@ import com.nendo.argosy.data.local.entity.CheatEntity
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
+import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.RAAwardResult
@@ -93,6 +94,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var achievementUpdateBus: AchievementUpdateBus
     @Inject lateinit var saveCacheManager: com.nendo.argosy.data.repository.SaveCacheManager
     @Inject lateinit var ambientLedManager: AmbientLedManager
+    @Inject lateinit var effectiveLibretroSettingsResolver: EffectiveLibretroSettingsResolver
 
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
@@ -203,8 +205,11 @@ class LibretroActivity : ComponentActivity() {
         }
         lastSramHash = existingSram?.let { hashBytes(it) }
 
+        val game = kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }
+        val platformId = game?.platformId ?: -1L
+        val platformSlug = game?.platformSlug ?: ""
         val settings = kotlinx.coroutines.runBlocking {
-            preferencesRepository.getBuiltinEmulatorSettings().first()
+            effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
         val inputPrefs = kotlinx.coroutines.runBlocking {
             preferencesRepository.preferences.first()
@@ -218,7 +223,6 @@ class LibretroActivity : ComponentActivity() {
         swapAB = isNintendoLayout xor inputPrefs.swapAB
         swapXY = isNintendoLayout xor inputPrefs.swapXY
         swapStartSelect = inputPrefs.swapStartSelect
-        // Key mapping uses raw pref values (like GamepadInputHandler), not icon-swap values
         menuInputHandler = LibretroMenuInputHandler(
             inputPrefs.swapAB,
             inputPrefs.swapXY,
@@ -228,24 +232,9 @@ class LibretroActivity : ComponentActivity() {
         fastForwardSpeed = settings.fastForwardSpeed
         overscanCrop = settings.overscanCrop
         rotationDegrees = settings.rotation
+        rewindEnabled = settings.rewindEnabled
 
-        // Disable rewind for heavy cores (32/64-bit systems) - state capture causes lag
-        val heavyCorePatterns = listOf(
-            "mupen64plus", "parallel_n64",  // N64
-            "mednafen_psx", "pcsx", "duckstation", "swanstation",  // PlayStation
-            "mednafen_saturn", "yabause", "kronos",  // Saturn
-            "flycast", "redream",  // Dreamcast
-            "ppsspp",  // PSP
-            "desmume", "melonds",  // DS
-            "opera",  // 3DO
-            "virtualjaguar"  // Jaguar
-        )
-        val isHeavyCore = coreName?.let { name ->
-            heavyCorePatterns.any { pattern -> name.contains(pattern, ignoreCase = true) }
-        } ?: false
-        rewindEnabled = settings.rewindEnabled && !isHeavyCore
-
-        Log.d("LibretroActivity", "Core: $coreName, isHeavyCore: $isHeavyCore, rewindEnabled: $rewindEnabled")
+        Log.d("LibretroActivity", "Core: $coreName, platformSlug: $platformSlug, rewindEnabled: $rewindEnabled")
 
         Log.d("LibretroActivity", "[Startup] Creating GLRetroView: core=$coreName, shader=${settings.shaderConfig}")
         val coreVariables = getCoreVariables(coreName)

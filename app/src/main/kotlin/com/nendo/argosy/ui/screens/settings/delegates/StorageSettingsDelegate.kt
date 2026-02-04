@@ -14,6 +14,7 @@ import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
 import com.nendo.argosy.domain.usecase.PurgePlatformUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
+import com.nendo.argosy.libretro.LibretroCoreRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.nendo.argosy.ui.screens.settings.EmulatorSavePathInfo
@@ -229,6 +230,7 @@ class StorageSettingsDelegate @Inject constructor(
                 PlatformStorageConfig(
                     platformId = platform.id,
                     platformName = platform.name,
+                    platformSlug = platform.slug,
                     gameCount = platform.gameCount,
                     downloadedCount = downloadedCount,
                     syncEnabled = platform.syncEnabled,
@@ -447,10 +449,18 @@ class StorageSettingsDelegate @Inject constructor(
     fun movePlatformSettingsFocus(delta: Int) {
         _state.update { state ->
             val config = state.platformConfigs.find { it.platformId == state.platformSettingsModalId }
-            val maxIndex = if (config?.supportsStatePath == true) 5 else 4
+            val maxIndex = calculatePlatformSettingsMaxIndex(config)
             val newIndex = (state.platformSettingsFocusIndex + delta).coerceIn(0, maxIndex)
             state.copy(platformSettingsFocusIndex = newIndex, platformSettingsButtonIndex = 0)
         }
+    }
+
+    private fun calculatePlatformSettingsMaxIndex(config: PlatformStorageConfig?): Int {
+        if (config == null) return 4
+        var nextIndex = 3
+        if (config.supportsStatePath) nextIndex++
+        if (LibretroCoreRegistry.isPlatformSupported(config.platformSlug)) nextIndex++
+        return nextIndex + 1  // +1 for resync, and the max is purge which is at nextIndex+1
     }
 
     fun selectPlatformSettingsOption(scope: CoroutineScope) {
@@ -459,8 +469,11 @@ class StorageSettingsDelegate @Inject constructor(
         val focusIndex = _state.value.platformSettingsFocusIndex
         val buttonIndex = _state.value.platformSettingsButtonIndex
 
-        val resyncIndex = if (config.supportsStatePath) 4 else 3
-        val purgeIndex = if (config.supportsStatePath) 5 else 4
+        var nextIndex = 3
+        val statePathIndex = if (config.supportsStatePath) nextIndex++ else -1
+        val libretroSettingsIndex = if (LibretroCoreRegistry.isPlatformSupported(config.platformSlug)) nextIndex++ else -1
+        val resyncIndex = nextIndex++
+        val purgeIndex = nextIndex
 
         when (focusIndex) {
             0 -> togglePlatformSync(scope, platformId, !config.syncEnabled)
@@ -478,17 +491,15 @@ class StorageSettingsDelegate @Inject constructor(
                     resetPlatformSavePath(scope, platformId)
                 }
             }
-            3 -> {
-                if (config.supportsStatePath) {
-                    if (buttonIndex == 0) {
-                        openPlatformStatePathPicker(scope, platformId)
-                    } else if (buttonIndex == 1 && config.isUserStatePathOverride) {
-                        resetPlatformStatePath(scope, platformId)
-                    }
-                } else {
-                    closePlatformSettingsModal()
-                    syncPlatform(scope, platformId, config.platformName)
+            statePathIndex -> {
+                if (buttonIndex == 0) {
+                    openPlatformStatePathPicker(scope, platformId)
+                } else if (buttonIndex == 1 && config.isUserStatePathOverride) {
+                    resetPlatformStatePath(scope, platformId)
                 }
+            }
+            libretroSettingsIndex -> {
+                // Handled in SettingsScreen via onClick callback
             }
             resyncIndex -> {
                 closePlatformSettingsModal()
@@ -565,10 +576,11 @@ class StorageSettingsDelegate @Inject constructor(
         _state.update { state ->
             val config = state.platformConfigs.find { it.platformId == state.platformSettingsModalId }
             val focusIndex = state.platformSettingsFocusIndex
-            val hasReset = when {
-                focusIndex == 1 -> config?.customRomPath != null
-                focusIndex == 2 -> config?.isUserSavePathOverride == true
-                focusIndex == 3 && config?.supportsStatePath == true -> config.isUserStatePathOverride
+            val statePathIndex = if (config?.supportsStatePath == true) 3 else -1
+            val hasReset = when (focusIndex) {
+                1 -> config?.customRomPath != null
+                2 -> config?.isUserSavePathOverride == true
+                statePathIndex -> config?.isUserStatePathOverride == true
                 else -> false
             }
             val maxIndex = if (hasReset) 1 else 0

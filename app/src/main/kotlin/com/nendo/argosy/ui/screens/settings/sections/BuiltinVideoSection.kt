@@ -1,89 +1,24 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.nendo.argosy.ui.components.CyclePreference
-import com.nendo.argosy.ui.components.SectionFocusedScroll
-import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
-import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.screens.settings.libretro.GlobalLibretroSettingsAccessor
+import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
+import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsSection
+import com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAccessor
+import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
 import com.nendo.argosy.ui.theme.Dimens
-
-internal sealed class BuiltinVideoItem(
-    val key: String,
-    val section: String,
-    val visibleWhen: (BuiltinVideoState) -> Boolean = { true }
-) {
-    val isFocusable: Boolean get() = this !is Header
-
-    class Header(key: String, section: String, val title: String) : BuiltinVideoItem(key, section)
-
-    data object Shader : BuiltinVideoItem("shader", "shaders")
-    data object Filter : BuiltinVideoItem("filter", "shaders")
-    data object AspectRatio : BuiltinVideoItem("aspectRatio", "display")
-    data object Rotation : BuiltinVideoItem("rotation", "display")
-    data object OverscanCrop : BuiltinVideoItem("overscanCrop", "display")
-    data object BlackFrameInsertion : BuiltinVideoItem(
-        "blackFrameInsertion",
-        "display",
-        visibleWhen = { it.canEnableBlackFrameInsertion }
-    )
-    data object FastForwardSpeed : BuiltinVideoItem("fastForwardSpeed", "performance")
-    data object RewindEnabled : BuiltinVideoItem("rewindEnabled", "performance")
-    data object SkipDuplicateFrames : BuiltinVideoItem("skipDuplicateFrames", "performance")
-    data object LowLatencyAudio : BuiltinVideoItem("lowLatencyAudio", "performance")
-
-    companion object {
-        private val ShadersHeader = Header("shadersHeader", "shaders", "Shaders")
-        private val DisplayHeader = Header("displayHeader", "display", "Display")
-        private val PerformanceHeader = Header("performanceHeader", "performance", "Performance")
-
-        val ALL: List<BuiltinVideoItem> = listOf(
-            ShadersHeader,
-            Shader,
-            Filter,
-            DisplayHeader,
-            AspectRatio,
-            Rotation,
-            OverscanCrop,
-            BlackFrameInsertion,
-            PerformanceHeader,
-            FastForwardSpeed,
-            RewindEnabled,
-            SkipDuplicateFrames,
-            LowLatencyAudio
-        )
-    }
-}
-
-private val builtinVideoLayout = SettingsLayout<BuiltinVideoItem, BuiltinVideoState>(
-    allItems = BuiltinVideoItem.ALL,
-    isFocusable = { it.isFocusable },
-    visibleWhen = { item, state -> item.visibleWhen(state) },
-    sectionOf = { it.section }
-)
-
-internal fun builtinVideoMaxFocusIndex(state: BuiltinVideoState): Int =
-    builtinVideoLayout.maxFocusIndex(state)
-
-internal fun builtinVideoItemAtFocusIndex(index: Int, state: BuiltinVideoState): BuiltinVideoItem? =
-    builtinVideoLayout.itemAtFocusIndex(index, state)
-
-internal fun builtinVideoSections(state: BuiltinVideoState) =
-    builtinVideoLayout.buildSections(state)
 
 @Composable
 fun BuiltinVideoSection(
@@ -92,123 +27,90 @@ fun BuiltinVideoSection(
 ) {
     val listState = rememberLazyListState()
     val videoState = uiState.builtinVideo
-
-    val visibleItems = remember(videoState) {
-        builtinVideoLayout.visibleItems(videoState)
+    val isGlobal = videoState.isGlobalContext
+    val platformContext = videoState.currentPlatformContext
+    val platformSettings = platformContext?.let {
+        uiState.platformLibretro.platformSettings[it.platformId]
     }
-    val sections = remember(videoState) {
-        builtinVideoLayout.buildSections(videoState)
-    }
+    val hasAnyOverrides = platformSettings?.hasAnyOverrides() == true
 
-    fun isFocused(item: BuiltinVideoItem): Boolean =
-        uiState.focusedIndex == builtinVideoLayout.focusIndexOf(item, videoState)
-
-    SectionFocusedScroll(
-        listState = listState,
-        focusedIndex = uiState.focusedIndex,
-        focusToListIndex = { builtinVideoLayout.focusToListIndex(it, videoState) },
-        sections = sections
+    val maxSettingsFocusIndex = libretroSettingsMaxFocusIndex(
+        platformSlug = platformContext?.platformSlug,
+        canEnableBFI = videoState.canEnableBlackFrameInsertion
     )
+    val resetAllFocusIndex = maxSettingsFocusIndex + 1
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Dimens.spacingMd),
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        items(visibleItems, key = { it.key }) { item ->
-            when (item) {
-                is BuiltinVideoItem.Header -> {
-                    if (item.section != "shaders") {
-                        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+    val accessor = remember(videoState, platformSettings) {
+        if (isGlobal) {
+            GlobalLibretroSettingsAccessor(
+                state = videoState,
+                onCycle = { setting, direction ->
+                    when (setting) {
+                        LibretroSettingDef.Shader -> viewModel.cycleBuiltinShader(direction)
+                        LibretroSettingDef.Filter -> viewModel.cycleBuiltinFilter(direction)
+                        LibretroSettingDef.AspectRatio -> viewModel.cycleBuiltinAspectRatio(direction)
+                        LibretroSettingDef.Rotation -> viewModel.cycleBuiltinRotation(direction)
+                        LibretroSettingDef.OverscanCrop -> viewModel.cycleBuiltinOverscanCrop(direction)
+                        LibretroSettingDef.FastForwardSpeed -> viewModel.cycleBuiltinFastForwardSpeed(direction)
+                        else -> {}
                     }
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(
-                            start = Dimens.spacingSm,
-                            top = Dimens.spacingXs,
-                            bottom = Dimens.spacingXs
-                        )
-                    )
+                },
+                onToggle = { setting, enabled ->
+                    when (setting) {
+                        LibretroSettingDef.BlackFrameInsertion -> viewModel.setBuiltinBlackFrameInsertion(enabled)
+                        LibretroSettingDef.RewindEnabled -> viewModel.setBuiltinRewindEnabled(enabled)
+                        LibretroSettingDef.SkipDuplicateFrames -> viewModel.setBuiltinSkipDuplicateFrames(enabled)
+                        LibretroSettingDef.LowLatencyAudio -> viewModel.setBuiltinLowLatencyAudio(enabled)
+                        else -> {}
+                    }
                 }
-
-                BuiltinVideoItem.Shader -> CyclePreference(
-                    title = "Shader",
-                    value = videoState.shader,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBuiltinShader(1) }
-                )
-
-                BuiltinVideoItem.Filter -> CyclePreference(
-                    title = "Filter",
-                    value = videoState.filter,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBuiltinFilter(1) }
-                )
-
-                BuiltinVideoItem.AspectRatio -> CyclePreference(
-                    title = "Aspect Ratio",
-                    value = videoState.aspectRatio,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBuiltinAspectRatio(1) }
-                )
-
-                BuiltinVideoItem.Rotation -> CyclePreference(
-                    title = "Screen Rotation",
-                    value = videoState.rotation,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBuiltinRotation(1) }
-                )
-
-                BuiltinVideoItem.OverscanCrop -> CyclePreference(
-                    title = "Crop Overscan",
-                    value = videoState.overscanCrop,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBuiltinOverscanCrop(1) }
-                )
-
-                BuiltinVideoItem.BlackFrameInsertion -> SwitchPreference(
-                    title = "Black Frame Insertion",
-                    subtitle = "Reduce motion blur (requires 120Hz+ display)",
-                    isEnabled = videoState.blackFrameInsertion,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setBuiltinBlackFrameInsertion(it) }
-                )
-
-                BuiltinVideoItem.FastForwardSpeed -> CyclePreference(
-                    title = "Fast Forward Speed",
-                    value = videoState.fastForwardSpeed,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBuiltinFastForwardSpeed(1) }
-                )
-
-                BuiltinVideoItem.RewindEnabled -> SwitchPreference(
-                    title = "Enable Rewind",
-                    subtitle = "May cause slowdowns on heavier platforms",
-                    isEnabled = videoState.rewindEnabled,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setBuiltinRewindEnabled(it) }
-                )
-
-                BuiltinVideoItem.SkipDuplicateFrames -> SwitchPreference(
-                    title = "Skip Duplicate Frames",
-                    subtitle = "Reduce CPU usage by skipping unchanged frames",
-                    isEnabled = videoState.skipDuplicateFrames,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setBuiltinSkipDuplicateFrames(it) }
-                )
-
-                BuiltinVideoItem.LowLatencyAudio -> SwitchPreference(
-                    title = "Low Latency Audio",
-                    subtitle = "Reduce audio delay for better responsiveness",
-                    isEnabled = videoState.lowLatencyAudio,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setBuiltinLowLatencyAudio(it) }
-                )
-            }
+            )
+        } else {
+            PlatformLibretroSettingsAccessor(
+                platformSettings = platformSettings,
+                globalState = videoState,
+                onUpdate = { setting, value -> viewModel.updatePlatformLibretroSetting(setting, value) }
+            )
         }
     }
+
+    LibretroSettingsSection(
+        accessor = accessor,
+        focusedIndex = uiState.focusedIndex,
+        platformSlug = platformContext?.platformSlug,
+        canEnableBFI = videoState.canEnableBlackFrameInsertion,
+        listState = listState
+    )
+
+    if (!isGlobal && hasAnyOverrides) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        OptionItem(
+            label = "Reset All to Global",
+            isFocused = uiState.focusedIndex == resetAllFocusIndex,
+            isDangerous = true,
+            onClick = { viewModel.resetAllPlatformLibretroSettings() }
+        )
+    }
 }
+
+fun builtinVideoMaxFocusIndex(state: BuiltinVideoState, platformSettings: Map<Long, com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity>): Int {
+    val platformContext = state.currentPlatformContext
+    val hasAnyOverrides = platformContext?.let { platformSettings[it.platformId]?.hasAnyOverrides() } == true
+    val settingsMax = libretroSettingsMaxFocusIndex(
+        platformSlug = platformContext?.platformSlug,
+        canEnableBFI = state.canEnableBlackFrameInsertion
+    )
+    return if (!state.isGlobalContext && hasAnyOverrides) settingsMax + 1 else settingsMax
+}
+
+fun builtinVideoItemAtFocusIndex(
+    index: Int,
+    state: BuiltinVideoState
+): LibretroSettingDef? =
+    libretroSettingsItemAtFocusIndex(
+        index = index,
+        platformSlug = state.currentPlatformContext?.platformSlug,
+        canEnableBFI = state.canEnableBlackFrameInsertion
+    )

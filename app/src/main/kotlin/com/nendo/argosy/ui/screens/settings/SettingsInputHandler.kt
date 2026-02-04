@@ -3,7 +3,7 @@ package com.nendo.argosy.ui.screens.settings
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.ui.screens.settings.sections.BuiltinVideoItem
+import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
@@ -12,6 +12,8 @@ import com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusI
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAccessor
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceSections
@@ -316,14 +318,29 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.BUILTIN_VIDEO) {
-            when (builtinVideoItemAtFocusIndex(state.focusedIndex, state.builtinVideo)) {
-                BuiltinVideoItem.Shader -> { viewModel.cycleBuiltinShader(-1); return InputResult.HANDLED }
-                BuiltinVideoItem.Filter -> { viewModel.cycleBuiltinFilter(-1); return InputResult.HANDLED }
-                BuiltinVideoItem.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(-1); return InputResult.HANDLED }
-                BuiltinVideoItem.Rotation -> { viewModel.cycleBuiltinRotation(-1); return InputResult.HANDLED }
-                BuiltinVideoItem.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(-1); return InputResult.HANDLED }
-                BuiltinVideoItem.FastForwardSpeed -> { viewModel.cycleBuiltinFastForwardSpeed(-1); return InputResult.HANDLED }
-                else -> {}
+            val setting = builtinVideoItemAtFocusIndex(state.focusedIndex, state.builtinVideo)
+            if (setting != null && setting.type is LibretroSettingDef.SettingType.Cycle) {
+                if (state.builtinVideo.isGlobalContext) {
+                    when (setting) {
+                        LibretroSettingDef.Shader -> { viewModel.cycleBuiltinShader(-1); return InputResult.HANDLED }
+                        LibretroSettingDef.Filter -> { viewModel.cycleBuiltinFilter(-1); return InputResult.HANDLED }
+                        LibretroSettingDef.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(-1); return InputResult.HANDLED }
+                        LibretroSettingDef.Rotation -> { viewModel.cycleBuiltinRotation(-1); return InputResult.HANDLED }
+                        LibretroSettingDef.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(-1); return InputResult.HANDLED }
+                        LibretroSettingDef.FastForwardSpeed -> { viewModel.cycleBuiltinFastForwardSpeed(-1); return InputResult.HANDLED }
+                        else -> {}
+                    }
+                } else {
+                    val platformContext = state.builtinVideo.currentPlatformContext
+                    val platformSettings = platformContext?.let { state.platformLibretro.platformSettings[it.platformId] }
+                    val accessor = PlatformLibretroSettingsAccessor(
+                        platformSettings = platformSettings,
+                        globalState = state.builtinVideo,
+                        onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) }
+                    )
+                    accessor.cycle(setting, -1)
+                    return InputResult.HANDLED
+                }
             }
         }
 
@@ -511,14 +528,29 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.BUILTIN_VIDEO) {
-            when (builtinVideoItemAtFocusIndex(state.focusedIndex, state.builtinVideo)) {
-                BuiltinVideoItem.Shader -> { viewModel.cycleBuiltinShader(1); return InputResult.HANDLED }
-                BuiltinVideoItem.Filter -> { viewModel.cycleBuiltinFilter(1); return InputResult.HANDLED }
-                BuiltinVideoItem.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(1); return InputResult.HANDLED }
-                BuiltinVideoItem.Rotation -> { viewModel.cycleBuiltinRotation(1); return InputResult.HANDLED }
-                BuiltinVideoItem.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(1); return InputResult.HANDLED }
-                BuiltinVideoItem.FastForwardSpeed -> { viewModel.cycleBuiltinFastForwardSpeed(1); return InputResult.HANDLED }
-                else -> {}
+            val setting = builtinVideoItemAtFocusIndex(state.focusedIndex, state.builtinVideo)
+            if (setting != null && setting.type is LibretroSettingDef.SettingType.Cycle) {
+                if (state.builtinVideo.isGlobalContext) {
+                    when (setting) {
+                        LibretroSettingDef.Shader -> { viewModel.cycleBuiltinShader(1); return InputResult.HANDLED }
+                        LibretroSettingDef.Filter -> { viewModel.cycleBuiltinFilter(1); return InputResult.HANDLED }
+                        LibretroSettingDef.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(1); return InputResult.HANDLED }
+                        LibretroSettingDef.Rotation -> { viewModel.cycleBuiltinRotation(1); return InputResult.HANDLED }
+                        LibretroSettingDef.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(1); return InputResult.HANDLED }
+                        LibretroSettingDef.FastForwardSpeed -> { viewModel.cycleBuiltinFastForwardSpeed(1); return InputResult.HANDLED }
+                        else -> {}
+                    }
+                } else {
+                    val platformContext = state.builtinVideo.currentPlatformContext
+                    val platformSettings = platformContext?.let { state.platformLibretro.platformSettings[it.platformId] }
+                    val accessor = PlatformLibretroSettingsAccessor(
+                        platformSettings = platformSettings,
+                        globalState = state.builtinVideo,
+                        onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) }
+                    )
+                    accessor.cycle(setting, 1)
+                    return InputResult.HANDLED
+                }
             }
         }
 
@@ -593,48 +625,85 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.BUILTIN_VIDEO) {
-            when (builtinVideoItemAtFocusIndex(state.focusedIndex, state.builtinVideo)) {
-                BuiltinVideoItem.Shader -> {
-                    viewModel.cycleBuiltinShader(1)
-                    return InputResult.HANDLED
+            val videoState = state.builtinVideo
+            val isGlobal = videoState.isGlobalContext
+            val platformContext = videoState.currentPlatformContext
+            val platformSettings = platformContext?.let { state.platformLibretro.platformSettings[it.platformId] }
+            val hasAnyOverrides = platformSettings?.hasAnyOverrides() == true
+
+            val maxSettingsIndex = libretroSettingsMaxFocusIndex(
+                platformSlug = platformContext?.platformSlug,
+                canEnableBFI = videoState.canEnableBlackFrameInsertion
+            )
+            val resetAllIndex = maxSettingsIndex + 1
+
+            if (!isGlobal && hasAnyOverrides && state.focusedIndex == resetAllIndex) {
+                viewModel.resetAllPlatformLibretroSettings()
+                return InputResult.HANDLED
+            }
+
+            val setting = builtinVideoItemAtFocusIndex(state.focusedIndex, videoState)
+            if (setting != null) {
+                if (isGlobal) {
+                    when (setting) {
+                        LibretroSettingDef.Shader -> {
+                            viewModel.cycleBuiltinShader(1)
+                            return InputResult.HANDLED
+                        }
+                        LibretroSettingDef.Filter -> {
+                            viewModel.cycleBuiltinFilter(1)
+                            return InputResult.HANDLED
+                        }
+                        LibretroSettingDef.AspectRatio -> {
+                            viewModel.cycleBuiltinAspectRatio(1)
+                            return InputResult.HANDLED
+                        }
+                        LibretroSettingDef.Rotation -> {
+                            viewModel.cycleBuiltinRotation(1)
+                            return InputResult.HANDLED
+                        }
+                        LibretroSettingDef.OverscanCrop -> {
+                            viewModel.cycleBuiltinOverscanCrop(1)
+                            return InputResult.HANDLED
+                        }
+                        LibretroSettingDef.FastForwardSpeed -> {
+                            viewModel.cycleBuiltinFastForwardSpeed(1)
+                            return InputResult.HANDLED
+                        }
+                        LibretroSettingDef.BlackFrameInsertion -> {
+                            viewModel.setBuiltinBlackFrameInsertion(!videoState.blackFrameInsertion)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
+                        LibretroSettingDef.RewindEnabled -> {
+                            viewModel.setBuiltinRewindEnabled(!videoState.rewindEnabled)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
+                        LibretroSettingDef.SkipDuplicateFrames -> {
+                            viewModel.setBuiltinSkipDuplicateFrames(!videoState.skipDuplicateFrames)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
+                        LibretroSettingDef.LowLatencyAudio -> {
+                            viewModel.setBuiltinLowLatencyAudio(!videoState.lowLatencyAudio)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
+                    }
+                } else {
+                    val accessor = PlatformLibretroSettingsAccessor(
+                        platformSettings = platformSettings,
+                        globalState = videoState,
+                        onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) }
+                    )
+                    when (setting.type) {
+                        is LibretroSettingDef.SettingType.Cycle -> {
+                            accessor.cycle(setting, 1)
+                            return InputResult.HANDLED
+                        }
+                        LibretroSettingDef.SettingType.Switch -> {
+                            accessor.toggle(setting)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
+                    }
                 }
-                BuiltinVideoItem.Filter -> {
-                    viewModel.cycleBuiltinFilter(1)
-                    return InputResult.HANDLED
-                }
-                BuiltinVideoItem.AspectRatio -> {
-                    viewModel.cycleBuiltinAspectRatio(1)
-                    return InputResult.HANDLED
-                }
-                BuiltinVideoItem.Rotation -> {
-                    viewModel.cycleBuiltinRotation(1)
-                    return InputResult.HANDLED
-                }
-                BuiltinVideoItem.OverscanCrop -> {
-                    viewModel.cycleBuiltinOverscanCrop(1)
-                    return InputResult.HANDLED
-                }
-                BuiltinVideoItem.FastForwardSpeed -> {
-                    viewModel.cycleBuiltinFastForwardSpeed(1)
-                    return InputResult.HANDLED
-                }
-                BuiltinVideoItem.BlackFrameInsertion -> {
-                    viewModel.setBuiltinBlackFrameInsertion(!state.builtinVideo.blackFrameInsertion)
-                    return InputResult.handled(SoundType.TOGGLE)
-                }
-                BuiltinVideoItem.RewindEnabled -> {
-                    viewModel.setBuiltinRewindEnabled(!state.builtinVideo.rewindEnabled)
-                    return InputResult.handled(SoundType.TOGGLE)
-                }
-                BuiltinVideoItem.SkipDuplicateFrames -> {
-                    viewModel.setBuiltinSkipDuplicateFrames(!state.builtinVideo.skipDuplicateFrames)
-                    return InputResult.handled(SoundType.TOGGLE)
-                }
-                BuiltinVideoItem.LowLatencyAudio -> {
-                    viewModel.setBuiltinLowLatencyAudio(!state.builtinVideo.lowLatencyAudio)
-                    return InputResult.handled(SoundType.TOGGLE)
-                }
-                else -> {}
             }
         }
 
@@ -718,6 +787,24 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
         }
+
+        if (state.currentSection == SettingsSection.BUILTIN_VIDEO && !state.builtinVideo.isGlobalContext) {
+            val videoState = state.builtinVideo
+            val platformContext = videoState.currentPlatformContext
+            val platformSettings = platformContext?.let { state.platformLibretro.platformSettings[it.platformId] }
+            val setting = builtinVideoItemAtFocusIndex(state.focusedIndex, videoState)
+            if (setting != null) {
+                val accessor = PlatformLibretroSettingsAccessor(
+                    platformSettings = platformSettings,
+                    globalState = videoState,
+                    onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) }
+                )
+                if (accessor.hasOverride(setting)) {
+                    accessor.reset(setting)
+                    return InputResult.HANDLED
+                }
+            }
+        }
         return InputResult.UNHANDLED
     }
 
@@ -750,6 +837,12 @@ class SettingsInputHandler(
                     return InputResult.HANDLED
                 }
             }
+            SettingsSection.BUILTIN_VIDEO -> {
+                if (state.builtinVideo.availablePlatforms.isNotEmpty()) {
+                    viewModel.cyclePlatformContext(-1)
+                    return InputResult.HANDLED
+                }
+            }
             else -> {}
         }
         return InputResult.UNHANDLED
@@ -779,6 +872,12 @@ class SettingsInputHandler(
             }
             SettingsSection.BIOS -> {
                 if (viewModel.jumpToNextSection(biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex))) {
+                    return InputResult.HANDLED
+                }
+            }
+            SettingsSection.BUILTIN_VIDEO -> {
+                if (state.builtinVideo.availablePlatforms.isNotEmpty()) {
+                    viewModel.cyclePlatformContext(1)
                     return InputResult.HANDLED
                 }
             }

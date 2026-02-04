@@ -25,6 +25,7 @@ import com.nendo.argosy.data.local.dao.PendingStateSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
@@ -113,7 +114,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_63_64,
                 ALauncherDatabase.MIGRATION_64_65,
                 ALauncherDatabase.MIGRATION_65_66,
-                ALauncherDatabase.MIGRATION_66_67
+                ALauncherDatabase.MIGRATION_66_67,
+                ALauncherDatabase.MIGRATION_67_68
             )
             .build()
     }
@@ -214,4 +216,8 @@ object DatabaseModule {
     @Provides
     fun providePendingStateSyncDao(database: ALauncherDatabase): PendingStateSyncDao =
         database.pendingStateSyncDao()
+
+    @Provides
+    fun providePlatformLibretroSettingsDao(database: ALauncherDatabase): PlatformLibretroSettingsDao =
+        database.platformLibretroSettingsDao()
 }

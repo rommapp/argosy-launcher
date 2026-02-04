@@ -71,6 +71,7 @@ private sealed class InputMappingState {
 @Composable
 fun InputMappingModal(
     controllers: List<ControllerInfo>,
+    lockedPlatformIndex: Int? = null,
     onGetMapping: suspend (ControllerInfo) -> Pair<Map<InputSource, Int>, String?>,
     onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean) -> Unit,
     onApplyPreset: suspend (ControllerInfo, String) -> Unit,
@@ -98,7 +99,7 @@ fun InputMappingModal(
                                         val (mapping, _) = onGetMapping(selected)
                                         state = InputMappingState.PlatformMapping(
                                             controller = selected,
-                                            platformIndex = 0,
+                                            platformIndex = lockedPlatformIndex ?: 0,
                                             currentMapping = mapping
                                         )
                                     }
@@ -154,18 +155,22 @@ fun InputMappingModal(
                                 }
                             }
                             KeyEvent.KEYCODE_BUTTON_L1 -> {
-                                val prevIndex = MappingPlatforms.getPrevIndex(currentState.platformIndex)
-                                state = currentState.copy(
-                                    platformIndex = prevIndex,
-                                    focusedButtonIndex = 0
-                                )
+                                if (lockedPlatformIndex == null) {
+                                    val prevIndex = MappingPlatforms.getPrevIndex(currentState.platformIndex)
+                                    state = currentState.copy(
+                                        platformIndex = prevIndex,
+                                        focusedButtonIndex = 0
+                                    )
+                                }
                             }
                             KeyEvent.KEYCODE_BUTTON_R1 -> {
-                                val nextIndex = MappingPlatforms.getNextIndex(currentState.platformIndex)
-                                state = currentState.copy(
-                                    platformIndex = nextIndex,
-                                    focusedButtonIndex = 0
-                                )
+                                if (lockedPlatformIndex == null) {
+                                    val nextIndex = MappingPlatforms.getNextIndex(currentState.platformIndex)
+                                    state = currentState.copy(
+                                        platformIndex = nextIndex,
+                                        focusedButtonIndex = 0
+                                    )
+                                }
                             }
                             KeyEvent.KEYCODE_DPAD_UP -> {
                                 if (currentState.focusedButtonIndex > 0) {
@@ -295,7 +300,7 @@ fun InputMappingModal(
                         val (mapping, _) = onGetMapping(selected)
                         state = InputMappingState.PlatformMapping(
                             controller = selected,
-                            platformIndex = 0,
+                            platformIndex = lockedPlatformIndex ?: 0,
                             currentMapping = mapping
                         )
                     }
@@ -308,6 +313,7 @@ fun InputMappingModal(
             platformIndex = currentState.platformIndex,
             mapping = currentState.currentMapping,
             focusedIndex = currentState.focusedButtonIndex,
+            platformLocked = lockedPlatformIndex != null,
             onSelectButton = { retroButton ->
                 backPressedAt = 0L
                 state = InputMappingState.Recording(
@@ -442,6 +448,7 @@ private fun PlatformMappingContent(
     platformIndex: Int,
     mapping: Map<InputSource, Int>,
     focusedIndex: Int,
+    platformLocked: Boolean = false,
     onSelectButton: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -454,23 +461,27 @@ private fun PlatformMappingContent(
         }
     }
 
+    val footerHints = buildList {
+        add(InputButton.A to "Remap")
+        add(InputButton.X to "Add")
+        add(InputButton.Y to "Clear")
+        add(InputButton.B to "Back")
+        if (!platformLocked) {
+            add(InputButton.LB to "Prev")
+            add(InputButton.RB to "Next")
+        }
+    }
+
     Modal(
         title = controller.name,
         subtitle = "Platform: ${platform.displayName}",
         baseWidth = 450.dp,
         onDismiss = onDismiss,
-        footerHints = listOf(
-            InputButton.A to "Remap",
-            InputButton.X to "Add",
-            InputButton.Y to "Clear",
-            InputButton.B to "Back",
-            InputButton.LB to "Prev",
-            InputButton.RB to "Next"
-        )
+        footerHints = footerHints
     ) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.heightIn(max = 400.dp),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
             itemsIndexed(platform.buttons) { index, retroButton ->

@@ -100,6 +100,31 @@ object MappingPlatforms {
     fun getNextIndex(currentIndex: Int): Int = (currentIndex + 1) % ALL.size
 
     fun getPrevIndex(currentIndex: Int): Int = if (currentIndex <= 0) ALL.lastIndex else currentIndex - 1
+
+    fun indexForPlatformSlug(slug: String): Int = when (slug) {
+        "nes", "fds", "gb", "gbc", "gameandwatch",
+        "sg1000", "sms", "gg",
+        "atari2600", "atari5200", "atari7800", "lynx",
+        "coleco", "intellivision", "odyssey2", "vectrex", "channelf",
+        "pokemini", "wonderswan", "wsc",
+        "megaduck", "supervision", "arduboy", "uzebox",
+        "ngp", "ngpc" -> ALL.indexOf(NES)
+
+        "snes", "satellaview", "gba", "vb",
+        "tg16", "supergrafx", "tgcd", "pcfx" -> ALL.indexOf(SNES)
+
+        "n64", "n64dd" -> ALL.indexOf(N64)
+
+        "psx", "ps2", "psp", "vita",
+        "gc", "wii", "dc", "saturn",
+        "nds", "dsi", "3ds", "n3ds",
+        "3do", "jaguar", "jaguarcd" -> ALL.indexOf(PSX)
+
+        "genesis", "scd", "32x", "pico",
+        "neogeo", "neogeocd" -> ALL.indexOf(GENESIS)
+
+        else -> 0
+    }
 }
 
 data class InputPreset(

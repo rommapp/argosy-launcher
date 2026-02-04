@@ -55,6 +55,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.components.ControllerOrderModal
 import com.nendo.argosy.ui.screens.settings.components.HotkeysModal
+import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.screens.settings.components.InputMappingModal
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsAccessor
@@ -371,6 +372,7 @@ fun InGameSettingsScreen(
         if (showInputMappingModal) {
             InputMappingModal(
                 controllers = modalCallbacks.connectedControllers,
+                lockedPlatformIndex = MappingPlatforms.indexForPlatformSlug(platformSlug ?: ""),
                 onGetMapping = modalCallbacks.onGetMapping,
                 onSaveMapping = modalCallbacks.onSaveMapping,
                 onApplyPreset = modalCallbacks.onApplyPreset,

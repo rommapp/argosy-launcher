@@ -130,3 +130,16 @@ class PlatformLibretroSettingsAccessor(
         else -> "${this}px"
     }
 }
+
+class InGameLibretroSettingsAccessor(
+    private val getCurrentValue: (LibretroSettingDef) -> String,
+    private val onCycle: (LibretroSettingDef, Int) -> Unit,
+    private val onToggle: (LibretroSettingDef) -> Unit
+) : LibretroSettingsAccessor {
+    override fun getValue(setting: LibretroSettingDef): String = getCurrentValue(setting)
+    override fun getGlobalValue(setting: LibretroSettingDef): String = getValue(setting)
+    override fun hasOverride(setting: LibretroSettingDef): Boolean = false
+    override fun cycle(setting: LibretroSettingDef, direction: Int) = onCycle(setting, direction)
+    override fun toggle(setting: LibretroSettingDef) = onToggle(setting)
+    override fun reset(setting: LibretroSettingDef) {}
+}

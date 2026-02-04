@@ -32,6 +32,7 @@ sealed class InGameMenuAction {
     data object Resume : InGameMenuAction()
     data object QuickSave : InGameMenuAction()
     data object QuickLoad : InGameMenuAction()
+    data object Settings : InGameMenuAction()
     data object Cheats : InGameMenuAction()
     data object Quit : InGameMenuAction()
 }
@@ -55,6 +56,7 @@ fun InGameMenu(
                     add("Quick Load" to InGameMenuAction.QuickLoad)
                 }
             }
+            add("Settings" to InGameMenuAction.Settings)
             if (cheatsAvailable) {
                 add("Cheats" to InGameMenuAction.Cheats)
             }

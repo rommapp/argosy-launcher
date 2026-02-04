@@ -163,7 +163,7 @@ val LocalInputDispatcher = staticCompositionLocalOf<InputDispatcher> {
     error("No InputDispatcher provided")
 }
 
-val LocalGamepadInputHandler = staticCompositionLocalOf<GamepadInputHandler?> { null }
+val LocalGamepadInputHandler = staticCompositionLocalOf<RawInputInterceptor?> { null }
 
 val LocalABIconsSwapped = staticCompositionLocalOf { false }
 

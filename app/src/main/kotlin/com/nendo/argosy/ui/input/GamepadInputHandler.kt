@@ -13,6 +13,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+interface RawInputInterceptor {
+    fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?)
+    fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?)
+}
+
 sealed interface GamepadEvent {
     data object Up : GamepadEvent
     data object Down : GamepadEvent
@@ -35,7 +40,7 @@ sealed interface GamepadEvent {
 @Singleton
 class GamepadInputHandler @Inject constructor(
     preferencesRepository: UserPreferencesRepository
-) {
+) : RawInputInterceptor {
 
     private val _events = MutableSharedFlow<GamepadEvent>(extraBufferCapacity = 16)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -67,11 +72,11 @@ class GamepadInputHandler @Inject constructor(
         inputBlockedUntil = System.currentTimeMillis() + durationMs
     }
 
-    fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
+    override fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
         rawKeyEventListener = listener
     }
 
-    fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?) {
+    override fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?) {
         rawMotionEventListener = listener
     }
 

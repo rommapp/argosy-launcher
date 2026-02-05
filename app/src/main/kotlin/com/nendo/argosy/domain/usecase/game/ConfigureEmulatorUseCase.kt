@@ -108,4 +108,8 @@ class ConfigureEmulatorUseCase @Inject constructor(
     suspend fun getConfigForGame(gameId: Long): EmulatorConfigEntity? {
         return emulatorConfigDao.getByGameId(gameId)
     }
+
+    suspend fun clearBuiltinSelections() {
+        emulatorConfigDao.clearPlatformConfigsByPackage(EmulatorRegistry.BUILTIN_PACKAGE)
+    }
 }

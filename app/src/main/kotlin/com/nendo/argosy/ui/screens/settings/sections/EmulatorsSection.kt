@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SectionFocusedScroll
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -43,7 +44,10 @@ import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 
-internal data class EmulatorsLayoutState(val canAutoAssign: Boolean)
+internal data class EmulatorsLayoutState(
+    val canAutoAssign: Boolean,
+    val builtinLibretroEnabled: Boolean = true
+)
 
 internal sealed class EmulatorsItem(
     val key: String,
@@ -51,9 +55,10 @@ internal sealed class EmulatorsItem(
     val visibleWhen: (EmulatorsLayoutState) -> Boolean = { true }
 ) {
     data object BuiltinHeader : EmulatorsItem("builtin_header", "builtin")
-    data object BuiltinVideo : EmulatorsItem("builtin_video", "builtin")
-    data object BuiltinControls : EmulatorsItem("builtin_controls", "builtin")
-    data object BuiltinCores : EmulatorsItem("builtin_cores", "builtin")
+    data object BuiltinVideo : EmulatorsItem("builtin_video", "builtin", visibleWhen = { it.builtinLibretroEnabled })
+    data object BuiltinControls : EmulatorsItem("builtin_controls", "builtin", visibleWhen = { it.builtinLibretroEnabled })
+    data object BuiltinCores : EmulatorsItem("builtin_cores", "builtin", visibleWhen = { it.builtinLibretroEnabled })
+    data object BuiltinToggle : EmulatorsItem("builtin_toggle", "builtin")
     data object PlatformsHeader : EmulatorsItem("platforms_header", "platforms")
     data object AutoAssign : EmulatorsItem("autoAssign", "platforms", visibleWhen = { it.canAutoAssign })
 
@@ -64,7 +69,7 @@ internal sealed class EmulatorsItem(
 
     companion object {
         fun buildItems(platforms: List<PlatformEmulatorConfig>): List<EmulatorsItem> =
-            listOf(BuiltinHeader, BuiltinVideo, BuiltinControls, BuiltinCores, PlatformsHeader, AutoAssign) +
+            listOf(BuiltinHeader, BuiltinVideo, BuiltinControls, BuiltinCores, BuiltinToggle, PlatformsHeader, AutoAssign) +
                 platforms.mapIndexed { index, config -> PlatformItem(config, index) }
     }
 }
@@ -76,10 +81,11 @@ internal fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<
     sectionOf = { it.section }
 )
 
-internal fun emulatorsMaxFocusIndex(canAutoAssign: Boolean, platformCount: Int): Int {
-    val builtinCount = 3  // Video, Audio, Cores (header not focusable)
+internal fun emulatorsMaxFocusIndex(canAutoAssign: Boolean, platformCount: Int, builtinEnabled: Boolean = true): Int {
+    val toggleCount = 1  // Toggle is always visible
+    val builtinCount = if (builtinEnabled) 3 else 0  // Video, Controls, Cores (only when enabled)
     val autoAssignCount = if (canAutoAssign) 1 else 0
-    return (builtinCount + autoAssignCount + platformCount - 1).coerceAtLeast(0)
+    return (toggleCount + builtinCount + autoAssignCount + platformCount - 1).coerceAtLeast(0)
 }
 
 internal data class EmulatorsLayoutInfo(
@@ -89,11 +95,12 @@ internal data class EmulatorsLayoutInfo(
 
 internal fun createEmulatorsLayoutInfo(
     platforms: List<PlatformEmulatorConfig>,
-    canAutoAssign: Boolean
+    canAutoAssign: Boolean,
+    builtinLibretroEnabled: Boolean = true
 ): EmulatorsLayoutInfo {
     val items = EmulatorsItem.buildItems(platforms)
     val layout = createEmulatorsLayout(items)
-    val state = EmulatorsLayoutState(canAutoAssign)
+    val state = EmulatorsLayoutState(canAutoAssign, builtinLibretroEnabled)
     return EmulatorsLayoutInfo(layout, state)
 }
 
@@ -111,8 +118,8 @@ fun EmulatorsSection(
     val listState = rememberLazyListState()
     val emulators = uiState.emulators
 
-    val layoutState = remember(emulators.canAutoAssign) {
-        EmulatorsLayoutState(emulators.canAutoAssign)
+    val layoutState = remember(emulators.canAutoAssign, emulators.builtinLibretroEnabled) {
+        EmulatorsLayoutState(emulators.canAutoAssign, emulators.builtinLibretroEnabled)
     }
 
     val allItems = remember(emulators.platforms) {
@@ -159,6 +166,14 @@ fun EmulatorsSection(
                             )
                         )
                     }
+
+                    EmulatorsItem.BuiltinToggle -> SwitchPreference(
+                        title = "Enable Built-in Emulator",
+                        subtitle = "Use LibRetro cores for supported platforms",
+                        isEnabled = emulators.builtinLibretroEnabled,
+                        isFocused = isFocused(item),
+                        onToggle = { viewModel.setBuiltinLibretroEnabled(it) }
+                    )
 
                     EmulatorsItem.BuiltinVideo -> ActionPreference(
                         title = "Video Settings",

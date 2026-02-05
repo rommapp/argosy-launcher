@@ -15,6 +15,8 @@ import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import kotlinx.coroutines.flow.first
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
@@ -56,7 +58,8 @@ class GameLauncher @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager,
     private val libretroCoreMgr: LibretroCoreManager,
-    private val biosRepository: BiosRepository
+    private val biosRepository: BiosRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
     suspend fun launch(
         gameId: Long,
@@ -364,6 +367,8 @@ class GameLauncher @Inject constructor(
             emulatorDetector.detectEmulators()
         }
 
+        val builtinEnabled = userPreferencesRepository.userPreferences.first().builtinLibretroEnabled
+
         var installedPackages = emulatorDetector.installedEmulators.value
             .map { it.def.packageName }
             .toSet()
@@ -381,15 +386,27 @@ class GameLauncher @Inject constructor(
                 .toSet()
         }
 
+        val isBuiltinPackage: (String?) -> Boolean = { pkg ->
+            pkg == EmulatorRegistry.BUILTIN_PACKAGE
+        }
+
         if (gameOverride?.packageName != null && gameOverride.packageName in installedPackages) {
-            return emulatorDetector.getByPackage(gameOverride.packageName)
+            if (!builtinEnabled && isBuiltinPackage(gameOverride.packageName)) {
+                // Skip builtin when disabled, fall through to next option
+            } else {
+                return emulatorDetector.getByPackage(gameOverride.packageName)
+            }
         }
 
         if (platformDefault?.packageName != null && platformDefault.packageName in installedPackages) {
-            return emulatorDetector.getByPackage(platformDefault.packageName)
+            if (!builtinEnabled && isBuiltinPackage(platformDefault.packageName)) {
+                // Skip builtin when disabled, fall through to auto-resolution
+            } else {
+                return emulatorDetector.getByPackage(platformDefault.packageName)
+            }
         }
 
-        return emulatorDetector.getPreferredEmulator(game.platformSlug)?.def
+        return emulatorDetector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def
     }
 
     private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity, forResume: Boolean): Intent? {

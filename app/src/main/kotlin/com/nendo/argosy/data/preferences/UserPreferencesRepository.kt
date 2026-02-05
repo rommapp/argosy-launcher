@@ -125,6 +125,7 @@ class UserPreferencesRepository @Inject constructor(
         val BUILTIN_SHADER = stringPreferencesKey("builtin_shader")
         val BUILTIN_SHADER_CHAIN = stringPreferencesKey("builtin_shader_chain")
         val BUILTIN_FILTER = stringPreferencesKey("builtin_filter")
+        val BUILTIN_LIBRETRO_ENABLED = booleanPreferencesKey("builtin_libretro_enabled")
         val BUILTIN_ASPECT_RATIO = stringPreferencesKey("builtin_aspect_ratio")
         val BUILTIN_SKIP_DUPLICATE_FRAMES = booleanPreferencesKey("builtin_skip_duplicate_frames")
         val BUILTIN_LOW_LATENCY_AUDIO = booleanPreferencesKey("builtin_low_latency_audio")
@@ -260,7 +261,8 @@ class UserPreferencesRepository @Inject constructor(
             ambientLedAudioBrightness = prefs[Keys.AMBIENT_LED_AUDIO_BRIGHTNESS] ?: true,
             ambientLedAudioColors = prefs[Keys.AMBIENT_LED_AUDIO_COLORS] ?: false,
             ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE]),
-            androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI]
+            androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI],
+            builtinLibretroEnabled = prefs[Keys.BUILTIN_LIBRETRO_ENABLED] ?: true
         )
     }
 
@@ -1058,6 +1060,12 @@ class UserPreferencesRepository @Inject constructor(
             else prefs.remove(Keys.ANDROID_DATA_SAF_URI)
         }
     }
+
+    suspend fun setBuiltinLibretroEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_LIBRETRO_ENABLED] = enabled
+        }
+    }
 }
 
 data class BuiltinEmulatorSettings(
@@ -1208,7 +1216,8 @@ data class UserPreferences(
     val ambientLedAudioBrightness: Boolean = true,
     val ambientLedAudioColors: Boolean = false,
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,
-    val androidDataSafUri: String? = null
+    val androidDataSafUri: String? = null,
+    val builtinLibretroEnabled: Boolean = true
 )
 
 enum class ThemeMode(val displayName: String) {

@@ -201,7 +201,8 @@ data class EmulatorState(
     val savePathModalButtonIndex: Int = 0,
     val installedCoreCount: Int = 0,
     val totalCoreCount: Int = 0,
-    val coreUpdatesAvailable: Int = 0
+    val coreUpdatesAvailable: Int = 0,
+    val builtinLibretroEnabled: Boolean = true
 )
 
 data class PlatformContext(

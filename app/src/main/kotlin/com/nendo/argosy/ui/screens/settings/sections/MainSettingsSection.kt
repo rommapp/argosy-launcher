@@ -35,14 +35,22 @@ import com.nendo.argosy.ui.theme.Dimens
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private sealed class MainSettingsItem(
+internal data class MainSettingsLayoutState(val builtinLibretroEnabled: Boolean = true)
+
+internal sealed class MainSettingsItem(
     val key: String,
     val icon: ImageVector,
-    val title: String
+    val title: String,
+    val visibleWhen: (MainSettingsLayoutState) -> Boolean = { true }
 ) {
     data object DeviceSettings : MainSettingsItem("device", Icons.Default.PhoneAndroid, "Device Settings")
     data object GameData : MainSettingsItem("gameData", Icons.Default.Dns, "Game Data")
-    data object RetroAchievements : MainSettingsItem("retroAchievements", Icons.Default.EmojiEvents, "RetroAchievements")
+    data object RetroAchievements : MainSettingsItem(
+        "retroAchievements",
+        Icons.Default.EmojiEvents,
+        "RetroAchievements",
+        visibleWhen = { it.builtinLibretroEnabled }
+    )
     data object Storage : MainSettingsItem("storage", Icons.Default.Storage, "Storage")
     data object Interface : MainSettingsItem("interface", Icons.Default.Palette, "Interface")
     data object Controls : MainSettingsItem("controls", Icons.Default.TouchApp, "Controls")
@@ -59,23 +67,31 @@ private sealed class MainSettingsItem(
     }
 }
 
-private val mainSettingsLayout = SettingsLayout<MainSettingsItem, Unit>(
+private val mainSettingsLayout = SettingsLayout<MainSettingsItem, MainSettingsLayoutState>(
     allItems = MainSettingsItem.ALL,
     isFocusable = { true },
-    visibleWhen = { _, _ -> true }
+    visibleWhen = { item, state -> item.visibleWhen(state) }
 )
 
-internal fun mainSettingsMaxFocusIndex(): Int = mainSettingsLayout.maxFocusIndex(Unit)
+internal fun mainSettingsMaxFocusIndex(builtinLibretroEnabled: Boolean = true): Int =
+    mainSettingsLayout.maxFocusIndex(MainSettingsLayoutState(builtinLibretroEnabled))
+
+internal fun mainSettingsItemAtFocusIndex(index: Int, builtinLibretroEnabled: Boolean = true): MainSettingsItem? =
+    mainSettingsLayout.itemAtFocusIndex(index, MainSettingsLayoutState(builtinLibretroEnabled))
 
 @Composable
 fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
 
-    val visibleItems = remember { mainSettingsLayout.visibleItems(Unit) }
+    val layoutState = remember(uiState.emulators.builtinLibretroEnabled) {
+        MainSettingsLayoutState(uiState.emulators.builtinLibretroEnabled)
+    }
+
+    val visibleItems = remember(layoutState) { mainSettingsLayout.visibleItems(layoutState) }
 
     fun isFocused(item: MainSettingsItem): Boolean =
-        uiState.focusedIndex == mainSettingsLayout.focusIndexOf(item, Unit)
+        uiState.focusedIndex == mainSettingsLayout.focusIndexOf(item, layoutState)
 
     fun getSubtitle(item: MainSettingsItem): String = when (item) {
         MainSettingsItem.DeviceSettings -> "System settings"

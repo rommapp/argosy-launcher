@@ -81,6 +81,8 @@ import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.MainSettingsItem
+import com.nendo.argosy.ui.screens.settings.sections.mainSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.permissionsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageMaxFocusIndex
@@ -421,8 +423,13 @@ class SettingsViewModel @Inject constructor(
                     .mapNotNull { EmulatorRegistry.getById(it) }
                     .filter { it.packageName !in installedPackages && it.downloadUrl != null }
 
-                val selectedEmulatorDef = defaultConfig?.packageName?.let { emulatorDetector.getByPackage(it) }
-                val autoResolvedEmulator = emulatorDetector.getPreferredEmulator(platform.slug)?.def
+                val rawSelectedEmulatorDef = defaultConfig?.packageName?.let { emulatorDetector.getByPackage(it) }
+                val selectedEmulatorDef = if (!prefs.builtinLibretroEnabled && rawSelectedEmulatorDef?.id == "builtin") {
+                    null
+                } else {
+                    rawSelectedEmulatorDef
+                }
+                val autoResolvedEmulator = emulatorDetector.getPreferredEmulator(platform.slug, prefs.builtinLibretroEnabled)?.def
                 val effectiveEmulatorDef = selectedEmulatorDef ?: autoResolvedEmulator
                 val isRetroArch = effectiveEmulatorDef?.launchConfig is LaunchConfig.RetroArch
                 val availableCores = if (isRetroArch) {
@@ -602,7 +609,8 @@ class SettingsViewModel @Inject constructor(
                 platforms = platformConfigs,
                 installedEmulators = installedEmulators,
                 canAutoAssign = canAutoAssign,
-                platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex
+                platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex,
+                builtinLibretroEnabled = prefs.builtinLibretroEnabled
             ))
             emulatorDelegate.updateCoreCounts()
 
@@ -768,6 +776,23 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(framesEnabled = enabled)) }
         viewModelScope.launch {
             preferencesRepository.setBuiltinFramesEnabled(enabled)
+        }
+    }
+
+    fun setBuiltinLibretroEnabled(enabled: Boolean) {
+        val newToggleIndex = if (enabled) 3 else 0
+        _uiState.update {
+            it.copy(
+                emulators = it.emulators.copy(builtinLibretroEnabled = enabled),
+                focusedIndex = newToggleIndex
+            )
+        }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinLibretroEnabled(enabled)
+            if (!enabled) {
+                configureEmulatorUseCase.clearBuiltinSelections()
+            }
+            loadSettings()
         }
     }
 
@@ -1782,7 +1807,7 @@ class SettingsViewModel @Inject constructor(
             val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                 state.server.connectionStatus == ConnectionStatus.OFFLINE
             val maxIndex = when (state.currentSection) {
-                SettingsSection.MAIN -> mainSettingsMaxFocusIndex()
+                SettingsSection.MAIN -> mainSettingsMaxFocusIndex(state.emulators.builtinLibretroEnabled)
                 SettingsSection.SERVER -> if (state.server.rommConfiguring) {
                     4
                 } else {
@@ -1809,7 +1834,8 @@ class SettingsViewModel @Inject constructor(
                 SettingsSection.CONTROLS -> controlsMaxFocusIndex(state.controls)
                 SettingsSection.EMULATORS -> emulatorsMaxFocusIndex(
                     state.emulators.canAutoAssign,
-                    state.emulators.platforms.size
+                    state.emulators.platforms.size,
+                    state.emulators.builtinLibretroEnabled
                 )
                 SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
                 SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(
@@ -3088,22 +3114,19 @@ class SettingsViewModel @Inject constructor(
         val state = _uiState.value
         return when (state.currentSection) {
             SettingsSection.MAIN -> {
-                if (state.focusedIndex == 0) {
-                    viewModelScope.launch { _openDeviceSettingsEvent.emit(Unit) }
-                } else {
-                    val section = when (state.focusedIndex) {
-                        1 -> SettingsSection.SERVER
-                        2 -> SettingsSection.RETRO_ACHIEVEMENTS
-                        3 -> SettingsSection.STORAGE
-                        4 -> SettingsSection.INTERFACE
-                        5 -> SettingsSection.CONTROLS
-                        6 -> SettingsSection.EMULATORS
-                        7 -> SettingsSection.BIOS
-                        8 -> SettingsSection.PERMISSIONS
-                        9 -> SettingsSection.ABOUT
-                        else -> null
-                    }
-                    section?.let { navigateToSection(it) }
+                val item = mainSettingsItemAtFocusIndex(state.focusedIndex, state.emulators.builtinLibretroEnabled)
+                when (item) {
+                    MainSettingsItem.DeviceSettings -> viewModelScope.launch { _openDeviceSettingsEvent.emit(Unit) }
+                    MainSettingsItem.GameData -> navigateToSection(SettingsSection.SERVER)
+                    MainSettingsItem.RetroAchievements -> navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
+                    MainSettingsItem.Storage -> navigateToSection(SettingsSection.STORAGE)
+                    MainSettingsItem.Interface -> navigateToSection(SettingsSection.INTERFACE)
+                    MainSettingsItem.Controls -> navigateToSection(SettingsSection.CONTROLS)
+                    MainSettingsItem.Emulators -> navigateToSection(SettingsSection.EMULATORS)
+                    MainSettingsItem.Bios -> navigateToSection(SettingsSection.BIOS)
+                    MainSettingsItem.Permissions -> navigateToSection(SettingsSection.PERMISSIONS)
+                    MainSettingsItem.About -> navigateToSection(SettingsSection.ABOUT)
+                    null -> {}
                 }
                 InputResult.HANDLED
             }

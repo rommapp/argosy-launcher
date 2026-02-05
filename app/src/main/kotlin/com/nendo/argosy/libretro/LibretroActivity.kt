@@ -424,7 +424,7 @@ class LibretroActivity : ComponentActivity() {
                                     activeMenuHandler = InGameMenu(
                                         gameName = gameName,
                                         hasQuickSave = hasQuickSave && !hardcoreMode,
-                                        cheatsAvailable = cheats.isNotEmpty() && !hardcoreMode,
+                                        cheatsAvailable = !hardcoreMode,
                                         focusedIndex = menuFocusIndex,
                                         onFocusChange = { menuFocusIndex = it },
                                         onAction = ::handleMenuAction,

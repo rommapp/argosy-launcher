@@ -265,20 +265,12 @@ class ShaderRegistry(private val context: Context) {
             githubPath = "scanlines/shaders/res-independent-scanlines.glsl"
         ),
         // --- SHARPENING: Pre-install ---
-        ShaderEntry(
-            "adaptive-sharpen", "Adaptive Sharpen", Category.SHARPENING, Source.CATALOG,
-            githubPath = "sharpen/shaders/adaptive-sharpen.glsl", preInstall = true,
-            description = "Adaptive sharpening filter"
-        ),
+        // NOTE: adaptive-sharpen.glsl removed - uses #version 130 and float[]() array
+        // constructor syntax which are incompatible with GLES 3.0
         ShaderEntry(
             "fast-sharpen", "Fast Sharpen", Category.SHARPENING, Source.CATALOG,
             githubPath = "sharpen/shaders/fast-sharpen.glsl", preInstall = true,
             description = "Lightweight sharpening pass"
-        ),
-        // --- SHARPENING: Extended catalog ---
-        ShaderEntry(
-            "diff", "Diff Sharpen", Category.SHARPENING, Source.CATALOG,
-            githubPath = "sharpen/shaders/diff.glsl"
         ),
         // --- ANTI_ALIASING: Pre-install ---
         ShaderEntry(

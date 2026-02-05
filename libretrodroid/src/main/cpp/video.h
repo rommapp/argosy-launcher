@@ -104,6 +104,7 @@ public:
 
 private:
     void updateProgram();
+    bool tryBuildShaderChain(const ShaderManager::Chain& shaders, std::vector<ShaderChainEntry>& outChain);
 
     float getScreenDensity();
     float getTextureWidth();

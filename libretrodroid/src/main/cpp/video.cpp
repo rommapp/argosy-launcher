@@ -99,32 +99,20 @@ GLuint createProgram(const char* pVertexSource, const char* pFragmentSource) {
     return program;
 }
 
-void Video::updateProgram() {
-    if (loadedShaderType.has_value() && loadedShaderType.value() == requestedShaderConfig) {
-        return;
-    }
+bool Video::tryBuildShaderChain(const ShaderManager::Chain& shaders, std::vector<ShaderChainEntry>& outChain) {
+    outChain.clear();
 
-    loadedShaderType = requestedShaderConfig;
-
-    auto shaders = ShaderManager::getShader(requestedShaderConfig);
-
-    // Apply filter mode override if set
-    if (filterMode == 0) {
-        shaders.linearTexture = false;  // Nearest
-    } else if (filterMode == 1) {
-        shaders.linearTexture = true;   // Linear/Bilinear
-    }
-    // filterMode == -1 means auto (use shader's default)
-
-    shadersChain = {};
-
-    std::for_each(shaders.passes.begin(), shaders.passes.end(), [&](const auto& item){
+    for (const auto& item : shaders.passes) {
         auto shader = ShaderChainEntry { };
 
         shader.gProgram = createProgram(item.vertex.data(), item.fragment.data());
         if (!shader.gProgram) {
-            LOGE("Could not create gl program.");
-            throw std::runtime_error("Cannot create gl program");
+            LOGE("Shader pass failed to compile, will fall back to default shader");
+            for (auto& entry : outChain) {
+                if (entry.gProgram) glDeleteProgram(entry.gProgram);
+            }
+            outChain.clear();
+            return false;
         }
 
         shader.gvPositionHandle = glGetAttribLocation(shader.gProgram, "vPosition");
@@ -153,9 +141,51 @@ void Video::updateProgram() {
         shader.gFrameDirectionHandle = glGetUniformLocation(shader.gProgram, "FrameDirection");
         shader.gMVPMatrixHandle = glGetUniformLocation(shader.gProgram, "MVPMatrix");
 
-        shadersChain.push_back(shader);
-    });
+        outChain.push_back(shader);
+    }
 
+    return true;
+}
+
+void Video::updateProgram() {
+    if (loadedShaderType.has_value() && loadedShaderType.value() == requestedShaderConfig) {
+        return;
+    }
+
+    loadedShaderType = requestedShaderConfig;
+
+    auto shaders = ShaderManager::getShader(requestedShaderConfig);
+
+    // Apply filter mode override if set
+    if (filterMode == 0) {
+        shaders.linearTexture = false;  // Nearest
+    } else if (filterMode == 1) {
+        shaders.linearTexture = true;   // Linear/Bilinear
+    }
+    // filterMode == -1 means auto (use shader's default)
+
+    for (auto& entry : shadersChain) {
+        if (entry.gProgram) glDeleteProgram(entry.gProgram);
+    }
+
+    std::vector<ShaderChainEntry> newChain;
+    if (!tryBuildShaderChain(shaders, newChain)) {
+        LOGE("Requested shader failed to compile, falling back to default shader");
+        auto defaultShaders = ShaderManager::getShader(ShaderManager::Config { ShaderManager::Type::SHADER_DEFAULT });
+        if (filterMode == 0) {
+            defaultShaders.linearTexture = false;
+        } else if (filterMode == 1) {
+            defaultShaders.linearTexture = true;
+        }
+
+        if (!tryBuildShaderChain(defaultShaders, newChain)) {
+            LOGE("Default shader also failed to compile - this should not happen");
+            throw std::runtime_error("Cannot create default gl program");
+        }
+        shaders = defaultShaders;
+    }
+
+    shadersChain = std::move(newChain);
     renderer->setShaders(shaders);
 }
 

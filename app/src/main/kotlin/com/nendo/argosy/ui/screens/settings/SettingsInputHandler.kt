@@ -175,6 +175,10 @@ class SettingsInputHandler(
         if (state.syncSettings.showPlatformFiltersModal) return InputResult.HANDLED
         if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
+        if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
+            viewModel.jumpShaderPickerSection(-1)
+            return InputResult.HANDLED
+        }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
             val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
@@ -398,6 +402,10 @@ class SettingsInputHandler(
         if (state.syncSettings.showPlatformFiltersModal) return InputResult.HANDLED
         if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
+        if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
+            viewModel.jumpShaderPickerSection(1)
+            return InputResult.HANDLED
+        }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
             val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
@@ -967,7 +975,10 @@ class SettingsInputHandler(
         val state = viewModel.uiState.value
         when (state.currentSection) {
             SettingsSection.SHADER_STACK -> {
-                if (!viewModel.shaderChainManager.shaderStack.showShaderPicker && viewModel.shaderChainManager.shaderStack.entries.isNotEmpty()) {
+                if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
+                    viewModel.jumpShaderPickerSection(-1)
+                    return InputResult.HANDLED
+                } else if (viewModel.shaderChainManager.shaderStack.entries.isNotEmpty()) {
                     viewModel.cycleShaderTab(-1)
                     return InputResult.HANDLED
                 }
@@ -1017,7 +1028,10 @@ class SettingsInputHandler(
         val state = viewModel.uiState.value
         when (state.currentSection) {
             SettingsSection.SHADER_STACK -> {
-                if (!viewModel.shaderChainManager.shaderStack.showShaderPicker && viewModel.shaderChainManager.shaderStack.entries.isNotEmpty()) {
+                if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
+                    viewModel.jumpShaderPickerSection(1)
+                    return InputResult.HANDLED
+                } else if (viewModel.shaderChainManager.shaderStack.entries.isNotEmpty()) {
                     viewModel.cycleShaderTab(1)
                     return InputResult.HANDLED
                 }

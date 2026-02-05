@@ -1041,6 +1041,7 @@ class SettingsViewModel @Inject constructor(
     fun dismissShaderPicker() = shaderChainManager.dismissShaderPicker()
     fun setShaderPickerFocusIndex(index: Int) = shaderChainManager.setShaderPickerFocusIndex(index)
     fun moveShaderPickerFocus(delta: Int) = shaderChainManager.moveShaderPickerFocus(delta)
+    fun jumpShaderPickerSection(direction: Int) = shaderChainManager.jumpShaderPickerSection(direction)
     fun confirmShaderPickerSelection() = shaderChainManager.confirmShaderPickerSelection()
     fun moveShaderParamFocus(delta: Int) = shaderChainManager.moveShaderParamFocus(delta)
     fun adjustShaderParam(direction: Int) = shaderChainManager.adjustShaderParam(direction)

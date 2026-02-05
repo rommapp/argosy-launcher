@@ -212,6 +212,27 @@ class ShaderChainManager(
         shaderStack = shaderStack.copy(shaderPickerFocusIndex = newIndex)
     }
 
+    fun jumpShaderPickerSection(direction: Int) {
+        val shaders = shaderRegistry.getShadersForPicker()
+        val grouped = shaders.groupBy { it.category }
+        val sectionStarts = mutableListOf<Int>()
+        var offset = 0
+        for (category in ShaderRegistry.Category.entries) {
+            val count = grouped[category]?.size ?: continue
+            sectionStarts.add(offset)
+            offset += count
+        }
+        if (sectionStarts.isEmpty()) return
+
+        val currentIndex = shaderStack.shaderPickerFocusIndex
+        val targetIndex = if (direction < 0) {
+            sectionStarts.lastOrNull { it < currentIndex } ?: sectionStarts.first()
+        } else {
+            sectionStarts.firstOrNull { it > currentIndex } ?: sectionStarts.last()
+        }
+        shaderStack = shaderStack.copy(shaderPickerFocusIndex = targetIndex)
+    }
+
     fun confirmShaderPickerSelection() {
         val shaders = shaderRegistry.getShadersForPicker()
         val grouped = shaders.groupBy { it.category }

@@ -772,6 +772,9 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
     if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker) {
         return
     }
+    if (shaderStack.showShaderPicker) {
+        return
+    }
 
     val hints = buildList {
         if (uiState.currentSection != SettingsSection.BOX_ART &&
@@ -794,19 +797,20 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
                 add(InputButton.LT_RT to "Reorder")
                 if (shaderStack.selectedShaderParams.isNotEmpty()) {
                     add(InputButton.DPAD_HORIZONTAL to "Adjust")
+                    add(InputButton.A to "Reset")
                 }
-            }
-            add(InputButton.X to "Add")
-            if (shaderStack.entries.isNotEmpty()) {
                 add(InputButton.Y to "Remove")
             }
+            add(InputButton.X to "Add")
         }
         if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
             uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
             uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
             add(InputButton.LB_RB to "Platform")
         }
-        add(InputButton.A to "Select")
+        if (uiState.currentSection != SettingsSection.SHADER_STACK) {
+            add(InputButton.A to "Select")
+        }
         if (uiState.currentSection == SettingsSection.EMULATORS) {
             add(InputButton.X to "Saves")
         }

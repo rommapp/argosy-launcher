@@ -25,6 +25,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.libretro.shader.ShaderChainManager
@@ -153,6 +155,21 @@ private fun ShaderTabBar(
     onTabTap: (Int) -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val tabWidths = remember { mutableMapOf<Int, Int>() }
+    val spacingPx = with(androidx.compose.ui.platform.LocalDensity.current) { Dimens.spacingXs.roundToPx() }
+
+    LaunchedEffect(selectedIndex, tabWidths.size) {
+        if (tabWidths.size < entries.size) return@LaunchedEffect
+        var targetScroll = 0
+        for (i in 0 until selectedIndex) {
+            targetScroll += (tabWidths[i] ?: 0) + spacingPx
+        }
+        val selectedWidth = tabWidths[selectedIndex] ?: 0
+        val viewportWidth = scrollState.viewportSize
+        val centeredScroll = (targetScroll + selectedWidth / 2 - viewportWidth / 2)
+            .coerceIn(0, scrollState.maxValue)
+        scrollState.animateScrollTo(centeredScroll)
+    }
 
     Row(
         modifier = Modifier
@@ -179,6 +196,7 @@ private fun ShaderTabBar(
                     .background(bgColor)
                     .clickableNoFocus { onTabTap(index) }
                     .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+                    .onSizeChanged { size -> tabWidths[index] = size.width }
             ) {
                 Text(
                     text = "${index + 1}. ${entry.displayName}",

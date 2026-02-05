@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -87,16 +88,19 @@ fun ShaderPickerModal(
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
             .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
+        val maxModalHeight = maxHeight * 0.9f
+
         Column(
             modifier = Modifier
                 .width(Dimens.modalWidthLg)
+                .heightIn(max = maxModalHeight)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
                 .clickableNoFocus(enabled = false) {}
@@ -113,7 +117,7 @@ fun ShaderPickerModal(
 
             LazyColumn(
                 state = listState,
-                modifier = Modifier.heightIn(max = Dimens.headerHeightLg * 3),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 items(flatItems, key = { it.key }) { item ->
@@ -149,6 +153,7 @@ fun ShaderPickerModal(
 
             FooterBar(
                 hints = listOf(
+                    InputButton.DPAD_HORIZONTAL to "Section",
                     InputButton.A to "Add",
                     InputButton.B to "Cancel"
                 )

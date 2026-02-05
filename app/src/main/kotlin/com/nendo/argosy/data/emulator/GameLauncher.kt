@@ -989,34 +989,10 @@ class GameLauncher @Inject constructor(
         return romFile
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private suspend fun applyExtensionPreferenceIfNeeded(game: GameEntity, romFile: File): File {
-        val validExtensions = setOf("3ds", "cci")
-        val currentExt = romFile.extension.lowercase()
-        if (currentExt !in validExtensions) return romFile
-
-        val preferredExt = emulatorConfigDao.getPreferredExtension(game.platformId)
-            ?.takeIf { it.isNotEmpty() && it.lowercase() in validExtensions }
-            ?: return romFile
-
-        if (currentExt == preferredExt.lowercase()) return romFile
-
-        val newPath = romFile.absolutePath.replaceAfterLast('.', preferredExt)
-        val newFile = File(newPath)
-
-        if (newFile.exists()) {
-            Logger.debug(TAG, "Target file already exists, updating DB path only: ${newFile.name}")
-            gameDao.updateLocalPath(game.id, newPath, game.source)
-            return newFile
-        }
-
-        val renamed = romFile.renameTo(newFile)
-        if (renamed) {
-            Logger.info(TAG, "Renamed ${romFile.name} -> ${newFile.name}")
-            gameDao.updateLocalPath(game.id, newPath, game.source)
-            return newFile
-        }
-
-        Logger.warn(TAG, "Failed to rename ${romFile.name} to ${newFile.name}")
+        // Extension switching was a workaround for old Azahar not supporting .3ds
+        // Modern Azahar supports all formats natively, so this is no longer needed
         return romFile
     }
 

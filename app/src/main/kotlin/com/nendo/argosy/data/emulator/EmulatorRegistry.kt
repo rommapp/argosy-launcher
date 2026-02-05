@@ -1065,16 +1065,7 @@ object EmulatorRegistry {
 
     fun getEmulatorFamilies(): List<EmulatorFamily> = emulatorFamilies
 
-    private val extensionOptions3ds = listOf(
-        ExtensionOption("", "Unchanged"),
-        ExtensionOption("3ds", ".3ds"),
-        ExtensionOption("cci", ".cci")
-    )
-
-    private val platformExtensionOptions: Map<String, List<ExtensionOption>> = mapOf(
-        "3ds" to extensionOptions3ds,
-        "n3ds" to extensionOptions3ds
-    )
+    private val platformExtensionOptions: Map<String, List<ExtensionOption>> = emptyMap()
 
     fun getExtensionOptionsForPlatform(platformSlug: String): List<ExtensionOption> {
         val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug)

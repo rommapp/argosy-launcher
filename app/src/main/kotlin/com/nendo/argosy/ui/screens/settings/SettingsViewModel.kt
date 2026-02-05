@@ -1528,8 +1528,8 @@ class SettingsViewModel @Inject constructor(
                 val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                     state.server.connectionStatus == ConnectionStatus.OFFLINE
                 val steamBaseIndex = when {
-                    isConnected && state.syncSettings.saveSyncEnabled -> 7
-                    isConnected -> 5
+                    isConnected && state.syncSettings.saveSyncEnabled -> 9
+                    isConnected -> 7
                     else -> 2
                 }
                 state.focusedIndex - steamBaseIndex
@@ -1641,7 +1641,7 @@ class SettingsViewModel @Inject constructor(
                 true
             }
             state.currentSection == SettingsSection.STEAM_SETTINGS -> {
-                val steamIndex = if (_uiState.value.syncSettings.saveSyncEnabled) 7 else 5
+                val steamIndex = if (_uiState.value.syncSettings.saveSyncEnabled) 9 else 7
                 _uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = steamIndex) }
                 true
             }
@@ -1719,8 +1719,8 @@ class SettingsViewModel @Inject constructor(
                     4
                 } else {
                     val steamBaseIndex = when {
-                        isConnected && state.syncSettings.saveSyncEnabled -> 7
-                        isConnected -> 5
+                        isConnected && state.syncSettings.saveSyncEnabled -> 10
+                        isConnected -> 8
                         else -> 2
                     }
                     val launcherCount = state.steam.installedLaunchers.size
@@ -2457,6 +2457,14 @@ class SettingsViewModel @Inject constructor(
         syncDelegate.runSaveSyncNow(viewModelScope)
     }
 
+    fun requestResetSaveCache() = syncDelegate.requestResetSaveCache()
+    fun confirmResetSaveCache() = syncDelegate.confirmResetSaveCache(viewModelScope)
+    fun cancelResetSaveCache() = syncDelegate.cancelResetSaveCache()
+
+    fun requestClearPathCache() = syncDelegate.requestClearPathCache()
+    fun confirmClearPathCache() = syncDelegate.confirmClearPathCache(viewModelScope)
+    fun cancelClearPathCache() = syncDelegate.cancelClearPathCache()
+
     fun openImageCachePicker() {
         syncDelegate.openImageCachePicker(viewModelScope)
     }
@@ -3042,8 +3050,8 @@ class SettingsViewModel @Inject constructor(
                     }
                 } else {
                     val androidBaseIndex = when {
-                        isConnected && state.syncSettings.saveSyncEnabled -> 7
-                        isConnected -> 5
+                        isConnected && state.syncSettings.saveSyncEnabled -> 9
+                        isConnected -> 7
                         else -> 1
                     }
                     val steamBaseIndex = androidBaseIndex + 1
@@ -3068,6 +3076,8 @@ class SettingsViewModel @Inject constructor(
                         }
                         state.focusedIndex == 5 && isConnected && state.syncSettings.saveSyncEnabled -> cycleSaveCacheLimit()
                         state.focusedIndex == 6 && isConnected && state.syncSettings.saveSyncEnabled && isOnline -> runSaveSyncNow()
+                        state.focusedIndex == androidBaseIndex - 2 && isConnected -> requestResetSaveCache()
+                        state.focusedIndex == androidBaseIndex - 1 && isConnected -> requestClearPathCache()
                         state.focusedIndex == androidBaseIndex -> scanForAndroidGames()
                         state.focusedIndex >= steamBaseIndex && state.focusedIndex < refreshIndex -> {
                             if (state.steam.hasStoragePermission && !state.steam.isSyncing) {

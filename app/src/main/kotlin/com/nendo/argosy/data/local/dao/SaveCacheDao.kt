@@ -94,4 +94,13 @@ interface SaveCacheDao {
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND note = :channelName ORDER BY cachedAt DESC LIMIT 1")
     suspend fun getMostRecentInChannel(gameId: Long, channelName: String): SaveCacheEntity?
+
+    @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
+    suspend fun deleteByPlatform(platformId: Long)
+
+    @Query("DELETE FROM save_cache")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM save_cache")
+    suspend fun count(): Int
 }

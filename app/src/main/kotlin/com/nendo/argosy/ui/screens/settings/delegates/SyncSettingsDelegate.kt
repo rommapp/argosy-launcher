@@ -4,8 +4,11 @@ import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
+import com.nendo.argosy.data.local.dao.PendingStateSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
@@ -24,15 +27,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class SyncSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: SaveSyncRepository,
     private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val pendingStateSyncDao: PendingStateSyncDao,
     private val saveSyncDao: SaveSyncDao,
+    private val saveCacheDao: SaveCacheDao,
+    private val stateCacheDao: StateCacheDao,
     private val platformDao: PlatformDao,
     private val rommRepository: RomMRepository,
     private val imageCacheManager: ImageCacheManager,
@@ -63,6 +71,9 @@ class SyncSettingsDelegate @Inject constructor(
             val totalPending = pendingUploads + pendingDownloads
             val enabledPlatformCount = platformDao.getEnabledPlatformCount()
             val totalPlatformCount = platformDao.getTotalPlatformCount()
+            val saveCount = saveCacheDao.count()
+            val stateCount = stateCacheDao.count()
+            val pathCount = saveSyncDao.countWithPaths()
             _state.update {
                 it.copy(
                     syncFilters = prefs.syncFilters,
@@ -74,7 +85,10 @@ class SyncSettingsDelegate @Inject constructor(
                     imageCachePath = prefs.imageCachePath,
                     defaultImageCachePath = imageCacheManager.getDefaultCachePath(),
                     enabledPlatformCount = enabledPlatformCount,
-                    totalPlatforms = totalPlatformCount
+                    totalPlatforms = totalPlatformCount,
+                    saveCacheCount = saveCount,
+                    stateCacheCount = stateCount,
+                    pathCacheCount = pathCount
                 )
             }
             imageCacheManager.setCustomCachePath(prefs.imageCachePath)
@@ -439,6 +453,45 @@ class SyncSettingsDelegate @Inject constructor(
                     enabledPlatformCount = enabledCount
                 )
             }
+        }
+    }
+
+    fun requestResetSaveCache() {
+        _state.update { it.copy(showResetSaveCacheConfirm = true) }
+    }
+
+    fun cancelResetSaveCache() {
+        _state.update { it.copy(showResetSaveCacheConfirm = false) }
+    }
+
+    fun confirmResetSaveCache(scope: CoroutineScope) {
+        _state.update { it.copy(showResetSaveCacheConfirm = false, isResettingSaveCache = true) }
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                pendingStateSyncDao.deleteAll()
+                pendingSaveSyncDao.deleteAll()
+                stateCacheDao.deleteAll()
+                saveCacheDao.deleteAll()
+            }
+            _state.update { it.copy(isResettingSaveCache = false, saveCacheCount = 0, stateCacheCount = 0) }
+        }
+    }
+
+    fun requestClearPathCache() {
+        _state.update { it.copy(showClearPathCacheConfirm = true) }
+    }
+
+    fun cancelClearPathCache() {
+        _state.update { it.copy(showClearPathCacheConfirm = false) }
+    }
+
+    fun confirmClearPathCache(scope: CoroutineScope) {
+        _state.update { it.copy(showClearPathCacheConfirm = false, isClearingPathCache = true) }
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                saveSyncDao.clearAllPaths()
+            }
+            _state.update { it.copy(isClearingPathCache = false, pathCacheCount = 0) }
         }
     }
 }

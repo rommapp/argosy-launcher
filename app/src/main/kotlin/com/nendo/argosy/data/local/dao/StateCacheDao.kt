@@ -157,4 +157,13 @@ interface StateCacheDao {
         ORDER BY cachedAt DESC
     """)
     suspend fun getSyncedStates(): List<StateCacheEntity>
+
+    @Query("DELETE FROM state_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
+    suspend fun deleteByPlatform(platformId: Long)
+
+    @Query("DELETE FROM state_cache")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM state_cache")
+    suspend fun count(): Int
 }

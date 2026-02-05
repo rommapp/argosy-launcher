@@ -239,6 +239,36 @@ private fun GameDataContent(
                     )
                 }
             }
+
+            val resetIndex = if (saveSyncEnabled) 7 else 5
+            val clearIndex = resetIndex + 1
+            item {
+                val totalCached = uiState.syncSettings.saveCacheCount + uiState.syncSettings.stateCacheCount
+                val subtitle = if (uiState.syncSettings.isResettingSaveCache) "Resetting..."
+                    else if (totalCached > 0) "$totalCached cached entries"
+                    else "No cached entries"
+                ActionPreference(
+                    title = "Reset Save Cache",
+                    subtitle = subtitle,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == resetIndex,
+                    isEnabled = !uiState.syncSettings.isResettingSaveCache && totalCached > 0,
+                    isDangerous = true,
+                    onClick = { viewModel.requestResetSaveCache() }
+                )
+            }
+            item {
+                val pathCount = uiState.syncSettings.pathCacheCount
+                val subtitle = if (uiState.syncSettings.isClearingPathCache) "Clearing..."
+                    else if (pathCount > 0) "$pathCount cached paths"
+                    else "No cached paths"
+                ActionPreference(
+                    title = "Clear Save Path Cache",
+                    subtitle = subtitle,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == clearIndex,
+                    isEnabled = !uiState.syncSettings.isClearingPathCache && pathCount > 0,
+                    onClick = { viewModel.requestClearPathCache() }
+                )
+            }
         }
 
         // === ANDROID ===
@@ -420,16 +450,16 @@ private fun buildGameDataSections(
         sections.add(ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 0))
         sections.add(ListSection(listStartIndex = 2, listEndIndex = 4, focusStartIndex = 1, focusEndIndex = 2))
         sections.add(ListSection(listStartIndex = 5, listEndIndex = 6, focusStartIndex = 3, focusEndIndex = 3))
-        sections.add(ListSection(listStartIndex = 7, listEndIndex = 8, focusStartIndex = 4, focusEndIndex = 4))
-        sections.add(ListSection(listStartIndex = 9, listEndIndex = 10, focusStartIndex = 5, focusEndIndex = 5))
-        sections.add(ListSection(listStartIndex = 11, listEndIndex = 11 + steamItemCount, focusStartIndex = 6, focusEndIndex = 6 + steamItemCount - 1))
+        sections.add(ListSection(listStartIndex = 7, listEndIndex = 10, focusStartIndex = 4, focusEndIndex = 6))
+        sections.add(ListSection(listStartIndex = 11, listEndIndex = 12, focusStartIndex = 7, focusEndIndex = 7))
+        sections.add(ListSection(listStartIndex = 13, listEndIndex = 13 + steamItemCount, focusStartIndex = 8, focusEndIndex = 8 + steamItemCount - 1))
     } else {
         sections.add(ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 0))
         sections.add(ListSection(listStartIndex = 2, listEndIndex = 4, focusStartIndex = 1, focusEndIndex = 2))
         sections.add(ListSection(listStartIndex = 5, listEndIndex = 6, focusStartIndex = 3, focusEndIndex = 3))
-        sections.add(ListSection(listStartIndex = 7, listEndIndex = 10, focusStartIndex = 4, focusEndIndex = 6))
-        sections.add(ListSection(listStartIndex = 11, listEndIndex = 12, focusStartIndex = 7, focusEndIndex = 7))
-        sections.add(ListSection(listStartIndex = 13, listEndIndex = 13 + steamItemCount, focusStartIndex = 8, focusEndIndex = 8 + steamItemCount - 1))
+        sections.add(ListSection(listStartIndex = 7, listEndIndex = 12, focusStartIndex = 4, focusEndIndex = 8))
+        sections.add(ListSection(listStartIndex = 13, listEndIndex = 14, focusStartIndex = 9, focusEndIndex = 9))
+        sections.add(ListSection(listStartIndex = 15, listEndIndex = 15 + steamItemCount, focusStartIndex = 10, focusEndIndex = 10 + steamItemCount - 1))
     }
 
     return sections
@@ -437,9 +467,9 @@ private fun buildGameDataSections(
 
 private fun calculateAndroidBaseIndex(isConnected: Boolean, saveSyncEnabled: Boolean): Int {
     return when {
-        isConnected && saveSyncEnabled -> 7  // Rom Manager(0), Sync Settings(1), Sync Library(2), Accurate Play Time(3), Save Sync(4), Save Cache(5), Sync Saves(6), Android at 7
-        isConnected -> 5                      // Rom Manager(0), Sync Settings(1), Sync Library(2), Accurate Play Time(3), Save Sync(4), Android at 5
-        else -> 1                             // Rom Manager(0), Android at 1
+        isConnected && saveSyncEnabled -> 9
+        isConnected -> 7
+        else -> 1
     }
 }
 
@@ -467,7 +497,7 @@ private fun calculateScrollIndex(
                 focusedIndex == 0 -> 1                      // Rom Manager
                 focusedIndex in 1..2 -> focusedIndex + 2    // Sync Settings, Sync Library
                 focusedIndex == 3 -> focusedIndex + 3       // Accurate Play Time
-                focusedIndex == 4 -> focusedIndex + 4       // Save Sync toggle
+                focusedIndex in 4..6 -> focusedIndex + 4    // Save Sync, Reset Save Cache, Clear Path Cache
                 focusedIndex == androidBaseIndex -> focusedIndex + 5  // Scan Android
                 else -> focusedIndex + 6                    // Steam items
             }
@@ -477,7 +507,7 @@ private fun calculateScrollIndex(
                 focusedIndex == 0 -> 1                      // Rom Manager
                 focusedIndex in 1..2 -> focusedIndex + 2    // Sync Settings, Sync Library
                 focusedIndex == 3 -> focusedIndex + 3       // Accurate Play Time
-                focusedIndex in 4..6 -> focusedIndex + 4    // Save Sync, Save Cache, Sync Saves
+                focusedIndex in 4..8 -> focusedIndex + 4    // Save Sync, Save Cache, Sync Saves, Reset Save Cache, Clear Path Cache
                 focusedIndex == androidBaseIndex -> focusedIndex + 5  // Scan Android
                 else -> focusedIndex + 6                    // Steam items
             }

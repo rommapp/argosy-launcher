@@ -2,7 +2,12 @@ package com.nendo.argosy.domain.usecase
 
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
+import com.nendo.argosy.data.local.dao.PendingStateSyncDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.NotificationProgress
@@ -25,7 +30,12 @@ class PurgePlatformUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
     private val gameRepository: GameRepository,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val saveCacheDao: SaveCacheDao,
+    private val stateCacheDao: StateCacheDao,
+    private val saveSyncDao: SaveSyncDao,
+    private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val pendingStateSyncDao: PendingStateSyncDao
 ) {
     suspend operator fun invoke(
         platformId: Long,
@@ -72,6 +82,12 @@ class PurgePlatformUseCase @Inject constructor(
                 }
             }
         }
+
+        pendingStateSyncDao.deleteByPlatform(platformId)
+        pendingSaveSyncDao.deleteByPlatform(platformId)
+        stateCacheDao.deleteByPlatform(platformId)
+        saveCacheDao.deleteByPlatform(platformId)
+        saveSyncDao.deleteByPlatform(platformId)
 
         val gamesCount = gameDao.countByPlatform(platformId)
         gameDao.deleteByPlatform(platformId)

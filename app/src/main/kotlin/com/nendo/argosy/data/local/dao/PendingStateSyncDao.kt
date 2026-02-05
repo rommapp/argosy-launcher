@@ -39,4 +39,10 @@ interface PendingStateSyncDao {
 
     @Query("SELECT * FROM pending_state_sync WHERE stateCacheId = :stateCacheId LIMIT 1")
     suspend fun getByStateCacheId(stateCacheId: Long): PendingStateSyncEntity?
+
+    @Query("DELETE FROM pending_state_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
+    suspend fun deleteByPlatform(platformId: Long)
+
+    @Query("DELETE FROM pending_state_sync")
+    suspend fun deleteAll()
 }

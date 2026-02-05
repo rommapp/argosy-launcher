@@ -432,7 +432,14 @@ data class SyncSettingsState(
     val imageCachePath: String? = null,
     val defaultImageCachePath: String? = null,
     val imageCacheActionIndex: Int = 0,
-    val isImageCacheMigrating: Boolean = false
+    val isImageCacheMigrating: Boolean = false,
+    val showResetSaveCacheConfirm: Boolean = false,
+    val isResettingSaveCache: Boolean = false,
+    val showClearPathCacheConfirm: Boolean = false,
+    val isClearingPathCache: Boolean = false,
+    val saveCacheCount: Int = 0,
+    val stateCacheCount: Int = 0,
+    val pathCacheCount: Int = 0
 )
 
 data class InstalledSteamLauncher(

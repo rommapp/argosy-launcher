@@ -541,6 +541,51 @@ fun SettingsScreen(
         )
     }
 
+    if (uiState.syncSettings.showResetSaveCacheConfirm) {
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelResetSaveCache() },
+            title = { Text("Reset Save Cache?") },
+            text = {
+                Text("This will delete all locally cached save snapshots and pending sync operations. Your actual save files and server saves are not affected.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.confirmResetSaveCache() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reset")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelResetSaveCache() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (uiState.syncSettings.showClearPathCacheConfirm) {
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelClearPathCache() },
+            title = { Text("Clear Save Path Cache?") },
+            text = {
+                Text("This will clear all detected save file paths. Paths will be re-detected on next sync. Use this if saves are syncing to the wrong location.")
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.confirmClearPathCache() }) {
+                    Text("Clear")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelClearPathCache() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (showFileBrowser) {
         FileBrowserScreen(
             mode = FileBrowserMode.FOLDER_SELECTION,

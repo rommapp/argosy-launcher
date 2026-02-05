@@ -39,4 +39,10 @@ interface PendingSaveSyncDao {
 
     @Query("SELECT * FROM pending_save_sync WHERE retryCount < 3 ORDER BY createdAt ASC")
     suspend fun getRetryable(): List<PendingSaveSyncEntity>
+
+    @Query("DELETE FROM pending_save_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
+    suspend fun deleteByPlatform(platformId: Long)
+
+    @Query("DELETE FROM pending_save_sync")
+    suspend fun deleteAll()
 }

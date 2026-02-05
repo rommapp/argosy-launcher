@@ -211,22 +211,39 @@ void Video::renderFrame() {
         glVertexAttribPointer(shader.gvCoordinateHandle, 2, GL_FLOAT, GL_FALSE, 0, coordinates.data());
         glEnableVertexAttribArray(shader.gvCoordinateHandle);
 
+        // For multi-pass shaders: first pass reads original, subsequent passes read previous output
+        GLuint mainTexture = (i > 0 && passData.texture.has_value())
+            ? passData.texture.value()
+            : renderer->getTexture();
+
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, renderer->getTexture());
+        glBindTexture(GL_TEXTURE_2D, mainTexture);
         glUniform1i(shader.gTextureHandle, 0);
 
-        if (shader.gPreviousPassTextureHandle != -1 && passData.texture.has_value()) {
+        // Also provide original texture as "OriginalTexture" for shaders that need it
+        if (shader.gPreviousPassTextureHandle != -1) {
             glActiveTexture(GL_TEXTURE0 + 1);
-            glBindTexture(GL_TEXTURE_2D, passData.texture.value());
+            glBindTexture(GL_TEXTURE_2D, renderer->getTexture());
             glUniform1i(shader.gPreviousPassTextureHandle, 1);
         }
 
-        glUniform2f(shader.gTextureSizeHandle, getTextureWidth(), getTextureHeight());
+        // Input size: for pass 0 use original, for subsequent passes use previous output size
+        float inputWidth, inputHeight;
+        if (i > 0 && passData.texture.has_value()) {
+            auto prevPassData = renderer->getPassData(i - 1);
+            inputWidth = static_cast<float>(prevPassData.width.value_or(getTextureWidth()));
+            inputHeight = static_cast<float>(prevPassData.height.value_or(getTextureHeight()));
+        } else {
+            inputWidth = getTextureWidth();
+            inputHeight = getTextureHeight();
+        }
+
+        glUniform2f(shader.gTextureSizeHandle, inputWidth, inputHeight);
 
         glUniform1f(shader.gScreenDensityHandle, getScreenDensity());
 
         if (shader.gInputSizeHandle != -1)
-            glUniform2f(shader.gInputSizeHandle, getTextureWidth(), getTextureHeight());
+            glUniform2f(shader.gInputSizeHandle, inputWidth, inputHeight);
 
         auto passWidth = static_cast<float>(passData.width.value_or(videoLayout.getScreenWidth()));
         auto passHeight = static_cast<float>(passData.height.value_or(videoLayout.getScreenHeight()));
@@ -266,13 +283,8 @@ void Video::renderFrame() {
     }
 
     // Render background frame ON TOP of game content with alpha blending
-    // Check both hasImage (texture uploaded) and hasPendingImage (data waiting to be uploaded)
     bool hasFrame = backgroundFrame.hasImage() || backgroundFrame.hasPendingImage();
-    LOGI("Video::renderFrame: hasFrame = %d (hasImage=%d, hasPending=%d)",
-         hasFrame, backgroundFrame.hasImage(), backgroundFrame.hasPendingImage());
     if (hasFrame) {
-        LOGI("Video::renderFrame: Rendering backgroundFrame, screen=%dx%d",
-             videoLayout.getScreenWidth(), videoLayout.getScreenHeight());
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         backgroundFrame.render(

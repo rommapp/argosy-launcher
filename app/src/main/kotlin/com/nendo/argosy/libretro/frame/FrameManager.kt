@@ -43,10 +43,19 @@ class FrameManager(
     private var previewJob: Job? = null
 
     val availableFrames: List<FrameRegistry.FrameEntry>
-        get() = frameRegistry.getFramesForPlatform(platformSlug)
+        get() {
+            val platformFrames = frameRegistry.getFramesForPlatform(platformSlug)
+            val otherFrames = frameRegistry.getAllFrames().filter { it !in platformFrames }
+            return platformFrames + otherFrames
+        }
 
     val localFrames: List<FrameRegistry.FrameEntry>
-        get() = frameRegistry.getInstalledFramesForPlatform(platformSlug)
+        get() {
+            val installed = frameRegistry.getInstalledIds()
+            val platformFrames = frameRegistry.getFramesForPlatform(platformSlug).filter { it.id in installed }
+            val otherFrames = frameRegistry.getAllFrames().filter { it.id in installed && it !in platformFrames }
+            return platformFrames + otherFrames
+        }
 
     fun selectFrame(frameId: String?) {
         if (frameId == selectedFrameId) return

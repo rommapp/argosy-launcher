@@ -103,13 +103,16 @@ class ShaderPreviewRenderer {
                     GLES20.glEnableVertexAttribArray(compiled.coordHandle)
                 }
 
+                // For multi-pass: pass 0 reads original, subsequent passes read previous output
+                val mainTexture = if (i > 0) fbos[i - 1].texture else inputTexture
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, inputTexture)
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mainTexture)
                 GLES20.glUniform1i(compiled.textureHandle, 0)
 
-                if (i > 0 && compiled.previousPassHandle != -1) {
+                // Also provide original texture for shaders that need it
+                if (compiled.previousPassHandle != -1) {
                     GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
-                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fbos[i - 1].texture)
+                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, inputTexture)
                     GLES20.glUniform1i(compiled.previousPassHandle, 1)
                 }
 
@@ -123,8 +126,11 @@ class ShaderPreviewRenderer {
                     outH = fbos[i].height.toFloat()
                 }
 
-                setUniformVec2(compiled.textureSizeHandle, texW, texH)
-                setUniformVec2(compiled.inputSizeHandle, texW, texH)
+                // Input size: for pass 0 use original, for subsequent passes use previous output
+                val inW = if (i > 0) fbos[i - 1].width.toFloat() else texW
+                val inH = if (i > 0) fbos[i - 1].height.toFloat() else texH
+                setUniformVec2(compiled.textureSizeHandle, inW, inH)
+                setUniformVec2(compiled.inputSizeHandle, inW, inH)
                 setUniformVec2(compiled.outputSizeHandle, outW, outH)
                 setUniformInt(compiled.frameCountHandle, 0)
                 setUniformInt(compiled.frameDirectionHandle, 1)

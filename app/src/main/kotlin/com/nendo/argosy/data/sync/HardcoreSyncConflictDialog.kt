@@ -94,7 +94,7 @@ fun HardcoreSyncConflictDialog(
                     onClick = { onAction(HardcoreSyncConflictAction.KeepLocal) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Keep Local (Skip Sync)")
+                    Text("Skip Sync")
                 }
             }
         },

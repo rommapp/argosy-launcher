@@ -405,8 +405,8 @@ private fun HardcoreConflictContent(
 
             if (onKeepLocal != null) {
                 ConflictOption(
-                    label = "Keep Local",
-                    subtitle = "Skip sync for now",
+                    label = "Skip Sync",
+                    subtitle = "Launch without syncing",
                     isFocused = focusIndex == 2,
                     onClick = onKeepLocal
                 )
@@ -469,8 +469,8 @@ private fun LocalModifiedContent(
         ) {
             if (onKeepLocal != null) {
                 ConflictOption(
-                    label = "Keep Local",
-                    subtitle = "Continue with your current progress",
+                    label = "Apply Local",
+                    subtitle = "Set local save as the latest version",
                     isFocused = focusIndex == 0,
                     onClick = onKeepLocal
                 )

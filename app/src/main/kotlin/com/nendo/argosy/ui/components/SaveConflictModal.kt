@@ -105,7 +105,7 @@ fun SaveConflictModal(
                 ),
                 shape = RoundedCornerShape(Dimens.radiusMd)
             ) {
-                Text("Keep Local")
+                Text("Skip Sync")
             }
 
             Button(

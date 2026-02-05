@@ -101,7 +101,7 @@ fun InGameShaderChainScreen(
                 return InputResult.HANDLED
             }
 
-            override fun onMenu(): InputResult {
+            override fun onContextMenu(): InputResult {
                 if (!manager.shaderStack.showShaderPicker) {
                     manager.showShaderPicker()
                 }
@@ -165,8 +165,8 @@ fun InGameShaderChainScreen(
                     onHintClick = { button ->
                         when (button) {
                             InputButton.B -> currentOnDismiss.value()
-                            InputButton.START -> manager.showShaderPicker()
-                            InputButton.X -> manager.removeShaderFromStack()
+                            InputButton.X -> manager.showShaderPicker()
+                            InputButton.Y -> manager.removeShaderFromStack()
                             else -> {}
                         }
                     }
@@ -188,11 +188,11 @@ private fun buildShaderChainFooterHints(
             add(InputButton.B to "Cancel")
         } else {
             add(InputButton.LB_RB to "Shader")
-            add(InputButton.DPAD_HORIZONTAL to "Adjust")
-            add(InputButton.A to "Reset")
-            add(InputButton.START to "Add")
-            add(InputButton.X to "Remove")
             add(InputButton.LT_RT to "Reorder")
+            add(InputButton.DPAD_HORIZONTAL to "Adjust")
+            add(InputButton.X to "Add")
+            add(InputButton.Y to "Remove")
+            add(InputButton.A to "Reset")
             add(InputButton.B to "Back")
         }
     }

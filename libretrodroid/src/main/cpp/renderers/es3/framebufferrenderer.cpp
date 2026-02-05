@@ -69,7 +69,6 @@ uintptr_t FramebufferRenderer::getFramebuffer() {
 }
 
 void FramebufferRenderer::setPixelFormat(int pixelFormat) {
-    // TODO... Here we should handle 32bit framebuffers.
 }
 
 void FramebufferRenderer::updateRenderedResolution(unsigned int width, unsigned int height) {

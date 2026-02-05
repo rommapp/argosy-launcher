@@ -521,6 +521,23 @@ void LibretroDroid::step() {
 
         video->updateRotation(Environment::getInstance().getScreenRotation());
     }
+
+    if (audio && fpsSync && Environment::getInstance().isGameTimingUpdated()) {
+        Environment::getInstance().clearGameTimingUpdated();
+
+        double newFps = Environment::getInstance().getGameTimingFps();
+        double newSampleRate = Environment::getInstance().getGameTimingSampleRate();
+
+        fpsSync->updateContentRefreshRate(newFps);
+
+        if (bfiEnabled) {
+            fpsSync->setExternalTimingControl(true);
+        }
+
+        double effectiveSampleRate = newSampleRate * fpsSync->getTimeStretchFactor();
+        audio->updateTiming((int32_t) std::lround(effectiveSampleRate), newFps);
+        updateAudioSampleRateMultiplier();
+    }
 }
 
 float LibretroDroid::getAspectRatio() {

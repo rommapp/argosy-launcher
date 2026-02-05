@@ -64,6 +64,10 @@ void Environment::deinitialize() {
     gameGeometryHeight = 0;
     gameGeometryAspectRatio = -1.0f;
 
+    gameTimingUpdated = false;
+    gameTimingFps = 0.0;
+    gameTimingSampleRate = 0.0;
+
     memoryDescriptors.clear();
     memoryMapStorage.descriptors = nullptr;
     memoryMapStorage.num_descriptors = 0;
@@ -308,10 +312,29 @@ bool Environment::handle_callback_environment(unsigned cmd, void *data) {
             LOGD("Called RETRO_ENVIRONMENT_GET_PERF_INTERFACE");
             return false;
 
-            // TODO... RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO can also change frame-rate
-        case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+        case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: {
+            LOGD("Called RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO");
+            auto *avInfo = static_cast<const struct retro_system_av_info *>(data);
+            gameGeometryHeight = avInfo->geometry.base_height;
+            gameGeometryWidth = avInfo->geometry.base_width;
+            gameGeometryAspectRatio = avInfo->geometry.aspect_ratio;
+            gameGeometryUpdated = true;
+
+            if (avInfo->timing.fps > 0 && avInfo->timing.sample_rate > 0) {
+                if (avInfo->timing.fps != gameTimingFps
+                    || avInfo->timing.sample_rate != gameTimingSampleRate) {
+                    gameTimingFps = avInfo->timing.fps;
+                    gameTimingSampleRate = avInfo->timing.sample_rate;
+                    gameTimingUpdated = true;
+                    LOGI("Timing updated: fps=%f sample_rate=%f", gameTimingFps, gameTimingSampleRate);
+                }
+            }
+            return true;
+        }
+
         case RETRO_ENVIRONMENT_SET_GEOMETRY: {
-            struct retro_game_geometry *geometry = static_cast<struct retro_game_geometry *>(data);
+            LOGD("Called RETRO_ENVIRONMENT_SET_GEOMETRY");
+            auto *geometry = static_cast<const struct retro_game_geometry *>(data);
             gameGeometryHeight = geometry->base_height;
             gameGeometryWidth = geometry->base_width;
             gameGeometryAspectRatio = geometry->aspect_ratio;
@@ -456,6 +479,22 @@ unsigned int Environment::getGameGeometryHeight() const {
 
 float Environment::getGameGeometryAspectRatio() const {
     return gameGeometryAspectRatio;
+}
+
+double Environment::getGameTimingFps() const {
+    return gameTimingFps;
+}
+
+double Environment::getGameTimingSampleRate() const {
+    return gameTimingSampleRate;
+}
+
+bool Environment::isGameTimingUpdated() const {
+    return gameTimingUpdated;
+}
+
+void Environment::clearGameTimingUpdated() {
+    gameTimingUpdated = false;
 }
 
 const std::vector<struct Variable> Environment::getVariables() const {

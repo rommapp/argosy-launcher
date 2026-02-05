@@ -70,4 +70,12 @@ void FPSSync::setExternalTimingControl(bool enabled) {
     reset();
 }
 
+void FPSSync::updateContentRefreshRate(double newContentRefreshRate) {
+    LOGI("Updating content refresh rate from %f to %f", contentRefreshRate, newContentRefreshRate);
+    contentRefreshRate = newContentRefreshRate;
+    sampleInterval = std::chrono::microseconds((long) ((1000000L / contentRefreshRate)));
+    useVSync = std::abs(contentRefreshRate - screenRefreshRate) < FPS_TOLERANCE;
+    reset();
+}
+
 } //namespace libretrodroid

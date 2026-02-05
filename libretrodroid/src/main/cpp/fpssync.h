@@ -36,6 +36,7 @@ public:
     void wait();
     double getTimeStretchFactor();
     void setExternalTimingControl(bool enabled);
+    void updateContentRefreshRate(double newContentRefreshRate);
 private:
 
     double screenRefreshRate;

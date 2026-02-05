@@ -105,6 +105,18 @@ void Audio::setPlaybackSpeed(const double newPlaybackSpeed) {
     playbackSpeed = newPlaybackSpeed;
 }
 
+void Audio::updateTiming(int32_t newSampleRate, double newRefreshRate) {
+    LOGI("Audio timing update: sampleRate %d -> %d, refreshRate %f -> %f",
+         inputSampleRate, newSampleRate, contentRefreshRate, newRefreshRate);
+    inputSampleRate = newSampleRate;
+    contentRefreshRate = newRefreshRate;
+    if (stream != nullptr) {
+        baseConversionFactor = (double) inputSampleRate / stream->getSampleRate();
+    }
+    errorIntegral = 0.0;
+    framesToSubmit = 0.0;
+}
+
 oboe::DataCallbackResult Audio::onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) {
     double dynamicBufferFactor = computeDynamicBufferConversionFactor(0.001 * numFrames);
     double finalConversionFactor = baseConversionFactor * dynamicBufferFactor * playbackSpeed;

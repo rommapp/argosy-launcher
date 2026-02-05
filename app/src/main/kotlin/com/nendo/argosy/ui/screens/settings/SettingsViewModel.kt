@@ -145,7 +145,8 @@ class SettingsViewModel @Inject constructor(
     private val modalResetSignal: ModalResetSignal,
     private val gradientColorExtractor: GradientColorExtractor,
     private val coreManager: LibretroCoreManager,
-    private val inputConfigRepository: com.nendo.argosy.data.repository.InputConfigRepository
+    private val inputConfigRepository: com.nendo.argosy.data.repository.InputConfigRepository,
+    private val frameRegistry: com.nendo.argosy.libretro.frame.FrameRegistry
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -763,6 +764,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setBuiltinFramesEnabled(enabled: Boolean) {
+        _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(framesEnabled = enabled)) }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinFramesEnabled(enabled)
+        }
+    }
+
     fun setBuiltinFilter(value: String) {
         _uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(filter = value)) }
         viewModelScope.launch {
@@ -957,6 +965,8 @@ class SettingsViewModel @Inject constructor(
         com.nendo.argosy.libretro.shader.ShaderDownloader(_shaderRegistry.getCatalogDir())
     }
 
+    fun getFrameRegistry(): com.nendo.argosy.libretro.frame.FrameRegistry = frameRegistry
+
     val shaderChainManager by lazy {
         ShaderChainManager(
             shaderRegistry = _shaderRegistry,
@@ -974,6 +984,52 @@ class SettingsViewModel @Inject constructor(
         shaderChainManager.loadChain(_uiState.value.builtinVideo.shaderChainJson)
         loadPreviewGames()
         navigateToSection(SettingsSection.SHADER_STACK)
+    }
+
+    fun openFrameConfig() {
+        navigateToSection(SettingsSection.FRAME_PICKER)
+    }
+
+    fun downloadAndSelectFrame(frameId: String) {
+        if (_uiState.value.frameDownloadingId != null) return
+        val frame = frameRegistry.findById(frameId) ?: return
+        _uiState.update { it.copy(frameDownloadingId = frameId) }
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                try {
+                    frameRegistry.ensureDirectoryExists()
+                    val downloadUrl = com.nendo.argosy.libretro.frame.FrameRegistry.downloadUrl(frame)
+                    val url = java.net.URL(downloadUrl)
+                    val connection = url.openConnection()
+                    connection.connectTimeout = 15000
+                    connection.readTimeout = 60000
+                    val bytes = connection.getInputStream().use { it.readBytes() }
+                    val file = java.io.File(frameRegistry.getFramesDir(), "${frame.id}.png")
+                    file.writeBytes(bytes)
+                    true
+                } catch (e: Exception) {
+                    android.util.Log.e("SettingsViewModel", "Failed to download frame: ${frame.id}", e)
+                    false
+                }
+            }
+            if (success) {
+                frameRegistry.invalidateInstalledCache()
+                // Auto-enable frames globally when downloading a frame
+                if (!_uiState.value.builtinVideo.framesEnabled) {
+                    setBuiltinFramesEnabled(true)
+                }
+                updatePlatformLibretroSetting(
+                    com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef.Frame,
+                    frame.id
+                )
+            }
+            _uiState.update {
+                it.copy(
+                    frameDownloadingId = null,
+                    frameInstalledRefresh = if (success) it.frameInstalledRefresh + 1 else it.frameInstalledRefresh
+                )
+            }
+        }
     }
 
     fun addShaderToStack(id: String, name: String) = shaderChainManager.addShaderToStack(id, name)
@@ -1122,6 +1178,13 @@ class SettingsViewModel @Inject constructor(
                 LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
                 LibretroSettingDef.Rotation -> current.copy(rotation = parseRotationValue(value))
                 LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = parseOverscanValue(value))
+                LibretroSettingDef.Frame -> {
+                    // Auto-enable frames globally when selecting a frame (not "none")
+                    if (value != null && value != "none" && !_uiState.value.builtinVideo.framesEnabled) {
+                        setBuiltinFramesEnabled(true)
+                    }
+                    current.copy(frame = value)
+                }
                 LibretroSettingDef.BlackFrameInsertion -> current.copy(blackFrameInsertion = value?.toBooleanStrictOrNull())
                 LibretroSettingDef.FastForwardSpeed -> current.copy(fastForwardSpeed = parseFastForwardValue(value))
                 LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = value?.toBooleanStrictOrNull())
@@ -1143,7 +1206,7 @@ class SettingsViewModel @Inject constructor(
             val current = platformLibretroSettingsDao.getByPlatformId(platformContext.platformId) ?: return@launch
             val updated = current.copy(
                 shader = null, filter = null, aspectRatio = null, rotation = null,
-                overscanCrop = null, blackFrameInsertion = null, fastForwardSpeed = null,
+                overscanCrop = null, frame = null, blackFrameInsertion = null, fastForwardSpeed = null,
                 rewindEnabled = null, skipDuplicateFrames = null, lowLatencyAudio = null
             )
             if (updated.hasAnyOverrides()) {
@@ -1665,6 +1728,10 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_VIDEO, focusedIndex = 1) }
                 true
             }
+            state.currentSection == SettingsSection.FRAME_PICKER -> {
+                _uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_VIDEO, focusedIndex = 2) }
+                true
+            }
             state.currentSection == SettingsSection.BUILTIN_VIDEO -> {
                 _uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 0) }
                 true
@@ -1751,6 +1818,7 @@ class SettingsViewModel @Inject constructor(
                 )
                 SettingsSection.CORE_MANAGEMENT -> (state.coreManagement.platforms.size - 1).coerceAtLeast(0)
                 SettingsSection.SHADER_STACK -> com.nendo.argosy.ui.screens.settings.sections.shaderStackMaxFocusIndex(shaderChainManager.shaderStack)
+                SettingsSection.FRAME_PICKER -> com.nendo.argosy.ui.screens.settings.sections.framePickerMaxFocusIndex(frameRegistry)
                 SettingsSection.BIOS -> {
                     // Summary card (0), Directory (1), platforms start at 2
                     val bios = state.bios
@@ -3399,6 +3467,26 @@ class SettingsViewModel @Inject constructor(
             SettingsSection.BUILTIN_VIDEO -> InputResult.HANDLED
             SettingsSection.BUILTIN_CONTROLS -> InputResult.HANDLED
             SettingsSection.SHADER_STACK -> InputResult.HANDLED
+            SettingsSection.FRAME_PICKER -> {
+                val allFrames = frameRegistry.getAllFrames()
+                val installedIds = frameRegistry.getInstalledIds()
+                when (state.focusedIndex) {
+                    0 -> updatePlatformLibretroSetting(LibretroSettingDef.Frame, null)
+                    1 -> updatePlatformLibretroSetting(LibretroSettingDef.Frame, "none")
+                    else -> {
+                        val frameIndex = state.focusedIndex - 2
+                        if (frameIndex in allFrames.indices) {
+                            val frame = allFrames[frameIndex]
+                            if (frame.id in installedIds) {
+                                updatePlatformLibretroSetting(LibretroSettingDef.Frame, frame.id)
+                            } else {
+                                downloadAndSelectFrame(frame.id)
+                            }
+                        }
+                    }
+                }
+                InputResult.HANDLED
+            }
             SettingsSection.CORE_MANAGEMENT -> {
                 selectCoreForPlatform()
                 InputResult.HANDLED

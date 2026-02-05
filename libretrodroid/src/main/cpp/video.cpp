@@ -175,7 +175,7 @@ void Video::renderFrame() {
     glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (immersiveModeEnabled) {
+    if (!backgroundFrame.hasImage() && immersiveModeEnabled) {
         immersiveMode.renderBackground(
             videoLayout.getScreenWidth(),
             videoLayout.getScreenHeight(),
@@ -263,6 +263,24 @@ void Video::renderFrame() {
         glBindTexture(GL_TEXTURE_2D, 0);
 
         glUseProgram(0);
+    }
+
+    // Render background frame ON TOP of game content with alpha blending
+    // Check both hasImage (texture uploaded) and hasPendingImage (data waiting to be uploaded)
+    bool hasFrame = backgroundFrame.hasImage() || backgroundFrame.hasPendingImage();
+    LOGI("Video::renderFrame: hasFrame = %d (hasImage=%d, hasPending=%d)",
+         hasFrame, backgroundFrame.hasImage(), backgroundFrame.hasPendingImage());
+    if (hasFrame) {
+        LOGI("Video::renderFrame: Rendering backgroundFrame, screen=%dx%d",
+             videoLayout.getScreenWidth(), videoLayout.getScreenHeight());
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        backgroundFrame.render(
+            videoLayout.getScreenWidth(),
+            videoLayout.getScreenHeight(),
+            videoLayout.getBackgroundVertices()
+        );
+        glDisable(GL_BLEND);
     }
 }
 
@@ -375,6 +393,14 @@ void Video::setIntegerScaling(bool enabled) {
 void Video::setBlackFrameInsertion(bool enabled) {
     bfiEnabled = enabled;
     bfiFrameCounter = 0;
+}
+
+void Video::setBackgroundFrame(const uint8_t* data, int width, int height) {
+    backgroundFrame.setImage(data, width, height);
+}
+
+void Video::clearBackgroundFrame() {
+    backgroundFrame.clearImage();
 }
 
 void Video::renderBlackFrame() {

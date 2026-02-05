@@ -105,6 +105,7 @@ class GLRetroView(
     private var isGameLoaded = false
     private var isEmulationReady = false
     private var isAborted = false
+    private var previewModeEnabled = false
 
     private val retroGLEventsSubject = MutableSharedFlow<GLRetroEvents>(1)
     private val retroGLIssuesErrors = MutableSharedFlow<Int>(1)
@@ -246,6 +247,39 @@ class GLRetroView(
 
     fun reset() = runOnGLThread {
         LibretroDroid.reset()
+    }
+
+    fun setBackgroundFrame(bitmap: Bitmap) = runOnGLThread {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        val rgbaData = ByteArray(width * height * 4)
+        for (i in pixels.indices) {
+            val pixel = pixels[i]
+            val offset = i * 4
+            rgbaData[offset] = ((pixel shr 16) and 0xFF).toByte()     // R
+            rgbaData[offset + 1] = ((pixel shr 8) and 0xFF).toByte()  // G
+            rgbaData[offset + 2] = (pixel and 0xFF).toByte()          // B
+            rgbaData[offset + 3] = ((pixel shr 24) and 0xFF).toByte() // A
+        }
+        LibretroDroid.setBackgroundFrame(rgbaData, width, height)
+    }
+
+    fun clearBackgroundFrame() = runOnGLThread {
+        LibretroDroid.clearBackgroundFrame()
+    }
+
+    fun enablePreviewMode() {
+        previewModeEnabled = true
+        isEmulationReady = false
+        onResume()
+    }
+
+    fun disablePreviewMode() {
+        previewModeEnabled = false
+        isEmulationReady = true
+        onPause()
     }
 
     fun getGLRetroEvents(): Flow<GLRetroEvents> {
@@ -426,6 +460,8 @@ class GLRetroView(
                         retroGLEventsSubject.emit(GLRetroEvents.FrameRendered)
                     }
                 }
+            } else if (previewModeEnabled) {
+                LibretroDroid.renderFrameOnly()
             }
         }
 

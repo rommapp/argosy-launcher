@@ -138,6 +138,7 @@ class UserPreferencesRepository @Inject constructor(
         val BUILTIN_ROTATION = intPreferencesKey("builtin_rotation")
         val BUILTIN_OVERSCAN_CROP = intPreferencesKey("builtin_overscan_crop")
         val BUILTIN_REWIND_ENABLED = booleanPreferencesKey("builtin_rewind_enabled")
+        val BUILTIN_FRAMES_ENABLED = booleanPreferencesKey("builtin_frames_enabled")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
         val ANDROID_DATA_SAF_URI = stringPreferencesKey("android_data_saf_uri")
     }
@@ -976,6 +977,7 @@ class UserPreferencesRepository @Inject constructor(
             lowLatencyAudio = prefs[Keys.BUILTIN_LOW_LATENCY_AUDIO] ?: true,
             rumbleEnabled = prefs[Keys.BUILTIN_RUMBLE_ENABLED] ?: true,
             blackFrameInsertion = prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] ?: false,
+            framesEnabled = prefs[Keys.BUILTIN_FRAMES_ENABLED] ?: false,
             limitHotkeysToPlayer1 = prefs[Keys.BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1] ?: true,
             analogAsDpad = prefs[Keys.BUILTIN_ANALOG_AS_DPAD] ?: false,
             dpadAsAnalog = prefs[Keys.BUILTIN_DPAD_AS_ANALOG] ?: false,
@@ -989,6 +991,12 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setBuiltinRewindEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.BUILTIN_REWIND_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setBuiltinFramesEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_FRAMES_ENABLED] = enabled
         }
     }
 
@@ -1061,6 +1069,8 @@ data class BuiltinEmulatorSettings(
     val lowLatencyAudio: Boolean = true,
     val rumbleEnabled: Boolean = true,
     val blackFrameInsertion: Boolean = false,
+    val framesEnabled: Boolean = false,
+    val frame: String? = null,
     val limitHotkeysToPlayer1: Boolean = true,
     val analogAsDpad: Boolean = false,
     val dpadAsAnalog: Boolean = false,

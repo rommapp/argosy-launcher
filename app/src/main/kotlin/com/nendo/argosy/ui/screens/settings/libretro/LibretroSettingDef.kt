@@ -47,6 +47,14 @@ sealed class LibretroSettingDef(
         type = SettingType.Cycle(listOf("Off", "4px", "8px", "12px", "16px"))
     )
 
+    data object Frame : LibretroSettingDef(
+        key = "frame",
+        section = "shaders",
+        title = "Frame",
+        subtitle = "Decorative bezel around the game",
+        type = SettingType.Cycle(listOf("None"))
+    )
+
     data object BlackFrameInsertion : LibretroSettingDef(
         key = "blackFrameInsertion",
         section = "display",
@@ -90,6 +98,7 @@ sealed class LibretroSettingDef(
         val ALL: List<LibretroSettingDef> = listOf(
             Shader,
             Filter,
+            Frame,
             AspectRatio,
             Rotation,
             OverscanCrop,

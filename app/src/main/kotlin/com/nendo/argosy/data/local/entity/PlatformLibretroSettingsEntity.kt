@@ -28,6 +28,7 @@ data class PlatformLibretroSettingsEntity(
     val rotation: Int? = null,
     val overscanCrop: Int? = null,
     val blackFrameInsertion: Boolean? = null,
+    val frame: String? = null,
     val fastForwardSpeed: Int? = null,
     val rewindEnabled: Boolean? = null,
     val skipDuplicateFrames: Boolean? = null,
@@ -46,6 +47,7 @@ data class PlatformLibretroSettingsEntity(
         rotation != null ||
         overscanCrop != null ||
         blackFrameInsertion != null ||
+        frame != null ||
         fastForwardSpeed != null ||
         rewindEnabled != null ||
         skipDuplicateFrames != null ||

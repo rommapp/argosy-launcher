@@ -63,19 +63,26 @@ fun BuiltinVideoSection(
                 },
                 onToggle = { setting, enabled ->
                     when (setting) {
+                        LibretroSettingDef.Frame -> viewModel.setBuiltinFramesEnabled(enabled)
                         LibretroSettingDef.BlackFrameInsertion -> viewModel.setBuiltinBlackFrameInsertion(enabled)
                         LibretroSettingDef.RewindEnabled -> viewModel.setBuiltinRewindEnabled(enabled)
                         LibretroSettingDef.SkipDuplicateFrames -> viewModel.setBuiltinSkipDuplicateFrames(enabled)
                         LibretroSettingDef.LowLatencyAudio -> viewModel.setBuiltinLowLatencyAudio(enabled)
                         else -> {}
                     }
+                },
+                onActionCallback = { setting ->
+                    if (setting.key == "filter") viewModel.openShaderChainConfig()
                 }
             )
         } else {
             PlatformLibretroSettingsAccessor(
                 platformSettings = platformSettings,
                 globalState = videoState,
-                onUpdate = { setting, value -> viewModel.updatePlatformLibretroSetting(setting, value) }
+                onUpdate = { setting, value -> viewModel.updatePlatformLibretroSetting(setting, value) },
+                onActionCallback = { setting ->
+                    if (setting == LibretroSettingDef.Frame) viewModel.openFrameConfig()
+                }
             )
         }
     }
@@ -85,20 +92,20 @@ fun BuiltinVideoSection(
         focusedIndex = uiState.focusedIndex,
         platformSlug = platformContext?.platformSlug,
         canEnableBFI = videoState.canEnableBlackFrameInsertion,
-        listState = listState
+        listState = listState,
+        trailingContent = if (!isGlobal && hasAnyOverrides) {
+            {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                OptionItem(
+                    label = "Reset All to Global",
+                    isFocused = uiState.focusedIndex == resetAllFocusIndex,
+                    isDangerous = true,
+                    onClick = { viewModel.resetAllPlatformLibretroSettings() }
+                )
+            }
+        } else null
     )
-
-    if (!isGlobal && hasAnyOverrides) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Spacer(modifier = Modifier.height(Dimens.spacingSm))
-
-        OptionItem(
-            label = "Reset All to Global",
-            isFocused = uiState.focusedIndex == resetAllFocusIndex,
-            isDangerous = true,
-            onClick = { viewModel.resetAllPlatformLibretroSettings() }
-        )
-    }
 }
 
 fun builtinVideoMaxFocusIndex(state: BuiltinVideoState, platformSettings: Map<Long, com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity>): Int {

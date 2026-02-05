@@ -614,6 +614,13 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_step(
     });
 }
 
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_renderFrameOnly(
+    JNIEnv* env,
+    jclass obj
+) {
+    LibretroDroid::getInstance().renderFrameOnly();
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setRumbleEnabled(
     JNIEnv* env,
     jclass obj,
@@ -675,6 +682,27 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_renderBlac
     jclass obj
 ) {
     LibretroDroid::getInstance().renderBlackFrame();
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setBackgroundFrame(
+    JNIEnv* env,
+    jclass obj,
+    jbyteArray rgbaData,
+    jint width,
+    jint height
+) {
+    jbyte* data = env->GetByteArrayElements(rgbaData, nullptr);
+    LibretroDroid::getInstance().setBackgroundFrame(
+        reinterpret_cast<const uint8_t*>(data), width, height
+    );
+    env->ReleaseByteArrayElements(rgbaData, data, JNI_ABORT);
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_clearBackgroundFrame(
+    JNIEnv* env,
+    jclass obj
+) {
+    LibretroDroid::getInstance().clearBackgroundFrame();
 }
 
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setViewport(

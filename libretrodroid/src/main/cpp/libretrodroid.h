@@ -99,6 +99,7 @@ public:
     );
     void resume();
     void step();
+    void renderFrameOnly();
     void pause();
     void destroy();
 
@@ -147,6 +148,9 @@ public:
     void setIntegerScaling(bool enabled);
     void setBlackFrameInsertion(bool enabled);
     void renderBlackFrame();
+
+    void setBackgroundFrame(const uint8_t* data, int width, int height);
+    void clearBackgroundFrame();
 
     void resetGlobalVariables();
 

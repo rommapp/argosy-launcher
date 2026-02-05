@@ -361,7 +361,9 @@ class SettingsInputHandler(
                         globalState = state.builtinVideo,
                         onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) }
                     )
-                    accessor.cycle(setting, -1)
+                    if (!accessor.isActionItem(setting)) {
+                        accessor.cycle(setting, -1)
+                    }
                     return InputResult.HANDLED
                 }
             }
@@ -581,7 +583,9 @@ class SettingsInputHandler(
                         globalState = state.builtinVideo,
                         onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) }
                     )
-                    accessor.cycle(setting, 1)
+                    if (!accessor.isActionItem(setting)) {
+                        accessor.cycle(setting, 1)
+                    }
                     return InputResult.HANDLED
                 }
             }
@@ -740,13 +744,24 @@ class SettingsInputHandler(
                             viewModel.setBuiltinLowLatencyAudio(!videoState.lowLatencyAudio)
                             return InputResult.handled(SoundType.TOGGLE)
                         }
+                        LibretroSettingDef.Frame -> {
+                            viewModel.setBuiltinFramesEnabled(!videoState.framesEnabled)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
                     }
                 } else {
                     val accessor = PlatformLibretroSettingsAccessor(
                         platformSettings = platformSettings,
                         globalState = videoState,
-                        onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) }
+                        onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) },
+                        onActionCallback = { s ->
+                            if (s == LibretroSettingDef.Frame) viewModel.openFrameConfig()
+                        }
                     )
+                    if (accessor.isActionItem(setting)) {
+                        accessor.onAction(setting)
+                        return InputResult.HANDLED
+                    }
                     when (setting.type) {
                         is LibretroSettingDef.SettingType.Cycle -> {
                             accessor.cycle(setting, 1)

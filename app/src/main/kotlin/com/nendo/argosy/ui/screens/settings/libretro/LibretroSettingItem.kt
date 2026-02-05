@@ -26,18 +26,33 @@ fun LibretroSettingItem(
     }
 
     if (accessor.isActionItem(setting)) {
+        val (actionTitle, actionSubtitle) = when (setting.key) {
+            "frame" -> setting.title to value
+            else -> value to "Configure shader effects"
+        }
         NavigationPreference(
             icon = Icons.Default.Tune,
-            title = value,
-            subtitle = "Configure shader effects",
+            title = actionTitle,
+            subtitle = actionSubtitle,
             isFocused = isFocused,
             onClick = { accessor.onAction(setting) }
         )
         return
     }
 
-    when (setting.type) {
-        is LibretroSettingDef.SettingType.Cycle -> CyclePreference(
+    if (accessor.isSwitch(setting)) {
+        SwitchPreference(
+            title = setting.title,
+            subtitle = subtitle,
+            isEnabled = value.toBooleanStrictOrNull() ?: (value == "On"),
+            isFocused = isFocused,
+            isCustom = isPerPlatform && hasOverride,
+            showResetButton = isPerPlatform && hasOverride && isFocused,
+            onToggle = { accessor.toggle(setting) },
+            onReset = { accessor.reset(setting) }
+        )
+    } else {
+        CyclePreference(
             title = setting.title,
             subtitle = subtitle,
             value = value,
@@ -45,17 +60,6 @@ fun LibretroSettingItem(
             isCustom = isPerPlatform && hasOverride,
             showResetButton = isPerPlatform && hasOverride && isFocused,
             onClick = { accessor.cycle(setting, 1) },
-            onReset = { accessor.reset(setting) }
-        )
-
-        LibretroSettingDef.SettingType.Switch -> SwitchPreference(
-            title = setting.title,
-            subtitle = subtitle,
-            isEnabled = value.toBooleanStrictOrNull() ?: false,
-            isFocused = isFocused,
-            isCustom = isPerPlatform && hasOverride,
-            showResetButton = isPerPlatform && hasOverride && isFocused,
-            onToggle = { accessor.toggle(setting) },
             onReset = { accessor.reset(setting) }
         )
     }

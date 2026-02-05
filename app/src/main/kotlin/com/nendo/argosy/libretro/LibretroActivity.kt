@@ -86,6 +86,11 @@ import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
+import androidx.compose.ui.graphics.asImageBitmap
+import com.nendo.argosy.libretro.frame.FrameDownloader
+import com.nendo.argosy.libretro.frame.FrameManager
+import com.nendo.argosy.libretro.frame.FrameRegistry
+import com.nendo.argosy.libretro.ui.InGameFrameScreen
 import com.nendo.argosy.libretro.shader.ShaderChainConfig
 import com.nendo.argosy.libretro.shader.ShaderChainManager
 import com.nendo.argosy.libretro.shader.ShaderDownloader
@@ -116,6 +121,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var ambientLedManager: AmbientLedManager
     @Inject lateinit var effectiveLibretroSettingsResolver: EffectiveLibretroSettingsResolver
     @Inject lateinit var platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
+    @Inject lateinit var frameRegistry: com.nendo.argosy.libretro.frame.FrameRegistry
 
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
@@ -136,7 +142,9 @@ class LibretroActivity : ComponentActivity() {
     private var cheatsMenuVisible by mutableStateOf(false)
     private var settingsVisible by mutableStateOf(false)
     private var shaderChainEditorVisible by mutableStateOf(false)
+    private var frameEditorVisible by mutableStateOf(false)
     private var inGameShaderChainManager: ShaderChainManager? = null
+    private var inGameFrameManager: FrameManager? = null
     private var capturedGameFrame: Bitmap? = null
     private var lastCheatsTab by mutableStateOf(CheatsTab.CHEATS)
     private var cheatsNeedReset = false
@@ -170,6 +178,7 @@ class LibretroActivity : ComponentActivity() {
     private var currentRumbleEnabled by mutableStateOf(true)
     private var currentAnalogAsDpad by mutableStateOf(false)
     private var currentDpadAsAnalog by mutableStateOf(false)
+    private var currentFrame by mutableStateOf<String?>(null)
     private var controllerOrderCount by mutableStateOf(0)
     private var controllerOrderList by mutableStateOf<List<ControllerOrderEntity>>(emptyList())
     private var hotkeyList by mutableStateOf<List<HotkeyEntity>>(emptyList())
@@ -360,6 +369,13 @@ class LibretroActivity : ComponentActivity() {
                 when (event) {
                     is GLRetroView.GLRetroEvents.SurfaceCreated -> {
                         Log.i("LibretroActivity", "[Startup] GL surface created - render pipeline ready")
+                        currentFrame?.let { frameId ->
+                            val bitmap = frameRegistry.loadFrame(frameId)
+                            if (bitmap != null) {
+                                Log.i("LibretroActivity", "[Startup] Setting initial frame: $frameId (${bitmap.width}x${bitmap.height})")
+                                retroView.setBackgroundFrame(bitmap)
+                            }
+                        }
                     }
                     is GLRetroView.GLRetroEvents.FrameRendered -> {
                         if (!firstFrameRendered) {
@@ -377,6 +393,8 @@ class LibretroActivity : ComponentActivity() {
         retroView.blackFrameInsertion = settings.blackFrameInsertion
         retroView.portResolver = portResolver
         retroView.keyMapper = inputMapper
+
+        currentFrame = settings.frame
 
         setupInputConfig()
 
@@ -440,9 +458,12 @@ class LibretroActivity : ComponentActivity() {
                                             onToggle = ::toggleVideoSetting,
                                             onReset = ::resetVideoSetting,
                                             onActionCallback = { setting ->
-                                                if (setting == LibretroSettingDef.Filter && currentShader == "Custom") {
+                                                if (setting.key == "filter" && currentShader == "Custom") {
                                                     settingsVisible = false
                                                     openInGameShaderChainEditor()
+                                                } else if (setting.key == "frame") {
+                                                    settingsVisible = false
+                                                    openInGameFrameEditor()
                                                 }
                                             }
                                         ),
@@ -518,7 +539,18 @@ class LibretroActivity : ComponentActivity() {
                                         )
                                     }
                                 }
-                                if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible) {
+                                if (frameEditorVisible) {
+                                    val manager = inGameFrameManager
+                                    if (manager != null) {
+                                        activeMenuHandler = InGameFrameScreen(
+                                            manager = manager,
+                                            isOffline = false,
+                                            onConfirm = ::confirmInGameFrameEditor,
+                                            onDismiss = ::closeInGameFrameEditor
+                                        )
+                                    }
+                                }
+                                if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible && !frameEditorVisible) {
                                     activeMenuHandler = null
                                 }
 
@@ -1140,12 +1172,83 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun openInGameFrameEditor() {
+        val registry = frameRegistry
+        val manager = FrameManager(
+            frameRegistry = registry,
+            frameDownloader = FrameDownloader(registry.getFramesDir()),
+            platformSlug = platformSlug,
+            scope = lifecycleScope,
+            initialFrameId = currentFrame,
+            onFrameChanged = { frameId ->
+                val bitmap = if (frameId != null) registry.loadFrame(frameId) else null
+                if (bitmap != null) {
+                    retroView.setBackgroundFrame(bitmap)
+                } else {
+                    retroView.clearBackgroundFrame()
+                }
+            }
+        )
+        inGameFrameManager = manager
+        retroView.enablePreviewMode()
+        frameEditorVisible = true
+    }
+
+    private fun confirmInGameFrameEditor() {
+        val manager = inGameFrameManager ?: return
+        val frameId = manager.selectedFrameId
+        currentFrame = frameId
+        persistInGameFrame(frameId)
+        if (frameId != null && !globalSettings.framesEnabled) {
+            lifecycleScope.launch {
+                preferencesRepository.setBuiltinFramesEnabled(true)
+            }
+        }
+        closeInGameFrameEditorInternal()
+    }
+
+    private fun closeInGameFrameEditor() {
+        val originalFrameId = currentFrame
+        val registry = frameRegistry
+        val bitmap = if (originalFrameId != null) registry.loadFrame(originalFrameId) else null
+        if (bitmap != null) {
+            retroView.setBackgroundFrame(bitmap)
+        } else {
+            retroView.clearBackgroundFrame()
+        }
+        closeInGameFrameEditorInternal()
+    }
+
+    private fun closeInGameFrameEditorInternal() {
+        retroView.disablePreviewMode()
+        inGameFrameManager?.destroy()
+        inGameFrameManager = null
+        frameEditorVisible = false
+        settingsVisible = true
+    }
+
+    private fun persistInGameFrame(frameId: String?) {
+        lifecycleScope.launch {
+            val current = platformLibretroSettingsDao.getByPlatformId(platformId)
+                ?: com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(platformId = platformId)
+            val updated = current.copy(frame = frameId)
+            if (updated.hasAnyOverrides()) {
+                platformLibretroSettingsDao.upsert(updated)
+            } else {
+                platformLibretroSettingsDao.deleteByPlatformId(platformId)
+            }
+        }
+    }
+
     private fun getVideoSettingValue(setting: LibretroSettingDef): String = when (setting) {
         LibretroSettingDef.Shader -> currentShader
         LibretroSettingDef.Filter -> currentFilter
         LibretroSettingDef.AspectRatio -> currentAspectRatio
         LibretroSettingDef.Rotation -> currentRotation
         LibretroSettingDef.OverscanCrop -> currentOverscanCrop
+        LibretroSettingDef.Frame -> currentFrame?.let {
+            frameRegistry.findById(it)?.displayName
+        } ?: "None"
         LibretroSettingDef.BlackFrameInsertion -> currentBFI.toString()
         LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed
         LibretroSettingDef.RewindEnabled -> currentRewindEnabled.toString()
@@ -1159,11 +1262,19 @@ class LibretroActivity : ComponentActivity() {
         LibretroSettingDef.AspectRatio -> globalSettings.aspectRatio
         LibretroSettingDef.Rotation -> globalSettings.rotationDisplay
         LibretroSettingDef.OverscanCrop -> globalSettings.overscanCropDisplay
+        LibretroSettingDef.Frame -> getGlobalFrameForPlatform()?.let {
+            frameRegistry.findById(it)?.displayName
+        } ?: "None"
         LibretroSettingDef.BlackFrameInsertion -> globalSettings.blackFrameInsertion.toString()
         LibretroSettingDef.FastForwardSpeed -> globalSettings.fastForwardSpeedDisplay
         LibretroSettingDef.RewindEnabled -> globalSettings.rewindEnabled.toString()
         LibretroSettingDef.SkipDuplicateFrames -> globalSettings.skipDuplicateFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> globalSettings.lowLatencyAudio.toString()
+    }
+
+    private fun getGlobalFrameForPlatform(): String? {
+        if (!globalSettings.framesEnabled) return null
+        return frameRegistry.getFramesForPlatform(platformSlug).firstOrNull()?.id
     }
 
     private fun resetVideoSetting(setting: LibretroSettingDef) {
@@ -1175,6 +1286,7 @@ class LibretroActivity : ComponentActivity() {
             LibretroSettingDef.Rotation -> currentRotation = globalValue
             LibretroSettingDef.OverscanCrop -> currentOverscanCrop = globalValue
             LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed = globalValue
+            LibretroSettingDef.Frame -> currentFrame = getGlobalFrameForPlatform()
             else -> {}
         }
         when (setting) {
@@ -1194,6 +1306,9 @@ class LibretroActivity : ComponentActivity() {
                 currentLowLatencyAudio = globalSettings.lowLatencyAudio
                 applyVideoSettingChange(setting, currentLowLatencyAudio.toString())
             }
+            LibretroSettingDef.Frame -> {
+                applyVideoSettingChange(setting, currentFrame ?: "None")
+            }
             else -> applyVideoSettingChange(setting, globalValue)
         }
         lifecycleScope.launch {
@@ -1204,6 +1319,7 @@ class LibretroActivity : ComponentActivity() {
                 LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = null)
                 LibretroSettingDef.Rotation -> current.copy(rotation = null)
                 LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = null)
+                LibretroSettingDef.Frame -> current.copy(frame = null)
                 LibretroSettingDef.BlackFrameInsertion -> current.copy(blackFrameInsertion = null)
                 LibretroSettingDef.FastForwardSpeed -> current.copy(fastForwardSpeed = null)
                 LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = null)
@@ -1321,6 +1437,19 @@ class LibretroActivity : ComponentActivity() {
                     retroView.destroyRewindBuffer()
                 }
             }
+            LibretroSettingDef.Frame -> {
+                val frameId = if (value == "None") null else currentFrame
+                if (frameId != null) {
+                    val bitmap = frameRegistry.loadFrame(frameId)
+                    if (bitmap != null) {
+                        retroView.setBackgroundFrame(bitmap)
+                    } else {
+                        retroView.clearBackgroundFrame()
+                    }
+                } else {
+                    retroView.clearBackgroundFrame()
+                }
+            }
             LibretroSettingDef.SkipDuplicateFrames,
             LibretroSettingDef.LowLatencyAudio -> {
                 // Non-runtime settings: persisted but only applied on next launch
@@ -1341,6 +1470,7 @@ class LibretroActivity : ComponentActivity() {
                 LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
                 LibretroSettingDef.Rotation -> current.copy(rotation = parseRotation(value))
                 LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = parseOverscan(value))
+                LibretroSettingDef.Frame -> current.copy(frame = if (value == "None") null else currentFrame)
                 LibretroSettingDef.BlackFrameInsertion -> current.copy(blackFrameInsertion = value.toBooleanStrictOrNull())
                 LibretroSettingDef.FastForwardSpeed -> current.copy(fastForwardSpeed = value.removeSuffix("x").toIntOrNull())
                 LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = value.toBooleanStrictOrNull())
@@ -1604,7 +1734,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
             if (gamepadInputBridge.handleKeyEvent(event)) return true
             if (menuInputHandler.mapKeyToEvent(event.keyCode) != null) return true
         }
@@ -1612,7 +1742,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
             return super.onKeyDown(keyCode, event)
         }
 
@@ -1675,7 +1805,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
             return super.onKeyUp(keyCode, event)
         }
 
@@ -1694,7 +1824,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible) {
+        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
             if (gamepadInputBridge.handleMotionEvent(event)) return true
             return super.onGenericMotionEvent(event)
         }
@@ -1742,7 +1872,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         enterImmersiveMode()
-        if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible) {
+        if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible && !frameEditorVisible) {
             retroView.onResume()
         }
     }

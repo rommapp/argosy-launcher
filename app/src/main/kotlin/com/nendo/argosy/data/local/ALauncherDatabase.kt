@@ -90,7 +90,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PendingStateSyncEntity::class,
         PlatformLibretroSettingsEntity::class
     ],
-    version = 71,
+    version = 72,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1102,6 +1102,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_70_71 = object : Migration(70, 71) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN shaderChain TEXT DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_71_72 = object : Migration(71, 72) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN frame TEXT DEFAULT NULL")
             }
         }
     }

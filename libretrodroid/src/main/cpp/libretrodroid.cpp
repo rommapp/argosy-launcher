@@ -540,6 +540,12 @@ void LibretroDroid::step() {
     }
 }
 
+void LibretroDroid::renderFrameOnly() {
+    if (video) {
+        video->renderFrame();
+    }
+}
+
 float LibretroDroid::getAspectRatio() {
     float gameAspectRatio = Environment::getInstance().retrieveGameSpecificAspectRatio();
     return gameAspectRatio > 0 ? gameAspectRatio : defaultAspectRatio;
@@ -605,6 +611,18 @@ void LibretroDroid::setBlackFrameInsertion(bool enabled) {
 void LibretroDroid::renderBlackFrame() {
     if (video) {
         video->renderBlackFrame();
+    }
+}
+
+void LibretroDroid::setBackgroundFrame(const uint8_t* data, int width, int height) {
+    if (video) {
+        video->setBackgroundFrame(data, width, height);
+    }
+}
+
+void LibretroDroid::clearBackgroundFrame() {
+    if (video) {
+        video->clearBackgroundFrame();
     }
 }
 

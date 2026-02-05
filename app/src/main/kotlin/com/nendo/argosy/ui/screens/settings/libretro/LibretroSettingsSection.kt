@@ -26,7 +26,8 @@ fun LibretroSettingsSection(
     platformSlug: String? = null,
     canEnableBFI: Boolean = false,
     listState: LazyListState = rememberLazyListState(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    trailingContent: @Composable (() -> Unit)? = null
 ) {
     val isPerPlatform = platformSlug != null
 
@@ -100,6 +101,13 @@ fun LibretroSettingsSection(
                         isPerPlatform = isPerPlatform
                     )
                 }
+            }
+        }
+
+        if (trailingContent != null) {
+            item(key = "trailing_content") {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                trailingContent()
             }
         }
     }

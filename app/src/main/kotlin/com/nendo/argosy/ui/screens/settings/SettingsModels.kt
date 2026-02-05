@@ -49,6 +49,7 @@ enum class SettingsSection {
     BUILTIN_VIDEO,
     BUILTIN_CONTROLS,
     SHADER_STACK,
+    FRAME_PICKER,
     CORE_MANAGEMENT,
     PERMISSIONS,
     ABOUT
@@ -220,6 +221,7 @@ data class BuiltinVideoState(
     val fastForwardSpeed: String = "4x",
     val rotation: String = "Auto",
     val overscanCrop: String = "Off",
+    val framesEnabled: Boolean = false,
     val lowLatencyAudio: Boolean = true,
     val rewindEnabled: Boolean = true,
     val platformContextIndex: Int = 0,
@@ -618,4 +620,6 @@ data class SettingsUiState(
     val previewGameIndex: Int = 0,
     val gradientConfig: GradientExtractionConfig = GradientExtractionConfig(),
     val gradientExtractionResult: GradientExtractionResult? = null,
+    val frameDownloadingId: String? = null,
+    val frameInstalledRefresh: Int = 0,
 )

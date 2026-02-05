@@ -29,6 +29,7 @@
 #include "utils/rect.h"
 #include "immersivemode.h"
 #include "videolayout.h"
+#include "backgroundframe.h"
 
 namespace libretrodroid {
 
@@ -83,6 +84,9 @@ public:
     void setIntegerScaling(bool enabled);
     void setBlackFrameInsertion(bool enabled);
 
+    void setBackgroundFrame(const uint8_t* data, int width, int height);
+    void clearBackgroundFrame();
+
     void renderFrame();
     void renderBlackFrame();
 
@@ -124,6 +128,7 @@ private:
 
     bool immersiveModeEnabled = false;
     ImmersiveMode immersiveMode;
+    BackgroundFrame backgroundFrame;
     VideoLayout videoLayout;
 
     Renderer* renderer;

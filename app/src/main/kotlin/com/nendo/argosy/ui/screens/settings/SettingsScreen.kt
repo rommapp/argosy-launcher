@@ -61,6 +61,7 @@ import com.nendo.argosy.ui.screens.settings.sections.BiosSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
+import com.nendo.argosy.ui.screens.settings.sections.FrameSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinVideoSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.CoreManagementSection
@@ -317,7 +318,8 @@ fun SettingsScreen(
                 .blur(soundPickerBlur)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            if (uiState.currentSection != SettingsSection.SHADER_STACK) {
+            if (uiState.currentSection != SettingsSection.SHADER_STACK &&
+                uiState.currentSection != SettingsSection.FRAME_PICKER) {
                 SettingsHeader(
                     title = when (uiState.currentSection) {
                         SettingsSection.MAIN -> "SETTINGS"
@@ -336,6 +338,7 @@ fun SettingsScreen(
                         SettingsSection.CORE_MANAGEMENT -> "MANAGE CORES"
                         SettingsSection.BIOS -> "BIOS FILES"
                         SettingsSection.SHADER_STACK -> "SHADER CHAIN"
+                        SettingsSection.FRAME_PICKER -> "SELECT FRAME"
                         SettingsSection.PERMISSIONS -> "PERMISSIONS"
                         SettingsSection.ABOUT -> "ABOUT"
                     },
@@ -385,6 +388,7 @@ fun SettingsScreen(
                     SettingsSection.CORE_MANAGEMENT -> CoreManagementSection(uiState, viewModel)
                     SettingsSection.BIOS -> BiosSection(uiState, viewModel)
                     SettingsSection.SHADER_STACK -> ShaderStackSection(viewModel.shaderChainManager)
+                    SettingsSection.FRAME_PICKER -> FrameSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                 }

@@ -781,10 +781,16 @@ class SettingsViewModel @Inject constructor(
 
     fun setBuiltinLibretroEnabled(enabled: Boolean) {
         val newToggleIndex = if (enabled) 3 else 0
-        _uiState.update {
-            it.copy(
-                emulators = it.emulators.copy(builtinLibretroEnabled = enabled),
-                focusedIndex = newToggleIndex
+        _uiState.update { state ->
+            val adjustedParentIndex = when {
+                enabled && state.parentFocusIndex >= 2 -> state.parentFocusIndex + 1
+                !enabled && state.parentFocusIndex > 2 -> state.parentFocusIndex - 1
+                else -> state.parentFocusIndex
+            }
+            state.copy(
+                emulators = state.emulators.copy(builtinLibretroEnabled = enabled),
+                focusedIndex = newToggleIndex,
+                parentFocusIndex = adjustedParentIndex
             )
         }
         viewModelScope.launch {
@@ -3392,16 +3398,15 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.EMULATORS -> {
-                // Built-in items: 0=Video, 1=Audio, 2=Cores
-                // Then: AutoAssign (if canAutoAssign), then platforms
-                val builtinCount = 3
-                val autoAssignIndex = if (state.emulators.canAutoAssign) builtinCount else -1
-                val platformStartIndex = builtinCount + (if (state.emulators.canAutoAssign) 1 else 0)
+                val builtinEnabled = state.emulators.builtinLibretroEnabled
+                val builtinItemCount = if (builtinEnabled) 4 else 1
+                val autoAssignIndex = if (state.emulators.canAutoAssign) builtinItemCount else -1
+                val platformStartIndex = builtinItemCount + (if (state.emulators.canAutoAssign) 1 else 0)
 
                 when {
-                    state.focusedIndex == 0 -> navigateToBuiltinVideo()
-                    state.focusedIndex == 1 -> navigateToBuiltinControls()
-                    state.focusedIndex == 2 -> navigateToCoreManagement()
+                    builtinEnabled && state.focusedIndex == 0 -> navigateToBuiltinVideo()
+                    builtinEnabled && state.focusedIndex == 1 -> navigateToBuiltinControls()
+                    builtinEnabled && state.focusedIndex == 2 -> navigateToCoreManagement()
                     state.focusedIndex == autoAssignIndex -> autoAssignAllEmulators()
                     state.focusedIndex >= platformStartIndex -> {
                         val platformIndex = state.focusedIndex - platformStartIndex

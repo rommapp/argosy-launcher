@@ -37,11 +37,24 @@ object PlatformWeightRegistry {
         "dreamcast"
     )
 
+    private val platformsWithoutCheats = setOf(
+        "gc", "wii",
+        "ps2", "psp", "vita",
+        "dreamcast",
+        "saturn",
+        "nds", "dsi", "3ds",
+        "3do",
+        "jaguar", "jaguarcd"
+    )
+
     fun hasAnalogStick(platformSlug: String): Boolean =
         PlatformDefinitions.getCanonicalSlug(platformSlug) in platformsWithAnalog
 
     fun hasRumble(platformSlug: String): Boolean =
         PlatformDefinitions.getCanonicalSlug(platformSlug) in platformsWithRumble
+
+    fun supportsCheats(platformSlug: String): Boolean =
+        PlatformDefinitions.getCanonicalSlug(platformSlug) !in platformsWithoutCheats
 
     fun isSettingVisible(
         setting: LibretroSettingDef,

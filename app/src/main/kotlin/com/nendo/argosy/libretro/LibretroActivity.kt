@@ -52,6 +52,7 @@ import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
+import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -424,7 +425,7 @@ class LibretroActivity : ComponentActivity() {
                                     activeMenuHandler = InGameMenu(
                                         gameName = gameName,
                                         hasQuickSave = hasQuickSave && !hardcoreMode,
-                                        cheatsAvailable = !hardcoreMode,
+                                        cheatsAvailable = !hardcoreMode && PlatformWeightRegistry.supportsCheats(platformSlug),
                                         focusedIndex = menuFocusIndex,
                                         onFocusChange = { menuFocusIndex = it },
                                         onAction = ::handleMenuAction,

@@ -81,7 +81,11 @@ fun BuiltinVideoSection(
                 globalState = videoState,
                 onUpdate = { setting, value -> viewModel.updatePlatformLibretroSetting(setting, value) },
                 onActionCallback = { setting ->
-                    if (setting == LibretroSettingDef.Frame) viewModel.openFrameConfig()
+                    when (setting) {
+                        LibretroSettingDef.Frame -> viewModel.openFrameConfig()
+                        LibretroSettingDef.Filter -> viewModel.openShaderChainConfig()
+                        else -> {}
+                    }
                 }
             )
         }

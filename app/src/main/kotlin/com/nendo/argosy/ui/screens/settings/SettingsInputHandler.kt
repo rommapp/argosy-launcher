@@ -755,7 +755,11 @@ class SettingsInputHandler(
                         globalState = videoState,
                         onUpdate = { s, v -> viewModel.updatePlatformLibretroSetting(s, v) },
                         onActionCallback = { s ->
-                            if (s == LibretroSettingDef.Frame) viewModel.openFrameConfig()
+                            when (s) {
+                                LibretroSettingDef.Frame -> viewModel.openFrameConfig()
+                                LibretroSettingDef.Filter -> viewModel.openShaderChainConfig()
+                                else -> {}
+                            }
                         }
                     )
                     if (accessor.isActionItem(setting)) {

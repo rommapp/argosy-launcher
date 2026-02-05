@@ -96,19 +96,25 @@ class PlatformLibretroSettingsAccessor(
 
     override fun getDisplayValue(setting: LibretroSettingDef): String {
         if (setting == LibretroSettingDef.Frame) {
-            if (!globalState.framesEnabled) return "Disabled"
             val value = platformSettings?.frame
             return when {
                 value == null -> "Auto"
-                value == "none" -> "Off"
+                value == "none" -> "None"
                 else -> value.replaceFirstChar { it.uppercase() }
             }
+        }
+        if (setting == LibretroSettingDef.Filter && getEffectiveShader() == "Custom") {
+            return "Configure Shader Chain"
         }
         val value = getValue(setting)
         return when (setting.type) {
             LibretroSettingDef.SettingType.Switch -> if (value == "true") "On" else "Off"
             is LibretroSettingDef.SettingType.Cycle -> value
         }
+    }
+
+    private fun getEffectiveShader(): String {
+        return platformSettings?.shader ?: globalState.shader
     }
 
     override fun getGlobalValue(setting: LibretroSettingDef): String = when (setting) {
@@ -133,7 +139,8 @@ class PlatformLibretroSettingsAccessor(
     }
 
     override fun isActionItem(setting: LibretroSettingDef): Boolean =
-        setting == LibretroSettingDef.Frame
+        setting == LibretroSettingDef.Frame ||
+        (setting == LibretroSettingDef.Filter && getEffectiveShader() == "Custom")
 
     override fun cycle(setting: LibretroSettingDef, direction: Int) {
         val type = setting.type as? LibretroSettingDef.SettingType.Cycle ?: return

@@ -1,5 +1,6 @@
 package com.nendo.argosy.libretro
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.os.Bundle
@@ -1733,6 +1734,7 @@ class LibretroActivity : ComponentActivity() {
         )
     }
 
+    @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
             if (gamepadInputBridge.handleKeyEvent(event)) return true

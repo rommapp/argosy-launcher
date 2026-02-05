@@ -1,5 +1,7 @@
 package com.nendo.argosy.domain.usecase.sync
 
+import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.SyncResult
 import com.nendo.argosy.ui.notification.NotificationManager
@@ -18,14 +20,34 @@ import org.junit.Test
 class SyncPlatformUseCaseTest {
 
     private lateinit var romMRepository: RomMRepository
+    private lateinit var platformDao: PlatformDao
     private lateinit var notificationManager: NotificationManager
     private lateinit var useCase: SyncPlatformUseCase
+
+    private fun createPlatformEntity(id: Long, slug: String = "gb") = PlatformEntity(
+        id = id,
+        slug = slug,
+        name = "Game Boy",
+        shortName = "GB",
+        sortOrder = 0,
+        isVisible = true,
+        logoPath = null,
+        romExtensions = "gb,gbc",
+        gameCount = 10,
+        syncEnabled = true,
+        customRomPath = null
+    )
 
     @Before
     fun setup() {
         romMRepository = mockk(relaxed = true)
+        platformDao = mockk(relaxed = true)
         notificationManager = mockk(relaxed = true)
-        useCase = SyncPlatformUseCase(romMRepository, notificationManager)
+        useCase = SyncPlatformUseCase(romMRepository, platformDao, notificationManager)
+
+        val defaultPlatform = createPlatformEntity(123L)
+        coEvery { platformDao.getById(any()) } returns defaultPlatform
+        coEvery { platformDao.getAllBySlug(any()) } returns listOf(defaultPlatform)
     }
 
     @Test
@@ -67,6 +89,9 @@ class SyncPlatformUseCaseTest {
 
     @Test
     fun `invoke calls syncPlatform with local platform ID`() = runTest {
+        val localPlatform = createPlatformEntity(-1L, "android")
+        coEvery { platformDao.getById(-1L) } returns localPlatform
+        coEvery { platformDao.getAllBySlug("android") } returns listOf(localPlatform)
         every { romMRepository.isConnected() } returns true
         coEvery { romMRepository.syncPlatform(-1L) } returns SyncResult(1, 5, 2, 0, emptyList())
 

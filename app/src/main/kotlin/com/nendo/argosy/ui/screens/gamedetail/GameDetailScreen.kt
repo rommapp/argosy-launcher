@@ -365,14 +365,16 @@ private fun GameDetailContent(
         isDownloading = uiState.downloadStatus in listOf(
             GameDownloadStatus.QUEUED,
             GameDownloadStatus.DOWNLOADING,
-            GameDownloadStatus.EXTRACTING,
             GameDownloadStatus.WAITING_FOR_STORAGE
         ),
+        isExtracting = uiState.downloadStatus == GameDownloadStatus.EXTRACTING,
+        downloadProgress = uiState.downloadProgress,
         isFavorite = game.isFavorite,
         hasDescription = !game.description.isNullOrBlank(),
         hasScreenshots = game.screenshots.isNotEmpty(),
         hasAchievements = game.achievements.isNotEmpty(),
-        saveStatus = uiState.saveStatusInfo
+        saveStatus = uiState.saveStatusInfo,
+        downloadSizeBytes = uiState.downloadSizeBytes
     )
 
     // Scroll to section when menu focus changes

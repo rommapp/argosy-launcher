@@ -49,11 +49,14 @@ data class GameDetailMenuState(
     val focusedIndex: Int = 0,
     val isDownloaded: Boolean = false,
     val isDownloading: Boolean = false,
+    val isExtracting: Boolean = false,
+    val downloadProgress: Float = 0f,
     val isFavorite: Boolean = false,
     val hasDescription: Boolean = true,
     val hasScreenshots: Boolean = true,
     val hasAchievements: Boolean = false,
-    val saveStatus: SaveStatusInfo? = null
+    val saveStatus: SaveStatusInfo? = null,
+    val downloadSizeBytes: Long? = null
 ) {
     val menuItems: List<MenuItemType>
         get() = buildList {
@@ -95,8 +98,11 @@ fun GameDetailMenu(
                     PlayMenuItem(
                         isDownloaded = state.isDownloaded,
                         isDownloading = state.isDownloading,
+                        isExtracting = state.isExtracting,
+                        downloadProgress = state.downloadProgress,
                         isFocused = isFocused,
                         saveStatus = state.saveStatus,
+                        downloadSizeBytes = state.downloadSizeBytes,
                         onClick = { onItemClick(item) }
                     )
                 }
@@ -163,12 +169,16 @@ fun GameDetailMenu(
 private fun PlayMenuItem(
     isDownloaded: Boolean,
     isDownloading: Boolean,
+    isExtracting: Boolean,
+    downloadProgress: Float,
     isFocused: Boolean,
     saveStatus: SaveStatusInfo?,
+    downloadSizeBytes: Long?,
     onClick: () -> Unit
 ) {
     val label = when {
-        isDownloading -> "Downloading..."
+        isExtracting -> "Extracting..."
+        isDownloading -> "${(downloadProgress * 100).toInt()}%"
         isDownloaded -> "Play"
         else -> "Download"
     }
@@ -186,15 +196,18 @@ private fun PlayMenuItem(
     }
 
     val icon = when {
-        isDownloading -> Icons.Default.Download
+        isExtracting || isDownloading -> Icons.Default.Download
         isDownloaded -> Icons.Default.PlayArrow
         else -> Icons.Default.Download
     }
 
+    val isInProgress = isDownloading || isExtracting
+    val showDownloadSize = !isDownloaded && !isInProgress && downloadSizeBytes != null
+
     Column {
         Button(
             onClick = onClick,
-            enabled = !isDownloading,
+            enabled = !isInProgress,
             shape = RoundedCornerShape(Dimens.radiusMd),
             colors = ButtonDefaults.buttonColors(
                 containerColor = containerColor,
@@ -210,10 +223,24 @@ private fun PlayMenuItem(
                 modifier = Modifier.size(Dimens.iconSm)
             )
             Spacer(modifier = Modifier.width(Dimens.spacingSm))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge
-            )
+            if (showDownloadSize) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        text = formatFileSize(downloadSizeBytes!!),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
         }
 
         if (saveStatus != null && isDownloaded) {
@@ -455,4 +482,13 @@ private fun buildEndWeightedLines(words: List<String>): List<String> {
     val lastPart = words.subList(bestSplit, words.size).joinToString("\u00A0")
 
     return listOf(firstPart, lastPart)
+}
+
+private fun formatFileSize(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
+        else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+    }
 }

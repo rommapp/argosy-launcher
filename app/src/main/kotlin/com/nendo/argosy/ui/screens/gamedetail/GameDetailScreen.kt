@@ -13,11 +13,14 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -36,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -52,10 +56,16 @@ import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.screens.gamedetail.components.AchievementListOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.AchievementsSection
+import com.nendo.argosy.ui.screens.gamedetail.components.ExpandedHeader
+import com.nendo.argosy.ui.screens.gamedetail.components.StickyCollapsedHeader
 import com.nendo.argosy.ui.screens.gamedetail.components.DescriptionSection
+import com.nendo.argosy.ui.screens.gamedetail.components.GameDetailMenu
+import com.nendo.argosy.ui.screens.gamedetail.components.GameDetailMenuState
 import com.nendo.argosy.ui.screens.gamedetail.components.GameDetailSkeleton
 import com.nendo.argosy.ui.screens.gamedetail.components.GameHeader
+import com.nendo.argosy.ui.screens.gamedetail.components.MenuItemType
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
 import com.nendo.argosy.ui.screens.gamedetail.components.SnapState
@@ -175,78 +185,69 @@ fun GameDetailScreen(
         achievementListState.scrollToItem(0)
     }
 
-    val inputHandler = remember(onBack, snapStates, screenshotCount, achievementColumnCount) {
+    val inputHandler = remember(onBack, uiState.menuFocusIndex, screenshotCount, achievementColumnCount) {
         viewModel.createInputHandler(
             onBack = onBack,
             onSnapUp = {
-                if (currentSnapIndex > 0) {
-                    currentSnapIndex--
-                    coroutineScope.launch {
-                        scrollState.animateScrollTo(getSnapTarget(snapStates[currentSnapIndex]))
-                    }
-                    true
-                } else false
+                viewModel.moveMenuFocus(-1)
+                true
             },
             onSnapDown = {
-                if (currentSnapIndex < snapStates.lastIndex) {
-                    currentSnapIndex++
-                    coroutineScope.launch {
-                        scrollState.animateScrollTo(getSnapTarget(snapStates[currentSnapIndex]))
-                    }
-                    true
-                } else false
+                viewModel.moveMenuFocus(1)
+                true
             },
             onSectionLeft = {
-                coroutineScope.launch {
-                    val snapState = snapStates.getOrElse(currentSnapIndex) { SnapState.TOP }
-                    val targetSection = when (snapState) {
-                        SnapState.TOP, SnapState.DESCRIPTION -> {
-                            if (hasScreenshots) SnapState.SCREENSHOTS
-                            else if (hasAchievements) SnapState.ACHIEVEMENTS
-                            else null
-                        }
-                        SnapState.SCREENSHOTS -> SnapState.SCREENSHOTS
-                        SnapState.ACHIEVEMENTS -> SnapState.ACHIEVEMENTS
+                val menuState = GameDetailMenuState(
+                    focusedIndex = uiState.menuFocusIndex,
+                    hasDescription = hasDescription,
+                    hasScreenshots = hasScreenshots,
+                    hasAchievements = hasAchievements
+                )
+                when (menuState.focusedItem) {
+                    MenuItemType.SCREENSHOTS -> if (screenshotCount > 0) {
+                        val currentIndex = screenshotListState.firstVisibleItemIndex
+                        val newIndex = (currentIndex - 1).coerceAtLeast(0)
+                        coroutineScope.launch { screenshotListState.animateScrollToItem(newIndex) }
                     }
-                    when (targetSection) {
-                        SnapState.SCREENSHOTS -> viewModel.moveScreenshotFocus(-1)
-                        SnapState.ACHIEVEMENTS -> {
-                            val current = achievementListState.firstVisibleItemIndex
-                            val target = if (current > 0) current - 1 else achievementColumnCount - 1
-                            achievementListState.scrollToItem(target)
-                        }
-                        else -> {}
+                    MenuItemType.ACHIEVEMENTS -> if (achievementColumnCount > 0) {
+                        val currentIndex = achievementListState.firstVisibleItemIndex
+                        val newIndex = (currentIndex - 1).coerceAtLeast(0)
+                        coroutineScope.launch { achievementListState.animateScrollToItem(newIndex) }
                     }
+                    else -> {}
                 }
             },
             onSectionRight = {
-                coroutineScope.launch {
-                    val snapState = snapStates.getOrElse(currentSnapIndex) { SnapState.TOP }
-                    val targetSection = when (snapState) {
-                        SnapState.TOP, SnapState.DESCRIPTION -> {
-                            if (hasScreenshots) SnapState.SCREENSHOTS
-                            else if (hasAchievements) SnapState.ACHIEVEMENTS
-                            else null
-                        }
-                        SnapState.SCREENSHOTS -> SnapState.SCREENSHOTS
-                        SnapState.ACHIEVEMENTS -> SnapState.ACHIEVEMENTS
+                val menuState = GameDetailMenuState(
+                    focusedIndex = uiState.menuFocusIndex,
+                    hasDescription = hasDescription,
+                    hasScreenshots = hasScreenshots,
+                    hasAchievements = hasAchievements
+                )
+                when (menuState.focusedItem) {
+                    MenuItemType.SCREENSHOTS -> if (screenshotCount > 0) {
+                        val currentIndex = screenshotListState.firstVisibleItemIndex
+                        val newIndex = (currentIndex + 1).coerceAtMost(screenshotCount - 1)
+                        coroutineScope.launch { screenshotListState.animateScrollToItem(newIndex) }
                     }
-                    when (targetSection) {
-                        SnapState.SCREENSHOTS -> viewModel.moveScreenshotFocus(1)
-                        SnapState.ACHIEVEMENTS -> {
-                            val isAtEnd = !achievementListState.canScrollForward
-                            val current = achievementListState.firstVisibleItemIndex
-                            val target = if (isAtEnd) 0 else current + 1
-                            achievementListState.scrollToItem(target)
-                        }
-                        else -> {}
+                    MenuItemType.ACHIEVEMENTS -> if (achievementColumnCount > 0) {
+                        val currentIndex = achievementListState.firstVisibleItemIndex
+                        val newIndex = (currentIndex + 1).coerceAtMost(achievementColumnCount - 1)
+                        coroutineScope.launch { achievementListState.animateScrollToItem(newIndex) }
                     }
+                    else -> {}
                 }
             },
             onPrevGame = { viewModel.navigateToPreviousGame() },
             onNextGame = { viewModel.navigateToNextGame() },
             isInScreenshotsSection = {
-                snapStates.getOrElse(currentSnapIndex) { SnapState.TOP } == SnapState.SCREENSHOTS
+                val menuState = GameDetailMenuState(
+                    focusedIndex = uiState.menuFocusIndex,
+                    hasDescription = hasDescription,
+                    hasScreenshots = hasScreenshots,
+                    hasAchievements = hasAchievements
+                )
+                menuState.focusedItem == MenuItemType.SCREENSHOTS
             }
         )
     }
@@ -359,18 +360,56 @@ private fun GameDetailContent(
     onBack: () -> Unit,
     localModifiedFocusIndex: Int
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val pickerState by viewModel.pickerModalDelegate.state.collectAsState()
     val isAnySyncing = uiState.isSyncing || uiState.syncOverlayState != null
     val showAnyOverlay = uiState.showMoreOptions || uiState.showPlayOptions ||
         uiState.showRatingsStatusMenu || pickerState.hasAnyPickerOpen ||
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || isAnySyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
-        uiState.showExtractionFailedPrompt
+        uiState.showExtractionFailedPrompt || uiState.showAchievementList
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
+
+    var descriptionTopY by remember { mutableIntStateOf(0) }
+    var screenshotTopY by remember { mutableIntStateOf(0) }
+    var achievementTopY by remember { mutableIntStateOf(0) }
+
+    val menuState = GameDetailMenuState(
+        focusedIndex = uiState.menuFocusIndex,
+        isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
+        isDownloading = uiState.downloadStatus in listOf(
+            GameDownloadStatus.QUEUED,
+            GameDownloadStatus.DOWNLOADING,
+            GameDownloadStatus.EXTRACTING,
+            GameDownloadStatus.WAITING_FOR_STORAGE
+        ),
+        isFavorite = game.isFavorite,
+        hasDescription = !game.description.isNullOrBlank(),
+        hasScreenshots = game.screenshots.isNotEmpty(),
+        hasAchievements = game.achievements.isNotEmpty(),
+        saveStatus = uiState.saveStatusInfo,
+        platformName = game.platformName,
+        playCount = game.playCount,
+        playTimeMinutes = game.playTimeMinutes
+    )
+
+    val headerScrollThreshold = 200
+    val isHeaderCollapsed = scrollState.value > headerScrollThreshold
+
+    // Scroll to section when menu focus changes
+    LaunchedEffect(uiState.menuFocusIndex) {
+        when (menuState.focusedItem) {
+            MenuItemType.DETAILS -> scrollState.animateScrollTo(0)
+            MenuItemType.DESCRIPTION -> scrollState.animateScrollTo(descriptionTopY.coerceAtLeast(0))
+            MenuItemType.SCREENSHOTS -> scrollState.animateScrollTo(screenshotTopY.coerceAtLeast(0))
+            MenuItemType.ACHIEVEMENTS -> scrollState.animateScrollTo(achievementTopY.coerceAtLeast(0))
+            else -> {} // Play, Favorite, Options don't trigger scroll
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Background layer - extends behind footer
@@ -414,68 +453,123 @@ private fun GameDetailContent(
             )
         }
 
-        // Content + Footer in Column (content doesn't flow behind footer)
+        // Main content: Left Menu (30%) + Right Content (70%)
         Column(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
             val isDark = LocalLauncherTheme.current.isDarkTheme
             val fadeColor = if (isDark) Color.Black else Color.White
 
             Box(modifier = Modifier.weight(1f)) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(start = Dimens.spacingXl, top = Dimens.spacingXl, end = Dimens.spacingXl, bottom = Dimens.spacingXl)
-                ) {
-                    GameHeader(game = game, uiState = uiState, viewModel = viewModel)
-
-                    Spacer(modifier = Modifier.height(Dimens.spacingXl))
-
-                    if (!game.description.isNullOrBlank()) {
-                        DescriptionSection(
-                            description = game.description,
-                            onPositioned = onDescriptionPositioned
-                        )
-                        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                Row(modifier = Modifier.fillMaxSize()) {
+                    // Left Menu (30%)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.30f)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                    ) {
+                        GameDetailMenu(
+                            state = menuState,
+                            onItemClick = { item ->
+                            when (item) {
+                                MenuItemType.PLAY -> viewModel.primaryAction()
+                                MenuItemType.FAVORITE -> viewModel.toggleFavorite()
+                                MenuItemType.OPTIONS -> viewModel.toggleMoreOptions()
+                                MenuItemType.DETAILS -> coroutineScope.launch {
+                                    scrollState.animateScrollTo(0)
+                                }
+                                MenuItemType.DESCRIPTION -> coroutineScope.launch {
+                                    scrollState.animateScrollTo(descriptionTopY.coerceAtLeast(0))
+                                }
+                                MenuItemType.SCREENSHOTS -> viewModel.openScreenshotViewer()
+                                MenuItemType.ACHIEVEMENTS -> coroutineScope.launch {
+                                    scrollState.animateScrollTo(achievementTopY.coerceAtLeast(0))
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = Dimens.spacingXl, top = Dimens.spacingXl)
+                    )
                     }
 
-                    if (game.screenshots.isNotEmpty()) {
-                        ScreenshotsSection(
-                            screenshots = game.screenshots,
-                            listState = screenshotListState,
-                            currentSnapState = currentSnapState,
-                            focusedIndex = uiState.focusedScreenshotIndex,
-                            onScreenshotTap = { index -> viewModel.openScreenshotViewer(index) },
-                            onPositioned = onScreenshotPositioned
+                    // Right Content (70%)
+                    Column(modifier = Modifier.weight(1f)) {
+                        StickyCollapsedHeader(
+                            game = game,
+                            isVisible = isHeaderCollapsed
                         )
-                        Spacer(modifier = Modifier.height(Dimens.spacingLg))
-                    }
 
-                    if (game.achievements.isNotEmpty()) {
-                        AchievementsSection(
-                            achievements = game.achievements,
-                            listState = achievementListState,
-                            currentSnapState = currentSnapState,
-                            onPositioned = onAchievementPositioned
-                        )
-                        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                        Box(modifier = Modifier.weight(1f)) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(scrollState)
+                                    .padding(start = Dimens.spacingMd, top = Dimens.spacingXl, end = Dimens.spacingXl, bottom = Dimens.spacingXl)
+                            ) {
+                                ExpandedHeader(game = game)
+
+                                Spacer(modifier = Modifier.height(Dimens.spacingXl))
+
+                            if (!game.description.isNullOrBlank()) {
+                                DescriptionSection(
+                                    description = game.description,
+                                    onPositioned = { y ->
+                                        descriptionTopY = y
+                                        onDescriptionPositioned(y)
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                            }
+
+                            if (game.screenshots.isNotEmpty()) {
+                                ScreenshotsSection(
+                                    screenshots = game.screenshots,
+                                    listState = screenshotListState,
+                                    currentSnapState = currentSnapState,
+                                    focusedIndex = uiState.focusedScreenshotIndex,
+                                    onScreenshotTap = { index -> viewModel.openScreenshotViewer(index) },
+                                    onPositioned = { y ->
+                                        screenshotTopY = y
+                                        onScreenshotPositioned(y)
+                                    },
+                                    isActive = menuState.focusedItem == MenuItemType.SCREENSHOTS
+                                )
+                                Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                            }
+
+                            if (game.achievements.isNotEmpty()) {
+                                AchievementsSection(
+                                    achievements = game.achievements,
+                                    listState = achievementListState,
+                                    currentSnapState = currentSnapState,
+                                    onPositioned = { y ->
+                                        achievementTopY = y
+                                        onAchievementPositioned(y)
+                                    },
+                                    isActive = menuState.focusedItem == MenuItemType.ACHIEVEMENTS
+                                )
+                                Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                            }
+                            }
+
+                            // Gradient fade at bottom of content
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth()
+                                    .height(Dimens.spacingXxl)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.Transparent,
+                                                fadeColor.copy(alpha = 0.8f)
+                                            )
+                                        )
+                                    )
+                            )
+                        }
                     }
                 }
-
-                // Gradient fade at bottom of content
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(Dimens.spacingXxl)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    fadeColor.copy(alpha = 0.8f)
-                                )
-                            )
-                        )
-                )
             }
 
             AnimatedVisibility(
@@ -483,36 +577,52 @@ private fun GameDetailContent(
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                val isInScreenshots = currentSnapState == SnapState.SCREENSHOTS && game.screenshots.isNotEmpty()
+                val focusedItem = menuState.focusedItem
                 val canShowPlayOptions = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED &&
                     game.isBuiltInEmulator
                 FooterBar(
                     hints = buildList {
                         add(InputButton.LB_RB to "Prev/Next Game")
-                        add(InputButton.A to when {
-                            isInScreenshots -> "View"
-                            isAnySyncing -> "Syncing..."
-                            uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
-                            uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> "Install"
-                            uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
-                            uiState.downloadStatus == GameDownloadStatus.QUEUED -> "Queued"
-                            uiState.downloadStatus == GameDownloadStatus.WAITING_FOR_STORAGE -> "No Space"
-                            uiState.downloadStatus == GameDownloadStatus.DOWNLOADING -> "Downloading"
-                            uiState.downloadStatus == GameDownloadStatus.EXTRACTING -> "Extracting"
-                            uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
-                            else -> "Play"
-                        })
+                        if (focusedItem == MenuItemType.SCREENSHOTS || focusedItem == MenuItemType.ACHIEVEMENTS) {
+                            add(InputButton.DPAD_HORIZONTAL to "Scroll")
+                        }
+                        when (focusedItem) {
+                            MenuItemType.PLAY -> add(InputButton.A to when {
+                                isAnySyncing -> "Syncing..."
+                                uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
+                                uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> "Install"
+                                uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
+                                uiState.downloadStatus == GameDownloadStatus.QUEUED -> "Queued"
+                                uiState.downloadStatus == GameDownloadStatus.WAITING_FOR_STORAGE -> "No Space"
+                                uiState.downloadStatus == GameDownloadStatus.DOWNLOADING -> "Downloading"
+                                uiState.downloadStatus == GameDownloadStatus.EXTRACTING -> "Extracting"
+                                uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
+                                else -> "Play"
+                            })
+                            MenuItemType.FAVORITE -> add(InputButton.A to if (game.isFavorite) "Unfavorite" else "Favorite")
+                            MenuItemType.OPTIONS -> add(InputButton.A to "Options")
+                            MenuItemType.SCREENSHOTS -> add(InputButton.A to "View")
+                            MenuItemType.ACHIEVEMENTS -> add(InputButton.A to "View All")
+                            MenuItemType.DETAILS, MenuItemType.DESCRIPTION, null -> {} // No A button action
+                        }
                         add(InputButton.B to "Back")
-                        if (canShowPlayOptions) {
+                        if (canShowPlayOptions && focusedItem == MenuItemType.PLAY) {
                             add(InputButton.X to "New Game")
                         }
-                        add(InputButton.Y to if (uiState.game?.isFavorite == true) "Unfavorite" else "Favorite")
+                        add(InputButton.Y to if (game.isFavorite) "Unfavorite" else "Favorite")
                     }
                 )
             }
         }
 
         GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack, localModifiedFocusIndex = localModifiedFocusIndex)
+
+        AchievementListOverlay(
+            visible = uiState.showAchievementList,
+            gameTitle = game.title,
+            achievements = game.achievements,
+            focusIndex = uiState.achievementListFocusIndex
+        )
     }
 }
 

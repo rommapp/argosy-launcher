@@ -384,7 +384,8 @@ fun ScreenshotsSection(
     currentSnapState: SnapState,
     focusedIndex: Int,
     onScreenshotTap: (Int) -> Unit,
-    onPositioned: (Int) -> Unit
+    onPositioned: (Int) -> Unit,
+    isActive: Boolean = false
 ) {
     val showFocus = currentSnapState == SnapState.SCREENSHOTS
 
@@ -401,14 +402,14 @@ fun ScreenshotsSection(
         Spacer(modifier = Modifier.height(Dimens.radiusLg))
 
         var scrollDirection by remember { mutableIntStateOf(1) }
-        val currentSnapStateUpdated by rememberUpdatedState(currentSnapState)
+        val isActiveUpdated by rememberUpdatedState(isActive)
 
         LaunchedEffect(screenshots) {
             if (screenshots.size <= 1) return@LaunchedEffect
 
             while (true) {
                 delay(3000)
-                if (currentSnapStateUpdated == SnapState.SCREENSHOTS) continue
+                if (isActiveUpdated) continue
 
                 val layoutInfo = listState.layoutInfo
                 val currentIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
@@ -485,7 +486,8 @@ fun AchievementsSection(
     achievements: List<AchievementUi>,
     listState: LazyListState,
     currentSnapState: SnapState,
-    onPositioned: (Int) -> Unit
+    onPositioned: (Int) -> Unit,
+    isActive: Boolean = false
 ) {
     Column(
         modifier = Modifier.onGloballyPositioned { coords ->
@@ -516,7 +518,7 @@ fun AchievementsSection(
         Spacer(modifier = Modifier.height(Dimens.radiusLg))
 
         val achievementColumns = achievements.chunked(3)
-        val currentSnapStateForAchievements by rememberUpdatedState(currentSnapState)
+        val isActiveUpdated by rememberUpdatedState(isActive)
 
         LaunchedEffect(achievements.size) {
             if (achievementColumns.size <= 1) return@LaunchedEffect
@@ -524,7 +526,7 @@ fun AchievementsSection(
             var scrollDirection = 1
             while (true) {
                 delay(4000)
-                if (currentSnapStateForAchievements == SnapState.ACHIEVEMENTS) continue
+                if (isActiveUpdated) continue
 
                 val layoutInfo = listState.layoutInfo
                 val currentIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0

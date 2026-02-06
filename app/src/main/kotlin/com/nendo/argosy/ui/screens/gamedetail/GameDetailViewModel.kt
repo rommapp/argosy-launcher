@@ -1832,12 +1832,14 @@ class GameDetailViewModel @Inject constructor(
 
     fun navigateToPreviousGame() {
         gameNavigationContext.getPreviousGameId(currentGameId)?.let { prevId ->
+            _uiState.update { it.copy(menuFocusIndex = 0) }
             loadGame(prevId)
         }
     }
 
     fun navigateToNextGame() {
         gameNavigationContext.getNextGameId(currentGameId)?.let { nextId ->
+            _uiState.update { it.copy(menuFocusIndex = 0) }
             loadGame(nextId)
         }
     }
@@ -1882,6 +1884,85 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { state ->
             val newIndex = (state.viewerScreenshotIndex + delta).mod(screenshots.size)
             state.copy(viewerScreenshotIndex = newIndex)
+        }
+    }
+
+    fun getMenuItemCount(): Int {
+        val game = _uiState.value.game ?: return 4
+        return buildList {
+            add("PLAY")
+            add("FAVORITE")
+            add("OPTIONS")
+            add("DETAILS")
+            if (!game.description.isNullOrBlank()) add("DESCRIPTION")
+            if (game.screenshots.isNotEmpty()) add("SCREENSHOTS")
+            if (game.achievements.isNotEmpty()) add("ACHIEVEMENTS")
+        }.size
+    }
+
+    fun moveMenuFocus(delta: Int) {
+        val menuItemCount = getMenuItemCount()
+        if (menuItemCount == 0) return
+        _uiState.update { state ->
+            val newIndex = (state.menuFocusIndex + delta).coerceIn(0, menuItemCount - 1)
+            state.copy(menuFocusIndex = newIndex)
+        }
+    }
+
+    fun getFocusedMenuItemIndex(): Int {
+        return _uiState.value.menuFocusIndex
+    }
+
+    enum class MenuAction {
+        PLAY, FAVORITE, OPTIONS, DETAILS, DESCRIPTION, SCREENSHOTS, ACHIEVEMENTS
+    }
+
+    fun getMenuItems(): List<MenuAction> {
+        val game = _uiState.value.game ?: return listOf(MenuAction.PLAY, MenuAction.FAVORITE, MenuAction.OPTIONS, MenuAction.DETAILS)
+        return buildList {
+            add(MenuAction.PLAY)
+            add(MenuAction.FAVORITE)
+            add(MenuAction.OPTIONS)
+            add(MenuAction.DETAILS)
+            if (!game.description.isNullOrBlank()) add(MenuAction.DESCRIPTION)
+            if (game.screenshots.isNotEmpty()) add(MenuAction.SCREENSHOTS)
+            if (game.achievements.isNotEmpty()) add(MenuAction.ACHIEVEMENTS)
+        }
+    }
+
+    fun getFocusedMenuAction(): MenuAction? {
+        val menuItems = getMenuItems()
+        val focusIndex = _uiState.value.menuFocusIndex
+        return menuItems.getOrNull(focusIndex)
+    }
+
+    fun executeMenuAction() {
+        when (getFocusedMenuAction()) {
+            MenuAction.PLAY -> primaryAction()
+            MenuAction.FAVORITE -> toggleFavorite()
+            MenuAction.OPTIONS -> toggleMoreOptions()
+            MenuAction.DETAILS -> {}
+            MenuAction.DESCRIPTION -> {}
+            MenuAction.SCREENSHOTS -> openScreenshotViewer()
+            MenuAction.ACHIEVEMENTS -> showAchievementList()
+            null -> {}
+        }
+    }
+
+    fun showAchievementList() {
+        _uiState.update { it.copy(showAchievementList = true, achievementListFocusIndex = 0) }
+    }
+
+    fun hideAchievementList() {
+        _uiState.update { it.copy(showAchievementList = false, achievementListFocusIndex = 0) }
+    }
+
+    fun moveAchievementListFocus(delta: Int) {
+        val achievements = _uiState.value.game?.achievements ?: return
+        if (achievements.isEmpty()) return
+        _uiState.update { state ->
+            val newIndex = (state.achievementListFocusIndex + delta).coerceIn(0, achievements.size - 1)
+            state.copy(achievementListFocusIndex = newIndex)
         }
     }
 
@@ -1970,6 +2051,10 @@ class GameDetailViewModel @Inject constructor(
                     moveOptionsFocus(-1)
                     InputResult.HANDLED
                 }
+                state.showAchievementList -> {
+                    moveAchievementListFocus(-1)
+                    InputResult.HANDLED
+                }
                 else -> {
                     if (onSnapUp()) InputResult.HANDLED else InputResult.UNHANDLED
                 }
@@ -2030,6 +2115,10 @@ class GameDetailViewModel @Inject constructor(
                 }
                 state.showMoreOptions -> {
                     moveOptionsFocus(1)
+                    InputResult.HANDLED
+                }
+                state.showAchievementList -> {
+                    moveAchievementListFocus(1)
                     InputResult.HANDLED
                 }
                 else -> {
@@ -2166,7 +2255,6 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showRestoreConfirmation -> restoreSave(syncToServer = false)
                 saveState.isVisible -> confirmSaveCacheSelection()
                 state.showScreenshotViewer -> closeScreenshotViewer()
-                isInScreenshotsSection() && state.game?.screenshots?.isNotEmpty() == true -> openScreenshotViewer()
                 state.showPermissionModal -> return InputResult.UNHANDLED
                 state.showRatingPicker -> confirmRating()
                 state.showStatusPicker -> confirmStatus()
@@ -2181,7 +2269,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showRatingsStatusMenu -> confirmRatingsStatusSelection()
                 state.showPlayOptions -> confirmPlayOptionSelection()
                 state.showMoreOptions -> confirmOptionSelection(onBack)
-                else -> primaryAction()
+                else -> executeMenuAction()
             }
             return InputResult.HANDLED
         }
@@ -2196,6 +2284,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showRestoreConfirmation -> dismissRestoreConfirmation()
                 saveState.isVisible -> dismissSaveCacheDialog()
                 state.showScreenshotViewer -> closeScreenshotViewer()
+                state.showAchievementList -> hideAchievementList()
                 state.showRatingPicker -> dismissRatingPicker()
                 state.showStatusPicker -> dismissStatusPicker()
                 state.showMissingDiscPrompt -> dismissMissingDiscPrompt()

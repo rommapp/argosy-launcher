@@ -131,6 +131,7 @@ data class ExtractionFailedInfo(
 
 data class GameDetailUiState(
     val game: GameDetailUi? = null,
+    val menuFocusIndex: Int = 0,
     val showMoreOptions: Boolean = false,
     val moreOptionsFocusIndex: Int = 0,
     val showPlayOptions: Boolean = false,
@@ -179,7 +180,9 @@ data class GameDetailUiState(
     val showAddToCollectionModal: Boolean = false,
     val collections: List<CollectionItemUi> = emptyList(),
     val collectionModalFocusIndex: Int = 0,
-    val showCreateCollectionDialog: Boolean = false
+    val showCreateCollectionDialog: Boolean = false,
+    val showAchievementList: Boolean = false,
+    val achievementListFocusIndex: Int = 0
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1

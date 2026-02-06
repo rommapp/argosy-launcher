@@ -356,6 +356,9 @@ private fun GameDetailContent(
     var screenshotTopY by remember { mutableIntStateOf(0) }
     var achievementTopY by remember { mutableIntStateOf(0) }
 
+    val headerScrollThreshold = 200
+    val isHeaderCollapsed = scrollState.value > headerScrollThreshold
+
     val menuState = GameDetailMenuState(
         focusedIndex = uiState.menuFocusIndex,
         isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
@@ -369,14 +372,8 @@ private fun GameDetailContent(
         hasDescription = !game.description.isNullOrBlank(),
         hasScreenshots = game.screenshots.isNotEmpty(),
         hasAchievements = game.achievements.isNotEmpty(),
-        saveStatus = uiState.saveStatusInfo,
-        platformName = game.platformName,
-        playCount = game.playCount,
-        playTimeMinutes = game.playTimeMinutes
+        saveStatus = uiState.saveStatusInfo
     )
-
-    val headerScrollThreshold = 200
-    val isHeaderCollapsed = scrollState.value > headerScrollThreshold
 
     // Scroll to section when menu focus changes
     LaunchedEffect(uiState.menuFocusIndex) {
@@ -431,10 +428,16 @@ private fun GameDetailContent(
             )
         }
 
-        // Main content: Left Menu (30%) + Right Content (70%)
+        // Main content: Collapsed Header + Left Menu (30%) + Right Content (70%)
         Column(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
             val isDark = LocalLauncherTheme.current.isDarkTheme
             val fadeColor = if (isDark) Color.Black else Color.White
+
+            // Full-width collapsed header (pushes content down)
+            StickyCollapsedHeader(
+                game = game,
+                isVisible = isHeaderCollapsed
+            )
 
             Box(modifier = Modifier.weight(1f)) {
                 Row(modifier = Modifier.fillMaxSize()) {
@@ -448,34 +451,30 @@ private fun GameDetailContent(
                         GameDetailMenu(
                             state = menuState,
                             onItemClick = { item ->
-                            when (item) {
-                                MenuItemType.PLAY -> viewModel.primaryAction()
-                                MenuItemType.FAVORITE -> viewModel.toggleFavorite()
-                                MenuItemType.OPTIONS -> viewModel.toggleMoreOptions()
-                                MenuItemType.DETAILS -> coroutineScope.launch {
-                                    scrollState.animateScrollTo(0)
+                                when (item) {
+                                    MenuItemType.PLAY -> viewModel.primaryAction()
+                                    MenuItemType.FAVORITE -> viewModel.toggleFavorite()
+                                    MenuItemType.OPTIONS -> viewModel.toggleMoreOptions()
+                                    MenuItemType.DETAILS -> coroutineScope.launch {
+                                        scrollState.animateScrollTo(0)
+                                    }
+                                    MenuItemType.DESCRIPTION -> coroutineScope.launch {
+                                        scrollState.animateScrollTo(descriptionTopY.coerceAtLeast(0))
+                                    }
+                                    MenuItemType.SCREENSHOTS -> viewModel.openScreenshotViewer()
+                                    MenuItemType.ACHIEVEMENTS -> coroutineScope.launch {
+                                        scrollState.animateScrollTo(achievementTopY.coerceAtLeast(0))
+                                    }
                                 }
-                                MenuItemType.DESCRIPTION -> coroutineScope.launch {
-                                    scrollState.animateScrollTo(descriptionTopY.coerceAtLeast(0))
-                                }
-                                MenuItemType.SCREENSHOTS -> viewModel.openScreenshotViewer()
-                                MenuItemType.ACHIEVEMENTS -> coroutineScope.launch {
-                                    scrollState.animateScrollTo(achievementTopY.coerceAtLeast(0))
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(start = Dimens.spacingXl, top = Dimens.spacingMd)
-                    )
+                            },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(start = Dimens.spacingXl, top = Dimens.spacingMd)
+                        )
                     }
 
                     // Right Content (70%)
                     Column(modifier = Modifier.weight(1f)) {
-                        StickyCollapsedHeader(
-                            game = game,
-                            isVisible = isHeaderCollapsed
-                        )
 
                         Box(modifier = Modifier.weight(1f)) {
                             Column(

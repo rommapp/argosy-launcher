@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -51,10 +53,7 @@ data class GameDetailMenuState(
     val hasDescription: Boolean = true,
     val hasScreenshots: Boolean = true,
     val hasAchievements: Boolean = false,
-    val saveStatus: SaveStatusInfo? = null,
-    val platformName: String = "",
-    val playCount: Int = 0,
-    val playTimeMinutes: Int = 0
+    val saveStatus: SaveStatusInfo? = null
 ) {
     val menuItems: List<MenuItemType>
         get() = buildList {
@@ -80,8 +79,6 @@ fun GameDetailMenu(
     modifier: Modifier = Modifier
 ) {
     val menuItems = state.menuItems
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val borderWidth = 4.dp
 
     Column(
         modifier = modifier
@@ -89,14 +86,6 @@ fun GameDetailMenu(
             .padding(end = Dimens.spacingMd),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
-        // Header with platform and play stats
-        MenuHeader(
-            platformName = state.platformName,
-            playCount = state.playCount,
-            playTimeMinutes = state.playTimeMinutes
-        )
-
-        Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         menuItems.forEachIndexed { index, item ->
             val isFocused = index == state.focusedIndex
@@ -121,8 +110,7 @@ fun GameDetailMenu(
                 }
 
                 MenuItemType.OPTIONS -> {
-                    TextMenuItem(
-                        label = "Options",
+                    OptionsMenuItem(
                         isFocused = isFocused,
                         onClick = { onItemClick(item) }
                     )
@@ -197,6 +185,12 @@ private fun PlayMenuItem(
         MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
     }
 
+    val icon = when {
+        isDownloading -> Icons.Default.Download
+        isDownloaded -> Icons.Default.PlayArrow
+        else -> Icons.Default.Download
+    }
+
     Column {
         Button(
             onClick = onClick,
@@ -210,6 +204,12 @@ private fun PlayMenuItem(
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+            Spacer(modifier = Modifier.width(Dimens.spacingSm))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge
@@ -266,6 +266,47 @@ private fun FavoriteMenuItem(
             )
             Text(
                 text = "Favorite",
+                style = textStyle,
+                color = textColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun OptionsMenuItem(
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val iconTint = if (isFocused) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val textColor = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val textStyle = if (isFocused) {
+        MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+    } else {
+        MaterialTheme.typography.bodyMedium
+    }
+
+    MenuItemWithLeftBorder(
+        isFocused = isFocused,
+        onClick = onClick
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = "Options",
+                tint = iconTint,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+            Text(
+                text = "Options",
                 style = textStyle,
                 color = textColor
             )
@@ -336,63 +377,6 @@ private fun MenuItemWithLeftBorder(
         contentAlignment = Alignment.CenterStart
     ) {
         content()
-    }
-}
-
-@Composable
-private fun MenuHeader(
-    platformName: String,
-    playCount: Int,
-    playTimeMinutes: Int
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
-    ) {
-        EndWeightedText(
-            text = platformName,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        if (playCount > 0 || playTimeMinutes > 0) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (playCount > 0) {
-                    Text(
-                        text = if (playCount == 1) "Played once" else "Played $playCount times",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (playCount > 0 && playTimeMinutes > 0) {
-                    Text(
-                        text = "|",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                }
-                if (playTimeMinutes > 0) {
-                    Text(
-                        text = formatPlayTime(playTimeMinutes),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun formatPlayTime(minutes: Int): String {
-    return when {
-        minutes < 60 -> "${minutes}m"
-        minutes < 1440 -> "${minutes / 60}h ${minutes % 60}m"
-        else -> {
-            val hours = minutes / 60
-            "${hours}h"
-        }
     }
 }
 

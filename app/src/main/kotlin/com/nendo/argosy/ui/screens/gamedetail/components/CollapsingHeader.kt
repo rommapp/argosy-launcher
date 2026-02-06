@@ -3,8 +3,6 @@ package com.nendo.argosy.ui.screens.gamedetail.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,8 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -89,8 +89,8 @@ fun StickyCollapsedHeader(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
+        enter = expandVertically(),
+        exit = shrinkVertically(),
         modifier = modifier
     ) {
         CollapsedHeader(game = game)
@@ -265,6 +265,105 @@ internal fun CollapsedHeader(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+        ) {
+            if (game.rating != null || game.userRating > 0 || game.userDifficulty > 0) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    game.rating?.let { rating ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.People,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "${rating.toInt()}%",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (game.userRating > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = ALauncherColors.StarGold,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "${game.userRating}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (game.userDifficulty > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Whatshot,
+                                contentDescription = null,
+                                tint = ALauncherColors.DifficultyRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "${game.userDifficulty}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+            if (game.playTimeMinutes > 0 || game.playCount > 0) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (game.playTimeMinutes > 0) {
+                        Text(
+                            text = formatPlayTime(game.playTimeMinutes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (game.playCount > 0) {
+                        Text(
+                            text = if (game.playCount == 1) "1 play" else "${game.playCount} plays",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatPlayTime(minutes: Int): String {
+    return when {
+        minutes < 60 -> "${minutes}m"
+        minutes < 1440 -> "${minutes / 60}h ${minutes % 60}m"
+        else -> {
+            val hours = minutes / 60
+            "${hours}h"
         }
     }
 }

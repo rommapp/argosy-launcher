@@ -14,11 +14,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -79,15 +84,17 @@ data class GameDetailMenuState(
 fun GameDetailMenu(
     state: GameDetailMenuState,
     onItemClick: (MenuItemType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isCompact: Boolean = false
 ) {
     val menuItems = state.menuItems
 
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .padding(end = Dimens.spacingMd),
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+            .padding(end = if (isCompact) Dimens.spacingXs else Dimens.spacingMd),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+        horizontalAlignment = if (isCompact) Alignment.CenterHorizontally else Alignment.Start
     ) {
 
         menuItems.forEachIndexed { index, item ->
@@ -103,6 +110,7 @@ fun GameDetailMenu(
                         isFocused = isFocused,
                         saveStatus = state.saveStatus,
                         downloadSizeBytes = state.downloadSizeBytes,
+                        isCompact = isCompact,
                         onClick = { onItemClick(item) }
                     )
                 }
@@ -111,6 +119,7 @@ fun GameDetailMenu(
                     FavoriteMenuItem(
                         isFavorite = state.isFavorite,
                         isFocused = isFocused,
+                        isCompact = isCompact,
                         onClick = { onItemClick(item) }
                     )
                 }
@@ -118,6 +127,7 @@ fun GameDetailMenu(
                 MenuItemType.OPTIONS -> {
                     OptionsMenuItem(
                         isFocused = isFocused,
+                        isCompact = isCompact,
                         onClick = { onItemClick(item) }
                     )
                     Spacer(modifier = Modifier.height(Dimens.spacingXs))
@@ -129,34 +139,42 @@ fun GameDetailMenu(
                 }
 
                 MenuItemType.DETAILS -> {
-                    TextMenuItem(
+                    IconTextMenuItem(
                         label = "Details",
+                        icon = Icons.Default.Info,
                         isFocused = isFocused,
+                        isCompact = isCompact,
                         onClick = { onItemClick(item) }
                     )
                 }
 
                 MenuItemType.DESCRIPTION -> {
-                    TextMenuItem(
+                    IconTextMenuItem(
                         label = "Description",
+                        icon = Icons.Default.Description,
                         isFocused = isFocused,
+                        isCompact = isCompact,
                         onClick = { onItemClick(item) }
                     )
                 }
 
                 MenuItemType.SCREENSHOTS -> {
-                    TextMenuItem(
+                    IconTextMenuItem(
                         label = "Screenshots",
+                        icon = Icons.Default.Image,
                         isFocused = isFocused,
+                        isCompact = isCompact,
                         onClick = { onItemClick(item) }
                     )
                 }
 
                 MenuItemType.ACHIEVEMENTS -> {
-                    TextMenuItem(
+                    IconTextMenuItem(
                         label = "Achievements",
+                        icon = Icons.Default.EmojiEvents,
                         isFocused = isFocused,
                         isEnabled = state.hasAchievements,
+                        isCompact = isCompact,
                         onClick = { onItemClick(item) }
                     )
                 }
@@ -174,6 +192,7 @@ private fun PlayMenuItem(
     isFocused: Boolean,
     saveStatus: SaveStatusInfo?,
     downloadSizeBytes: Long?,
+    isCompact: Boolean,
     onClick: () -> Unit
 ) {
     val label = when {
@@ -204,7 +223,7 @@ private fun PlayMenuItem(
     val isInProgress = isDownloading || isExtracting
     val showDownloadSize = !isDownloaded && !isInProgress && downloadSizeBytes != null
 
-    Column {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Button(
             onClick = onClick,
             enabled = !isInProgress,
@@ -215,35 +234,37 @@ private fun PlayMenuItem(
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = if (isCompact) Modifier else Modifier.fillMaxWidth()
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(Dimens.iconSm)
             )
-            Spacer(modifier = Modifier.width(Dimens.spacingSm))
-            if (showDownloadSize) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (!isCompact) {
+                Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                if (showDownloadSize) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Text(
+                            text = formatFileSize(downloadSizeBytes!!),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = contentColor.copy(alpha = 0.6f)
+                        )
+                    }
+                } else {
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelLarge
                     )
-                    Text(
-                        text = formatFileSize(downloadSizeBytes!!),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = contentColor.copy(alpha = 0.6f)
-                    )
                 }
-            } else {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge
-                )
             }
         }
 
-        if (saveStatus != null && isDownloaded) {
+        if (saveStatus != null && isDownloaded && !isCompact) {
             Spacer(modifier = Modifier.height(Dimens.spacingXs))
             SaveStatusRow(
                 status = saveStatus,
@@ -257,6 +278,7 @@ private fun PlayMenuItem(
 private fun FavoriteMenuItem(
     isFavorite: Boolean,
     isFocused: Boolean,
+    isCompact: Boolean,
     onClick: () -> Unit
 ) {
     val favoriteColor = MaterialTheme.colorScheme.error
@@ -279,23 +301,34 @@ private fun FavoriteMenuItem(
 
     MenuItemWithLeftBorder(
         isFocused = isFocused,
+        isCompact = isCompact,
         onClick = onClick
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
+        if (isCompact) {
             Icon(
                 imageVector = icon,
                 contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                 tint = iconTint,
                 modifier = Modifier.size(Dimens.iconSm)
             )
-            Text(
-                text = "Favorite",
-                style = textStyle,
-                color = textColor
-            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Favorite",
+                    style = textStyle,
+                    color = textColor,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                    tint = iconTint,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
         }
     }
 }
@@ -303,6 +336,7 @@ private fun FavoriteMenuItem(
 @Composable
 private fun OptionsMenuItem(
     isFocused: Boolean,
+    isCompact: Boolean,
     onClick: () -> Unit
 ) {
     val iconTint = if (isFocused) {
@@ -320,35 +354,53 @@ private fun OptionsMenuItem(
 
     MenuItemWithLeftBorder(
         isFocused = isFocused,
+        isCompact = isCompact,
         onClick = onClick
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
+        if (isCompact) {
             Icon(
                 imageVector = Icons.Default.Tune,
                 contentDescription = "Options",
                 tint = iconTint,
                 modifier = Modifier.size(Dimens.iconSm)
             )
-            Text(
-                text = "Options",
-                style = textStyle,
-                color = textColor
-            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Options",
+                    style = textStyle,
+                    color = textColor,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Options",
+                    tint = iconTint,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun TextMenuItem(
+private fun IconTextMenuItem(
     label: String,
+    icon: ImageVector,
     isFocused: Boolean,
+    isCompact: Boolean,
     isEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val textColor = when {
+        !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        isFocused -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val iconTint = when {
         !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
         isFocused -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -362,13 +414,35 @@ private fun TextMenuItem(
     MenuItemWithLeftBorder(
         isFocused = isFocused && isEnabled,
         isEnabled = isEnabled,
+        isCompact = isCompact,
         onClick = onClick
     ) {
-        Text(
-            text = label,
-            style = textStyle,
-            color = textColor
-        )
+        if (isCompact) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconTint,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = label,
+                    style = textStyle,
+                    color = textColor,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = iconTint,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
+        }
     }
 }
 
@@ -376,6 +450,7 @@ private fun TextMenuItem(
 private fun MenuItemWithLeftBorder(
     isFocused: Boolean,
     isEnabled: Boolean = true,
+    isCompact: Boolean = false,
     onClick: () -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -384,7 +459,7 @@ private fun MenuItemWithLeftBorder(
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
+            .then(if (isCompact) Modifier else Modifier.fillMaxWidth())
             .then(
                 if (isFocused) {
                     Modifier.drawBehind {
@@ -400,8 +475,13 @@ private fun MenuItemWithLeftBorder(
                 if (isEnabled) Modifier.clickableNoFocus(onClick = onClick)
                 else Modifier
             )
-            .padding(start = Dimens.spacingMd, top = Dimens.spacingSm, bottom = Dimens.spacingSm),
-        contentAlignment = Alignment.CenterStart
+            .padding(
+                start = Dimens.spacingMd,
+                end = if (isCompact) Dimens.spacingSm else 0.dp,
+                top = Dimens.spacingSm,
+                bottom = Dimens.spacingSm
+            ),
+        contentAlignment = if (isCompact) Alignment.Center else Alignment.CenterStart
     ) {
         content()
     }

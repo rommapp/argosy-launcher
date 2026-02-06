@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -441,12 +442,18 @@ private fun GameDetailContent(
                 isVisible = isHeaderCollapsed
             )
 
-            Box(modifier = Modifier.weight(1f)) {
+            BoxWithConstraints(modifier = Modifier.weight(1f)) {
+                val aspectRatio = maxWidth / maxHeight
+                val isCompactMenu = aspectRatio <= 1.3f
+
                 Row(modifier = Modifier.fillMaxSize()) {
-                    // Left Menu (30%)
+                    // Left Menu (compact: icon-only, normal: 30%)
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.30f)
+                            .then(
+                                if (isCompactMenu) Modifier.width(56.dp)
+                                else Modifier.fillMaxWidth(0.30f)
+                            )
                             .fillMaxHeight()
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                     ) {
@@ -469,9 +476,13 @@ private fun GameDetailContent(
                                     }
                                 }
                             },
+                            isCompact = isCompactMenu,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(start = Dimens.spacingXl, top = Dimens.spacingMd)
+                                .padding(
+                                    start = if (isCompactMenu) Dimens.spacingSm else Dimens.spacingXl,
+                                    top = Dimens.spacingMd
+                                )
                         )
                     }
 

@@ -132,9 +132,9 @@ fun ExpandedHeader(
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
-                Text(
+                EndWeightedText(
                     text = game.platformName,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,

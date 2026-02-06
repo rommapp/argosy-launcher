@@ -397,7 +397,7 @@ private fun formatPlayTime(minutes: Int): String {
 }
 
 @Composable
-private fun EndWeightedText(
+internal fun EndWeightedText(
     text: String,
     style: androidx.compose.ui.text.TextStyle,
     color: androidx.compose.ui.graphics.Color,

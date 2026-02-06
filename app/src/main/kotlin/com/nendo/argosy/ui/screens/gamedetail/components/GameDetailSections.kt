@@ -380,7 +380,8 @@ fun ScreenshotsSection(
     listState: LazyListState,
     onScreenshotTap: (Int) -> Unit,
     onPositioned: (Int) -> Unit,
-    isActive: Boolean = false
+    isActive: Boolean = false,
+    onSectionFocus: () -> Unit = {}
 ) {
 
     Column(
@@ -438,7 +439,13 @@ fun ScreenshotsSection(
                         .width(240.dp)
                         .height(135.dp)
                         .clip(RoundedCornerShape(Dimens.radiusMd))
-                        .clickableNoFocus { onScreenshotTap(index) }
+                        .clickableNoFocus {
+                            if (isActive) {
+                                onScreenshotTap(index)
+                            } else {
+                                onSectionFocus()
+                            }
+                        }
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     if (useRemote) {

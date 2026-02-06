@@ -31,7 +31,8 @@ fun ScreenshotViewerOverlay(
     screenshots: List<ScreenshotPair>,
     currentIndex: Int,
     onNavigate: (delta: Int) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSetBackground: () -> Unit = {}
 ) {
     if (screenshots.isEmpty()) return
 
@@ -101,7 +102,14 @@ fun ScreenshotViewerOverlay(
                     InputButton.DPAD_HORIZONTAL to "Navigate",
                     InputButton.B to "Close",
                     InputButton.X to "Set Background"
-                )
+                ),
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.B -> onDismiss()
+                        InputButton.X -> onSetBackground()
+                        else -> {}
+                    }
+                }
             )
         }
     }

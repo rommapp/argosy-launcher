@@ -84,6 +84,7 @@ data class GameDetailMenuState(
 fun GameDetailMenu(
     state: GameDetailMenuState,
     onItemClick: (MenuItemType) -> Unit,
+    onFocusChange: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
     isCompact: Boolean = false
 ) {
@@ -111,7 +112,7 @@ fun GameDetailMenu(
                         saveStatus = state.saveStatus,
                         downloadSizeBytes = state.downloadSizeBytes,
                         isCompact = isCompact,
-                        onClick = { onItemClick(item) }
+                        onClick = { onFocusChange(index); onItemClick(item) }
                     )
                 }
 
@@ -120,7 +121,7 @@ fun GameDetailMenu(
                         isFavorite = state.isFavorite,
                         isFocused = isFocused,
                         isCompact = isCompact,
-                        onClick = { onItemClick(item) }
+                        onClick = { onFocusChange(index); onItemClick(item) }
                     )
                 }
 
@@ -128,7 +129,7 @@ fun GameDetailMenu(
                     OptionsMenuItem(
                         isFocused = isFocused,
                         isCompact = isCompact,
-                        onClick = { onItemClick(item) }
+                        onClick = { onFocusChange(index); onItemClick(item) }
                     )
                     Spacer(modifier = Modifier.height(Dimens.spacingXs))
                     HorizontalDivider(
@@ -144,7 +145,7 @@ fun GameDetailMenu(
                         icon = Icons.Default.Info,
                         isFocused = isFocused,
                         isCompact = isCompact,
-                        onClick = { onItemClick(item) }
+                        onClick = { onFocusChange(index); onItemClick(item) }
                     )
                 }
 
@@ -154,7 +155,7 @@ fun GameDetailMenu(
                         icon = Icons.Default.Description,
                         isFocused = isFocused,
                         isCompact = isCompact,
-                        onClick = { onItemClick(item) }
+                        onClick = { onFocusChange(index); onItemClick(item) }
                     )
                 }
 
@@ -164,7 +165,7 @@ fun GameDetailMenu(
                         icon = Icons.Default.Image,
                         isFocused = isFocused,
                         isCompact = isCompact,
-                        onClick = { onItemClick(item) }
+                        onClick = { onFocusChange(index); onItemClick(item) }
                     )
                 }
 
@@ -175,7 +176,7 @@ fun GameDetailMenu(
                         isFocused = isFocused,
                         isEnabled = state.hasAchievements,
                         isCompact = isCompact,
-                        onClick = { onItemClick(item) }
+                        onClick = { onFocusChange(index); onItemClick(item) }
                     )
                 }
             }
@@ -234,12 +235,17 @@ private fun PlayMenuItem(
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
+            contentPadding = if (isCompact) {
+                androidx.compose.foundation.layout.PaddingValues(Dimens.spacingSm)
+            } else {
+                ButtonDefaults.ContentPadding
+            },
             modifier = if (isCompact) Modifier else Modifier.fillMaxWidth()
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(Dimens.iconSm)
+                modifier = Modifier.size(if (isCompact) Dimens.iconMd else Dimens.iconSm)
             )
             if (!isCompact) {
                 Spacer(modifier = Modifier.width(Dimens.spacingSm))

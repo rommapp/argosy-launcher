@@ -201,6 +201,15 @@ private fun InputButton.faceButtonPriority(): Int = when (this) {
     else -> 0
 }
 
+private fun InputButton.hidePriority(): Int = when (this) {
+    InputButton.A, InputButton.B -> 4
+    InputButton.X, InputButton.Y -> 3
+    InputButton.START, InputButton.SELECT -> 2
+    InputButton.LB, InputButton.RB, InputButton.LB_RB,
+    InputButton.LT, InputButton.RT, InputButton.LT_RT -> 1
+    else -> 0
+}
+
 @Composable
 fun FooterBar(
     hints: List<Pair<InputButton, String>>,
@@ -222,7 +231,11 @@ fun FooterBar(
         else -> hints.size
     }
 
-    val filteredHints = if (hints.size > maxHints) hints.take(maxHints) else hints
+    val filteredHints = if (hints.size > maxHints) {
+        hints.sortedByDescending { it.first.hidePriority() }.take(maxHints)
+    } else {
+        hints
+    }
 
     val dpadHints = filteredHints.filter { it.first.category() == HintCategory.DPAD }
     val bumperHints = filteredHints.filter { it.first.category() == HintCategory.BUMPER }
@@ -285,7 +298,11 @@ fun FooterBarWithState(
         else -> hints.size
     }
 
-    val filteredHints = if (hints.size > maxHints) hints.take(maxHints) else hints
+    val filteredHints = if (hints.size > maxHints) {
+        hints.sortedByDescending { it.button.hidePriority() }.take(maxHints)
+    } else {
+        hints
+    }
 
     val dpadHints = filteredHints.filter { it.button.category() == HintCategory.DPAD }
     val bumperHints = filteredHints.filter { it.button.category() == HintCategory.BUMPER }
@@ -364,7 +381,7 @@ fun SubtleFooterBar(
     }
 
     val filteredHints = if (hints.size > maxHints) {
-        hints.take(maxHints)
+        hints.sortedByDescending { it.first.hidePriority() }.take(maxHints)
     } else {
         hints
     }

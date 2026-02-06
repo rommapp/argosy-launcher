@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -89,7 +90,10 @@ import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @Composable
@@ -389,6 +393,34 @@ private fun GameDetailContent(
         }
     }
 
+    // Sync menu focus with scroll position (reverse direction)
+    @OptIn(FlowPreview::class)
+    LaunchedEffect(scrollState, menuState.hasDescription, menuState.hasScreenshots, menuState.hasAchievements) {
+        snapshotFlow { scrollState.value }
+            .debounce(100)
+            .distinctUntilChanged()
+            .collect { scrollY ->
+                val currentFocus = menuState.focusedItem
+                if (currentFocus !in listOf(MenuItemType.DETAILS, MenuItemType.DESCRIPTION, MenuItemType.SCREENSHOTS, MenuItemType.ACHIEVEMENTS)) {
+                    return@collect
+                }
+
+                val visibleSection = when {
+                    menuState.hasAchievements && scrollY >= achievementTopY - 100 -> MenuItemType.ACHIEVEMENTS
+                    menuState.hasScreenshots && scrollY >= screenshotTopY - 100 -> MenuItemType.SCREENSHOTS
+                    menuState.hasDescription && scrollY >= descriptionTopY - 100 -> MenuItemType.DESCRIPTION
+                    else -> MenuItemType.DETAILS
+                }
+
+                if (visibleSection != currentFocus) {
+                    val targetIndex = menuState.indexOfItem(visibleSection)
+                    if (targetIndex >= 0) {
+                        viewModel.setMenuFocusIndex(targetIndex)
+                    }
+                }
+            }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Background layer - extends behind footer
         Box(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
@@ -476,6 +508,7 @@ private fun GameDetailContent(
                                     }
                                 }
                             },
+                            onFocusChange = viewModel::setMenuFocusIndex,
                             isCompact = isCompactMenu,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -520,7 +553,10 @@ private fun GameDetailContent(
                                         screenshotTopY = y
                                         onScreenshotPositioned(y)
                                     },
-                                    isActive = menuState.focusedItem == MenuItemType.SCREENSHOTS
+                                    isActive = menuState.focusedItem == MenuItemType.SCREENSHOTS,
+                                    onSectionFocus = {
+                                        viewModel.setMenuFocusIndex(menuState.indexOfItem(MenuItemType.SCREENSHOTS))
+                                    }
                                 )
                                 Spacer(modifier = Modifier.height(Dimens.spacingLg))
                             }
@@ -597,6 +633,17 @@ private fun GameDetailContent(
                             add(InputButton.X to "New Game")
                         }
                         add(InputButton.Y to if (game.isFavorite) "Unfavorite" else "Favorite")
+                    },
+                    onHintClick = { button ->
+                        when (button) {
+                            InputButton.A -> viewModel.executeMenuAction()
+                            InputButton.B -> onBack()
+                            InputButton.X -> if (canShowPlayOptions) viewModel.showPlayOptions()
+                            InputButton.Y -> viewModel.toggleFavorite()
+                            InputButton.LB -> viewModel.navigateToPreviousGame()
+                            InputButton.RB -> viewModel.navigateToNextGame()
+                            else -> {}
+                        }
                     }
                 )
             }
@@ -844,7 +891,8 @@ private fun GameDetailModals(
             screenshots = game.screenshots,
             currentIndex = uiState.viewerScreenshotIndex,
             onNavigate = viewModel::moveViewerIndex,
-            onDismiss = viewModel::closeScreenshotViewer
+            onDismiss = viewModel::closeScreenshotViewer,
+            onSetBackground = viewModel::setCurrentScreenshotAsBackground
         )
     }
 

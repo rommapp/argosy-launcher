@@ -7,6 +7,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.People
@@ -102,121 +104,271 @@ fun ExpandedHeader(
     game: GameDetailUi,
     modifier: Modifier = Modifier
 ) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val aspectRatio = maxWidth / maxHeight
+        val isPortrait = aspectRatio <= 1.0f
+
+        if (isPortrait) {
+            PortraitExpandedHeader(game = game, maxWidth = maxWidth)
+        } else {
+            LandscapeExpandedHeader(game = game)
+        }
+    }
+}
+
+@Composable
+private fun LandscapeExpandedHeader(
+    game: GameDetailUi,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXl)
     ) {
-        val imageData = game.coverPath?.let { path ->
-            if (path.startsWith("/")) File(path) else path
-        }
-        AsyncImage(
-            model = imageData,
+        CoverArtImage(
+            coverPath = game.coverPath,
             contentDescription = game.title,
-            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .width(EXPANDED_COVER_WIDTH)
                 .height(EXPANDED_COVER_HEIGHT)
-                .clip(RoundedCornerShape(Dimens.radiusLg))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
         Column(modifier = Modifier.weight(1f)) {
-            GameTitle(
-                title = game.title,
-                titleStyle = MaterialTheme.typography.displaySmall,
-                titleColor = MaterialTheme.colorScheme.onSurface,
-                adaptiveSize = true
+            TitleSection(game = game)
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            RatingsRow(game = game)
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+            PlayStatsRow(game = game)
+        }
+    }
+}
+
+@Composable
+private fun PortraitExpandedHeader(
+    game: GameDetailUi,
+    maxWidth: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier
+) {
+    val coverWidth = maxWidth * 0.4f
+    val coverHeight = coverWidth * 1.4f
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        TitleSection(game = game)
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        ) {
+            CoverArtImage(
+                coverPath = game.coverPath,
+                contentDescription = game.title,
+                modifier = Modifier
+                    .widthIn(max = coverWidth)
+                    .height(coverHeight)
             )
 
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-                verticalAlignment = Alignment.Bottom
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
-                EndWeightedText(
-                    text = game.platformName,
+                PortraitRatingsColumn(game = game)
+                PlayStatsColumn(game = game)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoverArtImage(
+    coverPath: String?,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    val imageData = coverPath?.let { path ->
+        if (path.startsWith("/")) File(path) else path
+    }
+    AsyncImage(
+        model = imageData,
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Crop,
+        modifier = modifier
+            .clip(RoundedCornerShape(Dimens.radiusLg))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    )
+}
+
+@Composable
+private fun TitleSection(
+    game: GameDetailUi,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        GameTitle(
+            title = game.title,
+            titleStyle = MaterialTheme.typography.displaySmall,
+            titleColor = MaterialTheme.colorScheme.onSurface,
+            adaptiveSize = true
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            EndWeightedText(
+                text = game.platformName,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            game.releaseYear?.let { year ->
+                Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                Text(
+                    text = year.toString(),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            game.developer?.let { dev ->
+                Text(
+                    text = dev,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                game.releaseYear?.let { year ->
-                    Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-                    Text(
-                        text = year.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                    )
-                }
             }
-
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                game.developer?.let { dev ->
-                    Text(
-                        text = dev,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
+            game.genre?.let { genre ->
+                if (game.developer != null) {
+                    Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
                 }
-                game.genre?.let { genre ->
-                    if (game.developer != null) {
-                        Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
-                    }
-                    Text(
-                        text = genre,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
-                }
+                Text(
+                    text = genre,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+@Composable
+private fun RatingsRow(
+    game: GameDetailUi,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
+    ) {
+        game.players?.let { players ->
+            MetadataChip(label = "Players", value = players)
+        }
+        game.rating?.let { rating ->
+            CommunityRatingChip(rating = rating)
+        }
+        if (game.userRating > 0) {
+            RatingChip(
+                label = "My Rating",
+                value = game.userRating,
+                icon = Icons.Default.Star,
+                iconColor = ALauncherColors.StarGold
+            )
+        }
+        if (game.userDifficulty > 0) {
+            RatingChip(
+                label = "Difficulty",
+                value = game.userDifficulty,
+                icon = Icons.Default.Whatshot,
+                iconColor = ALauncherColors.DifficultyRed
+            )
+        }
+    }
+}
 
-            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)) {
-                game.players?.let { players ->
-                    MetadataChip(label = "Players", value = players)
-                }
-                game.rating?.let { rating ->
-                    CommunityRatingChip(rating = rating)
-                }
-                if (game.userRating > 0) {
-                    RatingChip(
-                        label = "My Rating",
-                        value = game.userRating,
-                        icon = Icons.Default.Star,
-                        iconColor = ALauncherColors.StarGold
-                    )
-                }
-                if (game.userDifficulty > 0) {
-                    RatingChip(
-                        label = "Difficulty",
-                        value = game.userDifficulty,
-                        icon = Icons.Default.Whatshot,
-                        iconColor = ALauncherColors.DifficultyRed
-                    )
-                }
+@Composable
+private fun PortraitRatingsColumn(
+    game: GameDetailUi,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+    ) {
+        game.players?.let { players ->
+            MetadataChip(label = "Players", value = players)
+        }
+        game.rating?.let { rating ->
+            CommunityRatingChip(rating = rating)
+        }
+        if (game.userRating > 0) {
+            RatingChip(
+                label = "My Rating",
+                value = game.userRating,
+                icon = Icons.Default.Star,
+                iconColor = ALauncherColors.StarGold
+            )
+        }
+        if (game.userDifficulty > 0) {
+            RatingChip(
+                label = "Difficulty",
+                value = game.userDifficulty,
+                icon = Icons.Default.Whatshot,
+                iconColor = ALauncherColors.DifficultyRed
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayStatsRow(
+    game: GameDetailUi,
+    modifier: Modifier = Modifier
+) {
+    if (game.playTimeMinutes > 0 || game.status != null) {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
+        ) {
+            if (game.playTimeMinutes > 0) {
+                PlayTimeChip(minutes = game.playTimeMinutes)
             }
+            game.status?.let { status ->
+                StatusChip(statusValue = status)
+            }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(Dimens.spacingLg))
-
-            if (game.playTimeMinutes > 0 || game.status != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)) {
-                    if (game.playTimeMinutes > 0) {
-                        PlayTimeChip(minutes = game.playTimeMinutes)
-                    }
-                    game.status?.let { status ->
-                        StatusChip(statusValue = status)
-                    }
-                }
+@Composable
+private fun PlayStatsColumn(
+    game: GameDetailUi,
+    modifier: Modifier = Modifier
+) {
+    if (game.playTimeMinutes > 0 || game.status != null) {
+        Column(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+        ) {
+            if (game.playTimeMinutes > 0) {
+                PlayTimeChip(minutes = game.playTimeMinutes)
+            }
+            game.status?.let { status ->
+                StatusChip(statusValue = status)
             }
         }
     }

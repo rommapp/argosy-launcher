@@ -1909,6 +1909,14 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    fun setMenuFocusIndex(index: Int) {
+        val menuItemCount = getMenuItemCount()
+        if (menuItemCount == 0) return
+        _uiState.update { state ->
+            state.copy(menuFocusIndex = index.coerceIn(0, menuItemCount - 1))
+        }
+    }
+
     fun getFocusedMenuItemIndex(): Int {
         return _uiState.value.menuFocusIndex
     }

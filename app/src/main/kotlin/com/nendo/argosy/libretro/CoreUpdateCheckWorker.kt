@@ -22,7 +22,6 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 private const val TAG = "CoreUpdateCheck"
-private const val BUILDBOT_BASE = "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a"
 
 @HiltWorker
 class CoreUpdateCheckWorker @AssistedInject constructor(
@@ -108,7 +107,7 @@ class CoreUpdateCheckWorker @AssistedInject constructor(
 
     private fun fetchLatestVersion(fileName: String): String? {
         return try {
-            val url = URL("$BUILDBOT_BASE/$fileName.zip")
+            val url = URL("${LibretroBuildbot.baseUrl}/$fileName.zip")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "HEAD"
             connection.connectTimeout = 10_000

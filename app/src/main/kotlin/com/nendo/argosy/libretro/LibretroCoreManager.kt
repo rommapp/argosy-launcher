@@ -16,7 +16,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "LibretroCoreManager"
-private const val BUILDBOT_BASE = "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a"
 
 @Singleton
 class LibretroCoreManager @Inject constructor(
@@ -25,6 +24,21 @@ class LibretroCoreManager @Inject constructor(
 ) {
     private val downloadedCoresDir = File(context.filesDir, "libretro/cores").apply { mkdirs() }
     private val nativeLibDir = context.applicationInfo.nativeLibraryDir
+    private val abiMarkerFile = File(downloadedCoresDir, ".abi")
+
+    suspend fun migrateAbiIfNeeded() {
+        val storedAbi = if (abiMarkerFile.exists()) abiMarkerFile.readText().trim() else null
+        val currentAbi = LibretroBuildbot.deviceAbi
+
+        if (storedAbi != currentAbi) {
+            Log.i(TAG, "ABI changed from $storedAbi to $currentAbi, clearing downloaded cores")
+            downloadedCoresDir.listFiles()
+                ?.filter { it.name != ".abi" }
+                ?.forEach { it.delete() }
+            coreVersionDao.deleteAll()
+            abiMarkerFile.writeText(currentAbi)
+        }
+    }
 
     fun getCorePathForPlatform(platformSlug: String): String? {
         val coreInfo = LibretroCoreRegistry.getDefaultCoreForPlatform(platformSlug) ?: return null
@@ -116,7 +130,7 @@ class LibretroCoreManager @Inject constructor(
         withContext(Dispatchers.IO) {
             runCatching {
                 val targetFile = File(downloadedCoresDir, coreInfo.fileName)
-                val zipUrl = "$BUILDBOT_BASE/${coreInfo.fileName}.zip"
+                val zipUrl = "${LibretroBuildbot.baseUrl}/${coreInfo.fileName}.zip"
 
                 Log.i(TAG, "Downloading ${coreInfo.displayName}: $zipUrl")
 

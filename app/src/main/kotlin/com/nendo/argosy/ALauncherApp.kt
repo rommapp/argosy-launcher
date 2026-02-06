@@ -16,6 +16,7 @@ import com.nendo.argosy.data.sync.SaveSyncWorker
 import com.nendo.argosy.data.sync.SyncServiceController
 import com.nendo.argosy.data.update.UpdateCheckWorker
 import com.nendo.argosy.libretro.CoreUpdateCheckWorker
+import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.ui.coil.AppIconFetcher
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +54,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var syncServiceController: SyncServiceController
 
+    @Inject
+    lateinit var coreManager: LibretroCoreManager
+
     override fun onCreate() {
         super.onCreate()
         UpdateCheckWorker.schedule(this)
@@ -63,6 +67,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         titleIdDownloadObserver.start()
         downloadServiceController.start()
         syncServiceController.start()
+        appScope.launch { coreManager.migrateAbiIfNeeded() }
         syncPlatformSortOrders()
     }
 

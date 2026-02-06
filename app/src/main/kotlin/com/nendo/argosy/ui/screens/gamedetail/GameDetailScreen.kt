@@ -466,7 +466,7 @@ private fun GameDetailContent(
                         },
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = Dimens.spacingXl, top = Dimens.spacingXl)
+                            .padding(start = Dimens.spacingXl, top = Dimens.spacingMd)
                     )
                     }
 
@@ -503,7 +503,6 @@ private fun GameDetailContent(
                                 ScreenshotsSection(
                                     screenshots = game.screenshots,
                                     listState = screenshotListState,
-                                    focusedIndex = uiState.focusedScreenshotIndex,
                                     onScreenshotTap = { index -> viewModel.openScreenshotViewer(index) },
                                     onPositioned = { y ->
                                         screenshotTopY = y

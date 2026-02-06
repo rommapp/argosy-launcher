@@ -124,7 +124,8 @@ fun ExpandedHeader(
             GameTitle(
                 title = game.title,
                 titleStyle = MaterialTheme.typography.displaySmall,
-                titleColor = MaterialTheme.colorScheme.onSurface
+                titleColor = MaterialTheme.colorScheme.onSurface,
+                adaptiveSize = true
             )
 
             Spacer(modifier = Modifier.height(Dimens.spacingSm))

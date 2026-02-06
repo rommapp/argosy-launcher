@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.screens.gamedetail.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -379,7 +378,6 @@ fun DescriptionSection(
 fun ScreenshotsSection(
     screenshots: List<ScreenshotPair>,
     listState: LazyListState,
-    focusedIndex: Int,
     onScreenshotTap: (Int) -> Unit,
     onPositioned: (Int) -> Unit,
     isActive: Boolean = false
@@ -434,18 +432,12 @@ fun ScreenshotsSection(
             horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
         ) {
             itemsIndexed(screenshots) { index, screenshot ->
-                val isFocused = isActive && index == focusedIndex
                 val useRemote = failedCachePaths[index] == true || screenshot.cachedPath == null
                 Box(
                     modifier = Modifier
                         .width(240.dp)
                         .height(135.dp)
                         .clip(RoundedCornerShape(Dimens.radiusMd))
-                        .then(
-                            if (isFocused)
-                                Modifier.border(Dimens.borderThick, MaterialTheme.colorScheme.primary, RoundedCornerShape(Dimens.radiusMd))
-                            else Modifier
-                        )
                         .clickableNoFocus { onScreenshotTap(index) }
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {

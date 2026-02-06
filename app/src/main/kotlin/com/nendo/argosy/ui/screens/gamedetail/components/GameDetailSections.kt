@@ -375,19 +375,15 @@ fun DescriptionSection(
     }
 }
 
-enum class SnapState { TOP, DESCRIPTION, SCREENSHOTS, ACHIEVEMENTS }
-
 @Composable
 fun ScreenshotsSection(
     screenshots: List<ScreenshotPair>,
     listState: LazyListState,
-    currentSnapState: SnapState,
     focusedIndex: Int,
     onScreenshotTap: (Int) -> Unit,
     onPositioned: (Int) -> Unit,
     isActive: Boolean = false
 ) {
-    val showFocus = currentSnapState == SnapState.SCREENSHOTS
 
     Column(
         modifier = Modifier.onGloballyPositioned { coords ->
@@ -431,12 +427,6 @@ fun ScreenshotsSection(
             }
         }
 
-        LaunchedEffect(focusedIndex, showFocus) {
-            if (showFocus && screenshots.isNotEmpty()) {
-                listState.animateScrollToItem(focusedIndex.coerceIn(0, screenshots.size - 1))
-            }
-        }
-
         val failedCachePaths = remember { mutableStateMapOf<Int, Boolean>() }
 
         LazyRow(
@@ -444,7 +434,7 @@ fun ScreenshotsSection(
             horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
         ) {
             itemsIndexed(screenshots) { index, screenshot ->
-                val isFocused = showFocus && index == focusedIndex
+                val isFocused = isActive && index == focusedIndex
                 val useRemote = failedCachePaths[index] == true || screenshot.cachedPath == null
                 Box(
                     modifier = Modifier
@@ -485,7 +475,6 @@ fun ScreenshotsSection(
 fun AchievementsSection(
     achievements: List<AchievementUi>,
     listState: LazyListState,
-    currentSnapState: SnapState,
     onPositioned: (Int) -> Unit,
     isActive: Boolean = false
 ) {

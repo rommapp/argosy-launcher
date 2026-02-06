@@ -68,7 +68,6 @@ import com.nendo.argosy.ui.screens.gamedetail.components.GameHeader
 import com.nendo.argosy.ui.screens.gamedetail.components.MenuItemType
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
-import com.nendo.argosy.ui.screens.gamedetail.components.SnapState
 import com.nendo.argosy.ui.components.DiscPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.CorePickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.EmulatorPickerModal
@@ -160,26 +159,7 @@ fun GameDetailScreen(
     val screenshotCount = game?.screenshots?.size ?: 0
     val achievementColumnCount = game?.achievements?.chunked(3)?.size ?: 0
 
-    val snapStates = remember(hasDescription, hasScreenshots, hasAchievements) {
-        buildList {
-            add(SnapState.TOP)
-            if (hasDescription) add(SnapState.DESCRIPTION)
-            if (hasScreenshots) add(SnapState.SCREENSHOTS)
-            if (hasAchievements) add(SnapState.ACHIEVEMENTS)
-        }
-    }
-
-    var currentSnapIndex by remember { mutableIntStateOf(0) }
-
-    fun getSnapTarget(state: SnapState): Int = when (state) {
-        SnapState.TOP -> 0
-        SnapState.DESCRIPTION -> descriptionTopY.coerceAtLeast(0)
-        SnapState.SCREENSHOTS -> screenshotTopY.coerceAtLeast(0)
-        SnapState.ACHIEVEMENTS -> achievementTopY.coerceAtLeast(0)
-    }
-
     LaunchedEffect(uiState.game?.id) {
-        currentSnapIndex = 0
         scrollState.scrollTo(0)
         screenshotListState.scrollToItem(0)
         achievementListState.scrollToItem(0)
@@ -334,7 +314,6 @@ fun GameDetailScreen(
                 scrollState = scrollState,
                 screenshotListState = screenshotListState,
                 achievementListState = achievementListState,
-                currentSnapState = snapStates.getOrElse(currentSnapIndex) { SnapState.TOP },
                 onDescriptionPositioned = { descriptionTopY = it },
                 onScreenshotPositioned = { screenshotTopY = it },
                 onAchievementPositioned = { achievementTopY = it },
@@ -353,7 +332,6 @@ private fun GameDetailContent(
     scrollState: ScrollState,
     screenshotListState: LazyListState,
     achievementListState: LazyListState,
-    currentSnapState: SnapState,
     onDescriptionPositioned: (Int) -> Unit,
     onScreenshotPositioned: (Int) -> Unit,
     onAchievementPositioned: (Int) -> Unit,
@@ -525,7 +503,6 @@ private fun GameDetailContent(
                                 ScreenshotsSection(
                                     screenshots = game.screenshots,
                                     listState = screenshotListState,
-                                    currentSnapState = currentSnapState,
                                     focusedIndex = uiState.focusedScreenshotIndex,
                                     onScreenshotTap = { index -> viewModel.openScreenshotViewer(index) },
                                     onPositioned = { y ->
@@ -541,7 +518,6 @@ private fun GameDetailContent(
                                 AchievementsSection(
                                     achievements = game.achievements,
                                     listState = achievementListState,
-                                    currentSnapState = currentSnapState,
                                     onPositioned = { y ->
                                         achievementTopY = y
                                         onAchievementPositioned(y)

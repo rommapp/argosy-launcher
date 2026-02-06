@@ -51,3 +51,6 @@ Thumbs.db
 .ref/
 .refs/
 .research/
+
+# Wiki (separate repo)
+wiki/

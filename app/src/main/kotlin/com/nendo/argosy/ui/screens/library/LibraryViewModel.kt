@@ -428,23 +428,22 @@ class LibraryViewModel @Inject constructor(
                 }
 
                 _uiState.update { state ->
-                    val currentIds = state.platforms.map { it.id }.toSet()
-                    val newIds = platformUis.map { it.id }.toSet()
-                    val platformsChanged = currentIds != newIds && state.platforms.isNotEmpty()
+                    val currentPlatformId = state.platforms.getOrNull(state.currentPlatformIndex)?.id
 
                     val newPlatformIndex = when {
                         pendingPlatformIndex != null -> pendingPlatformIndex
-                        platformsChanged -> {
-                            val currentPlatformId = state.platforms.getOrNull(state.currentPlatformIndex)?.id
+                        state.currentPlatformIndex < 0 -> state.currentPlatformIndex
+                        state.platforms.isEmpty() -> 0
+                        else -> {
                             currentPlatformId?.let { id ->
                                 platformUis.indexOfFirst { it.id == id }
                             }?.takeIf { it >= 0 } ?: 0
                         }
-                        state.currentPlatformIndex >= platformUis.size -> 0
-                        else -> state.currentPlatformIndex
                     }
 
-                    val newGameIndex = if (platformsChanged) 0 else state.focusedIndex
+                    val platformStillExists = currentPlatformId != null &&
+                        platformUis.any { it.id == currentPlatformId }
+                    val newGameIndex = if (platformStillExists) state.focusedIndex else 0
 
                     state.copy(
                         platforms = platformUis,

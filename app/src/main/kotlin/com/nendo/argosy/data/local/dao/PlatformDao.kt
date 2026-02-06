@@ -26,6 +26,9 @@ interface PlatformDao {
     @Query("SELECT * FROM platforms WHERE slug = :slug")
     suspend fun getAllBySlug(slug: String): List<PlatformEntity>
 
+    @Query("SELECT * FROM platforms WHERE slug IN (:slugs)")
+    suspend fun getAllBySlugs(slugs: Collection<String>): List<PlatformEntity>
+
     @Query("SELECT * FROM platforms WHERE gameCount > 0 AND isVisible = 1 AND syncEnabled = 1 ORDER BY sortOrder ASC, name ASC")
     fun observePlatformsWithGames(): Flow<List<PlatformEntity>>
 

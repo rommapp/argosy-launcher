@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.sync
 
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.SyncResult
 import com.nendo.argosy.ui.notification.NotificationManager
@@ -33,13 +34,15 @@ class SyncPlatformUseCase @Inject constructor(
 
         val platform = platformDao.getById(platformId)
         val allPlatforms = if (platform != null) {
-            platformDao.getAllBySlug(platform.slug)
+            val relatedSlugs = PlatformDefinitions.getSlugsForCanonical(platform.slug)
+            platformDao.getAllBySlugs(relatedSlugs)
         } else {
             listOf(platform).filterNotNull()
         }
 
         val platformIds = allPlatforms.map { it.id }
-        Logger.info(TAG, "invoke: syncing ${platformIds.size} platform(s) with slug '${platform?.slug}': $platformIds")
+        val canonicalSlug = platform?.slug?.let { PlatformDefinitions.getCanonicalSlug(it) }
+        Logger.info(TAG, "invoke: syncing ${platformIds.size} platform(s) for canonical slug '$canonicalSlug': $platformIds")
 
         notificationManager.showPersistent(
             title = "Syncing $platformName",

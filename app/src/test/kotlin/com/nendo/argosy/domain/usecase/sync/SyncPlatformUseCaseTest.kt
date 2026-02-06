@@ -47,7 +47,7 @@ class SyncPlatformUseCaseTest {
 
         val defaultPlatform = createPlatformEntity(123L)
         coEvery { platformDao.getById(any()) } returns defaultPlatform
-        coEvery { platformDao.getAllBySlug(any()) } returns listOf(defaultPlatform)
+        coEvery { platformDao.getAllBySlugs(any()) } returns listOf(defaultPlatform)
     }
 
     @Test
@@ -91,7 +91,7 @@ class SyncPlatformUseCaseTest {
     fun `invoke calls syncPlatform with local platform ID`() = runTest {
         val localPlatform = createPlatformEntity(-1L, "android")
         coEvery { platformDao.getById(-1L) } returns localPlatform
-        coEvery { platformDao.getAllBySlug("android") } returns listOf(localPlatform)
+        coEvery { platformDao.getAllBySlugs(any()) } returns listOf(localPlatform)
         every { romMRepository.isConnected() } returns true
         coEvery { romMRepository.syncPlatform(-1L) } returns SyncResult(1, 5, 2, 0, emptyList())
 
@@ -199,5 +199,43 @@ class SyncPlatformUseCaseTest {
                 type = NotificationType.ERROR
             )
         }
+    }
+
+    @Test
+    fun `invoke syncs all platforms with related slugs for arcade`() = runTest {
+        val arcadePlatform = createPlatformEntity(35L, "arcade")
+        val mamePlatform = createPlatformEntity(36L, "mame")
+        val fbneoPlatform = createPlatformEntity(37L, "fbneo")
+
+        coEvery { platformDao.getById(35L) } returns arcadePlatform
+        coEvery { platformDao.getAllBySlugs(any()) } returns listOf(arcadePlatform, mamePlatform, fbneoPlatform)
+        every { romMRepository.isConnected() } returns true
+        coEvery { romMRepository.syncPlatform(any()) } returns SyncResult(1, 5, 2, 0, emptyList())
+
+        val result = useCase(35L, "Arcade")
+
+        coVerify { romMRepository.syncPlatform(35L) }
+        coVerify { romMRepository.syncPlatform(36L) }
+        coVerify { romMRepository.syncPlatform(37L) }
+        assertTrue(result is SyncPlatformResult.Success)
+        assertEquals(15, (result as SyncPlatformResult.Success).result.gamesAdded)
+    }
+
+    @Test
+    fun `invoke syncs all platforms when starting from mame slug`() = runTest {
+        val arcadePlatform = createPlatformEntity(35L, "arcade")
+        val mamePlatform = createPlatformEntity(36L, "mame")
+
+        coEvery { platformDao.getById(36L) } returns mamePlatform
+        coEvery { platformDao.getAllBySlugs(any()) } returns listOf(arcadePlatform, mamePlatform)
+        every { romMRepository.isConnected() } returns true
+        coEvery { romMRepository.syncPlatform(any()) } returns SyncResult(1, 3, 1, 0, emptyList())
+
+        val result = useCase(36L, "MAME")
+
+        coVerify { romMRepository.syncPlatform(35L) }
+        coVerify { romMRepository.syncPlatform(36L) }
+        assertTrue(result is SyncPlatformResult.Success)
+        assertEquals(6, (result as SyncPlatformResult.Success).result.gamesAdded)
     }
 }

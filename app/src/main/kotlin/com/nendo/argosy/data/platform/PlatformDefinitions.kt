@@ -553,6 +553,12 @@ object PlatformDefinitions {
         return slugAliases[lower] ?: lower
     }
 
+    fun getSlugsForCanonical(slug: String): Set<String> {
+        val canonical = getCanonicalSlug(slug)
+        val aliases = slugAliases.filterValues { it == canonical }.keys
+        return aliases + canonical
+    }
+
     fun getPlatformsForExtension(extension: String): List<PlatformDef> =
         extensionMap[extension.lowercase()] ?: emptyList()
 

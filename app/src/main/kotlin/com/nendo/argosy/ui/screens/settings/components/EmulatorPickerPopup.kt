@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
@@ -20,11 +21,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +40,9 @@ import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.screens.settings.EmulatorDownloadState
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
+import com.nendo.argosy.ui.screens.settings.EmulatorUpdateInfo
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -172,14 +179,35 @@ fun EmulatorPickerPopup(
                         is PickerItem.InstalledItem -> {
                             val isTouchSelected = selectedIndex == item.itemIndex
                             val isCurrentEmulator = item.emulator.def.displayName == info.selectedEmulatorName
+                            val updateInfo = info.updates[item.emulator.def.id]
+                            val isDownloading = info.downloadingEmulatorId == item.emulator.def.id
+                            val downloadState = if (isDownloading) info.downloadState else EmulatorDownloadState.Idle
+                            val isDisabled = info.downloadState !is EmulatorDownloadState.Idle && !isDownloading
+
+                            val subtitle = when {
+                                downloadState is EmulatorDownloadState.Downloading ->
+                                    "Downloading ${(downloadState.progress * 100).toInt()}%"
+                                downloadState is EmulatorDownloadState.WaitingForInstall ->
+                                    "Installing..."
+                                downloadState is EmulatorDownloadState.Failed ->
+                                    "Download error"
+                                updateInfo != null ->
+                                    "${updateInfo.currentVersion ?: "?"} -> ${updateInfo.latestVersion}"
+                                else ->
+                                    "Installed" + (item.emulator.versionName?.let { " - v$it" } ?: "")
+                            }
+
                             EmulatorPickerItem(
                                 name = item.emulator.def.displayName,
-                                subtitle = "Installed" + (item.emulator.versionName?.let { " - v$it" } ?: ""),
+                                subtitle = subtitle,
                                 isFocused = isFocused(item),
                                 isTouchSelected = isTouchSelected,
                                 isCurrentEmulator = isCurrentEmulator,
                                 isDownload = false,
-                                onClick = { onItemTap(item.itemIndex) }
+                                hasUpdate = updateInfo != null,
+                                downloadState = downloadState,
+                                isDisabled = isDisabled,
+                                onClick = { if (!isDisabled) onItemTap(item.itemIndex) }
                             )
                         }
 
@@ -233,10 +261,23 @@ private fun EmulatorPickerItem(
     isTouchSelected: Boolean,
     isCurrentEmulator: Boolean,
     isDownload: Boolean,
+    hasUpdate: Boolean = false,
+    downloadState: EmulatorDownloadState = EmulatorDownloadState.Idle,
+    isDisabled: Boolean = false,
     onClick: () -> Unit
 ) {
-    val isHighlighted = isFocused || isTouchSelected
-    Row(
+    val isHighlighted = (isFocused || isTouchSelected) && !isDisabled
+    val isDownloading = downloadState is EmulatorDownloadState.Downloading
+    val isFailed = downloadState is EmulatorDownloadState.Failed
+
+    val contentAlpha = if (isDisabled) 0.5f else 1f
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = if (downloadState is EmulatorDownloadState.Downloading) downloadState.progress else 0f,
+        label = "download_progress"
+    )
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
@@ -247,39 +288,73 @@ private fun EmulatorPickerItem(
                     else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 }
             )
-            .clickableNoFocus(onClick = onClick)
-            .padding(Dimens.spacingMd),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .clickableNoFocus(enabled = !isDisabled, onClick = onClick)
     ) {
-        Column {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.spacingMd),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = (if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurface).copy(alpha = contentAlpha)
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when {
+                        isFailed -> MaterialTheme.colorScheme.error
+                        isHighlighted -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f * contentAlpha)
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
+                    }
+                )
+            }
+
+            when {
+                isFailed -> Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+                isCurrentEmulator && !hasUpdate -> Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = (if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
+                           else MaterialTheme.colorScheme.primary).copy(alpha = contentAlpha),
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+                hasUpdate -> Icon(
+                    imageVector = Icons.Default.SystemUpdate,
+                    contentDescription = "Update available",
+                    tint = (if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
+                           else MaterialTheme.colorScheme.tertiary).copy(alpha = contentAlpha),
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+                isDownload -> Icon(
+                    imageVector = Icons.Default.Cloud,
+                    contentDescription = null,
+                    tint = (if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
+                           else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)).copy(alpha = contentAlpha),
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
         }
-        when {
-            isCurrentEmulator -> Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
-                       else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(Dimens.iconSm)
-            )
-            isDownload -> Icon(
-                imageVector = Icons.Default.Cloud,
-                contentDescription = null,
-                tint = if (isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
-                       else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                modifier = Modifier.size(Dimens.iconSm)
+
+        if (isDownloading) {
+            LinearProgressIndicator(
+                progress = { animatedProgress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(Dimens.spacingXs)
+                    .clip(RoundedCornerShape(bottomStart = Dimens.radiusMd, bottomEnd = Dimens.radiusMd)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         }
     }

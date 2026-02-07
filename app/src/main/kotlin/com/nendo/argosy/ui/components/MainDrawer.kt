@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.FeaturedPlayList
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -54,13 +55,16 @@ fun MainDrawer(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val footerIndex = items.size
+    val isFooterFocused = focusedIndex == footerIndex && drawerState.emulatorUpdatesAvailable > 0
+
     ModalDrawerSheet(modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(vertical = Dimens.spacingLg)
         ) {
-            DrawerStatusBar()
+            DrawerStatusBar(isRommConnected = drawerState.rommConnected)
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.radiusLg),
                 color = MaterialTheme.colorScheme.outlineVariant
@@ -101,19 +105,33 @@ fun MainDrawer(
                 }
             }
 
-            RomMStatusFooter(isConnected = drawerState.rommConnected)
+            if (drawerState.emulatorUpdatesAvailable > 0) {
+                EmulatorUpdateFooter(
+                    updateCount = drawerState.emulatorUpdatesAvailable,
+                    isFocused = isFooterFocused,
+                    onClick = { onNavigate(Screen.Settings.createRoute(section = "emulators")) }
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun DrawerStatusBar() {
+private fun DrawerStatusBar(isRommConnected: Boolean) {
+    val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        Icon(
+            imageVector = if (isRommConnected) Icons.Default.Cloud else Icons.Default.CloudOff,
+            contentDescription = if (isRommConnected) "RomM Connected" else "RomM Offline",
+            tint = mutedColor,
+            modifier = Modifier.size(Dimens.iconSm)
+        )
         SystemStatusBar(
             contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
@@ -121,25 +139,54 @@ private fun DrawerStatusBar() {
 }
 
 @Composable
-private fun RomMStatusFooter(isConnected: Boolean) {
-    val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+private fun EmulatorUpdateFooter(
+    updateCount: Int,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+
+    val contentColor = if (isFocused) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+    }
+
+    val indicatorWidth = if (isFocused) Dimens.spacingXs else 0.dp
+    val shape = RoundedCornerShape(topEnd = Dimens.radiusMd, bottomEnd = Dimens.radiusMd)
+
     Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            .padding(end = Dimens.spacingMd)
+            .clip(shape)
+            .background(backgroundColor)
+            .clickableNoFocus(onClick = onClick)
     ) {
-        Icon(
-            imageVector = if (isConnected) Icons.Default.Cloud else Icons.Default.CloudOff,
-            contentDescription = null,
-            tint = mutedColor,
-            modifier = Modifier.size(Dimens.iconSm)
+        Box(
+            modifier = Modifier
+                .width(indicatorWidth)
+                .height(Dimens.spacingXxl)
+                .background(MaterialTheme.colorScheme.primary)
         )
+        Spacer(modifier = Modifier.width(if (isFocused) (Dimens.spacingLg - Dimens.spacingXs) else Dimens.spacingLg))
+        Icon(
+            imageVector = Icons.Default.SystemUpdate,
+            contentDescription = "Emulator updates",
+            tint = contentColor
+        )
+        Spacer(modifier = Modifier.width(Dimens.spacingMd))
         Text(
-            text = if (isConnected) "Connected" else "Offline",
-            style = MaterialTheme.typography.labelSmall,
-            color = mutedColor
+            text = "$updateCount emulator update${if (updateCount != 1) "s" else ""}",
+            style = MaterialTheme.typography.titleMedium,
+            color = contentColor,
+            modifier = Modifier.weight(1f)
         )
     }
 }

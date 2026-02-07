@@ -1,11 +1,15 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import com.nendo.argosy.data.emulator.EmulatorDetector
+import com.nendo.argosy.data.emulator.EmulatorDownloadManager
+import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.libretro.LibretroCoreManager
@@ -13,11 +17,15 @@ import com.nendo.argosy.libretro.LibretroCoreRegistry
 import kotlinx.coroutines.flow.Flow
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
+import com.nendo.argosy.ui.screens.settings.EmulatorDownloadState
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
 import com.nendo.argosy.ui.screens.settings.EmulatorSavePathInfo
 import com.nendo.argosy.ui.screens.settings.EmulatorState
+import com.nendo.argosy.ui.screens.settings.EmulatorUpdateInfo
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.SavePathModalInfo
+import com.nendo.argosy.ui.screens.settings.VariantOption
+import com.nendo.argosy.ui.screens.settings.VariantPickerInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +33,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -44,7 +53,9 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val gameDao: GameDao,
     private val coreManager: LibretroCoreManager,
-    private val coreVersionDao: CoreVersionDao
+    private val coreVersionDao: CoreVersionDao,
+    private val emulatorUpdateManager: EmulatorUpdateManager,
+    private val emulatorDownloadManager: EmulatorDownloadManager
 ) {
     private val _state = MutableStateFlow(EmulatorState())
     val state: StateFlow<EmulatorState> = _state.asStateFlow()
@@ -62,21 +73,36 @@ class EmulatorSettingsDelegate @Inject constructor(
         _state.value = newState
     }
 
-    fun showEmulatorPicker(config: PlatformEmulatorConfig) {
-        _state.update {
-            it.copy(
-                showEmulatorPicker = true,
-                emulatorPickerInfo = EmulatorPickerInfo(
-                    platformId = config.platform.id,
-                    platformSlug = config.platform.slug,
-                    platformName = config.platform.name,
-                    installedEmulators = config.availableEmulators,
-                    downloadableEmulators = config.downloadableEmulators,
-                    selectedEmulatorName = config.selectedEmulator
-                ),
-                emulatorPickerFocusIndex = 0,
-                emulatorPickerSelectedIndex = null
-            )
+    fun showEmulatorPicker(config: PlatformEmulatorConfig, scope: CoroutineScope) {
+        scope.launch {
+            val updates = emulatorUpdateManager.getUpdatesForPlatform(config.platform.slug)
+            val updateMap = updates.associate { update ->
+                update.emulatorId to EmulatorUpdateInfo(
+                    emulatorId = update.emulatorId,
+                    currentVersion = update.installedVersion,
+                    latestVersion = update.latestVersion,
+                    downloadUrl = update.downloadUrl,
+                    assetName = update.assetName,
+                    assetSize = update.assetSize
+                )
+            }
+
+            _state.update {
+                it.copy(
+                    showEmulatorPicker = true,
+                    emulatorPickerInfo = EmulatorPickerInfo(
+                        platformId = config.platform.id,
+                        platformSlug = config.platform.slug,
+                        platformName = config.platform.name,
+                        installedEmulators = config.availableEmulators,
+                        downloadableEmulators = config.downloadableEmulators,
+                        selectedEmulatorName = config.selectedEmulator,
+                        updates = updateMap
+                    ),
+                    emulatorPickerFocusIndex = 0,
+                    emulatorPickerSelectedIndex = null
+                )
+            }
         }
         soundManager.play(SoundType.OPEN_MODAL)
     }
@@ -152,6 +178,8 @@ class EmulatorSettingsDelegate @Inject constructor(
             val hasInstalled = installedCount > 0
             val downloadBaseIndex = if (hasInstalled) 1 + installedCount else 0
 
+            if (info.downloadState !is EmulatorDownloadState.Idle) return@launch
+
             when {
                 hasInstalled && focusIndex == 0 -> {
                     onSetEmulator(info.platformId, info.platformSlug, null)
@@ -160,9 +188,20 @@ class EmulatorSettingsDelegate @Inject constructor(
                 }
                 hasInstalled && focusIndex in 1..installedCount -> {
                     val emulator = info.installedEmulators[focusIndex - 1]
-                    onSetEmulator(info.platformId, info.platformSlug, emulator)
-                    dismissEmulatorPicker()
-                    onLoadSettings()
+                    val updateInfo = info.updates[emulator.def.id]
+
+                    if (updateInfo != null) {
+                        downloadEmulatorUpdate(
+                            emulatorId = updateInfo.emulatorId,
+                            downloadUrl = updateInfo.downloadUrl,
+                            assetName = updateInfo.assetName,
+                            variant = null
+                        )
+                    } else {
+                        onSetEmulator(info.platformId, info.platformSlug, emulator)
+                        dismissEmulatorPicker()
+                        onLoadSettings()
+                    }
                 }
                 focusIndex >= downloadBaseIndex -> {
                     val downloadIndex = focusIndex - downloadBaseIndex
@@ -401,4 +440,121 @@ class EmulatorSettingsDelegate @Inject constructor(
         }
     }
 
+    fun observeEmulatorUpdateCount(): Flow<Int> = emulatorUpdateManager.updateCount
+
+    fun observeDownloadProgress() = emulatorDownloadManager.downloadProgress
+
+    fun updateEmulatorUpdatesAvailable(count: Int) {
+        _state.update { it.copy(emulatorUpdatesAvailable = count) }
+    }
+
+    fun updatePlatformUpdatesAvailable(platformUpdates: Map<String, Int>) {
+        _state.update { it.copy(platformUpdatesAvailable = platformUpdates) }
+    }
+
+    fun checkForEmulatorUpdates(scope: CoroutineScope) {
+        scope.launch {
+            emulatorUpdateManager.checkForUpdates()
+        }
+    }
+
+    fun downloadEmulatorUpdate(
+        emulatorId: String,
+        downloadUrl: String,
+        assetName: String,
+        variant: String?
+    ) {
+        if (!emulatorDownloadManager.canInstallPackages()) {
+            emulatorDownloadManager.openInstallPermissionSettings()
+            return
+        }
+
+        emulatorDownloadManager.downloadAndInstall(
+            emulatorId = emulatorId,
+            downloadUrl = downloadUrl,
+            assetName = assetName,
+            variant = variant
+        )
+
+        _state.update { state ->
+            val info = state.emulatorPickerInfo ?: return@update state
+            state.copy(
+                emulatorPickerInfo = info.copy(
+                    downloadState = EmulatorDownloadState.Downloading(0f),
+                    downloadingEmulatorId = emulatorId
+                )
+            )
+        }
+    }
+
+    fun updatePickerDownloadState(emulatorId: String?, downloadState: EmulatorDownloadState) {
+        _state.update { state ->
+            val info = state.emulatorPickerInfo ?: return@update state
+            state.copy(
+                emulatorPickerInfo = info.copy(
+                    downloadState = downloadState,
+                    downloadingEmulatorId = emulatorId
+                )
+            )
+        }
+    }
+
+    fun showVariantPicker(
+        emulatorId: String,
+        emulatorName: String,
+        variants: List<VariantOption>
+    ) {
+        _state.update {
+            it.copy(
+                showVariantPicker = true,
+                variantPickerInfo = VariantPickerInfo(
+                    emulatorId = emulatorId,
+                    emulatorName = emulatorName,
+                    variants = variants
+                ),
+                variantPickerFocusIndex = 0
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissVariantPicker() {
+        _state.update {
+            it.copy(
+                showVariantPicker = false,
+                variantPickerInfo = null,
+                variantPickerFocusIndex = 0
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveVariantPickerFocus(delta: Int) {
+        _state.update { state ->
+            val info = state.variantPickerInfo ?: return@update state
+            val maxIndex = (info.variants.size - 1).coerceAtLeast(0)
+            val newIndex = (state.variantPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            state.copy(variantPickerFocusIndex = newIndex)
+        }
+    }
+
+    fun selectVariant() {
+        val state = _state.value
+        val info = state.variantPickerInfo ?: return
+        val variant = info.variants.getOrNull(state.variantPickerFocusIndex) ?: return
+
+        dismissVariantPicker()
+
+        downloadEmulatorUpdate(
+            emulatorId = info.emulatorId,
+            downloadUrl = variant.downloadUrl,
+            assetName = variant.assetName,
+            variant = variant.variant
+        )
+    }
+
+    suspend fun getUpdatesForPlatform(platformSlug: String): List<EmulatorUpdateEntity> {
+        return emulatorUpdateManager.getUpdatesForPlatform(platformSlug)
+    }
 }
+

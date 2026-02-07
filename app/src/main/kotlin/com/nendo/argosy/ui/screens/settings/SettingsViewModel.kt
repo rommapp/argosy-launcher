@@ -332,6 +332,18 @@ class SettingsViewModel @Inject constructor(
             emulatorDelegate.updateCoreUpdatesAvailable(count)
         }.launchIn(viewModelScope)
 
+        emulatorDelegate.observeEmulatorUpdateCount().onEach { count ->
+            emulatorDelegate.updateEmulatorUpdatesAvailable(count)
+        }.launchIn(viewModelScope)
+
+        emulatorDelegate.observeDownloadProgress().onEach { progress ->
+            if (progress != null) {
+                emulatorDelegate.updatePickerDownloadState(progress.emulatorId, progress.state)
+            } else {
+                emulatorDelegate.updatePickerDownloadState(null, EmulatorDownloadState.Idle)
+            }
+        }.launchIn(viewModelScope)
+
         serverDelegate.state.onEach { server ->
             _uiState.update { it.copy(server = server) }
         }.launchIn(viewModelScope)
@@ -739,11 +751,25 @@ class SettingsViewModel @Inject constructor(
 
     fun showEmulatorPicker(config: PlatformEmulatorConfig) {
         if (config.availableEmulators.isEmpty() && config.downloadableEmulators.isEmpty()) return
-        emulatorDelegate.showEmulatorPicker(config)
+        emulatorDelegate.showEmulatorPicker(config, viewModelScope)
     }
 
     fun dismissEmulatorPicker() {
         emulatorDelegate.dismissEmulatorPicker()
+    }
+
+    fun handleVariantPickerItemTap(index: Int) {
+        _uiState.update { state ->
+            state.copy(emulators = state.emulators.copy(variantPickerFocusIndex = index))
+        }
+    }
+
+    fun confirmVariantSelection() {
+        emulatorDelegate.selectVariant()
+    }
+
+    fun dismissVariantPicker() {
+        emulatorDelegate.dismissVariantPicker()
     }
 
     fun navigateToBuiltinVideo() {

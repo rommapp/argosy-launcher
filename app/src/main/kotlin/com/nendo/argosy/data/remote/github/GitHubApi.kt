@@ -4,6 +4,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface GitHubApi {
@@ -14,6 +15,19 @@ interface GitHubApi {
     @GET("repos/nendotools/argosy-launcher/releases")
     suspend fun getReleases(
         @Query("per_page") perPage: Int = 10
+    ): Response<List<GitHubRelease>>
+
+    @GET("repos/{owner}/{repo}/releases/latest")
+    suspend fun getRepoLatestRelease(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<GitHubRelease>
+
+    @GET("repos/{owner}/{repo}/releases")
+    suspend fun getRepoReleases(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 5
     ): Response<List<GitHubRelease>>
 }
 

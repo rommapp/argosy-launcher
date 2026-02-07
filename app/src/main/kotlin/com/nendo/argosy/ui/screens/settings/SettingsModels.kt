@@ -87,13 +87,46 @@ data class PlatformEmulatorConfig(
     val showExtensionSelection: Boolean get() = extensionOptions.isNotEmpty()
 }
 
+data class EmulatorUpdateInfo(
+    val emulatorId: String,
+    val currentVersion: String?,
+    val latestVersion: String,
+    val downloadUrl: String,
+    val assetName: String,
+    val assetSize: Long
+)
+
+sealed class EmulatorDownloadState {
+    data object Idle : EmulatorDownloadState()
+    data class Downloading(val progress: Float) : EmulatorDownloadState()
+    data object WaitingForInstall : EmulatorDownloadState()
+    data object Installed : EmulatorDownloadState()
+    data class Failed(val message: String) : EmulatorDownloadState()
+}
+
 data class EmulatorPickerInfo(
     val platformId: Long,
     val platformSlug: String,
     val platformName: String,
     val installedEmulators: List<InstalledEmulator>,
     val downloadableEmulators: List<EmulatorDef>,
-    val selectedEmulatorName: String?
+    val selectedEmulatorName: String?,
+    val updates: Map<String, EmulatorUpdateInfo> = emptyMap(),
+    val downloadState: EmulatorDownloadState = EmulatorDownloadState.Idle,
+    val downloadingEmulatorId: String? = null
+)
+
+data class VariantOption(
+    val assetName: String,
+    val downloadUrl: String,
+    val fileSize: Long,
+    val variant: String
+)
+
+data class VariantPickerInfo(
+    val emulatorId: String,
+    val emulatorName: String,
+    val variants: List<VariantOption>
 )
 
 data class CorePickerInfo(
@@ -205,7 +238,12 @@ data class EmulatorState(
     val installedCoreCount: Int = 0,
     val totalCoreCount: Int = 0,
     val coreUpdatesAvailable: Int = 0,
-    val builtinLibretroEnabled: Boolean = true
+    val builtinLibretroEnabled: Boolean = true,
+    val emulatorUpdatesAvailable: Int = 0,
+    val platformUpdatesAvailable: Map<String, Int> = emptyMap(),
+    val showVariantPicker: Boolean = false,
+    val variantPickerInfo: VariantPickerInfo? = null,
+    val variantPickerFocusIndex: Int = 0
 )
 
 data class PlatformContext(

@@ -5,6 +5,7 @@ import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.DefaultView
@@ -57,7 +58,8 @@ data class ArgosyUiState(
 data class DrawerState(
     val rommConnected: Boolean = false,
     val rommConnecting: Boolean = false,
-    val downloadCount: Int = 0
+    val downloadCount: Int = 0,
+    val emulatorUpdatesAvailable: Int = 0
 )
 
 data class QuickSettingsUiState(
@@ -102,7 +104,8 @@ class ArgosyViewModel @Inject constructor(
     private val playSessionTracker: PlaySessionTracker,
     private val saveSyncRepository: SaveSyncRepository,
     private val gameDao: GameDao,
-    private val libretroMigrationUseCase: LibretroMigrationUseCase
+    private val libretroMigrationUseCase: LibretroMigrationUseCase,
+    private val emulatorUpdateManager: EmulatorUpdateManager
 ) : ViewModel() {
 
     private val contentResolver get() = application.contentResolver
@@ -154,6 +157,7 @@ class ArgosyViewModel @Inject constructor(
             if (ready) {
                 syncCollectionsOnStartup()
                 runBuiltinEmulatorMigration()
+                emulatorUpdateManager.checkIfNeeded()
             } else {
                 android.util.Log.w("ArgosyViewModel", "Storage not ready after timeout, scheduling retry")
                 kotlinx.coroutines.delay(30_000L)
@@ -227,13 +231,15 @@ class ArgosyViewModel @Inject constructor(
 
     val drawerUiState: StateFlow<DrawerState> = combine(
         romMRepository.connectionState,
-        downloadManager.state
-    ) { connection, downloads ->
+        downloadManager.state,
+        emulatorUpdateManager.updateCount
+    ) { connection, downloads, emulatorUpdates ->
         val downloadCount = downloads.activeDownloads.size + downloads.queue.size
         DrawerState(
             rommConnected = connection is RomMRepository.ConnectionState.Connected,
             rommConnecting = connection is RomMRepository.ConnectionState.Connecting,
-            downloadCount = downloadCount
+            downloadCount = downloadCount,
+            emulatorUpdatesAvailable = emulatorUpdates
         )
     }.stateIn(
         scope = viewModelScope,
@@ -283,6 +289,12 @@ class ArgosyViewModel @Inject constructor(
         onNavigate: (String) -> Unit,
         onDismiss: () -> Unit
     ): InputHandler = object : InputHandler {
+        private val hasUpdateFooter: Boolean
+            get() = drawerUiState.value.emulatorUpdatesAvailable > 0
+
+        private val footerIndex: Int
+            get() = drawerItems.size
+
         override fun onUp(): InputResult {
             return if (_drawerFocusIndex.value > 0) {
                 _drawerFocusIndex.update { it - 1 }
@@ -293,7 +305,8 @@ class ArgosyViewModel @Inject constructor(
         }
 
         override fun onDown(): InputResult {
-            return if (_drawerFocusIndex.value < drawerItems.lastIndex) {
+            val maxIndex = if (hasUpdateFooter) footerIndex else drawerItems.lastIndex
+            return if (_drawerFocusIndex.value < maxIndex) {
                 _drawerFocusIndex.update { it + 1 }
                 InputResult.HANDLED
             } else {
@@ -305,7 +318,12 @@ class ArgosyViewModel @Inject constructor(
         override fun onRight(): InputResult = InputResult.UNHANDLED
 
         override fun onConfirm(): InputResult {
-            onNavigate(drawerItems[_drawerFocusIndex.value].route)
+            val currentIndex = _drawerFocusIndex.value
+            if (hasUpdateFooter && currentIndex == footerIndex) {
+                onNavigate(Screen.Settings.createRoute(section = "emulators"))
+            } else if (currentIndex < drawerItems.size) {
+                onNavigate(drawerItems[currentIndex].route)
+            }
             return InputResult.HANDLED
         }
 

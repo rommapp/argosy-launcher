@@ -14,6 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -40,6 +45,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
 import com.nendo.argosy.ui.screens.settings.components.SavePathModal
+import com.nendo.argosy.ui.screens.settings.components.VariantPickerModal
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
@@ -134,7 +140,7 @@ fun EmulatorsSection(
         uiState.focusedIndex == layout.focusIndexOf(item, layoutState)
 
     val modalBlur by animateDpAsState(
-        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "emulatorPickerBlur"
     )
@@ -222,10 +228,12 @@ fun EmulatorsSection(
 
                     is EmulatorsItem.PlatformItem -> {
                         val itemFocused = isFocused(item)
+                        val updateCount = emulators.platformUpdatesAvailable[item.config.platform.slug] ?: 0
                         PlatformEmulatorItem(
                             config = item.config,
                             isFocused = itemFocused,
                             subFocusIndex = if (itemFocused) emulators.platformSubFocusIndex else 0,
+                            updateCount = updateCount,
                             onEmulatorClick = { viewModel.handlePlatformItemTap(item.index) },
                             onCycleCore = { direction -> viewModel.cycleCoreForPlatform(item.config, direction) },
                             onExtensionChange = { extension -> viewModel.changeExtensionForPlatform(item.config, extension) },
@@ -259,6 +267,16 @@ fun EmulatorsSection(
                 }
             )
         }
+
+        if (emulators.showVariantPicker && emulators.variantPickerInfo != null) {
+            VariantPickerModal(
+                info = emulators.variantPickerInfo,
+                focusIndex = emulators.variantPickerFocusIndex,
+                onItemTap = { index -> viewModel.handleVariantPickerItemTap(index) },
+                onConfirm = { viewModel.confirmVariantSelection() },
+                onDismiss = { viewModel.dismissVariantPicker() }
+            )
+        }
     }
 }
 
@@ -267,6 +285,7 @@ private fun PlatformEmulatorItem(
     config: PlatformEmulatorConfig,
     isFocused: Boolean,
     subFocusIndex: Int,
+    updateCount: Int = 0,
     onEmulatorClick: () -> Unit,
     onCycleCore: (Int) -> Unit,
     onExtensionChange: (String) -> Unit,
@@ -305,12 +324,26 @@ private fun PlatformEmulatorItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = config.platform.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = contentColor
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    Text(
+                        text = config.platform.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = contentColor
+                    )
+                    if (updateCount > 0) {
+                        Icon(
+                            imageVector = Icons.Default.SystemUpdate,
+                            contentDescription = "$updateCount update${if (updateCount > 1) "s" else ""} available",
+                            tint = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+                                   else MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(Dimens.iconSm)
+                        )
+                    }
+                }
                 Text(
                     text = if (config.hasInstalledEmulators) "${config.availableEmulators.size} emulators available" else "No emulators installed",
                     style = MaterialTheme.typography.bodySmall,

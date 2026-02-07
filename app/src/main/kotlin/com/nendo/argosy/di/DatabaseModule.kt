@@ -14,6 +14,7 @@ import com.nendo.argosy.data.local.dao.HotkeyDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
+import com.nendo.argosy.data.local.dao.EmulatorUpdateDao
 import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -119,7 +120,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_68_69,
                 ALauncherDatabase.MIGRATION_69_70,
                 ALauncherDatabase.MIGRATION_70_71,
-                ALauncherDatabase.MIGRATION_71_72
+                ALauncherDatabase.MIGRATION_71_72,
+                ALauncherDatabase.MIGRATION_72_73
             )
             .build()
     }
@@ -224,4 +226,8 @@ object DatabaseModule {
     @Provides
     fun providePlatformLibretroSettingsDao(database: ALauncherDatabase): PlatformLibretroSettingsDao =
         database.platformLibretroSettingsDao()
+
+    @Provides
+    fun provideEmulatorUpdateDao(database: ALauncherDatabase): EmulatorUpdateDao =
+        database.emulatorUpdateDao()
 }

@@ -12,6 +12,7 @@ data class EmulatorDef(
     val launchAction: String = Intent.ACTION_VIEW,
     val launchConfig: LaunchConfig = LaunchConfig.FileUri,
     val downloadUrl: String? = null,
+    val githubRepo: String? = null,
     val packagePatterns: List<String> = emptyList()
 )
 
@@ -191,7 +192,8 @@ object EmulatorRegistry {
             packageName = "info.cemu.cemu",
             displayName = "Cemu",
             supportedPlatforms = setOf("wiiu"),
-            downloadUrl = "https://github.com/SSimco/Cemu/releases"
+            downloadUrl = "https://github.com/SSimco/Cemu/releases",
+            githubRepo = "SSimco/Cemu"
         ),
         // NOTE: Dual-screen fork uses same package name as official Cemu - only one can be installed
         EmulatorDef(
@@ -199,7 +201,8 @@ object EmulatorRegistry {
             packageName = "info.cemu.cemu",
             displayName = "Cemu (Dual Screen)",
             supportedPlatforms = setOf("wiiu"),
-            downloadUrl = "https://github.com/SapphireRhodonite/Cemu/releases"
+            downloadUrl = "https://github.com/SapphireRhodonite/Cemu/releases",
+            githubRepo = "SapphireRhodonite/Cemu"
         ),
         // NOTE: Original Citra is discontinued - use Azahar or Borked3DS instead
         EmulatorDef(
@@ -221,7 +224,8 @@ object EmulatorRegistry {
                 activityClass = "org.citra.emu.ui.EmulationActivity",
                 intentExtras = mapOf("GamePath" to ExtraValue.FilePath)
             ),
-            downloadUrl = "https://github.com/weihuoya/citra/releases"
+            downloadUrl = "https://github.com/weihuoya/citra/releases",
+            githubRepo = "weihuoya/citra"
         ),
         // NOTE: Azahar took over Lime3DS development, keeping the same package name
         // Uses Citra's internal namespace for activities
@@ -234,7 +238,8 @@ object EmulatorRegistry {
                 activityClass = "org.citra.citra_emu.activities.EmulationActivity",
                 intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
             ),
-            downloadUrl = "https://github.com/azahar-emu/azahar/releases"
+            downloadUrl = "https://github.com/azahar-emu/azahar/releases",
+            githubRepo = "azahar-emu/azahar"
         ),
         // NOTE: AzaharPlus is a fork of Azahar that restores .3ds file support
         EmulatorDef(
@@ -246,7 +251,8 @@ object EmulatorRegistry {
                 activityClass = "org.citra.citra_emu.activities.EmulationActivity",
                 intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
             ),
-            downloadUrl = "https://github.com/AzaharPlus/AzaharPlus/releases"
+            downloadUrl = "https://github.com/AzaharPlus/AzaharPlus/releases",
+            githubRepo = "AzaharPlus/AzaharPlus"
         ),
         EmulatorDef(
             id = "borked3ds",
@@ -256,7 +262,8 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "io.github.borked3ds.android.activities.EmulationActivity"
             ),
-            downloadUrl = "https://github.com/Borked3DS/Borked3DS/releases"
+            downloadUrl = "https://github.com/Borked3DS/Borked3DS/releases",
+            githubRepo = "Borked3DS/Borked3DS"
         ),
         EmulatorDef(
             id = "yuzu",
@@ -281,7 +288,8 @@ object EmulatorRegistry {
             packageName = "dev.eden.eden_emulator",
             displayName = "Eden",
             supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/eden-emulator/Releases/releases"
+            downloadUrl = "https://github.com/eden-emulator/Releases/releases",
+            githubRepo = "eden-emulator/Releases"
         ),
         EmulatorDef(
             id = "strato",
@@ -302,7 +310,8 @@ object EmulatorRegistry {
             packageName = "org.kenjinx.android",
             displayName = "Kenji-NX",
             supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://github.com/Kenji-NX/Android-Releases/releases"
+            downloadUrl = "https://github.com/Kenji-NX/Android-Releases/releases",
+            githubRepo = "Kenji-NX/Android-Releases"
         ),
         EmulatorDef(
             id = "sudachi",
@@ -331,7 +340,8 @@ object EmulatorRegistry {
                 activityClass = "me.magnum.melonds.ui.emulator.EmulatorActivity",
                 intentExtras = mapOf("PATH" to ExtraValue.FilePath)
             ),
-            downloadUrl = "https://github.com/rafaelvcaetano/melonDS-android/releases/tag/nightly-release"
+            downloadUrl = "https://github.com/rafaelvcaetano/melonDS-android/releases/tag/nightly-release",
+            githubRepo = "rafaelvcaetano/melonDS-android"
         ),
         EmulatorDef(
             id = "pizza_boy_gba",
@@ -373,7 +383,8 @@ object EmulatorRegistry {
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
-            downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
+            downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases",
+            githubRepo = "Trixarian/NetherSX2-patch"
         ),
         // AetherSX2 is discontinued - shares package with NetherSX2, kept for detection
         EmulatorDef(
@@ -395,14 +406,16 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "kr.co.iefriends.pcsx2.activities.MainActivity"
             ),
-            downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
+            downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases",
+            githubRepo = "ARMSX2/ARMSX2"
         ),
         EmulatorDef(
             id = "pcsx2",
             packageName = "net.pcsx2.emulator",
             displayName = "PCSX2",
             supportedPlatforms = setOf("ps2"),
-            downloadUrl = "https://github.com/PCSX2/pcsx2/releases"
+            downloadUrl = "https://github.com/PCSX2/pcsx2/releases",
+            githubRepo = "PCSX2/pcsx2"
         ),
         EmulatorDef(
             id = "ppsspp",
@@ -433,7 +446,8 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("vita", "psvita"),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Vita3K(),
-            downloadUrl = "https://github.com/Vita3K/Vita3K-Android/releases"
+            downloadUrl = "https://github.com/Vita3K/Vita3K-Android/releases",
+            githubRepo = "Vita3K/Vita3K-Android"
         ),
         EmulatorDef(
             id = "vita3k-zx",
@@ -442,7 +456,8 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("vita", "psvita"),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Vita3K(),
-            downloadUrl = "https://github.com/ikhoeyZX/Vita3K-Android/releases"
+            downloadUrl = "https://github.com/ikhoeyZX/Vita3K-Android/releases",
+            githubRepo = "ikhoeyZX/Vita3K-Android"
         ),
 
         // NOTE: Redream has known Android 13+ issues - explicit activity launches fail
@@ -555,6 +570,8 @@ object EmulatorRegistry {
     fun getById(id: String): EmulatorDef? = emulatorMap[id]
 
     fun getByPackage(packageName: String): EmulatorDef? = packageMap[packageName]
+
+    fun getUpdateCheckable(): List<EmulatorDef> = emulators.filter { it.githubRepo != null }
 
     fun getForPlatform(platformId: String): List<EmulatorDef> {
         val canonical = PlatformDefinitions.getCanonicalSlug(platformId)

@@ -17,6 +17,7 @@ import com.nendo.argosy.data.local.dao.HotkeyDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
+import com.nendo.argosy.data.local.dao.EmulatorUpdateDao
 import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -44,6 +45,7 @@ import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
+import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.FirmwareEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -88,9 +90,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         CheatEntity::class,
         PendingAchievementEntity::class,
         PendingStateSyncEntity::class,
-        PlatformLibretroSettingsEntity::class
+        PlatformLibretroSettingsEntity::class,
+        EmulatorUpdateEntity::class
     ],
-    version = 72,
+    version = 73,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -121,6 +124,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun pendingAchievementDao(): PendingAchievementDao
     abstract fun pendingStateSyncDao(): PendingStateSyncDao
     abstract fun platformLibretroSettingsDao(): PlatformLibretroSettingsDao
+    abstract fun emulatorUpdateDao(): EmulatorUpdateDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -1108,6 +1112,24 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_71_72 = object : Migration(71, 72) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN frame TEXT DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_72_73 = object : Migration(72, 73) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS emulator_updates (
+                        emulatorId TEXT PRIMARY KEY NOT NULL,
+                        latestVersion TEXT NOT NULL,
+                        installedVersion TEXT,
+                        downloadUrl TEXT NOT NULL,
+                        assetName TEXT NOT NULL,
+                        assetSize INTEGER NOT NULL,
+                        checkedAt INTEGER NOT NULL,
+                        installedVariant TEXT,
+                        hasUpdate INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
             }
         }
     }

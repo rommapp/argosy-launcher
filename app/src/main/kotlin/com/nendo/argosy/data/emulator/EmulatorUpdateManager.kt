@@ -47,6 +47,7 @@ class EmulatorUpdateManager @Inject constructor(
     companion object {
         private const val TAG = "EmulatorUpdateManager"
         private val CHECK_INTERVAL = Duration.ofHours(24)
+        private val FORCE_CHECK_COOLDOWN = Duration.ofMinutes(5)
         private val LAST_CHECK_KEY = longPreferencesKey("emulator_update_last_check")
     }
 
@@ -86,8 +87,17 @@ class EmulatorUpdateManager @Inject constructor(
     }
 
     fun forceCheck() {
-        Log.d(TAG, "Force check triggered")
         scope.launch {
+            val lastCheck = getLastCheckTime()
+            val now = Instant.now()
+
+            if (lastCheck != null && Duration.between(lastCheck, now) < FORCE_CHECK_COOLDOWN) {
+                val remaining = FORCE_CHECK_COOLDOWN.minus(Duration.between(lastCheck, now))
+                Log.d(TAG, "Force check on cooldown, ${remaining.toMinutes()}m remaining")
+                return@launch
+            }
+
+            Log.d(TAG, "Force check triggered")
             checkForUpdates(ignoreCache = true)
         }
     }

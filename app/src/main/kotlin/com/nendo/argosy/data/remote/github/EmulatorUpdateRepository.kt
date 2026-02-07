@@ -172,7 +172,25 @@ class EmulatorUpdateRepository @Inject constructor(
             Log.d(TAG, "${emulator.id}: final version: $extractedVersion")
 
             val latestVersion = VersionInfo.parse(extractedVersion)
-            val currentVersionInfo = installedVersion?.let { VersionInfo.parse(it) }
+
+            // If installed version is a commit hash, try to find the associated tag
+            var resolvedInstalledVersion = installedVersion
+            if (installedVersion != null && isCommitHash(installedVersion)) {
+                Log.d(TAG, "${emulator.id}: installed version is commit hash, fetching tags...")
+                val tagsResponse = gitHubApi.getRepoTags(owner, repo)
+                if (tagsResponse.isSuccessful) {
+                    tagsResponse.body()?.let { tags ->
+                        val matchingTag = tags.find { it.commit.sha.startsWith(installedVersion) || installedVersion.startsWith(it.commit.sha.take(7)) }
+                        if (matchingTag != null) {
+                            val tagVersion = VERSION_PATTERN.find(matchingTag.name)?.groupValues?.get(1) ?: matchingTag.name
+                            Log.d(TAG, "${emulator.id}: resolved commit $installedVersion to tag ${matchingTag.name} -> $tagVersion")
+                            resolvedInstalledVersion = tagVersion
+                        }
+                    }
+                }
+            }
+
+            val currentVersionInfo = resolvedInstalledVersion?.let { VersionInfo.parse(it) }
 
             val matchResult = ApkAssetMatcher.matchApk(
                 assets = release.assets,
@@ -188,11 +206,17 @@ class EmulatorUpdateRepository @Inject constructor(
 
             val hasUpdate = when {
                 // No installed version means we can't compare
-                installedVersion == null -> false
+                resolvedInstalledVersion == null -> false
                 // Both have valid semver - use semver comparison
                 currentVersionInfo != null && latestVersion != null -> latestVersion > currentVersionInfo
-                // Fallback: compare normalized strings (different = update available)
-                else -> normalizeVersion(extractedVersion) != normalizeVersion(installedVersion)
+                // If GitHub version couldn't be parsed but installed can, try extracting semver from installed
+                latestVersion != null && currentVersionInfo == null -> {
+                    val extractedInstalled = VERSION_PATTERN.find(resolvedInstalledVersion)?.groupValues?.get(1)
+                    val extractedInfo = extractedInstalled?.let { VersionInfo.parse(it) }
+                    extractedInfo != null && latestVersion > extractedInfo
+                }
+                // Can't compare - skip
+                else -> false
             }
 
             if (hasUpdate) {

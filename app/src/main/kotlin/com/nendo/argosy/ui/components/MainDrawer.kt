@@ -20,8 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.FeaturedPlayList
@@ -40,7 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.DrawerItem
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.DrawerState
@@ -133,10 +133,13 @@ private fun DrawerStatusBar(isRommConnected: Boolean) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Icon(
-            imageVector = if (isRommConnected) Icons.Default.Cloud else Icons.Default.CloudOff,
+            painter = painterResource(
+                if (isRommConnected) R.drawable.ic_romm_connected
+                else R.drawable.ic_romm_disconnected
+            ),
             contentDescription = if (isRommConnected) "RomM Connected" else "RomM Offline",
-            tint = mutedColor,
-            modifier = Modifier.size(Dimens.iconSm)
+            tint = if (isRommConnected) Color.Unspecified else mutedColor,
+            modifier = Modifier.size(Dimens.iconMd)
         )
         SystemStatusBar(
             contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)

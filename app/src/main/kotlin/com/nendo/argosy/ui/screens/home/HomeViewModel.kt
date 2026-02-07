@@ -1189,6 +1189,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun deactivateVideoPreview() {
+        val wasActive = _uiState.value.isVideoPreviewActive || _uiState.value.isVideoPreviewLoading
         _uiState.update {
             it.copy(
                 isVideoPreviewActive = false,
@@ -1196,7 +1197,9 @@ class HomeViewModel @Inject constructor(
                 videoPreviewId = null
             )
         }
-        ambientAudioManager.fadeIn()
+        if (wasActive) {
+            ambientAudioManager.fadeIn()
+        }
     }
 
     private suspend fun refreshRecommendationsIfNeeded() {

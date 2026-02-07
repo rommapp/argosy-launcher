@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.library
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -719,6 +720,7 @@ private fun LibraryGameCard(
     modifier: Modifier = Modifier
 ) {
     val effectiveFocused = isFocused && showFocus
+    val saturation = if (showFocus && !isFocused) 0.4f else null
     GameCard(
         game = HomeGameUi(
             id = game.id,
@@ -739,6 +741,7 @@ private fun LibraryGameCard(
         showPlatformBadge = showPlatformBadge,
         coverPathOverride = coverPathOverride,
         onCoverLoadFailed = onCoverLoadFailed,
+        saturationOverride = saturation,
         modifier = modifier
             .fillMaxWidth()
             .height(cardHeight)
@@ -1321,6 +1324,11 @@ private fun AlphabetSidebar(
         ) {
             itemsIndexed(availableLetters, key = { _, letter -> letter }) { _, letter ->
                 val isActive = letter == currentLetter
+                val scale by animateFloatAsState(
+                    targetValue = if (isActive) 1.5f else 1f,
+                    animationSpec = tween(150),
+                    label = "letterScale"
+                )
                 Text(
                     text = letter,
                     style = MaterialTheme.typography.labelMedium,
@@ -1330,6 +1338,7 @@ private fun AlphabetSidebar(
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                     modifier = Modifier
+                        .graphicsLayer { scaleX = scale; scaleY = scale }
                         .clickableNoFocus { onLetterClick(letter) }
                         .padding(vertical = 4.dp, horizontal = 8.dp)
                 )

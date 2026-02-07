@@ -103,7 +103,8 @@ fun GameCard(
     onCoverLoadFailed: ((gameId: Long, failedPath: String) -> Unit)? = null,
     onCoverLoaded: ((gameId: Long, coverPath: String) -> Unit)? = null,
     scaleOverride: Float? = null,
-    alphaOverride: Float? = null
+    alphaOverride: Float? = null,
+    saturationOverride: Float? = null
 ) {
     val themeConfig = LocalLauncherTheme.current
     val boxArtStyle = LocalBoxArtStyle.current
@@ -123,6 +124,15 @@ fun GameCard(
         animationSpec = Motion.focusSpring,
         label = "alpha"
     )
+
+    val saturation by animateFloatAsState(
+        targetValue = saturationOverride ?: 1f,
+        animationSpec = Motion.focusSpring,
+        label = "saturation"
+    )
+    val saturationColorFilter = if (saturation < 1f) {
+        ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(saturation) })
+    } else null
 
     val outerEffect = boxArtStyle.outerEffect
     val outerEffectRadius = boxArtStyle.outerEffectThicknessPx
@@ -304,6 +314,7 @@ fun GameCard(
                 model = imageData,
                 contentDescription = game.title,
                 contentScale = ContentScale.Crop,
+                colorFilter = saturationColorFilter,
                 modifier = Modifier.fillMaxSize(),
                 onSuccess = {
                     onCoverLoaded?.invoke(game.id, effectiveCoverPath)

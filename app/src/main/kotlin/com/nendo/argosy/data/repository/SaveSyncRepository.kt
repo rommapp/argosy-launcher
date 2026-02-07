@@ -1279,6 +1279,49 @@ class SaveSyncRepository @Inject constructor(
         )
     }
 
+    suspend fun scanAndQueueLocalChanges(): Int = withContext(Dispatchers.IO) {
+        val downloadedGames = gameDao.getGamesWithLocalPath().filter { it.rommId != null }
+        var queued = 0
+
+        for (game in downloadedGames) {
+            val emulatorId = resolveEmulatorForGame(game) ?: continue
+            val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
+            val folderSyncEnabled = isFolderSaveSyncEnabled()
+
+            val savePath = savePathResolver.discoverSavePath(
+                emulatorId = emulatorId,
+                gameTitle = game.title,
+                platformSlug = game.platformSlug,
+                romPath = game.localPath,
+                cachedTitleId = game.titleId,
+                emulatorPackage = emulatorPackage,
+                gameId = game.id,
+                isFolderSaveSyncEnabled = folderSyncEnabled
+            ) ?: continue
+
+            val localFile = File(savePath)
+            if (!localFile.exists()) continue
+
+            val localModified = if (localFile.isDirectory) {
+                Instant.ofEpochMilli(savePathResolver.findNewestFileTime(savePath))
+            } else {
+                Instant.ofEpochMilli(localFile.lastModified())
+            }
+
+            val syncEntity = saveSyncDao.getByGameAndEmulator(game.id, emulatorId)
+            val lastSynced = syncEntity?.lastSyncedAt
+
+            if (lastSynced == null || localModified.isAfter(lastSynced)) {
+                Logger.debug(TAG, "[SaveSync] SCAN gameId=${game.id} | Local newer than sync | local=$localModified, lastSync=$lastSynced")
+                queueUpload(game.id, emulatorId, savePath)
+                queued++
+            }
+        }
+
+        Logger.info(TAG, "[SaveSync] SCAN | Queued $queued local saves for upload")
+        queued
+    }
+
     suspend fun processPendingUploads(): Int = withContext(Dispatchers.IO) {
         val pending = pendingSaveSyncDao.getRetryable()
         if (pending.isEmpty()) {

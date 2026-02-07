@@ -590,6 +590,50 @@ fun SettingsScreen(
         )
     }
 
+    if (uiState.syncSettings.showForceSyncConfirm) {
+        val focusedButton = uiState.syncSettings.syncConfirmButtonIndex
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelSyncSaves() },
+            title = { Text("Sync Saves?") },
+            text = {
+                Text("This will scan all downloaded games for save changes and sync them with the server. Local saves newer than the last sync will be uploaded, and newer server saves will be downloaded.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.confirmSyncSaves() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (focusedButton == 1) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        contentColor = if (focusedButton == 1) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                ) {
+                    Text("Sync")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.cancelSyncSaves() },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = if (focusedButton == 0) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (showFileBrowser) {
         FileBrowserScreen(
             mode = FileBrowserMode.FOLDER_SELECTION,

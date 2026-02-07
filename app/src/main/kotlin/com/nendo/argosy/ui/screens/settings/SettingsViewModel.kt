@@ -1718,6 +1718,10 @@ class SettingsViewModel @Inject constructor(
                 dismissSyncFiltersModal()
                 true
             }
+            state.syncSettings.showForceSyncConfirm -> {
+                cancelSyncSaves()
+                true
+            }
             state.emulators.showEmulatorPicker -> {
                 dismissEmulatorPicker()
                 true
@@ -2581,6 +2585,11 @@ class SettingsViewModel @Inject constructor(
     fun confirmClearPathCache() = syncDelegate.confirmClearPathCache(viewModelScope)
     fun cancelClearPathCache() = syncDelegate.cancelClearPathCache()
 
+    fun requestSyncSaves() = syncDelegate.requestSyncSaves()
+    fun confirmSyncSaves() = syncDelegate.confirmSyncSaves(viewModelScope)
+    fun cancelSyncSaves() = syncDelegate.cancelSyncSaves()
+    fun moveSyncConfirmFocus(delta: Int) = syncDelegate.moveSyncConfirmFocus(delta)
+
     fun openImageCachePicker() {
         syncDelegate.openImageCachePicker(viewModelScope)
     }
@@ -3188,9 +3197,9 @@ class SettingsViewModel @Inject constructor(
                             return InputResult.handled(SoundType.TOGGLE)
                         }
                         state.focusedIndex == 5 && isConnected && state.syncSettings.saveSyncEnabled -> cycleSaveCacheLimit()
-                        state.focusedIndex == 6 && isConnected && state.syncSettings.saveSyncEnabled && isOnline -> runSaveSyncNow()
-                        state.focusedIndex == androidBaseIndex - 2 && isConnected -> requestResetSaveCache()
-                        state.focusedIndex == androidBaseIndex - 1 && isConnected -> requestClearPathCache()
+                        state.focusedIndex == 6 && isConnected && state.syncSettings.saveSyncEnabled && isOnline -> requestSyncSaves()
+                        state.focusedIndex == androidBaseIndex - 2 && isConnected -> requestClearPathCache()
+                        state.focusedIndex == androidBaseIndex - 1 && isConnected -> requestResetSaveCache()
                         state.focusedIndex == androidBaseIndex -> scanForAndroidGames()
                         state.focusedIndex >= steamBaseIndex && state.focusedIndex < refreshIndex -> {
                             if (state.steam.hasStoragePermission && !state.steam.isSyncing) {

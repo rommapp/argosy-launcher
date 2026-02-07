@@ -494,4 +494,64 @@ class SyncSettingsDelegate @Inject constructor(
             _state.update { it.copy(isClearingPathCache = false, pathCacheCount = 0) }
         }
     }
+
+    fun requestSyncSaves() {
+        _state.update { it.copy(showForceSyncConfirm = true, syncConfirmButtonIndex = 1) }
+    }
+
+    fun cancelSyncSaves() {
+        _state.update { it.copy(showForceSyncConfirm = false) }
+    }
+
+    fun moveSyncConfirmFocus(delta: Int) {
+        _state.update { state ->
+            val newIndex = (state.syncConfirmButtonIndex + delta).coerceIn(0, 1)
+            state.copy(syncConfirmButtonIndex = newIndex)
+        }
+    }
+
+    fun confirmSyncSaves(scope: CoroutineScope) {
+        _state.update { it.copy(showForceSyncConfirm = false) }
+        runSaveSyncWithLocalScan(scope)
+    }
+
+    private fun runSaveSyncWithLocalScan(scope: CoroutineScope) {
+        if (isSyncing) return
+        isSyncing = true
+        _state.update { it.copy(isSyncing = true) }
+
+        scope.launch {
+            try {
+                notificationManager.show("Scanning local saves...")
+                val queued = saveSyncRepository.scanAndQueueLocalChanges()
+                if (queued > 0) {
+                    notificationManager.show("Found $queued local saves to sync")
+                }
+
+                notificationManager.show("Syncing saves...")
+                saveSyncRepository.checkForAllServerUpdates()
+                val uploaded = saveSyncRepository.processPendingUploads()
+                val downloaded = saveSyncRepository.downloadPendingServerSaves()
+                val pendingUploads = pendingSaveSyncDao.getCount()
+                val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
+                val totalPending = pendingUploads + pendingDownloads
+                _state.update { it.copy(pendingUploadsCount = totalPending) }
+
+                val message = when {
+                    uploaded > 0 && downloaded > 0 -> "Uploaded $uploaded, downloaded $downloaded saves"
+                    uploaded > 0 -> "Uploaded $uploaded saves"
+                    downloaded > 0 -> "Downloaded $downloaded saves"
+                    else -> "Saves are up to date"
+                }
+                notificationManager.show(message)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                notificationManager.showError("Save sync failed: ${e.message}")
+            } finally {
+                isSyncing = false
+                _state.update { it.copy(isSyncing = false) }
+            }
+        }
+    }
 }

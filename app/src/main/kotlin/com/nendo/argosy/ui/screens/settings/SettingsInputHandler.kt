@@ -181,6 +181,10 @@ class SettingsInputHandler(
         if (state.syncSettings.showRegionPicker) return InputResult.HANDLED
         if (state.syncSettings.showPlatformFiltersModal) return InputResult.HANDLED
         if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
+        if (state.syncSettings.showForceSyncConfirm) {
+            viewModel.moveSyncConfirmFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
         if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             viewModel.jumpShaderPickerSection(-1)
@@ -408,6 +412,10 @@ class SettingsInputHandler(
         if (state.syncSettings.showRegionPicker) return InputResult.HANDLED
         if (state.syncSettings.showPlatformFiltersModal) return InputResult.HANDLED
         if (state.syncSettings.showSyncFiltersModal) return InputResult.HANDLED
+        if (state.syncSettings.showForceSyncConfirm) {
+            viewModel.moveSyncConfirmFocus(1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
         if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             viewModel.jumpShaderPickerSection(1)
@@ -637,6 +645,15 @@ class SettingsInputHandler(
         if (state.syncSettings.showSyncFiltersModal) {
             viewModel.confirmSyncFiltersModalSelection()
             return InputResult.handled(SoundType.TOGGLE)
+        }
+
+        if (state.syncSettings.showForceSyncConfirm) {
+            if (state.syncSettings.syncConfirmButtonIndex == 0) {
+                viewModel.cancelSyncSaves()
+            } else {
+                viewModel.confirmSyncSaves()
+            }
+            return InputResult.HANDLED
         }
 
         if (state.syncSettings.showPlatformFiltersModal) {

@@ -235,13 +235,26 @@ private fun GameDataContent(
                         subtitle = pendingText,
                         isFocused = !hasDialogOpen && uiState.focusedIndex == 6,
                         isEnabled = isOnline,
-                        onClick = { viewModel.runSaveSyncNow() }
+                        onClick = { viewModel.requestSyncSaves() }
                     )
                 }
             }
 
-            val resetIndex = if (saveSyncEnabled) 7 else 5
-            val clearIndex = resetIndex + 1
+            val clearIndex = if (saveSyncEnabled) 7 else 5
+            val resetIndex = clearIndex + 1
+            item {
+                val pathCount = uiState.syncSettings.pathCacheCount
+                val subtitle = if (uiState.syncSettings.isClearingPathCache) "Clearing..."
+                    else if (pathCount > 0) "$pathCount cached paths"
+                    else "No cached paths"
+                ActionPreference(
+                    title = "Clear Save Path Cache",
+                    subtitle = subtitle,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == clearIndex,
+                    isEnabled = !uiState.syncSettings.isClearingPathCache && pathCount > 0,
+                    onClick = { viewModel.requestClearPathCache() }
+                )
+            }
             item {
                 val totalCached = uiState.syncSettings.saveCacheCount + uiState.syncSettings.stateCacheCount
                 val subtitle = if (uiState.syncSettings.isResettingSaveCache) "Resetting..."
@@ -254,19 +267,6 @@ private fun GameDataContent(
                     isEnabled = !uiState.syncSettings.isResettingSaveCache && totalCached > 0,
                     isDangerous = true,
                     onClick = { viewModel.requestResetSaveCache() }
-                )
-            }
-            item {
-                val pathCount = uiState.syncSettings.pathCacheCount
-                val subtitle = if (uiState.syncSettings.isClearingPathCache) "Clearing..."
-                    else if (pathCount > 0) "$pathCount cached paths"
-                    else "No cached paths"
-                ActionPreference(
-                    title = "Clear Save Path Cache",
-                    subtitle = subtitle,
-                    isFocused = !hasDialogOpen && uiState.focusedIndex == clearIndex,
-                    isEnabled = !uiState.syncSettings.isClearingPathCache && pathCount > 0,
-                    onClick = { viewModel.requestClearPathCache() }
                 )
             }
         }

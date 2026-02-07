@@ -443,6 +443,8 @@ data class SyncSettingsState(
     val isResettingSaveCache: Boolean = false,
     val showClearPathCacheConfirm: Boolean = false,
     val isClearingPathCache: Boolean = false,
+    val showForceSyncConfirm: Boolean = false,
+    val syncConfirmButtonIndex: Int = 1,
     val saveCacheCount: Int = 0,
     val stateCacheCount: Int = 0,
     val pathCacheCount: Int = 0

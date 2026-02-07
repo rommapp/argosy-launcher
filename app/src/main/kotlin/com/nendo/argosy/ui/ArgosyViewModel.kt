@@ -2,6 +2,7 @@ package com.nendo.argosy.ui
 
 import android.app.Application
 import android.provider.Settings
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
@@ -319,9 +320,12 @@ class ArgosyViewModel @Inject constructor(
 
         override fun onConfirm(): InputResult {
             val currentIndex = _drawerFocusIndex.value
+            Log.d("ArgosyViewModel", "Drawer onConfirm: index=$currentIndex, footerIndex=$footerIndex, hasUpdateFooter=$hasUpdateFooter")
             if (hasUpdateFooter && currentIndex == footerIndex) {
+                Log.d("ArgosyViewModel", "Navigating to emulators section via footer")
                 onNavigate(Screen.Settings.createRoute(section = "emulators"))
             } else if (currentIndex < drawerItems.size) {
+                Log.d("ArgosyViewModel", "Navigating to drawer item: ${drawerItems[currentIndex].route}")
                 onNavigate(drawerItems[currentIndex].route)
             }
             return InputResult.HANDLED

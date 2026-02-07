@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.remote.github.VersionFormatter
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -191,10 +191,13 @@ fun EmulatorPickerPopup(
                                     "Installing..."
                                 downloadState is EmulatorDownloadState.Failed ->
                                     "Download error"
-                                updateInfo != null ->
-                                    "${updateInfo.currentVersion ?: "?"} -> ${updateInfo.latestVersion}"
+                                updateInfo != null -> {
+                                    val current = updateInfo.currentVersion?.let { VersionFormatter.formatForDisplay(it) } ?: "?"
+                                    val latest = VersionFormatter.formatForDisplay(updateInfo.latestVersion)
+                                    "$current -> $latest"
+                                }
                                 else ->
-                                    "Installed" + (item.emulator.versionName?.let { " - v$it" } ?: "")
+                                    "Installed" + (item.emulator.versionName?.let { " - ${VersionFormatter.formatForDisplay(it)}" } ?: "")
                             }
 
                             EmulatorPickerItem(
@@ -226,14 +229,31 @@ fun EmulatorPickerPopup(
                         is PickerItem.DownloadableItem -> {
                             val isTouchSelected = selectedIndex == item.itemIndex
                             val isPlayStore = item.emulator.downloadUrl?.contains("play.google.com") == true
+                            val isDownloading = info.downloadingEmulatorId == item.emulator.id
+                            val downloadState = if (isDownloading) info.downloadState else EmulatorDownloadState.Idle
+                            val isDisabled = info.downloadState !is EmulatorDownloadState.Idle && !isDownloading
+
+                            val subtitle = when {
+                                downloadState is EmulatorDownloadState.Downloading ->
+                                    "Downloading ${(downloadState.progress * 100).toInt()}%"
+                                downloadState is EmulatorDownloadState.WaitingForInstall ->
+                                    "Installing..."
+                                downloadState is EmulatorDownloadState.Failed ->
+                                    "Download error"
+                                isPlayStore -> "Play Store"
+                                else -> "GitHub"
+                            }
+
                             EmulatorPickerItem(
                                 name = item.emulator.displayName,
-                                subtitle = if (isPlayStore) "Play Store" else "GitHub",
+                                subtitle = subtitle,
                                 isFocused = isFocused(item),
                                 isTouchSelected = isTouchSelected,
                                 isCurrentEmulator = false,
                                 isDownload = true,
-                                onClick = { onItemTap(item.itemIndex) }
+                                downloadState = downloadState,
+                                isDisabled = isDisabled,
+                                onClick = { if (!isDisabled) onItemTap(item.itemIndex) }
                             )
                         }
                     }
@@ -273,7 +293,11 @@ private fun EmulatorPickerItem(
     val contentAlpha = if (isDisabled) 0.5f else 1f
 
     val animatedProgress by animateFloatAsState(
-        targetValue = if (downloadState is EmulatorDownloadState.Downloading) downloadState.progress else 0f,
+        targetValue = when (downloadState) {
+            is EmulatorDownloadState.Downloading -> downloadState.progress
+            is EmulatorDownloadState.WaitingForInstall -> 1f
+            else -> 0f
+        },
         label = "download_progress"
     )
 
@@ -346,16 +370,22 @@ private fun EmulatorPickerItem(
             }
         }
 
-        if (isDownloading) {
-            LinearProgressIndicator(
-                progress = { animatedProgress },
+        if (isDownloading || downloadState is EmulatorDownloadState.WaitingForInstall) {
+            val progressBarHeight = Dimens.spacingSm - Dimens.borderMedium
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(Dimens.spacingXs)
-                    .clip(RoundedCornerShape(bottomStart = Dimens.radiusMd, bottomEnd = Dimens.radiusMd)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                    .height(progressBarHeight)
+                    .clip(RoundedCornerShape(bottomStart = Dimens.radiusMd, bottomEnd = Dimens.radiusMd))
+                    .background(Color.Gray.copy(alpha = 0.6f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
+                        .height(progressBarHeight)
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
         }
     }
 }

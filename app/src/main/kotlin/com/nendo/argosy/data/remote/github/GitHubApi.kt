@@ -29,6 +29,13 @@ interface GitHubApi {
         @Path("repo") repo: String,
         @Query("per_page") perPage: Int = 5
     ): Response<List<GitHubRelease>>
+
+    @GET("repos/{owner}/{repo}/tags")
+    suspend fun getRepoTags(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Query("per_page") perPage: Int = 30
+    ): Response<List<GitHubTag>>
 }
 
 @JsonClass(generateAdapter = true)
@@ -39,6 +46,7 @@ data class GitHubRelease(
     @Json(name = "prerelease") val prerelease: Boolean,
     @Json(name = "draft") val draft: Boolean,
     @Json(name = "html_url") val htmlUrl: String,
+    @Json(name = "target_commitish") val targetCommitish: String?,
     @Json(name = "assets") val assets: List<GitHubAsset>
 )
 
@@ -48,4 +56,15 @@ data class GitHubAsset(
     @Json(name = "browser_download_url") val downloadUrl: String,
     @Json(name = "size") val size: Long,
     @Json(name = "content_type") val contentType: String
+)
+
+@JsonClass(generateAdapter = true)
+data class GitHubTag(
+    @Json(name = "name") val name: String,
+    @Json(name = "commit") val commit: GitHubTagCommit
+)
+
+@JsonClass(generateAdapter = true)
+data class GitHubTagCommit(
+    @Json(name = "sha") val sha: String
 )

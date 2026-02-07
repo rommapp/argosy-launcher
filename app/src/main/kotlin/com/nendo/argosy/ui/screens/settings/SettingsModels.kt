@@ -93,7 +93,8 @@ data class EmulatorUpdateInfo(
     val latestVersion: String,
     val downloadUrl: String,
     val assetName: String,
-    val assetSize: Long
+    val assetSize: Long,
+    val installedVariant: String? = null
 )
 
 sealed class EmulatorDownloadState {

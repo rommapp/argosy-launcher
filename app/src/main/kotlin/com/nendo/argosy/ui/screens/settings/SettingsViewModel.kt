@@ -336,6 +336,10 @@ class SettingsViewModel @Inject constructor(
             emulatorDelegate.updateEmulatorUpdatesAvailable(count)
         }.launchIn(viewModelScope)
 
+        emulatorDelegate.observePlatformUpdateCounts().onEach { platformCounts ->
+            emulatorDelegate.updatePlatformUpdatesAvailable(platformCounts)
+        }.launchIn(viewModelScope)
+
         emulatorDelegate.observeDownloadProgress().onEach { progress ->
             if (progress != null) {
                 emulatorDelegate.updatePickerDownloadState(progress.emulatorId, progress.state)
@@ -762,6 +766,14 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(emulators = state.emulators.copy(variantPickerFocusIndex = index))
         }
+    }
+
+    fun moveVariantPickerFocus(delta: Int) {
+        emulatorDelegate.moveVariantPickerFocus(delta)
+    }
+
+    fun selectVariant() {
+        emulatorDelegate.selectVariant()
     }
 
     fun confirmVariantSelection() {
@@ -1593,6 +1605,11 @@ class SettingsViewModel @Inject constructor(
         emulatorDelegate.confirmSavePathModalSelection(viewModelScope) {
             resetEmulatorSavePath(emulatorId)
         }
+    }
+
+    fun forceCheckEmulatorUpdates() {
+        Log.d("SettingsViewModel", "forceCheckEmulatorUpdates called")
+        emulatorDelegate.forceCheckEmulatorUpdates()
     }
 
     fun handlePlatformItemTap(index: Int) {

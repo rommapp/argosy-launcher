@@ -66,6 +66,7 @@ internal sealed class EmulatorsItem(
     data object BuiltinCores : EmulatorsItem("builtin_cores", "builtin", visibleWhen = { it.builtinLibretroEnabled })
     data object BuiltinToggle : EmulatorsItem("builtin_toggle", "builtin")
     data object PlatformsHeader : EmulatorsItem("platforms_header", "platforms")
+    data object CheckForUpdates : EmulatorsItem("check_updates", "platforms")
     data object AutoAssign : EmulatorsItem("autoAssign", "platforms", visibleWhen = { it.canAutoAssign })
 
     class PlatformItem(val config: PlatformEmulatorConfig, val index: Int) : EmulatorsItem(
@@ -75,7 +76,7 @@ internal sealed class EmulatorsItem(
 
     companion object {
         fun buildItems(platforms: List<PlatformEmulatorConfig>): List<EmulatorsItem> =
-            listOf(BuiltinHeader, BuiltinVideo, BuiltinControls, BuiltinCores, BuiltinToggle, PlatformsHeader, AutoAssign) +
+            listOf(BuiltinHeader, BuiltinVideo, BuiltinControls, BuiltinCores, BuiltinToggle, PlatformsHeader, CheckForUpdates, AutoAssign) +
                 platforms.mapIndexed { index, config -> PlatformItem(config, index) }
     }
 }
@@ -90,8 +91,9 @@ internal fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<
 internal fun emulatorsMaxFocusIndex(canAutoAssign: Boolean, platformCount: Int, builtinEnabled: Boolean = true): Int {
     val toggleCount = 1  // Toggle is always visible
     val builtinCount = if (builtinEnabled) 3 else 0  // Video, Controls, Cores (only when enabled)
+    val checkUpdatesCount = 1  // Check for updates is always visible
     val autoAssignCount = if (canAutoAssign) 1 else 0
-    return (toggleCount + builtinCount + autoAssignCount + platformCount - 1).coerceAtLeast(0)
+    return (toggleCount + builtinCount + checkUpdatesCount + autoAssignCount + platformCount - 1).coerceAtLeast(0)
 }
 
 internal data class EmulatorsLayoutInfo(
@@ -218,6 +220,15 @@ fun EmulatorsSection(
                             )
                         )
                     }
+
+                    EmulatorsItem.CheckForUpdates -> ActionPreference(
+                        title = "Check for Updates",
+                        subtitle = if (emulators.emulatorUpdatesAvailable > 0)
+                            "${emulators.emulatorUpdatesAvailable} update${if (emulators.emulatorUpdatesAvailable > 1) "s" else ""} available"
+                        else "Check for emulator updates",
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.forceCheckEmulatorUpdates() }
+                    )
 
                     EmulatorsItem.AutoAssign -> ActionPreference(
                         title = "Auto-assign Emulators",

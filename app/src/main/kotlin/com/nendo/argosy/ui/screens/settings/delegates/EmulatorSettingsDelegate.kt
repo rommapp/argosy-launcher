@@ -1,10 +1,13 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.util.Log
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
+import com.nendo.argosy.data.remote.github.FetchReleaseResult
 import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
@@ -55,8 +58,12 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val coreManager: LibretroCoreManager,
     private val coreVersionDao: CoreVersionDao,
     private val emulatorUpdateManager: EmulatorUpdateManager,
-    private val emulatorDownloadManager: EmulatorDownloadManager
+    private val emulatorDownloadManager: EmulatorDownloadManager,
+    private val emulatorUpdateRepository: EmulatorUpdateRepository
 ) {
+    companion object {
+        private const val TAG = "EmulatorSettingsDelegate"
+    }
     private val _state = MutableStateFlow(EmulatorState())
     val state: StateFlow<EmulatorState> = _state.asStateFlow()
 
@@ -83,7 +90,8 @@ class EmulatorSettingsDelegate @Inject constructor(
                     latestVersion = update.latestVersion,
                     downloadUrl = update.downloadUrl,
                     assetName = update.assetName,
-                    assetSize = update.assetSize
+                    assetSize = update.assetSize,
+                    installedVariant = update.installedVariant
                 )
             }
 
@@ -191,12 +199,18 @@ class EmulatorSettingsDelegate @Inject constructor(
                     val updateInfo = info.updates[emulator.def.id]
 
                     if (updateInfo != null) {
-                        downloadEmulatorUpdate(
-                            emulatorId = updateInfo.emulatorId,
-                            downloadUrl = updateInfo.downloadUrl,
-                            assetName = updateInfo.assetName,
-                            variant = null
-                        )
+                        // If no variant stored and emulator supports GitHub updates,
+                        // fetch fresh to allow variant selection
+                        if (updateInfo.installedVariant == null && emulator.def.githubRepo != null) {
+                            fetchAndDownloadEmulator(emulator.def)
+                        } else {
+                            downloadEmulatorUpdate(
+                                emulatorId = updateInfo.emulatorId,
+                                downloadUrl = updateInfo.downloadUrl,
+                                assetName = updateInfo.assetName,
+                                variant = updateInfo.installedVariant
+                            )
+                        }
                     } else {
                         onSetEmulator(info.platformId, info.platformSlug, emulator)
                         dismissEmulatorPicker()
@@ -205,8 +219,13 @@ class EmulatorSettingsDelegate @Inject constructor(
                 }
                 focusIndex >= downloadBaseIndex -> {
                     val downloadIndex = focusIndex - downloadBaseIndex
-                    val emulator = info.downloadableEmulators.getOrNull(downloadIndex)
-                    emulator?.downloadUrl?.let { _openUrlEvent.emit(it) }
+                    val emulator = info.downloadableEmulators.getOrNull(downloadIndex) ?: return@launch
+
+                    if (emulator.githubRepo != null) {
+                        fetchAndDownloadEmulator(emulator)
+                    } else {
+                        emulator.downloadUrl?.let { _openUrlEvent.emit(it) }
+                    }
                 }
             }
         }
@@ -442,7 +461,13 @@ class EmulatorSettingsDelegate @Inject constructor(
 
     fun observeEmulatorUpdateCount(): Flow<Int> = emulatorUpdateManager.updateCount
 
+    fun observePlatformUpdateCounts(): Flow<Map<String, Int>> = emulatorUpdateManager.platformUpdateCounts
+
     fun observeDownloadProgress() = emulatorDownloadManager.downloadProgress
+
+    fun forceCheckEmulatorUpdates() {
+        emulatorUpdateManager.forceCheck()
+    }
 
     fun updateEmulatorUpdatesAvailable(count: Int) {
         _state.update { it.copy(emulatorUpdatesAvailable = count) }
@@ -484,6 +509,66 @@ class EmulatorSettingsDelegate @Inject constructor(
                     downloadingEmulatorId = emulatorId
                 )
             )
+        }
+    }
+
+    private suspend fun fetchAndDownloadEmulator(emulator: com.nendo.argosy.data.emulator.EmulatorDef) {
+        _state.update { state ->
+            val info = state.emulatorPickerInfo ?: return@update state
+            state.copy(
+                emulatorPickerInfo = info.copy(
+                    downloadState = EmulatorDownloadState.Downloading(0f),
+                    downloadingEmulatorId = emulator.id
+                )
+            )
+        }
+
+        when (val result = emulatorUpdateRepository.fetchLatestRelease(emulator)) {
+            is FetchReleaseResult.Success -> {
+                Log.d(TAG, "Fetched release for ${emulator.id}: ${result.version}")
+                downloadEmulatorUpdate(
+                    emulatorId = emulator.id,
+                    downloadUrl = result.downloadUrl,
+                    assetName = result.assetName,
+                    variant = result.variant
+                )
+            }
+            is FetchReleaseResult.MultipleVariants -> {
+                Log.d(TAG, "Multiple variants for ${emulator.id}: ${result.variants.size}")
+                _state.update { state ->
+                    val info = state.emulatorPickerInfo ?: return@update state
+                    state.copy(
+                        emulatorPickerInfo = info.copy(
+                            downloadState = EmulatorDownloadState.Idle,
+                            downloadingEmulatorId = null
+                        )
+                    )
+                }
+                showVariantPicker(
+                    emulatorId = emulator.id,
+                    emulatorName = emulator.displayName,
+                    variants = result.variants.map { v ->
+                        VariantOption(
+                            variant = v.variant,
+                            downloadUrl = v.downloadUrl,
+                            assetName = v.assetName,
+                            fileSize = v.assetSize
+                        )
+                    }
+                )
+            }
+            is FetchReleaseResult.Error -> {
+                Log.e(TAG, "Failed to fetch release for ${emulator.id}: ${result.message}")
+                _state.update { state ->
+                    val info = state.emulatorPickerInfo ?: return@update state
+                    state.copy(
+                        emulatorPickerInfo = info.copy(
+                            downloadState = EmulatorDownloadState.Failed(result.message),
+                            downloadingEmulatorId = emulator.id
+                        )
+                    )
+                }
+            }
         }
     }
 

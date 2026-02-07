@@ -241,19 +241,6 @@ object EmulatorRegistry {
             downloadUrl = "https://github.com/azahar-emu/azahar/releases",
             githubRepo = "azahar-emu/azahar"
         ),
-        // NOTE: AzaharPlus is a fork of Azahar that restores .3ds file support
-        EmulatorDef(
-            id = "azahar_plus",
-            packageName = "io.github.azaharplus.android",
-            displayName = "AzaharPlus",
-            supportedPlatforms = setOf("3ds"),
-            launchConfig = LaunchConfig.Custom(
-                activityClass = "org.citra.citra_emu.activities.EmulationActivity",
-                intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
-            ),
-            downloadUrl = "https://github.com/AzaharPlus/AzaharPlus/releases",
-            githubRepo = "AzaharPlus/AzaharPlus"
-        ),
         EmulatorDef(
             id = "borked3ds",
             packageName = "io.github.borked3ds.android",
@@ -586,7 +573,7 @@ object EmulatorRegistry {
         "psvita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64"),
         "nds" to listOf("builtin", "drastic", "melonds", "retroarch", "retroarch_64"),
-        "3ds" to listOf("azahar_plus", "azahar", "citra_mmj", "borked3ds", "citra", "retroarch", "retroarch_64"),
+        "3ds" to listOf("azahar", "citra_mmj", "borked3ds", "citra", "retroarch", "retroarch_64"),
         "gc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "ngc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "wii" to listOf("dolphin", "dolphin_handheld"),
@@ -931,17 +918,6 @@ object EmulatorRegistry {
                 intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://github.com/azahar-emu/azahar/releases"
-        ),
-        EmulatorFamily(
-            baseId = "azahar_plus",
-            displayNamePrefix = "AzaharPlus",
-            packagePatterns = listOf("io.github.azaharplus.*"),
-            supportedPlatforms = setOf("3ds"),
-            launchConfig = LaunchConfig.Custom(
-                activityClass = "org.citra.citra_emu.activities.EmulationActivity",
-                intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
-            ),
-            downloadUrl = "https://github.com/AzaharPlus/AzaharPlus/releases"
         ),
         EmulatorFamily(
             baseId = "borked3ds",

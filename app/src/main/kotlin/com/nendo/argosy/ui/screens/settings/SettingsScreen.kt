@@ -93,7 +93,7 @@ fun SettingsScreen(
 
     LaunchedEffect(initialSection, initialAction) {
         if (initialSection != null) {
-            val section = SettingsSection.entries.find { it.name == initialSection }
+            val section = SettingsSection.entries.find { it.name.equals(initialSection, ignoreCase = true) }
             if (section != null) {
                 viewModel.navigateToSection(section)
                 kotlinx.coroutines.delay(300)

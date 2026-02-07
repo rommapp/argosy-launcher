@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.emulator.ApkAssetMatcher
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
@@ -60,7 +61,7 @@ fun VariantPickerModal(
     ) {
         Column(
             modifier = Modifier
-                .width(Dimens.modalWidth)
+                .width(Dimens.modalWidthLg)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
                 .clickableNoFocus(enabled = false) {}
@@ -82,7 +83,7 @@ fun VariantPickerModal(
 
             LazyColumn(
                 state = listState,
-                modifier = Modifier.heightIn(max = Dimens.headerHeightLg * 2),
+                modifier = Modifier.heightIn(max = 400.dp),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 itemsIndexed(info.variants, key = { _, v -> v.assetName }) { index, variant ->

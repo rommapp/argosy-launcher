@@ -60,6 +60,17 @@ class EmulatorUpdateManager @Inject constructor(
     val availableUpdates: Flow<List<EmulatorUpdateEntity>> =
         emulatorUpdateDao.observeAvailableUpdates()
 
+    val platformUpdateCounts: Flow<Map<String, Int>> = availableUpdates.map { updates ->
+        val platformCounts = mutableMapOf<String, Int>()
+        for (update in updates) {
+            val emulatorDef = EmulatorRegistry.getById(update.emulatorId) ?: continue
+            for (platformSlug in emulatorDef.supportedPlatforms) {
+                platformCounts[platformSlug] = (platformCounts[platformSlug] ?: 0) + 1
+            }
+        }
+        platformCounts
+    }
+
     fun checkIfNeeded() {
         scope.launch {
             val lastCheck = getLastCheckTime()
@@ -74,23 +85,33 @@ class EmulatorUpdateManager @Inject constructor(
         }
     }
 
-    suspend fun checkForUpdates(): UpdateCheckState = withContext(Dispatchers.IO) {
+    fun forceCheck() {
+        Log.d(TAG, "Force check triggered")
+        scope.launch {
+            checkForUpdates(ignoreCache = true)
+        }
+    }
+
+    suspend fun checkForUpdates(ignoreCache: Boolean = false): UpdateCheckState = withContext(Dispatchers.IO) {
         if (_checkState.value is UpdateCheckState.Checking) {
             return@withContext _checkState.value
         }
 
         _checkState.value = UpdateCheckState.Checking
-        Log.d(TAG, "Starting emulator update check")
+        Log.d(TAG, "Starting emulator update check (ignoreCache=$ignoreCache)")
 
         try {
             val installedEmulators = emulatorDetector.installedEmulators.first()
             val updateCheckable = EmulatorRegistry.getUpdateCheckable()
 
+            Log.d(TAG, "Installed emulators: ${installedEmulators.map { it.def.id }}")
+            Log.d(TAG, "Update checkable: ${updateCheckable.map { it.id }}")
+
             val emulatorsToCheck = updateCheckable.filter { def ->
                 installedEmulators.any { it.def.packageName == def.packageName }
             }
 
-            Log.d(TAG, "Checking ${emulatorsToCheck.size} emulators for updates")
+            Log.d(TAG, "Checking ${emulatorsToCheck.size} emulators for updates: ${emulatorsToCheck.map { it.id }}")
 
             var updatesFound = 0
 
@@ -120,7 +141,9 @@ class EmulatorUpdateManager @Inject constructor(
                 }
             }
 
-            setLastCheckTime(Instant.now())
+            if (!ignoreCache) {
+                setLastCheckTime(Instant.now())
+            }
 
             val state = UpdateCheckState.Completed(updatesFound)
             _checkState.value = state

@@ -100,7 +100,10 @@ fun MainDrawer(
                         isFocused = index == focusedIndex,
                         isSelected = currentRoute == item.route,
                         badge = badge,
-                        onClick = { onNavigate(item.route) }
+                        onClick = {
+                            android.util.Log.d("MainDrawer", "Menu item clicked: ${item.route}")
+                            onNavigate(item.route)
+                        }
                     )
                 }
             }
@@ -109,7 +112,10 @@ fun MainDrawer(
                 EmulatorUpdateFooter(
                     updateCount = drawerState.emulatorUpdatesAvailable,
                     isFocused = isFooterFocused,
-                    onClick = { onNavigate(Screen.Settings.createRoute(section = "emulators")) }
+                    onClick = {
+                        android.util.Log.d("MainDrawer", "Footer clicked, navigating to emulators section")
+                        onNavigate(Screen.Settings.createRoute(section = "emulators"))
+                    }
                 )
             }
         }

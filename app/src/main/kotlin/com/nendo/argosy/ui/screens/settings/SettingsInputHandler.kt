@@ -13,6 +13,9 @@ import com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusI
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.emulatorsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAccessor
@@ -30,17 +33,13 @@ class SettingsInputHandler(
         private const val HUE_STEP = 10f
     }
 
-    private fun getEmulatorsBuiltinCount(builtinEnabled: Boolean): Int {
-        return if (builtinEnabled) 4 else 1  // (Video, Controls, Cores when enabled) + Toggle
-    }
-
-    private fun getEmulatorsToggleIndex(builtinEnabled: Boolean): Int {
-        return if (builtinEnabled) 3 else 0  // After Video, Controls, Cores when enabled; first when disabled
-    }
-
-    private fun getEmulatorsPlatformIndex(focusedIndex: Int, canAutoAssign: Boolean, builtinEnabled: Boolean): Int {
-        val platformStartIndex = getEmulatorsBuiltinCount(builtinEnabled) + (if (canAutoAssign) 1 else 0)
-        return if (focusedIndex >= platformStartIndex) focusedIndex - platformStartIndex else -1
+    private fun getEmulatorsItemAtFocus(state: SettingsUiState): EmulatorsItem? {
+        val layoutInfo = createEmulatorsLayoutInfo(
+            platforms = state.emulators.platforms,
+            canAutoAssign = state.emulators.canAutoAssign,
+            builtinLibretroEnabled = state.emulators.builtinLibretroEnabled
+        )
+        return emulatorsItemAtFocusIndex(state.focusedIndex, layoutInfo)
     }
 
     private fun hasAlertDialogOpen(state: SettingsUiState): Boolean =
@@ -80,6 +79,10 @@ class SettingsInputHandler(
             viewModel.moveSyncFiltersModalFocus(-1)
             return InputResult.HANDLED
         }
+        if (state.emulators.showVariantPicker) {
+            viewModel.moveVariantPickerFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) {
             viewModel.moveEmulatorPickerFocus(-1)
             return InputResult.HANDLED
@@ -93,13 +96,15 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign, state.emulators.builtinLibretroEnabled)
-            val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config != null && config.hasInstalledEmulators && config.showSavePath &&
-                state.emulators.platformSubFocusIndex == 1
-            ) {
-                viewModel.movePlatformSubFocus(-1, 1)
-                return InputResult.HANDLED
+            val item = getEmulatorsItemAtFocus(state)
+            if (item is EmulatorsItem.PlatformItem) {
+                val config = item.config
+                if (config.hasInstalledEmulators && config.showSavePath &&
+                    state.emulators.platformSubFocusIndex == 1
+                ) {
+                    viewModel.movePlatformSubFocus(-1, 1)
+                    return InputResult.HANDLED
+                }
             }
         }
         viewModel.moveFocus(-1)
@@ -135,6 +140,10 @@ class SettingsInputHandler(
             viewModel.moveSyncFiltersModalFocus(1)
             return InputResult.HANDLED
         }
+        if (state.emulators.showVariantPicker) {
+            viewModel.moveVariantPickerFocus(1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) {
             viewModel.moveEmulatorPickerFocus(1)
             return InputResult.HANDLED
@@ -148,13 +157,15 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign, state.emulators.builtinLibretroEnabled)
-            val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config != null && config.hasInstalledEmulators && config.showSavePath &&
-                state.emulators.platformSubFocusIndex == 0
-            ) {
-                viewModel.movePlatformSubFocus(1, 1)
-                return InputResult.HANDLED
+            val item = getEmulatorsItemAtFocus(state)
+            if (item is EmulatorsItem.PlatformItem) {
+                val config = item.config
+                if (config.hasInstalledEmulators && config.showSavePath &&
+                    state.emulators.platformSubFocusIndex == 0
+                ) {
+                    viewModel.movePlatformSubFocus(1, 1)
+                    return InputResult.HANDLED
+                }
             }
         }
         viewModel.moveFocus(1)
@@ -185,6 +196,7 @@ class SettingsInputHandler(
             viewModel.moveSyncConfirmFocus(-1)
             return InputResult.HANDLED
         }
+        if (state.emulators.showVariantPicker) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
         if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             viewModel.jumpShaderPickerSection(-1)
@@ -314,15 +326,17 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign, state.emulators.builtinLibretroEnabled)
-            val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config?.showCoreSelection == true) {
-                viewModel.cycleCoreForPlatform(config, -1)
-                return InputResult.HANDLED
-            }
-            if (config?.showExtensionSelection == true) {
-                viewModel.cycleExtensionForPlatform(config, -1)
-                return InputResult.HANDLED
+            val item = getEmulatorsItemAtFocus(state)
+            if (item is EmulatorsItem.PlatformItem) {
+                val config = item.config
+                if (config.showCoreSelection) {
+                    viewModel.cycleCoreForPlatform(config, -1)
+                    return InputResult.HANDLED
+                }
+                if (config.showExtensionSelection) {
+                    viewModel.cycleExtensionForPlatform(config, -1)
+                    return InputResult.HANDLED
+                }
             }
         }
 
@@ -416,6 +430,7 @@ class SettingsInputHandler(
             viewModel.moveSyncConfirmFocus(1)
             return InputResult.HANDLED
         }
+        if (state.emulators.showVariantPicker) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
         if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             viewModel.jumpShaderPickerSection(1)
@@ -544,15 +559,17 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign, state.emulators.builtinLibretroEnabled)
-            val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config?.showCoreSelection == true) {
-                viewModel.cycleCoreForPlatform(config, 1)
-                return InputResult.HANDLED
-            }
-            if (config?.showExtensionSelection == true) {
-                viewModel.cycleExtensionForPlatform(config, 1)
-                return InputResult.HANDLED
+            val item = getEmulatorsItemAtFocus(state)
+            if (item is EmulatorsItem.PlatformItem) {
+                val config = item.config
+                if (config.showCoreSelection) {
+                    viewModel.cycleCoreForPlatform(config, 1)
+                    return InputResult.HANDLED
+                }
+                if (config.showExtensionSelection) {
+                    viewModel.cycleExtensionForPlatform(config, 1)
+                    return InputResult.HANDLED
+                }
             }
         }
 
@@ -661,6 +678,10 @@ class SettingsInputHandler(
             return InputResult.handled(SoundType.TOGGLE)
         }
 
+        if (state.emulators.showVariantPicker) {
+            viewModel.selectVariant()
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) {
             viewModel.confirmEmulatorPickerSelection()
             return InputResult.HANDLED
@@ -699,19 +720,43 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val toggleIndex = getEmulatorsToggleIndex(state.emulators.builtinLibretroEnabled)
-            if (state.focusedIndex == toggleIndex) {
-                viewModel.setBuiltinLibretroEnabled(!state.emulators.builtinLibretroEnabled)
-                return InputResult.handled(SoundType.TOGGLE)
-            }
-            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign, state.emulators.builtinLibretroEnabled)
-            val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config != null && config.hasInstalledEmulators && config.showSavePath) {
-                val subFocus = state.emulators.platformSubFocusIndex
-                if (subFocus == 1) {
-                    viewModel.showSavePathModal(config)
+            when (val item = getEmulatorsItemAtFocus(state)) {
+                EmulatorsItem.BuiltinVideo -> {
+                    viewModel.navigateToBuiltinVideo()
                     return InputResult.HANDLED
                 }
+                EmulatorsItem.BuiltinControls -> {
+                    viewModel.navigateToBuiltinControls()
+                    return InputResult.HANDLED
+                }
+                EmulatorsItem.BuiltinCores -> {
+                    viewModel.navigateToCoreManagement()
+                    return InputResult.HANDLED
+                }
+                EmulatorsItem.BuiltinToggle -> {
+                    viewModel.setBuiltinLibretroEnabled(!state.emulators.builtinLibretroEnabled)
+                    return InputResult.handled(SoundType.TOGGLE)
+                }
+                EmulatorsItem.CheckForUpdates -> {
+                    viewModel.forceCheckEmulatorUpdates()
+                    return InputResult.HANDLED
+                }
+                EmulatorsItem.AutoAssign -> {
+                    viewModel.autoAssignAllEmulators()
+                    return InputResult.HANDLED
+                }
+                is EmulatorsItem.PlatformItem -> {
+                    val config = item.config
+                    if (config.hasInstalledEmulators && config.showSavePath &&
+                        state.emulators.platformSubFocusIndex == 1
+                    ) {
+                        viewModel.showSavePathModal(config)
+                    } else {
+                        viewModel.showEmulatorPicker(config)
+                    }
+                    return InputResult.HANDLED
+                }
+                else -> {}
             }
         }
 
@@ -897,6 +942,11 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
 
+        if (state.emulators.showVariantPicker) {
+            viewModel.dismissVariantPicker()
+            return InputResult.HANDLED
+        }
+
         return if (!viewModel.navigateBack()) {
             onBackNavigation()
             InputResult.HANDLED
@@ -915,6 +965,7 @@ class SettingsInputHandler(
             state.syncSettings.showSyncFiltersModal ||
             state.syncSettings.showRegionPicker ||
             state.emulators.showEmulatorPicker ||
+            state.emulators.showVariantPicker ||
             viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             return InputResult.HANDLED
         }
@@ -935,11 +986,13 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.EMULATORS) {
-            val platformIndex = getEmulatorsPlatformIndex(state.focusedIndex, state.emulators.canAutoAssign, state.emulators.builtinLibretroEnabled)
-            val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config?.showSavePath == true && config.hasInstalledEmulators) {
-                viewModel.showSavePathModal(config)
-                return InputResult.HANDLED
+            val item = getEmulatorsItemAtFocus(state)
+            if (item is EmulatorsItem.PlatformItem) {
+                val config = item.config
+                if (config.showSavePath && config.hasInstalledEmulators) {
+                    viewModel.showSavePathModal(config)
+                    return InputResult.HANDLED
+                }
             }
         }
 

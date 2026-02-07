@@ -222,9 +222,10 @@ fun FirstRunScreen(
                 )
                 FirstRunStep.USAGE_STATS -> UsageStatsStep(
                     hasPermission = uiState.hasUsageStatsPermission,
-                    isFocused = uiState.focusedIndex == 0,
+                    focusedIndex = uiState.focusedIndex,
                     onRequestPermission = requestUsageStats,
-                    onContinue = { viewModel.proceedFromUsageStats() }
+                    onContinue = { viewModel.proceedFromUsageStats() },
+                    onSkip = { viewModel.skipUsageStats() }
                 )
                 FirstRunStep.PLATFORM_SELECT -> PlatformSelectStep(
                     platforms = uiState.platforms,
@@ -766,18 +767,28 @@ private fun SaveSyncStep(
 @Composable
 private fun UsageStatsStep(
     hasPermission: Boolean,
-    isFocused: Boolean,
+    focusedIndex: Int,
     onRequestPermission: () -> Unit,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    onSkip: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(Dimens.spacingXl)
     ) {
-        StepHeader(step = 4, title = "Usage Access", totalSteps = 4)
+        Text(
+            text = "OPTIONAL",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+        Text(
+            text = "Usage Access",
+            style = MaterialTheme.typography.headlineSmall
+        )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
-            text = "This permission allows Argosy to detect when you're playing a game, enabling accurate play time tracking and seamless game resumption.",
+            text = "This permission enables accurate play time tracking and seamless game resumption by detecting when you're playing.",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -789,7 +800,7 @@ private fun UsageStatsStep(
                 containerColor = if (hasPermission) {
                     MaterialTheme.colorScheme.primaryContainer
                 } else {
-                    MaterialTheme.colorScheme.errorContainer
+                    MaterialTheme.colorScheme.surfaceVariant
                 }
             ),
             modifier = Modifier.fillMaxWidth(0.8f)
@@ -804,17 +815,17 @@ private fun UsageStatsStep(
                     tint = if (hasPermission) {
                         MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
-                        MaterialTheme.colorScheme.onErrorContainer
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
                 Spacer(modifier = Modifier.width(Dimens.radiusLg))
                 Text(
-                    text = if (hasPermission) "Usage access granted" else "Usage access required",
+                    text = if (hasPermission) "Usage access granted" else "Usage access not granted",
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (hasPermission) {
                         MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
-                        MaterialTheme.colorScheme.onErrorContainer
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
             }
@@ -825,13 +836,19 @@ private fun UsageStatsStep(
         if (!hasPermission) {
             FocusableButton(
                 text = "Grant Usage Access",
-                isFocused = isFocused,
+                isFocused = focusedIndex == 0,
                 icon = Icons.Default.Lock,
                 onClick = onRequestPermission
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
+            FocusableOutlinedButton(
+                text = "Skip for Now",
+                isFocused = focusedIndex == 1,
+                onClick = onSkip
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
             Text(
-                text = "Find Argosy in the list and enable access.",
+                text = "You can enable this later in Settings.",
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -839,7 +856,7 @@ private fun UsageStatsStep(
         } else {
             FocusableButton(
                 text = "Continue",
-                isFocused = isFocused,
+                isFocused = focusedIndex == 0,
                 onClick = onContinue
             )
         }

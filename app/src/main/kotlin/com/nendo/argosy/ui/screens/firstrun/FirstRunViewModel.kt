@@ -297,7 +297,7 @@ class FirstRunViewModel @Inject constructor(
             }
             FirstRunStep.IMAGE_CACHE -> 1
             FirstRunStep.SAVE_SYNC -> 1
-            FirstRunStep.USAGE_STATS -> 0
+            FirstRunStep.USAGE_STATS -> if (state.hasUsageStatsPermission) 0 else 1
             FirstRunStep.PLATFORM_SELECT -> state.platforms.size
             FirstRunStep.CORE_PROMPT -> 1
             FirstRunStep.CORE_DOWNLOAD -> 1
@@ -469,9 +469,11 @@ class FirstRunViewModel @Inject constructor(
     }
 
     fun proceedFromUsageStats() {
-        if (_uiState.value.hasUsageStatsPermission) {
-            nextStep()
-        }
+        nextStep()
+    }
+
+    fun skipUsageStats() {
+        nextStep()
     }
 
     fun completeSetup() {
@@ -545,10 +547,14 @@ class FirstRunViewModel @Inject constructor(
                 if (state.focusedIndex == 0) enableSaveSync() else skipSaveSync()
             }
             FirstRunStep.USAGE_STATS -> {
-                if (!state.hasUsageStatsPermission) {
-                    onRequestUsageStats()
+                if (state.focusedIndex == 0) {
+                    if (!state.hasUsageStatsPermission) {
+                        onRequestUsageStats()
+                    } else {
+                        proceedFromUsageStats()
+                    }
                 } else {
-                    proceedFromUsageStats()
+                    skipUsageStats()
                 }
             }
             FirstRunStep.PLATFORM_SELECT -> {

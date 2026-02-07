@@ -122,7 +122,7 @@ class AmbientLedManager @Inject constructor(
     fun stop() {
         Log.i(TAG, "Stopping ambient LED manager")
         stopAudioCapture()
-        ledController.setBrightness(1f)
+        ledController.setEnabled(false)
     }
 
     private fun shouldUpdateLeds(): Boolean {

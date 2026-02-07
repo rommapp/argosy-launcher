@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -111,6 +112,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 
 @Composable
@@ -167,6 +170,28 @@ fun LibraryScreen(
 
         val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
         val centeringOffset = (effectiveHeight - itemHeight) / 2
+
+        isProgrammaticScroll = true
+        gridState.animateScrollToItem(
+            index = uiState.focusedIndex,
+            scrollOffset = -centeringOffset
+        )
+        isProgrammaticScroll = false
+    }
+
+    LaunchedEffect(uiState.letterJumpTrigger) {
+        if (uiState.letterJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
+
+        val layoutInfo = gridState.layoutInfo
+        val viewportHeight = layoutInfo.viewportSize.height
+        if (viewportHeight == 0) {
+            gridState.scrollToItem(uiState.focusedIndex)
+            return@LaunchedEffect
+        }
+
+        val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
+        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
+        val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
 
         isProgrammaticScroll = true
         gridState.animateScrollToItem(
@@ -296,8 +321,9 @@ fun LibraryScreen(
                             }
 
                             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                                val sidebarWidth = if (uiState.showAlphabetSidebar) 40.dp else 0.dp
                                 val totalSpacing = gridSpacing * (columnsCount + 1)
-                                val columnWidth = (maxWidth - totalSpacing) / columnsCount
+                                val columnWidth = (maxWidth - totalSpacing - sidebarWidth) / columnsCount
                                 val cardHeight = columnWidth / aspectRatio
 
                                 LazyVerticalGrid(
@@ -305,7 +331,7 @@ fun LibraryScreen(
                                     state = gridState,
                                     contentPadding = PaddingValues(
                                         start = gridSpacing,
-                                        end = gridSpacing,
+                                        end = gridSpacing + sidebarWidth,
                                         top = Dimens.headerHeightLg,
                                         bottom = cardHeight + gridSpacing
                                     ),
@@ -332,6 +358,17 @@ fun LibraryScreen(
                                         )
                                     }
                                 }
+
+                                if (uiState.showAlphabetSidebar) {
+                                    AlphabetSidebar(
+                                        availableLetters = uiState.availableLetters,
+                                        currentLetter = uiState.currentLetter,
+                                        onLetterClick = { viewModel.jumpToLetter(it) },
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .fillMaxHeight()
+                                    )
+                                }
                             }
                         }
                     }
@@ -350,6 +387,7 @@ fun LibraryScreen(
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 LibraryFooter(
                     focusedGame = uiState.focusedGame,
+                    showLetterJump = uiState.availableLetters.size > 1,
                     onHintClick = { button ->
                         when (button) {
                             InputButton.A -> uiState.focusedGame?.let { onGameSelect(it.id) }
@@ -554,6 +592,11 @@ fun LibraryScreen(
             hardcoreConflictFocusIndex = hardcoreConflictFocusIndex,
             localModifiedFocusIndex = localModifiedFocusIndex
         )
+
+        LetterOverlay(
+            letter = uiState.overlayLetter,
+            visible = uiState.showLetterOverlay
+        )
     }
 }
 
@@ -711,15 +754,20 @@ private fun LibraryGameCard(
 @Composable
 private fun LibraryFooter(
     focusedGame: LibraryGameUi?,
+    showLetterJump: Boolean = false,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
+    val hints = buildList {
+        if (showLetterJump) {
+            add(InputButton.LT_RT to "Jump Letter")
+        }
+        add(InputButton.A to "Details")
+        add(InputButton.Y to if (focusedGame?.isFavorite == true) "Unfavorite" else "Favorite")
+        add(InputButton.X to "Filter")
+        add(InputButton.SELECT to "Quick Menu")
+    }
     FooterBar(
-        hints = listOf(
-            InputButton.A to "Details",
-            InputButton.Y to if (focusedGame?.isFavorite == true) "Unfavorite" else "Favorite",
-            InputButton.X to "Filter",
-            InputButton.SELECT to "Quick Menu"
-        ),
+        hints = hints,
         onHintClick = onHintClick
     )
 }
@@ -1208,6 +1256,84 @@ private fun QuickMenuItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun LetterOverlay(
+    letter: String,
+    visible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(100)),
+        exit = fadeOut(tween(400)),
+        modifier = modifier
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = letter,
+                style = MaterialTheme.typography.displayLarge,
+                fontSize = 120.sp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlphabetSidebar(
+    availableLetters: List<String>,
+    currentLetter: String,
+    onLetterClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+    val currentIndex = availableLetters.indexOf(currentLetter).coerceAtLeast(0)
+
+    LaunchedEffect(currentLetter) {
+        if (availableLetters.isNotEmpty() && currentLetter.isNotEmpty()) {
+            val viewportHeight = listState.layoutInfo.viewportSize.height
+            val itemHeight = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 32
+            val centerOffset = (viewportHeight - itemHeight) / 2
+            val targetIndex = currentIndex.coerceIn(0, availableLetters.lastIndex)
+            listState.animateScrollToItem(targetIndex, -centerOffset)
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .width(40.dp)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+            .padding(top = Dimens.headerHeightLg, bottom = Dimens.footerHeight)
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            itemsIndexed(availableLetters, key = { _, letter -> letter }) { _, letter ->
+                val isActive = letter == currentLetter
+                Text(
+                    text = letter,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isActive)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .clickableNoFocus { onLetterClick(letter) }
+                        .padding(vertical = 4.dp, horizontal = 8.dp)
+                )
+            }
         }
     }
 }

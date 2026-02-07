@@ -180,8 +180,16 @@ data class LibraryUiState(
     val collectionGameId: Long? = null,
     val collections: List<CollectionItemUi> = emptyList(),
     val collectionModalFocusIndex: Int = 0,
-    val showCreateCollectionDialog: Boolean = false
+    val showCreateCollectionDialog: Boolean = false,
+    val currentLetter: String = "",
+    val availableLetters: List<String> = emptyList(),
+    val showLetterOverlay: Boolean = false,
+    val overlayLetter: String = "",
+    val letterJumpTrigger: Int = 0
 ) {
+    val showAlphabetSidebar: Boolean
+        get() = availableLetters.size >= 9
+
     val columnsCount: Int
         get() {
             val baseColumns = when (gridDensity) {
@@ -553,20 +561,109 @@ class LibraryViewModel @Inject constructor(
                         val matchesPlayers = filters.players.isEmpty() ||
                             game.gameModes?.split(",")?.map { it.trim() }?.any { it in filters.players } == true
                         matchesSearch && matchesGenre && matchesPlayers
-                    }
+                    }.sortedBy { it.title.lowercase() }
+
+                    val availableLetters = computeAvailableLetters(filteredGames)
 
                     Log.d(TAG, "loadGames: ${games.size} total, ${filteredGames.size} after filters")
                     _uiState.update { uiState ->
                         val shouldResetFocus = uiState.games.isEmpty()
                         val newFocusedIndex = if (shouldResetFocus) 0 else uiState.focusedIndex.coerceAtMost((filteredGames.size - 1).coerceAtLeast(0))
+                        val gamesList = filteredGames.map { it.toUi(cachedPlatformDisplayNames) }
+                        val currentLetter = computeLetterForGame(gamesList.getOrNull(newFocusedIndex))
                         uiState.copy(
-                            games = filteredGames.map { it.toUi(cachedPlatformDisplayNames) },
-                            focusedIndex = newFocusedIndex
+                            games = gamesList,
+                            focusedIndex = newFocusedIndex,
+                            availableLetters = availableLetters,
+                            currentLetter = currentLetter
                         )
                     }
                     extractGradientsForVisibleGames(_uiState.value.focusedIndex)
                 }
         }
+    }
+
+    private fun computeAvailableLetters(games: List<GameListItem>): List<String> {
+        val letters = games.mapNotNull { game ->
+            val first = game.title.uppercase().firstOrNull()
+            if (first?.isLetter() == true) first.toString() else null
+        }.distinct().sorted()
+
+        return if (games.any { game ->
+            val first = game.title.firstOrNull()
+            first != null && !first.isLetter()
+        }) {
+            listOf("#") + letters
+        } else {
+            letters
+        }
+    }
+
+    private fun computeLetterForGame(game: LibraryGameUi?): String {
+        if (game == null) return ""
+        val first = game.title.uppercase().firstOrNull() ?: return "#"
+        return if (first.isLetter()) first.toString() else "#"
+    }
+
+    private fun updateCurrentLetterFromFocus() {
+        val state = _uiState.value
+        val focusedGame = state.games.getOrNull(state.focusedIndex)
+        val letter = computeLetterForGame(focusedGame)
+        if (letter != state.currentLetter) {
+            _uiState.update { it.copy(currentLetter = letter) }
+        }
+    }
+
+    private var letterOverlayJob: Job? = null
+
+    private fun showLetterOverlay(letter: String) {
+        letterOverlayJob?.cancel()
+        _uiState.update { it.copy(showLetterOverlay = true, overlayLetter = letter) }
+        letterOverlayJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(600)
+            _uiState.update { it.copy(showLetterOverlay = false) }
+        }
+    }
+
+    fun jumpToLetter(letter: String, showOverlay: Boolean = true) {
+        val state = _uiState.value
+        val targetIndex = state.games.indexOfFirst { game ->
+            computeLetterForGame(game) == letter
+        }
+        if (targetIndex >= 0) {
+            _uiState.update {
+                it.copy(
+                    focusedIndex = targetIndex,
+                    currentLetter = letter,
+                    isTouchMode = false,
+                    letterJumpTrigger = it.letterJumpTrigger + 1
+                )
+            }
+            extractGradientsForVisibleGames(targetIndex)
+            if (showOverlay) {
+                showLetterOverlay(letter)
+            }
+        }
+    }
+
+    fun jumpToNextLetter() {
+        val state = _uiState.value
+        val letters = state.availableLetters
+        if (letters.isEmpty()) return
+
+        val currentIndex = letters.indexOf(state.currentLetter)
+        val nextIndex = if (currentIndex < 0 || currentIndex >= letters.lastIndex) 0 else currentIndex + 1
+        jumpToLetter(letters[nextIndex])
+    }
+
+    fun jumpToPreviousLetter() {
+        val state = _uiState.value
+        val letters = state.availableLetters
+        if (letters.isEmpty()) return
+
+        val currentIndex = letters.indexOf(state.currentLetter)
+        val prevIndex = if (currentIndex <= 0) letters.lastIndex else currentIndex - 1
+        jumpToLetter(letters[prevIndex])
     }
 
     fun nextPlatform() {
@@ -667,6 +764,7 @@ class LibraryViewModel @Inject constructor(
 
         Log.d(TAG, "moveFocus: $direction, $current -> $newIndex (cols=$cols, total=$total)")
         _uiState.update { it.copy(focusedIndex = newIndex, lastFocusMove = direction, isTouchMode = false) }
+        updateCurrentLetterFromFocus()
         extractGradientsForVisibleGames(newIndex)
         return true
     }
@@ -1275,6 +1373,26 @@ class LibraryViewModel @Inject constructor(
                 else -> nextPlatform()
             }
             return InputResult.HANDLED
+        }
+
+        override fun onPrevTrigger(): InputResult {
+            val state = _uiState.value
+            if (state.showAddToCollectionModal || state.showFilterMenu || state.showQuickMenu) {
+                return InputResult.HANDLED
+            }
+            if (state.availableLetters.isEmpty()) return InputResult.UNHANDLED
+            jumpToPreviousLetter()
+            return InputResult.handled(SoundType.SECTION_CHANGE)
+        }
+
+        override fun onNextTrigger(): InputResult {
+            val state = _uiState.value
+            if (state.showAddToCollectionModal || state.showFilterMenu || state.showQuickMenu) {
+                return InputResult.HANDLED
+            }
+            if (state.availableLetters.isEmpty()) return InputResult.UNHANDLED
+            jumpToNextLetter()
+            return InputResult.handled(SoundType.SECTION_CHANGE)
         }
     }
 }

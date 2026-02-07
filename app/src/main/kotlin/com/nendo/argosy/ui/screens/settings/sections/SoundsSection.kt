@@ -55,7 +55,7 @@ private sealed class SoundsItem(
     data object BgmToggle : SoundsItem("bgmToggle", "bgm")
     data object BgmVolume : SoundsItem("bgmVolume", "bgm", { it.bgmEnabled })
     data object BgmSource : SoundsItem("bgmSource", "bgm", { it.bgmEnabled })
-    data object BgmShuffle : SoundsItem("bgmShuffle", "bgm", { it.bgmEnabled && it.bgmIsFolder })
+    data object BgmShuffle : SoundsItem("bgmShuffle", "bgm", { it.bgmEnabled })
 
     data object UiSoundsToggle : SoundsItem("uiSoundsToggle", "uiSounds")
     data object UiSoundsVolume : SoundsItem("uiVolume", "uiSounds", { it.uiSoundsEnabled })

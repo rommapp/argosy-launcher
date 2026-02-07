@@ -93,7 +93,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PlatformLibretroSettingsEntity::class,
         EmulatorUpdateEntity::class
     ],
-    version = 73,
+    version = 74,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1130,6 +1130,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
                         hasUpdate INTEGER NOT NULL DEFAULT 0
                     )
                 """)
+            }
+        }
+
+        val MIGRATION_73_74 = object : Migration(73, 74) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE platforms ADD COLUMN fsSlug TEXT DEFAULT NULL")
             }
         }
     }

@@ -23,6 +23,9 @@ interface PlatformDao {
     @Query("SELECT * FROM platforms WHERE slug = :slug LIMIT 1")
     suspend fun getBySlug(slug: String): PlatformEntity?
 
+    @Query("SELECT * FROM platforms WHERE slug = :slug AND (fsSlug = :fsSlug OR (fsSlug IS NULL AND :fsSlug IS NULL)) LIMIT 1")
+    suspend fun getBySlugAndFsSlug(slug: String, fsSlug: String?): PlatformEntity?
+
     @Query("SELECT * FROM platforms WHERE slug = :slug")
     suspend fun getAllBySlug(slug: String): List<PlatformEntity>
 

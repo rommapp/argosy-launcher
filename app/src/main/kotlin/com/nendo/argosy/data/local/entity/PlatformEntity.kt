@@ -9,6 +9,7 @@ data class PlatformEntity(
     @PrimaryKey
     val id: Long,
     val slug: String,
+    val fsSlug: String? = null,
     val name: String,
     val shortName: String,
     val sortOrder: Int = 0,

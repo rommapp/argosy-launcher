@@ -505,6 +505,7 @@ class RomMRepository @Inject constructor(
         val entity = PlatformEntity(
             id = platformId,
             slug = remote.slug,
+            fsSlug = remote.fsSlug,
             name = normalizedName,
             shortName = platformDef?.shortName ?: normalizedName,
             romExtensions = platformDef?.extensions?.joinToString(",") ?: "",
@@ -1038,17 +1039,21 @@ class RomMRepository @Inject constructor(
     }
 
     private suspend fun cleanupLegacyPlatforms(remotePlatforms: List<RomMPlatform>) {
-        for (remote in remotePlatforms) {
-            val numericId = remote.id
-            val slug = remote.slug
+        val remoteIds = remotePlatforms.map { it.id }.toSet()
+        val remoteByKey = remotePlatforms.associateBy { it.slug to it.fsSlug }
+        val remoteBySlug = remotePlatforms.groupBy { it.slug }
+        val allLocal = platformDao.getAllPlatforms()
 
-            val numericPlatform = platformDao.getById(numericId)
-            val legacyPlatform = platformDao.getBySlug(slug)
+        for (local in allLocal) {
+            if (local.id in remoteIds) continue
 
-            if (numericPlatform != null && legacyPlatform != null && legacyPlatform.id != numericId) {
-                gameDao.migratePlatform(legacyPlatform.id, numericId)
-                platformDao.deleteById(legacyPlatform.id)
-                Logger.info(TAG, "Migrated games and removed legacy platform: ${legacyPlatform.id} -> $numericId")
+            val matchingRemote = remoteByKey[local.slug to local.fsSlug]
+                ?: if (local.fsSlug == null) remoteBySlug[local.slug]?.firstOrNull() else null
+
+            if (matchingRemote != null) {
+                gameDao.migratePlatform(local.id, matchingRemote.id)
+                platformDao.deleteById(local.id)
+                Logger.info(TAG, "Migrated legacy platform ${local.id} -> ${matchingRemote.id}")
             }
         }
     }
@@ -1294,13 +1299,15 @@ class RomMRepository @Inject constructor(
                 val platforms = response.body() ?: emptyList()
                 val entities = platforms.map { remote ->
                     val existing = platformDao.getById(remote.id)
-                        ?: platformDao.getBySlug(remote.slug)
+                        ?: platformDao.getBySlugAndFsSlug(remote.slug, remote.fsSlug)
+                        ?: platformDao.getBySlug(remote.slug)  // Fallback for NULL fsSlug migration
                     val platformDef = PlatformDefinitions.getBySlug(remote.slug)
                     val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
                     val normalizedName = remote.displayName ?: remote.name
                     PlatformEntity(
                         id = remote.id,
                         slug = remote.slug,
+                        fsSlug = remote.fsSlug,
                         name = normalizedName,
                         shortName = platformDef?.shortName ?: normalizedName,
                         romExtensions = platformDef?.extensions?.joinToString(",") ?: "",

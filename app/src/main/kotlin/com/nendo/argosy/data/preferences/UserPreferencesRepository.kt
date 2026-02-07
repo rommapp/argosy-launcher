@@ -104,6 +104,7 @@ class UserPreferencesRepository @Inject constructor(
         val AMBIENT_AUDIO_ENABLED = booleanPreferencesKey("ambient_audio_enabled")
         val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
         val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
+        val AMBIENT_AUDIO_SHUFFLE = booleanPreferencesKey("ambient_audio_shuffle")
         val IMAGE_CACHE_PATH = stringPreferencesKey("image_cache_path")
 
         val SCREEN_DIMMER_ENABLED = booleanPreferencesKey("screen_dimmer_enabled")
@@ -247,6 +248,7 @@ class UserPreferencesRepository @Inject constructor(
             ambientAudioEnabled = prefs[Keys.AMBIENT_AUDIO_ENABLED] ?: false,
             ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
             ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
+            ambientAudioShuffle = prefs[Keys.AMBIENT_AUDIO_SHUFFLE] ?: false,
             imageCachePath = prefs[Keys.IMAGE_CACHE_PATH],
             screenDimmerEnabled = prefs[Keys.SCREEN_DIMMER_ENABLED] ?: true,
             screenDimmerTimeoutMinutes = prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] ?: 2,
@@ -808,6 +810,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setAmbientAudioShuffle(shuffle: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.AMBIENT_AUDIO_SHUFFLE] = shuffle
+        }
+    }
+
     suspend fun setImageCachePath(path: String?) {
         dataStore.edit { prefs ->
             if (path != null) prefs[Keys.IMAGE_CACHE_PATH] = path
@@ -1202,6 +1210,7 @@ data class UserPreferences(
     val ambientAudioEnabled: Boolean = false,
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
+    val ambientAudioShuffle: Boolean = false,
     val imageCachePath: String? = null,
     val screenDimmerEnabled: Boolean = true,
     val screenDimmerTimeoutMinutes: Int = 2,

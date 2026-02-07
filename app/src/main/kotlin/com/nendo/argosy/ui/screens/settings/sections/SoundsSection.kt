@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings.sections
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +32,7 @@ import com.nendo.argosy.ui.theme.Dimens
 
 private data class SoundsLayoutState(
     val bgmEnabled: Boolean,
+    val bgmIsFolder: Boolean,
     val uiSoundsEnabled: Boolean
 )
 
@@ -52,7 +54,8 @@ private sealed class SoundsItem(
 
     data object BgmToggle : SoundsItem("bgmToggle", "bgm")
     data object BgmVolume : SoundsItem("bgmVolume", "bgm", { it.bgmEnabled })
-    data object BgmFile : SoundsItem("bgmFile", "bgm", { it.bgmEnabled })
+    data object BgmSource : SoundsItem("bgmSource", "bgm", { it.bgmEnabled })
+    data object BgmShuffle : SoundsItem("bgmShuffle", "bgm", { it.bgmEnabled && it.bgmIsFolder })
 
     data object UiSoundsToggle : SoundsItem("uiSoundsToggle", "uiSounds")
     data object UiSoundsVolume : SoundsItem("uiVolume", "uiSounds", { it.uiSoundsEnabled })
@@ -79,7 +82,7 @@ private sealed class SoundsItem(
         )
 
         val ALL: List<SoundsItem> = listOf(
-            BgmToggle, BgmVolume, BgmFile,
+            BgmToggle, BgmVolume, BgmSource, BgmShuffle,
             UiSoundsSpacer, UiSoundsHeader, UiSoundsToggle, UiSoundsVolume,
             CustomizeSpacer, CustomizeHeader
         ) + SoundType.entries.map { SoundTypeItem(it) }
@@ -93,26 +96,27 @@ private val soundsLayout = SettingsLayout<SoundsItem, SoundsLayoutState>(
     sectionOf = { it.section }
 )
 
-internal fun soundsMaxFocusIndex(bgmEnabled: Boolean, uiSoundsEnabled: Boolean): Int =
-    soundsLayout.maxFocusIndex(SoundsLayoutState(bgmEnabled, uiSoundsEnabled))
+internal fun soundsMaxFocusIndex(bgmEnabled: Boolean, bgmIsFolder: Boolean, uiSoundsEnabled: Boolean): Int =
+    soundsLayout.maxFocusIndex(SoundsLayoutState(bgmEnabled, bgmIsFolder, uiSoundsEnabled))
 
-internal fun soundsSections(bgmEnabled: Boolean, uiSoundsEnabled: Boolean) =
-    soundsLayout.buildSections(SoundsLayoutState(bgmEnabled, uiSoundsEnabled))
+internal fun soundsSections(bgmEnabled: Boolean, bgmIsFolder: Boolean, uiSoundsEnabled: Boolean) =
+    soundsLayout.buildSections(SoundsLayoutState(bgmEnabled, bgmIsFolder, uiSoundsEnabled))
 
 @Composable
 fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
 
     val bgmEnabled = uiState.ambientAudio.enabled
+    val bgmIsFolder = uiState.ambientAudio.isFolder
     val uiSoundsEnabled = uiState.sounds.enabled
-    val layoutState = remember(bgmEnabled, uiSoundsEnabled) {
-        SoundsLayoutState(bgmEnabled, uiSoundsEnabled)
+    val layoutState = remember(bgmEnabled, bgmIsFolder, uiSoundsEnabled) {
+        SoundsLayoutState(bgmEnabled, bgmIsFolder, uiSoundsEnabled)
     }
 
-    val visibleItems = remember(bgmEnabled, uiSoundsEnabled) {
+    val visibleItems = remember(bgmEnabled, bgmIsFolder, uiSoundsEnabled) {
         soundsLayout.visibleItems(layoutState)
     }
-    val sections = remember(bgmEnabled, uiSoundsEnabled) {
+    val sections = remember(bgmEnabled, bgmIsFolder, uiSoundsEnabled) {
         soundsLayout.buildSections(layoutState)
     }
 
@@ -171,10 +175,20 @@ fun SoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                SoundsItem.BgmFile -> BackgroundMusicFileItem(
-                    fileName = uiState.ambientAudio.audioFileName,
+                SoundsItem.BgmSource -> BackgroundMusicSourceItem(
+                    sourcePath = uiState.ambientAudio.audioUri,
+                    isFolder = uiState.ambientAudio.isFolder,
+                    currentTrack = uiState.ambientAudio.currentTrackName,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openAudioFileBrowser() }
+                )
+
+                SoundsItem.BgmShuffle -> SwitchPreference(
+                    title = "Shuffle",
+                    subtitle = "Randomize playback order",
+                    isEnabled = uiState.ambientAudio.shuffle,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setAmbientAudioShuffle(it) }
                 )
 
                 SoundsItem.UiSoundsToggle -> SwitchPreference(
@@ -254,12 +268,38 @@ private fun SoundCustomizationItem(
     }
 }
 
+private fun truncatePathMiddle(path: String, maxLength: Int = 40): String {
+    if (path.length <= maxLength) return path
+
+    val parts = path.split("/").filter { it.isNotEmpty() }
+    if (parts.size <= 2) return path
+
+    val first = parts.first()
+    val last = parts.last()
+    val secondLast = parts.getOrNull(parts.size - 2)
+
+    val suffix = if (secondLast != null) "$secondLast/$last" else last
+    val ellipsis = "/.../"
+
+    val available = maxLength - first.length - ellipsis.length
+    return if (available >= suffix.length) {
+        "$first$ellipsis$suffix"
+    } else {
+        "$first$ellipsis$last"
+    }
+}
+
 @Composable
-private fun BackgroundMusicFileItem(
-    fileName: String?,
+private fun BackgroundMusicSourceItem(
+    sourcePath: String?,
+    isFolder: Boolean,
+    currentTrack: String?,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
+    val title = "Music File(s)"
+    val displayValue = sourcePath?.let { truncatePathMiddle(it) } ?: "None selected"
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -273,14 +313,25 @@ private fun BackgroundMusicFileItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurface
+            )
+            if (isFolder && currentTrack != null) {
+                Text(
+                    text = "Playing: $currentTrack",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1
+                )
+            }
+        }
         Text(
-            text = "Music File",
-            style = MaterialTheme.typography.titleMedium,
-            color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = fileName ?: "None selected",
+            text = displayValue,
             style = MaterialTheme.typography.bodyMedium,
             color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     else MaterialTheme.colorScheme.onSurfaceVariant

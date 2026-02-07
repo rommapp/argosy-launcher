@@ -48,7 +48,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import android.content.res.Configuration
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -94,8 +96,16 @@ fun FileBrowserScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             FileBrowserHeader(
-                title = if (mode == FileBrowserMode.FOLDER_SELECTION) "Select Folder" else "Select File"
+                title = when (mode) {
+                    FileBrowserMode.FOLDER_SELECTION -> "Select Folder"
+                    FileBrowserMode.FILE_SELECTION -> "Select File"
+                    FileBrowserMode.FILE_OR_FOLDER_SELECTION -> "Select File or Folder"
+                }
             )
+
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val volumePaneFraction = if (isLandscape) 0.20f else 0.35f
 
             Row(
                 modifier = Modifier
@@ -107,7 +117,7 @@ fun FileBrowserScreen(
                     focusedIndex = state.volumeFocusIndex,
                     isFocused = state.focusedPane == FocusedPane.VOLUMES,
                     onVolumeClick = { viewModel.selectVolume(it) },
-                    modifier = Modifier.width(Dimens.modalWidth - 190.dp)
+                    modifier = Modifier.fillMaxWidth(volumePaneFraction)
                 )
 
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
@@ -129,7 +139,8 @@ fun FileBrowserScreen(
                         onEntryClick = { entry ->
                             if (entry.isDirectory) {
                                 viewModel.navigate(entry.path)
-                            } else if (mode == FileBrowserMode.FILE_SELECTION) {
+                            } else if (mode == FileBrowserMode.FILE_SELECTION ||
+                                       mode == FileBrowserMode.FILE_OR_FOLDER_SELECTION) {
                                 onPathSelected(entry.path)
                             }
                         },
@@ -521,13 +532,21 @@ private fun FileBrowserFooter(
     onNewFolder: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val selectHint = if (mode == FileBrowserMode.FILE_SELECTION) "Select File" else "Open"
+    val selectHint = when (mode) {
+        FileBrowserMode.FILE_SELECTION -> "Select File"
+        FileBrowserMode.FILE_OR_FOLDER_SELECTION -> "Select File"
+        FileBrowserMode.FOLDER_SELECTION -> "Open"
+    }
+    val showFolderOptions = mode == FileBrowserMode.FOLDER_SELECTION ||
+                            mode == FileBrowserMode.FILE_OR_FOLDER_SELECTION
     val hints = buildList {
         add(InputButton.A to selectHint)
         add(InputButton.B to "Back")
-        if (mode == FileBrowserMode.FOLDER_SELECTION && currentPath.isNotEmpty()) {
-            add(InputButton.Y to "New Folder")
-            add(InputButton.X to "Use Current")
+        if (showFolderOptions && currentPath.isNotEmpty()) {
+            if (mode == FileBrowserMode.FOLDER_SELECTION) {
+                add(InputButton.Y to "New Folder")
+            }
+            add(InputButton.X to "Use Folder")
         }
     }
 

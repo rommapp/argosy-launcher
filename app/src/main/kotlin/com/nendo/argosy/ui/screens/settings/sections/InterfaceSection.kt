@@ -422,7 +422,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
 
                 InterfaceItem.BgmFile -> BackgroundMusicFileItem(
-                    fileName = uiState.ambientAudio.audioFileName,
+                    filePath = uiState.ambientAudio.audioUri,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openAudioFileBrowser() }
                 )
@@ -514,12 +514,35 @@ private fun SoundCustomizationItem(
     }
 }
 
+private fun truncatePathMiddle(path: String, maxLength: Int = 40): String {
+    if (path.length <= maxLength) return path
+
+    val parts = path.split("/").filter { it.isNotEmpty() }
+    if (parts.size <= 2) return path
+
+    val first = parts.first()
+    val last = parts.last()
+    val secondLast = parts.getOrNull(parts.size - 2)
+
+    val suffix = if (secondLast != null) "$secondLast/$last" else last
+    val ellipsis = "/.../"
+
+    val available = maxLength - first.length - ellipsis.length
+    return if (available >= suffix.length) {
+        "$first$ellipsis$suffix"
+    } else {
+        "$first$ellipsis$last"
+    }
+}
+
 @Composable
 private fun BackgroundMusicFileItem(
-    fileName: String?,
+    filePath: String?,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
+    val displayValue = filePath?.let { truncatePathMiddle(it) } ?: "None selected"
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -534,13 +557,13 @@ private fun BackgroundMusicFileItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Music File",
+            text = "Music File(s)",
             style = MaterialTheme.typography.titleMedium,
             color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
                     else MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = fileName ?: "None selected",
+            text = displayValue,
             style = MaterialTheme.typography.bodyMedium,
             color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     else MaterialTheme.colorScheme.onSurfaceVariant

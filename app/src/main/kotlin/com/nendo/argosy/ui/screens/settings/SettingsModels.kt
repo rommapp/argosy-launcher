@@ -183,7 +183,10 @@ data class AmbientAudioState(
     val enabled: Boolean = false,
     val volume: Int = 50,
     val audioUri: String? = null,
-    val audioFileName: String? = null
+    val audioFileName: String? = null,
+    val isFolder: Boolean = false,
+    val shuffle: Boolean = false,
+    val currentTrackName: String? = null
 )
 
 data class EmulatorState(

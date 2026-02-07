@@ -131,7 +131,8 @@ class MainActivity : ComponentActivity() {
                 )
                 ambientAudioManager.setEnabled(prefs.ambientAudioEnabled)
                 ambientAudioManager.setVolume(prefs.ambientAudioVolume)
-                ambientAudioManager.setAudioUri(prefs.ambientAudioUri)
+                ambientAudioManager.setShuffle(prefs.ambientAudioShuffle)
+                ambientAudioManager.setAudioSource(prefs.ambientAudioUri)
                 if (prefs.ambientAudioEnabled && prefs.ambientAudioUri != null && hasWindowFocus()) {
                     ambientAudioManager.fadeIn()
                 }

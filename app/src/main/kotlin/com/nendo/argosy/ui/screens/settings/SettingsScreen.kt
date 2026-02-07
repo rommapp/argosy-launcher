@@ -607,7 +607,7 @@ fun SettingsScreen(
 
     if (showAudioFileBrowser) {
         FileBrowserScreen(
-            mode = FileBrowserMode.FILE_SELECTION,
+            mode = FileBrowserMode.FILE_OR_FOLDER_SELECTION,
             fileFilter = FileFilter.AUDIO,
             onPathSelected = { path ->
                 showAudioFileBrowser = false

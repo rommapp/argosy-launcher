@@ -322,6 +322,7 @@ class SettingsViewModel @Inject constructor(
         ambientAudioDelegate.state.onEach { ambientAudio ->
             _uiState.update { it.copy(ambientAudio = ambientAudio) }
         }.launchIn(viewModelScope)
+        ambientAudioDelegate.initFlowCollection(viewModelScope)
 
         emulatorDelegate.state.onEach { emulators ->
             _uiState.update { it.copy(emulators = emulators) }
@@ -583,25 +584,35 @@ class SettingsViewModel @Inject constructor(
                 soundConfigs = prefs.soundConfigs
             ))
 
-            val ambientFileName = prefs.ambientAudioUri?.let { uri ->
-                try {
-                    android.net.Uri.parse(uri).let { parsedUri ->
-                        context.contentResolver.query(parsedUri, null, null, null, null)?.use { cursor ->
-                            if (cursor.moveToFirst()) {
-                                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                                if (nameIndex >= 0) cursor.getString(nameIndex) else null
-                            } else null
+            val ambientUri = prefs.ambientAudioUri
+            val isAmbientFolder = ambientUri?.let { uri ->
+                uri.startsWith("/") && java.io.File(uri).isDirectory
+            } ?: false
+            val ambientFileName = ambientUri?.let { uri ->
+                if (uri.startsWith("/")) {
+                    uri.substringAfterLast("/")
+                } else {
+                    try {
+                        android.net.Uri.parse(uri).let { parsedUri ->
+                            context.contentResolver.query(parsedUri, null, null, null, null)?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                                    if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                                } else null
+                            }
                         }
+                    } catch (e: Exception) {
+                        uri.substringAfterLast("/").substringBefore("?")
                     }
-                } catch (e: Exception) {
-                    uri.substringAfterLast("/").substringBefore("?")
                 }
             }
             ambientAudioDelegate.updateState(AmbientAudioState(
                 enabled = prefs.ambientAudioEnabled,
                 volume = prefs.ambientAudioVolume,
-                audioUri = prefs.ambientAudioUri,
-                audioFileName = ambientFileName
+                audioUri = ambientUri,
+                audioFileName = ambientFileName,
+                isFolder = isAmbientFolder,
+                shuffle = prefs.ambientAudioShuffle
             ))
 
             val currentEmulatorState = emulatorDelegate.state.value
@@ -2373,11 +2384,15 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setAmbientAudioUri(uri: String?) {
-        ambientAudioDelegate.setAudioUri(viewModelScope, uri)
+        ambientAudioDelegate.setAudioSource(viewModelScope, uri)
     }
 
     fun setAmbientAudioFilePath(path: String?) {
-        ambientAudioDelegate.setAudioFilePath(viewModelScope, path)
+        ambientAudioDelegate.setAudioSource(viewModelScope, path)
+    }
+
+    fun setAmbientAudioShuffle(shuffle: Boolean) {
+        ambientAudioDelegate.setShuffle(viewModelScope, shuffle)
     }
 
     fun clearAmbientAudioFile() {
@@ -3293,7 +3308,7 @@ class SettingsViewModel @Inject constructor(
                         return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
                     }
                     InterfaceItem.BgmVolume -> cycleAmbientAudioVolume()
-                    InterfaceItem.BgmFile -> openAudioFilePicker()
+                    InterfaceItem.BgmFile -> openAudioFileBrowser()
                     InterfaceItem.UiSoundsToggle -> {
                         val newEnabled = !state.sounds.enabled
                         setSoundEnabled(newEnabled)

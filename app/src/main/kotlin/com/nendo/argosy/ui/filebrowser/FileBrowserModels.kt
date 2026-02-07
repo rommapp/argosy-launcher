@@ -34,7 +34,8 @@ enum class FocusedPane {
 
 enum class FileBrowserMode {
     FOLDER_SELECTION,
-    FILE_SELECTION
+    FILE_SELECTION,
+    FILE_OR_FOLDER_SELECTION
 }
 
 data class FileFilter(

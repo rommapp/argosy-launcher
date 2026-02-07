@@ -558,6 +558,9 @@ object EmulatorRegistry {
 
     fun getByPackage(packageName: String): EmulatorDef? = packageMap[packageName]
 
+    fun getAlternatives(packageName: String): List<EmulatorDef> =
+        emulators.filter { it.packageName == packageName }
+
     fun getUpdateCheckable(): List<EmulatorDef> = emulators.filter { it.githubRepo != null }
 
     fun getForPlatform(platformId: String): List<EmulatorDef> {

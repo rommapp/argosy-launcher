@@ -36,6 +36,8 @@ class EmulatorDetector @Inject constructor(
         val detectedPackages = mutableSetOf<String>()
 
         for (emulatorDef in EmulatorRegistry.getAll()) {
+            if (emulatorDef.packageName in detectedPackages) continue
+
             if (emulatorDef.packageName == EmulatorRegistry.BUILTIN_PACKAGE) {
                 installed.add(createBuiltinEmulator(emulatorDef))
                 detectedPackages.add(emulatorDef.packageName)
@@ -44,7 +46,8 @@ class EmulatorDetector @Inject constructor(
 
             try {
                 val packageInfo = packageManager.getPackageInfo(emulatorDef.packageName, 0)
-                installed.add(createInstalledEmulator(emulatorDef, packageInfo))
+                val matchedDef = resolveEmulatorVariant(emulatorDef, packageInfo)
+                installed.add(createInstalledEmulator(matchedDef, packageInfo))
                 detectedPackages.add(emulatorDef.packageName)
             } catch (_: PackageManager.NameNotFoundException) {
             }
@@ -93,6 +96,25 @@ class EmulatorDetector @Inject constructor(
                 detectedPackages.add(packageName)
             }
         }
+    }
+
+    private fun resolveEmulatorVariant(def: EmulatorDef, packageInfo: PackageInfo): EmulatorDef {
+        val alternatives = EmulatorRegistry.getAlternatives(def.packageName)
+        if (alternatives.size <= 1) return def
+
+        val version = packageInfo.versionName ?: return def
+        val parts = version.split(".")
+
+        // Cemu dual-screen fork uses 3-part versions (e.g., 0.3.1), official uses 2-part (e.g., 0.3)
+        if (def.packageName == "info.cemu.cemu") {
+            return if (parts.size >= 3) {
+                alternatives.find { it.id == "cemu_dualscreen" } ?: def
+            } else {
+                alternatives.find { it.id == "cemu" } ?: def
+            }
+        }
+
+        return def
     }
 
     private fun createInstalledEmulator(def: EmulatorDef, packageInfo: PackageInfo): InstalledEmulator {

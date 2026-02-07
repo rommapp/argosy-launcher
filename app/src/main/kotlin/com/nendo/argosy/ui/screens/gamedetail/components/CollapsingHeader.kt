@@ -39,7 +39,9 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.theme.ALauncherColors
+import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalUiScale
 import java.io.File
 
 private val EXPANDED_COVER_WIDTH = 200.dp
@@ -104,14 +106,15 @@ fun ExpandedHeader(
     game: GameDetailUi,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val aspectRatio = maxWidth / maxHeight
-        val isPortrait = aspectRatio <= 1.0f
+    val aspectRatioClass = LocalUiScale.current.aspectRatioClass
+    val isWideDisplay = aspectRatioClass == AspectRatioClass.WIDE ||
+                        aspectRatioClass == AspectRatioClass.ULTRA_WIDE
 
-        if (isPortrait) {
-            PortraitExpandedHeader(game = game, maxWidth = maxWidth)
-        } else {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        if (isWideDisplay) {
             LandscapeExpandedHeader(game = game)
+        } else {
+            PortraitExpandedHeader(game = game, maxWidth = maxWidth)
         }
     }
 }

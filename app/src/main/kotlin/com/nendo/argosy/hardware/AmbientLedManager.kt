@@ -279,6 +279,8 @@ class AmbientLedManager @Inject constructor(
         }
     }
 
+    private var ledUpdateJob: Job? = null
+
     private fun updateLeds() {
         val currentState = _state.value
         val (leftColor, rightColor) = when (currentState.context) {
@@ -303,8 +305,12 @@ class AmbientLedManager @Inject constructor(
             }
         }
 
-        ledController.setColor(leftColor, rightColor)
-        ledController.setBrightness(currentState.brightness * brightnessScalar)
+        val brightness = currentState.brightness * brightnessScalar
+        ledUpdateJob?.cancel()
+        ledUpdateJob = scope.launch(Dispatchers.IO) {
+            ledController.setColor(leftColor, rightColor)
+            ledController.setBrightness(brightness)
+        }
     }
 
     private fun blendForIntensity(intensity: Float, colors: SideColors): Color {

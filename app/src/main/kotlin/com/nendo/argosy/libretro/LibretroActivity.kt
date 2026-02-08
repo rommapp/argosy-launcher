@@ -1,6 +1,7 @@
 package com.nendo.argosy.libretro
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.os.Bundle
@@ -1880,6 +1881,13 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == ACTION_SHOW_MENU) {
+            showMenu()
+        }
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
@@ -1922,5 +1930,6 @@ class LibretroActivity : ComponentActivity() {
         const val EXTRA_GAME_NAME = "game_name"
         const val EXTRA_GAME_ID = "game_id"
         const val EXTRA_CORE_NAME = "core_name"
+        const val ACTION_SHOW_MENU = "com.nendo.argosy.action.SHOW_MENU"
     }
 }

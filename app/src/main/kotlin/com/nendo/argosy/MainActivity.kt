@@ -84,6 +84,8 @@ class MainActivity : ComponentActivity() {
         }
     }
     private var hasResumedBefore = false
+    private var hadFocusBefore = false
+    private var focusLostTime = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -148,6 +150,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleHomeIntent(intent)
+    }
+
     override fun onResume() {
         super.onResume()
         if (hasResumedBefore) {
@@ -158,6 +166,14 @@ class MainActivity : ComponentActivity() {
             ambientAudioManager.fadeIn()
         }
         hasResumedBefore = true
+    }
+
+    private fun handleHomeIntent(intent: Intent): Boolean {
+        if (intent.hasCategory(Intent.CATEGORY_HOME) && hasResumedBefore) {
+            gamepadInputHandler.emitHomeEvent()
+            return true
+        }
+        return false
     }
 
     override fun onPause() {
@@ -177,6 +193,11 @@ class MainActivity : ComponentActivity() {
             ambientAudioManager.resumeFromSuspend()
         }
         if (gamepadInputHandler.handleKeyEvent(event)) {
+            return true
+        }
+        // Only handle Home key when not in emulator (gamepad handler didn't consume it)
+        if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_HOME) {
+            gamepadInputHandler.emitHomeEvent()
             return true
         }
         return super.dispatchKeyEvent(event)
@@ -199,6 +220,13 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
+            val timeSinceFocusLost = System.currentTimeMillis() - focusLostTime
+            // Only emit if we had focus before and lost it briefly (< 1 second = Home while visible)
+            if (hadFocusBefore && focusLostTime > 0 && timeSinceFocusLost < 1000) {
+                gamepadInputHandler.emitHomeEvent()
+            }
+            hadFocusBefore = true
+            focusLostTime = 0L
             hideSystemUI()
             window.decorView.requestFocus()
             launchRetryTracker.onFocusGained()
@@ -207,6 +235,7 @@ class MainActivity : ComponentActivity() {
             ambientLedManager.clearInGameColors()
             gamepadInputHandler.blockInputFor(200)
         } else {
+            focusLostTime = System.currentTimeMillis()
             launchRetryTracker.onFocusLost()
             ambientAudioManager.fadeOut()
             ambientLedManager.setContext(AmbientLedContext.IN_GAME)

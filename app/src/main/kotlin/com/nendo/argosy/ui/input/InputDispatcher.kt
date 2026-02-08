@@ -155,6 +155,7 @@ class InputDispatcher(
             GamepadEvent.Select -> handler.onSelect()
             GamepadEvent.LeftStickClick -> handler.onLeftStickClick()
             GamepadEvent.RightStickClick -> handler.onRightStickClick()
+            GamepadEvent.Home -> InputResult.UNHANDLED
         }
     }
 }

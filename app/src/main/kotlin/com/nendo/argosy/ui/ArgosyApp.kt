@@ -23,7 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import com.nendo.argosy.libretro.LibretroActivity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -83,6 +86,7 @@ fun ArgosyApp(
     val saveConflictButtonIndex by viewModel.saveConflictButtonIndex.collectAsState()
     val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Drawer state - confirmStateChange handles swipe gestures synchronously
     val drawerState = rememberDrawerState(
@@ -252,6 +256,12 @@ fun ArgosyApp(
         inputDispatcher.setCurrentRoute(currentRoute)
     }
 
+    // Gate Home button events - only emit when not on home screen
+    LaunchedEffect(currentRoute) {
+        val isHome = currentRoute?.startsWith(Screen.Home.route) == true
+        viewModel.gamepadInputHandler.homeEventEnabled = !isHome
+    }
+
     // Sync ViewModel drawer state -> Compose drawer animation
     LaunchedEffect(isDrawerOpen) {
         if (isDrawerOpen && !drawerState.isOpen) {
@@ -312,7 +322,43 @@ fun ArgosyApp(
                             openQuickSettings()
                         }
                     }
+                    GamepadEvent.Home -> {
+                        if (isDrawerOpen) closeDrawer()
+                        if (isQuickSettingsOpen) closeQuickSettings()
+                        if (quickMenuState.isVisible) closeQuickMenu()
+                        val homeRoute = Screen.Home.route
+                        if (currentRoute != homeRoute) {
+                            navController.navigate(homeRoute) {
+                                popUpTo(homeRoute) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                     else -> {}
+                }
+            }
+        }
+    }
+
+    // Collect Home button events (from system Home button press)
+    LaunchedEffect(Unit) {
+        viewModel.gamepadInputHandler.homeEventFlow().collect {
+            if (isEmulatorRunning) {
+                // Bring emulator back and show its menu
+                context.startActivity(
+                    Intent(context, LibretroActivity::class.java).apply {
+                        action = LibretroActivity.ACTION_SHOW_MENU
+                        addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    }
+                )
+            } else {
+                // Navigate to home view
+                if (isDrawerOpen) closeDrawer()
+                if (isQuickSettingsOpen) closeQuickSettings()
+                if (quickMenuState.isVisible) closeQuickMenu()
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                    launchSingleTop = true
                 }
             }
         }

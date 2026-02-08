@@ -7,9 +7,11 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,6 +40,7 @@ sealed interface GamepadEvent {
     data object Select : GamepadEvent
     data object LeftStickClick : GamepadEvent
     data object RightStickClick : GamepadEvent
+    data object Home : GamepadEvent
 }
 
 @Singleton
@@ -45,8 +48,11 @@ class GamepadInputHandler @Inject constructor(
     preferencesRepository: UserPreferencesRepository
 ) : RawInputInterceptor {
 
-    private val _events = MutableSharedFlow<GamepadEvent>(extraBufferCapacity = 16)
+    private val _events = MutableSharedFlow<GamepadEvent>(replay = 1, extraBufferCapacity = 16)
+    private val _homeEvents = Channel<Unit>(Channel.BUFFERED)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    var homeEventEnabled: Boolean = true
 
     private var swapAB = false
     private var swapXY = false
@@ -70,6 +76,7 @@ class GamepadInputHandler @Inject constructor(
     }
 
     fun eventFlow(): Flow<GamepadEvent> = _events.asSharedFlow()
+    fun homeEventFlow(): Flow<Unit> = _homeEvents.receiveAsFlow()
 
     private val lastInputTimes = mutableMapOf<GamepadEvent, Long>()
     private val inputDebounceMs = 80L
@@ -77,6 +84,12 @@ class GamepadInputHandler @Inject constructor(
 
     fun blockInputFor(durationMs: Long) {
         inputBlockedUntil = System.currentTimeMillis() + durationMs
+    }
+
+    fun emitHomeEvent() {
+        if (homeEventEnabled) {
+            _homeEvents.trySend(Unit)
+        }
     }
 
     override fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
@@ -148,6 +161,7 @@ class GamepadInputHandler @Inject constructor(
 
         KeyEvent.KEYCODE_BUTTON_THUMBL -> GamepadEvent.LeftStickClick
         KeyEvent.KEYCODE_BUTTON_THUMBR -> GamepadEvent.RightStickClick
+        KeyEvent.KEYCODE_HOME -> GamepadEvent.Home
 
         else -> null
     }

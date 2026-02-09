@@ -615,9 +615,11 @@ data class BiosState(
     val showDistributeResultModal: Boolean = false,
     val distributeResults: List<DistributeResultItem> = emptyList(),
     val customBiosPath: String? = null,
+    val isBiosMigrating: Boolean = false,
     val expandedPlatformIndex: Int = -1,
     val platformSubFocusIndex: Int = 0,
-    val actionIndex: Int = 0
+    val actionIndex: Int = 0,
+    val biosPathActionIndex: Int = 0
 ) {
     val missingFiles: Int get() = totalFiles - downloadedFiles
     val isComplete: Boolean get() = totalFiles > 0 && downloadedFiles == totalFiles

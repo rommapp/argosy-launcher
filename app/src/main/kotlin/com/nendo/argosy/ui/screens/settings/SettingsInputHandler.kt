@@ -351,6 +351,11 @@ class SettingsInputHandler(
                     viewModel.moveBiosActionFocus(-1)
                     return InputResult.HANDLED
                 }
+                1 -> {
+                    if (viewModel.moveBiosPathActionFocus(-1)) {
+                        return InputResult.HANDLED
+                    }
+                }
                 else -> {
                     if (state.focusedIndex >= 2 && viewModel.moveBiosPlatformSubFocus(-1)) {
                         return InputResult.HANDLED
@@ -583,6 +588,11 @@ class SettingsInputHandler(
                 0 -> {
                     viewModel.moveBiosActionFocus(1)
                     return InputResult.HANDLED
+                }
+                1 -> {
+                    if (viewModel.moveBiosPathActionFocus(1)) {
+                        return InputResult.HANDLED
+                    }
                 }
                 else -> {
                     if (state.focusedIndex >= 2 && viewModel.moveBiosPlatformSubFocus(1)) {

@@ -1940,6 +1940,7 @@ class SettingsViewModel @Inject constructor(
         }
         if (_uiState.value.currentSection == SettingsSection.BIOS) {
             biosDelegate.resetPlatformSubFocus()
+            biosDelegate.resetBiosPathActionFocus()
         }
     }
 
@@ -3495,7 +3496,16 @@ class SettingsViewModel @Inject constructor(
                             distributeAllBios()
                         }
                     }
-                    1 -> openBiosFolderPicker()
+                    1 -> {
+                        if (!state.bios.isBiosMigrating) {
+                            val actionIndex = state.bios.biosPathActionIndex
+                            if (actionIndex == 0) {
+                                openBiosFolderPicker()
+                            } else {
+                                resetBiosToDefault()
+                            }
+                        }
+                    }
                     else -> {
                         val bios = state.bios
                         val focusMapping = buildBiosFocusMapping(bios.platformGroups, bios.expandedPlatformIndex)
@@ -3618,8 +3628,21 @@ class SettingsViewModel @Inject constructor(
         biosDelegate.onBiosFolderSelected(path, viewModelScope)
     }
 
+    fun resetBiosToDefault() {
+        biosDelegate.resetBiosToDefault(viewModelScope)
+    }
+
     fun moveBiosActionFocus(delta: Int) {
         biosDelegate.moveActionFocus(delta)
+    }
+
+    fun moveBiosPathActionFocus(delta: Int): Boolean {
+        val hasCustomPath = _uiState.value.bios.customBiosPath != null
+        return biosDelegate.moveBiosPathActionFocus(delta, hasCustomPath)
+    }
+
+    fun resetBiosPathActionFocus() {
+        biosDelegate.resetBiosPathActionFocus()
     }
 
     fun moveBiosPlatformSubFocus(delta: Int): Boolean {

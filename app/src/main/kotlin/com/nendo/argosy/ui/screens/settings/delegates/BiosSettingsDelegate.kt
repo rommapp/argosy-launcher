@@ -239,10 +239,43 @@ class BiosSettingsDelegate @Inject constructor(
 
     fun onBiosFolderSelected(path: String, scope: CoroutineScope) {
         scope.launch {
-            preferencesRepository.setCustomBiosPath(path)
-            biosRepository.migrateToCustomPath(path)
-            loadBiosState()
+            _state.update { it.copy(customBiosPath = path, isBiosMigrating = true) }
+            try {
+                biosRepository.migrateToCustomPath(path)
+            } finally {
+                _state.update { it.copy(isBiosMigrating = false) }
+                loadBiosState()
+            }
         }
+    }
+
+    fun resetBiosToDefault(scope: CoroutineScope) {
+        scope.launch {
+            _state.update { it.copy(customBiosPath = null, biosPathActionIndex = 0, isBiosMigrating = true) }
+            try {
+                biosRepository.migrateToCustomPath(null)
+            } finally {
+                _state.update { it.copy(isBiosMigrating = false) }
+                loadBiosState()
+            }
+        }
+    }
+
+    fun moveBiosPathActionFocus(delta: Int, hasCustomPath: Boolean): Boolean {
+        val maxIndex = if (hasCustomPath) 1 else 0
+        val current = _state.value.biosPathActionIndex
+        val newIndex = current + delta
+
+        return if (newIndex in 0..maxIndex) {
+            _state.update { it.copy(biosPathActionIndex = newIndex) }
+            true
+        } else {
+            false
+        }
+    }
+
+    fun resetBiosPathActionFocus() {
+        _state.update { it.copy(biosPathActionIndex = 0) }
     }
 
     fun moveActionFocus(delta: Int) {

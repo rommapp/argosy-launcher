@@ -581,7 +581,7 @@ object EmulatorRegistry {
         "ngc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "wii" to listOf("dolphin", "dolphin_handheld"),
         "wiiu" to listOf("cemu", "cemu_dualscreen"),
-        "switch" to listOf("citron", "sudachi", "ryujinx", "yuzu", "strato", "eden", "skyline"),
+        "switch" to listOf("eden", "citron", "sudachi", "ryujinx", "yuzu", "strato", "skyline"),
         "gba" to listOf("builtin", "pizza_boy_gba", "retroarch", "retroarch_64"),
         "gb" to listOf("builtin", "pizza_boy_gb", "retroarch", "retroarch_64"),
         "gbc" to listOf("builtin", "pizza_boy_gb", "retroarch", "retroarch_64"),

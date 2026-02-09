@@ -79,6 +79,15 @@ class BiosRepository @Inject constructor(
         return dir
     }
 
+    private fun resolveBiosDir(basePath: String): File {
+        val baseDir = File(basePath)
+        return if (baseDir.name.equals("bios", ignoreCase = true)) {
+            baseDir
+        } else {
+            File(basePath, "bios")
+        }
+    }
+
     private fun getInternalBiosPlatformDir(platformSlug: String): File {
         val dir = File(getInternalBiosDir(), platformSlug)
         if (!dir.exists()) dir.mkdirs()
@@ -400,33 +409,86 @@ class BiosRepository @Inject constructor(
         val oldPath = prefs.customBiosPath
         val internalDir = getInternalBiosDir()
 
+        // Determine source directory (old custom path or internal)
+        val oldBiosDir = if (oldPath != null) resolveBiosDir(oldPath) else null
+        val sourceDir = oldBiosDir ?: internalDir
+
         if (newPath != null) {
-            val newDir = File(newPath, "bios")
+            val newDir = resolveBiosDir(newPath)
             if (!newDir.exists() && !newDir.mkdirs()) {
                 Logger.error(TAG, "Failed to create new BIOS directory: $newPath")
                 return@withContext false
             }
 
             try {
-                internalDir.walkTopDown().filter { it.isFile }.forEach { file ->
-                    val relativePath = file.relativeTo(internalDir)
-                    val targetFile = File(newDir, relativePath.path)
-                    targetFile.parentFile?.mkdirs()
-                    file.copyTo(targetFile, overwrite = true)
+                // Copy from source (old custom or internal) to new custom path
+                if (sourceDir.exists()) {
+                    sourceDir.walkTopDown().filter { it.isFile }.forEach { file ->
+                        val relativePath = file.relativeTo(sourceDir)
+                        val targetFile = File(newDir, relativePath.path)
+                        targetFile.parentFile?.mkdirs()
+                        file.copyTo(targetFile, overwrite = true)
+                    }
+                    Logger.info(TAG, "Copied BIOS files from ${sourceDir.absolutePath} to ${newDir.absolutePath}")
                 }
-                Logger.info(TAG, "Copied BIOS files to $newPath")
+
+                // Update localPath in firmware database
+                val allFirmware = firmwareDao.getDownloaded()
+                allFirmware.forEach { firmware ->
+                    val oldLocalPath = firmware.localPath ?: return@forEach
+                    val oldFile = File(oldLocalPath)
+                    val relativePath = try {
+                        oldFile.relativeTo(sourceDir)
+                    } catch (e: IllegalArgumentException) {
+                        // File not under source dir, skip
+                        return@forEach
+                    }
+                    val newLocalPath = File(newDir, relativePath.path).absolutePath
+                    firmwareDao.updateLocalPath(firmware.id, newLocalPath, firmware.downloadedAt)
+                }
+                Logger.info(TAG, "Updated firmware database paths")
             } catch (e: Exception) {
                 Logger.error(TAG, "Failed to copy BIOS files: ${e.message}", e)
                 return@withContext false
             }
+        } else {
+            // Moving back to internal - update database paths
+            try {
+                if (sourceDir.exists() && sourceDir != internalDir) {
+                    sourceDir.walkTopDown().filter { it.isFile }.forEach { file ->
+                        val relativePath = file.relativeTo(sourceDir)
+                        val targetFile = File(internalDir, relativePath.path)
+                        targetFile.parentFile?.mkdirs()
+                        file.copyTo(targetFile, overwrite = true)
+                    }
+                    Logger.info(TAG, "Copied BIOS files back to internal directory")
+                }
+
+                val allFirmware = firmwareDao.getDownloaded()
+                allFirmware.forEach { firmware ->
+                    val oldLocalPath = firmware.localPath ?: return@forEach
+                    val oldFile = File(oldLocalPath)
+                    val relativePath = try {
+                        oldFile.relativeTo(sourceDir)
+                    } catch (e: IllegalArgumentException) {
+                        return@forEach
+                    }
+                    val newLocalPath = File(internalDir, relativePath.path).absolutePath
+                    firmwareDao.updateLocalPath(firmware.id, newLocalPath, firmware.downloadedAt)
+                }
+                Logger.info(TAG, "Updated firmware database paths to internal")
+            } catch (e: Exception) {
+                Logger.error(TAG, "Failed to migrate back to internal: ${e.message}", e)
+                return@withContext false
+            }
         }
 
-        if (oldPath != null && oldPath != newPath) {
+        // Delete old custom directory if different from new
+        if (oldBiosDir != null && oldBiosDir.absolutePath != (if (newPath != null) resolveBiosDir(newPath).absolutePath else null)) {
             try {
-                val oldDir = File(oldPath, "bios")
-                if (oldDir.exists()) {
-                    oldDir.deleteRecursively()
-                    Logger.info(TAG, "Deleted old BIOS directory: $oldPath")
+                if (oldBiosDir.exists()) {
+                    oldBiosDir.deleteRecursively()
+                    Logger.info(TAG, "Deleted old BIOS directory: ${oldBiosDir.absolutePath}")
                 }
             } catch (e: Exception) {
                 Logger.warn(TAG, "Failed to delete old BIOS directory: ${e.message}")
@@ -496,8 +558,17 @@ class BiosRepository @Inject constructor(
                 }
             }
 
+            // Create all Eden expected directories
+            val edenDirs = listOf(
+                "amiibo", "cache", "config", "crash_dumps", "dump",
+                "keys", "load", "log", "play_time", "screenshots",
+                "sdmc", "shader", "tas", "icons"
+            )
+            edenDirs.forEach { dir ->
+                File(edenBasePath, dir).mkdirs()
+            }
+
             val keysDir = File(edenBasePath, "keys")
-            keysDir.mkdirs()
             val targetProdKeys = File(keysDir, "prod.keys")
             File(prodKeysPath).copyTo(targetProdKeys, overwrite = true)
             Logger.info(TAG, "Copied prod.keys to ${targetProdKeys.absolutePath}")

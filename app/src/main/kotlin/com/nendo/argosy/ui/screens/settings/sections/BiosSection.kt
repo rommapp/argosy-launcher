@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.window.Dialog
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.ExpandedChildItem
+import com.nendo.argosy.ui.components.ImageCachePreference
 import com.nendo.argosy.ui.screens.settings.BiosPlatformGroup
 import com.nendo.argosy.ui.screens.settings.DistributeResultItem
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -97,16 +98,24 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         }
 
         item {
-            val pathDisplay = bios.customBiosPath?.let {
-                "${it.substringAfterLast("/")}/bios"
+            val pathDisplay = bios.customBiosPath?.let { path ->
+                val folderName = path.substringAfterLast("/")
+                if (folderName.equals("bios", ignoreCase = true)) {
+                    folderName
+                } else {
+                    "$folderName/bios"
+                }
             } ?: "Internal (default)"
 
-            ActionPreference(
-                icon = Icons.Default.Folder,
+            ImageCachePreference(
                 title = "BIOS Directory",
-                subtitle = pathDisplay,
+                displayPath = pathDisplay,
+                hasCustomPath = bios.customBiosPath != null,
                 isFocused = uiState.focusedIndex == 1,
-                onClick = { viewModel.openBiosFolderPicker() }
+                actionIndex = bios.biosPathActionIndex,
+                isMigrating = bios.isBiosMigrating,
+                onChange = { viewModel.openBiosFolderPicker() },
+                onReset = { viewModel.resetBiosToDefault() }
             )
         }
 

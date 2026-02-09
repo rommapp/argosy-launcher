@@ -44,6 +44,7 @@ import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.data.cheats.CheatsRepository
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.CheatDao
@@ -901,6 +902,19 @@ class LibretroActivity : ComponentActivity() {
                 Log.d("LibretroActivity", "New game mode - starting fresh (no save)")
                 val sramFile = getSramFile()
                 if (sramFile.exists()) {
+                    val result = saveCacheManager.cacheAsRollback(
+                        gameId,
+                        EmulatorRegistry.BUILTIN_PACKAGE,
+                        sramFile.absolutePath
+                    )
+                    when (result) {
+                        SaveCacheManager.CacheResult.Created ->
+                            Log.d("LibretroActivity", "Created rollback backup before fresh start")
+                        SaveCacheManager.CacheResult.Duplicate ->
+                            Log.d("LibretroActivity", "Rollback skipped - identical save already cached")
+                        SaveCacheManager.CacheResult.Failed ->
+                            Log.w("LibretroActivity", "Failed to create rollback backup")
+                    }
                     sramFile.delete()
                     Log.d("LibretroActivity", "Deleted existing save file for fresh start")
                 }
@@ -1910,7 +1924,7 @@ class LibretroActivity : ComponentActivity() {
             retroView.destroyRewindBuffer()
         }
         if (isFinishing && gameId != -1L) {
-            playSessionTracker.endSession()
+            kotlinx.coroutines.GlobalScope.launch { playSessionTracker.endSession() }
         }
         super.onDestroy()
     }

@@ -183,6 +183,13 @@ class SaveCacheManager @Inject constructor(
                 saveArchiver.calculateFileHash(saveFile) to saveFile
             }
 
+            val existingWithHash = saveCacheDao.getByGameAndHash(gameId, contentHash)
+            if (existingWithHash != null) {
+                Log.d(TAG, "Rollback skipped - identical save already cached (hash=$contentHash)")
+                tempFile?.delete()
+                return@withContext CacheResult.Duplicate
+            }
+
             val now = Instant.now()
             val timestamp = TIMESTAMP_FORMAT.format(now)
             val gameDir = File(cacheBaseDir, "$gameId/$timestamp")

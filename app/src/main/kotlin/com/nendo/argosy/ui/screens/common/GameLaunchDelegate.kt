@@ -12,6 +12,7 @@ import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.emulator.SessionEndResult
 import com.nendo.argosy.data.emulator.TitleIdDetector
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -350,12 +351,27 @@ class GameLaunchDelegate @Inject constructor(
         onSyncComplete: () -> Unit = {}
     ) {
         val session = playSessionTracker.activeSession.value ?: return
-
         val sessionDuration = playSessionTracker.getSessionDuration()
-        if (sessionDuration != null && sessionDuration.seconds < 2) {
-            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: likely failed launch (${sessionDuration.seconds}s), ending without sync")
-            playSessionTracker.endSession()
-            return
+
+        if (sessionDuration != null) {
+            val seconds = sessionDuration.seconds
+
+            if (seconds < 10) {
+                if (session.flashReturnCount > 0) {
+                    android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: double flash return (${seconds}s), cancelling session")
+                    playSessionTracker.cancelSession()
+                    return
+                }
+                android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: flash return (${seconds}s), keeping session alive")
+                playSessionTracker.markFlashReturn()
+                return
+            }
+
+            if (seconds < 30) {
+                android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: short session (${seconds}s), cancelling without backup")
+                playSessionTracker.cancelSession()
+                return
+            }
         }
 
         android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: proceeding with session end for gameId=${session.gameId}")
@@ -364,7 +380,7 @@ class GameLaunchDelegate @Inject constructor(
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)
         if (emulatorId == null) {
             android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: cannot resolve emulatorId, ending session without sync")
-            playSessionTracker.endSession()
+            scope.launch { playSessionTracker.endSession() }
             syncMutex.unlock()
             return
         }
@@ -384,7 +400,6 @@ class GameLaunchDelegate @Inject constructor(
 
                 val game = gameDao.getById(session.gameId)
                 val gameTitle = game?.title ?: "Game"
-                val channelName: String? = null
                 val emulatorName = EmulatorRegistry.getById(emulatorId)?.displayName
 
                 val validationResult = titleIdDetector.validateSavePathAccess(emulatorId, session.emulatorPackage)
@@ -414,47 +429,32 @@ class GameLaunchDelegate @Inject constructor(
                     is TitleIdDetector.ValidationResult.Valid,
                     is TitleIdDetector.ValidationResult.NotFolderBased,
                     is TitleIdDetector.ValidationResult.NoConfig -> {
-                        // Proceed to actual sync - it has retry logic and will determine real result
+                        // Proceed to actual sync
                     }
                 }
 
                 _syncOverlayState.value = SyncOverlayState(
                     gameTitle,
-                    SyncProgress.PostSession.CheckingSave(channelName)
+                    SyncProgress.PostSession.CheckingSave(null)
                 )
 
-                val syncStartTime = System.currentTimeMillis()
+                val result = playSessionTracker.endSession()
 
-                _syncOverlayState.value = SyncOverlayState(
-                    gameTitle,
-                    SyncProgress.PostSession.CheckingSave(channelName, found = true)
-                )
-
-                _syncOverlayState.value = SyncOverlayState(
-                    gameTitle,
-                    SyncProgress.PostSession.Connecting(channelName)
-                )
-
-                playSessionTracker.endSession()
-
-                _syncOverlayState.value = SyncOverlayState(
-                    gameTitle,
-                    SyncProgress.PostSession.Uploading(channelName, success = true)
-                )
-
-                val elapsed = System.currentTimeMillis() - syncStartTime
-                val minDisplayTime = 1500L
-                if (elapsed < minDisplayTime) {
-                    delay(minDisplayTime - elapsed)
+                when (result) {
+                    is SessionEndResult.Success -> {
+                        _syncOverlayState.value = SyncOverlayState(gameTitle, SyncProgress.PostSession.Complete)
+                        delay(800)
+                        _syncOverlayState.value = null
+                    }
+                    is SessionEndResult.Duplicate, is SessionEndResult.Skipped -> {
+                        _syncOverlayState.value = null
+                    }
+                    is SessionEndResult.Error -> {
+                        _syncOverlayState.value = SyncOverlayState(gameTitle, SyncProgress.Error(result.message))
+                        delay(1500)
+                        _syncOverlayState.value = null
+                    }
                 }
-
-                _syncOverlayState.value = SyncOverlayState(
-                    gameTitle,
-                    SyncProgress.PostSession.Complete
-                )
-
-                delay(300)
-                _syncOverlayState.value = null
                 onSyncComplete()
             } finally {
                 syncMutex.unlock()
@@ -488,7 +488,7 @@ class GameLaunchDelegate @Inject constructor(
     }
 
     private fun dismissBlockedOverlay(onSyncComplete: () -> Unit) {
-        playSessionTracker.endSession()
+        kotlinx.coroutines.GlobalScope.launch { playSessionTracker.endSession() }
         _syncOverlayState.value = null
         syncMutex.unlock()
         onSyncComplete()

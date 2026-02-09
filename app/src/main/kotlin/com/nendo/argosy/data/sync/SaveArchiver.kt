@@ -587,8 +587,13 @@ class SaveArchiver @Inject constructor(
 
     fun calculateFolderHash(folder: File): String {
         val md = MessageDigest.getInstance("MD5")
+        val excludedDirs = setOf("storage", "cache")
         folder.walkTopDown()
             .filter { it.isFile }
+            .filter { file ->
+                val relativePath = file.relativeTo(folder).path
+                !excludedDirs.any { dir -> relativePath.startsWith("$dir/") || relativePath.startsWith("$dir\\") }
+            }
             .sortedBy { it.relativeTo(folder).path }
             .forEach { file ->
                 md.update(file.relativeTo(folder).path.toByteArray())

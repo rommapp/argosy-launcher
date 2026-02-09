@@ -38,6 +38,7 @@ import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.SectionFocusedScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Dialog
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.ExpandedChildItem
@@ -47,6 +48,7 @@ import com.nendo.argosy.ui.screens.settings.DistributeResultItem
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 
 @Composable
 fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -195,6 +197,20 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             onDismiss = { viewModel.dismissDistributeResultModal() }
         )
     }
+
+    if (bios.showGpuDriverPrompt) {
+        GpuDriverPromptModal(
+            gpuName = bios.deviceGpuName,
+            driverName = bios.gpuDriverInfo?.name,
+            driverVersion = bios.gpuDriverInfo?.version,
+            isInstalling = bios.gpuDriverInfo?.isInstalling == true,
+            installProgress = bios.gpuDriverInfo?.installProgress ?: 0f,
+            focusIndex = bios.gpuDriverPromptFocusIndex,
+            onInstallRecommended = { viewModel.installGpuDriver() },
+            onInstallFromFile = { viewModel.openGpuDriverFilePicker() },
+            onSkip = { viewModel.dismissGpuDriverPrompt() }
+        )
+    }
 }
 
 @Composable
@@ -288,6 +304,133 @@ private fun DistributeResultModal(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun GpuDriverPromptModal(
+    gpuName: String?,
+    driverName: String?,
+    driverVersion: String?,
+    isInstalling: Boolean,
+    installProgress: Float,
+    focusIndex: Int,
+    onInstallRecommended: () -> Unit,
+    onInstallFromFile: () -> Unit,
+    onSkip: () -> Unit
+) {
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(overlayColor)
+            .clickableNoFocus(enabled = !isInstalling) { onSkip() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .width(Dimens.modalWidth)
+                .clip(RoundedCornerShape(Dimens.radiusLg))
+                .background(MaterialTheme.colorScheme.surface)
+                .clickableNoFocus(enabled = false) {}
+                .padding(Dimens.spacingMd)
+        ) {
+            Text(
+                text = "GPU Driver Available",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            if (gpuName != null) {
+                Text(
+                    text = "Detected: $gpuName",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(Dimens.spacingXs))
+            }
+
+            Text(
+                text = "A custom GPU driver can improve Switch emulation performance on Snapdragon 8 devices.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+            if (isInstalling) {
+                Text(
+                    text = "Installing driver...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(Dimens.spacingXs))
+                LinearProgressIndicator(
+                    progress = { installProgress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                )
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    GpuDriverOptionButton(
+                        text = if (driverName != null && driverVersion != null) {
+                            "Install Recommended ($driverVersion)"
+                        } else {
+                            "Install Recommended"
+                        },
+                        isSelected = focusIndex == 0,
+                        onClick = onInstallRecommended
+                    )
+
+                    GpuDriverOptionButton(
+                        text = "Install from File",
+                        isSelected = focusIndex == 1,
+                        onClick = onInstallFromFile
+                    )
+
+                    GpuDriverOptionButton(
+                        text = "Skip",
+                        isSelected = focusIndex == 2,
+                        onClick = onSkip
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GpuDriverOptionButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+            .clickableNoFocus { onClick() }
+            .padding(Dimens.spacingSm),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

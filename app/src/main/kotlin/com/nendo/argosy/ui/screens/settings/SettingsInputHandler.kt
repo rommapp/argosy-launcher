@@ -54,6 +54,10 @@ class SettingsInputHandler(
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
         if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
+        if (state.bios.showGpuDriverPrompt && state.bios.gpuDriverInfo?.isInstalling != true) {
+            viewModel.moveGpuDriverPromptFocus(-1)
+            return InputResult.HANDLED
+        }
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalFocus(-1)
@@ -115,6 +119,10 @@ class SettingsInputHandler(
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
         if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
+        if (state.bios.showGpuDriverPrompt && state.bios.gpuDriverInfo?.isInstalling != true) {
+            viewModel.moveGpuDriverPromptFocus(1)
+            return InputResult.HANDLED
+        }
 
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalFocus(1)
@@ -177,6 +185,7 @@ class SettingsInputHandler(
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
         if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
+        if (state.bios.showGpuDriverPrompt) return InputResult.HANDLED
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalButtonFocus(1)
             return InputResult.HANDLED
@@ -416,6 +425,7 @@ class SettingsInputHandler(
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
         if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
 
+        if (state.bios.showGpuDriverPrompt) return InputResult.HANDLED
         if (state.emulators.showSavePathModal) {
             viewModel.moveSavePathModalButtonFocus(-1)
             return InputResult.HANDLED
@@ -653,6 +663,15 @@ class SettingsInputHandler(
         val state = viewModel.uiState.value
         if (hasAlertDialogOpen(state)) return InputResult.UNHANDLED
         if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
+
+        if (state.bios.showGpuDriverPrompt && state.bios.gpuDriverInfo?.isInstalling != true) {
+            when (state.bios.gpuDriverPromptFocusIndex) {
+                0 -> viewModel.installGpuDriver()
+                1 -> viewModel.openGpuDriverFilePicker()
+                2 -> viewModel.dismissGpuDriverPrompt()
+            }
+            return InputResult.HANDLED
+        }
 
         if (state.storage.platformSettingsModalId != null) {
             viewModel.selectPlatformSettingsOption()
@@ -946,6 +965,11 @@ class SettingsInputHandler(
     override fun onBack(): InputResult {
         val state = viewModel.uiState.value
         if (hasBuiltinControlsModalOpen(state)) return InputResult.UNHANDLED
+
+        if (state.bios.showGpuDriverPrompt && state.bios.gpuDriverInfo?.isInstalling != true) {
+            viewModel.dismissGpuDriverPrompt()
+            return InputResult.HANDLED
+        }
 
         if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             viewModel.dismissShaderPicker()

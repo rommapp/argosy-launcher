@@ -704,6 +704,28 @@ fun SettingsScreen(
             }
         )
     }
+
+    var showGpuDriverFileBrowser by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.launchGpuDriverFilePicker.collect {
+            showGpuDriverFileBrowser = true
+        }
+    }
+
+    if (showGpuDriverFileBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FILE_SELECTION,
+            fileFilter = FileFilter(extensions = setOf("zip")),
+            onPathSelected = { path ->
+                showGpuDriverFileBrowser = false
+                viewModel.installGpuDriverFromFile(path)
+            },
+            onDismiss = {
+                showGpuDriverFileBrowser = false
+            }
+        )
+    }
 }
 
 @Composable

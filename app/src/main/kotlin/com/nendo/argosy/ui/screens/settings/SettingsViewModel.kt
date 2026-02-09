@@ -181,6 +181,7 @@ class SettingsViewModel @Inject constructor(
     val resetPlatformStatePathEvent: SharedFlow<Long> = storageDelegate.resetStatePathEvent
     val openImageCachePickerEvent: SharedFlow<Unit> = syncDelegate.openImageCachePickerEvent
     val launchBiosFolderPicker: SharedFlow<Unit> = biosDelegate.launchFolderPicker
+    val launchGpuDriverFilePicker: SharedFlow<Unit> = biosDelegate.launchGpuDriverFilePicker
 
     private val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
     val openLogFolderPickerEvent: SharedFlow<Unit> = _openLogFolderPickerEvent.asSharedFlow()
@@ -3666,6 +3667,26 @@ class SettingsViewModel @Inject constructor(
 
     fun dismissDistributeResultModal() {
         biosDelegate.dismissDistributeResultModal()
+    }
+
+    fun installGpuDriver() {
+        biosDelegate.installGpuDriver(viewModelScope)
+    }
+
+    fun openGpuDriverFilePicker() {
+        biosDelegate.openGpuDriverFilePicker(viewModelScope)
+    }
+
+    fun installGpuDriverFromFile(filePath: String) {
+        biosDelegate.installGpuDriverFromFile(filePath, viewModelScope)
+    }
+
+    fun dismissGpuDriverPrompt() {
+        biosDelegate.dismissGpuDriverPrompt()
+    }
+
+    fun moveGpuDriverPromptFocus(delta: Int) {
+        biosDelegate.moveGpuDriverPromptFocus(delta)
     }
 
     private fun buildBiosFocusMapping(

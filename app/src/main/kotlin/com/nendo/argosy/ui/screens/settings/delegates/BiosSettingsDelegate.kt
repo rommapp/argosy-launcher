@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.GpuDriverManager
 import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -9,6 +10,7 @@ import com.nendo.argosy.ui.screens.settings.BiosFirmwareItem
 import com.nendo.argosy.ui.screens.settings.BiosPlatformGroup
 import com.nendo.argosy.ui.screens.settings.BiosState
 import com.nendo.argosy.ui.screens.settings.DistributeResultItem
+import com.nendo.argosy.ui.screens.settings.GpuDriverInfo
 import com.nendo.argosy.ui.screens.settings.PlatformDistributeResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,13 +28,17 @@ class BiosSettingsDelegate @Inject constructor(
     private val biosRepository: BiosRepository,
     private val firmwareDao: FirmwareDao,
     private val platformDao: PlatformDao,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val gpuDriverManager: GpuDriverManager
 ) {
     private val _state = MutableStateFlow(BiosState())
     val state: StateFlow<BiosState> = _state.asStateFlow()
 
     private val _launchFolderPicker = MutableSharedFlow<Unit>()
     val launchFolderPicker: SharedFlow<Unit> = _launchFolderPicker.asSharedFlow()
+
+    private val _launchGpuDriverFilePicker = MutableSharedFlow<Unit>()
+    val launchGpuDriverFilePicker: SharedFlow<Unit> = _launchGpuDriverFilePicker.asSharedFlow()
 
     fun updateState(newState: BiosState) {
         _state.value = newState
@@ -212,12 +218,24 @@ class BiosSettingsDelegate @Inject constructor(
                 )
             }.sortedBy { it.emulatorName }
 
+            val edenDistributed = resultItems.any { it.emulatorId == "eden" }
+            val shouldPromptGpuDriver = edenDistributed &&
+                gpuDriverManager.isAdrenoGpuSupported() &&
+                !checkHasGpuDriverInstalled()
+
             _state.update {
                 it.copy(
                     isDistributing = false,
                     distributeResults = resultItems,
-                    showDistributeResultModal = resultItems.isNotEmpty()
+                    showDistributeResultModal = !shouldPromptGpuDriver && resultItems.isNotEmpty(),
+                    showGpuDriverPrompt = shouldPromptGpuDriver,
+                    deviceGpuName = if (shouldPromptGpuDriver) gpuDriverManager.getDeviceGpu() else null,
+                    gpuDriverPromptFocusIndex = 0
                 )
+            }
+
+            if (shouldPromptGpuDriver) {
+                fetchGpuDriverInfo(scope)
             }
         }
     }
@@ -302,5 +320,107 @@ class BiosSettingsDelegate @Inject constructor(
 
     fun resetPlatformSubFocus() {
         _state.update { it.copy(platformSubFocusIndex = 0) }
+    }
+
+    private fun checkHasGpuDriverInstalled(): Boolean {
+        val edenPackage = biosRepository.findInstalledEdenPackage() ?: return false
+        return gpuDriverManager.hasInstalledDriver(edenPackage)
+    }
+
+    private fun fetchGpuDriverInfo(scope: CoroutineScope) {
+        scope.launch {
+            val driverInfo = gpuDriverManager.getLatestDriverInfo()
+            if (driverInfo != null) {
+                _state.update {
+                    it.copy(
+                        gpuDriverInfo = GpuDriverInfo(
+                            name = driverInfo.name,
+                            version = driverInfo.version
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun installGpuDriver(scope: CoroutineScope) {
+        scope.launch {
+            val edenPackage = biosRepository.findInstalledEdenPackage() ?: return@launch
+            val driverInfo = gpuDriverManager.getLatestDriverInfo() ?: return@launch
+
+            _state.update {
+                it.copy(
+                    gpuDriverInfo = it.gpuDriverInfo?.copy(isInstalling = true)
+                )
+            }
+
+            val success = gpuDriverManager.downloadAndInstallDriver(
+                driverInfo = driverInfo,
+                edenPackage = edenPackage,
+                onProgress = { downloaded, total ->
+                    val progress = if (total > 0) downloaded.toFloat() / total else 0f
+                    _state.update {
+                        it.copy(
+                            gpuDriverInfo = it.gpuDriverInfo?.copy(installProgress = progress)
+                        )
+                    }
+                }
+            )
+
+            _state.update {
+                it.copy(
+                    gpuDriverInfo = it.gpuDriverInfo?.copy(isInstalling = false),
+                    showGpuDriverPrompt = false,
+                    hasGpuDriverInstalled = success,
+                    showDistributeResultModal = it.distributeResults.isNotEmpty()
+                )
+            }
+        }
+    }
+
+    fun openGpuDriverFilePicker(scope: CoroutineScope) {
+        scope.launch {
+            _launchGpuDriverFilePicker.emit(Unit)
+        }
+    }
+
+    fun installGpuDriverFromFile(filePath: String, scope: CoroutineScope) {
+        scope.launch {
+            val edenPackage = biosRepository.findInstalledEdenPackage() ?: return@launch
+
+            _state.update {
+                it.copy(
+                    gpuDriverInfo = it.gpuDriverInfo?.copy(isInstalling = true)
+                )
+            }
+
+            val success = gpuDriverManager.installDriverFromFile(filePath, edenPackage)
+
+            _state.update {
+                it.copy(
+                    gpuDriverInfo = it.gpuDriverInfo?.copy(isInstalling = false),
+                    showGpuDriverPrompt = false,
+                    hasGpuDriverInstalled = success,
+                    showDistributeResultModal = it.distributeResults.isNotEmpty()
+                )
+            }
+        }
+    }
+
+    fun dismissGpuDriverPrompt() {
+        _state.update {
+            it.copy(
+                showGpuDriverPrompt = false,
+                gpuDriverInfo = null,
+                showDistributeResultModal = it.distributeResults.isNotEmpty()
+            )
+        }
+    }
+
+    fun moveGpuDriverPromptFocus(delta: Int) {
+        _state.update { state ->
+            val newIndex = (state.gpuDriverPromptFocusIndex + delta).coerceIn(0, 2)
+            state.copy(gpuDriverPromptFocusIndex = newIndex)
+        }
     }
 }

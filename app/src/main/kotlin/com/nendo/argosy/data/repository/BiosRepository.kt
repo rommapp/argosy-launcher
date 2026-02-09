@@ -507,7 +507,7 @@ class BiosRepository @Inject constructor(
         data object MissingFiles : SwitchInstallResult()
     }
 
-    private fun findInstalledEdenPackage(): String? {
+    fun findInstalledEdenPackage(): String? {
         val pm = context.packageManager
         return BiosPathRegistry.EDEN_PACKAGES.firstOrNull { pkg ->
             try {

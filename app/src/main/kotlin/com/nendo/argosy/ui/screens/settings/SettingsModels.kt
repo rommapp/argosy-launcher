@@ -604,6 +604,13 @@ data class PlatformDistributeResult(
     val filesCopied: Int
 )
 
+data class GpuDriverInfo(
+    val name: String,
+    val version: String,
+    val isInstalling: Boolean = false,
+    val installProgress: Float = 0f
+)
+
 data class BiosState(
     val platformGroups: List<BiosPlatformGroup> = emptyList(),
     val totalFiles: Int = 0,
@@ -619,7 +626,12 @@ data class BiosState(
     val expandedPlatformIndex: Int = -1,
     val platformSubFocusIndex: Int = 0,
     val actionIndex: Int = 0,
-    val biosPathActionIndex: Int = 0
+    val biosPathActionIndex: Int = 0,
+    val showGpuDriverPrompt: Boolean = false,
+    val gpuDriverInfo: GpuDriverInfo? = null,
+    val gpuDriverPromptFocusIndex: Int = 0,
+    val hasGpuDriverInstalled: Boolean = false,
+    val deviceGpuName: String? = null
 ) {
     val missingFiles: Int get() = totalFiles - downloadedFiles
     val isComplete: Boolean get() = totalFiles > 0 && downloadedFiles == totalFiles

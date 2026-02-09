@@ -44,6 +44,7 @@ import com.nendo.argosy.ui.theme.Dimens
 internal data class InterfaceLayoutState(
     val display: DisplayState,
     val bgmEnabled: Boolean,
+    val bgmIsFolder: Boolean,
     val uiSoundsEnabled: Boolean
 )
 
@@ -112,6 +113,7 @@ internal sealed class InterfaceItem(
     data object BgmToggle : InterfaceItem("bgmToggle", "bgm")
     data object BgmVolume : InterfaceItem("bgmVolume", "bgm", { it.bgmEnabled })
     data object BgmFile : InterfaceItem("bgmFile", "bgm", { it.bgmEnabled })
+    data object BgmShuffle : InterfaceItem("bgmShuffle", "bgm", { it.bgmEnabled && it.bgmIsFolder })
 
     // UI Sounds
     data object UiSoundsToggle : InterfaceItem("uiSoundsToggle", "uiSounds")
@@ -157,7 +159,7 @@ internal sealed class InterfaceItem(
             AmbientLedHeader,
             AmbientLed, AmbientLedBrightness, AmbientLedAudioBrightness, AmbientLedAudioColors, AmbientLedColorMode,
             BgmSpacer, BgmHeader,
-            BgmToggle, BgmVolume, BgmFile,
+            BgmToggle, BgmVolume, BgmFile, BgmShuffle,
             UiSoundsSpacer, UiSoundsHeader,
             UiSoundsToggle, UiSoundsVolume,
             CustomizeSpacer, CustomizeHeader
@@ -188,15 +190,17 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
     val storage = uiState.storage
     val bgmEnabled = uiState.ambientAudio.enabled
+    val bgmIsFolder = uiState.ambientAudio.isFolder
     val uiSoundsEnabled = uiState.sounds.enabled
 
     val layoutState = remember(
         display.ambientLedAvailable,
         display.ambientLedEnabled,
         bgmEnabled,
+        bgmIsFolder,
         uiSoundsEnabled
     ) {
-        InterfaceLayoutState(display, bgmEnabled, uiSoundsEnabled)
+        InterfaceLayoutState(display, bgmEnabled, bgmIsFolder, uiSoundsEnabled)
     }
 
     val currentHue = display.primaryColor?.let { colorIntToHue(it) }
@@ -206,6 +210,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         display.ambientLedAvailable,
         display.ambientLedEnabled,
         bgmEnabled,
+        bgmIsFolder,
         uiSoundsEnabled
     ) {
         interfaceLayout.visibleItems(layoutState)
@@ -214,6 +219,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         display.ambientLedAvailable,
         display.ambientLedEnabled,
         bgmEnabled,
+        bgmIsFolder,
         uiSoundsEnabled
     ) {
         interfaceLayout.buildSections(layoutState)
@@ -425,6 +431,14 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     filePath = uiState.ambientAudio.audioUri,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openAudioFileBrowser() }
+                )
+
+                InterfaceItem.BgmShuffle -> SwitchPreference(
+                    title = "Shuffle",
+                    subtitle = "Randomize playback order",
+                    isEnabled = uiState.ambientAudio.shuffle,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setAmbientAudioShuffle(it) }
                 )
 
                 InterfaceItem.UiSoundsToggle -> SwitchPreference(

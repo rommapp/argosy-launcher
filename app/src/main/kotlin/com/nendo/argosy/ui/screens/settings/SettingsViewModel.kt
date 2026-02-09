@@ -1892,7 +1892,7 @@ class SettingsViewModel @Inject constructor(
                     state.storage.platformConfigs.size
                 )
                 SettingsSection.INTERFACE -> interfaceMaxFocusIndex(
-                    InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                    InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
                 )
                 SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
                 SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)
@@ -3327,7 +3327,7 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {
-                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
                 when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                     InterfaceItem.Theme -> {
                         val next = when (state.display.themeMode) {
@@ -3363,6 +3363,11 @@ class SettingsViewModel @Inject constructor(
                     }
                     InterfaceItem.BgmVolume -> cycleAmbientAudioVolume()
                     InterfaceItem.BgmFile -> openAudioFileBrowser()
+                    InterfaceItem.BgmShuffle -> {
+                        val newShuffle = !state.ambientAudio.shuffle
+                        setAmbientAudioShuffle(newShuffle)
+                        return InputResult.handled(SoundType.TOGGLE)
+                    }
                     InterfaceItem.UiSoundsToggle -> {
                         val newEnabled = !state.sounds.enabled
                         setSoundEnabled(newEnabled)

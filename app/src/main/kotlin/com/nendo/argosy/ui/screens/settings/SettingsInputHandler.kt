@@ -213,7 +213,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
-            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> { viewModel.adjustHue(-HUE_STEP); return InputResult.HANDLED }
                 InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(-HUE_STEP); return InputResult.HANDLED }
@@ -453,7 +453,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
-            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> { viewModel.adjustHue(HUE_STEP); return InputResult.HANDLED }
                 InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(HUE_STEP); return InputResult.HANDLED }
@@ -734,7 +734,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
-            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> {
                     viewModel.resetToDefaultColor()
@@ -1108,7 +1108,7 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {
-                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
                 if (viewModel.jumpToPrevSection(interfaceSections(layoutState))) {
                     return InputResult.HANDLED
                 }
@@ -1161,7 +1161,7 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {
-                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.sounds.enabled)
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
                 if (viewModel.jumpToNextSection(interfaceSections(layoutState))) {
                     return InputResult.HANDLED
                 }

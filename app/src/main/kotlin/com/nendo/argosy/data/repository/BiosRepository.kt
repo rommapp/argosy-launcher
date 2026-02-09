@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import android.content.Context
 import com.nendo.argosy.data.emulator.BiosPathRegistry
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.SwitchKeyManager
 import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -14,14 +15,22 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.security.MessageDigest
 import java.time.Instant
+import java.util.UUID
+import java.util.zip.ZipInputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,7 +64,8 @@ class BiosRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firmwareDao: FirmwareDao,
     private val platformDao: PlatformDao,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val switchKeyManager: SwitchKeyManager
 ) {
     private var api: RomMApi? = null
 
@@ -287,22 +297,39 @@ class BiosRepository @Inject constructor(
     )
 
     suspend fun distributeAllBiosToEmulatorsDetailed(): List<DetailedDistributeResult> = withContext(Dispatchers.IO) {
-        val results = mutableMapOf<String, MutableMap<String, Int>>()
-        val platformSlugs = firmwareDao.getPlatformSlugsWithDownloadedFirmware()
+        coroutineScope {
+            val results = mutableMapOf<String, MutableMap<String, Int>>()
+            val platformSlugs = firmwareDao.getPlatformSlugsWithDownloadedFirmware()
 
-        for (slug in platformSlugs) {
-            val emulators = BiosPathRegistry.getEmulatorsForPlatform(slug)
-            for (config in emulators) {
-                val count = distributeBiosToEmulator(slug, config.emulatorId)
-                if (count > 0) {
-                    val emulatorResults = results.getOrPut(config.emulatorId) { mutableMapOf() }
-                    emulatorResults[slug] = count
+            val switchJob = if (isSwitchFirmwareReady() && isEdenInstalled()) {
+                async {
+                    val result = installSwitchFirmware()
+                    if (result is SwitchInstallResult.Success) {
+                        Pair("eden", "switch" to 2)
+                    } else null
+                }
+            } else null
+
+            val regularSlugs = platformSlugs.filter { it != "switch" }
+            for (slug in regularSlugs) {
+                val emulators = BiosPathRegistry.getEmulatorsForPlatform(slug)
+                for (config in emulators) {
+                    val count = distributeBiosToEmulator(slug, config.emulatorId)
+                    if (count > 0) {
+                        val emulatorResults = results.getOrPut(config.emulatorId) { mutableMapOf() }
+                        emulatorResults[slug] = count
+                    }
                 }
             }
-        }
 
-        results.map { (emulatorId, platformResults) ->
-            DetailedDistributeResult(emulatorId, platformResults)
+            switchJob?.await()?.let { (emulatorId, platformResult) ->
+                val emulatorResults = results.getOrPut(emulatorId) { mutableMapOf() }
+                emulatorResults[platformResult.first] = platformResult.second
+            }
+
+            results.map { (emulatorId, platformResults) ->
+                DetailedDistributeResult(emulatorId, platformResults)
+            }
         }
     }
 
@@ -408,6 +435,179 @@ class BiosRepository @Inject constructor(
 
         userPreferencesRepository.setCustomBiosPath(newPath)
         true
+    }
+
+    sealed class SwitchInstallResult {
+        data object Success : SwitchInstallResult()
+        data class ValidationFailed(val message: String) : SwitchInstallResult()
+        data class Error(val message: String) : SwitchInstallResult()
+        data object EdenNotInstalled : SwitchInstallResult()
+        data object MissingFiles : SwitchInstallResult()
+    }
+
+    private fun findInstalledEdenPackage(): String? {
+        val pm = context.packageManager
+        return BiosPathRegistry.EDEN_PACKAGES.firstOrNull { pkg ->
+            try {
+                pm.getPackageInfo(pkg, 0)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    fun isEdenInstalled(): Boolean = findInstalledEdenPackage() != null
+
+    suspend fun installSwitchFirmware(
+        onProgress: ((current: Int, total: Int, fileName: String) -> Unit)? = null
+    ): SwitchInstallResult = withContext(Dispatchers.IO) {
+        val edenPackage = findInstalledEdenPackage()
+        if (edenPackage == null) {
+            Logger.info(TAG, "Switch firmware install skipped: Eden not installed")
+            return@withContext SwitchInstallResult.EdenNotInstalled
+        }
+        val edenBasePath = BiosPathRegistry.getEdenDataPath(edenPackage)
+
+        val switchFirmware = firmwareDao.getByPlatformSlug("switch")
+        val prodKeysFile = switchFirmware.find {
+            it.fileName.matches(Regex("prod.*\\.keys", RegexOption.IGNORE_CASE))
+        }
+        val firmwareZipFile = switchFirmware.find {
+            it.fileName.endsWith(".zip", ignoreCase = true)
+        }
+
+        if (prodKeysFile?.localPath == null || firmwareZipFile?.localPath == null) {
+            Logger.warn(TAG, "Switch firmware install: missing required files | prodKeys=${prodKeysFile?.localPath}, firmwareZip=${firmwareZipFile?.localPath}")
+            return@withContext SwitchInstallResult.MissingFiles
+        }
+
+        val prodKeysPath = prodKeysFile.localPath!!
+        val firmwareZipPath = firmwareZipFile.localPath!!
+
+        Logger.info(TAG, "Installing Switch firmware | prodKeys=$prodKeysPath, firmwareZip=$firmwareZipPath, eden=$edenBasePath")
+
+        try {
+            FileInputStream(firmwareZipPath).use { firmwareStream ->
+                val isValid = switchKeyManager.validateKeysForFirmware(prodKeysPath, firmwareStream)
+                if (!isValid) {
+                    Logger.warn(TAG, "Switch firmware validation failed: keys incompatible with firmware")
+                    return@withContext SwitchInstallResult.ValidationFailed("prod.keys incompatible with firmware")
+                }
+            }
+
+            val keysDir = File(edenBasePath, "keys")
+            keysDir.mkdirs()
+            val targetProdKeys = File(keysDir, "prod.keys")
+            File(prodKeysPath).copyTo(targetProdKeys, overwrite = true)
+            Logger.info(TAG, "Copied prod.keys to ${targetProdKeys.absolutePath}")
+
+            val registeredDir = File(edenBasePath, "nand/system/Contents/registered")
+            registeredDir.mkdirs()
+
+            val ncaFiles = mutableListOf<String>()
+            ZipInputStream(FileInputStream(firmwareZipPath)).use { zip ->
+                var entry = zip.nextEntry
+                while (entry != null) {
+                    if (entry.name.endsWith(".nca", ignoreCase = true)) {
+                        ncaFiles.add(entry.name)
+                    }
+                    entry = zip.nextEntry
+                }
+            }
+
+            val totalFiles = ncaFiles.size
+            var extractedCount = 0
+
+            ZipInputStream(FileInputStream(firmwareZipPath)).use { zip ->
+                var entry = zip.nextEntry
+                while (entry != null) {
+                    if (entry.name.endsWith(".nca", ignoreCase = true)) {
+                        val ncaFileName = File(entry.name).name
+                        onProgress?.invoke(extractedCount + 1, totalFiles, ncaFileName)
+
+                        val outFile = File(registeredDir, ncaFileName)
+                        outFile.outputStream().use { out ->
+                            zip.copyTo(out)
+                        }
+                        extractedCount++
+                    }
+                    entry = zip.nextEntry
+                }
+            }
+
+            Logger.info(TAG, "Extracted $extractedCount NCA files to ${registeredDir.absolutePath}")
+
+            createDefaultEdenProfile(edenBasePath)
+
+            SwitchInstallResult.Success
+        } catch (e: Exception) {
+            Logger.error(TAG, "Switch firmware install failed", e)
+            SwitchInstallResult.Error(e.message ?: "Installation failed")
+        }
+    }
+
+    private fun createDefaultEdenProfile(edenBasePath: String) {
+        val profileDir = File(edenBasePath, "nand/system/save/8000000000000010/su/avators")
+        val profileFile = File(profileDir, "profiles.dat")
+
+        if (profileFile.exists()) {
+            Logger.debug(TAG, "Eden profile already exists, skipping creation")
+            return
+        }
+
+        profileDir.mkdirs()
+
+        // profiles.dat format (0x650 bytes total):
+        // [0x00-0x0F] 16 bytes header padding
+        // [0x10-0xD7] User 0 (0xC8 bytes per user, 8 users max)
+        //   [0x10-0x1F] UUID (16 bytes)
+        //   [0x20-0x2F] UUID2 (16 bytes, same as UUID)
+        //   [0x30-0x37] timestamp (8 bytes, little-endian)
+        //   [0x38-0x57] username (32 bytes, null-padded UTF-8)
+        //   [0x58-0xD7] extra_data (128 bytes)
+
+        val uuid = UUID.randomUUID()
+        val uuidBytes = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN)
+            .putLong(uuid.leastSignificantBits)
+            .putLong(uuid.mostSignificantBits)
+            .array()
+
+        val timestamp = System.currentTimeMillis() / 1000
+        val timestampBytes = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
+            .putLong(timestamp)
+            .array()
+
+        val username = "Argosy".toByteArray(Charsets.UTF_8)
+        val usernameBytes = ByteArray(32)
+        System.arraycopy(username, 0, usernameBytes, 0, minOf(username.size, 31))
+
+        val profileData = ByteArray(0x650)
+        System.arraycopy(uuidBytes, 0, profileData, 0x10, 16)
+        System.arraycopy(uuidBytes, 0, profileData, 0x20, 16)
+        System.arraycopy(timestampBytes, 0, profileData, 0x30, 8)
+        System.arraycopy(usernameBytes, 0, profileData, 0x38, 32)
+
+        profileFile.writeBytes(profileData)
+
+        val folderName = String.format("%016X%016X", uuid.mostSignificantBits, uuid.leastSignificantBits)
+        Logger.info(TAG, "Created default Eden profile | uuid=$folderName, path=${profileFile.absolutePath}")
+
+        // Create user save directory structure so save sync works immediately
+        val userSaveDir = File(edenBasePath, "nand/user/save/0000000000000000/$folderName")
+        userSaveDir.mkdirs()
+        Logger.info(TAG, "Created Eden user save directory | path=${userSaveDir.absolutePath}")
+    }
+
+    suspend fun isSwitchFirmwareReady(): Boolean = withContext(Dispatchers.IO) {
+        val switchFirmware = firmwareDao.getByPlatformSlug("switch")
+        val hasProdKeys = switchFirmware.any {
+            it.fileName.matches(Regex("prod.*\\.keys", RegexOption.IGNORE_CASE)) && it.localPath != null
+        }
+        val hasFirmwareZip = switchFirmware.any {
+            it.fileName.endsWith(".zip", ignoreCase = true) && it.localPath != null
+        }
+        hasProdKeys && hasFirmwareZip
     }
 
     private fun calculateMd5(file: File): String {

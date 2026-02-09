@@ -146,6 +146,10 @@ object BiosPathRegistry {
         ),
         "ps2" to listOf(
             BiosRequirement("ps2", "ps2-bios.bin", null, "PlayStation 2 BIOS", isRequired = true)
+        ),
+        "switch" to listOf(
+            BiosRequirement("switch", "prod.keys", null, "Switch Production Keys", isRequired = true),
+            BiosRequirement("switch", "firmware.zip", null, "Switch Firmware", isRequired = true)
         )
     )
 
@@ -224,6 +228,13 @@ object BiosPathRegistry {
             ),
             supportedPlatforms = setOf("ps2")
         ),
+        "eden" to BiosPathConfig(
+            emulatorId = "eden",
+            defaultPaths = listOf(
+                "/storage/emulated/0/Android/data/dev.eden.eden_emulator/files"
+            ),
+            supportedPlatforms = setOf("switch")
+        ),
         BUILTIN_EMULATOR_ID to BiosPathConfig(
             emulatorId = BUILTIN_EMULATOR_ID,
             defaultPaths = emptyList(), // Paths set dynamically via getBuiltInSystemDir()
@@ -276,4 +287,15 @@ object BiosPathRegistry {
     }
 
     fun getBiosFilesByPlatform(): Map<String, List<BiosRequirement>> = platformBiosFiles
+
+    val EDEN_PACKAGES = listOf(
+        "dev.eden.eden_emulator",
+        "dev.eden.eden_emulator.debug",
+        "dev.legacy.eden",
+        "org.eden.emulator"
+    )
+
+    fun getEdenDataPath(packageName: String): String {
+        return "/storage/emulated/0/Android/data/$packageName/files"
+    }
 }

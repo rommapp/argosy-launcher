@@ -84,7 +84,11 @@ data class QuickSettingsState(
     val fanSpeed: Int = 25000,
     val performanceMode: PerformanceMode = PerformanceMode.STANDARD,
     val deviceSettingsSupported: Boolean = false,
-    val deviceSettingsEnabled: Boolean = false
+    val deviceSettingsEnabled: Boolean = false,
+    val systemVolume: Float = 1f,
+    val secondaryVolume: Float? = null,
+    val screenBrightness: Float = 0.5f,
+    val secondaryBrightness: Float? = null
 )
 
 @Composable
@@ -100,11 +104,20 @@ fun QuickSettingsPanel(
     onFanModeCycle: () -> Unit,
     onFanSpeedChange: (Int) -> Unit,
     onPerformanceModeCycle: () -> Unit,
+    onVolumeChange: (Float) -> Unit,
+    onSecondaryVolumeChange: (Float) -> Unit,
+    onBrightnessChange: (Float) -> Unit,
+    onSecondaryBrightnessChange: (Float) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val hasVibrationSlider = state.vibrationSupported && state.hapticEnabled
-    val baseItemCount = if (hasVibrationSlider) 5 else 4
+    val hasSecondaryVolume = state.secondaryVolume != null
+    val hasSecondaryBrightness = state.secondaryBrightness != null
+    val baseItemCount = 6 +
+        (if (hasVibrationSlider) 1 else 0) +
+        (if (hasSecondaryVolume) 1 else 0) +
+        (if (hasSecondaryBrightness) 1 else 0)
     val hasFanSlider = state.deviceSettingsSupported && state.fanMode == FanMode.CUSTOM && state.deviceSettingsEnabled
     val deviceItemCount = when {
         !state.deviceSettingsSupported -> 0
@@ -242,6 +255,11 @@ fun QuickSettingsPanel(
                         }
                     }
 
+                    val secondaryVolumeOffset = if (hasSecondaryVolume) 1 else 0
+                    val secondaryBrightnessOffset = if (hasSecondaryBrightness) 1 else 0
+                    val avOffset = secondaryVolumeOffset + secondaryBrightnessOffset
+                    val vibrationSliderOffset = if (hasVibrationSlider) 1 else 0
+
                     item {
                         QuickSettingItem(
                             icon = when (state.themeMode) {
@@ -257,11 +275,51 @@ fun QuickSettingsPanel(
                     }
 
                     item {
+                        SystemVolumeSlider(
+                            volume = state.systemVolume,
+                            isFocused = focusedIndex == deviceItemCount + 1,
+                            onVolumeChange = onVolumeChange,
+                            label = if (hasSecondaryVolume) "Top Screen" else "Volume"
+                        )
+                    }
+
+                    if (hasSecondaryVolume) {
+                        item {
+                            SystemVolumeSlider(
+                                volume = state.secondaryVolume ?: 0.5f,
+                                isFocused = focusedIndex == deviceItemCount + 2,
+                                onVolumeChange = onSecondaryVolumeChange,
+                                label = "Bottom Screen"
+                            )
+                        }
+                    }
+
+                    item {
+                        ScreenBrightnessSlider(
+                            brightness = state.screenBrightness,
+                            isFocused = focusedIndex == deviceItemCount + 2 + secondaryVolumeOffset,
+                            onBrightnessChange = onBrightnessChange,
+                            label = if (hasSecondaryBrightness) "Top Screen" else "Brightness"
+                        )
+                    }
+
+                    if (hasSecondaryBrightness) {
+                        item {
+                            ScreenBrightnessSlider(
+                                brightness = state.secondaryBrightness ?: 0.5f,
+                                isFocused = focusedIndex == deviceItemCount + 3 + secondaryVolumeOffset,
+                                onBrightnessChange = onSecondaryBrightnessChange,
+                                label = "Bottom Screen"
+                            )
+                        }
+                    }
+
+                    item {
                         QuickSettingToggle(
                             icon = Icons.Default.Vibration,
                             label = "Haptics",
                             isEnabled = state.hapticEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 1,
+                            isFocused = focusedIndex == deviceItemCount + 3 + avOffset,
                             onClick = onHapticToggle
                         )
                     }
@@ -270,20 +328,18 @@ fun QuickSettingsPanel(
                         item {
                             VibrationStrengthSlider(
                                 strength = state.vibrationStrength,
-                                isFocused = focusedIndex == deviceItemCount + 2,
+                                isFocused = focusedIndex == deviceItemCount + 4 + avOffset,
                                 onStrengthChange = onVibrationStrengthChange
                             )
                         }
                     }
-
-                    val vibrationSliderOffset = if (hasVibrationSlider) 1 else 0
 
                     item {
                         QuickSettingToggle(
                             icon = if (state.soundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
                             label = "UI Sounds",
                             isEnabled = state.soundEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 2 + vibrationSliderOffset,
+                            isFocused = focusedIndex == deviceItemCount + 4 + avOffset + vibrationSliderOffset,
                             onClick = onSoundToggle
                         )
                     }
@@ -293,7 +349,7 @@ fun QuickSettingsPanel(
                             icon = if (state.ambientAudioEnabled) Icons.Default.MusicNote else Icons.Default.MusicOff,
                             label = "BGM",
                             isEnabled = state.ambientAudioEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 3 + vibrationSliderOffset,
+                            isFocused = focusedIndex == deviceItemCount + 5 + avOffset + vibrationSliderOffset,
                             onClick = onAmbientToggle
                         )
                     }
@@ -596,6 +652,136 @@ private fun VibrationStrengthSlider(
             onValueChange = onStrengthChange,
             valueRange = 0f..1f,
             steps = 9,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier.height(Dimens.iconMd)
+        )
+    }
+}
+
+@Composable
+private fun SystemVolumeSlider(
+    volume: Float,
+    isFocused: Boolean,
+    onVolumeChange: (Float) -> Unit,
+    label: String = "Volume"
+) {
+    val percentage = (volume * 100).toInt()
+
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+
+    val shape = RoundedCornerShape(topStart = Dimens.radiusMd, bottomStart = Dimens.radiusMd)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = Dimens.spacingMd)
+            .clip(shape)
+            .background(backgroundColor)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (volume > 0) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                    contentDescription = null,
+                    tint = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(Dimens.iconMd)
+                )
+                Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = "$percentage%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Slider(
+            value = volume,
+            onValueChange = onVolumeChange,
+            valueRange = 0f..1f,
+            steps = 19,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier.height(Dimens.iconMd)
+        )
+    }
+}
+
+@Composable
+private fun ScreenBrightnessSlider(
+    brightness: Float,
+    isFocused: Boolean,
+    onBrightnessChange: (Float) -> Unit,
+    label: String = "Brightness"
+) {
+    val percentage = (brightness * 100).toInt()
+
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+
+    val shape = RoundedCornerShape(topStart = Dimens.radiusMd, bottomStart = Dimens.radiusMd)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = Dimens.spacingMd)
+            .clip(shape)
+            .background(backgroundColor)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.SettingsBrightness,
+                    contentDescription = null,
+                    tint = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(Dimens.iconMd)
+                )
+                Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = "$percentage%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Slider(
+            value = brightness,
+            onValueChange = onBrightnessChange,
+            valueRange = 0f..1f,
+            steps = 19,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,

@@ -170,20 +170,47 @@ class PlaySessionTracker @Inject constructor(
                 )
                 when (cacheResult) {
                     is SaveCacheManager.CacheResult.Created -> {
-                        gameDao.updateActiveSaveTimestamp(orphaned.gameId, null)
+                        gameDao.updateActiveSaveTimestamp(orphaned.gameId, cacheResult.timestamp)
                         gameDao.updateActiveSaveApplied(orphaned.gameId, false)
                         Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Recovery backup created | path=$savePath")
-                        notificationManager.show(
-                            title = "Recovered backup for ${game.title}",
-                            type = NotificationType.INFO,
-                            duration = NotificationDuration.LONG
-                        )
                     }
                     is SaveCacheManager.CacheResult.Duplicate -> {
                         Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Save unchanged (already backed up)")
                     }
                     is SaveCacheManager.CacheResult.Failed -> {
                         Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Failed to create recovery backup")
+                    }
+                }
+
+                // Sync to RomM after caching
+                if (cacheResult !is SaveCacheManager.CacheResult.Duplicate) {
+                    val syncResult = syncSaveOnSessionEndUseCase.get()(
+                        orphaned.gameId,
+                        orphaned.emulatorPackage,
+                        orphaned.startTime.toEpochMilli(),
+                        orphaned.coreName,
+                        orphaned.isHardcore
+                    )
+                    when (syncResult) {
+                        is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
+                            Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Synced to RomM")
+                            notificationManager.show(
+                                title = "Save Uploaded",
+                                subtitle = game.title,
+                                type = NotificationType.SUCCESS,
+                                imagePath = game.coverPath,
+                                duration = NotificationDuration.MEDIUM,
+                                key = "sync-${orphaned.gameId}",
+                                immediate = true
+                            )
+                        }
+                        is SyncSaveOnSessionEndUseCase.Result.Queued -> {
+                            Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Queued for sync")
+                        }
+                        is SyncSaveOnSessionEndUseCase.Result.Error -> {
+                            Logger.error(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Sync failed: ${syncResult.message}")
+                        }
+                        else -> {}
                     }
                 }
             } else {
@@ -532,6 +559,12 @@ class PlaySessionTracker @Inject constructor(
         scope.launch { preferencesRepository.clearActiveSession() }
     }
 
+    fun forceStopService() {
+        GameSessionService.stop(application)
+        scope.launch { preferencesRepository.clearActiveSession() }
+        Logger.debug(TAG, "[SaveSync] SESSION | Force stopped service (no active session)")
+    }
+
     fun canResumeSession(gameId: Long): Boolean {
         val session = _activeSession.value
         if (session == null) {
@@ -581,7 +614,7 @@ class PlaySessionTracker @Inject constructor(
                 )
                 when (cacheResult) {
                     is SaveCacheManager.CacheResult.Created -> {
-                        gameDao.updateActiveSaveTimestamp(session.gameId, null)
+                        gameDao.updateActiveSaveTimestamp(session.gameId, cacheResult.timestamp)
                         gameDao.updateActiveSaveApplied(session.gameId, false)
                         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cached local save | path=$savePath, channel=$activeChannel")
                     }

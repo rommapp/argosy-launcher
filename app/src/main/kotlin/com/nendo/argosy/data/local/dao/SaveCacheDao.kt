@@ -6,6 +6,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 @Dao
 interface SaveCacheDao {
@@ -103,4 +104,44 @@ interface SaveCacheDao {
 
     @Query("SELECT COUNT(*) FROM save_cache")
     suspend fun count(): Int
+
+    @Query("SELECT * FROM save_cache WHERE needsRemoteSync = 1 ORDER BY cachedAt DESC")
+    suspend fun getNeedingRemoteSync(): List<SaveCacheEntity>
+
+    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND needsRemoteSync = 1 ORDER BY cachedAt DESC LIMIT 1")
+    suspend fun getLatestNeedingSync(gameId: Long): SaveCacheEntity?
+
+    @Query("""
+        UPDATE save_cache
+        SET needsRemoteSync = 0
+        WHERE gameId = :gameId AND channelName = :channelName AND id != :excludeId
+    """)
+    suspend fun clearDirtyFlagForChannel(gameId: Long, channelName: String?, excludeId: Long)
+
+    @Query("""
+        UPDATE save_cache
+        SET needsRemoteSync = 0
+        WHERE gameId = :gameId AND channelName IS NULL
+    """)
+    suspend fun clearDirtyFlagForLatest(gameId: Long)
+
+    @Query("""
+        UPDATE save_cache
+        SET needsRemoteSync = 0, lastSyncedAt = :syncedAt, remoteSyncError = NULL
+        WHERE id = :id
+    """)
+    suspend fun markSynced(id: Long, syncedAt: Instant)
+
+    @Query("""
+        UPDATE save_cache
+        SET remoteSyncError = :error
+        WHERE id = :id
+    """)
+    suspend fun markSyncError(id: Long, error: String?)
+
+    @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
+    suspend fun countNeedingRemoteSync(): Int
+
+    @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
+    fun observeNeedingRemoteSyncCount(): Flow<Int>
 }

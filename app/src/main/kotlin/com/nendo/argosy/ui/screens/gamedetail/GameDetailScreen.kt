@@ -87,9 +87,11 @@ import com.nendo.argosy.ui.common.savechannel.SaveChannelModal
 import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -100,7 +102,8 @@ import kotlinx.coroutines.launch
 fun GameDetailScreen(
     gameId: Long,
     onBack: () -> Unit,
-    viewModel: GameDetailViewModel = hiltViewModel()
+    viewModel: GameDetailViewModel = hiltViewModel(),
+    argosyViewModel: ArgosyViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val requestSafGrant by viewModel.requestSafGrant.collectAsState()
@@ -316,6 +319,7 @@ fun GameDetailScreen(
                 game = game,
                 uiState = uiState,
                 viewModel = viewModel,
+                argosyViewModel = argosyViewModel,
                 scrollState = scrollState,
                 screenshotListState = screenshotListState,
                 achievementListState = achievementListState,
@@ -334,6 +338,7 @@ private fun GameDetailContent(
     game: GameDetailUi,
     uiState: GameDetailUiState,
     viewModel: GameDetailViewModel,
+    argosyViewModel: ArgosyViewModel,
     scrollState: ScrollState,
     screenshotListState: LazyListState,
     achievementListState: LazyListState,
@@ -356,6 +361,24 @@ private fun GameDetailContent(
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
+
+    val isTransitioningToGame by argosyViewModel.isTransitioningToGame.collectAsState()
+    val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
+
+    val gameTransitionBlur by animateDpAsState(
+        targetValue = if (isTransitioningToGame || returningFromGame) Motion.blurRadiusModal else 0.dp,
+        animationSpec = Motion.focusSpringDp,
+        label = "gameTransitionBlur"
+    )
+
+    LaunchedEffect(returningFromGame) {
+        if (returningFromGame) {
+            delay(350)
+            argosyViewModel.clearReturningFlag()
+        }
+    }
+
+    val combinedBlur = maxOf(modalBlur, gameTransitionBlur)
 
     var descriptionTopY by remember { mutableIntStateOf(0) }
     var screenshotTopY by remember { mutableIntStateOf(0) }
@@ -423,7 +446,7 @@ private fun GameDetailContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Background layer - extends behind footer
-        Box(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
+        Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
             val effectiveBackgroundPath = uiState.repairedBackgroundPath ?: game.backgroundPath
             if (effectiveBackgroundPath != null) {
                 val imageData = if (effectiveBackgroundPath.startsWith("/")) {
@@ -464,7 +487,7 @@ private fun GameDetailContent(
         }
 
         // Main content: Collapsed Header + Left Menu (30%) + Right Content (70%)
-        Column(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
+        Column(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
             val isDark = LocalLauncherTheme.current.isDarkTheme
             val fadeColor = if (isDark) Color.Black else Color.White
 

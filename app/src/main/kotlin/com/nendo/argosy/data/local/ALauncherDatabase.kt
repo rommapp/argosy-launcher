@@ -23,10 +23,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
-import com.nendo.argosy.data.local.dao.PendingAchievementDao
-import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
-import com.nendo.argosy.data.local.dao.PendingStateSyncDao
-import com.nendo.argosy.data.local.dao.PendingSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
@@ -51,10 +48,7 @@ import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
-import com.nendo.argosy.data.local.entity.PendingAchievementEntity
-import com.nendo.argosy.data.local.entity.PendingSaveSyncEntity
-import com.nendo.argosy.data.local.entity.PendingStateSyncEntity
-import com.nendo.argosy.data.local.entity.PendingSyncEntity
+import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.PinnedCollectionEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
@@ -67,10 +61,8 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PlatformEntity::class,
         GameEntity::class,
         EmulatorConfigEntity::class,
-        PendingSyncEntity::class,
         DownloadQueueEntity::class,
         SaveSyncEntity::class,
-        PendingSaveSyncEntity::class,
         EmulatorSaveConfigEntity::class,
         GameDiscEntity::class,
         AchievementEntity::class,
@@ -88,12 +80,11 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         ControllerMappingEntity::class,
         HotkeyEntity::class,
         CheatEntity::class,
-        PendingAchievementEntity::class,
-        PendingStateSyncEntity::class,
         PlatformLibretroSettingsEntity::class,
-        EmulatorUpdateEntity::class
+        EmulatorUpdateEntity::class,
+        PendingSyncQueueEntity::class
     ],
-    version = 74,
+    version = 75,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -102,10 +93,9 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun gameDao(): GameDao
     abstract fun gameDiscDao(): GameDiscDao
     abstract fun emulatorConfigDao(): EmulatorConfigDao
-    abstract fun pendingSyncDao(): PendingSyncDao
     abstract fun downloadQueueDao(): DownloadQueueDao
     abstract fun saveSyncDao(): SaveSyncDao
-    abstract fun pendingSaveSyncDao(): PendingSaveSyncDao
+    abstract fun pendingSyncQueueDao(): PendingSyncQueueDao
     abstract fun emulatorSaveConfigDao(): EmulatorSaveConfigDao
     abstract fun achievementDao(): AchievementDao
     abstract fun saveCacheDao(): SaveCacheDao
@@ -121,8 +111,6 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun controllerMappingDao(): ControllerMappingDao
     abstract fun hotkeyDao(): HotkeyDao
     abstract fun cheatDao(): CheatDao
-    abstract fun pendingAchievementDao(): PendingAchievementDao
-    abstract fun pendingStateSyncDao(): PendingStateSyncDao
     abstract fun platformLibretroSettingsDao(): PlatformLibretroSettingsDao
     abstract fun emulatorUpdateDao(): EmulatorUpdateDao
 
@@ -1136,6 +1124,44 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_73_74 = object : Migration(73, 74) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE platforms ADD COLUMN fsSlug TEXT DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_74_75 = object : Migration(74, 75) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Add columns to save_cache for remote sync tracking
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN needsRemoteSync INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN lastSyncedAt INTEGER")
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN remoteSyncError TEXT")
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN channelName TEXT")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_save_cache_needsRemoteSync ON save_cache(needsRemoteSync)")
+
+                // 2. Create unified pending sync queue
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS pending_sync_queue (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        gameId INTEGER NOT NULL,
+                        rommId INTEGER NOT NULL,
+                        syncType TEXT NOT NULL,
+                        priority INTEGER NOT NULL,
+                        payloadJson TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'PENDING',
+                        retryCount INTEGER NOT NULL DEFAULT 0,
+                        maxRetries INTEGER NOT NULL DEFAULT 3,
+                        lastError TEXT,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_sync_queue_priority_createdAt ON pending_sync_queue(priority, createdAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_sync_queue_gameId ON pending_sync_queue(gameId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_sync_queue_status ON pending_sync_queue(status)")
+
+                // 3. Drop old pending tables (clean slate)
+                db.execSQL("DROP TABLE IF EXISTS pending_sync")
+                db.execSQL("DROP TABLE IF EXISTS pending_save_sync")
+                db.execSQL("DROP TABLE IF EXISTS pending_state_sync")
+                db.execSQL("DROP TABLE IF EXISTS pending_achievements")
             }
         }
     }

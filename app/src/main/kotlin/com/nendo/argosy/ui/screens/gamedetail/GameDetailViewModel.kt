@@ -545,10 +545,25 @@ class GameDetailViewModel @Inject constructor(
                     if (updatedGame == null) return@collect
                     _uiState.update { state ->
                         val currentGame = state.game ?: return@update state
-                        if (currentGame.titleId != updatedGame.titleId) {
-                            state.copy(game = currentGame.copy(titleId = updatedGame.titleId))
-                        } else {
-                            state
+                        val gameUpdated = currentGame.titleId != updatedGame.titleId
+                        val oldTimestamp = state.saveStatusInfo?.activeSaveTimestamp
+                        val newTimestamp = updatedGame.activeSaveTimestamp
+                        val oldChannel = state.saveChannel.activeChannel
+                        val newChannel = updatedGame.activeSaveChannel
+                        val saveUpdated = oldTimestamp != newTimestamp || oldChannel != newChannel
+
+                        android.util.Log.d("GameDetailVM", "[SaveTimestamp] Observer fired | gameId=$gameId | oldTs=$oldTimestamp, newTs=$newTimestamp | oldCh=$oldChannel, newCh=$newChannel | saveUpdated=$saveUpdated | saveStatusInfo=${state.saveStatusInfo != null}")
+
+                        when {
+                            gameUpdated || saveUpdated -> state.copy(
+                                game = currentGame.copy(titleId = updatedGame.titleId),
+                                saveChannel = state.saveChannel.copy(activeChannel = updatedGame.activeSaveChannel),
+                                saveStatusInfo = state.saveStatusInfo?.copy(
+                                    channelName = updatedGame.activeSaveChannel,
+                                    activeSaveTimestamp = updatedGame.activeSaveTimestamp
+                                )
+                            )
+                            else -> state
                         }
                     }
                 }
@@ -588,14 +603,23 @@ class GameDetailViewModel @Inject constructor(
             saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
         }
 
-        val timestamp = syncEntity?.lastSyncedAt
+        val cacheTimestamp = if (activeChannel != null) {
+            saveCacheManager.getMostRecentInChannel(gameId, activeChannel)?.cachedAt
+        } else {
+            saveCacheManager.getMostRecentSave(gameId)?.cachedAt
+        }
+
+        val effectiveTimestamp = activeSaveTimestamp
+            ?: cacheTimestamp?.toEpochMilli()
+
+        if (activeSaveTimestamp == null && effectiveTimestamp != null) {
+            gameDao.updateActiveSaveTimestamp(gameId, effectiveTimestamp)
+        }
+
+        val lastSyncTime = syncEntity?.lastSyncedAt
             ?: syncEntity?.localUpdatedAt
             ?: syncEntity?.serverUpdatedAt
-            ?: if (activeChannel != null) {
-                saveCacheManager.getMostRecentInChannel(gameId, activeChannel)?.cachedAt
-            } else {
-                saveCacheManager.getMostRecentSave(gameId)?.cachedAt
-            }
+            ?: cacheTimestamp
 
         return if (syncEntity != null) {
             SaveStatusInfo(
@@ -608,15 +632,15 @@ class GameDetailViewModel @Inject constructor(
                     else -> SaveSyncStatus.NO_SAVE
                 },
                 channelName = activeChannel,
-                activeSaveTimestamp = activeSaveTimestamp,
-                lastSyncTime = timestamp
+                activeSaveTimestamp = effectiveTimestamp,
+                lastSyncTime = lastSyncTime
             )
         } else {
             SaveStatusInfo(
                 status = SaveSyncStatus.NO_SAVE,
                 channelName = activeChannel,
-                activeSaveTimestamp = activeSaveTimestamp,
-                lastSyncTime = timestamp
+                activeSaveTimestamp = effectiveTimestamp,
+                lastSyncTime = lastSyncTime
             )
         }
     }

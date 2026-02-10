@@ -116,6 +116,7 @@ import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -132,7 +133,8 @@ fun HomeScreen(
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     onChangelogAction: (RequiredAction) -> Unit = {},
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    argosyViewModel: ArgosyViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -237,11 +239,29 @@ fun HomeScreen(
         }
     }
 
+    val isTransitioningToGame by argosyViewModel.isTransitioningToGame.collectAsState()
+    val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
+
     val modalBlur by animateDpAsState(
         targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
+
+    val gameTransitionBlur by animateDpAsState(
+        targetValue = if (isTransitioningToGame || returningFromGame) Motion.blurRadiusModal else 0.dp,
+        animationSpec = Motion.focusSpringDp,
+        label = "gameTransitionBlur"
+    )
+
+    LaunchedEffect(returningFromGame) {
+        if (returningFromGame) {
+            delay(350)
+            argosyViewModel.clearReturningFlag()
+        }
+    }
+
+    val combinedBlur = maxOf(modalBlur, gameTransitionBlur)
 
     val changelogInputHandler = remember(viewModel) {
         ChangelogInputHandler(
@@ -454,7 +474,7 @@ fun HomeScreen(
             SplashOverlay()
         } else {
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize().blur(modalBlur)) {
+        Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

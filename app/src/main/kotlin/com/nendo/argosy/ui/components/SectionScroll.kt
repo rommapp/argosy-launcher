@@ -18,8 +18,14 @@ fun FocusedScroll(
 ) {
     LaunchedEffect(focusedIndex) {
         val layoutInfo = listState.layoutInfo
-        val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val visibleItems = layoutInfo.visibleItemsInfo
+
+        if (visibleItems.isEmpty()) {
+            listState.scrollToItem(focusedIndex)
+            return@LaunchedEffect
+        }
+
+        val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val targetItem = visibleItems.find { it.index == focusedIndex }
         val itemHeight = targetItem?.size ?: visibleItems.maxOfOrNull { it.size } ?: 80
         val centerOffset = (viewportHeight - itemHeight) / 2

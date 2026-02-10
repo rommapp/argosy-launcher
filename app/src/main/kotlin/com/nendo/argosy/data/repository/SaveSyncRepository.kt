@@ -33,12 +33,16 @@ import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.local.entity.GameEntity
-import com.nendo.argosy.data.local.entity.PendingSaveSyncEntity
+import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.local.entity.SyncPriority
+import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.sync.SaveFilePayload
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMSave
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -92,7 +96,8 @@ sealed class SaveSyncResult {
 class SaveSyncRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveSyncDao: SaveSyncDao,
-    private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
+    private val saveCacheDao: SaveCacheDao,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorResolver: EmulatorResolver,
@@ -156,7 +161,7 @@ class SaveSyncRepository @Inject constructor(
 
     fun observeNewSavesCount(): Flow<Int> = saveSyncDao.observeNewSavesCount()
 
-    fun observePendingCount(): Flow<Int> = pendingSaveSyncDao.observePendingCount()
+    fun observePendingCount(): Flow<Int> = saveCacheDao.observeNeedingRemoteSyncCount()
 
     suspend fun discoverSavePath(
         emulatorId: String,
@@ -1267,14 +1272,15 @@ class SaveSyncRepository @Inject constructor(
         val game = gameDao.getById(gameId) ?: return
         val rommId = game.rommId ?: return
 
-        pendingSaveSyncDao.deleteByGameAndEmulator(gameId, emulatorId)
-        pendingSaveSyncDao.insert(
-            PendingSaveSyncEntity(
+        val payload = SaveFilePayload(emulatorId)
+        pendingSyncQueueDao.deleteByGameAndType(gameId, SyncType.SAVE_FILE)
+        pendingSyncQueueDao.insert(
+            PendingSyncQueueEntity(
                 gameId = gameId,
                 rommId = rommId,
-                emulatorId = emulatorId,
-                localSavePath = localPath,
-                action = PendingSaveSyncEntity.ACTION_UPLOAD
+                syncType = SyncType.SAVE_FILE,
+                priority = SyncPriority.SAVE_FILE,
+                payloadJson = payload.toJson()
             )
         )
     }
@@ -1323,7 +1329,7 @@ class SaveSyncRepository @Inject constructor(
     }
 
     suspend fun processPendingUploads(): Int = withContext(Dispatchers.IO) {
-        val pending = pendingSaveSyncDao.getRetryable()
+        val pending = pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_FILE)
         if (pending.isEmpty()) {
             return@withContext 0
         }
@@ -1345,12 +1351,13 @@ class SaveSyncRepository @Inject constructor(
         var processed = 0
 
         for (item in pending) {
-            Logger.debug(TAG, "Processing pending upload: gameId=${item.gameId}, emulator=${item.emulatorId}")
+            val payload = SaveFilePayload.fromJson(item.payloadJson) ?: continue
+            Logger.debug(TAG, "Processing pending upload: gameId=${item.gameId}, emulator=${payload.emulatorId}")
             syncQueueManager.updateOperation(item.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
 
-            when (val result = uploadSave(item.gameId, item.emulatorId)) {
+            when (val result = uploadSave(item.gameId, payload.emulatorId)) {
                 is SaveSyncResult.Success -> {
-                    pendingSaveSyncDao.delete(item.id)
+                    pendingSyncQueueDao.deleteById(item.id)
                     syncQueueManager.completeOperation(item.gameId)
                     processed++
                 }
@@ -1360,7 +1367,7 @@ class SaveSyncRepository @Inject constructor(
                 }
                 is SaveSyncResult.Error -> {
                     Logger.debug(TAG, "Pending upload failed for gameId=${item.gameId}: ${result.message}")
-                    pendingSaveSyncDao.incrementRetry(item.id, result.message)
+                    pendingSyncQueueDao.markFailed(item.id, result.message)
                     syncQueueManager.completeOperation(item.gameId, result.message)
                 }
                 else -> {

@@ -64,22 +64,28 @@ class SyncNotificationObserver @Inject constructor(
             return
         }
 
-        val directionText = when (operation.direction) {
-            SyncDirection.UPLOAD -> "Upload"
-            SyncDirection.DOWNLOAD -> "Download"
-        }
-
         val (title, type, immediate) = when (operation.status) {
             SyncStatus.PENDING -> Triple("Sync Queued", NotificationType.INFO, false)
-            SyncStatus.IN_PROGRESS -> Triple("${directionText}ing Save", NotificationType.INFO, false)
-            SyncStatus.COMPLETED -> Triple("$directionText Complete", NotificationType.SUCCESS, true)
-            SyncStatus.FAILED -> Triple("$directionText Failed", NotificationType.ERROR, true)
+            SyncStatus.IN_PROGRESS -> when (operation.direction) {
+                SyncDirection.UPLOAD -> Triple("Uploading Save", NotificationType.INFO, false)
+                SyncDirection.DOWNLOAD -> Triple("Downloading Save", NotificationType.INFO, false)
+            }
+            SyncStatus.COMPLETED -> Triple("Save Synced", NotificationType.SUCCESS, true)
+            SyncStatus.FAILED -> when (operation.direction) {
+                SyncDirection.UPLOAD -> Triple("Upload Failed", NotificationType.ERROR, true)
+                SyncDirection.DOWNLOAD -> Triple("Download Failed", NotificationType.ERROR, true)
+            }
         }
 
-        val subtitle = if (operation.status == SyncStatus.FAILED && operation.error != null) {
-            "${operation.gameName}: ${operation.error}"
+        val gameLine = if (operation.channelName != null) {
+            "${operation.gameName} (${operation.channelName})"
         } else {
             operation.gameName
+        }
+        val subtitle = if (operation.status == SyncStatus.FAILED && operation.error != null) {
+            "$gameLine: ${operation.error}"
+        } else {
+            gameLine
         }
 
         notificationManager.show(

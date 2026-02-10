@@ -2,9 +2,12 @@ package com.nendo.argosy.data.repository
 
 import android.content.Context
 import com.nendo.argosy.BuildConfig
-import com.nendo.argosy.data.local.dao.PendingAchievementDao
-import com.nendo.argosy.data.local.entity.PendingAchievementEntity
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
+import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
+import com.nendo.argosy.data.local.entity.SyncPriority
+import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.sync.AchievementPayload
 import com.nendo.argosy.data.remote.ra.RAAchievementPatch
 import com.nendo.argosy.data.remote.ra.RAApi
 import com.nendo.argosy.data.remote.ra.RACredentials
@@ -40,7 +43,7 @@ sealed class RAAwardResult {
 @Singleton
 class RetroAchievementsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val pendingAchievementDao: PendingAchievementDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val prefsRepository: UserPreferencesRepository
 ) {
     private val api: RAApi by lazy { createApi() }
@@ -192,33 +195,40 @@ class RetroAchievementsRepository @Inject constructor(
     }
 
     private suspend fun queueAchievement(gameId: Long, achievementRaId: Long, forHardcoreMode: Boolean) {
-        val entity = PendingAchievementEntity(
-            gameId = gameId,
+        val payload = AchievementPayload(
             achievementRaId = achievementRaId,
             forHardcoreMode = forHardcoreMode,
-            earnedAt = Instant.now()
+            earnedAt = Instant.now().toEpochMilli()
         )
-        pendingAchievementDao.insert(entity)
+        val entity = PendingSyncQueueEntity(
+            gameId = gameId,
+            rommId = 0,
+            syncType = SyncType.ACHIEVEMENT,
+            priority = SyncPriority.PROPERTY,
+            payloadJson = payload.toJson()
+        )
+        pendingSyncQueueDao.insert(entity)
         Logger.info(TAG, "Achievement $achievementRaId queued for later submission")
     }
 
     suspend fun submitPendingAchievements(): Int {
         val credentials = getCredentials() ?: return 0
-        val pending = pendingAchievementDao.getRetryable()
+        val pending = pendingSyncQueueDao.getRetryableBySyncType(SyncType.ACHIEVEMENT)
         if (pending.isEmpty()) return 0
 
         Logger.info(TAG, "Submitting ${pending.size} pending achievements")
         var successCount = 0
 
         for (entity in pending) {
-            val validation = generateValidation(entity.achievementRaId, credentials.username, entity.forHardcoreMode)
-            val hardcoreInt = if (entity.forHardcoreMode) 1 else 0
+            val payload = AchievementPayload.fromJson(entity.payloadJson) ?: continue
+            val validation = generateValidation(payload.achievementRaId, credentials.username, payload.forHardcoreMode)
+            val hardcoreInt = if (payload.forHardcoreMode) 1 else 0
 
             try {
                 val response = api.awardAchievement(
                     username = credentials.username,
                     token = credentials.token,
-                    achievementId = entity.achievementRaId,
+                    achievementId = payload.achievementRaId,
                     hardcore = hardcoreInt,
                     validation = validation
                 )
@@ -228,17 +238,17 @@ class RetroAchievementsRepository @Inject constructor(
                 val alreadyHas = body?.error?.contains("already has", ignoreCase = true) == true
 
                 if (success || alreadyHas) {
-                    pendingAchievementDao.delete(entity.id)
+                    pendingSyncQueueDao.deleteById(entity.id)
                     successCount++
-                    Logger.debug(TAG, "Pending achievement ${entity.achievementRaId} submitted")
+                    Logger.debug(TAG, "Pending achievement ${payload.achievementRaId} submitted")
                 } else {
                     val error = body?.error ?: "HTTP ${response.code()}"
-                    pendingAchievementDao.incrementRetry(entity.id, error)
-                    Logger.warn(TAG, "Pending achievement ${entity.achievementRaId} retry: $error")
+                    pendingSyncQueueDao.markFailed(entity.id, error)
+                    Logger.warn(TAG, "Pending achievement ${payload.achievementRaId} retry: $error")
                 }
             } catch (e: Exception) {
-                pendingAchievementDao.incrementRetry(entity.id, e.message ?: "Network error")
-                Logger.error(TAG, "Pending achievement ${entity.achievementRaId} exception: ${e.message}")
+                pendingSyncQueueDao.markFailed(entity.id, e.message ?: "Network error")
+                Logger.error(TAG, "Pending achievement ${payload.achievementRaId} exception: ${e.message}")
             }
         }
 
@@ -333,9 +343,9 @@ class RetroAchievementsRepository @Inject constructor(
         }
     }
 
-    fun observePendingCount(): Flow<Int> = pendingAchievementDao.observeCount()
+    fun observePendingCount(): Flow<Int> = pendingSyncQueueDao.observePendingCountBySyncType(SyncType.ACHIEVEMENT)
 
-    suspend fun getPendingCount(): Int = pendingAchievementDao.getCount()
+    suspend fun getPendingCount(): Int = pendingSyncQueueDao.countPendingBySyncType(SyncType.ACHIEVEMENT)
 
     data class RAGameAchievements(
         val achievements: List<RAAchievementPatch>,

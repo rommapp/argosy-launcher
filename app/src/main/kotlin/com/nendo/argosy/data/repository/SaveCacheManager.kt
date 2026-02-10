@@ -2,6 +2,7 @@ package com.nendo.argosy.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -23,6 +24,7 @@ import javax.inject.Singleton
 class SaveCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveCacheDao: SaveCacheDao,
+    private val gameDao: GameDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val saveArchiver: SaveArchiver,
     private val fal: FileAccessLayer
@@ -55,7 +57,8 @@ class SaveCacheManager @Inject constructor(
         cheatsUsed: Boolean = false,
         isHardcore: Boolean = false,
         slotName: String? = null,
-        skipDuplicateCheck: Boolean = false
+        skipDuplicateCheck: Boolean = false,
+        needsRemoteSync: Boolean = false
     ): CacheResult = withContext(Dispatchers.IO) {
         if (!fal.exists(savePath)) {
             Log.w(TAG, "Save file does not exist: $savePath")
@@ -138,9 +141,19 @@ class SaveCacheManager @Inject constructor(
                 contentHash = contentHash,
                 cheatsUsed = cheatsUsed,
                 isHardcore = isHardcore,
-                slotName = slotName
+                slotName = slotName,
+                channelName = channelName,
+                needsRemoteSync = needsRemoteSync
             )
-            saveCacheDao.insert(entity)
+            val insertedId = saveCacheDao.insert(entity)
+
+            if (channelName != null) {
+                gameDao.updateActiveSaveChannel(gameId, channelName)
+                if (needsRemoteSync) {
+                    saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, insertedId)
+                }
+                saveCacheDao.clearDirtyFlagForLatest(gameId)
+            }
             val slotInfo = when {
                 isHardcore -> " [HARDCORE]"
                 channelName != null -> " (channel: $channelName)"

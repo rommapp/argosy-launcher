@@ -20,10 +20,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
-import com.nendo.argosy.data.local.dao.PendingAchievementDao
-import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
-import com.nendo.argosy.data.local.dao.PendingStateSyncDao
-import com.nendo.argosy.data.local.dao.PendingSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
@@ -122,7 +119,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_70_71,
                 ALauncherDatabase.MIGRATION_71_72,
                 ALauncherDatabase.MIGRATION_72_73,
-                ALauncherDatabase.MIGRATION_73_74
+                ALauncherDatabase.MIGRATION_73_74,
+                ALauncherDatabase.MIGRATION_74_75
             )
             .build()
     }
@@ -141,10 +139,6 @@ object DatabaseModule {
         database.emulatorConfigDao()
 
     @Provides
-    fun providePendingSyncDao(database: ALauncherDatabase): PendingSyncDao =
-        database.pendingSyncDao()
-
-    @Provides
     fun provideDownloadQueueDao(database: ALauncherDatabase): DownloadQueueDao =
         database.downloadQueueDao()
 
@@ -153,8 +147,8 @@ object DatabaseModule {
         database.saveSyncDao()
 
     @Provides
-    fun providePendingSaveSyncDao(database: ALauncherDatabase): PendingSaveSyncDao =
-        database.pendingSaveSyncDao()
+    fun providePendingSyncQueueDao(database: ALauncherDatabase): PendingSyncQueueDao =
+        database.pendingSyncQueueDao()
 
     @Provides
     fun provideEmulatorSaveConfigDao(database: ALauncherDatabase): EmulatorSaveConfigDao =
@@ -215,14 +209,6 @@ object DatabaseModule {
     @Provides
     fun provideCheatDao(database: ALauncherDatabase): CheatDao =
         database.cheatDao()
-
-    @Provides
-    fun providePendingAchievementDao(database: ALauncherDatabase): PendingAchievementDao =
-        database.pendingAchievementDao()
-
-    @Provides
-    fun providePendingStateSyncDao(database: ALauncherDatabase): PendingStateSyncDao =
-        database.pendingStateSyncDao()
 
     @Provides
     fun providePlatformLibretroSettingsDao(database: ALauncherDatabase): PlatformLibretroSettingsDao =

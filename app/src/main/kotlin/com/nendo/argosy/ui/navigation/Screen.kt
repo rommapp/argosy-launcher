@@ -34,6 +34,14 @@ sealed class Screen(val route: String) {
     data object GameDetail : Screen("game/{gameId}") {
         fun createRoute(gameId: Long) = "game/$gameId"
     }
+    data object Launch : Screen("launch/{gameId}?channelName={channelName}&discId={discId}") {
+        fun createRoute(gameId: Long, channelName: String? = null, discId: Long? = null): String {
+            val params = mutableListOf<String>()
+            if (channelName != null) params.add("channelName=$channelName")
+            if (discId != null) params.add("discId=$discId")
+            return if (params.isEmpty()) "launch/$gameId" else "launch/$gameId?${params.joinToString("&")}"
+        }
+    }
     data object Search : Screen("search")
     data object ManagePins : Screen("manage_pins")
 
@@ -44,6 +52,7 @@ sealed class Screen(val route: String) {
         const val ROUTE_COLLECTION_DETAIL = "collection"
         const val ROUTE_VIRTUAL_BROWSER = "virtual"
         const val ROUTE_GAME_DETAIL = "game"
+        const val ROUTE_LAUNCH = "launch"
         const val ROUTE_SETTINGS = "settings"
         const val ROUTE_DOWNLOADS = "downloads"
         const val ROUTE_APPS = "apps"

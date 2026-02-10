@@ -12,8 +12,6 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.nendo.argosy.data.remote.romm.RomMRepository
-import com.nendo.argosy.data.repository.SaveSyncRepository
-import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.domain.usecase.save.CheckNewSavesUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -24,8 +22,7 @@ class SaveSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val checkNewSavesUseCase: CheckNewSavesUseCase,
-    private val saveSyncRepository: SaveSyncRepository,
-    private val stateCacheManager: StateCacheManager,
+    private val syncCoordinator: SyncCoordinator,
     private val romMRepository: RomMRepository
 ) : CoroutineWorker(context, params) {
 
@@ -85,13 +82,15 @@ class SaveSyncWorker @AssistedInject constructor(
             val checkResult = checkNewSavesUseCase()
             Logger.info(TAG, "[SaveSync] WORKER | Check complete | newSaves=${checkResult.newSavesCount}, platformsChecked=${checkResult.platformsChecked}")
 
-            val savesUploaded = saveSyncRepository.processPendingUploads()
-            Logger.info(TAG, "[SaveSync] WORKER | Save uploads processed | count=$savesUploaded")
+            when (val result = syncCoordinator.processQueue()) {
+                is SyncCoordinator.ProcessResult.NotConnected -> {
+                    Logger.info(TAG, "[SaveSync] WORKER | Sync skipped - not connected")
+                }
+                is SyncCoordinator.ProcessResult.Completed -> {
+                    Logger.info(TAG, "[SaveSync] WORKER | Sync complete | processed=${result.processed}, failed=${result.failed}")
+                }
+            }
 
-            val statesUploaded = stateCacheManager.processPendingStateUploads()
-            Logger.info(TAG, "[StateSync] WORKER | State uploads processed | count=$statesUploaded")
-
-            Logger.info(TAG, "[SaveSync] WORKER | Sync complete")
             Result.success()
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] WORKER | Sync failed, will retry", e)

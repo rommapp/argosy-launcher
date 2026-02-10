@@ -106,7 +106,8 @@ class ArgosyViewModel @Inject constructor(
     private val saveSyncRepository: SaveSyncRepository,
     private val gameDao: GameDao,
     private val libretroMigrationUseCase: LibretroMigrationUseCase,
-    private val emulatorUpdateManager: EmulatorUpdateManager
+    private val emulatorUpdateManager: EmulatorUpdateManager,
+    private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator
 ) : ViewModel() {
 
     private val contentResolver get() = application.contentResolver
@@ -120,6 +121,20 @@ class ArgosyViewModel @Inject constructor(
         downloadManager.clearCompleted()
         startControllerDetectionPolling()
         observeSaveConflicts()
+        observeConnectionForSync()
+    }
+
+    private fun observeConnectionForSync() {
+        viewModelScope.launch {
+            var wasConnected = false
+            romMRepository.connectionState.collect { state ->
+                val isConnected = state is RomMRepository.ConnectionState.Connected
+                if (isConnected && !wasConnected) {
+                    syncCoordinator.processQueue()
+                }
+                wasConnected = isConnected
+            }
+        }
     }
 
     private fun observeSaveConflicts() {
@@ -345,9 +360,7 @@ class ArgosyViewModel @Inject constructor(
     fun onDrawerOpened() {
         viewModelScope.launch {
             romMRepository.checkConnection()
-            if (romMRepository.connectionState.value is RomMRepository.ConnectionState.Connected) {
-                romMRepository.processPendingSync()
-            }
+            syncCoordinator.processQueue()
             downloadManager.recheckStorageAndResume()
         }
     }
@@ -440,16 +453,6 @@ class ArgosyViewModel @Inject constructor(
                 emulatorId = info.emulatorId,
                 channelName = null,
                 forceOverwrite = true
-            )
-            val game = gameDao.getById(info.gameId)
-            notificationManager.show(
-                title = "Save Uploaded",
-                subtitle = game?.title,
-                type = com.nendo.argosy.ui.notification.NotificationType.SUCCESS,
-                imagePath = game?.coverPath,
-                duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM,
-                key = "sync-${info.gameId}",
-                immediate = true
             )
         }
         dismissSaveConflict()
@@ -751,5 +754,40 @@ class ArgosyViewModel @Inject constructor(
             onDismiss()
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
+    }
+
+    data class PendingLaunch(
+        val gameId: Long,
+        val channelName: String? = null,
+        val discId: Long? = null
+    )
+
+    private val _isTransitioningToGame = MutableStateFlow(false)
+    val isTransitioningToGame: StateFlow<Boolean> = _isTransitioningToGame.asStateFlow()
+
+    private val _returningFromGame = MutableStateFlow(false)
+    val returningFromGame: StateFlow<Boolean> = _returningFromGame.asStateFlow()
+
+    private val _pendingLaunch = MutableStateFlow<PendingLaunch?>(null)
+    val pendingLaunch: StateFlow<PendingLaunch?> = _pendingLaunch.asStateFlow()
+
+    fun initiateGameLaunch(gameId: Long, channelName: String? = null, discId: Long? = null) {
+        _isTransitioningToGame.value = true
+        _pendingLaunch.value = PendingLaunch(gameId, channelName, discId)
+    }
+
+    fun consumePendingLaunch(): PendingLaunch? {
+        val launch = _pendingLaunch.value
+        _pendingLaunch.value = null
+        _isTransitioningToGame.value = false
+        return launch
+    }
+
+    fun setReturningFromGame() {
+        _returningFromGame.value = true
+    }
+
+    fun clearReturningFlag() {
+        _returningFromGame.value = false
     }
 }

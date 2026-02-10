@@ -26,7 +26,7 @@ import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
-import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.entity.GameListItem
@@ -132,7 +132,7 @@ class SettingsViewModel @Inject constructor(
     private val updateRepository: UpdateRepository,
     private val appInstaller: AppInstaller,
     private val soundManager: SoundFeedbackManager,
-    private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val saveCacheDao: SaveCacheDao,
     private val retroArchConfigParser: RetroArchConfigParser,
     val displayDelegate: DisplaySettingsDelegate,
     val controlsDelegate: ControlsSettingsDelegate,
@@ -702,7 +702,7 @@ class SettingsViewModel @Inject constructor(
                 saveSyncEnabled = prefs.saveSyncEnabled,
                 experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
                 saveCacheLimit = prefs.saveCacheLimit,
-                pendingUploadsCount = pendingSaveSyncDao.getCount(),
+                pendingUploadsCount = saveCacheDao.countNeedingRemoteSync(),
                 imageCachePath = prefs.imageCachePath,
                 defaultImageCachePath = imageCacheManager.getDefaultCachePath()
             ))

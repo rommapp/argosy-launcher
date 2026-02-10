@@ -3,7 +3,7 @@ package com.nendo.argosy.domain.usecase.game
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
-import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.model.GameSource
@@ -27,7 +27,7 @@ class DeleteGameUseCase @Inject constructor(
     private val downloadQueueDao: DownloadQueueDao,
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncDao: SaveSyncDao,
-    private val pendingSaveSyncDao: PendingSaveSyncDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val orphanedFileDao: OrphanedFileDao,
     private val steamRepository: SteamRepository
 ) {
@@ -48,7 +48,7 @@ class DeleteGameUseCase @Inject constructor(
 
         saveCacheManager.deleteAllCachesForGame(gameId)
         saveSyncDao.deleteByGame(gameId)
-        pendingSaveSyncDao.deleteByGame(gameId)
+        pendingSyncQueueDao.deleteByGameId(gameId)
         gameDao.updateActiveSaveChannel(gameId, null)
         gameDao.updateActiveSaveTimestamp(gameId, null)
         Logger.debug(TAG, "Deleted local file and all save data for game $gameId")

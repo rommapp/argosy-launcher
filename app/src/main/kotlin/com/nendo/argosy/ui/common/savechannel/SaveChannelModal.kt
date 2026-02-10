@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -70,7 +71,9 @@ fun SaveChannelModal(
 ) {
     if (!state.isVisible) return
 
-    val listState = rememberLazyListState()
+    val listState = remember(state.selectedTab) {
+        LazyListState(firstVisibleItemIndex = state.focusIndex, firstVisibleItemScrollOffset = 0)
+    }
     val itemHeight = Dimens.settingsItemMinHeight
     val maxVisibleItems = 5
     val entries = state.currentTabEntries
@@ -78,6 +81,10 @@ fun SaveChannelModal(
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    LaunchedEffect(state.selectedTab, state.focusIndex) {
+        listState.scrollToItem(state.focusIndex)
     }
 
     // Handle focus changes (including centering)

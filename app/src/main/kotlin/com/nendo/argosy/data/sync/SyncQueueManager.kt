@@ -13,6 +13,7 @@ enum class SyncStatus { PENDING, IN_PROGRESS, COMPLETED, FAILED }
 data class SyncOperation(
     val gameId: Long,
     val gameName: String,
+    val channelName: String? = null,
     val coverPath: String?,
     val direction: SyncDirection,
     val status: SyncStatus,

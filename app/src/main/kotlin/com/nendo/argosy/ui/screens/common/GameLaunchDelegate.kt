@@ -353,7 +353,13 @@ class GameLaunchDelegate @Inject constructor(
         scope: CoroutineScope,
         onSyncComplete: () -> Unit = {}
     ) {
-        val session = playSessionTracker.activeSession.value ?: return
+        val session = playSessionTracker.activeSession.value
+        if (session == null) {
+            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: no active session, cleaning up")
+            playSessionTracker.forceStopService()
+            onSyncComplete()
+            return
+        }
         val sessionDuration = playSessionTracker.getSessionDuration()
 
         if (sessionDuration != null) {
@@ -363,6 +369,7 @@ class GameLaunchDelegate @Inject constructor(
                 if (session.flashReturnCount > 0) {
                     android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: double flash return (${seconds}s), cancelling session")
                     playSessionTracker.cancelSession()
+                    onSyncComplete()
                     return
                 }
                 android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: flash return (${seconds}s), keeping session alive")
@@ -373,12 +380,16 @@ class GameLaunchDelegate @Inject constructor(
             if (seconds < 30) {
                 android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: short session (${seconds}s), cancelling without backup")
                 playSessionTracker.cancelSession()
+                onSyncComplete()
                 return
             }
         }
 
         android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: proceeding with session end for gameId=${session.gameId}")
-        if (!syncMutex.tryLock()) return
+        if (!syncMutex.tryLock()) {
+            onSyncComplete()
+            return
+        }
 
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)
         if (emulatorId == null) {

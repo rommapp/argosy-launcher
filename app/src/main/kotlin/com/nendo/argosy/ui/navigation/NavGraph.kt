@@ -21,6 +21,7 @@ import com.nendo.argosy.ui.screens.downloads.DownloadsScreen
 import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
+import com.nendo.argosy.ui.screens.launch.LaunchScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
 import com.nendo.argosy.ui.screens.settings.ManagePinsScreen
@@ -32,6 +33,7 @@ fun NavGraph(
     startDestination: String,
     defaultView: DefaultView,
     onDrawerToggle: () -> Unit,
+    onSetReturningFromGame: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val navigateToDefault = remember(defaultView) {
@@ -212,6 +214,35 @@ fun NavGraph(
             GameDetailScreen(
                 gameId = gameId,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.Launch.route,
+            arguments = listOf(
+                navArgument("gameId") { type = NavType.LongType },
+                navArgument("channelName") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("discId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
+        ) { backStackEntry ->
+            val gameId = backStackEntry.arguments?.getLong("gameId") ?: return@composable
+            val channelName = backStackEntry.arguments?.getString("channelName")
+            val discId = backStackEntry.arguments?.getLong("discId")?.takeIf { it != -1L }
+            LaunchScreen(
+                gameId = gameId,
+                channelName = channelName,
+                discId = discId,
+                onLaunchComplete = {
+                    onSetReturningFromGame()
+                    navController.popBackStack()
+                }
             )
         }
 

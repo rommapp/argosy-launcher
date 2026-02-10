@@ -7,8 +7,7 @@ import android.os.Build
 import android.os.Environment
 import androidx.core.content.ContextCompat
 import com.nendo.argosy.data.cache.ImageCacheManager
-import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
-import com.nendo.argosy.data.local.dao.PendingStateSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
@@ -41,8 +40,7 @@ class SyncSettingsDelegate @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: SaveSyncRepository,
-    private val pendingSaveSyncDao: PendingSaveSyncDao,
-    private val pendingStateSyncDao: PendingStateSyncDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val saveSyncDao: SaveSyncDao,
     private val saveCacheDao: SaveCacheDao,
     private val stateCacheDao: StateCacheDao,
@@ -75,7 +73,7 @@ class SyncSettingsDelegate @Inject constructor(
             val prefs = preferencesRepository.preferences.first()
             val hasStoragePermission = checkStoragePermission()
             val hasNotificationPermission = checkNotificationPermission()
-            val pendingUploads = pendingSaveSyncDao.getCount()
+            val pendingUploads = saveCacheDao.countNeedingRemoteSync()
             val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
             val totalPending = pendingUploads + pendingDownloads
             val enabledPlatformCount = platformDao.getEnabledPlatformCount()
@@ -338,7 +336,7 @@ class SyncSettingsDelegate @Inject constructor(
                 saveSyncRepository.checkForAllServerUpdates()
                 val uploaded = saveSyncRepository.processPendingUploads()
                 val downloaded = saveSyncRepository.downloadPendingServerSaves()
-                val pendingUploads = pendingSaveSyncDao.getCount()
+                val pendingUploads = saveCacheDao.countNeedingRemoteSync()
                 val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
                 val totalPending = pendingUploads + pendingDownloads
                 _state.update { it.copy(pendingUploadsCount = totalPending) }
@@ -512,8 +510,7 @@ class SyncSettingsDelegate @Inject constructor(
         _state.update { it.copy(showResetSaveCacheConfirm = false, isResettingSaveCache = true) }
         scope.launch {
             withContext(Dispatchers.IO) {
-                pendingStateSyncDao.deleteAll()
-                pendingSaveSyncDao.deleteAll()
+                pendingSyncQueueDao.deleteAll()
                 stateCacheDao.deleteAll()
                 saveCacheDao.deleteAll()
             }
@@ -576,7 +573,7 @@ class SyncSettingsDelegate @Inject constructor(
                 saveSyncRepository.checkForAllServerUpdates()
                 val uploaded = saveSyncRepository.processPendingUploads()
                 val downloaded = saveSyncRepository.downloadPendingServerSaves()
-                val pendingUploads = pendingSaveSyncDao.getCount()
+                val pendingUploads = saveCacheDao.countNeedingRemoteSync()
                 val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
                 val totalPending = pendingUploads + pendingDownloads
                 _state.update { it.copy(pendingUploadsCount = totalPending) }

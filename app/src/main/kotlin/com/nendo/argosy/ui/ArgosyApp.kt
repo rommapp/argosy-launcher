@@ -442,6 +442,7 @@ fun ArgosyApp(
                     startDestination = startDestination,
                     defaultView = uiState.defaultView,
                     onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
+                    onSetReturningFromGame = { viewModel.setReturningFromGame() },
                     modifier = Modifier.blur(contentBlur)
                 )
             }

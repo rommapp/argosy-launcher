@@ -9,7 +9,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
-import com.nendo.argosy.data.local.dao.PendingSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
@@ -18,8 +18,9 @@ import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
-import com.nendo.argosy.data.local.entity.PendingSyncEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.sync.SyncCoordinator
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
@@ -61,14 +62,15 @@ class RomMRepository @Inject constructor(
     private val gameDiscDao: GameDiscDao,
     private val gameFileDao: GameFileDao,
     private val platformDao: PlatformDao,
-    private val pendingSyncDao: PendingSyncDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val orphanedFileDao: OrphanedFileDao,
     private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
     private val biosRepository: BiosRepository,
-    private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>
+    private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>,
+    private val syncCoordinator: dagger.Lazy<SyncCoordinator>
 ) {
     private var api: RomMApi? = null
     private var baseUrl: String = ""
@@ -1121,14 +1123,16 @@ class RomMRepository @Inject constructor(
             val rom = response.body() ?: return RomMResult.Success(Unit)
             val romUser = rom.romUser ?: return RomMResult.Success(Unit)
 
-            val pendingSyncTypes = pendingSyncDao.getPendingSyncTypes(gameId).toSet()
+            val hasRating = pendingSyncQueueDao.hasPending(gameId, SyncType.RATING)
+            val hasDifficulty = pendingSyncQueueDao.hasPending(gameId, SyncType.DIFFICULTY)
+            val hasStatus = pendingSyncQueueDao.hasPending(gameId, SyncType.STATUS)
 
             val updatedGame = game.copy(
-                userRating = if ("RATING" in pendingSyncTypes) game.userRating else romUser.rating,
-                userDifficulty = if ("DIFFICULTY" in pendingSyncTypes) game.userDifficulty else romUser.difficulty,
-                status = if ("STATUS" in pendingSyncTypes) game.status else romUser.status,
-                backlogged = if ("BACKLOGGED" in pendingSyncTypes) game.backlogged else romUser.backlogged,
-                nowPlaying = if ("NOW_PLAYING" in pendingSyncTypes) game.nowPlaying else romUser.nowPlaying
+                userRating = if (hasRating) game.userRating else romUser.rating,
+                userDifficulty = if (hasDifficulty) game.userDifficulty else romUser.difficulty,
+                status = if (hasStatus) game.status else romUser.status,
+                backlogged = romUser.backlogged,
+                nowPlaying = romUser.nowPlaying
             )
 
             if (updatedGame != game) {
@@ -1378,85 +1382,48 @@ class RomMRepository @Inject constructor(
 
     suspend fun updateUserRating(gameId: Long, rating: Int): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
-
         gameDao.updateUserRating(gameId, rating)
-
         val rommId = game.rommId ?: return RomMResult.Success(Unit)
-
-        pendingSyncDao.deleteByGameAndType(gameId, "RATING")
-
-        val currentApi = api
-        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))
-            return RomMResult.Success(Unit)
-        }
-
-        return try {
-            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(data = RomMUserPropsUpdateData(rating = rating)))
-            if (!response.isSuccessful) {
-                pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))
-            }
-            RomMResult.Success(Unit)
-        } catch (e: Exception) {
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "RATING", value = rating))
-            RomMResult.Success(Unit)
-        }
+        syncCoordinator.get().queuePropertyChange(gameId, rommId, SyncType.RATING, intValue = rating)
+        return RomMResult.Success(Unit)
     }
 
     suspend fun updateUserDifficulty(gameId: Long, difficulty: Int): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
-
         gameDao.updateUserDifficulty(gameId, difficulty)
-
         val rommId = game.rommId ?: return RomMResult.Success(Unit)
-
-        pendingSyncDao.deleteByGameAndType(gameId, "DIFFICULTY")
-
-        val currentApi = api
-        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))
-            return RomMResult.Success(Unit)
-        }
-
-        return try {
-            val response = currentApi.updateRomUserProps(rommId, RomMUserPropsUpdate(data = RomMUserPropsUpdateData(difficulty = difficulty)))
-            if (!response.isSuccessful) {
-                pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))
-            }
-            RomMResult.Success(Unit)
-        } catch (e: Exception) {
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "DIFFICULTY", value = difficulty))
-            RomMResult.Success(Unit)
-        }
+        syncCoordinator.get().queuePropertyChange(gameId, rommId, SyncType.DIFFICULTY, intValue = difficulty)
+        return RomMResult.Success(Unit)
     }
 
     suspend fun updateUserStatus(gameId: Long, status: String?): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
-
         gameDao.updateStatus(gameId, status)
-
         val rommId = game.rommId ?: return RomMResult.Success(Unit)
+        syncCoordinator.get().queuePropertyChange(gameId, rommId, SyncType.STATUS, stringValue = status)
+        return RomMResult.Success(Unit)
+    }
 
-        pendingSyncDao.deleteByGameAndType(gameId, "STATUS")
-
-        val currentApi = api
-        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "STATUS", stringValue = status))
-            return RomMResult.Success(Unit)
-        }
-
+    suspend fun updateRomUserProps(
+        rommId: Long,
+        userRating: Int? = null,
+        userDifficulty: Int? = null,
+        userStatus: String? = null
+    ): Boolean {
+        val currentApi = api ?: return false
         return try {
-            val response = currentApi.updateRomUserProps(
-                rommId,
-                RomMUserPropsUpdate(data = RomMUserPropsUpdateData(status = status))
+            val props = RomMUserPropsUpdate(
+                data = RomMUserPropsUpdateData(
+                    rating = userRating,
+                    difficulty = userDifficulty,
+                    status = userStatus
+                )
             )
-            if (!response.isSuccessful) {
-                pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "STATUS", stringValue = status))
-            }
-            RomMResult.Success(Unit)
+            val response = currentApi.updateRomUserProps(rommId, props)
+            response.isSuccessful
         } catch (e: Exception) {
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "STATUS", stringValue = status))
-            RomMResult.Success(Unit)
+            Logger.error(TAG, "updateRomUserProps failed: ${e.message}")
+            false
         }
     }
 
@@ -1495,66 +1462,6 @@ class RomMRepository @Inject constructor(
                 initialize()
             }
         }
-    }
-
-    suspend fun processPendingSync(): Int {
-        val currentApi = api ?: return 0
-        if (_connectionState.value !is ConnectionState.Connected) return 0
-
-        val pending = pendingSyncDao.getAll()
-        var synced = 0
-
-        val favoriteChanges = pending.filter { it.syncType == "FAVORITE" }
-        val otherChanges = pending.filter { it.syncType != "FAVORITE" }
-
-        if (favoriteChanges.isNotEmpty()) {
-            try {
-                val collection = getOrCreateFavoritesCollection()
-                if (collection != null) {
-                    val currentRemoteIds = collection.romIds.toMutableSet()
-
-                    for (item in favoriteChanges) {
-                        if (item.value == 1) {
-                            currentRemoteIds.add(item.rommId)
-                        } else {
-                            currentRemoteIds.remove(item.rommId)
-                        }
-                    }
-
-                    val result = updateFavoritesCollection(collection.id, currentRemoteIds.toList())
-                    if (result != null) {
-                        for (item in favoriteChanges) {
-                            pendingSyncDao.delete(item.id)
-                            synced++
-                        }
-                        parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
-                    }
-                }
-            } catch (e: Exception) {
-                Logger.info(TAG, "processPendingSync: failed to sync favorites: ${e.message}")
-            }
-        }
-
-        for (item in otherChanges) {
-            try {
-                val props = when (item.syncType) {
-                    "RATING" -> RomMUserPropsUpdate(data = RomMUserPropsUpdateData(rating = item.value))
-                    "DIFFICULTY" -> RomMUserPropsUpdate(data = RomMUserPropsUpdateData(difficulty = item.value))
-                    "STATUS" -> RomMUserPropsUpdate(data = RomMUserPropsUpdateData(status = item.stringValue))
-                    else -> continue
-                }
-                val response = currentApi.updateRomUserProps(item.rommId, props)
-                if (response.isSuccessful) {
-                    pendingSyncDao.delete(item.id)
-                    synced++
-                    if (synced < pending.size) {
-                        delay(500)
-                    }
-                }
-            } catch (_: Exception) {
-            }
-        }
-        return synced
     }
 
     private fun parseTimestamp(timestamp: String?): Instant? {
@@ -1638,42 +1545,14 @@ class RomMRepository @Inject constructor(
                 return RomMResult.Error("Failed to update favorites collection")
             }
 
-            val pendingFavorites = pendingSyncDao.getAll().filter { it.syncType == "FAVORITE" }
-            if (pendingFavorites.isNotEmpty()) {
-                val currentRemoteIds = remoteRommIds.toMutableSet()
-                for (item in pendingFavorites) {
-                    if (item.value == 1) {
-                        currentRemoteIds.add(item.rommId)
-                    } else {
-                        currentRemoteIds.remove(item.rommId)
-                    }
-                }
-
-                val result = updateFavoritesCollection(collection.id, currentRemoteIds.toList())
-                if (result != null) {
-                    for (item in pendingFavorites) {
-                        pendingSyncDao.delete(item.id)
-                    }
-                    if (currentRemoteIds.isNotEmpty()) {
-                        gameDao.setFavoritesByRommIds(currentRemoteIds.toList())
-                        gameDao.clearFavoritesNotInRommIds(currentRemoteIds.toList())
-                    } else {
-                        gameDao.clearFavoritesNotInRommIds(emptyList())
-                    }
-                    parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
-                    userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
-                    return RomMResult.Success(Unit)
-                }
+            if (remoteRommIds.isNotEmpty()) {
+                gameDao.setFavoritesByRommIds(remoteRommIds.toList())
+                gameDao.clearFavoritesNotInRommIds(remoteRommIds.toList())
             } else {
-                if (remoteRommIds.isNotEmpty()) {
-                    gameDao.setFavoritesByRommIds(remoteRommIds.toList())
-                    gameDao.clearFavoritesNotInRommIds(remoteRommIds.toList())
-                } else {
-                    gameDao.clearFavoritesNotInRommIds(emptyList())
-                }
-                parseTimestamp(collection.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
-                userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
+                gameDao.clearFavoritesNotInRommIds(emptyList())
             }
+            parseTimestamp(collection.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
+            userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
 
             RomMResult.Success(Unit)
         } catch (e: Exception) {
@@ -1684,44 +1563,32 @@ class RomMRepository @Inject constructor(
 
     suspend fun toggleFavoriteWithSync(gameId: Long, rommId: Long, isFavorite: Boolean): RomMResult<Unit> {
         gameDao.updateFavorite(gameId, isFavorite)
+        syncCoordinator.get().queueFavoriteChange(gameId, rommId, isFavorite)
+        return RomMResult.Success(Unit)
+    }
 
-        pendingSyncDao.deleteByGameAndType(gameId, "FAVORITE")
-
-        val currentApi = api
-        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
-            val value = if (isFavorite) 1 else 0
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "FAVORITE", value = value))
-            return RomMResult.Success(Unit)
-        }
+    suspend fun syncFavorite(rommId: Long, isFavorite: Boolean): Boolean {
+        val currentApi = api ?: return false
+        if (_connectionState.value !is ConnectionState.Connected) return false
 
         return try {
-            val collection = getOrCreateFavoritesCollection()
-                ?: run {
-                    val value = if (isFavorite) 1 else 0
-                    pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "FAVORITE", value = value))
-                    return RomMResult.Success(Unit)
-                }
-
+            val collection = getOrCreateFavoritesCollection() ?: return false
             val currentIds = collection.romIds.toMutableSet()
             if (isFavorite) {
                 currentIds.add(rommId)
             } else {
                 currentIds.remove(rommId)
             }
-
             val result = updateFavoritesCollection(collection.id, currentIds.toList())
             if (result != null) {
                 parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
-                RomMResult.Success(Unit)
+                true
             } else {
-                val value = if (isFavorite) 1 else 0
-                pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "FAVORITE", value = value))
-                RomMResult.Success(Unit)
+                false
             }
         } catch (e: Exception) {
-            val value = if (isFavorite) 1 else 0
-            pendingSyncDao.insert(PendingSyncEntity(gameId = gameId, rommId = rommId, syncType = "FAVORITE", value = value))
-            RomMResult.Success(Unit)
+            Logger.warn(TAG, "syncFavorite: failed for rommId=$rommId, isFavorite=$isFavorite: ${e.message}")
+            false
         }
     }
 

@@ -7,10 +7,13 @@ import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.StatePathConfig
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.VersionValidationResult
-import com.nendo.argosy.data.local.dao.PendingStateSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
-import com.nendo.argosy.data.local.entity.PendingStateSyncEntity
+import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.StateCacheEntity
+import com.nendo.argosy.data.local.entity.SyncPriority
+import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.sync.SaveStatePayload
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMSave
@@ -40,7 +43,7 @@ data class DiscoveredState(
 class StateCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val stateCacheDao: StateCacheDao,
-    private val pendingStateSyncDao: PendingStateSyncDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val coreVersionExtractor: CoreVersionExtractor,
     private val retroArchConfigParser: RetroArchConfigParser,
@@ -697,29 +700,19 @@ class StateCacheManager @Inject constructor(
         rommId: Long,
         emulatorId: String
     ): Boolean {
-        val existing = pendingStateSyncDao.getByStateCacheId(stateCacheId)
-        if (existing != null) {
-            Log.d(TAG, "[StateSync] QUEUE stateId=$stateCacheId | Already queued")
-            return false
-        }
-
         val state = stateCacheDao.getById(stateCacheId) ?: return false
-        val action = if (state.rommSaveId != null) {
-            PendingStateSyncEntity.ACTION_UPDATE
-        } else {
-            PendingStateSyncEntity.ACTION_UPLOAD
-        }
 
-        pendingStateSyncDao.insert(
-            PendingStateSyncEntity(
-                stateCacheId = stateCacheId,
+        val payload = SaveStatePayload(stateCacheId, emulatorId)
+        pendingSyncQueueDao.insert(
+            PendingSyncQueueEntity(
                 gameId = gameId,
                 rommId = rommId,
-                emulatorId = emulatorId,
-                action = action
+                syncType = SyncType.SAVE_STATE,
+                priority = SyncPriority.SAVE_STATE,
+                payloadJson = payload.toJson()
             )
         )
-        Log.d(TAG, "[StateSync] QUEUED stateId=$stateCacheId gameId=$gameId action=$action")
+        Log.d(TAG, "[StateSync] QUEUED stateId=$stateCacheId gameId=$gameId")
         return true
     }
 
@@ -730,7 +723,7 @@ class StateCacheManager @Inject constructor(
             return@withContext 0
         }
 
-        val pending = pendingStateSyncDao.getRetryable()
+        val pending = pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_STATE)
         if (pending.isEmpty()) {
             return@withContext 0
         }
@@ -739,30 +732,31 @@ class StateCacheManager @Inject constructor(
 
         var uploadedCount = 0
         for (item in pending) {
-            val state = stateCacheDao.getById(item.stateCacheId)
+            val payload = SaveStatePayload.fromJson(item.payloadJson) ?: continue
+            val state = stateCacheDao.getById(payload.stateCacheId)
             if (state == null) {
                 Log.w(TAG, "[StateSync] UPLOAD itemId=${item.id} | State cache not found, removing from queue")
-                pendingStateSyncDao.delete(item.id)
+                pendingSyncQueueDao.deleteById(item.id)
                 continue
             }
 
             val result = uploadStateToRomM(state, item.rommId, api)
             when (result) {
                 is StateCloudResult.Success -> {
-                    pendingStateSyncDao.delete(item.id)
+                    pendingSyncQueueDao.deleteById(item.id)
                     uploadedCount++
                     Log.i(TAG, "[StateSync] UPLOADED stateId=${state.id} slot=${state.slotNumber}")
                 }
                 is StateCloudResult.AlreadySynced -> {
-                    pendingStateSyncDao.delete(item.id)
+                    pendingSyncQueueDao.deleteById(item.id)
                     Log.d(TAG, "[StateSync] UPLOAD stateId=${state.id} | Already synced, removed from queue")
                 }
                 is StateCloudResult.NoStateFound -> {
-                    pendingStateSyncDao.delete(item.id)
+                    pendingSyncQueueDao.deleteById(item.id)
                     Log.w(TAG, "[StateSync] UPLOAD stateId=${state.id} | Cache file not found, removed from queue")
                 }
                 is StateCloudResult.Error -> {
-                    pendingStateSyncDao.incrementRetry(item.id, result.message)
+                    pendingSyncQueueDao.markFailed(item.id, result.message)
                     Log.w(TAG, "[StateSync] UPLOAD FAILED stateId=${state.id} | ${result.message} | retry=${item.retryCount + 1}")
                 }
                 else -> {

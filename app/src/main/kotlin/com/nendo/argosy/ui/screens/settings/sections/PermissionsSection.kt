@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.ScreenshotMonitor
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,11 +60,12 @@ private sealed class PermissionsItem(
         key = "screenCapture",
         visibleWhen = { it.isScreenCaptureRelevant }
     )
+    data object DisplayOverlay : PermissionsItem("displayOverlay")
     data object StatusFooter : PermissionsItem("statusFooter")
 
     companion object {
         val ALL: List<PermissionsItem> = listOf(
-            InfoText, StorageAccess, UsageStats, Notifications, WriteSettings, ScreenCapture, StatusFooter
+            InfoText, StorageAccess, UsageStats, Notifications, WriteSettings, ScreenCapture, DisplayOverlay, StatusFooter
         )
     }
 }
@@ -150,6 +152,15 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isGranted = permissions.hasScreenCapture,
                     isFocused = isFocused(item),
                     onClick = { viewModel.requestScreenCapturePermission() }
+                )
+
+                PermissionsItem.DisplayOverlay -> PermissionCard(
+                    icon = Icons.Default.Layers,
+                    title = "Display Over Other Apps",
+                    description = "Shows save detection notifications while playing games in external emulators.",
+                    isGranted = permissions.hasDisplayOverlay,
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.openDisplayOverlaySettings() }
                 )
 
                 PermissionsItem.StatusFooter -> Column {

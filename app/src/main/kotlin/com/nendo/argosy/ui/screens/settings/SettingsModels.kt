@@ -538,20 +538,23 @@ data class PermissionsState(
     val hasWriteSettings: Boolean = false,
     val isWriteSettingsRelevant: Boolean = false,
     val hasScreenCapture: Boolean = false,
-    val isScreenCaptureRelevant: Boolean = false
+    val isScreenCaptureRelevant: Boolean = false,
+    val hasDisplayOverlay: Boolean = false
 ) {
     val allGranted: Boolean get() = hasStorageAccess && hasUsageStats && hasNotificationPermission &&
         (!isWriteSettingsRelevant || hasWriteSettings) &&
-        (!isScreenCaptureRelevant || hasScreenCapture)
+        (!isScreenCaptureRelevant || hasScreenCapture) &&
+        hasDisplayOverlay
     val grantedCount: Int get() = listOf(
         hasStorageAccess,
         hasUsageStats,
         hasNotificationPermission,
         if (isWriteSettingsRelevant) hasWriteSettings else null,
-        if (isScreenCaptureRelevant) hasScreenCapture else null
+        if (isScreenCaptureRelevant) hasScreenCapture else null,
+        hasDisplayOverlay
     ).count { it == true }
     val totalCount: Int get() {
-        var count = 3
+        var count = 4
         if (isWriteSettingsRelevant) count++
         if (isScreenCaptureRelevant) count++
         return count

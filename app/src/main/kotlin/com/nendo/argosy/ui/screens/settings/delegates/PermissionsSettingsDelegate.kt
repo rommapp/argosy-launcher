@@ -51,6 +51,7 @@ class PermissionsSettingsDelegate @Inject constructor(
         val isDeviceWithFanControl = fanSpeedFile.exists()
         val hasScreenCapture = screenCaptureManager.hasPermission.value
         val isLedAvailable = ledController.isAvailable
+        val hasDisplayOverlay = Settings.canDrawOverlays(application)
 
         _state.update {
             it.copy(
@@ -60,7 +61,8 @@ class PermissionsSettingsDelegate @Inject constructor(
                 hasWriteSettings = hasWriteSettings,
                 isWriteSettingsRelevant = isDeviceWithFanControl,
                 hasScreenCapture = hasScreenCapture,
-                isScreenCaptureRelevant = isLedAvailable
+                isScreenCaptureRelevant = isLedAvailable,
+                hasDisplayOverlay = hasDisplayOverlay
             )
         }
     }
@@ -101,6 +103,14 @@ class PermissionsSettingsDelegate @Inject constructor(
 
     fun openWriteSettings() {
         val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
+            data = Uri.parse("package:${application.packageName}")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        application.startActivity(intent)
+    }
+
+    fun openDisplayOverlaySettings() {
+        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
             data = Uri.parse("package:${application.packageName}")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }

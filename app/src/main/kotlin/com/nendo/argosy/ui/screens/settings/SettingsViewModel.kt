@@ -2502,6 +2502,10 @@ class SettingsViewModel @Inject constructor(
         permissionsDelegate.openWriteSettings()
     }
 
+    fun openDisplayOverlaySettings() {
+        permissionsDelegate.openDisplayOverlaySettings()
+    }
+
     fun requestScreenCapturePermission() {
         viewModelScope.launch {
             _requestScreenCapturePermissionEvent.emit(Unit)
@@ -3552,12 +3556,23 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.PERMISSIONS -> {
+                val perms = state.permissions
+                val baseIndex = 3
+                val writeSettingsIndex = if (perms.isWriteSettingsRelevant) baseIndex else -1
+                val screenCaptureIndex = if (perms.isScreenCaptureRelevant) {
+                    if (perms.isWriteSettingsRelevant) baseIndex + 1 else baseIndex
+                } else -1
+                val displayOverlayIndex = baseIndex +
+                    (if (perms.isWriteSettingsRelevant) 1 else 0) +
+                    (if (perms.isScreenCaptureRelevant) 1 else 0)
+
                 when (state.focusedIndex) {
                     0 -> openStorageSettings()
                     1 -> openUsageStatsSettings()
                     2 -> openNotificationSettings()
-                    3 -> openWriteSettings()
-                    4 -> requestScreenCapturePermission()
+                    writeSettingsIndex -> openWriteSettings()
+                    screenCaptureIndex -> requestScreenCapturePermission()
+                    displayOverlayIndex -> openDisplayOverlaySettings()
                 }
                 InputResult.HANDLED
             }

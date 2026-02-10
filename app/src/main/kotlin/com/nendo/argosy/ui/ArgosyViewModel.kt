@@ -2,7 +2,10 @@ package com.nendo.argosy.ui
 
 import android.app.Application
 import android.content.Context
+import android.database.ContentObserver
 import android.media.AudioManager
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
@@ -134,6 +137,12 @@ class ArgosyViewModel @Inject constructor(
     private val _backgroundConflictButtonIndex = MutableStateFlow(0)
     val backgroundConflictButtonIndex: StateFlow<Int> = _backgroundConflictButtonIndex.asStateFlow()
 
+    private val settingsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            refreshAudioVisualSettings()
+        }
+    }
+
     init {
         downloadNotificationObserver.observe(viewModelScope)
         syncNotificationObserver.observe(viewModelScope)
@@ -144,6 +153,20 @@ class ArgosyViewModel @Inject constructor(
         observeSaveConflicts()
         observeBackgroundSyncConflicts()
         observeConnectionForSync()
+        registerSettingsObserver()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        application.contentResolver.unregisterContentObserver(settingsObserver)
+    }
+
+    private fun registerSettingsObserver() {
+        application.contentResolver.registerContentObserver(
+            Settings.System.CONTENT_URI,
+            true,
+            settingsObserver
+        )
     }
 
     private fun observeConnectionForSync() {
@@ -434,13 +457,12 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private fun getInitialPrimaryBrightness(): Float {
-        val display = brightnessController.getBrightness()
-        return display.primary
+        return brightnessController.getBrightness().primary ?: 0.5f
     }
 
     private fun getInitialSecondaryBrightness(): Float? {
         if (!brightnessController.isMultiDisplaySupported) return null
-        return brightnessController.getBrightness().secondary
+        return brightnessController.getBrightness().secondary ?: 0.5f
     }
 
     private data class AudioVisualState(
@@ -547,7 +569,18 @@ class ArgosyViewModel @Inject constructor(
         if (open) {
             _quickSettingsFocusIndex.value = 0
             loadDeviceSettings()
+            refreshAudioVisualSettings()
         }
+    }
+
+    private fun refreshAudioVisualSettings() {
+        val volume = volumeController.getVolume()
+        _systemVolume.value = volume.primary
+        _secondaryVolume.value = volume.secondary
+
+        val brightness = brightnessController.getBrightness()
+        brightness.primary?.let { _screenBrightness.value = it }
+        brightness.secondary?.let { _secondaryBrightness.value = it }
     }
 
     private fun loadDeviceSettings() {

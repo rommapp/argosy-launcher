@@ -3,12 +3,24 @@ package com.nendo.argosy.data.sync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
 enum class SyncDirection { UPLOAD, DOWNLOAD }
-enum class SyncStatus { PENDING, IN_PROGRESS, COMPLETED, FAILED }
+enum class SyncStatus { PENDING, IN_PROGRESS, COMPLETED, FAILED, CONFLICT_PENDING }
+enum class ConflictResolution { KEEP_LOCAL, KEEP_SERVER, SKIP }
+
+data class ConflictInfo(
+    val gameId: Long,
+    val gameName: String,
+    val channelName: String?,
+    val localTimestamp: Instant,
+    val serverTimestamp: Instant,
+    val isHashConflict: Boolean
+)
 
 data class SyncOperation(
     val gameId: Long,
@@ -18,7 +30,8 @@ data class SyncOperation(
     val direction: SyncDirection,
     val status: SyncStatus,
     val progress: Float = 0f,
-    val error: String? = null
+    val error: String? = null,
+    val conflictInfo: ConflictInfo? = null
 )
 
 data class SyncQueueState(
@@ -36,6 +49,11 @@ data class SyncQueueState(
 class SyncQueueManager @Inject constructor() {
     private val _state = MutableStateFlow(SyncQueueState())
     val state: StateFlow<SyncQueueState> = _state.asStateFlow()
+
+    private val _pendingConflicts = MutableStateFlow<List<ConflictInfo>>(emptyList())
+    val pendingConflicts: StateFlow<List<ConflictInfo>> = _pendingConflicts.asStateFlow()
+
+    private val conflictResolutions = MutableStateFlow<Map<Long, ConflictResolution>>(emptyMap())
 
     fun addOperation(operation: SyncOperation) {
         _state.update { state ->
@@ -87,5 +105,25 @@ class SyncQueueManager @Inject constructor() {
             }
             state.copy(operations = remaining, isActive = remaining.isNotEmpty())
         }
+    }
+
+    fun addConflict(conflict: ConflictInfo) {
+        _pendingConflicts.update { conflicts ->
+            if (conflicts.any { it.gameId == conflict.gameId }) conflicts
+            else conflicts + conflict
+        }
+    }
+
+    suspend fun awaitResolution(gameId: Long): ConflictResolution {
+        return conflictResolutions.first { it.containsKey(gameId) }[gameId]!!
+    }
+
+    fun resolveConflict(gameId: Long, resolution: ConflictResolution) {
+        conflictResolutions.update { it + (gameId to resolution) }
+        _pendingConflicts.update { conflicts -> conflicts.filter { it.gameId != gameId } }
+    }
+
+    fun clearResolutions() {
+        conflictResolutions.value = emptyMap()
     }
 }

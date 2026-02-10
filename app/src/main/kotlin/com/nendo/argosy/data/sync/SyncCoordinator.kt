@@ -4,8 +4,9 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
+import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
-import com.nendo.argosy.data.local.entity.SyncStatus
+import com.nendo.argosy.data.local.entity.SyncStatus as DbSyncStatus
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
@@ -153,11 +154,70 @@ class SyncCoordinator @Inject constructor(
         if (dirtySaves.isEmpty()) return 0
 
         Logger.debug(TAG, "processDirtySaveCaches: Found ${dirtySaves.size} saves needing sync")
-        var synced = 0
+
+        // Phase 1: Pre-check all saves for conflicts
+        val conflicts = mutableMapOf<Long, Pair<SaveCacheEntity, ConflictInfo>>()
+        val resolutions = mutableMapOf<Long, ConflictResolution>()
 
         for (cache in dirtySaves) {
             val game = gameDao.getById(cache.gameId) ?: continue
             if (game.rommId == null) continue
+
+            val conflictInfo = saveSyncRepository.get().checkForConflict(
+                gameId = cache.gameId,
+                emulatorId = cache.emulatorId,
+                channelName = cache.channelName
+            )
+            if (conflictInfo != null) {
+                conflicts[cache.gameId] = cache to conflictInfo
+            }
+        }
+
+        // Phase 2: Wait for conflict resolutions if any
+        if (conflicts.isNotEmpty()) {
+            Logger.debug(TAG, "processDirtySaveCaches: Found ${conflicts.size} conflicts, awaiting resolution")
+
+            for ((_, pair) in conflicts) {
+                val (_, info) = pair
+                syncQueueManager.addConflict(info)
+            }
+
+            for ((gameId, _) in conflicts) {
+                val resolution = syncQueueManager.awaitResolution(gameId)
+                resolutions[gameId] = resolution
+                Logger.debug(TAG, "processDirtySaveCaches: Conflict resolved gameId=$gameId resolution=$resolution")
+            }
+
+            syncQueueManager.clearResolutions()
+        }
+
+        // Phase 3: Process saves based on resolutions
+        var synced = 0
+        for (cache in dirtySaves) {
+            val game = gameDao.getById(cache.gameId) ?: continue
+            if (game.rommId == null) continue
+
+            val resolution = resolutions[cache.gameId]
+
+            // Skip if user chose to skip or keep server
+            if (resolution == ConflictResolution.SKIP) {
+                Logger.debug(TAG, "processDirtySaveCaches: Skipping gameId=${cache.gameId} per user choice")
+                continue
+            }
+            if (resolution == ConflictResolution.KEEP_SERVER) {
+                val downloadResult = saveSyncRepository.get().downloadSave(
+                    gameId = cache.gameId,
+                    emulatorId = cache.emulatorId,
+                    channelName = cache.channelName
+                )
+                if (downloadResult is SaveSyncResult.Success) {
+                    saveCacheDao.markSynced(cache.id, Instant.now())
+                    Logger.debug(TAG, "processDirtySaveCaches: Downloaded server save for gameId=${cache.gameId}")
+                } else {
+                    Logger.warn(TAG, "processDirtySaveCaches: Failed to download server save for gameId=${cache.gameId}")
+                }
+                continue
+            }
 
             syncQueueManager.addOperation(SyncOperation(
                 gameId = cache.gameId,
@@ -165,15 +225,16 @@ class SyncCoordinator @Inject constructor(
                 channelName = cache.channelName,
                 coverPath = game.coverPath,
                 direction = SyncDirection.UPLOAD,
-                status = com.nendo.argosy.data.sync.SyncStatus.PENDING
+                status = SyncStatus.PENDING
             ))
-            syncQueueManager.updateOperation(cache.gameId) { it.copy(status = com.nendo.argosy.data.sync.SyncStatus.IN_PROGRESS) }
+            syncQueueManager.updateOperation(cache.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
 
+            val forceOverwrite = resolution == ConflictResolution.KEEP_LOCAL
             val result = saveSyncRepository.get().uploadSave(
                 gameId = cache.gameId,
                 emulatorId = cache.emulatorId,
                 channelName = cache.channelName,
-                forceOverwrite = false
+                forceOverwrite = forceOverwrite
             )
 
             when (result) {
@@ -187,6 +248,10 @@ class SyncCoordinator @Inject constructor(
                     saveCacheDao.markSyncError(cache.id, result.message)
                     syncQueueManager.completeOperation(cache.gameId, result.message)
                     Logger.warn(TAG, "processDirtySaveCaches: Failed gameId=${cache.gameId} | ${result.message}")
+                }
+                is SaveSyncResult.Conflict -> {
+                    syncQueueManager.completeOperation(cache.gameId, "Conflict not resolved")
+                    Logger.debug(TAG, "processDirtySaveCaches: Conflict gameId=${cache.gameId}")
                 }
                 else -> {
                     syncQueueManager.completeOperation(cache.gameId, "Skipped")

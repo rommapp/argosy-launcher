@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.nendo.argosy.data.sync.BackgroundSyncConflictDialog
+import com.nendo.argosy.data.sync.ConflictResolution
 import com.nendo.argosy.ui.components.MainDrawer
 import com.nendo.argosy.ui.components.QuickSettingsPanel
 import com.nendo.argosy.ui.components.QuickSettingsState
@@ -84,6 +86,8 @@ fun ArgosyApp(
     val quickMenuState by quickMenuViewModel.uiState.collectAsState()
     val saveConflictInfo by viewModel.saveConflictInfo.collectAsState()
     val saveConflictButtonIndex by viewModel.saveConflictButtonIndex.collectAsState()
+    val backgroundConflictInfo by viewModel.backgroundConflictInfo.collectAsState()
+    val backgroundConflictButtonIndex by viewModel.backgroundConflictButtonIndex.collectAsState()
     val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -240,11 +244,36 @@ fun ArgosyApp(
         }
     }
 
-    LaunchedEffect(saveConflictInfo) {
-        if (saveConflictInfo != null) {
-            inputDispatcher.subscribeDrawer(saveConflictInputHandler)
-        } else {
-            inputDispatcher.unsubscribeDrawer()
+    val backgroundConflictInputHandler = remember(viewModel) {
+        object : InputHandler {
+            override fun onUp(): InputResult {
+                viewModel.moveBackgroundConflictFocus(-1)
+                return InputResult.HANDLED
+            }
+            override fun onDown(): InputResult {
+                viewModel.moveBackgroundConflictFocus(1)
+                return InputResult.HANDLED
+            }
+            override fun onConfirm(): InputResult {
+                when (viewModel.backgroundConflictButtonIndex.value) {
+                    0 -> viewModel.resolveBackgroundConflict(ConflictResolution.KEEP_LOCAL)
+                    1 -> viewModel.resolveBackgroundConflict(ConflictResolution.KEEP_SERVER)
+                    2 -> viewModel.resolveBackgroundConflict(ConflictResolution.SKIP)
+                }
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+            override fun onBack(): InputResult {
+                viewModel.resolveBackgroundConflict(ConflictResolution.SKIP)
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+        }
+    }
+
+    LaunchedEffect(saveConflictInfo, backgroundConflictInfo) {
+        when {
+            saveConflictInfo != null -> inputDispatcher.subscribeDrawer(saveConflictInputHandler)
+            backgroundConflictInfo != null -> inputDispatcher.subscribeDrawer(backgroundConflictInputHandler)
+            else -> inputDispatcher.unsubscribeDrawer()
         }
     }
 
@@ -498,6 +527,17 @@ fun ArgosyApp(
                     focusedButton = saveConflictButtonIndex,
                     onKeepLocal = { viewModel.dismissSaveConflict() },
                     onOverwrite = { viewModel.forceUploadConflictSave() }
+                )
+            }
+
+            // Background Sync Conflict Dialog
+            backgroundConflictInfo?.let { info ->
+                BackgroundSyncConflictDialog(
+                    conflictInfo = info,
+                    focusIndex = backgroundConflictButtonIndex,
+                    onKeepLocal = { viewModel.resolveBackgroundConflict(ConflictResolution.KEEP_LOCAL) },
+                    onKeepServer = { viewModel.resolveBackgroundConflict(ConflictResolution.KEEP_SERVER) },
+                    onSkip = { viewModel.resolveBackgroundConflict(ConflictResolution.SKIP) }
                 )
             }
             }

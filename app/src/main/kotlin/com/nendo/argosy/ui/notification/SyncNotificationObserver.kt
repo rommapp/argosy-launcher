@@ -75,6 +75,7 @@ class SyncNotificationObserver @Inject constructor(
                 SyncDirection.UPLOAD -> Triple("Upload Failed", NotificationType.ERROR, true)
                 SyncDirection.DOWNLOAD -> Triple("Download Failed", NotificationType.ERROR, true)
             }
+            SyncStatus.CONFLICT_PENDING -> return
         }
 
         val gameLine = if (operation.channelName != null) {

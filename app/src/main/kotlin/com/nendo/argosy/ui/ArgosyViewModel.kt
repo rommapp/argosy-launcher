@@ -11,6 +11,9 @@ import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.repository.SaveSyncRepository
+import com.nendo.argosy.data.sync.ConflictInfo
+import com.nendo.argosy.data.sync.ConflictResolution
+import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.ui.components.SaveConflictInfo
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -107,11 +110,18 @@ class ArgosyViewModel @Inject constructor(
     private val gameDao: GameDao,
     private val libretroMigrationUseCase: LibretroMigrationUseCase,
     private val emulatorUpdateManager: EmulatorUpdateManager,
-    private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator
+    private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator,
+    private val syncQueueManager: SyncQueueManager
 ) : ViewModel() {
 
     private val contentResolver get() = application.contentResolver
     private val fanSpeedFile = File("/sys/class/gpio5_pwm2/speed")
+
+    private val _backgroundConflictInfo = MutableStateFlow<ConflictInfo?>(null)
+    val backgroundConflictInfo: StateFlow<ConflictInfo?> = _backgroundConflictInfo.asStateFlow()
+
+    private val _backgroundConflictButtonIndex = MutableStateFlow(0)
+    val backgroundConflictButtonIndex: StateFlow<Int> = _backgroundConflictButtonIndex.asStateFlow()
 
     init {
         downloadNotificationObserver.observe(viewModelScope)
@@ -121,6 +131,7 @@ class ArgosyViewModel @Inject constructor(
         downloadManager.clearCompleted()
         startControllerDetectionPolling()
         observeSaveConflicts()
+        observeBackgroundSyncConflicts()
         observeConnectionForSync()
     }
 
@@ -149,6 +160,19 @@ class ArgosyViewModel @Inject constructor(
                     serverTimestamp = event.serverTimestamp
                 )
                 _saveConflictButtonIndex.value = 0
+            }
+        }
+    }
+
+    private fun observeBackgroundSyncConflicts() {
+        viewModelScope.launch {
+            syncQueueManager.pendingConflicts.collect { conflicts ->
+                if (conflicts.isNotEmpty()) {
+                    _backgroundConflictInfo.value = conflicts.first()
+                    _backgroundConflictButtonIndex.value = 0
+                } else {
+                    _backgroundConflictInfo.value = null
+                }
             }
         }
     }
@@ -456,6 +480,16 @@ class ArgosyViewModel @Inject constructor(
             )
         }
         dismissSaveConflict()
+    }
+
+    fun resolveBackgroundConflict(resolution: ConflictResolution) {
+        val info = _backgroundConflictInfo.value ?: return
+        syncQueueManager.resolveConflict(info.gameId, resolution)
+    }
+
+    fun moveBackgroundConflictFocus(direction: Int) {
+        val newIndex = (_backgroundConflictButtonIndex.value + direction).coerceIn(0, 2)
+        _backgroundConflictButtonIndex.value = newIndex
     }
 
     fun setQuickSettingsOpen(open: Boolean) {

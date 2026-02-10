@@ -10,6 +10,7 @@ import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdExtractor
+import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.data.sync.SyncDirection
 import com.nendo.argosy.data.sync.SyncOperation
 import com.nendo.argosy.data.sync.SyncQueueManager
@@ -1634,6 +1635,115 @@ class SaveSyncRepository @Inject constructor(
             val serverTimestamp: Instant,
             val channelName: String?
         ) : PreLaunchSyncResult()
+    }
+
+    private suspend fun findLocalSavePath(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?
+    ): String? {
+        val game = gameDao.getById(gameId) ?: return null
+        val resolvedEmulatorId = if (emulatorId == "default" || emulatorId.isBlank()) {
+            resolveEmulatorForGame(game) ?: return null
+        } else emulatorId
+
+        val syncEntity = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, resolvedEmulatorId, DEFAULT_SAVE_NAME)
+        }
+
+        val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
+            if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
+        }
+        if (cachedPath != null) return cachedPath
+
+        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val folderSyncEnabled = isFolderSaveSyncEnabled()
+
+        return savePathResolver.discoverSavePath(
+            emulatorId = resolvedEmulatorId,
+            gameTitle = game.title,
+            platformSlug = game.platformSlug,
+            romPath = game.localPath,
+            cachedTitleId = game.titleId,
+            emulatorPackage = emulatorPackage,
+            gameId = gameId,
+            isFolderSaveSyncEnabled = folderSyncEnabled
+        )
+    }
+
+    suspend fun checkForConflict(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?
+    ): ConflictInfo? = withContext(Dispatchers.IO) {
+        val api = this@SaveSyncRepository.api ?: return@withContext null
+
+        val game = gameDao.getById(gameId) ?: return@withContext null
+        val rommId = game.rommId ?: return@withContext null
+
+        val localPath = findLocalSavePath(gameId, emulatorId, channelName)
+        if (localPath == null) {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | No local save path found")
+            return@withContext null
+        }
+        val localFile = File(localPath)
+        if (!localFile.exists()) {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Local file does not exist")
+            return@withContext null
+        }
+        val localModified = Instant.ofEpochMilli(localFile.lastModified())
+
+        val serverSaves = try {
+            checkSavesForGame(gameId, rommId)
+        } catch (e: Exception) {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Failed to check server saves: ${e.message}")
+            return@withContext null
+        }
+
+        val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+        val matchingSaves = serverSaves.filter { it.emulator == emulatorId || it.emulator == null }
+        val serverSave = if (channelName != null) {
+            matchingSaves.find { it.fileNameNoExt == channelName }
+        } else {
+            matchingSaves.filter { isLatestSaveFileName(it.fileName, romBaseName) }.firstOrNull()
+        }
+
+        if (serverSave == null) {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | No matching server save")
+            return@withContext null
+        }
+
+        val serverTime = parseTimestamp(serverSave.updatedAt)
+
+        val syncEntity = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, DEFAULT_SAVE_NAME)
+        }
+
+        val isHashConflict = if (syncEntity?.lastUploadedHash != null) {
+            val localHash = saveCacheManager.get().calculateLocalSaveHash(localPath)
+            localHash != null && localHash != syncEntity.lastUploadedHash
+        } else false
+
+        val isTimestampConflict = serverTime.isAfter(localModified)
+
+        if (isTimestampConflict || isHashConflict) {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Conflict detected: timestamp=$isTimestampConflict, hash=$isHashConflict")
+            ConflictInfo(
+                gameId = gameId,
+                gameName = game.title,
+                channelName = channelName,
+                localTimestamp = localModified,
+                serverTimestamp = serverTime,
+                isHashConflict = isHashConflict
+            )
+        } else {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | No conflict")
+            null
+        }
     }
 
     @Suppress("SwallowedException")

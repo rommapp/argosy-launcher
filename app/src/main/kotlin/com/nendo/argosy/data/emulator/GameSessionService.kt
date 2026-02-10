@@ -212,7 +212,8 @@ class GameSessionService : Service() {
         Logger.debug(TAG, "Starting file watcher on ${dirsToWatch.size} directories (session elapsed: ${elapsedSinceStart}ms)")
 
         dirsToWatch.forEach { dir ->
-            val observer = object : FileObserver(dir, CLOSE_WRITE or MOVED_TO or CREATE) {
+            @Suppress("DEPRECATION")
+            val observer = object : FileObserver(dir.absolutePath, CLOSE_WRITE or MOVED_TO or CREATE) {
                 override fun onEvent(event: Int, path: String?) {
                     if (path == null) return
                     if (path.startsWith(".") || path.endsWith(".tmp") || path.endsWith(".bak")) return
@@ -241,11 +242,11 @@ class GameSessionService : Service() {
         handler.removeCallbacksAndMessages(null)
     }
 
+    private val cacheRunnable = Runnable { performCacheAndNotify() }
+
     private fun onSaveDetected() {
-        handler.removeCallbacksAndMessages(CACHE_TOKEN)
-        handler.postDelayed({
-            performCacheAndNotify()
-        }, CACHE_TOKEN, CACHE_DEBOUNCE_MS)
+        handler.removeCallbacks(cacheRunnable)
+        handler.postDelayed(cacheRunnable, CACHE_DEBOUNCE_MS)
     }
 
     private fun performCacheAndNotify() {
@@ -292,11 +293,13 @@ class GameSessionService : Service() {
             }
         }
 
-        handler.removeCallbacksAndMessages(RESET_TOKEN)
-        handler.postDelayed({
-            updateNotification(currentGameTitle, NotificationState.PLAYING)
-            hideOverlay()
-        }, RESET_TOKEN, RESET_DELAY_MS)
+        handler.removeCallbacks(resetRunnable)
+        handler.postDelayed(resetRunnable, RESET_DELAY_MS)
+    }
+
+    private val resetRunnable = Runnable {
+        updateNotification(currentGameTitle, NotificationState.PLAYING)
+        hideOverlay()
     }
 
     // region Notification
@@ -307,11 +310,15 @@ class GameSessionService : Service() {
 
     private fun startForegroundWithNotification(gameTitle: String, state: NotificationState) {
         val notification = buildNotification(gameTitle, state)
-        startForeground(
-            NOTIFICATION_ID,
-            notification,
-            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun updateNotification(gameTitle: String, state: NotificationState) {
@@ -592,8 +599,6 @@ class GameSessionService : Service() {
         private const val POLL_INTERVAL_MS = 2000L
         private const val STARTUP_COOLDOWN_MS = 45000L
         private const val CACHE_DEBOUNCE_MS = 250L
-        private val RESET_TOKEN = Any()
-        private val CACHE_TOKEN = Any()
 
         private val IGNORED_DIRECTORY_PATTERNS = setOf(
             "cache",

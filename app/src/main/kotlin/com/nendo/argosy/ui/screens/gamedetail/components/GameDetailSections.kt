@@ -102,8 +102,11 @@ fun GameHeader(
         Column(modifier = Modifier.weight(1f)) {
             GameTitle(
                 title = game.title,
-                titleStyle = MaterialTheme.typography.displaySmall,
-                titleColor = MaterialTheme.colorScheme.onSurface
+                titleStyle = MaterialTheme.typography.headlineMedium,
+                titleColor = MaterialTheme.colorScheme.onSurface,
+                adaptiveSize = true,
+                reducedScale = 0.85f,
+                maxLines = 2
             )
 
             Spacer(modifier = Modifier.height(Dimens.spacingSm))

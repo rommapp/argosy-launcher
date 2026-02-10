@@ -120,62 +120,23 @@ fun GameTitle(
     )
 
     if (parsed.seriesName != null) {
-        if (titleId != null) {
-            Row(
-                modifier = modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = horizontalAlignment
-                ) {
-                    Text(
-                        text = parsed.seriesName,
-                        style = seriesStyle,
-                        color = titleColor.copy(alpha = 0.8f),
-                        maxLines = 1,
-                        overflow = overflow,
-                        textAlign = textAlign
-                    )
-                    Text(
-                        text = parsed.gameName,
-                        style = titleStyle,
-                        color = titleColor,
-                        maxLines = maxLines,
-                        overflow = overflow,
-                        textAlign = textAlign
-                    )
-                }
-                Text(
-                    text = titleId,
-                    style = titleIdStyle,
-                    color = titleIdColor
-                )
-            }
-        } else {
-            Column(
-                modifier = modifier,
-                horizontalAlignment = horizontalAlignment
-            ) {
-                Text(
-                    text = parsed.seriesName,
-                    style = seriesStyle,
-                    color = titleColor.copy(alpha = 0.8f),
-                    maxLines = 1,
-                    overflow = overflow,
-                    textAlign = textAlign
-                )
-                Text(
-                    text = parsed.gameName,
-                    style = titleStyle,
-                    color = titleColor,
-                    maxLines = maxLines,
-                    overflow = overflow,
-                    textAlign = textAlign
-                )
-            }
-        }
+        AdaptiveSeriesTitle(
+            seriesName = parsed.seriesName,
+            gameName = parsed.gameName,
+            modifier = modifier,
+            titleStyle = titleStyle,
+            seriesStyle = seriesStyle,
+            titleColor = titleColor,
+            maxLines = maxLines,
+            overflow = overflow,
+            textAlign = textAlign,
+            horizontalAlignment = horizontalAlignment,
+            titleId = titleId,
+            titleIdStyle = titleIdStyle,
+            titleIdColor = titleIdColor,
+            adaptiveSize = adaptiveSize,
+            reducedScale = reducedScale
+        )
     } else {
         if (adaptiveSize) {
             AdaptiveSizeTitle(
@@ -385,5 +346,158 @@ private fun TitleWithOptionalId(
             overflow = TextOverflow.Ellipsis,
             textAlign = textAlign
         )
+    }
+}
+
+@Composable
+private fun AdaptiveSeriesTitle(
+    seriesName: String,
+    gameName: String,
+    modifier: Modifier,
+    titleStyle: TextStyle,
+    seriesStyle: TextStyle,
+    titleColor: Color,
+    maxLines: Int,
+    overflow: TextOverflow,
+    textAlign: TextAlign?,
+    horizontalAlignment: Alignment.Horizontal,
+    titleId: String?,
+    titleIdStyle: TextStyle,
+    titleIdColor: Color,
+    adaptiveSize: Boolean,
+    reducedScale: Float
+) {
+    val textMeasurer = rememberTextMeasurer()
+    val reducedTitleStyle = remember(titleStyle, reducedScale) {
+        titleStyle.copy(fontSize = titleStyle.fontSize * reducedScale)
+    }
+    val reducedSeriesStyle = remember(seriesStyle, reducedScale) {
+        seriesStyle.copy(fontSize = seriesStyle.fontSize * reducedScale)
+    }
+
+    if (!adaptiveSize) {
+        SeriesTitleContent(
+            seriesName = seriesName,
+            gameName = gameName,
+            modifier = modifier,
+            titleStyle = titleStyle,
+            seriesStyle = seriesStyle,
+            titleColor = titleColor,
+            maxLines = maxLines,
+            overflow = overflow,
+            textAlign = textAlign,
+            horizontalAlignment = horizontalAlignment,
+            titleId = titleId,
+            titleIdStyle = titleIdStyle,
+            titleIdColor = titleIdColor
+        )
+    } else {
+        BoxWithConstraints(modifier = modifier) {
+            val maxWidthPx = constraints.maxWidth
+
+            val needsReduction = remember(gameName, titleStyle, maxWidthPx) {
+                val measurement = textMeasurer.measure(
+                    text = gameName,
+                    style = titleStyle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    constraints = Constraints(maxWidth = maxWidthPx)
+                )
+                measurement.hasVisualOverflow
+            }
+
+            val effectiveTitleStyle = if (needsReduction) reducedTitleStyle else titleStyle
+            val effectiveSeriesStyle = if (needsReduction) reducedSeriesStyle else seriesStyle
+
+            SeriesTitleContent(
+                seriesName = seriesName,
+                gameName = gameName,
+                modifier = Modifier,
+                titleStyle = effectiveTitleStyle,
+                seriesStyle = effectiveSeriesStyle,
+                titleColor = titleColor,
+                maxLines = maxLines,
+                overflow = overflow,
+                textAlign = textAlign,
+                horizontalAlignment = horizontalAlignment,
+                titleId = titleId,
+                titleIdStyle = titleIdStyle,
+                titleIdColor = titleIdColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun SeriesTitleContent(
+    seriesName: String,
+    gameName: String,
+    modifier: Modifier,
+    titleStyle: TextStyle,
+    seriesStyle: TextStyle,
+    titleColor: Color,
+    maxLines: Int,
+    overflow: TextOverflow,
+    textAlign: TextAlign?,
+    horizontalAlignment: Alignment.Horizontal,
+    titleId: String?,
+    titleIdStyle: TextStyle,
+    titleIdColor: Color
+) {
+    if (titleId != null) {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = horizontalAlignment
+            ) {
+                Text(
+                    text = seriesName,
+                    style = seriesStyle,
+                    color = titleColor.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = overflow,
+                    textAlign = textAlign
+                )
+                Text(
+                    text = gameName,
+                    style = titleStyle,
+                    color = titleColor,
+                    maxLines = maxLines,
+                    overflow = overflow,
+                    textAlign = textAlign
+                )
+            }
+            Text(
+                text = titleId,
+                style = titleIdStyle,
+                color = titleIdColor
+            )
+        }
+    } else {
+        Column(
+            modifier = modifier,
+            horizontalAlignment = horizontalAlignment
+        ) {
+            Text(
+                text = seriesName,
+                style = seriesStyle,
+                color = titleColor.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = overflow,
+                textAlign = textAlign
+            )
+            Text(
+                text = gameName,
+                style = titleStyle,
+                color = titleColor,
+                maxLines = maxLines,
+                overflow = overflow,
+                textAlign = textAlign
+            )
+        }
     }
 }

@@ -685,4 +685,5 @@ data class SettingsUiState(
     val gradientExtractionResult: GradientExtractionResult? = null,
     val frameDownloadingId: String? = null,
     val frameInstalledRefresh: Int = 0,
+    val appAffinityEnabled: Boolean = false
 )

@@ -64,6 +64,7 @@ private sealed class AboutItem(
         section = "debug",
         visibleWhen = { it.hasLogPath }
     )
+    data object AppAffinity : AboutItem("appAffinity", "debug")
 
     companion object {
         private val VersionHeader = Header("versionHeader", "version", "VERSION")
@@ -71,7 +72,7 @@ private sealed class AboutItem(
 
         val ALL: List<AboutItem> = listOf(
             VersionHeader, VersionInfo, CheckUpdates, BetaUpdates,
-            SectionSpacer, DebugHeader, FileLogging, LogLevel
+            SectionSpacer, DebugHeader, FileLogging, LogLevel, AppAffinity
         )
     }
 }
@@ -197,6 +198,17 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     value = uiState.fileLogLevel.name,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleFileLogLevel() }
+                )
+
+                AboutItem.AppAffinity -> SwitchPreference(
+                    title = "App Display Affinity",
+                    subtitle = if (uiState.appAffinityEnabled)
+                        "Emulators primary, apps secondary"
+                    else
+                        "Default display behavior",
+                    isEnabled = uiState.appAffinityEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setAppAffinityEnabled(it) }
                 )
             }
         }

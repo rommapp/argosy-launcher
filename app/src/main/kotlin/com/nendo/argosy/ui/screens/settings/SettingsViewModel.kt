@@ -717,6 +717,7 @@ class SettingsViewModel @Inject constructor(
                     fileLoggingEnabled = prefs.fileLoggingEnabled,
                     fileLoggingPath = prefs.fileLoggingPath,
                     fileLogLevel = prefs.fileLogLevel,
+                    appAffinityEnabled = prefs.appAffinityEnabled,
                     builtinVideo = it.builtinVideo.copy(
                         shader = builtinSettings.shader,
                         shaderChainJson = builtinSettings.shaderChainJson,
@@ -2360,6 +2361,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setAppAffinityEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setAppAffinityEnabled(enabled)
+            _uiState.update { it.copy(appAffinityEnabled = enabled) }
+        }
+    }
+
     fun setSoundVolume(volume: Int) {
         soundsDelegate.setSoundVolume(viewModelScope, volume)
     }
@@ -3577,6 +3585,7 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.ABOUT -> {
+                val appAffinityIndex = if (state.fileLoggingPath != null) 4 else 3
                 when (state.focusedIndex) {
                     0 -> {
                         if (state.updateCheck.updateAvailable) {
@@ -3600,7 +3609,14 @@ class SettingsViewModel @Inject constructor(
                     3 -> {
                         if (state.fileLoggingPath != null) {
                             cycleFileLogLevel()
+                        } else {
+                            setAppAffinityEnabled(!state.appAffinityEnabled)
+                            return InputResult.handled(SoundType.TOGGLE)
                         }
+                    }
+                    appAffinityIndex -> {
+                        setAppAffinityEnabled(!state.appAffinityEnabled)
+                        return InputResult.handled(SoundType.TOGGLE)
                     }
                 }
                 InputResult.HANDLED

@@ -90,7 +90,7 @@ data class AppsUiState(
 }
 
 sealed class AppsEvent {
-    data class Launch(val intent: Intent) : AppsEvent()
+    data class Launch(val intent: Intent, val options: android.os.Bundle? = null) : AppsEvent()
     data class OpenAppInfo(val packageName: String) : AppsEvent()
     data class RequestUninstall(val packageName: String) : AppsEvent()
 }
@@ -104,6 +104,7 @@ class AppsViewModel @Inject constructor(
     private val platformDao: PlatformDao,
     private val playStoreService: PlayStoreService,
     private val imageCacheManager: ImageCacheManager,
+    private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -493,7 +494,11 @@ class AppsViewModel @Inject constructor(
     private fun launchApp(packageName: String) {
         val intent = appsRepository.getLaunchIntent(packageName) ?: return
         viewModelScope.launch {
-            _events.emit(AppsEvent.Launch(intent))
+            val prefs = preferencesRepository.preferences.first()
+            val options = if (prefs.appAffinityEnabled) {
+                displayAffinityHelper.getActivityOptions(forEmulator = false)
+            } else null
+            _events.emit(AppsEvent.Launch(intent, options))
         }
     }
 

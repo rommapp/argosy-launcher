@@ -1,24 +1,30 @@
 package com.nendo.argosy.ui.screens.launch
 
 import android.content.Intent
+import android.os.Bundle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.screens.common.DiscPickerState
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
+import com.nendo.argosy.util.DisplayAffinityHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class LaunchViewModel @Inject constructor(
     private val gameDao: GameDao,
-    private val gameLaunchDelegate: GameLaunchDelegate
+    private val gameLaunchDelegate: GameLaunchDelegate,
+    private val preferencesRepository: UserPreferencesRepository,
+    private val displayAffinityHelper: DisplayAffinityHelper
 ) : ViewModel() {
 
     val syncOverlayState: StateFlow<SyncOverlayState?> = gameLaunchDelegate.syncOverlayState
@@ -30,6 +36,9 @@ class LaunchViewModel @Inject constructor(
     private val _launchIntent = MutableStateFlow<Intent?>(null)
     val launchIntent: StateFlow<Intent?> = _launchIntent.asStateFlow()
 
+    private val _launchOptions = MutableStateFlow<Bundle?>(null)
+    val launchOptions: StateFlow<Bundle?> = _launchOptions.asStateFlow()
+
     private val _isSessionEnded = MutableStateFlow(false)
     val isSessionEnded: StateFlow<Boolean> = _isSessionEnded.asStateFlow()
 
@@ -38,12 +47,18 @@ class LaunchViewModel @Inject constructor(
             val game = gameDao.getById(gameId)
             _gameTitle.value = game?.title ?: "Game"
 
+            val prefs = preferencesRepository.preferences.first()
+            val options = if (prefs.appAffinityEnabled) {
+                displayAffinityHelper.getActivityOptions(forEmulator = true)
+            } else null
+
             gameLaunchDelegate.launchGame(
                 scope = viewModelScope,
                 gameId = gameId,
                 discId = discId,
                 channelName = channelName,
                 onLaunch = { intent ->
+                    _launchOptions.value = options
                     _launchIntent.value = intent
                 }
             )
@@ -70,5 +85,6 @@ class LaunchViewModel @Inject constructor(
 
     fun clearLaunchIntent() {
         _launchIntent.value = null
+        _launchOptions.value = null
     }
 }

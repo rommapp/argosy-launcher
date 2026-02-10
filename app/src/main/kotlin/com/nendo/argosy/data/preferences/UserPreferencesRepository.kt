@@ -152,6 +152,7 @@ class UserPreferencesRepository @Inject constructor(
         val ACTIVE_SESSION_IS_HARDCORE = booleanPreferencesKey("active_session_is_hardcore")
 
         val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
+        val APP_AFFINITY_ENABLED = booleanPreferencesKey("app_affinity_enabled")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -274,7 +275,8 @@ class UserPreferencesRepository @Inject constructor(
             ambientLedAudioColors = prefs[Keys.AMBIENT_LED_AUDIO_COLORS] ?: false,
             ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE]),
             androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI],
-            builtinLibretroEnabled = prefs[Keys.BUILTIN_LIBRETRO_ENABLED] ?: true
+            builtinLibretroEnabled = prefs[Keys.BUILTIN_LIBRETRO_ENABLED] ?: true,
+            appAffinityEnabled = prefs[Keys.APP_AFFINITY_ENABLED] ?: false
         )
     }
 
@@ -1146,6 +1148,12 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.SAVE_WATCHER_ENABLED] = enabled
         }
     }
+
+    suspend fun setAppAffinityEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.APP_AFFINITY_ENABLED] = enabled
+        }
+    }
 }
 
 data class BuiltinEmulatorSettings(
@@ -1299,7 +1307,8 @@ data class UserPreferences(
     val ambientLedAudioColors: Boolean = false,
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,
     val androidDataSafUri: String? = null,
-    val builtinLibretroEnabled: Boolean = true
+    val builtinLibretroEnabled: Boolean = true,
+    val appAffinityEnabled: Boolean = false
 )
 
 enum class ThemeMode(val displayName: String) {

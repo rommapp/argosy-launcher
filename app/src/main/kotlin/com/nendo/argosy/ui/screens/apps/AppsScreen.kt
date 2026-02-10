@@ -92,7 +92,11 @@ fun AppsScreen(
             when (event) {
                 is AppsEvent.Launch -> {
                     try {
-                        context.startActivity(event.intent)
+                        if (event.options != null) {
+                            context.startActivity(event.intent, event.options)
+                        } else {
+                            context.startActivity(event.intent)
+                        }
                     } catch (_: Exception) {
                     }
                 }

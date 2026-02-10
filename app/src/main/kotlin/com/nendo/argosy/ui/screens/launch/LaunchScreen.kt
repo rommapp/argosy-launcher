@@ -42,6 +42,7 @@ fun LaunchScreen(
     val syncOverlayState by viewModel.syncOverlayState.collectAsState()
     val discPickerState by viewModel.discPickerState.collectAsState()
     val launchIntent by viewModel.launchIntent.collectAsState()
+    val launchOptions by viewModel.launchOptions.collectAsState()
     val gameTitle by viewModel.gameTitle.collectAsState()
     val isSessionEnded by viewModel.isSessionEnded.collectAsState()
 
@@ -59,7 +60,11 @@ fun LaunchScreen(
     LaunchedEffect(launchIntent) {
         launchIntent?.let { intent ->
             try {
-                context.startActivity(intent)
+                if (launchOptions != null) {
+                    context.startActivity(intent, launchOptions)
+                } else {
+                    context.startActivity(intent)
+                }
                 viewModel.clearLaunchIntent()
             } catch (e: Exception) {
                 android.util.Log.e("LaunchScreen", "Failed to start activity", e)

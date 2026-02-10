@@ -212,6 +212,7 @@ class SyncCoordinator @Inject constructor(
                 )
                 if (downloadResult is SaveSyncResult.Success) {
                     saveCacheDao.markSynced(cache.id, Instant.now())
+                    gameDao.updateActiveSaveApplied(cache.gameId, false)
                     Logger.debug(TAG, "processDirtySaveCaches: Downloaded server save for gameId=${cache.gameId}")
                 } else {
                     Logger.warn(TAG, "processDirtySaveCaches: Failed to download server save for gameId=${cache.gameId}")

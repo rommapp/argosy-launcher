@@ -450,6 +450,9 @@ interface GameDao {
     @Query("UPDATE games SET activeSaveApplied = :applied WHERE id = :gameId")
     suspend fun updateActiveSaveApplied(gameId: Long, applied: Boolean)
 
+    @Query("UPDATE games SET activeSaveApplied = 0 WHERE activeSaveApplied = 1")
+    suspend fun resetAllActiveSaveApplied()
+
     @Query("SELECT activeSaveApplied FROM games WHERE id = :gameId")
     suspend fun getActiveSaveApplied(gameId: Long): Boolean
 

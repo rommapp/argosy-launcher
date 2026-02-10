@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.cheats.CheatsDownloadObserver
@@ -47,6 +48,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var platformDao: PlatformDao
 
     @Inject
+    lateinit var gameDao: GameDao
+
+    @Inject
     lateinit var apkInstallManager: ApkInstallManager
 
     @Inject
@@ -73,6 +77,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         syncServiceController.start()
         appScope.launch { coreManager.migrateAbiIfNeeded() }
         appScope.launch { playSessionTracker.checkOrphanedSession() }
+        appScope.launch { gameDao.resetAllActiveSaveApplied() }
         syncPlatformSortOrders()
     }
 

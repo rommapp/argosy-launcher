@@ -51,11 +51,30 @@ object MappingPlatforms {
         ) + DPAD
     )
 
+    val GB = MappingPlatform(
+        id = "gb",
+        displayName = "Game Boy",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD
+    )
+
     val SNES = MappingPlatform(
         id = "snes",
         displayName = "SNES",
         buttons = listOf(
             RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD
+    )
+
+    val GBA = MappingPlatform(
+        id = "gba",
+        displayName = "GBA",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B,
             RetroButton.L, RetroButton.R,
             RetroButton.START, RetroButton.SELECT
         ) + DPAD
@@ -93,7 +112,7 @@ object MappingPlatforms {
         ) + DPAD
     )
 
-    val ALL = listOf(UNIVERSAL, NES, SNES, N64, PSX, GENESIS)
+    val ALL = listOf(UNIVERSAL, NES, GB, SNES, GBA, N64, PSX, GENESIS)
 
     fun getByIndex(index: Int): MappingPlatform = ALL[index.coerceIn(0, ALL.lastIndex)]
 
@@ -109,7 +128,7 @@ object MappingPlatforms {
     fun dbPlatformIdForSlug(slug: String): String? = dbPlatformId(indexForPlatformSlug(slug))
 
     fun indexForPlatformSlug(slug: String): Int = when (slug) {
-        "nes", "fds", "gb", "gbc", "gameandwatch",
+        "nes", "fds", "gameandwatch",
         "sg1000", "sms", "gg",
         "atari2600", "atari5200", "atari7800", "lynx",
         "coleco", "intellivision", "odyssey2", "vectrex", "channelf",
@@ -117,7 +136,11 @@ object MappingPlatforms {
         "megaduck", "supervision", "arduboy", "uzebox",
         "ngp", "ngpc" -> ALL.indexOf(NES)
 
-        "snes", "satellaview", "gba", "vb",
+        "gb", "gbc" -> ALL.indexOf(GB)
+
+        "gba" -> ALL.indexOf(GBA)
+
+        "snes", "satellaview", "vb",
         "tg16", "supergrafx", "tgcd", "pcfx" -> ALL.indexOf(SNES)
 
         "n64", "n64dd" -> ALL.indexOf(N64)

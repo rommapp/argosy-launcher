@@ -1819,6 +1819,10 @@ class LibretroActivity : ComponentActivity() {
             }
         }
 
+        if (shouldFilterShoulderButton(keyCode)) {
+            return true
+        }
+
         return retroView.onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event)
     }
 
@@ -1836,6 +1840,10 @@ class LibretroActivity : ComponentActivity() {
 
         if (!hotkeyManager.isHotkeyActive(HotkeyAction.REWIND) && isRewinding) {
             isRewinding = false
+        }
+
+        if (shouldFilterShoulderButton(keyCode)) {
+            return true
         }
 
         return retroView.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event)
@@ -1937,6 +1945,18 @@ class LibretroActivity : ComponentActivity() {
         return emptyArray()
     }
 
+    private fun shouldFilterShoulderButton(keyCode: Int): Boolean {
+        val isL1R1 = keyCode == KeyEvent.KEYCODE_BUTTON_L1 || keyCode == KeyEvent.KEYCODE_BUTTON_R1
+        val isL2R2 = keyCode == KeyEvent.KEYCODE_BUTTON_L2 || keyCode == KeyEvent.KEYCODE_BUTTON_R2
+
+        if (!isL1R1 && !isL2R2) return false
+
+        if (isL1R1 && platformSlug in PLATFORMS_WITHOUT_SHOULDERS) return true
+        if (isL2R2 && platformSlug !in PLATFORMS_WITH_L2_R2) return true
+
+        return false
+    }
+
     companion object {
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_CORE_PATH = "core_path"
@@ -1945,5 +1965,22 @@ class LibretroActivity : ComponentActivity() {
         const val EXTRA_GAME_ID = "game_id"
         const val EXTRA_CORE_NAME = "core_name"
         const val ACTION_SHOW_MENU = "com.nendo.argosy.action.SHOW_MENU"
+
+        private val PLATFORMS_WITHOUT_SHOULDERS = setOf(
+            "gb", "gbc",
+            "nes", "fds",
+            "sg1000", "sms", "gg",
+            "atari2600", "atari5200", "atari7800",
+            "coleco", "intellivision", "odyssey2", "vectrex"
+        )
+
+        private val PLATFORMS_WITH_L2_R2 = setOf(
+            "psx", "ps1", "playstation",
+            "dreamcast", "dc",
+            "saturn",
+            "gc", "ngc", "gamecube", "wii",
+            "psp",
+            "3do"
+        )
     }
 }

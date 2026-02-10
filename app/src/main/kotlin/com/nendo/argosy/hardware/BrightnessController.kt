@@ -32,6 +32,30 @@ class BrightnessController @Inject constructor(
 
     private fun getPrimaryBrightness(): Float? {
         return try {
+            val raw = PServerExecutor.execute("cat /sys/class/backlight/panel0-backlight/brightness")
+                .getOrNull()?.toIntOrNull() ?: return getSystemBrightness()
+            val max = PServerExecutor.execute("cat /sys/class/backlight/panel0-backlight/max_brightness")
+                .getOrNull()?.toIntOrNull() ?: 4095
+            raw.toFloat() / max.toFloat()
+        } catch (e: Exception) {
+            getSystemBrightness()
+        }
+    }
+
+    private fun getSecondaryBrightness(): Float? {
+        return try {
+            val raw = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/brightness")
+                .getOrNull()?.toIntOrNull() ?: return null
+            val max = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/max_brightness")
+                .getOrNull()?.toIntOrNull() ?: 4095
+            raw.toFloat() / max.toFloat()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun getSystemBrightness(): Float? {
+        return try {
             val brightness = Settings.System.getInt(
                 context.contentResolver,
                 Settings.System.SCREEN_BRIGHTNESS
@@ -42,21 +66,20 @@ class BrightnessController @Inject constructor(
         }
     }
 
-    private fun getSecondaryBrightness(): Float? {
-        return try {
-            val raw = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/brightness")
-                .getOrNull()?.toIntOrNull() ?: return null
-            val max = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/max_brightness")
-                .getOrNull()?.toIntOrNull() ?: 4095
-            // AYN displays at 2.5x the sysfs value
-            (raw.toFloat() / max.toFloat() * 2.5f).coerceIn(0f, 1f)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     fun setPrimaryBrightness(brightness: Float): Boolean {
         val clamped = brightness.coerceIn(0f, 1f)
+
+        val sysfsResult = try {
+            val max = PServerExecutor.execute("cat /sys/class/backlight/panel0-backlight/max_brightness")
+                .getOrNull()?.toIntOrNull() ?: 4095
+            val value = (clamped * max).toInt()
+            PServerExecutor.execute("echo $value > /sys/class/backlight/panel0-backlight/brightness").isSuccess
+        } catch (e: Exception) {
+            false
+        }
+
+        if (sysfsResult) return true
+
         return try {
             val brightnessValue = (clamped * 255).toInt()
             Settings.System.putInt(
@@ -71,14 +94,13 @@ class BrightnessController @Inject constructor(
     }
 
     fun setSecondaryBrightness(brightness: Float): Boolean {
-        if (!isMultiDisplaySupported) return false
+        if (!hasSecondaryDisplay) return false
 
         val clamped = brightness.coerceIn(0f, 1f)
         return try {
             val max = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/max_brightness")
                 .getOrNull()?.toIntOrNull() ?: 4095
-            // AYN displays at 2.5x sysfs value, so divide by 2.5 when writing
-            val value = (clamped / 2.5f * max).toInt()
+            val value = (clamped * max).toInt()
             PServerExecutor.execute("echo $value > /sys/class/backlight/panel1-backlight/brightness").isSuccess
         } catch (e: Exception) {
             false

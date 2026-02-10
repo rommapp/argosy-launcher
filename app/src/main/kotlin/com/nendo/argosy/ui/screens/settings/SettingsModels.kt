@@ -473,6 +473,7 @@ data class SyncSettingsState(
     val saveCacheLimit: Int = 10,
     val pendingUploadsCount: Int = 0,
     val hasStoragePermission: Boolean = false,
+    val hasNotificationPermission: Boolean = false,
     val isSyncing: Boolean = false,
     val imageCachePath: String? = null,
     val defaultImageCachePath: String? = null,

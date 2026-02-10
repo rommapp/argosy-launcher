@@ -29,6 +29,7 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <uses-feature
         android:name="android.hardware.gamepad"
@@ -100,6 +101,11 @@
         <service
             android:name=".hardware.ScreenCaptureService"
             android:foregroundServiceType="mediaProjection"
+            android:exported="false" />
+
+        <service
+            android:name=".data.emulator.GameSessionService"
+            android:foregroundServiceType="dataSync"
             android:exported="false" />
 
         <receiver

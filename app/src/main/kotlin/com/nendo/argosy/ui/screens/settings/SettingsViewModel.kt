@@ -1,7 +1,10 @@
 package com.nendo.argosy.ui.screens.settings
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -162,6 +165,9 @@ class SettingsViewModel @Inject constructor(
 
     private val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
+
+    private val _requestNotificationPermissionEvent = MutableSharedFlow<Unit>()
+    val requestNotificationPermissionEvent: SharedFlow<Unit> = _requestNotificationPermissionEvent.asSharedFlow()
 
     private val _requestScreenCapturePermissionEvent = MutableSharedFlow<Unit>()
     val requestScreenCapturePermissionEvent: SharedFlow<Unit> = _requestScreenCapturePermissionEvent.asSharedFlow()
@@ -415,6 +421,10 @@ class SettingsViewModel @Inject constructor(
             storageDelegate.requestStoragePermissionEvent
         ).onEach {
             _requestStoragePermissionEvent.emit(Unit)
+        }.launchIn(viewModelScope)
+
+        syncDelegate.requestNotificationPermissionEvent.onEach {
+            _requestNotificationPermissionEvent.emit(Unit)
         }.launchIn(viewModelScope)
 
         emulatorDelegate.openUrlEvent.onEach { url ->
@@ -2616,6 +2626,10 @@ class SettingsViewModel @Inject constructor(
     fun onStoragePermissionResult(granted: Boolean) {
         syncDelegate.onStoragePermissionResult(viewModelScope, granted, _uiState.value.currentSection)
         steamDelegate.loadSteamSettings(context, viewModelScope)
+    }
+
+    fun onNotificationPermissionResult(granted: Boolean) {
+        syncDelegate.onNotificationPermissionResult(viewModelScope, granted)
     }
 
     fun runSaveSyncNow() {

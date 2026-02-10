@@ -36,7 +36,7 @@ class SaveCacheManager @Inject constructor(
     }
 
     sealed class CacheResult {
-        data object Created : CacheResult()
+        data class Created(val timestamp: Long) : CacheResult()
         data object Duplicate : CacheResult()
         data object Failed : CacheResult()
 
@@ -149,7 +149,7 @@ class SaveCacheManager @Inject constructor(
             Log.d(TAG, "Cached save for game $gameId at $cachePath (hash=$contentHash)$slotInfo")
 
             pruneOldCaches(gameId)
-            CacheResult.Created
+            CacheResult.Created(now.toEpochMilli())
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache save", e)
             tempFile?.delete()
@@ -227,7 +227,7 @@ class SaveCacheManager @Inject constructor(
             saveCacheDao.insert(entity)
             Log.d(TAG, "Created rollback save for game $gameId at $cachePath")
 
-            CacheResult.Created
+            CacheResult.Created(now.toEpochMilli())
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache rollback save", e)
             tempFile?.delete()
@@ -409,6 +409,9 @@ class SaveCacheManager @Inject constructor(
 
     suspend fun getMostRecentInChannel(gameId: Long, channelName: String): SaveCacheEntity? =
         saveCacheDao.getMostRecentInChannel(gameId, channelName)
+
+    suspend fun getByGameAndHash(gameId: Long, hash: String): SaveCacheEntity? =
+        saveCacheDao.getByGameAndHash(gameId, hash)
 
     suspend fun getSaveBytes(cacheId: Long): ByteArray? = withContext(Dispatchers.IO) {
         val entity = saveCacheDao.getById(cacheId) ?: return@withContext null

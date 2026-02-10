@@ -1,7 +1,11 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.Manifest
+import android.app.Application
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
+import androidx.core.content.ContextCompat
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.PendingSaveSyncDao
 import com.nendo.argosy.data.local.dao.PendingStateSyncDao
@@ -34,6 +38,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class SyncSettingsDelegate @Inject constructor(
+    private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: SaveSyncRepository,
     private val pendingSaveSyncDao: PendingSaveSyncDao,
@@ -52,6 +57,9 @@ class SyncSettingsDelegate @Inject constructor(
     private val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
 
+    private val _requestNotificationPermissionEvent = MutableSharedFlow<Unit>()
+    val requestNotificationPermissionEvent: SharedFlow<Unit> = _requestNotificationPermissionEvent.asSharedFlow()
+
     private val _openImageCachePickerEvent = MutableSharedFlow<Unit>()
     val openImageCachePickerEvent: SharedFlow<Unit> = _openImageCachePickerEvent.asSharedFlow()
 
@@ -65,7 +73,8 @@ class SyncSettingsDelegate @Inject constructor(
     fun loadLibrarySettings(scope: CoroutineScope) {
         scope.launch {
             val prefs = preferencesRepository.preferences.first()
-            val hasPermission = checkStoragePermission()
+            val hasStoragePermission = checkStoragePermission()
+            val hasNotificationPermission = checkNotificationPermission()
             val pendingUploads = pendingSaveSyncDao.getCount()
             val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
             val totalPending = pendingUploads + pendingDownloads
@@ -80,7 +89,8 @@ class SyncSettingsDelegate @Inject constructor(
                     saveSyncEnabled = prefs.saveSyncEnabled,
                     experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
                     saveCacheLimit = prefs.saveCacheLimit,
-                    hasStoragePermission = hasPermission,
+                    hasStoragePermission = hasStoragePermission,
+                    hasNotificationPermission = hasNotificationPermission,
                     pendingUploadsCount = totalPending,
                     imageCachePath = prefs.imageCachePath,
                     defaultImageCachePath = imageCacheManager.getDefaultCachePath(),
@@ -98,6 +108,17 @@ class SyncSettingsDelegate @Inject constructor(
     fun checkStoragePermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
+        } else {
+            true
+        }
+    }
+
+    fun checkNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                application,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
         } else {
             true
         }
@@ -241,6 +262,10 @@ class SyncSettingsDelegate @Inject constructor(
                 _requestStoragePermissionEvent.emit(Unit)
                 return@launch
             }
+            if (!currentState.hasNotificationPermission) {
+                _requestNotificationPermissionEvent.emit(Unit)
+                return@launch
+            }
 
             preferencesRepository.setSaveSyncEnabled(true)
             _state.update { it.copy(saveSyncEnabled = true) }
@@ -252,6 +277,11 @@ class SyncSettingsDelegate @Inject constructor(
         scope.launch {
             val currentState = _state.value
             val newValue = !currentState.saveSyncEnabled
+
+            if (newValue && !currentState.hasNotificationPermission) {
+                _requestNotificationPermissionEvent.emit(Unit)
+                return@launch
+            }
 
             preferencesRepository.setSaveSyncEnabled(newValue)
             _state.update { it.copy(saveSyncEnabled = newValue) }
@@ -276,11 +306,25 @@ class SyncSettingsDelegate @Inject constructor(
         scope.launch {
             _state.update { it.copy(hasStoragePermission = granted) }
             if (granted) {
+                enableSaveSync(scope)
+            }
+        }
+    }
+
+    fun onNotificationPermissionResult(scope: CoroutineScope, granted: Boolean) {
+        scope.launch {
+            _state.update { it.copy(hasNotificationPermission = granted) }
+            if (granted && _state.value.hasStoragePermission) {
                 preferencesRepository.setSaveSyncEnabled(true)
                 _state.update { it.copy(saveSyncEnabled = true) }
                 runSaveSyncNow(scope)
             }
         }
+    }
+
+    fun refreshNotificationPermission() {
+        val hasPermission = checkNotificationPermission()
+        _state.update { it.copy(hasNotificationPermission = hasPermission) }
     }
 
     fun runSaveSyncNow(scope: CoroutineScope) {

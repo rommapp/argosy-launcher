@@ -11,6 +11,7 @@ import com.nendo.argosy.ui.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
@@ -143,6 +144,14 @@ class UserPreferencesRepository @Inject constructor(
         val BUILTIN_FRAMES_ENABLED = booleanPreferencesKey("builtin_frames_enabled")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
         val ANDROID_DATA_SAF_URI = stringPreferencesKey("android_data_saf_uri")
+
+        val ACTIVE_SESSION_GAME_ID = stringPreferencesKey("active_session_game_id")
+        val ACTIVE_SESSION_EMULATOR = stringPreferencesKey("active_session_emulator")
+        val ACTIVE_SESSION_START_TIME = stringPreferencesKey("active_session_start_time")
+        val ACTIVE_SESSION_CORE_NAME = stringPreferencesKey("active_session_core_name")
+        val ACTIVE_SESSION_IS_HARDCORE = booleanPreferencesKey("active_session_is_hardcore")
+
+        val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -216,6 +225,7 @@ class UserPreferencesRepository @Inject constructor(
             fileLoggingEnabled = prefs[Keys.FILE_LOGGING_ENABLED] ?: false,
             fileLoggingPath = prefs[Keys.FILE_LOGGING_PATH],
             fileLogLevel = LogLevel.fromString(prefs[Keys.FILE_LOG_LEVEL]),
+            saveWatcherEnabled = prefs[Keys.SAVE_WATCHER_ENABLED] ?: false,
             boxArtShape = BoxArtShape.fromString(prefs[Keys.BOX_ART_SHAPE]),
             boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
             boxArtBorderThickness = BoxArtBorderThickness.fromString(prefs[Keys.BOX_ART_BORDER_THICKNESS]),
@@ -1074,6 +1084,68 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.BUILTIN_LIBRETRO_ENABLED] = enabled
         }
     }
+
+    data class PersistedSession(
+        val gameId: Long,
+        val emulatorPackage: String,
+        val startTime: Instant,
+        val coreName: String?,
+        val isHardcore: Boolean
+    )
+
+    suspend fun persistActiveSession(
+        gameId: Long,
+        emulatorPackage: String,
+        startTime: Instant,
+        coreName: String?,
+        isHardcore: Boolean
+    ) {
+        dataStore.edit { prefs ->
+            prefs[Keys.ACTIVE_SESSION_GAME_ID] = gameId.toString()
+            prefs[Keys.ACTIVE_SESSION_EMULATOR] = emulatorPackage
+            prefs[Keys.ACTIVE_SESSION_START_TIME] = startTime.toString()
+            if (coreName != null) prefs[Keys.ACTIVE_SESSION_CORE_NAME] = coreName
+            else prefs.remove(Keys.ACTIVE_SESSION_CORE_NAME)
+            prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] = isHardcore
+        }
+    }
+
+    suspend fun clearActiveSession() {
+        dataStore.edit { prefs ->
+            prefs.remove(Keys.ACTIVE_SESSION_GAME_ID)
+            prefs.remove(Keys.ACTIVE_SESSION_EMULATOR)
+            prefs.remove(Keys.ACTIVE_SESSION_START_TIME)
+            prefs.remove(Keys.ACTIVE_SESSION_CORE_NAME)
+            prefs.remove(Keys.ACTIVE_SESSION_IS_HARDCORE)
+        }
+    }
+
+    suspend fun getPersistedSession(): PersistedSession? {
+        val prefs = dataStore.data.first()
+        val gameId = prefs[Keys.ACTIVE_SESSION_GAME_ID]?.toLongOrNull() ?: return null
+        val emulator = prefs[Keys.ACTIVE_SESSION_EMULATOR] ?: return null
+        val startTime = prefs[Keys.ACTIVE_SESSION_START_TIME]?.let {
+            try { Instant.parse(it) } catch (e: Exception) { null }
+        } ?: return null
+
+        return PersistedSession(
+            gameId = gameId,
+            emulatorPackage = emulator,
+            startTime = startTime,
+            coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
+            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false
+        )
+    }
+
+    fun saveWatcherEnabled(): Flow<Boolean> = dataStore.data.map {
+        it[Keys.SAVE_WATCHER_ENABLED] ?: false
+    }
+
+    suspend fun setSaveWatcherEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SAVE_WATCHER_ENABLED] = enabled
+        }
+    }
 }
 
 data class BuiltinEmulatorSettings(
@@ -1185,6 +1257,7 @@ data class UserPreferences(
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,
+    val saveWatcherEnabled: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,

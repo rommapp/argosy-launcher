@@ -262,6 +262,9 @@ class GameLaunchDelegate @Inject constructor(
                                     channelName = info.channelName
                                 )
                                 android.util.Log.d("GameLaunchDelegate", "Cache result after LocalModified keep: $cacheResult")
+                                if (cacheResult is SaveCacheManager.CacheResult.Created) {
+                                    gameDao.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
+                                }
                                 gameDao.updateActiveSaveApplied(gameId, true)
                             }
                         }

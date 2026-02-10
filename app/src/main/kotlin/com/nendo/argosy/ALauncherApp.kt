@@ -15,6 +15,7 @@ import com.nendo.argosy.data.download.DownloadServiceController
 import com.nendo.argosy.data.sync.SaveSyncWorker
 import com.nendo.argosy.data.sync.SyncServiceController
 import com.nendo.argosy.data.update.UpdateCheckWorker
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.libretro.CoreUpdateCheckWorker
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.ui.coil.AppIconFetcher
@@ -57,6 +58,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var coreManager: LibretroCoreManager
 
+    @Inject
+    lateinit var playSessionTracker: PlaySessionTracker
+
     override fun onCreate() {
         super.onCreate()
         UpdateCheckWorker.schedule(this)
@@ -68,6 +72,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         downloadServiceController.start()
         syncServiceController.start()
         appScope.launch { coreManager.migrateAbiIfNeeded() }
+        appScope.launch { playSessionTracker.checkOrphanedSession() }
         syncPlatformSortOrders()
     }
 

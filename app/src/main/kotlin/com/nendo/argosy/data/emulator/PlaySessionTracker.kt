@@ -7,7 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -76,7 +80,8 @@ class PlaySessionTracker @Inject constructor(
     private val permissionHelper: PermissionHelper,
     private val gameUpdateBus: GameUpdateBus,
     private val emulatorResolver: EmulatorResolver,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val fileAccessLayer: FileAccessLayer
 ) {
     companion object {
         private const val TAG = "PlaySessionTracker"
@@ -110,6 +115,85 @@ class PlaySessionTracker @Inject constructor(
     init {
         registerLifecycleCallbacks()
         registerScreenReceiver()
+        registerProcessLifecycleObserver()
+    }
+
+    private fun registerProcessLifecycleObserver() {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStop(owner: LifecycleOwner) {
+                val session = _activeSession.value ?: return
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | App going to background with active session")
+            }
+        })
+    }
+
+    suspend fun checkOrphanedSession() {
+        val orphaned = preferencesRepository.getPersistedSession() ?: return
+        Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Detected orphaned session from ${orphaned.startTime}")
+
+        try {
+            val game = gameDao.getById(orphaned.gameId)
+            if (game == null) {
+                Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Game not found, clearing session")
+                preferencesRepository.clearActiveSession()
+                return
+            }
+
+            val emulatorId = emulatorResolver.resolveEmulatorId(orphaned.emulatorPackage)
+            if (emulatorId == null) {
+                Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Cannot resolve emulator ID | package=${orphaned.emulatorPackage}")
+                preferencesRepository.clearActiveSession()
+                return
+            }
+
+            val savePath = saveSyncRepository.get().discoverSavePath(
+                emulatorId = emulatorId,
+                gameTitle = game.title,
+                platformSlug = game.platformSlug,
+                romPath = game.localPath,
+                cachedTitleId = game.titleId,
+                coreName = orphaned.coreName,
+                emulatorPackage = orphaned.emulatorPackage,
+                gameId = orphaned.gameId
+            )
+
+            if (savePath != null) {
+                val activeChannel = if (orphaned.isHardcore) null else game.activeSaveChannel
+                val cacheResult = saveCacheManager.get().cacheCurrentSave(
+                    gameId = orphaned.gameId,
+                    emulatorId = emulatorId,
+                    savePath = savePath,
+                    channelName = activeChannel,
+                    isLocked = false,
+                    isHardcore = orphaned.isHardcore,
+                    skipDuplicateCheck = false
+                )
+                when (cacheResult) {
+                    is SaveCacheManager.CacheResult.Created -> {
+                        gameDao.updateActiveSaveTimestamp(orphaned.gameId, null)
+                        gameDao.updateActiveSaveApplied(orphaned.gameId, false)
+                        Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Recovery backup created | path=$savePath")
+                        notificationManager.show(
+                            title = "Recovered backup for ${game.title}",
+                            type = NotificationType.INFO,
+                            duration = NotificationDuration.LONG
+                        )
+                    }
+                    is SaveCacheManager.CacheResult.Duplicate -> {
+                        Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Save unchanged (already backed up)")
+                    }
+                    is SaveCacheManager.CacheResult.Failed -> {
+                        Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Failed to create recovery backup")
+                    }
+                }
+            } else {
+                Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | No save path found for recovery")
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Recovery failed", e)
+        } finally {
+            preferencesRepository.clearActiveSession()
+        }
     }
 
     private fun registerScreenReceiver() {
@@ -143,23 +227,84 @@ class PlaySessionTracker @Inject constructor(
         lastScreenOnTime = Instant.now()
         isScreenOn = true
 
+        val startTime = Instant.now()
         _activeSession.value = ActiveSession(
             gameId = gameId,
-            startTime = Instant.now(),
+            startTime = startTime,
             emulatorPackage = emulatorPackage,
             coreName = coreName,
             isHardcore = isHardcore,
             isNewGame = isNewGame
         )
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session started | emulator=$emulatorPackage, core=$coreName, hardcore=$isHardcore, newGame=$isNewGame")
+
+        scope.launch {
+            preferencesRepository.persistActiveSession(
+                gameId = gameId,
+                emulatorPackage = emulatorPackage,
+                startTime = startTime,
+                coreName = coreName,
+                isHardcore = isHardcore
+            )
+
+            val prefs = preferencesRepository.userPreferences.first()
+            if (prefs.saveSyncEnabled) {
+                startGameSessionService(gameId, emulatorPackage, coreName, isHardcore, startTime.toEpochMilli())
+            }
+        }
+    }
+
+    private suspend fun startGameSessionService(gameId: Long, emulatorPackage: String, coreName: String?, isHardcore: Boolean, sessionStartTime: Long) {
+        val game = gameDao.getById(gameId) ?: return
+        val emulatorId = emulatorResolver.resolveEmulatorId(emulatorPackage)
+
+        val savePath = if (emulatorId != null) {
+            saveSyncRepository.get().discoverSavePath(
+                emulatorId = emulatorId,
+                gameTitle = game.title,
+                platformSlug = game.platformSlug,
+                romPath = game.localPath,
+                cachedTitleId = game.titleId,
+                coreName = coreName,
+                emulatorPackage = emulatorPackage,
+                gameId = gameId
+            )
+        } else null
+
+        val watchPath = if (savePath != null) {
+            val transformedFile = fileAccessLayer.getTransformedFile(savePath)
+            if (transformedFile.isDirectory) {
+                transformedFile.absolutePath
+            } else {
+                transformedFile.parentFile?.absolutePath ?: transformedFile.absolutePath
+            }
+        } else null
+
+        val channelName = if (isHardcore) null else game.activeSaveChannel
+
+        Logger.debug(TAG, "[GameSession] Starting service for gameId=$gameId | watchPath=$watchPath | savePath=$savePath")
+        GameSessionService.start(
+            context = application,
+            watchPath = watchPath,
+            savePath = savePath,
+            gameId = gameId,
+            emulatorId = emulatorId,
+            gameTitle = game.title,
+            channelName = channelName,
+            isHardcore = isHardcore,
+            sessionStartTime = sessionStartTime
+        )
     }
 
     suspend fun endSession(): SessionEndResult {
         val session = _activeSession.value ?: run {
             Logger.debug(TAG, "[SaveSync] SESSION | endSession called but no active session")
+            preferencesRepository.clearActiveSession()
+            GameSessionService.stop(application)
             return SessionEndResult.Skipped
         }
         _activeSession.value = null
+        GameSessionService.stop(application)
 
         val finalScreenOnDuration = calculateFinalScreenOnDuration()
         val sessionDuration = Duration.between(session.startTime, Instant.now())
@@ -183,6 +328,8 @@ class PlaySessionTracker @Inject constructor(
                 result
             }
 
+            preferencesRepository.clearActiveSession()
+
             when (cacheResult) {
                 is SaveCacheManager.CacheResult.Created -> SessionEndResult.Success
                 is SaveCacheManager.CacheResult.Duplicate -> SessionEndResult.Duplicate
@@ -191,6 +338,7 @@ class PlaySessionTracker @Inject constructor(
             }
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session end failed", e)
+            preferencesRepository.clearActiveSession()
             SessionEndResult.Error(e.message ?: "Unknown error")
         }
     }
@@ -379,7 +527,9 @@ class PlaySessionTracker @Inject constructor(
     fun cancelSession() {
         val session = _activeSession.value ?: return
         _activeSession.value = null
+        GameSessionService.stop(application)
         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cancelled (no backup)")
+        scope.launch { preferencesRepository.clearActiveSession() }
     }
 
     fun canResumeSession(gameId: Long): Boolean {

@@ -908,11 +908,11 @@ class LibretroActivity : ComponentActivity() {
                         sramFile.absolutePath
                     )
                     when (result) {
-                        SaveCacheManager.CacheResult.Created ->
+                        is SaveCacheManager.CacheResult.Created ->
                             Log.d("LibretroActivity", "Created rollback backup before fresh start")
-                        SaveCacheManager.CacheResult.Duplicate ->
+                        is SaveCacheManager.CacheResult.Duplicate ->
                             Log.d("LibretroActivity", "Rollback skipped - identical save already cached")
-                        SaveCacheManager.CacheResult.Failed ->
+                        is SaveCacheManager.CacheResult.Failed ->
                             Log.w("LibretroActivity", "Failed to create rollback backup")
                     }
                     sramFile.delete()

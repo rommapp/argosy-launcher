@@ -1471,6 +1471,13 @@ class SaveSyncRepository @Inject constructor(
                 return@withContext PreLaunchSyncResult.NoConnection
             }
 
+            // Skip sync if user explicitly chose to keep local save
+            val activeSaveApplied = gameDao.getActiveSaveApplied(gameId)
+            if (activeSaveApplied == true) {
+                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Skipping - user chose to keep local (activeSaveApplied=true)")
+                return@withContext PreLaunchSyncResult.LocalIsNewer
+            }
+
             try {
                 val serverSaves = checkSavesForGame(gameId, rommId)
                 val matchingSaves = serverSaves.filter { it.emulator == emulatorId || it.emulator == null }
@@ -1526,7 +1533,13 @@ class SaveSyncRepository @Inject constructor(
                 val localFile = validatedPath?.let { File(it) }?.takeIf { it.exists() }
                 val localFileTime = localFile?.let { Instant.ofEpochMilli(it.lastModified()) }
                 val localDbTime = if (validatedPath != null) existing?.localUpdatedAt else null
-                val localTime = localDbTime ?: localFileTime
+                // Use the MORE RECENT of DB time and filesystem time to catch manual modifications
+                val localTime = when {
+                    localDbTime == null -> localFileTime
+                    localFileTime == null -> localDbTime
+                    localFileTime.isAfter(localDbTime) -> localFileTime
+                    else -> localDbTime
+                }
 
                 val deltaMs = if (localTime != null) serverTime.toEpochMilli() - localTime.toEpochMilli() else null
                 val deltaStr = deltaMs?.let { if (it >= 0) "+${it/1000}s" else "${it/1000}s" } ?: "N/A"
@@ -1555,7 +1568,23 @@ class SaveSyncRepository @Inject constructor(
                             )
                         }
                     } else {
-                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No cached hash to compare (cachedSave=${cachedSave?.id}, timestamp=$activeSaveTimestamp, channel=$selectedChannel)")
+                        // No specific cached hash to compare - check if local differs from ANY known cache
+                        val localHash = saveCacheManager.get().calculateLocalSaveHash(validatedPath)
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No cached hash to compare, checking against all caches (localHash=$localHash)")
+                        if (localHash != null) {
+                            val matchingCache = saveCacheManager.get().getByGameAndHash(gameId, localHash)
+                            if (matchingCache == null) {
+                                // Local file has unknown hash - treat as modified
+                                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_MODIFIED | Local hash not found in any cache, prompting user")
+                                return@withContext PreLaunchSyncResult.LocalModified(
+                                    localSavePath = validatedPath,
+                                    serverTimestamp = serverTime,
+                                    channelName = selectedChannel
+                                )
+                            } else {
+                                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Local hash matches cache id=${matchingCache.id}")
+                            }
+                        }
                     }
                 }
 

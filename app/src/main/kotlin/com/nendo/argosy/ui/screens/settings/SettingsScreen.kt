@@ -140,6 +140,12 @@ fun SettingsScreen(
     var showFileBrowser by remember { mutableStateOf(false) }
     var fileBrowserCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        viewModel.onNotificationPermissionResult(granted)
+    }
+
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(onBack = onBack)
@@ -204,6 +210,16 @@ fun SettingsScreen(
                     data = Uri.parse("package:${context.packageName}")
                 }
                 context.startActivity(intent)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.requestNotificationPermissionEvent.collect {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                viewModel.onNotificationPermissionResult(true)
             }
         }
     }

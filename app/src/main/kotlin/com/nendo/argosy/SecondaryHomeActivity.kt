@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeScreen
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.ui.theme.ALauncherTheme
@@ -29,6 +30,9 @@ class SecondaryHomeActivity : ComponentActivity() {
 
     @Inject
     lateinit var displayAffinityHelper: DisplayAffinityHelper
+
+    @Inject
+    lateinit var playSessionTracker: PlaySessionTracker
 
     private val viewModel: SecondaryHomeViewModel by viewModels()
 
@@ -159,6 +163,9 @@ class SecondaryHomeActivity : ComponentActivity() {
     }
 
     private fun bringPrimaryHomeToFront() {
+        // Don't cover an active game/emulator on the primary display
+        if (playSessionTracker.activeSession.value != null) return
+
         val intent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_HOME)
             setPackage(packageName)

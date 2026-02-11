@@ -64,6 +64,11 @@ private sealed class AboutItem(
         section = "debug",
         visibleWhen = { it.hasLogPath }
     )
+    data object SaveDebugLogging : AboutItem(
+        key = "saveDebugLogging",
+        section = "debug",
+        visibleWhen = { it.hasLogPath }
+    )
     data object AppAffinity : AboutItem("appAffinity", "debug")
 
     companion object {
@@ -72,7 +77,7 @@ private sealed class AboutItem(
 
         val ALL: List<AboutItem> = listOf(
             VersionHeader, VersionInfo, CheckUpdates, BetaUpdates,
-            SectionSpacer, DebugHeader, FileLogging, LogLevel, AppAffinity
+            SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging, AppAffinity
         )
     }
 }
@@ -198,6 +203,17 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     value = uiState.fileLogLevel.name,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleFileLogLevel() }
+                )
+
+                AboutItem.SaveDebugLogging -> SwitchPreference(
+                    title = "Save Debug Logging",
+                    subtitle = if (uiState.saveDebugLoggingEnabled)
+                        "Detailed save operations logged"
+                    else
+                        "Log save sync, cache, and channel events",
+                    isEnabled = uiState.saveDebugLoggingEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setSaveDebugLoggingEnabled(it) }
                 )
 
                 AboutItem.AppAffinity -> SwitchPreference(

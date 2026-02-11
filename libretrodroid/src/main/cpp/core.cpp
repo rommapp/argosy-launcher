@@ -36,11 +36,15 @@ void* get_symbol(void* handle, const char* symbol) {
 }
 
 void Core::open(const std::string& soCorePath) {
+    LOGI("Loading core: %s", soCorePath.c_str());
     libHandle = dlopen(soCorePath.c_str(), RTLD_LOCAL | RTLD_LAZY);
     if (!libHandle) {
-        LOGE("Cannot dlopen library, closing");
-        throw std::runtime_error("Cannot dlopen library");
+        const char* error = dlerror();
+        LOGE("Cannot dlopen library: %s", error ? error : "unknown error");
+        LOGE("Core path was: %s", soCorePath.c_str());
+        throw std::runtime_error(error ? error : "Cannot dlopen library");
     }
+    LOGI("Core loaded successfully");
     retro_cheat_reset = (void (*)()) get_symbol(libHandle, "retro_cheat_reset");
     retro_cheat_set = (void (*)(unsigned, bool, const char*)) get_symbol(libHandle, "retro_cheat_set");
     retro_init = (void (*)()) get_symbol(libHandle, "retro_init");

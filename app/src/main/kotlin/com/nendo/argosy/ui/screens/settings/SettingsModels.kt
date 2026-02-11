@@ -679,6 +679,7 @@ data class SettingsUiState(
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,
+    val saveDebugLoggingEnabled: Boolean = false,
     val previewGame: GameListItem? = null,
     val previewGames: List<GameListItem> = emptyList(),
     val previewGameIndex: Int = 0,

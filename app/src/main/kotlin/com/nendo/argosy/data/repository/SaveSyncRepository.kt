@@ -6,6 +6,7 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.GameCubeHeaderParser
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.SaveDebugLogger
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
@@ -601,7 +602,16 @@ class SaveSyncRepository @Inject constructor(
                 syncEntity?.rommSaveId
             }
             val isUpdate = serverSaveIdToUpdate != null
+            val uploadStartTime = System.currentTimeMillis()
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | HTTP request | isUpdate=$isUpdate, saveIdToUpdate=$serverSaveIdToUpdate, fileName=$uploadFileName, size=${uploadFile.length()}bytes, serverSavesCount=${serverSaves.size}")
+
+            SaveDebugLogger.logSyncUploadStarted(
+                gameId = gameId,
+                gameName = game.title,
+                channel = channelName,
+                sizeBytes = uploadFile.length(),
+                contentHash = contentHash
+            )
 
             val requestBody = uploadFile.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
@@ -640,14 +650,39 @@ class SaveSyncRepository @Inject constructor(
                         lastUploadedHash = contentHash
                     )
                 )
+
+                SaveDebugLogger.logSyncUploadCompleted(
+                    gameId = gameId,
+                    gameName = game.title,
+                    channel = channelName,
+                    serverId = serverSave.id,
+                    durationMs = System.currentTimeMillis() - uploadStartTime
+                )
+
                 SaveSyncResult.Success
             } else {
                 val errorBody = response.errorBody()?.string()
                 Logger.error(TAG, "[SaveSync] UPLOAD gameId=$gameId | HTTP failed | status=${response.code()}, body=$errorBody")
+
+                SaveDebugLogger.logSyncUploadFailed(
+                    gameId = gameId,
+                    gameName = game.title,
+                    channel = channelName,
+                    error = "HTTP ${response.code()}: $errorBody"
+                )
+
                 SaveSyncResult.Error("Upload failed: ${response.code()}")
             }
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD gameId=$gameId | Exception during upload", e)
+
+            SaveDebugLogger.logSyncUploadFailed(
+                gameId = gameId,
+                gameName = game.title,
+                channel = channelName,
+                error = e.message ?: "Unknown exception"
+            )
+
             SaveSyncResult.Error(e.message ?: "Upload failed")
         } finally {
             if (prepared.isTemporary) fileToUpload.delete()
@@ -807,7 +842,16 @@ class SaveSyncRepository @Inject constructor(
                 return@withContext SaveSyncResult.Error("No download path available")
             }
 
+            val downloadStartTime = System.currentTimeMillis()
             Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | HTTP request starting | downloadPath=$downloadPath")
+
+            SaveDebugLogger.logSyncDownloadStarted(
+                gameId = gameId,
+                gameName = game.title,
+                channel = channelName,
+                serverId = saveId
+            )
+
             val response = try {
                 withRetry(tag = "[SaveSync] DOWNLOAD gameId=$gameId") {
                     api.downloadRaw(downloadPath)
@@ -1077,9 +1121,26 @@ class SaveSyncRepository @Inject constructor(
             }
 
             Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Complete | path=$targetPath, channel=$effectiveChannelName")
+
+            SaveDebugLogger.logSyncDownloadCompleted(
+                gameId = gameId,
+                gameName = game.title,
+                channel = effectiveChannelName,
+                sizeBytes = File(targetPath).let { if (it.isDirectory) it.walkTopDown().sumOf { f -> f.length() } else it.length() },
+                durationMs = System.currentTimeMillis() - downloadStartTime
+            )
+
             SaveSyncResult.Success
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Exception during download", e)
+
+            SaveDebugLogger.logSyncDownloadFailed(
+                gameId = gameId,
+                gameName = game.title,
+                channel = channelName,
+                error = e.message ?: "Unknown exception"
+            )
+
             SaveSyncResult.Error(e.message ?: "Download failed")
         } finally {
             tempZipFile?.delete()

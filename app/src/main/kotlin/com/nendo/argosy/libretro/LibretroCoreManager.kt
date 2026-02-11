@@ -26,6 +26,11 @@ class LibretroCoreManager @Inject constructor(
     private val nativeLibDir = context.applicationInfo.nativeLibraryDir
     private val abiMarkerFile = File(downloadedCoresDir, ".abi")
 
+    init {
+        Log.i(TAG, "Device ABI: ${LibretroBuildbot.deviceAbi}, nativeLibDir: $nativeLibDir")
+        Log.i(TAG, "Buildbot URL: ${LibretroBuildbot.baseUrl}")
+    }
+
     suspend fun migrateAbiIfNeeded() {
         val storedAbi = if (abiMarkerFile.exists()) abiMarkerFile.readText().trim() else null
         val currentAbi = LibretroBuildbot.deviceAbi
@@ -109,14 +114,17 @@ class LibretroCoreManager @Inject constructor(
         val downloadedCore = File(downloadedCoresDir, fileName)
         if (downloadedCore.exists()) {
             ensureExecutable(downloadedCore)
+            Log.d(TAG, "Using downloaded core: ${downloadedCore.absolutePath} (${downloadedCore.length()} bytes)")
             return downloadedCore.absolutePath
         }
 
         val bundledCore = File(nativeLibDir, "lib$fileName")
         if (bundledCore.exists()) {
+            Log.d(TAG, "Using bundled core: ${bundledCore.absolutePath}")
             return bundledCore.absolutePath
         }
 
+        Log.w(TAG, "Core not found: $fileName (checked $downloadedCore and $bundledCore)")
         return null
     }
 
@@ -133,9 +141,20 @@ class LibretroCoreManager @Inject constructor(
                 val zipUrl = "${LibretroBuildbot.baseUrl}/${coreInfo.fileName}.zip"
 
                 Log.i(TAG, "Downloading ${coreInfo.displayName}: $zipUrl")
+                Log.i(TAG, "Device ABI: ${LibretroBuildbot.deviceAbi}")
 
                 val url = URL(zipUrl)
                 val connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 30_000
+                connection.readTimeout = 60_000
+
+                val responseCode = connection.responseCode
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    val errorMessage = "HTTP $responseCode: ${connection.responseMessage}"
+                    Log.e(TAG, "Core download failed: $errorMessage for $zipUrl")
+                    throw IllegalStateException("Core not available: $errorMessage")
+                }
+
                 val version = connection.getHeaderField("Last-Modified")
                     ?: connection.contentLengthLong.toString()
 

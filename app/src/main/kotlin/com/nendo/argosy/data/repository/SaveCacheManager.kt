@@ -8,6 +8,7 @@ import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
+import com.nendo.argosy.util.SaveDebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -86,6 +87,12 @@ class SaveCacheManager @Inject constructor(
                 val existingWithHash = saveCacheDao.getByGameAndHash(gameId, contentHash)
                 if (existingWithHash != null) {
                     Log.d(TAG, "Duplicate save detected for game $gameId (hash=$contentHash, hardcore=$isHardcore), skipping cache")
+                    SaveDebugLogger.logCacheDuplicate(
+                        gameId = gameId,
+                        gameName = null,
+                        channel = channelName,
+                        contentHash = contentHash
+                    )
                     tempFile?.delete()
                     return@withContext CacheResult.Duplicate
                 }
@@ -160,6 +167,17 @@ class SaveCacheManager @Inject constructor(
                 else -> ""
             }
             Log.d(TAG, "Cached save for game $gameId at $cachePath (hash=$contentHash)$slotInfo")
+
+            SaveDebugLogger.logCacheCreated(
+                gameId = gameId,
+                gameName = null,
+                channel = channelName,
+                sizeBytes = saveSize,
+                contentHash = contentHash,
+                isHardcore = isHardcore,
+                needsRemoteSync = needsRemoteSync,
+                emulatorId = emulatorId
+            )
 
             pruneOldCaches(gameId)
             CacheResult.Created(now.toEpochMilli())
@@ -283,9 +301,24 @@ class SaveCacheManager @Inject constructor(
             }
 
             Log.d(TAG, "Restored save from cache $cacheId to $targetPath")
+
+            SaveDebugLogger.logCacheRestored(
+                gameId = entity.gameId,
+                gameName = null,
+                channel = entity.channelName,
+                cacheId = cacheId,
+                targetPath = targetPath
+            )
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to restore save from cache", e)
+            SaveDebugLogger.logError(
+                operation = "restoreSave",
+                gameId = entity.gameId,
+                gameName = null,
+                channel = entity.channelName,
+                error = e
+            )
             false
         }
     }
@@ -302,6 +335,14 @@ class SaveCacheManager @Inject constructor(
 
         saveCacheDao.deleteById(cacheId)
         Log.d(TAG, "Deleted cached save $cacheId")
+
+        SaveDebugLogger.logCacheDeleted(
+            gameId = entity.gameId,
+            gameName = null,
+            channel = entity.channelName,
+            cacheId = cacheId,
+            reason = "user_delete"
+        )
     }
 
     suspend fun renameSave(cacheId: Long, name: String?) = withContext(Dispatchers.IO) {
@@ -388,6 +429,13 @@ class SaveCacheManager @Inject constructor(
 
         saveCacheDao.deleteOldestUnlocked(gameId, toDeleteCount)
         Log.d(TAG, "Pruned $toDeleteCount old caches for game $gameId")
+
+        SaveDebugLogger.logCachePruned(
+            gameId = gameId,
+            gameName = null,
+            prunedCount = toDeleteCount,
+            remainingCount = totalCount - toDeleteCount
+        )
     }
 
     suspend fun getCacheById(cacheId: Long): SaveCacheEntity? =

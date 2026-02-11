@@ -79,6 +79,7 @@ class UserPreferencesRepository @Inject constructor(
         val FILE_LOGGING_ENABLED = booleanPreferencesKey("file_logging_enabled")
         val FILE_LOGGING_PATH = stringPreferencesKey("file_logging_path")
         val FILE_LOG_LEVEL = stringPreferencesKey("file_log_level")
+        val SAVE_DEBUG_LOGGING_ENABLED = booleanPreferencesKey("save_debug_logging_enabled")
 
         val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
         val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
@@ -233,6 +234,7 @@ class UserPreferencesRepository @Inject constructor(
             fileLoggingEnabled = prefs[Keys.FILE_LOGGING_ENABLED] ?: false,
             fileLoggingPath = prefs[Keys.FILE_LOGGING_PATH],
             fileLogLevel = LogLevel.fromString(prefs[Keys.FILE_LOG_LEVEL]),
+            saveDebugLoggingEnabled = prefs[Keys.SAVE_DEBUG_LOGGING_ENABLED] ?: false,
             saveWatcherEnabled = prefs[Keys.SAVE_WATCHER_ENABLED] ?: false,
             boxArtShape = BoxArtShape.fromString(prefs[Keys.BOX_ART_SHAPE]),
             boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
@@ -673,6 +675,12 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setFileLogLevel(level: LogLevel) {
         dataStore.edit { prefs ->
             prefs[Keys.FILE_LOG_LEVEL] = level.name
+        }
+    }
+
+    suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SAVE_DEBUG_LOGGING_ENABLED] = enabled
         }
     }
 
@@ -1291,6 +1299,7 @@ data class UserPreferences(
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,
+    val saveDebugLoggingEnabled: Boolean = false,
     val saveWatcherEnabled: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,

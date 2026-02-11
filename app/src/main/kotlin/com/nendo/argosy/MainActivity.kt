@@ -27,6 +27,7 @@ import com.nendo.argosy.data.emulator.LaunchRetryTracker
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.SaveDebugLogger
 import com.nendo.argosy.ui.ArgosyApp
 import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
@@ -137,6 +138,11 @@ class MainActivity : ComponentActivity() {
                     logDirectory = prefs.fileLoggingPath,
                     enabled = prefs.fileLoggingEnabled,
                     level = prefs.fileLogLevel
+                )
+                SaveDebugLogger.configure(
+                    versionName = BuildConfig.VERSION_NAME,
+                    logDirectory = prefs.fileLoggingPath,
+                    enabled = prefs.saveDebugLoggingEnabled
                 )
                 ambientAudioManager.setEnabled(prefs.ambientAudioEnabled)
                 ambientAudioManager.setVolume(prefs.ambientAudioVolume)

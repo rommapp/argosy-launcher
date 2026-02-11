@@ -717,6 +717,7 @@ class SettingsViewModel @Inject constructor(
                     fileLoggingEnabled = prefs.fileLoggingEnabled,
                     fileLoggingPath = prefs.fileLoggingPath,
                     fileLogLevel = prefs.fileLogLevel,
+                    saveDebugLoggingEnabled = prefs.saveDebugLoggingEnabled,
                     appAffinityEnabled = prefs.appAffinityEnabled,
                     builtinVideo = it.builtinVideo.copy(
                         shader = builtinSettings.shader,
@@ -3035,6 +3036,13 @@ class SettingsViewModel @Inject constructor(
     fun cycleFileLogLevel() {
         val currentLevel = _uiState.value.fileLogLevel
         setFileLogLevel(currentLevel.next())
+    }
+
+    fun setSaveDebugLoggingEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setSaveDebugLoggingEnabled(enabled)
+        }
+        _uiState.update { it.copy(saveDebugLoggingEnabled = enabled) }
     }
 
     fun setPlatformEmulator(platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {

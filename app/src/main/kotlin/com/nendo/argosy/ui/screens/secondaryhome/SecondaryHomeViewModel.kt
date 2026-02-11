@@ -8,8 +8,10 @@ import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
+import com.nendo.argosy.ui.util.GridUtils
 import com.nendo.argosy.util.DisplayAffinityHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -52,7 +54,8 @@ data class SecondaryHomeUiState(
     val currentSectionIndex: Int = 0,
     val games: List<SecondaryGameUi> = emptyList(),
     val homeApps: List<SecondaryAppUi> = emptyList(),
-    val columnsCount: Int = 4,
+    val gridDensity: GridDensity = GridDensity.NORMAL,
+    val screenWidthDp: Int = 0,
     val isLoading: Boolean = true,
     val focusedGameIndex: Int = 0,
     val isHoldingFocusedGame: Boolean = false
@@ -62,6 +65,12 @@ data class SecondaryHomeUiState(
 
     val focusedGame: SecondaryGameUi?
         get() = games.getOrNull(focusedGameIndex)
+
+    val columnsCount: Int
+        get() = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
+
+    val gridSpacingDp: Int
+        get() = GridUtils.getGridSpacingDp(gridDensity)
 }
 
 @HiltViewModel
@@ -82,6 +91,19 @@ class SecondaryHomeViewModel @Inject constructor(
         loadData()
         observeDownloads()
         observeSecondaryHomeApps()
+        observeGridDensity()
+    }
+
+    private fun observeGridDensity() {
+        viewModelScope.launch {
+            preferencesRepository.userPreferences.collect { prefs ->
+                _uiState.update { it.copy(gridDensity = prefs.gridDensity) }
+            }
+        }
+    }
+
+    fun setScreenWidth(widthDp: Int) {
+        _uiState.update { it.copy(screenWidthDp = widthDp) }
     }
 
     private fun observeDownloads() {

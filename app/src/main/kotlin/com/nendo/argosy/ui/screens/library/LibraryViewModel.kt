@@ -48,6 +48,7 @@ import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
+import com.nendo.argosy.ui.util.GridUtils
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.catch
@@ -191,25 +192,10 @@ data class LibraryUiState(
         get() = availableLetters.size >= 9
 
     val columnsCount: Int
-        get() {
-            val baseColumns = when (gridDensity) {
-                GridDensity.COMPACT -> 8
-                GridDensity.NORMAL -> 6
-                GridDensity.SPACIOUS -> 5
-            }
-            return if (screenWidthDp > 900) {
-                (baseColumns * 1.5f).toInt()
-            } else {
-                baseColumns
-            }
-        }
+        get() = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
 
     val gridSpacingDp: Int
-        get() = when (gridDensity) {
-            GridDensity.COMPACT -> 4
-            GridDensity.NORMAL -> 6
-            GridDensity.SPACIOUS -> 8
-        }
+        get() = GridUtils.getGridSpacingDp(gridDensity)
 
     val currentPlatform: HomePlatformUi?
         get() = if (currentPlatformIndex >= 0) platforms.getOrNull(currentPlatformIndex) else null

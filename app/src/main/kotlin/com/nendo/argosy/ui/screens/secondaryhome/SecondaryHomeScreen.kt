@@ -79,6 +79,12 @@ fun SecondaryHomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val configuration = LocalContext.current.resources.configuration
+    val screenWidthDp = configuration.screenWidthDp
+
+    LaunchedEffect(screenWidthDp) {
+        viewModel.setScreenWidth(screenWidthDp)
+    }
 
     Column(
         modifier = Modifier
@@ -111,12 +117,14 @@ fun SecondaryHomeScreen(
                 }
             }
 
+            val gridSpacing = uiState.gridSpacingDp.dp
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(uiState.columnsCount),
                 state = gridState,
-                contentPadding = PaddingValues(Dimens.spacingMd),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
-                verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                contentPadding = PaddingValues(gridSpacing),
+                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                verticalArrangement = Arrangement.spacedBy(gridSpacing),
                 modifier = Modifier.weight(1f)
             ) {
                 itemsIndexed(uiState.games, key = { _, game -> game.id }) { index, game ->
@@ -213,7 +221,7 @@ private fun SectionHeader(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .padding(horizontal = Dimens.spacingLg)
-                .weight(1f, fill = false),
+                .weight(1f),
             textAlign = TextAlign.Center
         )
 

@@ -149,21 +149,22 @@ fun HomeScreen(
 
     val currentOnDrawerToggle by rememberUpdatedState(onDrawerToggle)
 
-    LaunchedEffect(uiState.focusedGameIndex, uiState.currentRow, uiState.currentItems.size) {
-        if (uiState.currentItems.isNotEmpty()) {
-            if (skipNextProgrammaticScroll) {
-                skipNextProgrammaticScroll = false
-            } else {
-                isProgrammaticScroll = true
-                scope.launch {
-                    listState.animateScrollToItem(
-                        index = uiState.focusedGameIndex.coerceIn(0, uiState.currentItems.lastIndex),
-                        scrollOffset = SCROLL_OFFSET
-                    )
-                    isProgrammaticScroll = false
+    LaunchedEffect(Unit) {
+        snapshotFlow { Triple(uiState.focusedGameIndex, uiState.currentRow, uiState.currentItems.size) }
+            .collect { (focusedIndex, _, itemsSize) ->
+                if (itemsSize > 0) {
+                    if (skipNextProgrammaticScroll) {
+                        skipNextProgrammaticScroll = false
+                    } else {
+                        isProgrammaticScroll = true
+                        listState.animateScrollToItem(
+                            index = focusedIndex.coerceIn(0, itemsSize - 1),
+                            scrollOffset = SCROLL_OFFSET
+                        )
+                        isProgrammaticScroll = false
+                    }
                 }
             }
-        }
     }
 
     LaunchedEffect(listState) {

@@ -144,6 +144,8 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
+    private val _detectedLayout = MutableStateFlow(ControllerDetector.detectFromActiveGamepad().layout)
+
     private val inputManager = application.getSystemService(Context.INPUT_SERVICE) as InputManager
     private val inputDeviceListener = object : InputManager.InputDeviceListener {
         override fun onInputDeviceAdded(deviceId: Int) = refreshControllerDetection()
@@ -285,8 +287,6 @@ class ArgosyViewModel @Inject constructor(
             }
         }
     }
-
-    private val _detectedLayout = MutableStateFlow(ControllerDetector.detectFromActiveGamepad().layout)
 
     val uiState: StateFlow<ArgosyUiState> = combine(
         preferencesRepository.userPreferences,

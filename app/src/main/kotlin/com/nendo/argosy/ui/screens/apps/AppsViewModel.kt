@@ -22,6 +22,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
+import com.nendo.argosy.ui.util.GridUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -67,18 +68,7 @@ data class AppsUiState(
     val hasSecondaryDisplay: Boolean = false
 ) {
     val columnsCount: Int
-        get() {
-            val baseColumns = when (gridDensity) {
-                GridDensity.COMPACT -> 5
-                GridDensity.NORMAL -> 4
-                GridDensity.SPACIOUS -> 3
-            }
-            return if (screenWidthDp > 900) {
-                (baseColumns * 1.5f).toInt()
-            } else {
-                baseColumns
-            }
-        }
+        get() = GridUtils.getAppGridColumns(gridDensity, screenWidthDp)
 
     val focusedApp: AppUi?
         get() = apps.getOrNull(focusedIndex)

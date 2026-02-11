@@ -33,6 +33,7 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.hardware.ScreenCaptureManager
 import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.input.GamepadInputHandler
+import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -47,6 +48,9 @@ private const val TAG = "MainActivity"
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val _pendingDeepLink = kotlinx.coroutines.flow.MutableStateFlow<android.net.Uri?>(null)
+    val pendingDeepLink: kotlinx.coroutines.flow.StateFlow<android.net.Uri?> = _pendingDeepLink
 
     @Inject
     lateinit var gamepadInputHandler: GamepadInputHandler
@@ -71,6 +75,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var screenCaptureManager: ScreenCaptureManager
+
+    @Inject
+    lateinit var displayAffinityHelper: DisplayAffinityHelper
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -148,12 +155,42 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        bringSecondaryHomeToFront()
+    }
+
+    private fun bringSecondaryHomeToFront() {
+        val options = displayAffinityHelper.getActivityOptions(forEmulator = false)
+        if (options != null) {
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_SECONDARY_HOME)
+                setPackage(packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent, options)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleHomeIntent(intent)
+        if (!handleDeepLink(intent)) {
+            handleHomeIntent(intent)
+        }
+    }
+
+    private fun handleDeepLink(intent: Intent): Boolean {
+        val uri = intent.data ?: return false
+        if (uri.scheme == "argosy") {
+            Log.d(TAG, "Received deep link: $uri")
+            _pendingDeepLink.value = uri
+            return true
+        }
+        return false
+    }
+
+    fun clearPendingDeepLink() {
+        _pendingDeepLink.value = null
     }
 
     override fun onResume() {

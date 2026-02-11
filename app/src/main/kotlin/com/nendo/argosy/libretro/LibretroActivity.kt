@@ -179,6 +179,7 @@ class LibretroActivity : ComponentActivity() {
     private var currentRewindEnabled by mutableStateOf(true)
     private var currentSkipDupFrames by mutableStateOf(false)
     private var currentLowLatencyAudio by mutableStateOf(true)
+    private var currentForceSoftwareTiming by mutableStateOf(false)
     private var currentRumbleEnabled by mutableStateOf(true)
     private var currentAnalogAsDpad by mutableStateOf(false)
     private var currentDpadAsAnalog by mutableStateOf(false)
@@ -315,6 +316,7 @@ class LibretroActivity : ComponentActivity() {
         currentRewindEnabled = settings.rewindEnabled
         currentSkipDupFrames = settings.skipDuplicateFrames
         currentLowLatencyAudio = settings.lowLatencyAudio
+        currentForceSoftwareTiming = settings.forceSoftwareTiming
         currentRumbleEnabled = settings.rumbleEnabled
         currentAnalogAsDpad = settings.analogAsDpad
         currentDpadAsAnalog = settings.dpadAsAnalog
@@ -340,6 +342,7 @@ class LibretroActivity : ComponentActivity() {
                 shader = effectiveShader
                 skipDuplicateFrames = settings.skipDuplicateFrames
                 preferLowLatencyAudio = settings.lowLatencyAudio
+                forceSoftwareTiming = settings.forceSoftwareTiming
                 rumbleEventsEnabled = settings.rumbleEnabled
                 variables = coreVariables
             }
@@ -1271,6 +1274,7 @@ class LibretroActivity : ComponentActivity() {
         LibretroSettingDef.RewindEnabled -> currentRewindEnabled.toString()
         LibretroSettingDef.SkipDuplicateFrames -> currentSkipDupFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> currentLowLatencyAudio.toString()
+        LibretroSettingDef.ForceSoftwareTiming -> currentForceSoftwareTiming.toString()
     }
 
     private fun getGlobalVideoSettingValue(setting: LibretroSettingDef): String = when (setting) {
@@ -1287,6 +1291,7 @@ class LibretroActivity : ComponentActivity() {
         LibretroSettingDef.RewindEnabled -> globalSettings.rewindEnabled.toString()
         LibretroSettingDef.SkipDuplicateFrames -> globalSettings.skipDuplicateFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> globalSettings.lowLatencyAudio.toString()
+        LibretroSettingDef.ForceSoftwareTiming -> globalSettings.forceSoftwareTiming.toString()
     }
 
     private fun getGlobalFrameForPlatform(): String? {
@@ -1323,6 +1328,10 @@ class LibretroActivity : ComponentActivity() {
                 currentLowLatencyAudio = globalSettings.lowLatencyAudio
                 applyVideoSettingChange(setting, currentLowLatencyAudio.toString())
             }
+            LibretroSettingDef.ForceSoftwareTiming -> {
+                currentForceSoftwareTiming = globalSettings.forceSoftwareTiming
+                applyVideoSettingChange(setting, currentForceSoftwareTiming.toString())
+            }
             LibretroSettingDef.Frame -> {
                 applyVideoSettingChange(setting, currentFrame ?: "None")
             }
@@ -1342,6 +1351,7 @@ class LibretroActivity : ComponentActivity() {
                 LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = null)
                 LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = null)
                 LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = null)
+                LibretroSettingDef.ForceSoftwareTiming -> return@launch
             }
             if (updated.hasAnyOverrides()) {
                 platformLibretroSettingsDao.upsert(updated)
@@ -1389,6 +1399,10 @@ class LibretroActivity : ComponentActivity() {
             LibretroSettingDef.LowLatencyAudio -> {
                 currentLowLatencyAudio = !currentLowLatencyAudio
                 applyVideoSettingChange(setting, currentLowLatencyAudio.toString())
+            }
+            LibretroSettingDef.ForceSoftwareTiming -> {
+                currentForceSoftwareTiming = !currentForceSoftwareTiming
+                applyVideoSettingChange(setting, currentForceSoftwareTiming.toString())
             }
             else -> {}
         }
@@ -1468,7 +1482,8 @@ class LibretroActivity : ComponentActivity() {
                 }
             }
             LibretroSettingDef.SkipDuplicateFrames,
-            LibretroSettingDef.LowLatencyAudio -> {
+            LibretroSettingDef.LowLatencyAudio,
+            LibretroSettingDef.ForceSoftwareTiming -> {
                 // Non-runtime settings: persisted but only applied on next launch
             }
         }
@@ -1493,6 +1508,12 @@ class LibretroActivity : ComponentActivity() {
                 LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = value.toBooleanStrictOrNull())
                 LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = value.toBooleanStrictOrNull())
                 LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = value.toBooleanStrictOrNull())
+                LibretroSettingDef.ForceSoftwareTiming -> {
+                    lifecycleScope.launch {
+                        preferencesRepository.setBuiltinForceSoftwareTiming(value.toBooleanStrictOrNull() ?: false)
+                    }
+                    return@launch
+                }
             }
 
             if (updated.hasAnyOverrides()) {

@@ -35,10 +35,12 @@ unsigned FPSSync::advanceFrames() {
     return frames;
 }
 
-FPSSync::FPSSync(double contentRefreshRate, double screenRefreshRate) {
+FPSSync::FPSSync(double contentRefreshRate, double screenRefreshRate, bool forceSoftwareTiming) {
     this->contentRefreshRate = contentRefreshRate;
     this->screenRefreshRate = screenRefreshRate;
-    this->useVSync = std::abs(contentRefreshRate - screenRefreshRate) < FPS_TOLERANCE;
+    this->forceSoftwareTiming = forceSoftwareTiming;
+    // If force software timing is enabled, never use VSync
+    this->useVSync = !forceSoftwareTiming && std::abs(contentRefreshRate - screenRefreshRate) < FPS_TOLERANCE;
     this->sampleInterval = std::chrono::microseconds((long) ((1000000L / contentRefreshRate)));
     reset();
 }
@@ -62,7 +64,9 @@ void FPSSync::wait() {
 }
 
 void FPSSync::setExternalTimingControl(bool enabled) {
-    if (enabled) {
+    if (forceSoftwareTiming) {
+        useVSync = false;
+    } else if (enabled) {
         useVSync = true;
     } else {
         useVSync = std::abs(contentRefreshRate - screenRefreshRate) < FPS_TOLERANCE;
@@ -74,7 +78,7 @@ void FPSSync::updateContentRefreshRate(double newContentRefreshRate) {
     LOGI("Updating content refresh rate from %f to %f", contentRefreshRate, newContentRefreshRate);
     contentRefreshRate = newContentRefreshRate;
     sampleInterval = std::chrono::microseconds((long) ((1000000L / contentRefreshRate)));
-    useVSync = std::abs(contentRefreshRate - screenRefreshRate) < FPS_TOLERANCE;
+    useVSync = !forceSoftwareTiming && std::abs(contentRefreshRate - screenRefreshRate) < FPS_TOLERANCE;
     reset();
 }
 

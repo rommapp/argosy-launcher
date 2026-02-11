@@ -28,10 +28,12 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -328,6 +330,7 @@ fun AppsScreen(
                                 isFocused = index == uiState.contextMenuFocusIndex,
                                 isAppHidden = uiState.focusedApp?.isHidden ?: false,
                                 isOnHome = uiState.focusedApp?.isOnHome ?: false,
+                                isOnSecondaryHome = uiState.focusedApp?.isOnSecondaryHome ?: false,
                                 onClick = {
                                     viewModel.selectContextMenuItem(index)
                                 }
@@ -346,6 +349,7 @@ private fun ContextMenuItem(
     isFocused: Boolean,
     isAppHidden: Boolean = false,
     isOnHome: Boolean = false,
+    isOnSecondaryHome: Boolean = false,
     onClick: () -> Unit = {}
 ) {
     val (icon, label) = when (item) {
@@ -354,6 +358,11 @@ private fun ContextMenuItem(
             Icons.Default.Home to "Remove from Home"
         } else {
             Icons.Outlined.Home to "Add to Home"
+        }
+        AppContextMenuItem.TOGGLE_SECONDARY_HOME -> if (isOnSecondaryHome) {
+            Icons.Default.Devices to "Remove from Second Screen"
+        } else {
+            Icons.Outlined.Devices to "Add to Second Screen"
         }
         AppContextMenuItem.TOGGLE_VISIBILITY -> if (isAppHidden) {
             Icons.Default.Visibility to "Show"

@@ -193,7 +193,6 @@ class GameLaunchDelegate @Inject constructor(
                 var localModifiedChoice: LocalModifiedChoice? = null
 
                 launchWithSyncUseCase.invokeWithProgress(gameId, channelName).collect { progress ->
-                    android.util.Log.d("GameLaunchDelegate", "collect: progress=$progress, canSync=$canSync")
                     if (canSync && progress != SyncProgress.Skipped && progress != SyncProgress.Idle) {
                         when (progress) {
                             is SyncProgress.HardcoreConflict -> {
@@ -344,6 +343,7 @@ class GameLaunchDelegate @Inject constructor(
                     }
                 }
             } finally {
+                _syncOverlayState.value = null
                 syncMutex.unlock()
             }
         }
@@ -355,7 +355,9 @@ class GameLaunchDelegate @Inject constructor(
     ) {
         val session = playSessionTracker.activeSession.value
         if (session == null) {
-            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: no active session, cleaning up")
+            if (isSyncing) {
+                return
+            }
             playSessionTracker.forceStopService()
             onSyncComplete()
             return

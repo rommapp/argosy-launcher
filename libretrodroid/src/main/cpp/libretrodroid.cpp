@@ -292,6 +292,7 @@ void LibretroDroid::create(
     const ShaderManager::Config& shaderConfig,
     float refreshRate,
     bool lowLatencyAudio,
+    bool forceSoftwareTiming,
     bool enableVirtualFileSystem,
     bool enableMicrophone,
     bool duplicateFrames,
@@ -331,6 +332,7 @@ void LibretroDroid::create(
     core->retro_init();
 
     preferLowLatencyAudio = lowLatencyAudio;
+    this->forceSoftwareTiming = forceSoftwareTiming;
 
     // HW accelerated cores are only supported on opengles 3.
     if (Environment::getInstance().isUseHwAcceleration() && openglESVersion < 3) {
@@ -706,7 +708,7 @@ void LibretroDroid::afterGameLoad() {
     struct retro_system_av_info system_av_info {};
     core->retro_get_system_av_info(&system_av_info);
 
-    fpsSync = std::make_unique<FPSSync>(system_av_info.timing.fps, screenRefreshRate);
+    fpsSync = std::make_unique<FPSSync>(system_av_info.timing.fps, screenRefreshRate, forceSoftwareTiming);
 
     if (bfiEnabled) {
         fpsSync->setExternalTimingControl(true);

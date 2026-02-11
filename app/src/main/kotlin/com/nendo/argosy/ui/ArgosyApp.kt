@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.focusable
@@ -91,6 +92,41 @@ fun ArgosyApp(
     val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // Handle deep links from secondary home
+    val activity = context as? com.nendo.argosy.MainActivity
+    val pendingDeepLink by activity?.pendingDeepLink?.collectAsState() ?: remember { mutableStateOf(null) }
+    LaunchedEffect(pendingDeepLink) {
+        pendingDeepLink?.let { uri ->
+            android.util.Log.d("ArgosyApp", "Handling deep link: $uri")
+            if (uri.scheme == "argosy") {
+                when (uri.host) {
+                    "game" -> {
+                        val gameId = uri.lastPathSegment?.toLongOrNull()
+                        if (gameId != null) {
+                            navController.navigate(Screen.GameDetail.createRoute(gameId)) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                    "play" -> {
+                        val gameId = uri.lastPathSegment?.toLongOrNull()
+                        if (gameId != null) {
+                            navController.navigate(Screen.Launch.createRoute(gameId)) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                    "apps" -> {
+                        navController.navigate(Screen.Apps.route) {
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            }
+            activity?.clearPendingDeepLink()
+        }
+    }
 
     // Drawer state - confirmStateChange handles swipe gestures synchronously
     val drawerState = rememberDrawerState(
@@ -381,13 +417,15 @@ fun ArgosyApp(
                     }
                 )
             } else {
-                // Navigate to home view
-                if (isDrawerOpen) closeDrawer()
-                if (isQuickSettingsOpen) closeQuickSettings()
-                if (quickMenuState.isVisible) closeQuickMenu()
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Home.route) { inclusive = true }
-                    launchSingleTop = true
+                // Navigate to home view (only if nav graph is ready)
+                if (navController.currentDestination != null) {
+                    if (isDrawerOpen) closeDrawer()
+                    if (isQuickSettingsOpen) closeQuickSettings()
+                    if (quickMenuState.isVisible) closeQuickMenu()
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
         }

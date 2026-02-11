@@ -28,7 +28,7 @@ typedef std::chrono::duration<long, std::micro> Duration;
 
 class FPSSync {
 public:
-    FPSSync(double contentRefreshRate, double screenRefreshRate);
+    FPSSync(double contentRefreshRate, double screenRefreshRate, bool forceSoftwareTiming = false);
     ~FPSSync() { }
 
     void reset();
@@ -42,6 +42,7 @@ private:
     double screenRefreshRate;
     double contentRefreshRate;
     bool useVSync;
+    bool forceSoftwareTiming;
     const double FPS_TOLERANCE = 5;
 
     const TimePoint MIN_TIME = TimePoint::min();

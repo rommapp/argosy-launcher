@@ -855,6 +855,10 @@ class SettingsInputHandler(
                             viewModel.setBuiltinLowLatencyAudio(!videoState.lowLatencyAudio)
                             return InputResult.handled(SoundType.TOGGLE)
                         }
+                        LibretroSettingDef.ForceSoftwareTiming -> {
+                            viewModel.setBuiltinForceSoftwareTiming(!videoState.forceSoftwareTiming)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
                         LibretroSettingDef.Frame -> {
                             viewModel.setBuiltinFramesEnabled(!videoState.framesEnabled)
                             return InputResult.handled(SoundType.TOGGLE)

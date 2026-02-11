@@ -730,6 +730,7 @@ class SettingsViewModel @Inject constructor(
                         rotation = builtinSettings.rotationDisplay,
                         overscanCrop = builtinSettings.overscanCropDisplay,
                         lowLatencyAudio = builtinSettings.lowLatencyAudio,
+                        forceSoftwareTiming = builtinSettings.forceSoftwareTiming,
                         rewindEnabled = builtinSettings.rewindEnabled
                     ),
                     builtinControls = BuiltinControlsState(
@@ -900,6 +901,15 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setBuiltinLowLatencyAudio(enabled)
             if (enabled) preferencesRepository.setBuiltinBlackFrameInsertion(false)
+        }
+    }
+
+    fun setBuiltinForceSoftwareTiming(enabled: Boolean) {
+        _uiState.update {
+            it.copy(builtinVideo = it.builtinVideo.copy(forceSoftwareTiming = enabled))
+        }
+        viewModelScope.launch {
+            preferencesRepository.setBuiltinForceSoftwareTiming(enabled)
         }
     }
 
@@ -1283,6 +1293,7 @@ class SettingsViewModel @Inject constructor(
                 LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = value?.toBooleanStrictOrNull())
                 LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = value?.toBooleanStrictOrNull())
                 LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = value?.toBooleanStrictOrNull())
+                LibretroSettingDef.ForceSoftwareTiming -> return@launch
             }
 
             if (updated.hasAnyOverrides()) {

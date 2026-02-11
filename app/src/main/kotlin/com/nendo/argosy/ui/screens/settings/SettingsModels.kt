@@ -266,6 +266,7 @@ data class BuiltinVideoState(
     val overscanCrop: String = "Off",
     val framesEnabled: Boolean = false,
     val lowLatencyAudio: Boolean = true,
+    val forceSoftwareTiming: Boolean = false,
     val rewindEnabled: Boolean = true,
     val platformContextIndex: Int = 0,
     val availablePlatforms: List<PlatformContext> = emptyList()

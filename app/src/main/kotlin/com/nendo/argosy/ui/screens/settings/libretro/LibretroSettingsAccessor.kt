@@ -44,6 +44,7 @@ class GlobalLibretroSettingsAccessor(
         LibretroSettingDef.RewindEnabled -> state.rewindEnabled.toString()
         LibretroSettingDef.SkipDuplicateFrames -> state.skipDuplicateFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> state.lowLatencyAudio.toString()
+        LibretroSettingDef.ForceSoftwareTiming -> state.forceSoftwareTiming.toString()
     }
 
     override fun hasOverride(setting: LibretroSettingDef): Boolean = false
@@ -129,6 +130,7 @@ class PlatformLibretroSettingsAccessor(
         LibretroSettingDef.RewindEnabled -> globalState.rewindEnabled.toString()
         LibretroSettingDef.SkipDuplicateFrames -> globalState.skipDuplicateFrames.toString()
         LibretroSettingDef.LowLatencyAudio -> globalState.lowLatencyAudio.toString()
+        LibretroSettingDef.ForceSoftwareTiming -> globalState.forceSoftwareTiming.toString()
     }
 
     override fun hasOverride(setting: LibretroSettingDef): Boolean {
@@ -178,6 +180,7 @@ class PlatformLibretroSettingsAccessor(
             LibretroSettingDef.RewindEnabled -> ps.rewindEnabled?.toString()
             LibretroSettingDef.SkipDuplicateFrames -> ps.skipDuplicateFrames?.toString()
             LibretroSettingDef.LowLatencyAudio -> ps.lowLatencyAudio?.toString()
+            LibretroSettingDef.ForceSoftwareTiming -> null
         }
     }
 

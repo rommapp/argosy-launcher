@@ -11,6 +11,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.screens.apps.AppsScreen
 import com.nendo.argosy.ui.screens.collections.CollectionDetailScreen
@@ -175,7 +176,10 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Apps.route) {
+        composable(
+            route = Screen.Apps.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "argosy://apps" })
+        ) {
             AppsScreen(
                 onBack = navigateToDefault,
                 onDrawerToggle = onDrawerToggle
@@ -208,7 +212,8 @@ fun NavGraph(
 
         composable(
             route = Screen.GameDetail.route,
-            arguments = listOf(navArgument("gameId") { type = NavType.LongType })
+            arguments = listOf(navArgument("gameId") { type = NavType.LongType }),
+            deepLinks = listOf(navDeepLink { uriPattern = "argosy://game/{gameId}" })
         ) { backStackEntry ->
             val gameId = backStackEntry.arguments?.getLong("gameId") ?: return@composable
             GameDetailScreen(

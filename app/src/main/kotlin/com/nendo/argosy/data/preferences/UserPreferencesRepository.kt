@@ -56,6 +56,7 @@ class UserPreferencesRepository @Inject constructor(
         val SYNC_SCREENSHOTS_ENABLED = booleanPreferencesKey("sync_screenshots_enabled")
 
         val HIDDEN_APPS = stringPreferencesKey("hidden_apps")
+        val SECONDARY_HOME_APPS = stringPreferencesKey("secondary_home_apps")
         val VISIBLE_SYSTEM_APPS = stringPreferencesKey("visible_system_apps")
         val APP_ORDER = stringPreferencesKey("app_order")
         val MAX_CONCURRENT_DOWNLOADS = intPreferencesKey("max_concurrent_downloads")
@@ -131,6 +132,7 @@ class UserPreferencesRepository @Inject constructor(
         val BUILTIN_ASPECT_RATIO = stringPreferencesKey("builtin_aspect_ratio")
         val BUILTIN_SKIP_DUPLICATE_FRAMES = booleanPreferencesKey("builtin_skip_duplicate_frames")
         val BUILTIN_LOW_LATENCY_AUDIO = booleanPreferencesKey("builtin_low_latency_audio")
+        val BUILTIN_FORCE_SOFTWARE_TIMING = booleanPreferencesKey("builtin_force_software_timing")
         val BUILTIN_RUMBLE_ENABLED = booleanPreferencesKey("builtin_rumble_enabled")
         val BUILTIN_BLACK_FRAME_INSERTION = booleanPreferencesKey("builtin_black_frame_insertion")
         val BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1 = booleanPreferencesKey("builtin_limit_hotkeys_to_player1")
@@ -201,6 +203,11 @@ class UserPreferencesRepository @Inject constructor(
             customBackgroundPath = prefs[Keys.CUSTOM_BACKGROUND_PATH],
             useAccentColorFooter = prefs[Keys.USE_ACCENT_COLOR_FOOTER] ?: false,
             hiddenApps = prefs[Keys.HIDDEN_APPS]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?.toSet()
+                ?: emptySet(),
+            secondaryHomeApps = prefs[Keys.SECONDARY_HOME_APPS]
                 ?.split(",")
                 ?.filter { it.isNotBlank() }
                 ?.toSet()
@@ -508,6 +515,16 @@ class UserPreferencesRepository @Inject constructor(
                 prefs.remove(Keys.HIDDEN_APPS)
             } else {
                 prefs[Keys.HIDDEN_APPS] = apps.joinToString(",")
+            }
+        }
+    }
+
+    suspend fun setSecondaryHomeApps(apps: Set<String>) {
+        dataStore.edit { prefs ->
+            if (apps.isEmpty()) {
+                prefs.remove(Keys.SECONDARY_HOME_APPS)
+            } else {
+                prefs[Keys.SECONDARY_HOME_APPS] = apps.joinToString(",")
             }
         }
     }
@@ -947,6 +964,12 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setBuiltinForceSoftwareTiming(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.BUILTIN_FORCE_SOFTWARE_TIMING] = enabled
+        }
+    }
+
     suspend fun setBuiltinRumbleEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.BUILTIN_RUMBLE_ENABLED] = enabled
@@ -997,6 +1020,7 @@ class UserPreferencesRepository @Inject constructor(
             aspectRatio = prefs[Keys.BUILTIN_ASPECT_RATIO] ?: "Core Provided",
             skipDuplicateFrames = prefs[Keys.BUILTIN_SKIP_DUPLICATE_FRAMES] ?: false,
             lowLatencyAudio = prefs[Keys.BUILTIN_LOW_LATENCY_AUDIO] ?: true,
+            forceSoftwareTiming = prefs[Keys.BUILTIN_FORCE_SOFTWARE_TIMING] ?: false,
             rumbleEnabled = prefs[Keys.BUILTIN_RUMBLE_ENABLED] ?: true,
             blackFrameInsertion = prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] ?: false,
             framesEnabled = prefs[Keys.BUILTIN_FRAMES_ENABLED] ?: false,
@@ -1163,6 +1187,7 @@ data class BuiltinEmulatorSettings(
     val aspectRatio: String = "Core Provided",
     val skipDuplicateFrames: Boolean = false,
     val lowLatencyAudio: Boolean = true,
+    val forceSoftwareTiming: Boolean = false,
     val rumbleEnabled: Boolean = true,
     val blackFrameInsertion: Boolean = false,
     val framesEnabled: Boolean = false,
@@ -1245,6 +1270,7 @@ data class UserPreferences(
     val syncFilters: SyncFilterPreferences = SyncFilterPreferences(),
     val syncScreenshotsEnabled: Boolean = false,
     val hiddenApps: Set<String> = emptySet(),
+    val secondaryHomeApps: Set<String> = emptySet(),
     val visibleSystemApps: Set<String> = emptySet(),
     val appOrder: List<String> = emptyList(),
     val maxConcurrentDownloads: Int = 1,

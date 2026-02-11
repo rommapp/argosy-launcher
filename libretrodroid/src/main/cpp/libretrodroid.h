@@ -91,6 +91,7 @@ public:
         const ShaderManager::Config& shaderConfig,
         float refreshRate,
         bool lowLatencyAudio,
+        bool forceSoftwareTiming,
         bool enableVirtualFileSystem,
         bool enableMicrophone,
         bool duplicateFrames,
@@ -177,6 +178,7 @@ private:
     unsigned int frameSpeed = 1;
     bool audioEnabled = true;
     bool preferLowLatencyAudio = false;
+    bool forceSoftwareTiming = false;
     bool rumbleEnabled = false;
 
     ShaderManager::Config fragmentShaderConfig = ShaderManager::Config {

@@ -40,12 +40,14 @@ data class AppUi(
     val label: String,
     val isHidden: Boolean = false,
     val isSystemApp: Boolean = false,
-    val isOnHome: Boolean = false
+    val isOnHome: Boolean = false,
+    val isOnSecondaryHome: Boolean = false
 )
 
 enum class AppContextMenuItem {
     APP_INFO,
     TOGGLE_HOME,
+    TOGGLE_SECONDARY_HOME,
     TOGGLE_VISIBILITY,
     UNINSTALL
 }
@@ -61,7 +63,8 @@ data class AppsUiState(
     val isReorderMode: Boolean = false,
     val isTouchMode: Boolean = false,
     val hasSelectedApp: Boolean = false,
-    val screenWidthDp: Int = 0
+    val screenWidthDp: Int = 0,
+    val hasSecondaryDisplay: Boolean = false
 ) {
     val columnsCount: Int
         get() {
@@ -81,12 +84,15 @@ data class AppsUiState(
         get() = apps.getOrNull(focusedIndex)
 
     val contextMenuItems: List<AppContextMenuItem>
-        get() = listOf(
-            AppContextMenuItem.APP_INFO,
-            AppContextMenuItem.TOGGLE_HOME,
-            AppContextMenuItem.TOGGLE_VISIBILITY,
-            AppContextMenuItem.UNINSTALL
-        )
+        get() = buildList {
+            add(AppContextMenuItem.APP_INFO)
+            add(AppContextMenuItem.TOGGLE_HOME)
+            if (hasSecondaryDisplay) {
+                add(AppContextMenuItem.TOGGLE_SECONDARY_HOME)
+            }
+            add(AppContextMenuItem.TOGGLE_VISIBILITY)
+            add(AppContextMenuItem.UNINSTALL)
+        }
 }
 
 sealed class AppsEvent {
@@ -116,10 +122,12 @@ class AppsViewModel @Inject constructor(
 
     private var hiddenApps: Set<String> = emptySet()
     private var visibleSystemApps: Set<String> = emptySet()
+    private var secondaryHomeApps: Set<String> = emptySet()
     private var customOrder: List<String> = emptyList()
     private var originalAppsBeforeReorder: List<AppUi> = emptyList()
 
     init {
+        _uiState.update { it.copy(hasSecondaryDisplay = displayAffinityHelper.hasSecondaryDisplay) }
         loadApps()
         observePackageChanges()
         observeGridDensity()
@@ -148,6 +156,7 @@ class AppsViewModel @Inject constructor(
             val prefs = preferencesRepository.preferences.first()
             hiddenApps = prefs.hiddenApps
             visibleSystemApps = prefs.visibleSystemApps
+            secondaryHomeApps = prefs.secondaryHomeApps
             customOrder = prefs.appOrder
 
             val showHidden = _uiState.value.showHiddenApps
@@ -169,7 +178,8 @@ class AppsViewModel @Inject constructor(
                         app.toUi(
                             isHidden = isHidden,
                             isSystemApp = app.isSystemApp,
-                            isOnHome = app.packageName in homePackages
+                            isOnHome = app.packageName in homePackages,
+                            isOnSecondaryHome = app.packageName in secondaryHomeApps
                         )
                     },
                     isLoading = false,
@@ -256,6 +266,9 @@ class AppsViewModel @Inject constructor(
             AppContextMenuItem.TOGGLE_HOME -> {
                 toggleHomeStatus(app.packageName, app.label, app.isOnHome)
             }
+            AppContextMenuItem.TOGGLE_SECONDARY_HOME -> {
+                toggleSecondaryHomeStatus(app.packageName, app.isOnSecondaryHome)
+            }
             AppContextMenuItem.TOGGLE_VISIBILITY -> {
                 toggleAppVisibility(app.packageName, app.isHidden, app.isSystemApp)
             }
@@ -326,6 +339,31 @@ class AppsViewModel @Inject constructor(
 
             soundManager.play(if (isCurrentlyOnHome) SoundType.UNFAVORITE else SoundType.FAVORITE)
             loadApps()
+        }
+    }
+
+    private fun toggleSecondaryHomeStatus(packageName: String, isCurrentlyOnSecondaryHome: Boolean) {
+        viewModelScope.launch {
+            val newSecondaryHomeApps = if (isCurrentlyOnSecondaryHome) {
+                secondaryHomeApps - packageName
+            } else {
+                secondaryHomeApps + packageName
+            }
+            preferencesRepository.setSecondaryHomeApps(newSecondaryHomeApps)
+            secondaryHomeApps = newSecondaryHomeApps
+            soundManager.play(if (isCurrentlyOnSecondaryHome) SoundType.UNFAVORITE else SoundType.FAVORITE)
+
+            _uiState.update { state ->
+                state.copy(
+                    apps = state.apps.map { app ->
+                        if (app.packageName == packageName) {
+                            app.copy(isOnSecondaryHome = !isCurrentlyOnSecondaryHome)
+                        } else {
+                            app
+                        }
+                    }
+                )
+            }
         }
     }
 
@@ -505,13 +543,15 @@ class AppsViewModel @Inject constructor(
     private fun InstalledApp.toUi(
         isHidden: Boolean = false,
         isSystemApp: Boolean = false,
-        isOnHome: Boolean = false
+        isOnHome: Boolean = false,
+        isOnSecondaryHome: Boolean = false
     ) = AppUi(
         packageName = packageName,
         label = label,
         isHidden = isHidden,
         isSystemApp = isSystemApp,
-        isOnHome = isOnHome
+        isOnHome = isOnHome,
+        isOnSecondaryHome = isOnSecondaryHome
     )
 
     fun createInputHandler(

@@ -94,6 +94,14 @@ sealed class LibretroSettingDef(
         type = SettingType.Switch
     )
 
+    data object ForceSoftwareTiming : LibretroSettingDef(
+        key = "forceSoftwareTiming",
+        section = "display",
+        title = "Force Software Timing",
+        subtitle = "Use CPU timing instead of VSync (fixes speed issues on some devices)",
+        type = SettingType.Switch
+    )
+
     companion object {
         val ALL: List<LibretroSettingDef> = listOf(
             Shader,
@@ -103,6 +111,7 @@ sealed class LibretroSettingDef(
             Rotation,
             OverscanCrop,
             BlackFrameInsertion,
+            ForceSoftwareTiming,
             FastForwardSpeed,
             RewindEnabled,
             SkipDuplicateFrames,

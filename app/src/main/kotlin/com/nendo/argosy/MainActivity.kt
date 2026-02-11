@@ -41,6 +41,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -97,6 +98,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (shouldYieldToEmulator()) {
+            Log.d(TAG, "Persisted session found - yielding to emulator")
+            moveTaskToBack(true)
+            return
+        }
+
         enableEdgeToEdge()
         hideSystemUI()
 
@@ -175,6 +183,15 @@ class MainActivity : ComponentActivity() {
             }
             startActivity(intent, options)
         }
+    }
+
+    private fun shouldYieldToEmulator(): Boolean {
+        if (intent.data != null || intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
+            return false
+        }
+        val session = runBlocking { preferencesRepository.getPersistedSession() } ?: return false
+        val permissionHelper = com.nendo.argosy.util.PermissionHelper()
+        return permissionHelper.isPackageInForeground(this, session.emulatorPackage, withinMs = 10_000)
     }
 
     override fun onNewIntent(intent: Intent) {

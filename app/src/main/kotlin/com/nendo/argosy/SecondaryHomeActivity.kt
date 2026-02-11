@@ -17,12 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeScreen
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.nendo.argosy.util.DisplayAffinityHelper
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,7 +33,7 @@ class SecondaryHomeActivity : ComponentActivity() {
     lateinit var displayAffinityHelper: DisplayAffinityHelper
 
     @Inject
-    lateinit var playSessionTracker: PlaySessionTracker
+    lateinit var preferencesRepository: UserPreferencesRepository
 
     private val viewModel: SecondaryHomeViewModel by viewModels()
 
@@ -44,6 +45,13 @@ class SecondaryHomeActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (shouldYieldToEmulator()) {
+            android.util.Log.d("SecondaryHomeActivity", "Persisted session found - yielding to emulator")
+            moveTaskToBack(true)
+            return
+        }
+
         enableEdgeToEdge()
         hideSystemUI()
 
@@ -157,24 +165,13 @@ class SecondaryHomeActivity : ComponentActivity() {
         super.onResume()
         if (justLaunchedOnPrimary) {
             justLaunchedOnPrimary = false
-            return
         }
-        bringPrimaryHomeToFront()
     }
 
-    private fun bringPrimaryHomeToFront() {
-        // Don't cover an active game/emulator on the primary display
-        if (playSessionTracker.activeSession.value != null) return
-
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
-            setPackage(packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        val options = displayAffinityHelper.getActivityOptions(forEmulator = true)
-        if (options != null) {
-            startActivity(intent, options)
-        }
+    private fun shouldYieldToEmulator(): Boolean {
+        val session = runBlocking { preferencesRepository.getPersistedSession() } ?: return false
+        val permissionHelper = com.nendo.argosy.util.PermissionHelper()
+        return permissionHelper.isPackageInForeground(this, session.emulatorPackage, withinMs = 10_000)
     }
 
     private fun hideSystemUI() {

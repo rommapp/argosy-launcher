@@ -20,16 +20,15 @@ class LaunchGameUseCase @Inject constructor(
     ): LaunchResult {
         val result = gameLauncher.launch(gameId, discId, forResume, selectedDiscPath)
         if (result is LaunchResult.Success) {
-            if (!forResume) {
-                val coreName = extractCoreName(result.intent)
-                playSessionTracker.startSession(
-                    gameId = gameId,
-                    emulatorPackage = result.intent.component?.packageName
-                        ?: result.intent.`package`
-                        ?: "",
-                    coreName = coreName
-                )
-            }
+            val coreName = extractCoreName(result.intent)
+            playSessionTracker.startSession(
+                gameId = gameId,
+                emulatorPackage = result.intent.component?.packageName
+                    ?: result.intent.`package`
+                    ?: "",
+                coreName = coreName,
+                isNewGame = !forResume
+            )
             launchRetryTracker.onLaunchStarted(result.intent)
         }
         return result

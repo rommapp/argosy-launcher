@@ -3609,7 +3609,7 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.ABOUT -> {
-                val appAffinityIndex = if (state.fileLoggingPath != null) 4 else 3
+                val hasLogPath = state.fileLoggingPath != null
                 when (state.focusedIndex) {
                     0 -> {
                         if (state.updateCheck.updateAvailable) {
@@ -3623,7 +3623,7 @@ class SettingsViewModel @Inject constructor(
                         return InputResult.handled(SoundType.TOGGLE)
                     }
                     2 -> {
-                        if (state.fileLoggingPath != null) {
+                        if (hasLogPath) {
                             toggleFileLogging(!state.fileLoggingEnabled)
                         } else {
                             openLogFolderPicker()
@@ -3631,16 +3631,24 @@ class SettingsViewModel @Inject constructor(
                         return InputResult.handled(SoundType.TOGGLE)
                     }
                     3 -> {
-                        if (state.fileLoggingPath != null) {
+                        if (hasLogPath) {
                             cycleFileLogLevel()
                         } else {
                             setAppAffinityEnabled(!state.appAffinityEnabled)
                             return InputResult.handled(SoundType.TOGGLE)
                         }
                     }
-                    appAffinityIndex -> {
-                        setAppAffinityEnabled(!state.appAffinityEnabled)
-                        return InputResult.handled(SoundType.TOGGLE)
+                    4 -> {
+                        if (hasLogPath) {
+                            setSaveDebugLoggingEnabled(!state.saveDebugLoggingEnabled)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
+                    }
+                    5 -> {
+                        if (hasLogPath) {
+                            setAppAffinityEnabled(!state.appAffinityEnabled)
+                            return InputResult.handled(SoundType.TOGGLE)
+                        }
                     }
                 }
                 InputResult.HANDLED

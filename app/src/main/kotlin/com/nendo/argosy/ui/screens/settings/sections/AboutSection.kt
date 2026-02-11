@@ -41,9 +41,9 @@ import com.nendo.argosy.ui.screens.settings.dialogs.LicensesDialog
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
-private data class AboutLayoutState(val hasLogPath: Boolean)
+internal data class AboutLayoutState(val hasLogPath: Boolean)
 
-private sealed class AboutItem(
+internal sealed class AboutItem(
     val key: String,
     val section: String,
     val visibleWhen: (AboutLayoutState) -> Boolean = { true }
@@ -91,6 +91,9 @@ private val aboutLayout = SettingsLayout<AboutItem, AboutLayoutState>(
 
 internal fun aboutMaxFocusIndex(hasLogPath: Boolean): Int =
     aboutLayout.maxFocusIndex(AboutLayoutState(hasLogPath))
+
+internal fun aboutItemAtFocusIndex(focusIndex: Int, hasLogPath: Boolean): AboutItem? =
+    aboutLayout.itemAtFocusIndex(focusIndex, AboutLayoutState(hasLogPath))
 
 @Composable
 fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {

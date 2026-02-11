@@ -8,6 +8,8 @@ import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.AboutItem
+import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
@@ -235,6 +237,14 @@ class SettingsInputHandler(
                 HomeScreenItem.Blur -> { viewModel.adjustBackgroundBlur(-SLIDER_STEP); return InputResult.HANDLED }
                 HomeScreenItem.Saturation -> { viewModel.adjustBackgroundSaturation(-SLIDER_STEP); return InputResult.HANDLED }
                 HomeScreenItem.Opacity -> { viewModel.adjustBackgroundOpacity(-SLIDER_STEP); return InputResult.HANDLED }
+                else -> {}
+            }
+        }
+
+        if (state.currentSection == SettingsSection.ABOUT) {
+            val hasLogPath = state.fileLoggingPath != null
+            when (aboutItemAtFocusIndex(state.focusedIndex, hasLogPath)) {
+                AboutItem.LogLevel -> { viewModel.cycleFileLogLevel(-1); return InputResult.HANDLED }
                 else -> {}
             }
         }
@@ -477,6 +487,14 @@ class SettingsInputHandler(
                 HomeScreenItem.Blur -> { viewModel.adjustBackgroundBlur(SLIDER_STEP); return InputResult.HANDLED }
                 HomeScreenItem.Saturation -> { viewModel.adjustBackgroundSaturation(SLIDER_STEP); return InputResult.HANDLED }
                 HomeScreenItem.Opacity -> { viewModel.adjustBackgroundOpacity(SLIDER_STEP); return InputResult.HANDLED }
+                else -> {}
+            }
+        }
+
+        if (state.currentSection == SettingsSection.ABOUT) {
+            val hasLogPath = state.fileLoggingPath != null
+            when (aboutItemAtFocusIndex(state.focusedIndex, hasLogPath)) {
+                AboutItem.LogLevel -> { viewModel.cycleFileLogLevel(1); return InputResult.HANDLED }
                 else -> {}
             }
         }

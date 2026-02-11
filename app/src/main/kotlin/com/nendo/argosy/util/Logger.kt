@@ -220,6 +220,7 @@ enum class LogLevel {
     ERROR;
 
     fun next(): LogLevel = entries[(ordinal + 1).mod(entries.size)]
+    fun prev(): LogLevel = entries[(ordinal - 1).mod(entries.size)]
 
     companion object {
         fun fromString(value: String?): LogLevel =

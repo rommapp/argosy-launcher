@@ -71,6 +71,8 @@ import com.nendo.argosy.ui.screens.settings.delegates.SoundSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.sections.AboutItem
+import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
@@ -3038,9 +3040,10 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(fileLogLevel = level) }
     }
 
-    fun cycleFileLogLevel() {
+    fun cycleFileLogLevel(direction: Int = 1) {
         val currentLevel = _uiState.value.fileLogLevel
-        setFileLogLevel(currentLevel.next())
+        val newLevel = if (direction > 0) currentLevel.next() else currentLevel.prev()
+        setFileLogLevel(newLevel)
     }
 
     fun setSaveDebugLoggingEnabled(enabled: Boolean) {
@@ -3610,19 +3613,19 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsSection.ABOUT -> {
                 val hasLogPath = state.fileLoggingPath != null
-                when (state.focusedIndex) {
-                    0 -> {
+                when (aboutItemAtFocusIndex(state.focusedIndex, hasLogPath)) {
+                    AboutItem.CheckUpdates -> {
                         if (state.updateCheck.updateAvailable) {
                             viewModelScope.launch { _downloadUpdateEvent.emit(Unit) }
                         } else {
                             checkForUpdates()
                         }
                     }
-                    1 -> {
+                    AboutItem.BetaUpdates -> {
                         setBetaUpdatesEnabled(!state.betaUpdatesEnabled)
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    2 -> {
+                    AboutItem.FileLogging -> {
                         if (hasLogPath) {
                             toggleFileLogging(!state.fileLoggingEnabled)
                         } else {
@@ -3630,26 +3633,18 @@ class SettingsViewModel @Inject constructor(
                         }
                         return InputResult.handled(SoundType.TOGGLE)
                     }
-                    3 -> {
-                        if (hasLogPath) {
-                            cycleFileLogLevel()
-                        } else {
-                            setAppAffinityEnabled(!state.appAffinityEnabled)
-                            return InputResult.handled(SoundType.TOGGLE)
-                        }
+                    AboutItem.LogLevel -> {
+                        cycleFileLogLevel()
                     }
-                    4 -> {
-                        if (hasLogPath) {
-                            setSaveDebugLoggingEnabled(!state.saveDebugLoggingEnabled)
-                            return InputResult.handled(SoundType.TOGGLE)
-                        }
+                    AboutItem.SaveDebugLogging -> {
+                        setSaveDebugLoggingEnabled(!state.saveDebugLoggingEnabled)
+                        return InputResult.handled(SoundType.TOGGLE)
                     }
-                    5 -> {
-                        if (hasLogPath) {
-                            setAppAffinityEnabled(!state.appAffinityEnabled)
-                            return InputResult.handled(SoundType.TOGGLE)
-                        }
+                    AboutItem.AppAffinity -> {
+                        setAppAffinityEnabled(!state.appAffinityEnabled)
+                        return InputResult.handled(SoundType.TOGGLE)
                     }
+                    else -> {}
                 }
                 InputResult.HANDLED
             }

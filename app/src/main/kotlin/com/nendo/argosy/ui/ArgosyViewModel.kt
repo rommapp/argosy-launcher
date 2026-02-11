@@ -465,12 +465,14 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private fun getInitialPrimaryBrightness(): Float {
-        return brightnessController.getBrightness().primary ?: 0.5f
+        return brightnessController.getBrightness().primary
+            ?: brightnessController.getSystemBrightnessSync()
+            ?: 0.5f
     }
 
     private fun getInitialSecondaryBrightness(): Float? {
         if (!brightnessController.isMultiDisplaySupported) return null
-        return brightnessController.getBrightness().secondary ?: 0.5f
+        return brightnessController.getBrightness().secondary
     }
 
     private data class AudioVisualState(

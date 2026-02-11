@@ -54,7 +54,9 @@ class BrightnessController @Inject constructor(
         }
     }
 
-    private fun getSystemBrightness(): Float? {
+    private fun getSystemBrightness(): Float? = getSystemBrightnessSync()
+
+    fun getSystemBrightnessSync(): Float? {
         return try {
             val brightness = Settings.System.getInt(
                 context.contentResolver,

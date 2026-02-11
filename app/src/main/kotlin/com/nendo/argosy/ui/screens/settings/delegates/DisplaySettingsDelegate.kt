@@ -341,6 +341,14 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun cycleGlowColorMode(scope: CoroutineScope, direction: Int = 1) {
+        val next = cycleEnum(_state.value.glowColorMode, direction)
+        scope.launch {
+            preferencesRepository.setGlowColorMode(next)
+            _state.update { it.copy(glowColorMode = next) }
+        }
+    }
+
     fun cycleSystemIconPosition(scope: CoroutineScope, direction: Int = 1) {
         val next = cycleEnum(_state.value.systemIconPosition, direction)
         scope.launch {

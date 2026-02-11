@@ -20,6 +20,7 @@ import com.nendo.argosy.data.preferences.GlassBorderTint
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
+import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
@@ -157,6 +158,7 @@ data class DisplayState(
     val boxArtGlowStrength: BoxArtGlowStrength = BoxArtGlowStrength.MEDIUM,
     val boxArtOuterEffect: BoxArtOuterEffect = BoxArtOuterEffect.GLOW,
     val boxArtOuterEffectThickness: BoxArtOuterEffectThickness = BoxArtOuterEffectThickness.MEDIUM,
+    val glowColorMode: GlowColorMode = GlowColorMode.AUTO,
     val boxArtInnerEffect: BoxArtInnerEffect = BoxArtInnerEffect.SHADOW,
     val boxArtInnerEffectThickness: BoxArtInnerEffectThickness = BoxArtInnerEffectThickness.MEDIUM,
     val gradientPreset: GradientPreset = GradientPreset.BALANCED,

@@ -102,6 +102,7 @@ import kotlinx.coroutines.launch
 fun GameDetailScreen(
     gameId: Long,
     onBack: () -> Unit,
+    onNavigateToLaunch: (gameId: Long, channelName: String?, discId: Long?) -> Unit = { _, _, _ -> },
     viewModel: GameDetailViewModel = hiltViewModel(),
     argosyViewModel: ArgosyViewModel = hiltViewModel()
 ) {
@@ -134,13 +135,13 @@ fun GameDetailScreen(
     LaunchedEffect(Unit) {
         viewModel.launchEvents.collectLatest { event ->
             when (event) {
-                is LaunchEvent.Launch -> {
+                is LaunchEvent.NavigateToLaunch -> {
+                    onNavigateToLaunch(event.gameId, event.channelName, event.discId)
+                }
+                is LaunchEvent.LaunchIntent -> {
                     try {
-                        android.util.Log.d("GameDetailScreen", "Starting activity: ${event.intent}")
                         context.startActivity(event.intent)
-                        android.util.Log.d("GameDetailScreen", "Activity started successfully")
                     } catch (e: Exception) {
-                        android.util.Log.e("GameDetailScreen", "Failed to start activity", e)
                         viewModel.showLaunchError("Failed to launch: ${e.message}")
                     }
                 }

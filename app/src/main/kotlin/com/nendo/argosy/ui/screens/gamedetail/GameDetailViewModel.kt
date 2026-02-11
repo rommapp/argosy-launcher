@@ -302,7 +302,7 @@ class GameDetailViewModel @Inject constructor(
                 when (result) {
                     is LaunchResult.Success -> {
                         soundManager.play(SoundType.LAUNCH_GAME)
-                        _launchEvents.emit(LaunchEvent.Launch(result.intent))
+                        _launchEvents.emit(LaunchEvent.LaunchIntent(result.intent))
                     }
                     is LaunchResult.Error -> {
                         notificationManager.showError(result.message)
@@ -1025,6 +1025,8 @@ class GameDetailViewModel @Inject constructor(
 
     fun onResume() {
         if (gameLaunchDelegate.isSyncing) return
+        // Fallback session end handling in case Android killed Argosy while emulator was running
+        // (normal flow goes through LaunchScreen, but if app was killed, user returns here directly)
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
     }
 
@@ -1099,10 +1101,8 @@ class GameDetailViewModel @Inject constructor(
                 else -> { /* Permission granted, continue */ }
             }
 
-            // Delegate handles: resume check, sync, launch, all error cases
-            gameLaunchDelegate.launchGame(viewModelScope, currentGameId, discId) { intent ->
-                viewModelScope.launch { _launchEvents.emit(LaunchEvent.Launch(intent)) }
-            }
+            // Navigate to LaunchScreen which handles: resume check, sync, launch, session end
+            _launchEvents.emit(LaunchEvent.NavigateToLaunch(currentGameId, discId = discId))
         }
     }
 
@@ -1238,7 +1238,7 @@ class GameDetailViewModel @Inject constructor(
                     putExtra(com.nendo.argosy.libretro.LaunchMode.EXTRA_LAUNCH_MODE, launchMode.name)
                 }
                 soundManager.play(SoundType.LAUNCH_GAME)
-                _launchEvents.emit(LaunchEvent.Launch(intentWithMode))
+                _launchEvents.emit(LaunchEvent.LaunchIntent(intentWithMode))
             }
             is LaunchResult.SelectDisc -> {
                 pickerModalDelegate.showDiscPicker(result.discs)
@@ -1845,7 +1845,7 @@ class GameDetailViewModel @Inject constructor(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         viewModelScope.launch {
-            _launchEvents.emit(LaunchEvent.Launch(intent))
+            _launchEvents.emit(LaunchEvent.LaunchIntent(intent))
         }
     }
 

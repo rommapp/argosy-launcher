@@ -14,6 +14,7 @@ import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
+import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
@@ -43,6 +44,7 @@ data class ThemeState(
     val boxArtGlowStrength: BoxArtGlowStrength = BoxArtGlowStrength.MEDIUM,
     val boxArtOuterEffect: BoxArtOuterEffect = BoxArtOuterEffect.GLOW,
     val boxArtOuterEffectThickness: BoxArtOuterEffectThickness = BoxArtOuterEffectThickness.MEDIUM,
+    val glowColorMode: GlowColorMode = GlowColorMode.AUTO,
     val boxArtInnerEffect: BoxArtInnerEffect = BoxArtInnerEffect.SHADOW,
     val boxArtInnerEffectThickness: BoxArtInnerEffectThickness = BoxArtInnerEffectThickness.MEDIUM,
     val gradientPreset: GradientPreset = GradientPreset.BALANCED,
@@ -88,6 +90,7 @@ class ThemeViewModel @Inject constructor(
                 boxArtGlowStrength = prefs.boxArtGlowStrength,
                 boxArtOuterEffect = prefs.boxArtOuterEffect,
                 boxArtOuterEffectThickness = prefs.boxArtOuterEffectThickness,
+                glowColorMode = prefs.glowColorMode,
                 boxArtInnerEffect = prefs.boxArtInnerEffect,
                 boxArtInnerEffectThickness = prefs.boxArtInnerEffectThickness,
                 gradientPreset = prefs.gradientPreset,

@@ -123,6 +123,7 @@ import kotlinx.coroutines.delay
 fun LibraryScreen(
     isDefaultView: Boolean,
     onGameSelect: (Long) -> Unit,
+    onNavigateToLaunch: (gameId: Long, channelName: String?) -> Unit,
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     initialPlatformId: Long? = null,
@@ -219,7 +220,10 @@ fun LibraryScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is LibraryEvent.LaunchGame -> {
+                is LibraryEvent.NavigateToLaunch -> {
+                    onNavigateToLaunch(event.gameId, event.channelName)
+                }
+                is LibraryEvent.LaunchIntent -> {
                     try {
                         context.startActivity(event.intent)
                     } catch (e: Exception) {

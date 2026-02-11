@@ -89,6 +89,7 @@ class UserPreferencesRepository @Inject constructor(
         val BOX_ART_GLOW_STRENGTH = stringPreferencesKey("box_art_glow_strength")
         val BOX_ART_OUTER_EFFECT = stringPreferencesKey("box_art_outer_effect")
         val BOX_ART_OUTER_EFFECT_THICKNESS = stringPreferencesKey("box_art_outer_effect_thickness")
+        val GLOW_COLOR_MODE = stringPreferencesKey("glow_color_mode")
         val BOX_ART_INNER_EFFECT = stringPreferencesKey("box_art_inner_effect")
         val BOX_ART_INNER_EFFECT_THICKNESS = stringPreferencesKey("box_art_inner_effect_thickness")
         val GRADIENT_PRESET = stringPreferencesKey("gradient_preset")
@@ -244,6 +245,7 @@ class UserPreferencesRepository @Inject constructor(
             boxArtGlowStrength = BoxArtGlowStrength.fromString(prefs[Keys.BOX_ART_GLOW_STRENGTH]),
             boxArtOuterEffect = BoxArtOuterEffect.fromString(prefs[Keys.BOX_ART_OUTER_EFFECT]),
             boxArtOuterEffectThickness = BoxArtOuterEffectThickness.fromString(prefs[Keys.BOX_ART_OUTER_EFFECT_THICKNESS]),
+            glowColorMode = GlowColorMode.fromString(prefs[Keys.GLOW_COLOR_MODE]),
             boxArtInnerEffect = BoxArtInnerEffect.fromString(prefs[Keys.BOX_ART_INNER_EFFECT]),
             boxArtInnerEffectThickness = BoxArtInnerEffectThickness.fromString(prefs[Keys.BOX_ART_INNER_EFFECT_THICKNESS]),
             gradientPreset = GradientPreset.fromString(prefs[Keys.GRADIENT_PRESET]),
@@ -729,6 +731,12 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setBoxArtOuterEffectThickness(thickness: BoxArtOuterEffectThickness) {
         dataStore.edit { prefs ->
             prefs[Keys.BOX_ART_OUTER_EFFECT_THICKNESS] = thickness.name
+        }
+    }
+
+    suspend fun setGlowColorMode(mode: GlowColorMode) {
+        dataStore.edit { prefs ->
+            prefs[Keys.GLOW_COLOR_MODE] = mode.name
         }
     }
 
@@ -1309,6 +1317,7 @@ data class UserPreferences(
     val boxArtGlowStrength: BoxArtGlowStrength = BoxArtGlowStrength.MEDIUM,
     val boxArtOuterEffect: BoxArtOuterEffect = BoxArtOuterEffect.GLOW,
     val boxArtOuterEffectThickness: BoxArtOuterEffectThickness = BoxArtOuterEffectThickness.THIN,
+    val glowColorMode: GlowColorMode = GlowColorMode.AUTO,
     val boxArtInnerEffect: BoxArtInnerEffect = BoxArtInnerEffect.GLASS,
     val boxArtInnerEffectThickness: BoxArtInnerEffectThickness = BoxArtInnerEffectThickness.THICK,
     val gradientPreset: GradientPreset = GradientPreset.BALANCED,
@@ -1479,6 +1488,15 @@ enum class BoxArtOuterEffectThickness(val px: Float) {
     companion object {
         fun fromString(value: String?): BoxArtOuterEffectThickness =
             entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+enum class GlowColorMode {
+    AUTO, ACCENT, ACCENT_GRADIENT, COVER;
+
+    companion object {
+        fun fromString(value: String?): GlowColorMode =
+            entries.find { it.name == value } ?: AUTO
     }
 }
 

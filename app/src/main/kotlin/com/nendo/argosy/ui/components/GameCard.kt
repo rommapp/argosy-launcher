@@ -82,6 +82,7 @@ import java.io.File
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
+import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -110,8 +111,23 @@ fun GameCard(
     val boxArtStyle = LocalBoxArtStyle.current
     val isDarkTheme = isSystemInDarkTheme()
     val effectiveCoverPath = coverPathOverride ?: game.coverPath
-    val gradientColorsForGlow = game.gradientColors
-    val useGradientGlow = boxArtStyle.borderStyle == BoxArtBorderStyle.GRADIENT && gradientColorsForGlow != null
+    val coverGradientColors = game.gradientColors
+
+    val glowColorMode = boxArtStyle.glowColorMode
+    val glowGradientColors: Pair<Color, Color>? = when (glowColorMode) {
+        GlowColorMode.AUTO -> {
+            if (boxArtStyle.borderStyle == BoxArtBorderStyle.GRADIENT && coverGradientColors != null) {
+                coverGradientColors
+            } else null
+        }
+        GlowColorMode.ACCENT -> null
+        GlowColorMode.ACCENT_GRADIENT -> {
+            val accent = boxArtStyle.accentColor
+            val secondary = boxArtStyle.secondaryColor
+            if (accent != null && secondary != null) Pair(accent, secondary) else null
+        }
+        GlowColorMode.COVER -> coverGradientColors
+    }
 
     val scale by animateFloatAsState(
         targetValue = scaleOverride ?: if (isFocused) focusScale else Motion.scaleDefault,
@@ -138,7 +154,7 @@ fun GameCard(
     val outerEffectRadius = boxArtStyle.outerEffectThicknessPx
     val showOuterEffect = isFocused && outerEffect != BoxArtOuterEffect.OFF
 
-    val glowColor = themeConfig.focusGlowColor
+    val glowColor = boxArtStyle.accentColor ?: themeConfig.focusGlowColor
     val borderColor = MaterialTheme.colorScheme.primary
     val shape = RoundedCornerShape(boxArtStyle.cornerRadiusDp)
 
@@ -178,12 +194,12 @@ fun GameCard(
                                             outerEffectRadius,
                                             android.graphics.BlurMaskFilter.Blur.NORMAL
                                         )
-                                        if (useGradientGlow && gradientColorsForGlow != null) {
+                                        if (glowGradientColors != null) {
                                             shader = android.graphics.LinearGradient(
                                                 0f, 0f,
                                                 0f, size.height,
-                                                gradientColorsForGlow.first.copy(alpha = glowAlpha).toArgb(),
-                                                gradientColorsForGlow.second.copy(alpha = glowAlpha).toArgb(),
+                                                glowGradientColors.first.copy(alpha = glowAlpha).toArgb(),
+                                                glowGradientColors.second.copy(alpha = glowAlpha).toArgb(),
                                                 android.graphics.Shader.TileMode.CLAMP
                                             )
                                         } else {

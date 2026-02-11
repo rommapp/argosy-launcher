@@ -320,7 +320,11 @@ data class HomeUiState(
 }
 
 sealed class HomeEvent {
-    data class LaunchGame(val intent: Intent) : HomeEvent()
+    data class NavigateToLaunch(
+        val gameId: Long,
+        val channelName: String? = null
+    ) : HomeEvent()
+    data class LaunchIntent(val intent: Intent) : HomeEvent()
     data class NavigateToLibrary(
         val platformId: Long? = null,
         val sourceFilter: String? = null
@@ -361,7 +365,8 @@ class HomeViewModel @Inject constructor(
     private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     private val gradientExtractionDelegate: GradientExtractionDelegate,
     private val ambientLedManager: AmbientLedManager,
-    private val ambientAudioManager: AmbientAudioManager
+    private val ambientAudioManager: AmbientAudioManager,
+    private val imagePrefetchManager: com.nendo.argosy.ui.util.ImagePrefetchManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -375,6 +380,7 @@ class HomeViewModel @Inject constructor(
     private val loadViewDebounceMs = 150L
     private var achievementPrefetchJob: kotlinx.coroutines.Job? = null
     private val achievementPrefetchDebounceMs = 300L
+    private var backgroundPrefetchJob: kotlinx.coroutines.Job? = null
 
     private val recentGamesCache = AtomicReference(RecentGamesCache(null, 0L))
     private val _pinnedGamesLoading = MutableStateFlow<Set<Long>>(emptySet())
@@ -396,7 +402,6 @@ class HomeViewModel @Inject constructor(
         observeRecentlyPlayedChanges()
         observeFocusedGameForLed()
         observeCollectionModal()
-        observeGradientChanges()
     }
 
     private fun resetMenus() {
@@ -411,10 +416,9 @@ class HomeViewModel @Inject constructor(
                 if (focusedGame != null && focusedGame.id != previousGameId) {
                     previousGameId = focusedGame.id
                     ambientLedManager.setContext(AmbientLedContext.GAME_HOVER)
-                    val primary = focusedGame.gradientColors?.first
-                    val secondary = focusedGame.gradientColors?.second
-                    if (primary != null) {
-                        ambientLedManager.setHoverColors(primary, secondary)
+                    val colors = gradientExtractionDelegate.getGradient(focusedGame.id)
+                    if (colors != null) {
+                        ambientLedManager.setHoverColors(colors.first, colors.second)
                     } else {
                         ambientLedManager.clearHoverColors()
                     }
@@ -671,58 +675,6 @@ class HomeViewModel @Inject constructor(
 
         val requests = games.map { GameGradientRequest(it.id, it.coverPath) }
         gradientExtractionDelegate.extractForVisibleGames(viewModelScope, requests, focusedIndex)
-    }
-
-    private fun observeGradientChanges() {
-        viewModelScope.launch {
-            gradientExtractionDelegate.gradients.collect { gradients ->
-                if (gradients.isEmpty()) return@collect
-                applyExtractedGradientsToState(gradients)
-            }
-        }
-    }
-
-    private fun applyExtractedGradientsToState(gradients: Map<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>) {
-        _uiState.update { state ->
-            state.copy(
-                recentGames = state.recentGames.map { game ->
-                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
-                },
-                favoriteGames = state.favoriteGames.map { game ->
-                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
-                },
-                recommendedGames = state.recommendedGames.map { game ->
-                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
-                },
-                androidGames = state.androidGames.map { game ->
-                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
-                },
-                steamGames = state.steamGames.map { game ->
-                    gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
-                },
-                platformItems = state.platformItems.map { item ->
-                    when (item) {
-                        is HomeRowItem.Game -> {
-                            val colors = gradients[item.game.id]
-                            if (colors != null) HomeRowItem.Game(item.game.copy(gradientColors = colors)) else item
-                        }
-                        is HomeRowItem.ViewAll -> item
-                    }
-                },
-                pinnedGames = state.pinnedGames.mapValues { (_, games) ->
-                    games.map { game ->
-                        gradients[game.id]?.let { colors -> game.copy(gradientColors = colors) } ?: game
-                    }
-                }
-            )
-        }
-        updateHoverColorsForFocusedGame()
-    }
-
-    private fun updateHoverColorsForFocusedGame() {
-        val focusedGame = _uiState.value.focusedGame ?: return
-        val colors = gradientExtractionDelegate.getGradient(focusedGame.id) ?: return
-        ambientLedManager.setHoverColors(colors.first, colors.second)
     }
 
     fun extractGradientForGame(gameId: Long, coverPath: String) {
@@ -1102,6 +1054,8 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onResume() {
+        // Fallback session end handling in case Android killed Argosy while emulator was running
+        // (normal flow goes through LaunchScreen, but if app was killed, user returns here directly)
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
         invalidateRecentGamesCache()
 
@@ -1343,6 +1297,7 @@ class HomeViewModel @Inject constructor(
         }
         saveCurrentState()
         prefetchAchievementsDebounced()
+        prefetchAdjacentBackgrounds(_uiState.value.focusedGameIndex)
         extractGradientsForVisibleGames(_uiState.value.focusedGameIndex)
         return true
     }
@@ -1357,6 +1312,7 @@ class HomeViewModel @Inject constructor(
         }
         saveCurrentState()
         prefetchAchievementsDebounced()
+        prefetchAdjacentBackgrounds(_uiState.value.focusedGameIndex)
         extractGradientsForVisibleGames(_uiState.value.focusedGameIndex)
         return true
     }
@@ -1369,6 +1325,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun prefetchAdjacentBackgrounds(focusedIndex: Int) {
+        backgroundPrefetchJob?.cancel()
+        backgroundPrefetchJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            kotlinx.coroutines.delay(200)
+            val games = _uiState.value.currentItems.filterIsInstance<HomeRowItem.Game>()
+            val paths = listOf(focusedIndex - 1, focusedIndex + 1, focusedIndex + 2)
+                .filter { it in games.indices }
+                .mapNotNull { games[it].game.backgroundPath }
+            imagePrefetchManager.prefetchBackgrounds(paths)
+        }
+    }
+
     fun setFocusIndex(index: Int) {
         val state = _uiState.value
         if (index < 0 || index >= state.currentItems.size) return
@@ -1377,6 +1345,7 @@ class HomeViewModel @Inject constructor(
         soundManager.play(SoundType.NAVIGATE)
         saveCurrentState()
         prefetchAchievementsDebounced()
+        prefetchAdjacentBackgrounds(index)
         extractGradientsForVisibleGames(index)
     }
 
@@ -1641,7 +1610,7 @@ class HomeViewModel @Inject constructor(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         viewModelScope.launch {
-            _events.emit(HomeEvent.LaunchGame(intent))
+            _events.emit(HomeEvent.LaunchIntent(intent))
         }
     }
 
@@ -1808,11 +1777,11 @@ class HomeViewModel @Inject constructor(
         downloadManager.resumeDownload(gameId)
     }
 
-    fun launchGame(gameId: Long) {
+    fun launchGame(gameId: Long, channelName: String? = null) {
         deactivateVideoPreview()
         saveCurrentState()
-        gameLaunchDelegate.launchGame(viewModelScope, gameId) { intent ->
-            viewModelScope.launch { _events.emit(HomeEvent.LaunchGame(intent)) }
+        viewModelScope.launch {
+            _events.emit(HomeEvent.NavigateToLaunch(gameId, channelName))
         }
     }
 

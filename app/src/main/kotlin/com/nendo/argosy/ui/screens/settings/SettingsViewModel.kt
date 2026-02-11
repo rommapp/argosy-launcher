@@ -565,6 +565,7 @@ class SettingsViewModel @Inject constructor(
                 boxArtGlowStrength = prefs.boxArtGlowStrength,
                 boxArtOuterEffect = prefs.boxArtOuterEffect,
                 boxArtOuterEffectThickness = prefs.boxArtOuterEffectThickness,
+                glowColorMode = prefs.glowColorMode,
                 boxArtInnerEffect = prefs.boxArtInnerEffect,
                 boxArtInnerEffectThickness = prefs.boxArtInnerEffectThickness,
                 gradientPreset = prefs.gradientPreset,
@@ -2160,6 +2161,10 @@ class SettingsViewModel @Inject constructor(
 
     fun cycleBoxArtOuterEffectThickness(direction: Int = 1) {
         displayDelegate.cycleBoxArtOuterEffectThickness(viewModelScope, direction)
+    }
+
+    fun cycleGlowColorMode(direction: Int = 1) {
+        displayDelegate.cycleGlowColorMode(viewModelScope, direction)
     }
 
     fun cycleSystemIconPosition(direction: Int = 1) {

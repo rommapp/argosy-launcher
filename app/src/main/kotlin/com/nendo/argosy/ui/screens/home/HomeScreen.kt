@@ -82,9 +82,10 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -130,6 +131,7 @@ fun HomeScreen(
     isDefaultView: Boolean,
     onGameSelect: (Long) -> Unit,
     onNavigateToLibrary: (platformId: Long?, sourceFilter: String?) -> Unit = { _, _ -> },
+    onNavigateToLaunch: (gameId: Long, channelName: String?) -> Unit,
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     onChangelogAction: (RequiredAction) -> Unit = {},
@@ -197,12 +199,13 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is HomeEvent.LaunchGame -> {
+                is HomeEvent.NavigateToLaunch -> {
+                    onNavigateToLaunch(event.gameId, event.channelName)
+                }
+                is HomeEvent.LaunchIntent -> {
                     try {
                         context.startActivity(event.intent)
-                    } catch (e: Exception) {
-                        viewModel.showLaunchError("Failed to launch: ${e.message}")
-                    }
+                    } catch (_: Exception) { }
                 }
                 is HomeEvent.NavigateToLibrary -> {
                     onNavigateToLibrary(event.platformId, event.sourceFilter)
@@ -448,6 +451,12 @@ fun HomeScreen(
     val overlayAlphaTop = 0.3f + (1f - opacityFraction) * 0.4f
     val overlayAlphaBottom = 0.7f + (1f - opacityFraction) * 0.3f
 
+    val saturationMatrix = remember(saturationFraction) {
+        androidx.compose.ui.graphics.ColorMatrix().apply {
+            setToSaturation(saturationFraction)
+        }
+    }
+
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayBaseColor = if (isDarkTheme) Color.Black else Color.White
 
@@ -474,7 +483,7 @@ fun HomeScreen(
             SplashOverlay()
         } else {
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -497,18 +506,16 @@ fun HomeScreen(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(imageData)
                                 .size(640, 360)
-                                .crossfade(300)
                                 .build(),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
-                                androidx.compose.ui.graphics.ColorMatrix().apply {
-                                    setToSaturation(saturationFraction)
-                                }
-                            ),
+                            colorFilter = ColorFilter.colorMatrix(saturationMatrix),
                             modifier = Modifier
                                 .fillMaxSize()
-                                .blur(backgroundBlurDp)
+                                .let {
+                                    val totalBlur = backgroundBlurDp + combinedBlur
+                                    if (totalBlur > 0.dp) it.blur(totalBlur) else it
+                                }
                         )
                     }
                     Box(

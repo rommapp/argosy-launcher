@@ -3,6 +3,7 @@ package com.nendo.argosy.ui
 import android.app.Application
 import android.content.Context
 import android.database.ContentObserver
+import android.hardware.input.InputManager
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
@@ -143,13 +144,20 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
+    private val inputManager = application.getSystemService(Context.INPUT_SERVICE) as InputManager
+    private val inputDeviceListener = object : InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) = refreshControllerDetection()
+        override fun onInputDeviceChanged(deviceId: Int) = refreshControllerDetection()
+        override fun onInputDeviceRemoved(deviceId: Int) = refreshControllerDetection()
+    }
+
     init {
         downloadNotificationObserver.observe(viewModelScope)
         syncNotificationObserver.observe(viewModelScope)
         scheduleStartupTasks()
         observeFeedbackSettings(preferencesRepository)
         downloadManager.clearCompleted()
-        startControllerDetectionPolling()
+        initControllerDetection()
         observeSaveConflicts()
         observeBackgroundSyncConflicts()
         observeConnectionForSync()
@@ -159,6 +167,7 @@ class ArgosyViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         application.contentResolver.unregisterContentObserver(settingsObserver)
+        inputManager.unregisterInputDeviceListener(inputDeviceListener)
     }
 
     private fun registerSettingsObserver() {
@@ -211,16 +220,19 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
-    private fun startControllerDetectionPolling() {
-        viewModelScope.launch {
-            while (true) {
-                delay(1000)
-                val result = ControllerDetector.detectFromActiveGamepad()
-                android.util.Log.d("ArgosyVM", "Polling: layout=${result.layout}, device=${result.deviceName}, current=${_detectedLayout.value}")
-                if (_detectedLayout.value != result.layout) {
-                    android.util.Log.d("ArgosyVM", "Layout changed: ${_detectedLayout.value} -> ${result.layout}")
-                    _detectedLayout.value = result.layout
-                }
+    private fun initControllerDetection() {
+        // One-time detection at startup
+        refreshControllerDetection()
+        // Register listener for device changes (connect/disconnect/mode change)
+        inputManager.registerInputDeviceListener(inputDeviceListener, null)
+    }
+
+    fun refreshControllerDetection() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val result = ControllerDetector.detectFromActiveGamepad()
+            if (_detectedLayout.value != result.layout) {
+                Log.d("ArgosyVM", "Layout changed: ${_detectedLayout.value} -> ${result.layout} (${result.source})")
+                _detectedLayout.value = result.layout
             }
         }
     }
@@ -275,10 +287,6 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private val _detectedLayout = MutableStateFlow(ControllerDetector.detectFromActiveGamepad().layout)
-
-    fun refreshControllerDetection() {
-        _detectedLayout.value = ControllerDetector.detectFromActiveGamepad().layout
-    }
 
     val uiState: StateFlow<ArgosyUiState> = combine(
         preferencesRepository.userPreferences,

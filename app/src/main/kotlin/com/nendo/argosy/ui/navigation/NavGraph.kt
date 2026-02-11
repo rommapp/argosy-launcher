@@ -76,6 +76,9 @@ fun NavGraph(
                 onNavigateToLibrary = { platformId, sourceFilter ->
                     navController.navigate(Screen.Library.createRoute(platformId, sourceFilter))
                 },
+                onNavigateToLaunch = { gameId, channelName ->
+                    navController.navigate(Screen.Launch.createRoute(gameId, channelName))
+                },
                 onNavigateToDefault = navigateToDefault,
                 onDrawerToggle = onDrawerToggle,
                 onChangelogAction = { action ->
@@ -108,6 +111,9 @@ fun NavGraph(
                 initialSource = source,
                 onGameSelect = { gameId ->
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
+                },
+                onNavigateToLaunch = { gameId, channelName ->
+                    navController.navigate(Screen.Launch.createRoute(gameId, channelName))
                 },
                 onNavigateToDefault = navigateToDefault,
                 onDrawerToggle = onDrawerToggle
@@ -218,7 +224,10 @@ fun NavGraph(
             val gameId = backStackEntry.arguments?.getLong("gameId") ?: return@composable
             GameDetailScreen(
                 gameId = gameId,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateToLaunch = { id, channelName, discId ->
+                    navController.navigate(Screen.Launch.createRoute(id, channelName, discId))
+                }
             )
         }
 

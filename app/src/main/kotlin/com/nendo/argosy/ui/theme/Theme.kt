@@ -20,6 +20,7 @@ import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
+import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.FooterStyleConfig
@@ -192,6 +193,9 @@ data class BoxArtStyleConfig(
     val isShadow: Boolean = false,
     val outerEffect: BoxArtOuterEffect = BoxArtOuterEffect.GLOW,
     val outerEffectThicknessPx: Float = 16f,
+    val glowColorMode: GlowColorMode = GlowColorMode.AUTO,
+    val accentColor: Color? = null,
+    val secondaryColor: Color? = null,
     val innerEffect: BoxArtInnerEffect = BoxArtInnerEffect.SHADOW,
     val innerEffectThicknessPx: Float = 4f,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
@@ -252,6 +256,9 @@ fun ALauncherTheme(
         isShadow = themeState.boxArtGlowStrength.isShadow,
         outerEffect = themeState.boxArtOuterEffect,
         outerEffectThicknessPx = themeState.boxArtOuterEffectThickness.px,
+        glowColorMode = themeState.glowColorMode,
+        accentColor = effectivePrimary,
+        secondaryColor = secondaryColor ?: effectivePrimary,
         innerEffect = themeState.boxArtInnerEffect,
         innerEffectThicknessPx = themeState.boxArtInnerEffectThickness.px,
         systemIconPosition = themeState.systemIconPosition,

@@ -531,8 +531,10 @@ class ImageCacheManager @Inject constructor(
 
                 val game = gameDao.getById(gameId)
                 if (game != null && (game.backgroundPath == null || !game.backgroundPath.startsWith("/"))) {
-                    gameDao.updateBackgroundPath(gameId, cachedPaths.first())
-                    Log.d(TAG, "Set first screenshot as background for gameId $gameId")
+                    // Use second screenshot (gameplay) if available, otherwise first
+                    val backgroundPath = cachedPaths.getOrNull(1) ?: cachedPaths.first()
+                    gameDao.updateBackgroundPath(gameId, backgroundPath)
+                    Log.d(TAG, "Set screenshot ${if (cachedPaths.size > 1) "2" else "1"} as background for gameId $gameId")
                 }
             }
         }

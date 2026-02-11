@@ -29,6 +29,7 @@ import com.nendo.argosy.data.preferences.GlassBorderTint
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
+import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.components.CyclePreference
@@ -93,6 +94,12 @@ private sealed class BoxArtItem(
 
     data object GlowIntensity : BoxArtItem(
         key = "glowIntensity",
+        section = "outer",
+        visibleWhen = { it.boxArtOuterEffect == BoxArtOuterEffect.GLOW }
+    )
+
+    data object GlowColor : BoxArtItem(
+        key = "glowColor",
         section = "outer",
         visibleWhen = { it.boxArtOuterEffect == BoxArtOuterEffect.GLOW }
     )
@@ -169,7 +176,7 @@ private sealed class BoxArtItem(
             IconHeader,
             IconPos, IconPad,
             OuterHeader,
-            OuterEffect, OuterThickness, GlowIntensity,
+            OuterEffect, OuterThickness, GlowIntensity, GlowColor,
             InnerHeader,
             InnerEffect, InnerThickness
         )
@@ -300,6 +307,12 @@ fun BoxArtSection(
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtGlowStrength() }
                     )
+                    BoxArtItem.GlowColor -> CyclePreference(
+                        title = "Color",
+                        value = display.glowColorMode.displayName(),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cycleGlowColorMode() }
+                    )
 
                     BoxArtItem.InnerEffect -> CyclePreference(
                         title = "Effect",
@@ -367,6 +380,7 @@ fun BoxArtSection(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            val currentStyle = LocalBoxArtStyle.current
             val previewBoxArtStyle = BoxArtStyleConfig(
                 cornerRadiusDp = display.boxArtCornerRadius.dp.dp,
                 borderThicknessDp = display.boxArtBorderThickness.dp.dp,
@@ -376,6 +390,9 @@ fun BoxArtSection(
                 isShadow = display.boxArtGlowStrength.isShadow,
                 outerEffect = display.boxArtOuterEffect,
                 outerEffectThicknessPx = display.boxArtOuterEffectThickness.px,
+                glowColorMode = display.glowColorMode,
+                accentColor = currentStyle.accentColor,
+                secondaryColor = currentStyle.secondaryColor,
                 innerEffect = display.boxArtInnerEffect,
                 innerEffectThicknessPx = display.boxArtInnerEffectThickness.px,
                 systemIconPosition = display.systemIconPosition,
@@ -511,6 +528,13 @@ private fun BoxArtOuterEffectThickness.displayName(): String = when (this) {
     BoxArtOuterEffectThickness.THIN -> "Thin"
     BoxArtOuterEffectThickness.MEDIUM -> "Medium"
     BoxArtOuterEffectThickness.THICK -> "Thick"
+}
+
+private fun GlowColorMode.displayName(): String = when (this) {
+    GlowColorMode.AUTO -> "Auto"
+    GlowColorMode.ACCENT -> "Accent"
+    GlowColorMode.ACCENT_GRADIENT -> "Theme Gradient"
+    GlowColorMode.COVER -> "Cover"
 }
 
 private fun BoxArtInnerEffect.displayName(): String = when (this) {

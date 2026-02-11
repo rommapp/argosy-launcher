@@ -264,7 +264,8 @@ data class LibraryUiState(
 private const val TAG = "LibraryVM"
 
 sealed class LibraryEvent {
-    data class LaunchGame(val intent: Intent) : LibraryEvent()
+    data class NavigateToLaunch(val gameId: Long, val channelName: String? = null) : LibraryEvent()
+    data class LaunchIntent(val intent: Intent) : LibraryEvent()
 }
 
 @HiltViewModel
@@ -478,6 +479,8 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun onResume() {
+        // Fallback session end handling in case Android killed Argosy while emulator was running
+        // (normal flow goes through LaunchScreen, but if app was killed, user returns here directly)
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
 
         if (romMRepository.isConnected()) {
@@ -1042,13 +1045,13 @@ class LibraryViewModel @Inject constructor(
                 data = Uri.parse("package:$packageName")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            _events.emit(LibraryEvent.LaunchGame(intent))
+            _events.emit(LibraryEvent.LaunchIntent(intent))
         }
     }
 
-    fun launchGame(gameId: Long) {
-        gameLaunchDelegate.launchGame(viewModelScope, gameId) { intent ->
-            viewModelScope.launch { _events.emit(LibraryEvent.LaunchGame(intent)) }
+    fun launchGame(gameId: Long, channelName: String? = null) {
+        viewModelScope.launch {
+            _events.emit(LibraryEvent.NavigateToLaunch(gameId, channelName))
         }
     }
 

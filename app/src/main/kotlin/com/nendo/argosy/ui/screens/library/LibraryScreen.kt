@@ -406,6 +406,7 @@ fun LibraryScreen(
                 LibraryHeader(
                     platformName = uiState.currentPlatform?.displayName ?: "All Platforms",
                     gameCount = uiState.games.size,
+                    hasEmulator = uiState.currentPlatform?.hasEmulator ?: true,
                     onPreviousPlatform = { viewModel.previousPlatform() },
                     onNextPlatform = { viewModel.nextPlatform() }
                 )
@@ -631,6 +632,7 @@ fun LibraryScreen(
 private fun LibraryHeader(
     platformName: String,
     gameCount: Int,
+    hasEmulator: Boolean = true,
     onPreviousPlatform: () -> Unit = {},
     onNextPlatform: () -> Unit = {}
 ) {
@@ -689,6 +691,11 @@ private fun LibraryHeader(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val navIconTint = if (hasEmulator)
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+
                 Row(
                     modifier = Modifier
                         .clickableNoFocus(onClick = onPreviousPlatform)
@@ -698,18 +705,30 @@ private fun LibraryHeader(
                     Icon(
                         painter = InputIcons.BumperLeft,
                         contentDescription = "Previous platform",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = navIconTint,
                         modifier = Modifier.size(Dimens.iconSm)
                     )
                 }
 
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
-                Text(
-                    text = displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = displayName,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (hasEmulator)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    )
+                    if (!hasEmulator) {
+                        Text(
+                            text = "No emulator installed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
@@ -722,7 +741,7 @@ private fun LibraryHeader(
                     Icon(
                         painter = InputIcons.BumperRight,
                         contentDescription = "Next platform",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = navIconTint,
                         modifier = Modifier.size(Dimens.iconSm)
                     )
                 }

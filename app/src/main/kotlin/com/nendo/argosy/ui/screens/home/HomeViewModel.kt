@@ -8,6 +8,7 @@ import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadState
+import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -172,10 +173,12 @@ sealed class HomeRowItem {
 
 data class HomePlatformUi(
     val id: Long,
+    val slug: String,
     val name: String,
     val shortName: String,
     val displayName: String,
-    val logoPath: String?
+    val logoPath: String?,
+    val hasEmulator: Boolean = true
 )
 
 sealed class HomeRow {
@@ -366,7 +369,8 @@ class HomeViewModel @Inject constructor(
     private val gradientExtractionDelegate: GradientExtractionDelegate,
     private val ambientLedManager: AmbientLedManager,
     private val ambientAudioManager: AmbientAudioManager,
-    private val imagePrefetchManager: com.nendo.argosy.ui.util.ImagePrefetchManager
+    private val imagePrefetchManager: com.nendo.argosy.ui.util.ImagePrefetchManager,
+    private val emulatorDetector: EmulatorDetector
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -1825,10 +1829,12 @@ class HomeViewModel @Inject constructor(
 
     private fun PlatformEntity.toUi() = HomePlatformUi(
         id = id,
+        slug = slug,
         name = name,
         shortName = shortName,
         displayName = getDisplayName(),
-        logoPath = logoPath
+        logoPath = logoPath,
+        hasEmulator = emulatorDetector.hasAnyEmulator(slug)
     )
 
     private fun GameEntity.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): HomeGameUi {

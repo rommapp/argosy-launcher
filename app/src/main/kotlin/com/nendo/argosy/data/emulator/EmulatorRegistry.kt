@@ -108,12 +108,12 @@ object EmulatorRegistry {
                 "genesis", "sms", "gg", "scd", "32x",
                 "psx", "psp", "saturn", "dreamcast", "dc",
                 "tg16", "tgcd", "pcfx", "3do",
-                "atari2600", "atari5200", "atari7800", "lynx",
+                "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo",
-                "msx", "msx2",
+                "msx", "msx2", "coleco",
                 "wonderswan", "wonderswancolor",
                 "arcade",
-                "c64", "vic20", "dos"
+                "c64", "vic20", "dos", "zx"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -128,12 +128,12 @@ object EmulatorRegistry {
                 "genesis", "sms", "gg", "scd", "32x",
                 "psx", "psp", "saturn", "dreamcast", "dc",
                 "tg16", "tgcd", "pcfx", "3do",
-                "atari2600", "atari5200", "atari7800", "lynx",
+                "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo",
-                "msx", "msx2",
+                "msx", "msx2", "coleco",
                 "wonderswan", "wonderswancolor",
                 "arcade",
-                "c64", "vic20", "dos"
+                "c64", "vic20", "dos", "zx"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -860,6 +860,20 @@ object EmulatorRegistry {
         ),
         "vic20" to listOf(
             RetroArchCore("vice_xvic", "VICE VIC-20")
+        ),
+        "jaguar" to listOf(
+            RetroArchCore("virtualjaguar", "Virtual Jaguar")
+        ),
+        "atari8bit" to listOf(
+            RetroArchCore("atari800", "Atari800")
+        ),
+        "coleco" to listOf(
+            RetroArchCore("bluemsx", "blueMSX"),
+            RetroArchCore("gearcoleco", "Gearcoleco")
+        ),
+        "zx" to listOf(
+            RetroArchCore("fuse", "Fuse"),
+            RetroArchCore("81", "EightyOne")
         )
     )
 

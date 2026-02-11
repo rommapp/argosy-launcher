@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -273,7 +274,8 @@ class LibraryViewModel @Inject constructor(
     private val syncPlatformUseCase: SyncPlatformUseCase,
     private val repairImageCacheUseCase: RepairImageCacheUseCase,
     private val modalResetSignal: ModalResetSignal,
-    private val gradientExtractionDelegate: GradientExtractionDelegate
+    private val gradientExtractionDelegate: GradientExtractionDelegate,
+    private val emulatorDetector: EmulatorDetector
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -1113,10 +1115,12 @@ class LibraryViewModel @Inject constructor(
 
     private fun PlatformEntity.toUi() = HomePlatformUi(
         id = id,
+        slug = slug,
         name = name,
         shortName = shortName,
         displayName = getDisplayName(),
-        logoPath = logoPath
+        logoPath = logoPath,
+        hasEmulator = emulatorDetector.hasAnyEmulator(slug)
     )
 
     private fun GameEntity.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): LibraryGameUi {

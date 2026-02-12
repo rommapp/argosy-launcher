@@ -140,7 +140,7 @@ fun GameDetailScreen(
                 }
                 is LaunchEvent.LaunchIntent -> {
                     try {
-                        context.startActivity(event.intent)
+                        context.startActivity(event.intent, event.options)
                     } catch (e: Exception) {
                         viewModel.showLaunchError("Failed to launch: ${e.message}")
                     }

@@ -91,7 +91,7 @@ sealed class LaunchEvent {
         val channelName: String? = null,
         val discId: Long? = null
     ) : LaunchEvent()
-    data class LaunchIntent(val intent: Intent) : LaunchEvent()
+    data class LaunchIntent(val intent: Intent, val options: android.os.Bundle? = null) : LaunchEvent()
     data object NavigateBack : LaunchEvent()
 }
 

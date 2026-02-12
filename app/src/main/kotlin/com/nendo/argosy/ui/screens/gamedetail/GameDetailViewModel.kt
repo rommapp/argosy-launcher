@@ -120,7 +120,8 @@ class GameDetailViewModel @Inject constructor(
     private val raRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository,
     private val saveSyncRepository: SaveSyncRepository,
     val pickerModalDelegate: PickerModalDelegate,
-    private val titleIdDownloadObserver: com.nendo.argosy.data.emulator.TitleIdDownloadObserver
+    private val titleIdDownloadObserver: com.nendo.argosy.data.emulator.TitleIdDownloadObserver,
+    private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -302,7 +303,8 @@ class GameDetailViewModel @Inject constructor(
                 when (result) {
                     is LaunchResult.Success -> {
                         soundManager.play(SoundType.LAUNCH_GAME)
-                        _launchEvents.emit(LaunchEvent.LaunchIntent(result.intent))
+                        val options = displayAffinityHelper.getActivityOptions(forEmulator = true)
+                        _launchEvents.emit(LaunchEvent.LaunchIntent(result.intent, options))
                     }
                     is LaunchResult.Error -> {
                         notificationManager.showError(result.message)
@@ -1238,7 +1240,8 @@ class GameDetailViewModel @Inject constructor(
                     putExtra(com.nendo.argosy.libretro.LaunchMode.EXTRA_LAUNCH_MODE, launchMode.name)
                 }
                 soundManager.play(SoundType.LAUNCH_GAME)
-                _launchEvents.emit(LaunchEvent.LaunchIntent(intentWithMode))
+                val options = displayAffinityHelper.getActivityOptions(forEmulator = true)
+                _launchEvents.emit(LaunchEvent.LaunchIntent(intentWithMode, options))
             }
             is LaunchResult.SelectDisc -> {
                 pickerModalDelegate.showDiscPicker(result.discs)

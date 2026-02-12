@@ -201,6 +201,8 @@ class DownloadManager @Inject constructor(
 
     companion object {
         private const val TAG = "DownloadManager"
+        const val ACTION_DOWNLOAD_COMPLETED = "com.nendo.argosy.DOWNLOAD_COMPLETED"
+        const val EXTRA_GAME_ID = "game_id"
     }
 
     private suspend fun getDownloadDir(platformSlug: String): File {
@@ -320,8 +322,19 @@ class DownloadManager @Inject constructor(
                     completed = _state.value.completed + finalProgress
                 )
                 processQueue()
+                if (result is DownloadResult.Success) {
+                    broadcastDownloadCompleted(progress.gameId)
+                }
             }
         }
+    }
+
+    private fun broadcastDownloadCompleted(gameId: Long) {
+        val intent = android.content.Intent(ACTION_DOWNLOAD_COMPLETED).apply {
+            setPackage(context.packageName)
+            putExtra(EXTRA_GAME_ID, gameId)
+        }
+        context.sendBroadcast(intent)
     }
 
     suspend fun enqueueDownload(
@@ -611,6 +624,9 @@ class DownloadManager @Inject constructor(
                         completed = _state.value.completed + finalProgress
                     )
                     processQueue()
+                    if (result is DownloadResult.Success) {
+                        broadcastDownloadCompleted(next.gameId)
+                    }
                 }
             }
         }

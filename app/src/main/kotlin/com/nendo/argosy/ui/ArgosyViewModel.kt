@@ -297,8 +297,9 @@ class ArgosyViewModel @Inject constructor(
             "xbox" -> false
             else -> detectedLayout == DetectedLayout.NINTENDO
         }
+        val hasExistingConfig = prefs.rommBaseUrl != null || prefs.romStoragePath != null
         ArgosyUiState(
-            isFirstRun = !prefs.firstRunComplete,
+            isFirstRun = !prefs.firstRunComplete && !hasExistingConfig,
             isLoading = false,
             abIconsSwapped = isNintendoLayout xor prefs.swapAB,
             xyIconsSwapped = isNintendoLayout xor prefs.swapXY,

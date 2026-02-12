@@ -46,6 +46,7 @@
         android:theme="@style/Theme.Argosy"
         android:requestLegacyExternalStorage="true"
         android:largeHeap="true"
+        android:persistent="true"
         tools:targetApi="34">
 
         <activity
@@ -64,7 +65,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <intent-filter>
+            <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -119,9 +120,24 @@
             android:exported="false" />
 
         <service
-            android:name=".hardware.SecondaryDisplayService"
+            android:name=".hardware.RecoveryDisplayService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
+
+        <activity
+            android:name=".hardware.SecondaryHomeActivity"
+            android:process=":companion"
+            android:launchMode="standard"
+            android:theme="@style/Theme.Argosy"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.SECONDARY_HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <receiver
             android:name=".hardware.AudioTestReceiver"

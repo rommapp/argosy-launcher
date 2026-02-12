@@ -78,9 +78,9 @@ class SecondaryHomeViewModel @Inject constructor(
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
     private val appsRepository: AppsRepository,
-    private val preferencesRepository: UserPreferencesRepository,
+    private val preferencesRepository: UserPreferencesRepository?,
     private val displayAffinityHelper: DisplayAffinityHelper,
-    private val downloadManager: DownloadManager,
+    private val downloadManager: DownloadManager?,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -89,14 +89,21 @@ class SecondaryHomeViewModel @Inject constructor(
 
     init {
         loadData()
-        observeDownloads()
-        observeSecondaryHomeApps()
-        observeGridDensity()
+        if (downloadManager != null) {
+            observeDownloads()
+        }
+        // Only observe DataStore flows if preferencesRepository is available (main process)
+        // Companion process passes null to avoid cross-process DataStore conflicts
+        if (preferencesRepository != null) {
+            observeSecondaryHomeApps()
+            observeGridDensity()
+        }
     }
 
     private fun observeGridDensity() {
+        val repo = preferencesRepository ?: return
         viewModelScope.launch {
-            preferencesRepository.userPreferences.collect { prefs ->
+            repo.userPreferences.collect { prefs ->
                 _uiState.update { it.copy(gridDensity = prefs.gridDensity) }
             }
         }
@@ -107,10 +114,11 @@ class SecondaryHomeViewModel @Inject constructor(
     }
 
     private fun observeDownloads() {
+        val dm = downloadManager ?: return
         viewModelScope.launch {
             var previouslyDownloading = emptySet<Long>()
 
-            downloadManager.state.collect { downloadState ->
+            dm.state.collect { downloadState ->
                 val downloadsByGameId = (downloadState.activeDownloads + downloadState.queue)
                     .associateBy { it.gameId }
                 val currentlyDownloading = downloadsByGameId.keys
@@ -137,8 +145,9 @@ class SecondaryHomeViewModel @Inject constructor(
     }
 
     private fun observeSecondaryHomeApps() {
+        val repo = preferencesRepository ?: return
         viewModelScope.launch {
-            preferencesRepository.preferences.collect { prefs ->
+            repo.preferences.collect { prefs ->
                 val secondaryHomeApps = prefs.secondaryHomeApps
                 val installedApps = appsRepository.getInstalledApps(includeSystemApps = true)
                 val homeApps = installedApps
@@ -191,7 +200,8 @@ class SecondaryHomeViewModel @Inject constructor(
     }
 
     private suspend fun loadHomeApps(): List<SecondaryAppUi> {
-        val prefs = preferencesRepository.preferences.first()
+        val repo = preferencesRepository ?: return emptyList()
+        val prefs = repo.preferences.first()
         val secondaryHomeApps = prefs.secondaryHomeApps
 
         if (secondaryHomeApps.isEmpty()) return emptyList()
@@ -200,6 +210,24 @@ class SecondaryHomeViewModel @Inject constructor(
         return installedApps
             .filter { it.packageName in secondaryHomeApps }
             .map { SecondaryAppUi(it.packageName, it.label) }
+    }
+
+    fun setHomeApps(packageNames: List<String>) {
+        viewModelScope.launch {
+            val installedApps = appsRepository.getInstalledApps(includeSystemApps = true)
+            val homeApps = installedApps
+                .filter { it.packageName in packageNames }
+                .map { SecondaryAppUi(it.packageName, it.label) }
+            _uiState.update { it.copy(homeApps = homeApps) }
+        }
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            val sections = buildSections()
+            _uiState.update { it.copy(sections = sections) }
+            loadGamesForCurrentSection()
+        }
     }
 
     private fun loadGamesForCurrentSection() {
@@ -309,15 +337,16 @@ class SecondaryHomeViewModel @Inject constructor(
     }
 
     fun startDownload(gameId: Long) {
+        val dm = downloadManager ?: return
         viewModelScope.launch {
             // Try to resume if there's a paused/waiting download first
-            downloadManager.resumeDownload(gameId)
+            dm.resumeDownload(gameId)
 
             val game = gameDao.getById(gameId) ?: return@launch
             val rommId = game.rommId ?: return@launch
             val fileName = game.rommFileName ?: game.title
 
-            downloadManager.enqueueDownload(
+            dm.enqueueDownload(
                 gameId = gameId,
                 rommId = rommId,
                 fileName = fileName,

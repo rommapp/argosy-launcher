@@ -13,6 +13,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
@@ -86,8 +87,38 @@ class PlaySessionTracker @Inject constructor(
     companion object {
         private const val TAG = "PlaySessionTracker"
         private const val MIN_PLAY_SECONDS_FOR_COMPLETION = 20
+
+        // Broadcast actions for companion process
+        private const val ACTION_SESSION_CHANGED = "com.nendo.argosy.SESSION_CHANGED"
+        private const val EXTRA_GAME_ID = "game_id"
+        private const val EXTRA_CHANNEL_NAME = "channel_name"
+        private const val EXTRA_IS_HARDCORE = "is_hardcore"
     }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val sessionStateStore by lazy { SessionStateStore(application) }
+
+    private fun broadcastSessionChanged(gameId: Long?, channelName: String?, isHardcore: Boolean) {
+        // Write to SharedPreferences for companion process to read on startup
+        if (gameId != null && gameId > 0) {
+            sessionStateStore.setActiveSession(gameId, channelName, isHardcore)
+        } else {
+            sessionStateStore.clearSession()
+        }
+
+        // Broadcast for live updates
+        val intent = Intent(ACTION_SESSION_CHANGED).apply {
+            setPackage(application.packageName)
+            putExtra(EXTRA_GAME_ID, gameId ?: -1L)
+            putExtra(EXTRA_CHANNEL_NAME, channelName)
+            putExtra(EXTRA_IS_HARDCORE, isHardcore)
+        }
+        application.sendBroadcast(intent)
+    }
+
+    private suspend fun clearSessionAndBroadcast() {
+        preferencesRepository.clearActiveSession()
+        broadcastSessionChanged(null, null, false)
+    }
 
     private val _activeSession = MutableStateFlow<ActiveSession?>(null)
     val activeSession: StateFlow<ActiveSession?> = _activeSession.asStateFlow()
@@ -135,14 +166,14 @@ class PlaySessionTracker @Inject constructor(
             val game = gameDao.getById(orphaned.gameId)
             if (game == null) {
                 Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Game not found, clearing session")
-                preferencesRepository.clearActiveSession()
+                clearSessionAndBroadcast()
                 return
             }
 
             val emulatorId = emulatorResolver.resolveEmulatorId(orphaned.emulatorPackage)
             if (emulatorId == null) {
                 Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Cannot resolve emulator ID | package=${orphaned.emulatorPackage}")
-                preferencesRepository.clearActiveSession()
+                clearSessionAndBroadcast()
                 return
             }
 
@@ -219,7 +250,7 @@ class PlaySessionTracker @Inject constructor(
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Recovery failed", e)
         } finally {
-            preferencesRepository.clearActiveSession()
+            clearSessionAndBroadcast()
         }
     }
 
@@ -274,6 +305,10 @@ class PlaySessionTracker @Inject constructor(
                 isHardcore = isHardcore
             )
 
+            // Notify companion process of session start
+            val game = gameDao.getById(gameId)
+            broadcastSessionChanged(gameId, game?.activeSaveChannel, isHardcore)
+
             val prefs = preferencesRepository.userPreferences.first()
             if (prefs.saveSyncEnabled) {
                 startGameSessionService(gameId, emulatorPackage, coreName, isHardcore, startTime.toEpochMilli())
@@ -326,7 +361,7 @@ class PlaySessionTracker @Inject constructor(
     suspend fun endSession(): SessionEndResult {
         val session = _activeSession.value ?: run {
             Logger.debug(TAG, "[SaveSync] SESSION | endSession called but no active session")
-            preferencesRepository.clearActiveSession()
+            clearSessionAndBroadcast()
             GameSessionService.stop(application)
             return SessionEndResult.Skipped
         }
@@ -355,7 +390,7 @@ class PlaySessionTracker @Inject constructor(
                 result
             }
 
-            preferencesRepository.clearActiveSession()
+            clearSessionAndBroadcast()
 
             when (cacheResult) {
                 is SaveCacheManager.CacheResult.Created -> SessionEndResult.Success
@@ -365,7 +400,7 @@ class PlaySessionTracker @Inject constructor(
             }
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session end failed", e)
-            preferencesRepository.clearActiveSession()
+            clearSessionAndBroadcast()
             SessionEndResult.Error(e.message ?: "Unknown error")
         }
     }
@@ -556,12 +591,12 @@ class PlaySessionTracker @Inject constructor(
         _activeSession.value = null
         GameSessionService.stop(application)
         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cancelled (no backup)")
-        scope.launch { preferencesRepository.clearActiveSession() }
+        scope.launch { clearSessionAndBroadcast() }
     }
 
     fun forceStopService() {
         GameSessionService.stop(application)
-        scope.launch { preferencesRepository.clearActiveSession() }
+        scope.launch { clearSessionAndBroadcast() }
         Logger.debug(TAG, "[SaveSync] SESSION | Force stopped service (no active session)")
     }
 

@@ -478,18 +478,19 @@ class FirstRunViewModel @Inject constructor(
 
     fun completeSetup() {
         val state = _uiState.value
-        if (!state.hasStoragePermission || !state.folderSelected) return
 
         viewModelScope.launch {
-            state.romStoragePath?.let { path ->
-                preferencesRepository.setRomStoragePath(path)
-            }
-            if (state.imageCacheFolderSelected) {
-                state.imageCachePath?.let { path ->
-                    preferencesRepository.setImageCachePath(path)
+            if (state.hasStoragePermission && state.folderSelected) {
+                state.romStoragePath?.let { path ->
+                    preferencesRepository.setRomStoragePath(path)
                 }
+                if (state.imageCacheFolderSelected) {
+                    state.imageCachePath?.let { path ->
+                        preferencesRepository.setImageCachePath(path)
+                    }
+                }
+                preferencesRepository.setSaveSyncEnabled(state.saveSyncEnabled)
             }
-            preferencesRepository.setSaveSyncEnabled(state.saveSyncEnabled)
             preferencesRepository.setFirstRunComplete()
         }
     }

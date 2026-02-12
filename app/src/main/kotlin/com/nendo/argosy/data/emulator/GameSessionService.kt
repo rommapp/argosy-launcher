@@ -33,6 +33,7 @@ import androidx.core.app.NotificationCompat
 import com.nendo.argosy.MainActivity
 import com.nendo.argosy.R
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.AndroidEntryPoint
@@ -53,6 +54,7 @@ class GameSessionService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val handler = Handler(Looper.getMainLooper())
     private val fileObservers = mutableListOf<FileObserver>()
+    private val sessionStateStore by lazy { SessionStateStore(this) }
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var windowManager: WindowManager? = null
@@ -123,6 +125,9 @@ class GameSessionService : Service() {
                 sessionStartTime = if (startTime > 0) startTime else System.currentTimeMillis()
 
                 startForegroundWithNotification(gameTitle, NotificationState.PLAYING)
+
+                // Reset save state to clean when starting a new session
+                broadcastSaveStateChanged(isDirty = false)
 
                 if (watchPath != null) {
                     stopWatching()
@@ -261,6 +266,9 @@ class GameSessionService : Service() {
 
         updateNotification(currentGameTitle, NotificationState.SAVE_DETECTED)
         showOverlayBriefly()
+
+        // Notify secondary home that save is dirty (being cached)
+        broadcastSaveStateChanged(isDirty = true)
 
         serviceScope.launch {
             try {
@@ -580,7 +588,21 @@ class GameSessionService : Service() {
 
     // endregion
 
+    private fun broadcastSaveStateChanged(isDirty: Boolean) {
+        // Write to SharedPreferences for companion process to read on startup
+        sessionStateStore.setSaveDirty(isDirty)
+
+        // Broadcast for live updates
+        val intent = Intent(ACTION_SAVE_STATE_CHANGED).apply {
+            setPackage(packageName)
+            putExtra(EXTRA_SAVE_STATE_DIRTY, isDirty)
+        }
+        sendBroadcast(intent)
+    }
+
     companion object {
+        private const val ACTION_SAVE_STATE_CHANGED = "com.nendo.argosy.SAVE_STATE_CHANGED"
+        private const val EXTRA_SAVE_STATE_DIRTY = "is_dirty"
         private const val TAG = "GameSessionService"
         private const val CHANNEL_ID = "game_session_channel"
         private const val NOTIFICATION_ID = 0x5000

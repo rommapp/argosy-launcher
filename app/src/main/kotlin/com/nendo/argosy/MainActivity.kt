@@ -32,10 +32,11 @@ import com.nendo.argosy.ui.ArgosyApp
 import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.hardware.ScreenCaptureManager
-import com.nendo.argosy.hardware.SecondaryDisplayService
+import com.nendo.argosy.hardware.RecoveryDisplayService
 import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.util.DisplayAffinityHelper
+import com.nendo.argosy.util.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -81,6 +82,11 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var displayAffinityHelper: DisplayAffinityHelper
+
+    @Inject
+    lateinit var permissionHelper: PermissionHelper
+
+    private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(this) }
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -141,6 +147,8 @@ class MainActivity : ComponentActivity() {
 
 
         activityScope.launch {
+            var previousHomeApps: Set<String>? = null
+            var previousPrimaryColor: Int? = null
             preferencesRepository.preferences.collect { prefs ->
                 Logger.configure(
                     versionName = BuildConfig.VERSION_NAME,
@@ -160,6 +168,18 @@ class MainActivity : ComponentActivity() {
                 if (prefs.ambientAudioEnabled && prefs.ambientAudioUri != null && hasWindowFocus()) {
                     ambientAudioManager.fadeIn()
                 }
+
+                // Update home apps for companion process
+                if (previousHomeApps != null && prefs.secondaryHomeApps != previousHomeApps) {
+                    updateHomeApps(prefs.secondaryHomeApps)
+                }
+                previousHomeApps = prefs.secondaryHomeApps
+
+                // Update primary color for companion process
+                if (prefs.primaryColor != previousPrimaryColor) {
+                    sessionStateStore.setPrimaryColor(prefs.primaryColor)
+                }
+                previousPrimaryColor = prefs.primaryColor
             }
         }
 
@@ -171,10 +191,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Start secondary display service if secondary display is available
-        if (displayAffinityHelper.hasSecondaryDisplay) {
-            SecondaryDisplayService.start(this)
-        }
     }
 
     private fun shouldYieldToEmulator(): Boolean {
@@ -182,9 +198,21 @@ class MainActivity : ComponentActivity() {
         if (intent.data != null || intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
             return false
         }
-        // If a persisted session exists, an emulator was running when Argosy was killed.
-        // Yield to let the emulator remain in foreground.
-        return runBlocking { preferencesRepository.getPersistedSession() } != null
+        // Check if a persisted session exists
+        val session = runBlocking { preferencesRepository.getPersistedSession() } ?: return false
+
+        // Only yield if emulator is still in foreground (used within last 15 seconds)
+        // If emulator isn't in foreground, the game has ended - clear session and proceed
+        val emulatorInForeground = permissionHelper.isPackageInForeground(
+            this, session.emulatorPackage, withinMs = 15_000
+        )
+        if (!emulatorInForeground) {
+            Log.d(TAG, "Emulator ${session.emulatorPackage} not in foreground - clearing session")
+            runBlocking { preferencesRepository.clearActiveSession() }
+            return false
+        }
+
+        return true
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -212,12 +240,18 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
 
+        // Notify secondary display that Argosy is in foreground
+        broadcastForegroundState(true)
+
         // Check if we should yield to a running emulator
         if (shouldYieldOnResume()) {
             Log.d(TAG, "Persisted session found on resume - yielding to emulator")
             moveTaskToBack(true)
             return
         }
+
+        // Clear stale session if emulator is no longer running
+        clearStaleSession()
 
         if (hasResumedBefore) {
             romMRepository.onAppResumed()
@@ -227,6 +261,31 @@ class MainActivity : ComponentActivity() {
             ambientAudioManager.fadeIn()
         }
         hasResumedBefore = true
+    }
+
+    private fun clearStaleSession() {
+        val session = runBlocking { preferencesRepository.getPersistedSession() } ?: return
+        val emulatorInForeground = permissionHelper.isPackageInForeground(
+            this, session.emulatorPackage, withinMs = 15_000
+        )
+        if (!emulatorInForeground) {
+            Log.d(TAG, "Emulator ${session.emulatorPackage} not in foreground - clearing stale session")
+            runBlocking { preferencesRepository.clearActiveSession() }
+            broadcastSessionCleared()
+
+            // Stop recovery service if running (SECONDARY_HOME handles display now)
+            if (displayAffinityHelper.hasSecondaryDisplay) {
+                RecoveryDisplayService.stop(this)
+            }
+        }
+    }
+
+    private fun broadcastSessionCleared() {
+        val intent = Intent("com.nendo.argosy.SESSION_CHANGED").apply {
+            setPackage(packageName)
+            putExtra("game_id", -1L)
+        }
+        sendBroadcast(intent)
     }
 
     private fun shouldYieldOnResume(): Boolean {
@@ -250,12 +309,48 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         ambientAudioManager.suspend()
+        // Notify secondary display that Argosy is going to background
+        broadcastForegroundState(false)
+    }
+
+    private fun broadcastForegroundState(isForeground: Boolean) {
+        // Write to SharedPreferences for companion process to read on startup
+        sessionStateStore.setArgosyForeground(isForeground)
+
+        val action = if (isForeground) {
+            "com.nendo.argosy.FOREGROUND"
+        } else {
+            "com.nendo.argosy.BACKGROUND"
+        }
+        val intent = Intent(action).apply {
+            setPackage(packageName)
+        }
+        sendBroadcast(intent)
+
+        // Also update home apps when going to foreground
+        if (isForeground) {
+            activityScope.launch {
+                val prefs = preferencesRepository.preferences.first()
+                updateHomeApps(prefs.secondaryHomeApps)
+            }
+        }
+    }
+
+    private fun updateHomeApps(homeApps: Set<String>) {
+        // Write to SharedPreferences for companion process to read on startup
+        sessionStateStore.setHomeApps(homeApps)
+
+        // Broadcast for live updates
+        val intent = Intent("com.nendo.argosy.HOME_APPS_CHANGED").apply {
+            setPackage(packageName)
+            putStringArrayListExtra("home_apps", ArrayList(homeApps))
+        }
+        sendBroadcast(intent)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         screenCaptureManager.stopCapture()
-        SecondaryDisplayService.stop(this)
         activityScope.cancel()
     }
 

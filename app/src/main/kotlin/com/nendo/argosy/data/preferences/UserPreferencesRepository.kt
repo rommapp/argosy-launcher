@@ -1179,6 +1179,22 @@ class UserPreferencesRepository @Inject constructor(
         )
     }
 
+    val activeSessionFlow: Flow<PersistedSession?> = dataStore.data.map { prefs ->
+        val gameId = prefs[Keys.ACTIVE_SESSION_GAME_ID]?.toLongOrNull() ?: return@map null
+        val emulator = prefs[Keys.ACTIVE_SESSION_EMULATOR] ?: return@map null
+        val startTime = prefs[Keys.ACTIVE_SESSION_START_TIME]?.let {
+            try { Instant.parse(it) } catch (e: Exception) { null }
+        } ?: return@map null
+
+        PersistedSession(
+            gameId = gameId,
+            emulatorPackage = emulator,
+            startTime = startTime,
+            coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
+            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false
+        )
+    }
+
     fun saveWatcherEnabled(): Flow<Boolean> = dataStore.data.map {
         it[Keys.SAVE_WATCHER_ENABLED] ?: false
     }

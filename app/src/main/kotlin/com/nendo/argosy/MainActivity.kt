@@ -32,6 +32,7 @@ import com.nendo.argosy.ui.ArgosyApp
 import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.hardware.ScreenCaptureManager
+import com.nendo.argosy.hardware.SecondaryDisplayService
 import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.util.DisplayAffinityHelper
@@ -100,8 +101,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         if (shouldYieldToEmulator()) {
-            Log.d(TAG, "Persisted session found - yielding to emulator")
-            moveTaskToBack(true)
+            Log.d(TAG, "Persisted session found - finishing to avoid stealing focus")
+            finish()
             return
         }
 
@@ -170,28 +171,20 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        bringSecondaryHomeToFront()
-    }
-
-    private fun bringSecondaryHomeToFront() {
-        val options = displayAffinityHelper.getActivityOptions(forEmulator = false)
-        if (options != null) {
-            val intent = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_SECONDARY_HOME)
-                setPackage(packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent, options)
+        // Start secondary display service if secondary display is available
+        if (displayAffinityHelper.hasSecondaryDisplay) {
+            SecondaryDisplayService.start(this)
         }
     }
 
     private fun shouldYieldToEmulator(): Boolean {
+        // Don't yield if user explicitly navigated here
         if (intent.data != null || intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
             return false
         }
-        val session = runBlocking { preferencesRepository.getPersistedSession() } ?: return false
-        val permissionHelper = com.nendo.argosy.util.PermissionHelper()
-        return permissionHelper.isPackageInForeground(this, session.emulatorPackage, withinMs = 10_000)
+        // If a persisted session exists, an emulator was running when Argosy was killed.
+        // Yield to let the emulator remain in foreground.
+        return runBlocking { preferencesRepository.getPersistedSession() } != null
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -218,6 +211,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        // Check if we should yield to a running emulator
+        if (shouldYieldOnResume()) {
+            Log.d(TAG, "Persisted session found on resume - yielding to emulator")
+            moveTaskToBack(true)
+            return
+        }
+
         if (hasResumedBefore) {
             romMRepository.onAppResumed()
             activityScope.launch {
@@ -226,6 +227,16 @@ class MainActivity : ComponentActivity() {
             ambientAudioManager.fadeIn()
         }
         hasResumedBefore = true
+    }
+
+    private fun shouldYieldOnResume(): Boolean {
+        // Don't yield if this is the first resume (onCreate just ran)
+        if (!hasResumedBefore) return false
+        // Check if a game session is active
+        val session = runBlocking { preferencesRepository.getPersistedSession() } ?: return false
+        // Only yield if we regained focus very quickly (< 2 sec) - indicates OOM recovery
+        val timeSinceFocusLost = System.currentTimeMillis() - focusLostTime
+        return focusLostTime > 0 && timeSinceFocusLost < 2000
     }
 
     private fun handleHomeIntent(intent: Intent): Boolean {
@@ -244,6 +255,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         screenCaptureManager.stopCapture()
+        SecondaryDisplayService.stop(this)
         activityScope.cancel()
     }
 

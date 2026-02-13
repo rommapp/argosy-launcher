@@ -74,6 +74,18 @@ class SessionStateStore(context: Context) {
         }
     }
 
+    fun setInputSwapPreferences(swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean) {
+        prefs.edit()
+            .putBoolean(KEY_SWAP_AB, swapAB)
+            .putBoolean(KEY_SWAP_XY, swapXY)
+            .putBoolean(KEY_SWAP_START_SELECT, swapStartSelect)
+            .apply()
+    }
+
+    fun getSwapAB(): Boolean = prefs.getBoolean(KEY_SWAP_AB, false)
+    fun getSwapXY(): Boolean = prefs.getBoolean(KEY_SWAP_XY, false)
+    fun getSwapStartSelect(): Boolean = prefs.getBoolean(KEY_SWAP_START_SELECT, false)
+
     companion object {
         private const val PREFS_NAME = "argosy_session_state"
         private const val KEY_HAS_SESSION = "has_session"
@@ -84,5 +96,8 @@ class SessionStateStore(context: Context) {
         private const val KEY_HOME_APPS = "home_apps"
         private const val KEY_ARGOSY_FOREGROUND = "argosy_foreground"
         private const val KEY_PRIMARY_COLOR = "primary_color"
+        private const val KEY_SWAP_AB = "swap_ab"
+        private const val KEY_SWAP_XY = "swap_xy"
+        private const val KEY_SWAP_START_SELECT = "swap_start_select"
     }
 }

@@ -62,7 +62,9 @@ object ControllerDetector {
 
     @SuppressLint("PrivateApi")
     private fun getGamepadTypeProperty(): Int? {
-        return getGamepadTypeViaReflection() ?: getGamepadTypeViaShell()
+        val value = getGamepadTypeViaReflection() ?: getGamepadTypeViaShell()
+        android.util.Log.d("ControllerDetector", "getGamepadTypeProperty result: $value")
+        return value
     }
 
     private fun getGamepadTypeViaReflection(): Int? {

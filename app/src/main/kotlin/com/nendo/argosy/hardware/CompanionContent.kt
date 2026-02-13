@@ -1,6 +1,7 @@
 package com.nendo.argosy.hardware
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -164,10 +165,19 @@ private fun SaveStateIndicator(isDirty: Boolean) {
 }
 
 @Composable
-private fun CompanionAppBar(
+internal fun CompanionAppBar(
     apps: List<String>,
-    onAppClick: (String) -> Unit
+    onAppClick: (String) -> Unit,
+    focusedIndex: Int = -1
 ) {
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    androidx.compose.runtime.LaunchedEffect(focusedIndex) {
+        if (focusedIndex >= 0) {
+            listState.animateScrollToItem(focusedIndex)
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -182,13 +192,15 @@ private fun CompanionAppBar(
             .padding(vertical = 12.dp)
     ) {
         LazyRow(
+            state = listState,
             contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(apps) { packageName ->
+            items(apps.size) { index ->
                 CompanionAppItem(
-                    packageName = packageName,
-                    onClick = { onAppClick(packageName) }
+                    packageName = apps[index],
+                    isFocused = index == focusedIndex,
+                    onClick = { onAppClick(apps[index]) }
                 )
             }
         }
@@ -196,8 +208,9 @@ private fun CompanionAppBar(
 }
 
 @Composable
-private fun CompanionAppItem(
+internal fun CompanionAppItem(
     packageName: String,
+    isFocused: Boolean = false,
     onClick: () -> Unit
 ) {
     Column(
@@ -212,7 +225,14 @@ private fun CompanionAppItem(
             contentDescription = null,
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(12.dp)),
+                .clip(RoundedCornerShape(12.dp))
+                .then(
+                    if (isFocused) Modifier.border(
+                        width = 2.dp,
+                        color = Color.White,
+                        shape = RoundedCornerShape(12.dp)
+                    ) else Modifier
+                ),
             contentScale = ContentScale.Crop
         )
 

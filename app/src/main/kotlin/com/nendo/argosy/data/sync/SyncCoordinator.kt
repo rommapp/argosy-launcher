@@ -199,9 +199,9 @@ class SyncCoordinator @Inject constructor(
 
             val resolution = resolutions[cache.gameId]
 
-            // Skip if user chose to skip or keep server
             if (resolution == ConflictResolution.SKIP) {
-                Logger.debug(TAG, "processDirtySaveCaches: Skipping gameId=${cache.gameId} per user choice")
+                saveCacheDao.clearAllDirtyFlags(cache.gameId)
+                Logger.debug(TAG, "processDirtySaveCaches: Skipped gameId=${cache.gameId}, cleared dirty flags")
                 continue
             }
             if (resolution == ConflictResolution.KEEP_SERVER) {

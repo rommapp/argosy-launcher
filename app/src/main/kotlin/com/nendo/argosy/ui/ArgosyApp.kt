@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,18 +59,29 @@ import com.nendo.argosy.ui.notification.NotificationHost
 import com.nendo.argosy.ui.quickmenu.QuickMenuInputHandler
 import com.nendo.argosy.ui.quickmenu.QuickMenuOverlay
 import com.nendo.argosy.ui.quickmenu.QuickMenuViewModel
+import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
+import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
+import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperScreen
+import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
+import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
+import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun ArgosyApp(
     viewModel: ArgosyViewModel = hiltViewModel(),
-    quickMenuViewModel: QuickMenuViewModel = hiltViewModel()
+    quickMenuViewModel: QuickMenuViewModel = hiltViewModel(),
+    isDualScreenDevice: Boolean = false,
+    isCompanionActive: StateFlow<Boolean>? = null,
+    dualScreenShowcase: StateFlow<DualHomeShowcaseState>? = null,
+    dualGameDetailState: StateFlow<DualGameDetailUpperState?>? = null
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -92,6 +104,13 @@ fun ArgosyApp(
     val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // Dual-screen showcase state (when running on dual-display device)
+    val showcaseState by dualScreenShowcase?.collectAsState() ?: remember { mutableStateOf(DualHomeShowcaseState()) }
+    val gameDetailUpperState by dualGameDetailState?.collectAsState() ?: remember { mutableStateOf(null) }
+    val companionActive by isCompanionActive?.collectAsState() ?: remember { mutableStateOf(false) }
+    val isOnHomeScreen = currentRoute == Screen.Home.route
+    val showDualOverlay = isDualScreenDevice && isOnHomeScreen && companionActive
 
     // Handle deep links from secondary home
     val activity = context as? com.nendo.argosy.MainActivity
@@ -141,6 +160,7 @@ fun ArgosyApp(
     }
 
     val rootFocusRequester = remember { FocusRequester() }
+    var resumeCount by remember { mutableStateOf(0) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         inputDispatcher.blockInputFor(200)
@@ -148,6 +168,7 @@ fun ArgosyApp(
         viewModel.resetAllModals()
         viewModel.refreshControllerDetection()
         try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
+        resumeCount++
     }
 
     val startDestination = when {
@@ -305,11 +326,113 @@ fun ArgosyApp(
         }
     }
 
-    LaunchedEffect(saveConflictInfo, backgroundConflictInfo) {
+    val dualModalInputHandler = remember(activity) {
+        object : InputHandler {
+            override fun onLeft(): InputResult {
+                val state = activity?.dualGameDetailState?.value
+                if (state?.modalType == ActiveModal.RATING ||
+                    state?.modalType == ActiveModal.DIFFICULTY
+                ) {
+                    activity?.adjustDualModalRating(-1)
+                }
+                return InputResult.HANDLED
+            }
+            override fun onRight(): InputResult {
+                val state = activity?.dualGameDetailState?.value
+                if (state?.modalType == ActiveModal.RATING ||
+                    state?.modalType == ActiveModal.DIFFICULTY
+                ) {
+                    activity?.adjustDualModalRating(1)
+                }
+                return InputResult.HANDLED
+            }
+            override fun onUp(): InputResult {
+                val state = activity?.dualGameDetailState?.value
+                if (state?.showCreateDialog == true) return InputResult.HANDLED
+                when (state?.modalType) {
+                    ActiveModal.STATUS -> activity?.moveDualModalStatus(-1)
+                    ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(-1)
+                    ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(-1)
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            override fun onDown(): InputResult {
+                val state = activity?.dualGameDetailState?.value
+                if (state?.showCreateDialog == true) return InputResult.HANDLED
+                when (state?.modalType) {
+                    ActiveModal.STATUS -> activity?.moveDualModalStatus(1)
+                    ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(1)
+                    ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(1)
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            override fun onConfirm(): InputResult {
+                val state = activity?.dualGameDetailState?.value
+                if (state?.showCreateDialog == true) return InputResult.HANDLED
+                when (state?.modalType) {
+                    ActiveModal.RATING, ActiveModal.DIFFICULTY,
+                    ActiveModal.STATUS -> activity?.confirmDualModal()
+                    ActiveModal.EMULATOR -> activity?.confirmDualEmulatorSelection()
+                    ActiveModal.COLLECTION -> activity?.toggleDualCollectionAtFocus()
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            override fun onBack(): InputResult {
+                val state = activity?.dualGameDetailState?.value
+                if (state?.showCreateDialog == true) {
+                    activity?.dismissDualCollectionCreateDialog()
+                    return InputResult.HANDLED
+                }
+                activity?.dismissDualModal()
+                return InputResult.HANDLED
+            }
+            override fun onMenu(): InputResult = InputResult.HANDLED
+            override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+            override fun onContextMenu(): InputResult = InputResult.HANDLED
+            override fun onPrevSection(): InputResult = InputResult.HANDLED
+            override fun onNextSection(): InputResult = InputResult.HANDLED
+            override fun onPrevTrigger(): InputResult = InputResult.HANDLED
+            override fun onNextTrigger(): InputResult = InputResult.HANDLED
+            override fun onSelect(): InputResult = InputResult.HANDLED
+            override fun onLeftStickClick(): InputResult = InputResult.HANDLED
+            override fun onRightStickClick(): InputResult = InputResult.HANDLED
+        }
+    }
+
+    val dualModalActive = gameDetailUpperState?.modalType != null &&
+        gameDetailUpperState?.modalType != ActiveModal.NONE
+
+    LaunchedEffect(saveConflictInfo, backgroundConflictInfo, dualModalActive, resumeCount) {
         when {
+            dualModalActive -> inputDispatcher.subscribeDrawer(dualModalInputHandler)
             saveConflictInfo != null -> inputDispatcher.subscribeDrawer(saveConflictInputHandler)
             backgroundConflictInfo != null -> inputDispatcher.subscribeDrawer(backgroundConflictInputHandler)
             else -> inputDispatcher.unsubscribeDrawer()
+        }
+    }
+
+    var grabbedFocusForConflict by remember { mutableStateOf(false) }
+    LaunchedEffect(saveConflictInfo, backgroundConflictInfo, showDualOverlay) {
+        val hasConflict = saveConflictInfo != null || backgroundConflictInfo != null
+        if (showDualOverlay && hasConflict && !grabbedFocusForConflict) {
+            grabbedFocusForConflict = true
+            activity?.startActivity(
+                Intent(activity, activity::class.java).addFlags(
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            )
+        } else if (grabbedFocusForConflict && !hasConflict) {
+            grabbedFocusForConflict = false
+            if (showDualOverlay) {
+                activity?.sendBroadcast(
+                    Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
+                        .setPackage(activity.packageName)
+                )
+            }
         }
     }
 
@@ -504,14 +627,87 @@ fun ArgosyApp(
                 )
                 val contentBlur = maxOf(drawerBlur, quickMenuBlur)
 
-                NavGraph(
-                    navController = navController,
-                    startDestination = startDestination,
-                    defaultView = uiState.defaultView,
-                    onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
-                    onSetReturningFromGame = { viewModel.setReturningFromGame() },
-                    modifier = Modifier.blur(contentBlur)
-                )
+                // Dual-screen mode: show showcase on upper display when companion is active
+                if (showDualOverlay) {
+                    val detailState = gameDetailUpperState
+                    if (detailState != null) {
+                        DualGameDetailUpperScreen(
+                            state = detailState,
+                            onModalRatingSelect = { value ->
+                                activity?.setDualModalRating(value)
+                                activity?.confirmDualModal()
+                            },
+                            onModalStatusSelect = { value ->
+                                activity?.setDualModalStatus(value)
+                                activity?.confirmDualModal()
+                            },
+                            onModalEmulatorSelect = { index ->
+                                activity?.let { a ->
+                                    a.setDualEmulatorFocus(index)
+                                    a.confirmDualEmulatorSelection()
+                                }
+                            },
+                            onModalCollectionToggle = { collectionId ->
+                                activity?.let { a ->
+                                    val idx = detailState.collectionItems
+                                        .indexOfFirst { it.id == collectionId }
+                                    if (idx >= 0) a.setDualCollectionFocus(idx)
+                                    a.toggleDualCollectionAtFocus()
+                                }
+                            },
+                            onModalCollectionShowCreate = {
+                                activity?.showDualCollectionCreateDialog()
+                            },
+                            onModalCollectionCreate = { name ->
+                                if (name.isNotBlank()) {
+                                    activity?.confirmDualCollectionCreate(
+                                        name.trim()
+                                    )
+                                }
+                            },
+                            onModalCollectionCreateDismiss = {
+                                activity?.dismissDualCollectionCreateDialog()
+                            },
+                            onModalDismiss = {
+                                activity?.dismissDualModal()
+                            },
+                            footerHints = {
+                                com.nendo.argosy.ui.components.FooterBar(
+                                    hints = listOf(
+                                        com.nendo.argosy.ui.components.InputButton.LB_RB to "Tab",
+                                        com.nendo.argosy.ui.components.InputButton.A to "Select",
+                                        com.nendo.argosy.ui.components.InputButton.B to "Back"
+                                    )
+                                )
+                            },
+                            modifier = Modifier.blur(contentBlur)
+                        )
+                    } else {
+                        DualHomeUpperScreen(
+                            state = showcaseState,
+                            footerHints = {
+                                com.nendo.argosy.ui.components.FooterBar(
+                                    hints = listOf(
+                                        com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
+                                        com.nendo.argosy.ui.components.InputButton.A to "Play",
+                                        com.nendo.argosy.ui.components.InputButton.X to "Details",
+                                        com.nendo.argosy.ui.components.InputButton.Y to if (showcaseState.isFavorite) "Unfavorite" else "Favorite"
+                                    )
+                                )
+                            },
+                            modifier = Modifier.blur(contentBlur)
+                        )
+                    }
+                } else {
+                    NavGraph(
+                        navController = navController,
+                        startDestination = startDestination,
+                        defaultView = uiState.defaultView,
+                        onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
+                        onSetReturningFromGame = { viewModel.setReturningFromGame() },
+                        modifier = Modifier.blur(contentBlur)
+                    )
+                }
             }
 
             NotificationHost(

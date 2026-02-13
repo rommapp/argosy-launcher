@@ -165,6 +165,8 @@ class SaveSyncRepository @Inject constructor(
 
     fun observePendingCount(): Flow<Int> = saveCacheDao.observeNeedingRemoteSyncCount()
 
+    suspend fun clearDirtyFlags(gameId: Long) = saveCacheDao.clearAllDirtyFlags(gameId)
+
     suspend fun discoverSavePath(
         emulatorId: String,
         gameTitle: String,
@@ -1784,11 +1786,19 @@ class SaveSyncRepository @Inject constructor(
             saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, DEFAULT_SAVE_NAME)
         }
 
-        val isHashConflict = if (syncEntity?.lastUploadedHash != null) {
-            val localHash = saveCacheManager.get().calculateLocalSaveHash(localPath)
-            localHash != null && localHash != syncEntity.lastUploadedHash
-        } else false
+        val localHash = saveCacheManager.get().calculateLocalSaveHash(localPath)
+        val hashMatchesLastUpload = syncEntity?.lastUploadedHash != null
+            && localHash != null
+            && localHash == syncEntity.lastUploadedHash
 
+        if (hashMatchesLastUpload) {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Local hash matches last upload, no real conflict")
+            return@withContext null
+        }
+
+        val isHashConflict = syncEntity?.lastUploadedHash != null
+            && localHash != null
+            && localHash != syncEntity.lastUploadedHash
         val isTimestampConflict = serverTime.isAfter(localModified)
 
         if (isTimestampConflict || isHashConflict) {

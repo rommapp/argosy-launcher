@@ -144,4 +144,7 @@ interface SaveCacheDao {
 
     @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
     fun observeNeedingRemoteSyncCount(): Flow<Int>
+
+    @Query("UPDATE save_cache SET needsRemoteSync = 0 WHERE gameId = :gameId AND needsRemoteSync = 1")
+    suspend fun clearAllDirtyFlags(gameId: Long)
 }

@@ -34,6 +34,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         data class Conflict(
             val gameId: Long,
             val emulatorId: String,
+            val channelName: String?,
             val localTimestamp: Instant,
             val serverTimestamp: Instant
         ) : Result()
@@ -181,6 +182,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
                 Result.Conflict(
                     syncResult.gameId,
                     emulatorId,
+                    activeChannel,
                     syncResult.localTimestamp,
                     syncResult.serverTimestamp
                 )

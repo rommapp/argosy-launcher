@@ -201,6 +201,7 @@ class ArgosyViewModel @Inject constructor(
                     gameId = event.gameId,
                     gameName = game?.title ?: "Unknown Game",
                     emulatorId = event.emulatorId,
+                    channelName = event.channelName,
                     localTimestamp = event.localTimestamp,
                     serverTimestamp = event.serverTimestamp
                 )
@@ -356,7 +357,6 @@ class ArgosyViewModel @Inject constructor(
     fun resetAllModals() {
         _isDrawerOpen.value = false
         _isQuickSettingsOpen.value = false
-        _saveConflictInfo.value = null
         modalResetSignal.emit()
     }
 
@@ -543,8 +543,14 @@ class ArgosyViewModel @Inject constructor(
     val saveConflictButtonIndex: StateFlow<Int> = _saveConflictButtonIndex.asStateFlow()
 
     fun dismissSaveConflict() {
+        val info = _saveConflictInfo.value
         _saveConflictInfo.value = null
         _saveConflictButtonIndex.value = 0
+        if (info != null) {
+            viewModelScope.launch {
+                saveSyncRepository.clearDirtyFlags(info.gameId)
+            }
+        }
     }
 
     fun moveSaveConflictFocus(direction: Int) {
@@ -558,7 +564,7 @@ class ArgosyViewModel @Inject constructor(
             saveSyncRepository.uploadSave(
                 gameId = info.gameId,
                 emulatorId = info.emulatorId,
-                channelName = null,
+                channelName = info.channelName,
                 forceOverwrite = true
             )
         }

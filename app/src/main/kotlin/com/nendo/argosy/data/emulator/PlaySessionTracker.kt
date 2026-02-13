@@ -64,6 +64,7 @@ sealed class SessionEndResult {
 data class SaveConflictEvent(
     val gameId: Long,
     val emulatorId: String,
+    val channelName: String?,
     val localTimestamp: Instant,
     val serverTimestamp: Instant
 )
@@ -490,6 +491,7 @@ class PlaySessionTracker @Inject constructor(
                     SaveConflictEvent(
                         gameId = result.gameId,
                         emulatorId = result.emulatorId,
+                        channelName = result.channelName,
                         localTimestamp = result.localTimestamp,
                         serverTimestamp = result.serverTimestamp
                     )

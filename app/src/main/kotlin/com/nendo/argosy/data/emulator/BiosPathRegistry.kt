@@ -240,7 +240,7 @@ object BiosPathRegistry {
             defaultPaths = emptyList(), // Paths set dynamically via getBuiltInSystemDir()
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "gba", "tgcd", "lynx"
+                "gba", "tgcd", "lynx", "3do"
             )
         )
     )

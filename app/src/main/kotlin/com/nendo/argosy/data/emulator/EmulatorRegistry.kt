@@ -603,7 +603,7 @@ object EmulatorRegistry {
         "lynx" to listOf("retroarch", "retroarch_64"),
         "tg16" to listOf("builtin", "retroarch", "retroarch_64"),
         "tgcd" to listOf("retroarch", "retroarch_64"),
-        "3do" to listOf("retroarch", "retroarch_64"),
+        "3do" to listOf("builtin", "retroarch", "retroarch_64"),
         "ngp" to listOf("retroarch", "retroarch_64"),
         "ngpc" to listOf("retroarch", "retroarch_64"),
         "wonderswan" to listOf("retroarch", "retroarch_64"),

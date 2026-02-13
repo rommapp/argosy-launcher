@@ -17,6 +17,7 @@ import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -346,6 +347,7 @@ class MainActivity : ComponentActivity() {
                     if (gameId < 0) return
                     when (type) {
                         "PLAY" -> handleDualPlay(gameId)
+                        "DOWNLOAD" -> handleDualDownload(gameId)
                         "REFRESH_METADATA" -> handleDualRefresh(gameId)
                         "DELETE" -> handleDualDelete(gameId)
                         "HIDE" -> handleDualHide(gameId)
@@ -919,6 +921,12 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun handleDualDownload(gameId: Long) {
+        activityScope.launch(Dispatchers.IO) {
+            gameActionsDelegate.queueDownload(gameId)
+        }
+    }
+
     private fun handleDualRefresh(gameId: Long) {
         activityScope.launch(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@launch
@@ -1237,15 +1245,10 @@ class MainActivity : ComponentActivity() {
             addAction(DualScreenBroadcasts.ACTION_COMPANION_RESUMED)
             addAction(DualScreenBroadcasts.ACTION_COMPANION_PAUSED)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(dualGameSelectedReceiver, showcaseFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(dualGameDetailReceiver, detailFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(companionLifecycleReceiver, companionFilter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(dualGameSelectedReceiver, showcaseFilter)
-            registerReceiver(dualGameDetailReceiver, detailFilter)
-            registerReceiver(companionLifecycleReceiver, companionFilter)
-        }
+        val flag = ContextCompat.RECEIVER_NOT_EXPORTED
+        ContextCompat.registerReceiver(this, dualGameSelectedReceiver, showcaseFilter, flag)
+        ContextCompat.registerReceiver(this, dualGameDetailReceiver, detailFilter, flag)
+        ContextCompat.registerReceiver(this, companionLifecycleReceiver, companionFilter, flag)
     }
 
     @SuppressLint("RestrictedApi")

@@ -287,7 +287,7 @@ class UserPreferencesRepository @Inject constructor(
             ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE]),
             androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI],
             builtinLibretroEnabled = prefs[Keys.BUILTIN_LIBRETRO_ENABLED] ?: true,
-            appAffinityEnabled = prefs[Keys.APP_AFFINITY_ENABLED] ?: false
+            appAffinityEnabled = true
         )
     }
 

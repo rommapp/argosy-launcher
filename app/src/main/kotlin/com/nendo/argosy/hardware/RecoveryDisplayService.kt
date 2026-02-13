@@ -1,5 +1,6 @@
 package com.nendo.argosy.hardware
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -146,6 +147,7 @@ class RecoveryDisplayService : Service() {
         }
     }
 
+    @SuppressLint("NewApi")
     private fun showPresentation(display: Display) {
         val displayContext = createWindowContext(
             display,

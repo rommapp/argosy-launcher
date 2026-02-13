@@ -77,7 +77,7 @@ internal sealed class AboutItem(
 
         val ALL: List<AboutItem> = listOf(
             VersionHeader, VersionInfo, CheckUpdates, BetaUpdates,
-            SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging, AppAffinity
+            SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging
         )
     }
 }

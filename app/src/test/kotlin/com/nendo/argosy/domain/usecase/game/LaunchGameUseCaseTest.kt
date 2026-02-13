@@ -45,7 +45,9 @@ class LaunchGameUseCaseTest {
         coVerify {
             playSessionTracker.startSession(
                 gameId = 123L,
-                emulatorPackage = "com.emulator.test"
+                emulatorPackage = "com.emulator.test",
+                coreName = null,
+                isNewGame = true
             )
         }
     }
@@ -63,7 +65,9 @@ class LaunchGameUseCaseTest {
         coVerify {
             playSessionTracker.startSession(
                 gameId = 123L,
-                emulatorPackage = ""
+                emulatorPackage = "",
+                coreName = null,
+                isNewGame = true
             )
         }
     }

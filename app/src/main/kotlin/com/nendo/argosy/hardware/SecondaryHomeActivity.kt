@@ -4,10 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -458,27 +458,16 @@ class SecondaryHomeActivity : ComponentActivity() {
         val directActionFilter = IntentFilter(DualScreenBroadcasts.ACTION_DIRECT_ACTION)
         val saveDataFilter = IntentFilter(DualScreenBroadcasts.ACTION_SAVE_DATA)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(foregroundReceiver, foregroundFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(saveStateReceiver, saveStateFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(sessionReceiver, sessionFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(homeAppsReceiver, homeAppsFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(libraryRefreshReceiver, libraryRefreshFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(refocusReceiver, refocusFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(modalResultReceiver, modalResultFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(directActionResultReceiver, directActionFilter, Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(saveDataReceiver, saveDataFilter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(foregroundReceiver, foregroundFilter)
-            registerReceiver(saveStateReceiver, saveStateFilter)
-            registerReceiver(sessionReceiver, sessionFilter)
-            registerReceiver(homeAppsReceiver, homeAppsFilter)
-            registerReceiver(libraryRefreshReceiver, libraryRefreshFilter)
-            registerReceiver(refocusReceiver, refocusFilter)
-            registerReceiver(modalResultReceiver, modalResultFilter)
-            registerReceiver(directActionResultReceiver, directActionFilter)
-            registerReceiver(saveDataReceiver, saveDataFilter)
-        }
+        val flag = ContextCompat.RECEIVER_NOT_EXPORTED
+        ContextCompat.registerReceiver(this, foregroundReceiver, foregroundFilter, flag)
+        ContextCompat.registerReceiver(this, saveStateReceiver, saveStateFilter, flag)
+        ContextCompat.registerReceiver(this, sessionReceiver, sessionFilter, flag)
+        ContextCompat.registerReceiver(this, homeAppsReceiver, homeAppsFilter, flag)
+        ContextCompat.registerReceiver(this, libraryRefreshReceiver, libraryRefreshFilter, flag)
+        ContextCompat.registerReceiver(this, refocusReceiver, refocusFilter, flag)
+        ContextCompat.registerReceiver(this, modalResultReceiver, modalResultFilter, flag)
+        ContextCompat.registerReceiver(this, directActionResultReceiver, directActionFilter, flag)
+        ContextCompat.registerReceiver(this, saveDataReceiver, saveDataFilter, flag)
     }
 
     private fun launchApp(packageName: String) {
@@ -656,15 +645,6 @@ class SecondaryHomeActivity : ComponentActivity() {
         )
     }
 
-    private fun launchGame(gameId: Long) {
-        val (intent, options) = dualHomeViewModel.getLaunchIntent(gameId)
-        if (options != null) {
-            startActivity(intent, options)
-        } else {
-            startActivity(intent)
-        }
-    }
-
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
         if (event.repeatCount == 0) {
             android.util.Log.d("SecondaryInput", "keyCode=$keyCode (${android.view.KeyEvent.keyCodeToString(keyCode)}), swapAB=$swapAB, swapXY=$swapXY")
@@ -731,7 +711,7 @@ class SecondaryHomeActivity : ComponentActivity() {
                 } else {
                     val game = state.selectedGame
                     if (game != null && game.isPlayable) {
-                        launchGame(game.id)
+                        broadcastDirectAction("PLAY", game.id)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
                 }
@@ -988,7 +968,7 @@ class SecondaryHomeActivity : ComponentActivity() {
                 if (vm.uiState.value.isPlayable) {
                     broadcastDirectAction("PLAY", gameId)
                 } else {
-                    launchSingleScreenDetail(vm)
+                    broadcastDirectAction("DOWNLOAD", gameId)
                 }
             }
             GameDetailOption.RATING -> {
@@ -1034,15 +1014,6 @@ class SecondaryHomeActivity : ComponentActivity() {
                 broadcastDirectAction("HIDE", gameId)
             }
         }
-    }
-
-    private fun launchSingleScreenDetail(vm: DualGameDetailViewModel) {
-        val gameId = vm.uiState.value.gameId
-        val (intent, opts) = vm.getGameDetailIntent(gameId)
-        if (opts != null) startActivity(intent, opts)
-        else startActivity(intent)
-        returnToHome()
-        refocusSelf()
     }
 
     private fun handleSaveConfirm(vm: DualGameDetailViewModel) {

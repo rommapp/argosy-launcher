@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +30,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Whatshot
 import androidx.compose.material.icons.filled.Cloud
@@ -48,8 +51,10 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -71,18 +76,20 @@ import java.util.Locale
 @Composable
 fun DualGameDetailLowerScreen(
     state: DualGameDetailUiState,
-    saves: List<SaveTimelineEntry>,
-    channels: List<SaveChannelUi>,
+    slots: List<SaveSlotItem>,
+    history: List<SaveHistoryItem>,
+    saveFocusColumn: SaveFocusColumn,
+    selectedSlotIndex: Int,
+    selectedHistoryIndex: Int,
     visibleOptions: List<GameDetailOption>,
-    selectedSaveIndex: Int,
     selectedScreenshotIndex: Int,
     selectedOptionIndex: Int,
+    savesLoading: Boolean = false,
+    savesApplying: Boolean = false,
     isDimmed: Boolean = false,
     onTabChanged: (DualGameDetailTab) -> Unit,
-    onSaveSelected: (String) -> Unit,
-    onSaveRestore: (String) -> Unit,
-    onSaveLock: (String) -> Unit,
-    onSaveDelete: (String) -> Unit,
+    onSlotTapped: (Int) -> Unit,
+    onHistoryTapped: (Int) -> Unit,
     onScreenshotSelected: (Int) -> Unit,
     onScreenshotView: (Int) -> Unit,
     onOptionSelected: (GameDetailOption) -> Unit,
@@ -108,10 +115,15 @@ fun DualGameDetailLowerScreen(
             Box(modifier = Modifier.weight(1f)) {
                 when (state.currentTab) {
                     DualGameDetailTab.SAVES -> SavesTabContent(
-                        saves = saves,
-                        channels = channels,
-                        selectedIndex = selectedSaveIndex,
-                        onSaveSelected = onSaveSelected
+                        slots = slots,
+                        history = history,
+                        focusColumn = saveFocusColumn,
+                        selectedSlotIndex = selectedSlotIndex,
+                        selectedHistoryIndex = selectedHistoryIndex,
+                        isLoading = savesLoading,
+                        isApplying = savesApplying,
+                        onSlotTapped = onSlotTapped,
+                        onHistoryTapped = onHistoryTapped
                     )
                     DualGameDetailTab.MEDIA -> MediaTabContent(
                         screenshots = state.screenshots,
@@ -188,41 +200,269 @@ private fun TabHeader(
 
 @Composable
 private fun SavesTabContent(
-    saves: List<SaveTimelineEntry>,
-    channels: List<SaveChannelUi>,
-    selectedIndex: Int,
-    onSaveSelected: (String) -> Unit
+    slots: List<SaveSlotItem>,
+    history: List<SaveHistoryItem>,
+    focusColumn: SaveFocusColumn,
+    selectedSlotIndex: Int,
+    selectedHistoryIndex: Int,
+    isLoading: Boolean,
+    isApplying: Boolean,
+    onSlotTapped: (Int) -> Unit,
+    onHistoryTapped: (Int) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Channel selector (simplified)
-        if (channels.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "CHANNEL:",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = channels.firstOrNull { it.isActive }?.name ?: "Main",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Loading saves...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        return
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            SaveSlotsColumn(
+                slots = slots,
+                selectedIndex = selectedSlotIndex,
+                isFocused = focusColumn == SaveFocusColumn.SLOTS,
+                onSlotTapped = onSlotTapped,
+                modifier = Modifier
+                    .weight(0.4f)
+                    .fillMaxHeight()
+            )
+
+            VerticalDivider(
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f)
+            )
+
+            SaveHistoryColumn(
+                history = history,
+                selectedIndex = selectedHistoryIndex,
+                isFocused = focusColumn == SaveFocusColumn.HISTORY,
+                slotName = slots.getOrNull(selectedSlotIndex)
+                    ?.let { if (it.isCreateAction) null else it.displayName },
+                onHistoryTapped = onHistoryTapped,
+                modifier = Modifier
+                    .weight(0.6f)
+                    .fillMaxHeight()
+            )
         }
 
-        if (saves.isEmpty()) {
+        if (isApplying) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .touchOnly { },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Applying save...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SaveSlotsColumn(
+    slots: List<SaveSlotItem>,
+    selectedIndex: Int,
+    isFocused: Boolean,
+    onSlotTapped: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex >= 0 && isFocused) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+
+    Column(modifier = modifier.padding(top = 12.dp)) {
+        Text(
+            text = "Save Slots",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
+
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(
+                horizontal = 8.dp, vertical = 4.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            itemsIndexed(slots) { index, slot ->
+                val isSelected = index == selectedIndex && isFocused
+                if (slot.isCreateAction) {
+                    NewSlotRow(
+                        isSelected = isSelected,
+                        onClick = { onSlotTapped(index) }
+                    )
+                } else {
+                    SlotRow(
+                        slot = slot,
+                        isSelected = isSelected,
+                        onClick = { onSlotTapped(index) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SlotRow(
+    slot: SaveSlotItem,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val accentColor = MaterialTheme.colorScheme.primary
+    val textColor = if (slot.isActive) accentColor
+        else MaterialTheme.colorScheme.onSurface
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.6f)
+                else Color.Transparent
+            )
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            )
+            .touchOnly { onClick() }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            if (slot.isActive) {
+                Icon(
+                    imageVector = Icons.Filled.Circle,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier
+                        .size(8.dp)
+                        .padding(end = 0.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = slot.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (slot.isActive) FontWeight.Bold
+                    else FontWeight.Normal,
+                color = textColor
+            )
+        }
+        if (slot.saveCount > 0) {
+            Text(
+                text = "${slot.saveCount}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun NewSlotRow(
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.6f)
+                else Color.Transparent
+            )
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            )
+            .touchOnly { onClick() }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Add,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = "New Slot",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun SaveHistoryColumn(
+    history: List<SaveHistoryItem>,
+    selectedIndex: Int,
+    isFocused: Boolean,
+    slotName: String?,
+    onHistoryTapped: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex >= 0 && isFocused) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+
+    Column(modifier = modifier.padding(top = 12.dp)) {
+        Text(
+            text = if (slotName != null) "History ($slotName)" else "History",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
+
+        if (history.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -233,13 +473,17 @@ private fun SavesTabContent(
             }
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                state = listState,
+                contentPadding = PaddingValues(
+                    horizontal = 8.dp, vertical = 4.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                itemsIndexed(saves) { index, save ->
-                    SaveTimelineItem(
-                        entry = save,
-                        isSelected = index == selectedIndex,
-                        onClick = { onSaveSelected(save.id) }
+                itemsIndexed(history) { index, item ->
+                    HistoryRow(
+                        item = item,
+                        isSelected = index == selectedIndex && isFocused,
+                        onClick = { onHistoryTapped(index) }
                     )
                 }
             }
@@ -248,8 +492,8 @@ private fun SavesTabContent(
 }
 
 @Composable
-private fun SaveTimelineItem(
-    entry: SaveTimelineEntry,
+private fun HistoryRow(
+    item: SaveHistoryItem,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -258,70 +502,64 @@ private fun SaveTimelineItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(
-                if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                }
+                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.6f)
+                else Color.Transparent
             )
             .then(
-                if (isSelected) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                } else Modifier
+                if (isSelected) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
             )
             .touchOnly { onClick() }
-            .padding(12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = entry.label ?: formatTimestamp(entry.timestamp),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (entry.label != null) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
-                    text = formatTimestamp(entry.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = formatTimestamp(item.timestamp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                if (item.isActiveRestorePoint) {
+                    Icon(
+                        imageVector = Icons.Filled.CheckCircle,
+                        contentDescription = "Active restore point",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                if (item.isLatest) {
+                    Text(
+                        text = "Latest",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
+            Text(
+                text = formatSize(item.size),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (entry.isLocked) {
-                Icon(
-                    imageVector = Icons.Filled.Lock,
-                    contentDescription = "Locked",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            Icon(
-                imageVector = when {
-                    entry.isSynced -> Icons.Filled.CheckCircle
-                    entry.isRemoteOnly -> Icons.Filled.Cloud
-                    entry.isLocal -> Icons.Filled.CloudOff
-                    else -> Icons.Filled.CloudOff
-                },
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = when {
-                    entry.isSynced -> Color(0xFF4CAF50)
-                    entry.isRemoteOnly -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
+        val syncTag = if (item.isSynced) "Synced" else "Local"
+        val syncColor = if (item.isSynced) Color(0xFF4CAF50)
+            else MaterialTheme.colorScheme.onSurfaceVariant
+        Text(
+            text = "[$syncTag]",
+            style = MaterialTheme.typography.labelSmall,
+            color = syncColor
+        )
     }
 }
 
@@ -681,5 +919,13 @@ private fun formatTimestamp(timestamp: Long): String {
             val format = SimpleDateFormat("MMM d", Locale.getDefault())
             format.format(date)
         }
+    }
+}
+
+private fun formatSize(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        else -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
     }
 }

@@ -38,6 +38,12 @@ import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualCollectionItem
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
+import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
+import com.nendo.argosy.ui.dualscreen.gamedetail.toJsonString
+import com.nendo.argosy.ui.dualscreen.gamedetail.toSaveEntryData
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
@@ -140,6 +146,7 @@ class MainActivity : ComponentActivity() {
                         communityRating = showcase.communityRating,
                         titleId = showcase.titleId
                     )
+                    broadcastUnifiedSaves(gameId)
                     activityScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                         val game = gameDao.getById(gameId)
                             ?: return@launch
@@ -229,6 +236,23 @@ class MainActivity : ComponentActivity() {
                                         )
                                     },
                                     collectionFocusIndex = 0
+                                )
+                            }
+                        }
+                        ActiveModal.SAVE_NAME -> {
+                            val actionType = intent.getStringExtra(
+                                DualScreenBroadcasts.EXTRA_ACTION_TYPE
+                            )
+                            val cacheId = intent.getLongExtra(
+                                DualScreenBroadcasts.EXTRA_SAVE_CACHE_ID, -1
+                            )
+                            _dualGameDetailState.update { state ->
+                                state?.copy(
+                                    modalType = ActiveModal.SAVE_NAME,
+                                    saveNamePromptAction = actionType,
+                                    saveNameCacheId = if (cacheId > 0) cacheId
+                                        else null,
+                                    saveNameText = ""
                                 )
                             }
                         }
@@ -325,6 +349,23 @@ class MainActivity : ComponentActivity() {
                         "REFRESH_METADATA" -> handleDualRefresh(gameId)
                         "DELETE" -> handleDualDelete(gameId)
                         "HIDE" -> handleDualHide(gameId)
+                        "SAVE_SWITCH_CHANNEL" -> {
+                            val channelName = intent.getStringExtra(
+                                DualScreenBroadcasts.EXTRA_CHANNEL_NAME
+                            )
+                            handleSaveSwitchChannel(gameId, channelName)
+                        }
+                        "SAVE_SET_RESTORE_POINT" -> {
+                            val channelName = intent.getStringExtra(
+                                DualScreenBroadcasts.EXTRA_CHANNEL_NAME
+                            )
+                            val timestamp = intent.getLongExtra(
+                                DualScreenBroadcasts.EXTRA_SAVE_TIMESTAMP, 0
+                            )
+                            handleSaveSetRestorePoint(
+                                gameId, channelName, timestamp
+                            )
+                        }
                     }
                 }
                 DualScreenBroadcasts.ACTION_INLINE_UPDATE -> {
@@ -400,6 +441,18 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var gameLaunchDelegate: GameLaunchDelegate
+
+    @Inject
+    lateinit var saveCacheManager: SaveCacheManager
+
+    @Inject
+    lateinit var getUnifiedSavesUseCase: GetUnifiedSavesUseCase
+
+    @Inject
+    lateinit var restoreCachedSaveUseCase: RestoreCachedSaveUseCase
+
+    @Inject
+    lateinit var emulatorResolver: EmulatorResolver
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(this) }
 
@@ -925,6 +978,176 @@ class MainActivity : ComponentActivity() {
                 }
             )
         }
+    }
+
+    private fun handleSaveSwitchChannel(gameId: Long, channelName: String?) {
+        activityScope.launch(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(
+                gameId, game.platformId, game.platformSlug
+            )
+
+            gameDao.updateActiveSaveChannel(gameId, channelName)
+            gameDao.updateActiveSaveTimestamp(gameId, null)
+
+            if (emulatorId != null) {
+                val entries = getUnifiedSavesUseCase(gameId)
+                val latestForChannel = entries
+                    .filter { it.channelName == channelName }
+                    .maxByOrNull { it.timestamp }
+
+                if (latestForChannel != null) {
+                    val result = restoreCachedSaveUseCase(
+                        latestForChannel, gameId, emulatorId, false
+                    )
+                    when (result) {
+                        is RestoreCachedSaveUseCase.Result.Restored,
+                        is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
+                            gameDao.updateActiveSaveApplied(gameId, true)
+                        }
+                        is RestoreCachedSaveUseCase.Result.Error -> {
+                            Log.w(TAG, "Channel switch restore failed: ${result.message}")
+                        }
+                    }
+                }
+            }
+
+            broadcastSaveActionResult("SAVE_SWITCH_DONE", gameId)
+            broadcastUnifiedSaves(gameId)
+        }
+    }
+
+    private fun handleSaveSetRestorePoint(
+        gameId: Long,
+        channelName: String?,
+        timestamp: Long
+    ) {
+        activityScope.launch(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(
+                gameId, game.platformId, game.platformSlug
+            )
+
+            gameDao.updateActiveSaveChannel(gameId, channelName)
+            gameDao.updateActiveSaveTimestamp(gameId, timestamp)
+
+            if (emulatorId != null) {
+                val entries = getUnifiedSavesUseCase(gameId)
+                val targetEntry = entries.find {
+                    it.channelName == channelName &&
+                        it.timestamp.toEpochMilli() == timestamp
+                }
+
+                if (targetEntry != null) {
+                    val result = restoreCachedSaveUseCase(
+                        targetEntry, gameId, emulatorId, false
+                    )
+                    when (result) {
+                        is RestoreCachedSaveUseCase.Result.Restored,
+                        is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
+                            gameDao.updateActiveSaveApplied(gameId, true)
+                        }
+                        is RestoreCachedSaveUseCase.Result.Error -> {
+                            Log.w(TAG, "Restore point apply failed: ${result.message}")
+                        }
+                    }
+                }
+            }
+
+            broadcastSaveActionResult("SAVE_RESTORE_DONE", gameId)
+            broadcastUnifiedSaves(gameId)
+        }
+    }
+
+    private fun handleCreateSlot(gameId: Long, name: String) {
+        activityScope.launch(Dispatchers.IO) {
+            gameDao.updateActiveSaveChannel(gameId, name)
+            gameDao.updateActiveSaveTimestamp(gameId, null)
+            broadcastSaveActionResult("SAVE_CREATE_DONE", gameId)
+            broadcastUnifiedSaves(gameId)
+        }
+    }
+
+    private fun handleLockAsSlot(gameId: Long, cacheId: Long?, name: String) {
+        if (cacheId == null) return
+        activityScope.launch(Dispatchers.IO) {
+            saveCacheManager.copyToChannel(cacheId, name)
+            broadcastSaveActionResult("SAVE_LOCK_DONE", gameId)
+            broadcastUnifiedSaves(gameId)
+        }
+    }
+
+    private fun broadcastSaveActionResult(type: String, gameId: Long) {
+        sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
+                setPackage(packageName)
+                putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
+                putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
+            }
+        )
+    }
+
+    private fun broadcastUnifiedSaves(gameId: Long) {
+        activityScope.launch(Dispatchers.IO) {
+            try {
+                val entries = getUnifiedSavesUseCase(gameId)
+                val json = entries.map { it.toSaveEntryData() }.toJsonString()
+                val game = gameDao.getById(gameId)
+                sendBroadcast(
+                    Intent(DualScreenBroadcasts.ACTION_SAVE_DATA).apply {
+                        setPackage(packageName)
+                        putExtra(DualScreenBroadcasts.EXTRA_SAVE_DATA_JSON, json)
+                        putExtra(
+                            DualScreenBroadcasts.EXTRA_ACTIVE_CHANNEL,
+                            game?.activeSaveChannel
+                        )
+                        game?.activeSaveTimestamp?.let {
+                            putExtra(
+                                DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP,
+                                it
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to broadcast unified saves", e)
+                sendBroadcast(
+                    Intent(DualScreenBroadcasts.ACTION_SAVE_DATA).apply {
+                        setPackage(packageName)
+                        putExtra(DualScreenBroadcasts.EXTRA_SAVE_DATA_JSON, "[]")
+                    }
+                )
+            }
+        }
+    }
+
+    fun updateDualSaveNameText(text: String) {
+        _dualGameDetailState.update { it?.copy(saveNameText = text) }
+    }
+
+    fun confirmDualSaveName() {
+        val state = _dualGameDetailState.value ?: return
+        val name = state.saveNameText.trim()
+        if (name.isBlank()) return
+        val gameId = state.gameId
+
+        when (state.saveNamePromptAction) {
+            "CREATE_SLOT" -> handleCreateSlot(gameId, name)
+            "LOCK_AS_SLOT" -> handleLockAsSlot(
+                gameId, state.saveNameCacheId, name
+            )
+        }
+
+        _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
+                setPackage(packageName)
+                putExtra(
+                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
+                    ActiveModal.SAVE_NAME.name
+                )
+            }
+        )
     }
 
     private fun shouldYieldOnResume(): Boolean {

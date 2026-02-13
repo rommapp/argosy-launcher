@@ -40,9 +40,6 @@ class DualGameDetailViewModel(
     private val _uiState = MutableStateFlow(DualGameDetailUiState())
     val uiState: StateFlow<DualGameDetailUiState> = _uiState.asStateFlow()
 
-    private val _selectedSaveIndex = MutableStateFlow(-1)
-    val selectedSaveIndex: StateFlow<Int> = _selectedSaveIndex.asStateFlow()
-
     private val _selectedScreenshotIndex = MutableStateFlow(-1)
     val selectedScreenshotIndex: StateFlow<Int> =
         _selectedScreenshotIndex.asStateFlow()
@@ -51,11 +48,25 @@ class DualGameDetailViewModel(
     val selectedOptionIndex: StateFlow<Int> =
         _selectedOptionIndex.asStateFlow()
 
-    private val _saves = MutableStateFlow<List<SaveTimelineEntry>>(emptyList())
-    val saves: StateFlow<List<SaveTimelineEntry>> = _saves.asStateFlow()
+    private val _saveSlots = MutableStateFlow<List<SaveSlotItem>>(emptyList())
+    val saveSlots: StateFlow<List<SaveSlotItem>> = _saveSlots.asStateFlow()
 
-    private val _channels = MutableStateFlow<List<SaveChannelUi>>(emptyList())
-    val channels: StateFlow<List<SaveChannelUi>> = _channels.asStateFlow()
+    private var _rawEntries: List<SaveEntryData> = emptyList()
+
+    private val _savesLoading = MutableStateFlow(true)
+    val savesLoading: StateFlow<Boolean> = _savesLoading.asStateFlow()
+
+    private val _savesApplying = MutableStateFlow(false)
+    val savesApplying: StateFlow<Boolean> = _savesApplying.asStateFlow()
+
+    private val _saveHistory = MutableStateFlow<List<SaveHistoryItem>>(emptyList())
+    val saveHistory: StateFlow<List<SaveHistoryItem>> = _saveHistory.asStateFlow()
+
+    private val _selectedSlotIndex = MutableStateFlow(0)
+    val selectedSlotIndex: StateFlow<Int> = _selectedSlotIndex.asStateFlow()
+
+    private val _selectedHistoryIndex = MutableStateFlow(0)
+    val selectedHistoryIndex: StateFlow<Int> = _selectedHistoryIndex.asStateFlow()
 
     private val _activeModal =
         MutableStateFlow(ActiveModal.NONE)
@@ -85,6 +96,12 @@ class DualGameDetailViewModel(
     private var ratingDebounceJob: Job? = null
     private var difficultyDebounceJob: Job? = null
     private var statusDebounceJob: Job? = null
+
+    val focusedSlotChannelName: String?
+        get() {
+            val slot = _saveSlots.value.getOrNull(_selectedSlotIndex.value)
+            return if (slot?.isCreateAction == true) null else slot?.channelName
+        }
 
     fun adjustRatingInline(delta: Int) {
         val current = _uiState.value.rating ?: 0
@@ -188,7 +205,8 @@ class DualGameDetailViewModel(
                     gameDao.updateStatus(gameId, value)
                 }
             }
-            ActiveModal.EMULATOR, ActiveModal.COLLECTION -> return
+            ActiveModal.EMULATOR, ActiveModal.COLLECTION,
+            ActiveModal.SAVE_NAME -> return
             ActiveModal.NONE -> return
         }
         _activeModal.value = ActiveModal.NONE
@@ -226,6 +244,9 @@ class DualGameDetailViewModel(
                 emulatorConfigDao.getByGameId(game.id)
                     ?: emulatorConfigDao.getDefaultForPlatform(game.platformId)
 
+            val activeChannel = game.activeSaveChannel
+            val activeSaveTimestamp = game.activeSaveTimestamp
+
             val newState = DualGameDetailUiState(
                 gameId = game.id,
                 title = game.title,
@@ -253,16 +274,178 @@ class DualGameDetailViewModel(
                 isDownloaded = game.localPath != null,
                 platformSlug = game.platformSlug,
                 platformId = game.platformId,
-                emulatorName = emulatorConfig?.displayName
+                emulatorName = emulatorConfig?.displayName,
+                activeChannel = activeChannel,
+                activeSaveTimestamp = activeSaveTimestamp
             )
             _uiState.value = newState
             _visibleOptions.value = newState.visibleOptions()
 
-            _selectedSaveIndex.value = -1
             _selectedScreenshotIndex.value =
                 if (screenshots.isNotEmpty()) 0 else -1
             _selectedOptionIndex.value = 0
+            _savesLoading.value = true
         }
+    }
+
+    fun loadUnifiedSaves(
+        entries: List<SaveEntryData>,
+        activeChannel: String?,
+        activeSaveTimestamp: Long?
+    ) {
+        _rawEntries = entries
+
+        val channelGroups = entries.groupBy { it.channelName }
+        val slotItems = mutableListOf<SaveSlotItem>()
+
+        val autoSaves = channelGroups[null] ?: emptyList()
+        slotItems.add(
+            SaveSlotItem(
+                channelName = null,
+                displayName = "Auto Save",
+                isActive = activeChannel == null,
+                saveCount = autoSaves.size,
+                latestTimestamp = autoSaves.maxByOrNull { it.timestamp }
+                    ?.timestamp
+            )
+        )
+
+        channelGroups.filterKeys { it != null }
+            .forEach { (name, saves) ->
+                slotItems.add(
+                    SaveSlotItem(
+                        channelName = name,
+                        displayName = name!!,
+                        isActive = name == activeChannel,
+                        saveCount = saves.size,
+                        latestTimestamp = saves.maxByOrNull { it.timestamp }
+                            ?.timestamp
+                    )
+                )
+            }
+
+        slotItems.add(
+            SaveSlotItem(
+                channelName = null,
+                displayName = "+ New Slot",
+                isActive = false,
+                saveCount = 0,
+                latestTimestamp = null,
+                isCreateAction = true
+            )
+        )
+
+        val preservedSlotName = _saveSlots.value
+            .getOrNull(_selectedSlotIndex.value)?.channelName
+        _saveSlots.value = slotItems
+        val restoredIndex = if (preservedSlotName != null) {
+            slotItems.indexOfFirst {
+                !it.isCreateAction && it.channelName == preservedSlotName
+            }.takeIf { it >= 0 }
+        } else null
+        _selectedSlotIndex.value = restoredIndex ?: 0
+        _selectedHistoryIndex.value = 0
+
+        _uiState.update {
+            it.copy(
+                activeChannel = activeChannel,
+                activeSaveTimestamp = activeSaveTimestamp
+            )
+        }
+        updateHistoryForFocusedSlot(activeSaveTimestamp)
+        _savesLoading.value = false
+        _savesApplying.value = false
+    }
+
+    private fun updateHistoryForFocusedSlot(
+        activeSaveTimestamp: Long? = _uiState.value.activeSaveTimestamp
+    ) {
+        val slot = _saveSlots.value.getOrNull(_selectedSlotIndex.value)
+        if (slot == null || slot.isCreateAction) {
+            _saveHistory.value = emptyList()
+            return
+        }
+        val channelName = slot.channelName
+        val activeChannel = _uiState.value.activeChannel
+        val isActiveChannel = channelName == activeChannel
+        val filtered = _rawEntries
+            .filter { it.channelName == channelName }
+            .sortedByDescending { it.timestamp }
+        _saveHistory.value = filtered.mapIndexed { i, entry ->
+            val isApplied = isActiveChannel && if (activeSaveTimestamp != null) {
+                entry.timestamp == activeSaveTimestamp
+            } else {
+                i == 0
+            }
+            SaveHistoryItem(
+                cacheId = entry.localCacheId ?: -1,
+                timestamp = entry.timestamp,
+                size = entry.size,
+                channelName = entry.channelName,
+                isLocal = entry.source != "SERVER",
+                isSynced = entry.source == "BOTH" || entry.source == "SERVER",
+                isActiveRestorePoint = isApplied,
+                isLatest = i == 0,
+                isHardcore = entry.isHardcore,
+                isRollback = entry.isRollback
+            )
+        }
+        _selectedHistoryIndex.value = 0
+    }
+
+    fun reloadSaves() {
+        _savesLoading.value = true
+    }
+
+    fun setActiveChannel(channelName: String?) {
+        _savesApplying.value = true
+        _uiState.update {
+            it.copy(activeChannel = channelName, activeSaveTimestamp = null)
+        }
+        _saveSlots.update { slots ->
+            slots.map { slot ->
+                if (slot.isCreateAction) slot
+                else slot.copy(isActive = slot.channelName == channelName)
+            }
+        }
+    }
+
+    fun setActiveRestorePoint(channelName: String?, timestamp: Long) {
+        _savesApplying.value = true
+        _uiState.update {
+            it.copy(
+                activeChannel = channelName,
+                activeSaveTimestamp = timestamp
+            )
+        }
+        _saveSlots.update { slots ->
+            slots.map { slot ->
+                if (slot.isCreateAction) slot
+                else slot.copy(isActive = slot.channelName == channelName)
+            }
+        }
+        updateHistoryForFocusedSlot(timestamp)
+    }
+
+    fun focusSlotsColumn() {
+        _uiState.update { it.copy(saveFocusColumn = SaveFocusColumn.SLOTS) }
+    }
+
+    fun focusHistoryColumn() {
+        if (_saveHistory.value.isEmpty()) return
+        _uiState.update { it.copy(saveFocusColumn = SaveFocusColumn.HISTORY) }
+        if (_selectedHistoryIndex.value < 0) _selectedHistoryIndex.value = 0
+    }
+
+    fun moveSlotSelection(delta: Int) {
+        val max = (_saveSlots.value.size - 1).coerceAtLeast(0)
+        _selectedSlotIndex.update { (it + delta).coerceIn(0, max) }
+        updateHistoryForFocusedSlot()
+    }
+
+    fun moveHistorySelection(delta: Int) {
+        val max = (_saveHistory.value.size - 1).coerceAtLeast(0)
+        _selectedHistoryIndex.update { (it + delta).coerceIn(0, max) }
     }
 
     fun setTab(tab: DualGameDetailTab) {
@@ -290,10 +473,10 @@ class DualGameDetailViewModel(
     fun moveSelectionUp() {
         when (_uiState.value.currentTab) {
             DualGameDetailTab.SAVES -> {
-                val saves = _saves.value
-                if (saves.isEmpty()) return
-                _selectedSaveIndex.update { idx ->
-                    (idx - 1).coerceAtLeast(0)
+                if (_uiState.value.saveFocusColumn == SaveFocusColumn.SLOTS) {
+                    moveSlotSelection(-1)
+                } else {
+                    moveHistorySelection(-1)
                 }
             }
             DualGameDetailTab.OPTIONS -> {
@@ -314,10 +497,10 @@ class DualGameDetailViewModel(
     fun moveSelectionDown() {
         when (_uiState.value.currentTab) {
             DualGameDetailTab.SAVES -> {
-                val saves = _saves.value
-                if (saves.isEmpty()) return
-                _selectedSaveIndex.update { idx ->
-                    (idx + 1).coerceAtMost(saves.size - 1)
+                if (_uiState.value.saveFocusColumn == SaveFocusColumn.SLOTS) {
+                    moveSlotSelection(1)
+                } else {
+                    moveHistorySelection(1)
                 }
             }
             DualGameDetailTab.OPTIONS -> {
@@ -411,8 +594,13 @@ class DualGameDetailViewModel(
     private fun resetSelectionForTab(tab: DualGameDetailTab) {
         when (tab) {
             DualGameDetailTab.SAVES -> {
-                _selectedSaveIndex.value =
-                    if (_saves.value.isNotEmpty()) 0 else -1
+                _selectedSlotIndex.value =
+                    if (_saveSlots.value.isNotEmpty()) 0 else 0
+                _selectedHistoryIndex.value = 0
+                _uiState.update {
+                    it.copy(saveFocusColumn = SaveFocusColumn.SLOTS)
+                }
+                updateHistoryForFocusedSlot()
             }
             DualGameDetailTab.MEDIA -> {
                 _selectedScreenshotIndex.value =

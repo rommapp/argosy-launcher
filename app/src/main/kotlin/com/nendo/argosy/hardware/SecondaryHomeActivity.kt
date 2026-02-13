@@ -43,6 +43,7 @@ import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailTab
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel
 import com.nendo.argosy.ui.dualscreen.gamedetail.GameDetailOption
+import com.nendo.argosy.ui.dualscreen.gamedetail.SaveFocusColumn
 import com.nendo.argosy.ui.dualscreen.home.DualHomeFocusZone
 import com.nendo.argosy.ui.dualscreen.home.DualHomeLowerContent
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
@@ -278,6 +279,10 @@ class SecondaryHomeActivity : ComponentActivity() {
                     else vm.dismissPicker()
                     refocusSelf()
                 }
+                ActiveModal.SAVE_NAME.name -> {
+                    // Save data arrives via ACTION_SAVE_DATA broadcast
+                    refocusSelf()
+                }
                 ActiveModal.COLLECTION.name -> {
                     val createName = intent.getStringExtra(
                         DualScreenBroadcasts.EXTRA_COLLECTION_CREATE_NAME
@@ -301,25 +306,49 @@ class SecondaryHomeActivity : ComponentActivity() {
         }
     }
 
+    private val saveDataReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != DualScreenBroadcasts.ACTION_SAVE_DATA) return
+            val vm = dualGameDetailViewModel ?: return
+            val json = intent.getStringExtra(
+                DualScreenBroadcasts.EXTRA_SAVE_DATA_JSON
+            ) ?: return
+            val entries = com.nendo.argosy.ui.dualscreen.gamedetail
+                .parseSaveEntryDataList(json)
+            val activeChannel = intent.getStringExtra(
+                DualScreenBroadcasts.EXTRA_ACTIVE_CHANNEL
+            )
+            val activeTimestamp = if (intent.hasExtra(
+                    DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP
+                )) {
+                intent.getLongExtra(
+                    DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP, 0
+                )
+            } else null
+            vm.loadUnifiedSaves(entries, activeChannel, activeTimestamp)
+        }
+    }
+
     private val directActionResultReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != DualScreenBroadcasts.ACTION_DIRECT_ACTION) return
             val type = intent.getStringExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE)
             val vm = dualGameDetailViewModel ?: return
+            val actionGameId = intent.getLongExtra(
+                DualScreenBroadcasts.EXTRA_GAME_ID, -1
+            )
             when (type) {
                 "REFRESH_DONE" -> {
-                    val gameId = intent.getLongExtra(
-                        DualScreenBroadcasts.EXTRA_GAME_ID, -1
-                    )
-                    if (gameId > 0) vm.loadGame(gameId)
+                    if (actionGameId > 0) vm.loadGame(actionGameId)
                 }
                 "DELETE_DONE" -> {
-                    val gameId = intent.getLongExtra(
-                        DualScreenBroadcasts.EXTRA_GAME_ID, -1
-                    )
-                    if (gameId > 0) vm.loadGame(gameId)
+                    if (actionGameId > 0) vm.loadGame(actionGameId)
                 }
                 "HIDE_DONE" -> returnToHome()
+                "SAVE_SWITCH_DONE", "SAVE_RESTORE_DONE",
+                "SAVE_CREATE_DONE", "SAVE_LOCK_DONE" -> {
+                    // Save data arrives via ACTION_SAVE_DATA broadcast
+                }
             }
         }
     }
@@ -427,6 +456,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         val refocusFilter = IntentFilter(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
         val modalResultFilter = IntentFilter(DualScreenBroadcasts.ACTION_MODAL_RESULT)
         val directActionFilter = IntentFilter(DualScreenBroadcasts.ACTION_DIRECT_ACTION)
+        val saveDataFilter = IntentFilter(DualScreenBroadcasts.ACTION_SAVE_DATA)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(foregroundReceiver, foregroundFilter, Context.RECEIVER_NOT_EXPORTED)
@@ -437,6 +467,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             registerReceiver(refocusReceiver, refocusFilter, Context.RECEIVER_NOT_EXPORTED)
             registerReceiver(modalResultReceiver, modalResultFilter, Context.RECEIVER_NOT_EXPORTED)
             registerReceiver(directActionResultReceiver, directActionFilter, Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(saveDataReceiver, saveDataFilter, Context.RECEIVER_NOT_EXPORTED)
         } else {
             registerReceiver(foregroundReceiver, foregroundFilter)
             registerReceiver(saveStateReceiver, saveStateFilter)
@@ -446,6 +477,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             registerReceiver(refocusReceiver, refocusFilter)
             registerReceiver(modalResultReceiver, modalResultFilter)
             registerReceiver(directActionResultReceiver, directActionFilter)
+            registerReceiver(saveDataReceiver, saveDataFilter)
         }
     }
 
@@ -759,34 +791,49 @@ class SecondaryHomeActivity : ComponentActivity() {
                 InputResult.HANDLED
             }
             GamepadEvent.Left -> {
-                if (vm.uiState.value.currentTab == DualGameDetailTab.OPTIONS) {
-                    handleInlineAdjust(vm, -1)
-                } else {
-                    vm.moveSelectionLeft()
-                    if (isScreenshotViewerOpen) {
-                        broadcastScreenshotSelected(
-                            vm.selectedScreenshotIndex.value
-                        )
+                when (vm.uiState.value.currentTab) {
+                    DualGameDetailTab.SAVES -> {
+                        vm.focusSlotsColumn()
+                    }
+                    DualGameDetailTab.OPTIONS -> {
+                        handleInlineAdjust(vm, -1)
+                    }
+                    DualGameDetailTab.MEDIA -> {
+                        vm.moveSelectionLeft()
+                        if (isScreenshotViewerOpen) {
+                            broadcastScreenshotSelected(
+                                vm.selectedScreenshotIndex.value
+                            )
+                        }
                     }
                 }
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
-                if (vm.uiState.value.currentTab == DualGameDetailTab.OPTIONS) {
-                    handleInlineAdjust(vm, 1)
-                } else {
-                    vm.moveSelectionRight()
-                    if (isScreenshotViewerOpen) {
-                        broadcastScreenshotSelected(
-                            vm.selectedScreenshotIndex.value
-                        )
+                when (vm.uiState.value.currentTab) {
+                    DualGameDetailTab.SAVES -> {
+                        vm.focusHistoryColumn()
+                    }
+                    DualGameDetailTab.OPTIONS -> {
+                        handleInlineAdjust(vm, 1)
+                    }
+                    DualGameDetailTab.MEDIA -> {
+                        vm.moveSelectionRight()
+                        if (isScreenshotViewerOpen) {
+                            broadcastScreenshotSelected(
+                                vm.selectedScreenshotIndex.value
+                            )
+                        }
                     }
                 }
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
                 when (vm.uiState.value.currentTab) {
-                    DualGameDetailTab.SAVES -> InputResult.HANDLED
+                    DualGameDetailTab.SAVES -> {
+                        handleSaveConfirm(vm)
+                        InputResult.HANDLED
+                    }
                     DualGameDetailTab.MEDIA -> {
                         val idx = vm.selectedScreenshotIndex.value
                         if (idx >= 0) broadcastScreenshotSelected(idx)
@@ -807,6 +854,9 @@ class SecondaryHomeActivity : ComponentActivity() {
                 InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
+                if (vm.uiState.value.currentTab == DualGameDetailTab.SAVES) {
+                    handleSaveLockAsSlot(vm)
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.SecondaryAction -> {
@@ -995,6 +1045,83 @@ class SecondaryHomeActivity : ComponentActivity() {
         refocusSelf()
     }
 
+    private fun handleSaveConfirm(vm: DualGameDetailViewModel) {
+        val state = vm.uiState.value
+        if (state.saveFocusColumn == SaveFocusColumn.SLOTS) {
+            val slot = vm.saveSlots.value
+                .getOrNull(vm.selectedSlotIndex.value) ?: return
+            if (slot.isCreateAction) {
+                broadcastSaveNamePrompt("CREATE_SLOT", cacheId = null)
+            } else {
+                vm.setActiveChannel(slot.channelName)
+                broadcastSaveAction(
+                    "SAVE_SWITCH_CHANNEL",
+                    state.gameId,
+                    channelName = slot.channelName
+                )
+            }
+        } else {
+            val item = vm.saveHistory.value
+                .getOrNull(vm.selectedHistoryIndex.value) ?: return
+            val channelName = vm.focusedSlotChannelName
+            vm.setActiveRestorePoint(channelName, item.timestamp)
+            broadcastSaveAction(
+                "SAVE_SET_RESTORE_POINT",
+                state.gameId,
+                channelName = channelName,
+                timestamp = item.timestamp
+            )
+        }
+    }
+
+    private fun handleSaveLockAsSlot(vm: DualGameDetailViewModel) {
+        val state = vm.uiState.value
+        if (state.saveFocusColumn != SaveFocusColumn.HISTORY) return
+        val item = vm.saveHistory.value
+            .getOrNull(vm.selectedHistoryIndex.value) ?: return
+        broadcastSaveNamePrompt("LOCK_AS_SLOT", cacheId = item.cacheId)
+    }
+
+    private fun broadcastSaveAction(
+        type: String,
+        gameId: Long,
+        channelName: String? = null,
+        timestamp: Long? = null
+    ) {
+        sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
+                setPackage(packageName)
+                putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
+                putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
+                channelName?.let {
+                    putExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME, it)
+                }
+                timestamp?.let {
+                    putExtra(DualScreenBroadcasts.EXTRA_SAVE_TIMESTAMP, it)
+                }
+            }
+        )
+    }
+
+    private fun broadcastSaveNamePrompt(
+        actionType: String,
+        cacheId: Long?
+    ) {
+        sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
+                setPackage(packageName)
+                putExtra(
+                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
+                    ActiveModal.SAVE_NAME.name
+                )
+                putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, actionType)
+                if (cacheId != null) {
+                    putExtra(DualScreenBroadcasts.EXTRA_SAVE_CACHE_ID, cacheId)
+                }
+            }
+        )
+    }
+
     private fun refocusSelf() {
         val intent = Intent(
             this, SecondaryHomeActivity::class.java
@@ -1076,6 +1203,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             unregisterReceiver(refocusReceiver)
             unregisterReceiver(modalResultReceiver)
             unregisterReceiver(directActionResultReceiver)
+            unregisterReceiver(saveDataReceiver)
         } catch (e: Exception) {
             // Receiver may not be registered
         }
@@ -1206,28 +1334,37 @@ private fun DualGameDetailContent(
     onBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    val saves by viewModel.saves.collectAsState()
-    val channels by viewModel.channels.collectAsState()
+    val slots by viewModel.saveSlots.collectAsState()
+    val history by viewModel.saveHistory.collectAsState()
+    val selectedSlotIndex by viewModel.selectedSlotIndex.collectAsState()
+    val selectedHistoryIndex by viewModel.selectedHistoryIndex.collectAsState()
     val visibleOptions by viewModel.visibleOptions.collectAsState()
-    val selectedSaveIndex by viewModel.selectedSaveIndex.collectAsState()
     val selectedScreenshotIndex by viewModel.selectedScreenshotIndex.collectAsState()
     val selectedOptionIndex by viewModel.selectedOptionIndex.collectAsState()
     val activeModal by viewModel.activeModal.collectAsState()
+    val savesLoading by viewModel.savesLoading.collectAsState()
+    val savesApplying by viewModel.savesApplying.collectAsState()
 
     DualGameDetailLowerScreen(
         state = state,
-        saves = saves,
-        channels = channels,
+        slots = slots,
+        history = history,
+        saveFocusColumn = state.saveFocusColumn,
+        selectedSlotIndex = selectedSlotIndex,
+        selectedHistoryIndex = selectedHistoryIndex,
         visibleOptions = visibleOptions,
-        selectedSaveIndex = selectedSaveIndex,
         selectedScreenshotIndex = selectedScreenshotIndex,
         selectedOptionIndex = selectedOptionIndex,
+        savesLoading = savesLoading,
+        savesApplying = savesApplying,
         isDimmed = activeModal != ActiveModal.NONE,
         onTabChanged = { viewModel.setTab(it) },
-        onSaveSelected = {},
-        onSaveRestore = {},
-        onSaveLock = {},
-        onSaveDelete = {},
+        onSlotTapped = { index ->
+            viewModel.moveSlotSelection(index - viewModel.selectedSlotIndex.value)
+        },
+        onHistoryTapped = { index ->
+            viewModel.moveHistorySelection(index - viewModel.selectedHistoryIndex.value)
+        },
         onScreenshotSelected = { index ->
             viewModel.setScreenshotIndex(index)
         },

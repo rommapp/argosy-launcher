@@ -59,6 +59,15 @@ object DualScreenBroadcasts {
 
     const val ACTION_DIRECT_ACTION = "com.nendo.argosy.DUAL_DIRECT_ACTION"
     const val EXTRA_ACTION_TYPE = "action_type"
+    const val EXTRA_CHANNEL_NAME = "channel_name"
+    const val EXTRA_SAVE_CACHE_ID = "save_cache_id"
+    const val EXTRA_SAVE_TIMESTAMP = "save_timestamp"
+    const val EXTRA_RENAME_TEXT = "rename_text"
+
+    const val ACTION_SAVE_DATA = "com.nendo.argosy.DUAL_SAVE_DATA"
+    const val EXTRA_SAVE_DATA_JSON = "save_data_json"
+    const val EXTRA_ACTIVE_CHANNEL = "active_channel"
+    const val EXTRA_ACTIVE_SAVE_TIMESTAMP = "active_save_timestamp"
 
     const val ACTION_COMPANION_RESUMED = "com.nendo.argosy.DUAL_COMPANION_RESUMED"
     const val ACTION_COMPANION_PAUSED = "com.nendo.argosy.DUAL_COMPANION_PAUSED"

@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.components.GameTitle
+import androidx.compose.material3.OutlinedTextField
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.screens.gamedetail.RatingType
@@ -72,6 +73,8 @@ fun DualGameDetailUpperScreen(
     onModalCollectionShowCreate: () -> Unit = {},
     onModalCollectionCreate: (String) -> Unit = {},
     onModalCollectionCreateDismiss: () -> Unit = {},
+    onSaveNameTextChange: (String) -> Unit = {},
+    onSaveNameConfirm: () -> Unit = {},
     onModalDismiss: () -> Unit = {},
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
@@ -136,6 +139,12 @@ fun DualGameDetailUpperScreen(
                     onDismiss = onModalDismiss
                 )
             }
+            ActiveModal.SAVE_NAME -> DualSaveNamePrompt(
+                text = state.saveNameText,
+                onTextChange = onSaveNameTextChange,
+                onConfirm = onSaveNameConfirm,
+                onDismiss = onModalDismiss
+            )
             ActiveModal.NONE -> {}
         }
     }
@@ -779,5 +788,79 @@ private fun formatLastPlayed(timestamp: Long): String {
         daysBetween < 7 -> "$daysBetween days ago"
         daysBetween < 30 -> "${daysBetween / 7} weeks ago"
         else -> "${daysBetween / 30} months ago"
+    }
+}
+
+@Composable
+private fun DualSaveNamePrompt(
+    text: String,
+    onTextChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .touchOnly { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.5f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .touchOnly { }
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "CREATE SAVE SLOT",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            OutlinedTextField(
+                value = text,
+                onValueChange = onTextChange,
+                label = { Text("Slot name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .touchOnly { onDismiss() }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Cancel",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .touchOnly { onConfirm() }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Create",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
     }
 }

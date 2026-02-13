@@ -3,13 +3,17 @@
  */
 package com.nendo.argosy.ui.dualscreen.gamedetail
 
+import com.nendo.argosy.domain.model.UnifiedSaveEntry
+import org.json.JSONArray
+import org.json.JSONObject
+
 enum class DualGameDetailTab {
     SAVES,
     MEDIA,
     OPTIONS
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, COLLECTION }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, COLLECTION, SAVE_NAME }
 
 enum class GameDetailOption {
     PLAY,
@@ -28,6 +32,30 @@ data class DualCollectionItem(
     val id: Long,
     val name: String,
     val isInCollection: Boolean
+)
+
+enum class SaveFocusColumn { SLOTS, HISTORY }
+
+data class SaveSlotItem(
+    val channelName: String?,
+    val displayName: String,
+    val isActive: Boolean,
+    val saveCount: Int,
+    val latestTimestamp: Long?,
+    val isCreateAction: Boolean = false
+)
+
+data class SaveHistoryItem(
+    val cacheId: Long,
+    val timestamp: Long,
+    val size: Long,
+    val channelName: String?,
+    val isLocal: Boolean,
+    val isSynced: Boolean,
+    val isActiveRestorePoint: Boolean,
+    val isLatest: Boolean,
+    val isHardcore: Boolean,
+    val isRollback: Boolean
 )
 
 data class DualGameDetailUiState(
@@ -57,7 +85,10 @@ data class DualGameDetailUiState(
     val isDownloaded: Boolean = false,
     val platformSlug: String = "",
     val platformId: Long = 0,
-    val emulatorName: String? = null
+    val emulatorName: String? = null,
+    val saveFocusColumn: SaveFocusColumn = SaveFocusColumn.SLOTS,
+    val activeChannel: String? = null,
+    val activeSaveTimestamp: Long? = null
 )
 
 fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
@@ -106,20 +137,85 @@ data class DualGameDetailUpperState(
     val emulatorCurrentName: String? = null,
     val collectionItems: List<DualCollectionItem> = emptyList(),
     val collectionFocusIndex: Int = 0,
-    val showCreateDialog: Boolean = false
+    val showCreateDialog: Boolean = false,
+    val saveNamePromptAction: String? = null,
+    val saveNameCacheId: Long? = null,
+    val saveNameText: String = ""
 )
 
-data class SaveTimelineEntry(
-    val id: String,
+data class SaveEntryData(
+    val localCacheId: Long?,
+    val serverSaveId: Long?,
     val timestamp: Long,
-    val label: String?,
+    val size: Long,
+    val channelName: String?,
+    val source: String,
+    val isLatest: Boolean,
     val isLocked: Boolean,
-    val isLocal: Boolean,
-    val isSynced: Boolean,
-    val isRemoteOnly: Boolean
-)
+    val isHardcore: Boolean,
+    val isRollback: Boolean,
+    val cheatsUsed: Boolean,
+    val displayName: String
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("localCacheId", localCacheId ?: JSONObject.NULL)
+        put("serverSaveId", serverSaveId ?: JSONObject.NULL)
+        put("timestamp", timestamp)
+        put("size", size)
+        put("channelName", channelName ?: JSONObject.NULL)
+        put("source", source)
+        put("isLatest", isLatest)
+        put("isLocked", isLocked)
+        put("isHardcore", isHardcore)
+        put("isRollback", isRollback)
+        put("cheatsUsed", cheatsUsed)
+        put("displayName", displayName)
+    }
 
-data class SaveChannelUi(
-    val name: String,
-    val isActive: Boolean
+    companion object {
+        fun fromJson(json: JSONObject): SaveEntryData = SaveEntryData(
+            localCacheId = if (json.isNull("localCacheId")) null
+                else json.getLong("localCacheId"),
+            serverSaveId = if (json.isNull("serverSaveId")) null
+                else json.getLong("serverSaveId"),
+            timestamp = json.getLong("timestamp"),
+            size = json.getLong("size"),
+            channelName = if (json.isNull("channelName")) null
+                else json.getString("channelName"),
+            source = json.getString("source"),
+            isLatest = json.getBoolean("isLatest"),
+            isLocked = json.getBoolean("isLocked"),
+            isHardcore = json.getBoolean("isHardcore"),
+            isRollback = json.getBoolean("isRollback"),
+            cheatsUsed = json.getBoolean("cheatsUsed"),
+            displayName = json.getString("displayName")
+        )
+    }
+}
+
+fun List<SaveEntryData>.toJsonString(): String {
+    val arr = JSONArray()
+    forEach { arr.put(it.toJson()) }
+    return arr.toString()
+}
+
+fun parseSaveEntryDataList(json: String): List<SaveEntryData> {
+    if (json.isBlank()) return emptyList()
+    val arr = JSONArray(json)
+    return (0 until arr.length()).map { SaveEntryData.fromJson(arr.getJSONObject(it)) }
+}
+
+fun UnifiedSaveEntry.toSaveEntryData(): SaveEntryData = SaveEntryData(
+    localCacheId = localCacheId,
+    serverSaveId = serverSaveId,
+    timestamp = timestamp.toEpochMilli(),
+    size = size,
+    channelName = channelName,
+    source = source.name,
+    isLatest = isLatest,
+    isLocked = isLocked,
+    isHardcore = isHardcore,
+    isRollback = isRollback,
+    cheatsUsed = cheatsUsed,
+    displayName = displayName
 )

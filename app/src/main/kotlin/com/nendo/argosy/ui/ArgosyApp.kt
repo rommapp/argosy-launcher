@@ -376,6 +376,7 @@ fun ArgosyApp(
                     ActiveModal.STATUS -> activity?.confirmDualModal()
                     ActiveModal.EMULATOR -> activity?.confirmDualEmulatorSelection()
                     ActiveModal.COLLECTION -> activity?.toggleDualCollectionAtFocus()
+                    ActiveModal.SAVE_NAME -> activity?.confirmDualSaveName()
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -667,6 +668,12 @@ fun ArgosyApp(
                             },
                             onModalCollectionCreateDismiss = {
                                 activity?.dismissDualCollectionCreateDialog()
+                            },
+                            onSaveNameTextChange = { text ->
+                                activity?.updateDualSaveNameText(text)
+                            },
+                            onSaveNameConfirm = {
+                                activity?.confirmDualSaveName()
                             },
                             onModalDismiss = {
                                 activity?.dismissDualModal()

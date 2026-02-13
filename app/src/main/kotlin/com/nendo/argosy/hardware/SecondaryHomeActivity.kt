@@ -93,6 +93,7 @@ class SecondaryHomeActivity : ComponentActivity() {
     private var currentScreen by mutableStateOf(CompanionScreen.HOME)
     private var dualGameDetailViewModel: DualGameDetailViewModel? = null
     private var isScreenshotViewerOpen = false
+    private var launchedExternalApp = false
 
     private lateinit var gameDao: GameDao
     private lateinit var platformDao: PlatformDao
@@ -366,6 +367,7 @@ class SecondaryHomeActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        launchedExternalApp = false
         isGameActive = sessionStateStore.hasActiveSession()
         currentChannelName = sessionStateStore.getChannelName()
         isSaveDirty = sessionStateStore.isSaveDirty()
@@ -451,11 +453,12 @@ class SecondaryHomeActivity : ComponentActivity() {
         try {
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             if (launchIntent != null) {
+                launchedExternalApp = true
                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(launchIntent)
             }
         } catch (e: Exception) {
-            // Log error but don't crash
+            launchedExternalApp = false
         }
     }
 

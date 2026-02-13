@@ -1044,10 +1044,11 @@ class MainActivity : ComponentActivity() {
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
-            // Dual-screen: notify lower screen to reclaim input focus
-            sendBroadcast(
-                Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER).setPackage(packageName)
-            )
+            if (_isCompanionActive.value) {
+                sendBroadcast(
+                    Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER).setPackage(packageName)
+                )
+            }
         }
         return super.dispatchTouchEvent(event)
     }

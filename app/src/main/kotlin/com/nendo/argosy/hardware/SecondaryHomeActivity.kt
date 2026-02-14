@@ -117,6 +117,7 @@ class SecondaryHomeActivity : ComponentActivity() {
     private var isGameActive by mutableStateOf(false)
     private var currentChannelName by mutableStateOf<String?>(null)
     private var isSaveDirty by mutableStateOf(false)
+    private var isHardcore by mutableStateOf(false)
     private var homeApps by mutableStateOf<List<String>>(emptyList())
     private var primaryColor by mutableStateOf<Int?>(null)
 
@@ -163,6 +164,37 @@ class SecondaryHomeActivity : ComponentActivity() {
             viewModel.setHomeApps(homeApps)
         }
 
+        isHardcore = sessionStateStore.isHardcore()
+
+        // Restore carousel position
+        val savedSection = sessionStateStore.getCarouselSectionIndex()
+        val savedSelected = sessionStateStore.getCarouselSelectedIndex()
+        if (savedSection > 0 || savedSelected > 0) {
+            dualHomeViewModel.restorePosition(savedSection, savedSelected)
+        }
+
+        // Restore game detail screen if persisted and no game session active
+        val savedScreen = sessionStateStore.getCompanionScreen()
+        val savedDetailGameId = sessionStateStore.getDetailGameId()
+        if (savedScreen == "GAME_DETAIL" &&
+            savedDetailGameId > 0 &&
+            !isGameActive
+        ) {
+            val affinityHelper = DisplayAffinityHelper(applicationContext)
+            val vm = DualGameDetailViewModel(
+                gameDao = gameDao,
+                platformDao = platformDao,
+                collectionDao = collectionDao,
+                emulatorConfigDao = emulatorConfigDao,
+                displayAffinityHelper = affinityHelper,
+                context = applicationContext
+            )
+            vm.loadGame(savedDetailGameId)
+            dualGameDetailViewModel = vm
+            currentScreen = CompanionScreen.GAME_DETAIL
+            broadcastGameDetailOpened(savedDetailGameId)
+        }
+
         loadInputSwapPreferences()
         isInitialized = true
     }
@@ -178,6 +210,13 @@ class SecondaryHomeActivity : ComponentActivity() {
         startSelectSwapped = swapStartSelect
     }
 
+    private fun persistCarouselPosition() {
+        val state = dualHomeViewModel.uiState.value
+        sessionStateStore.setCarouselPosition(
+            state.currentSectionIndex,
+            state.selectedIndex
+        )
+    }
 
     private val foregroundReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -208,14 +247,22 @@ class SecondaryHomeActivity : ComponentActivity() {
                 val gameId = intent.getLongExtra(EXTRA_GAME_ID, -1)
                 if (gameId > 0) {
                     isGameActive = true
-                    currentChannelName = intent.getStringExtra(EXTRA_CHANNEL_NAME)
+                    isHardcore = intent.getBooleanExtra(
+                        EXTRA_IS_HARDCORE, false
+                    )
+                    currentChannelName = intent.getStringExtra(
+                        EXTRA_CHANNEL_NAME
+                    )
                     isSaveDirty = false
                     currentScreen = CompanionScreen.HOME
                     dualGameDetailViewModel = null
+                    sessionStateStore.setCompanionScreen("HOME")
                 } else {
                     isGameActive = false
+                    isHardcore = false
                     currentChannelName = null
                     isSaveDirty = false
+                    sessionStateStore.setCompanionScreen("HOME")
                 }
                 isInitialized = true
             }
@@ -530,6 +577,7 @@ class SecondaryHomeActivity : ComponentActivity() {
                             isInitialized = isInitialized,
                             isArgosyForeground = isArgosyForeground,
                             isGameActive = isGameActive,
+                            isHardcore = isHardcore,
                             channelName = currentChannelName,
                             isSaveDirty = isSaveDirty,
                             homeApps = homeApps,
@@ -627,6 +675,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         super.onResume()
         launchedExternalApp = false
         isGameActive = sessionStateStore.hasActiveSession()
+        isHardcore = sessionStateStore.isHardcore()
         currentChannelName = sessionStateStore.getChannelName()
         isSaveDirty = sessionStateStore.isSaveDirty()
         sendBroadcast(
@@ -755,6 +804,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         vm.loadGame(gameId)
         dualGameDetailViewModel = vm
         currentScreen = CompanionScreen.GAME_DETAIL
+        sessionStateStore.setCompanionScreen("GAME_DETAIL", gameId)
         broadcastGameDetailOpened(gameId)
     }
 
@@ -762,6 +812,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         isScreenshotViewerOpen = false
         currentScreen = CompanionScreen.HOME
         dualGameDetailViewModel = null
+        sessionStateStore.setCompanionScreen("HOME")
         broadcastGameDetailClosed()
         dualHomeViewModel.refresh()
     }
@@ -1012,12 +1063,18 @@ class SecondaryHomeActivity : ComponentActivity() {
             }
             GamepadEvent.Left -> {
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
-                else dualHomeViewModel.selectPrevious()
+                else {
+                    dualHomeViewModel.selectPrevious()
+                    persistCarouselPosition()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
                 if (inAppBar) dualHomeViewModel.selectNextApp(homeApps.size)
-                else dualHomeViewModel.selectNext()
+                else {
+                    dualHomeViewModel.selectNext()
+                    persistCarouselPosition()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.Down -> {
@@ -1040,11 +1097,13 @@ class SecondaryHomeActivity : ComponentActivity() {
             GamepadEvent.PrevSection -> {
                 if (inAppBar) dualHomeViewModel.focusCarousel()
                 dualHomeViewModel.previousSection()
+                persistCarouselPosition()
                 InputResult.HANDLED
             }
             GamepadEvent.NextSection -> {
                 if (inAppBar) dualHomeViewModel.focusCarousel()
                 dualHomeViewModel.nextSection()
+                persistCarouselPosition()
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {
@@ -1788,6 +1847,7 @@ private fun SecondaryHomeContent(
     isInitialized: Boolean,
     isArgosyForeground: Boolean,
     isGameActive: Boolean,
+    isHardcore: Boolean,
     channelName: String?,
     isSaveDirty: Boolean,
     homeApps: List<String>,
@@ -1903,7 +1963,7 @@ private fun SecondaryHomeContent(
         ) {
             CompanionContent(
                 channelName = channelName,
-                isHardcore = false, // TODO: Get from session
+                isHardcore = isHardcore,
                 gameName = null,
                 isDirty = isSaveDirty,
                 homeApps = homeApps,

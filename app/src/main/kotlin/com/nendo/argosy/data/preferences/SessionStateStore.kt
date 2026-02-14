@@ -29,6 +29,8 @@ class SessionStateStore(context: Context) {
             .putLong(KEY_GAME_ID, -1)
             .remove(KEY_CHANNEL_NAME)
             .putBoolean(KEY_IS_HARDCORE, false)
+            .putString(KEY_COMPANION_SCREEN, "HOME")
+            .putLong(KEY_DETAIL_GAME_ID, -1)
             .apply()
     }
 
@@ -99,6 +101,31 @@ class SessionStateStore(context: Context) {
 
     fun isRolesSwapped(): Boolean = prefs.getBoolean(KEY_ROLES_SWAPPED, false)
 
+    fun setCompanionScreen(screen: String, detailGameId: Long = -1) {
+        prefs.edit()
+            .putString(KEY_COMPANION_SCREEN, screen)
+            .putLong(KEY_DETAIL_GAME_ID, detailGameId)
+            .apply()
+    }
+
+    fun getCompanionScreen(): String =
+        prefs.getString(KEY_COMPANION_SCREEN, "HOME") ?: "HOME"
+
+    fun getDetailGameId(): Long = prefs.getLong(KEY_DETAIL_GAME_ID, -1)
+
+    fun setCarouselPosition(sectionIndex: Int, selectedIndex: Int) {
+        prefs.edit()
+            .putInt(KEY_CAROUSEL_SECTION_INDEX, sectionIndex)
+            .putInt(KEY_CAROUSEL_SELECTED_INDEX, selectedIndex)
+            .apply()
+    }
+
+    fun getCarouselSectionIndex(): Int =
+        prefs.getInt(KEY_CAROUSEL_SECTION_INDEX, 0)
+
+    fun getCarouselSelectedIndex(): Int =
+        prefs.getInt(KEY_CAROUSEL_SELECTED_INDEX, 0)
+
     companion object {
         private const val PREFS_NAME = "argosy_session_state"
         private const val KEY_HAS_SESSION = "has_session"
@@ -114,5 +141,9 @@ class SessionStateStore(context: Context) {
         private const val KEY_SWAP_START_SELECT = "swap_start_select"
         private const val KEY_DISPLAY_ROLE_OVERRIDE = "display_role_override"
         private const val KEY_ROLES_SWAPPED = "roles_swapped"
+        private const val KEY_COMPANION_SCREEN = "companion_screen"
+        private const val KEY_DETAIL_GAME_ID = "detail_game_id"
+        private const val KEY_CAROUSEL_SECTION_INDEX = "carousel_section_index"
+        private const val KEY_CAROUSEL_SELECTED_INDEX = "carousel_selected_index"
     }
 }

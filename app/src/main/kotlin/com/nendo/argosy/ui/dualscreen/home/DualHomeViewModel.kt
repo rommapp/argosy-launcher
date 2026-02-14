@@ -205,44 +205,56 @@ class DualHomeViewModel(
     }
 
     private fun loadGamesForCurrentSection() {
-        viewModelScope.launch {
-            val section = _uiState.value.currentSection ?: return@launch
+        viewModelScope.launch { loadGamesForCurrentSectionSuspend() }
+    }
 
-            var realCount = 0
-            val games = when (section) {
-                is DualHomeSection.Recent -> {
-                    val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
-                    val recentlyPlayed = gameDao.getRecentlyPlayed(limit = RECENT_GAMES_LIMIT)
-                    val newlyAdded = gameDao.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_LIMIT)
-                    val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+    private suspend fun loadGamesForCurrentSectionSuspend() {
+        val section = _uiState.value.currentSection ?: return
 
-                    val playable = allCandidates.filter { game ->
-                        when {
-                            game.source == GameSource.STEAM -> true
-                            game.source == GameSource.ANDROID_APP -> true
-                            game.localPath != null -> File(game.localPath).exists()
-                            else -> false
-                        }
+        var realCount = 0
+        val games = when (section) {
+            is DualHomeSection.Recent -> {
+                val newThreshold = Instant.now().minus(
+                    NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS
+                )
+                val recentlyPlayed = gameDao.getRecentlyPlayed(
+                    limit = RECENT_GAMES_LIMIT
+                )
+                val newlyAdded = gameDao.getNewlyAddedPlayable(
+                    newThreshold, RECENT_GAMES_LIMIT
+                )
+                val allCandidates = (recentlyPlayed + newlyAdded)
+                    .distinctBy { it.id }
+
+                val playable = allCandidates.filter { game ->
+                    when {
+                        game.source == GameSource.STEAM -> true
+                        game.source == GameSource.ANDROID_APP -> true
+                        game.localPath != null ->
+                            File(game.localPath).exists()
+                        else -> false
                     }
+                }
 
-                    sortRecentGamesWithNewPriority(playable)
-                        .take(RECENT_GAMES_LIMIT)
-                        .map { it.toUi() }
-                }
-                is DualHomeSection.Favorites -> {
-                    gameDao.getFavorites().map { it.toUi() }
-                }
-                is DualHomeSection.Platform -> {
-                    realCount = gameDao.countByPlatform(section.id)
-                    gameDao.getByPlatformSorted(section.id, limit = PLATFORM_GAMES_LIMIT)
-                        .filter { !it.isHidden }
-                        .map { it.toUi() }
-                }
+                sortRecentGamesWithNewPriority(playable)
+                    .take(RECENT_GAMES_LIMIT)
+                    .map { it.toUi() }
             }
+            is DualHomeSection.Favorites -> {
+                gameDao.getFavorites().map { it.toUi() }
+            }
+            is DualHomeSection.Platform -> {
+                realCount = gameDao.countByPlatform(section.id)
+                gameDao.getByPlatformSorted(
+                    section.id, limit = PLATFORM_GAMES_LIMIT
+                )
+                    .filter { !it.isHidden }
+                    .map { it.toUi() }
+            }
+        }
 
-            _uiState.update {
-                it.copy(games = games, platformTotalCount = realCount)
-            }
+        _uiState.update {
+            it.copy(games = games, platformTotalCount = realCount)
         }
     }
 
@@ -264,6 +276,37 @@ class DualHomeViewModel(
                 game.lastPlayed?.toEpochMilli() ?: game.addedAt.toEpochMilli()
             }
         )
+    }
+
+    fun restorePosition(sectionIndex: Int, selectedIndex: Int) {
+        viewModelScope.launch {
+            val sections = _uiState.value.sections
+            if (sections.isEmpty()) return@launch
+            val coercedSection = sectionIndex.coerceIn(
+                0, sections.size - 1
+            )
+            _uiState.update {
+                it.copy(
+                    currentSectionIndex = coercedSection,
+                    selectedIndex = 0
+                )
+            }
+            loadGamesForCurrentSectionSuspend()
+            val games = _uiState.value.games
+            if (games.isNotEmpty()) {
+                val maxIndex = if (_uiState.value.hasMoreGames) {
+                    games.size
+                } else {
+                    games.size - 1
+                }
+                _uiState.update {
+                    it.copy(
+                        selectedIndex = selectedIndex
+                            .coerceIn(0, maxIndex)
+                    )
+                }
+            }
+        }
     }
 
     fun refresh() {

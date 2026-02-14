@@ -130,6 +130,7 @@ class MainActivity : ComponentActivity() {
             when (intent?.action) {
                 DualScreenBroadcasts.ACTION_COMPANION_RESUMED -> {
                     _isCompanionActive.value = true
+                    resyncCompanionState()
                 }
                 DualScreenBroadcasts.ACTION_COMPANION_PAUSED -> {
                     _isCompanionActive.value = false
@@ -703,6 +704,7 @@ class MainActivity : ComponentActivity() {
         if (!emulatorInForeground) {
             Log.d(TAG, "Emulator ${session.emulatorPackage} not in foreground - clearing session")
             runBlocking { preferencesRepository.clearActiveSession() }
+            sessionStateStore.clearSession()
             return false
         }
 
@@ -776,6 +778,7 @@ class MainActivity : ComponentActivity() {
         if (!emulatorInForeground) {
             Log.d(TAG, "Emulator ${session.emulatorPackage} not in foreground - clearing stale session")
             runBlocking { preferencesRepository.clearActiveSession() }
+            sessionStateStore.clearSession()
             broadcastSessionCleared()
 
             // Stop recovery service if running (SECONDARY_HOME handles display now)
@@ -1300,6 +1303,23 @@ class MainActivity : ComponentActivity() {
         ambientAudioManager.suspend()
         // Notify secondary display that Argosy is going to background
         broadcastForegroundState(false)
+    }
+
+    private fun resyncCompanionState() {
+        broadcastForegroundState(true)
+        val detailState = _dualGameDetailState.value
+        if (detailState != null && detailState.gameId > 0) {
+            sendBroadcast(
+                Intent(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED).apply {
+                    setPackage(packageName)
+                    putExtra(
+                        DualScreenBroadcasts.EXTRA_GAME_ID,
+                        detailState.gameId
+                    )
+                }
+            )
+            broadcastUnifiedSaves(detailState.gameId)
+        }
     }
 
     private fun broadcastForegroundState(isForeground: Boolean) {

@@ -142,7 +142,7 @@ class ZipExtractorTest {
     @Test
     fun `nsw config has all expected game extensions`() {
         val config = ZipExtractor.getPlatformConfig("switch")!!
-        val expectedExtensions = setOf("xci", "nsp", "nca", "nro")
+        val expectedExtensions = setOf("xci", "nsp", "nca", "nro", "nsz", "xcz")
         assertEquals(expectedExtensions, config.gameExtensions)
     }
 

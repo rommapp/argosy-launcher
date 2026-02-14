@@ -77,7 +77,7 @@ data class PlatformExtractConfig(
 private val PLATFORM_CONFIGS = listOf(
     PlatformExtractConfig(
         platformSlugs = setOf("switch", "nsw"),
-        gameExtensions = setOf("xci", "nsp", "nca", "nro"),
+        gameExtensions = setOf("xci", "nsp", "nca", "nro", "nsz", "xcz"),
         updateExtensions = setOf("nsp"),
         dlcExtensions = setOf("nsp"),
         updateFolder = "update",
@@ -707,7 +707,7 @@ object ZipExtractor {
     private fun isGameFile(extension: String): Boolean {
         val gameExtensions = setOf(
             // Nintendo Switch
-            "xci", "nsp", "nca", "nro",
+            "xci", "nsp", "nca", "nro", "nsz", "xcz",
             // Nintendo 3DS
             "3ds", "cci", "cxi", "cia",
             // Nintendo DS

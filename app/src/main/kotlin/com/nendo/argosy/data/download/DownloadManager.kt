@@ -15,6 +15,7 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.download.nsz.NszDecompressor
 import com.nendo.argosy.data.emulator.M3uManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -925,7 +926,7 @@ class DownloadManager @Inject constructor(
 
         Log.d(TAG, "processDownloadedFile: targetFile=${targetFile.absolutePath}, shouldExtract=$shouldExtract, isMultiFileRom=$isMultiFileRom, usesZipAsRom=${ZipExtractor.usesZipAsRomFormat(platformSlug)}, isNsw=${ZipExtractor.isNswPlatform(platformSlug)}, isDisc=$isDiscDownload")
 
-        return when {
+        val resultPath = when {
             shouldExtract -> {
                 Log.d(TAG, "processDownloadedFile: BRANCH=ZIP_EXTRACT")
 
@@ -949,15 +950,15 @@ class DownloadManager @Inject constructor(
                     throw java.io.IOException("ZIP file is corrupted: ${e.message}. Please try downloading again.")
                 }
 
-                val resultPath = extracted.launchPath
-                Log.d(TAG, "processDownloadedFile: extracted.launchPath=$resultPath, extracted.gameFolder=${extracted.gameFolder}")
-                if (File(resultPath).exists()) {
+                val extractedPath = extracted.launchPath
+                Log.d(TAG, "processDownloadedFile: extracted.launchPath=$extractedPath, extracted.gameFolder=${extracted.gameFolder}")
+                if (File(extractedPath).exists()) {
                     if (targetFile.isFile) {
                         targetFile.delete()
                     }
-                    resultPath
+                    extractedPath
                 } else {
-                    throw java.io.IOException("Extraction failed: $resultPath does not exist")
+                    throw java.io.IOException("Extraction failed: $extractedPath does not exist")
                 }
             }
             ZipExtractor.isNswPlatform(platformSlug) -> {
@@ -981,6 +982,20 @@ class DownloadManager @Inject constructor(
                 targetFile.absolutePath
             }
         }
+
+        val resultFile = File(resultPath)
+        if (ZipExtractor.isNswPlatform(platformSlug) &&
+            NszDecompressor.isCompressedNsw(resultFile)
+        ) {
+            Log.d(TAG, "processDownloadedFile: NSZ/XCZ detected, decompressing")
+            val decompressed = NszDecompressor.decompress(
+                inputFile = resultFile,
+                onProgress = onExtractionProgress
+            )
+            return decompressed.absolutePath
+        }
+
+        return resultPath
     }
 
     private fun organizeDiscFile(romFile: File, gameTitle: String, platformDir: File): String {

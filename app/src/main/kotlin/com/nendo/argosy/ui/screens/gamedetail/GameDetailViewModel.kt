@@ -37,7 +37,6 @@ import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
-import com.nendo.argosy.domain.usecase.save.CheckSaveSyncPermissionUseCase
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
@@ -106,7 +105,6 @@ class GameDetailViewModel @Inject constructor(
     private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
     val saveChannelDelegate: SaveChannelDelegate,
     private val saveSyncDao: SaveSyncDao,
-    private val checkSaveSyncPermissionUseCase: CheckSaveSyncPermissionUseCase,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val achievementUpdateBus: AchievementUpdateBus,
     private val gameUpdateBus: GameUpdateBus,
@@ -1092,20 +1090,6 @@ class GameDetailViewModel @Inject constructor(
                     soundManager.play(SoundType.OPEN_MODAL)
                     return@launch
                 }
-            }
-
-            // Check permissions before sync (GameDetail-specific modals)
-            val permissionResult = checkSaveSyncPermissionUseCase()
-            when (permissionResult) {
-                is CheckSaveSyncPermissionUseCase.Result.MissingStoragePermission -> {
-                    _uiState.update { it.copy(showPermissionModal = true, permissionModalType = PermissionModalType.STORAGE) }
-                    return@launch
-                }
-                is CheckSaveSyncPermissionUseCase.Result.MissingSafGrant -> {
-                    _uiState.update { it.copy(showPermissionModal = true, permissionModalType = PermissionModalType.SAF) }
-                    return@launch
-                }
-                else -> { /* Permission granted, continue */ }
             }
 
             // Navigate to LaunchScreen which handles: resume check, sync, launch, session end

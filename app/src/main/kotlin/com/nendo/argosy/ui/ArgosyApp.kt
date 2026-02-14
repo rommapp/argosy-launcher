@@ -460,6 +460,28 @@ fun ArgosyApp(
         }
     }
 
+    // Notify companion when drawer closes: stop forwarding + refocus lower screen
+    LaunchedEffect(isDualScreenDevice) {
+        if (!isDualScreenDevice) return@LaunchedEffect
+        var wasOpen = false
+        viewModel.isDrawerOpen.collect { open ->
+            if (wasOpen && !open) {
+                activity?.let { a ->
+                    a.isDrawerFocused = false
+                    a.sendBroadcast(
+                        Intent(DualScreenBroadcasts.ACTION_CLOSE_START_MENU)
+                            .setPackage(a.packageName)
+                    )
+                    a.sendBroadcast(
+                        Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
+                            .setPackage(a.packageName)
+                    )
+                }
+            }
+            wasOpen = open
+        }
+    }
+
     // Sync Compose drawer state -> ViewModel (for scrim tap close)
     LaunchedEffect(drawerState.isOpen) {
         if (!drawerState.isOpen && isDrawerOpen) {

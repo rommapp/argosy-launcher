@@ -87,6 +87,7 @@ fun DualGameDetailLowerScreen(
     savesLoading: Boolean = false,
     savesApplying: Boolean = false,
     isDimmed: Boolean = false,
+    onDimTapped: () -> Unit = {},
     onTabChanged: (DualGameDetailTab) -> Unit,
     onSlotTapped: (Int) -> Unit,
     onHistoryTapped: (Int) -> Unit,
@@ -150,7 +151,7 @@ fun DualGameDetailLowerScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.5f))
-                    .touchOnly { }
+                    .touchOnly { onDimTapped() }
             )
         }
     }

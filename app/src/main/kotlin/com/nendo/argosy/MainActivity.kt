@@ -85,6 +85,18 @@ class MainActivity : ComponentActivity() {
     private val _isCompanionActive = kotlinx.coroutines.flow.MutableStateFlow(false)
     val isCompanionActive: kotlinx.coroutines.flow.StateFlow<Boolean> = _isCompanionActive
 
+    var isDrawerFocused = false
+
+    private val startMenuReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == DualScreenBroadcasts.ACTION_OPEN_START_MENU) {
+                isDrawerFocused = true
+                refocusMain()
+                gamepadInputHandler.injectEvent(com.nendo.argosy.ui.input.GamepadEvent.Menu)
+            }
+        }
+    }
+
     private val companionLifecycleReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -1224,6 +1236,7 @@ class MainActivity : ComponentActivity() {
         activityScope.cancel()
         try {
             unregisterReceiver(dualGameSelectedReceiver)
+            unregisterReceiver(startMenuReceiver)
             unregisterReceiver(dualGameDetailReceiver)
             unregisterReceiver(companionLifecycleReceiver)
         } catch (_: Exception) {}
@@ -1231,6 +1244,7 @@ class MainActivity : ComponentActivity() {
 
     private fun registerDualScreenReceiver() {
         val showcaseFilter = IntentFilter(DualScreenBroadcasts.ACTION_GAME_SELECTED)
+        val startMenuFilter = IntentFilter(DualScreenBroadcasts.ACTION_OPEN_START_MENU)
         val detailFilter = IntentFilter().apply {
             addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED)
             addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED)
@@ -1247,6 +1261,7 @@ class MainActivity : ComponentActivity() {
         }
         val flag = ContextCompat.RECEIVER_NOT_EXPORTED
         ContextCompat.registerReceiver(this, dualGameSelectedReceiver, showcaseFilter, flag)
+        ContextCompat.registerReceiver(this, startMenuReceiver, startMenuFilter, flag)
         ContextCompat.registerReceiver(this, dualGameDetailReceiver, detailFilter, flag)
         ContextCompat.registerReceiver(this, companionLifecycleReceiver, companionFilter, flag)
     }
@@ -1270,13 +1285,21 @@ class MainActivity : ComponentActivity() {
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
-            if (_isCompanionActive.value) {
+            if (_isCompanionActive.value && !isDrawerFocused) {
                 sendBroadcast(
                     Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER).setPackage(packageName)
                 )
             }
         }
         return super.dispatchTouchEvent(event)
+    }
+
+    private fun refocusMain() {
+        startActivity(
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+        )
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {

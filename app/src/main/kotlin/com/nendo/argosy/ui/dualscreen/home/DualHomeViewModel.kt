@@ -78,6 +78,12 @@ class DualHomeViewModel(
     private val _uiState = MutableStateFlow(DualHomeUiState())
     val uiState: StateFlow<DualHomeUiState> = _uiState.asStateFlow()
 
+    private val _isForwardingToDrawer = MutableStateFlow(false)
+    val isForwardingToDrawer: StateFlow<Boolean> = _isForwardingToDrawer.asStateFlow()
+
+    fun startDrawerForwarding() { _isForwardingToDrawer.value = true }
+    fun stopDrawerForwarding() { _isForwardingToDrawer.value = false }
+
     init {
         loadData()
     }

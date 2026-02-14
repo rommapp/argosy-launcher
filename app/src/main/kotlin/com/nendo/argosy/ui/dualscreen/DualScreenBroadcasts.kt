@@ -6,7 +6,6 @@ package com.nendo.argosy.ui.dualscreen
 object DualScreenBroadcasts {
     const val ACTION_GAME_SELECTED = "com.nendo.argosy.DUAL_GAME_SELECTED"
     const val ACTION_REFOCUS_LOWER = "com.nendo.argosy.DUAL_REFOCUS_LOWER"
-    const val ACTION_KEY_EVENT = "com.nendo.argosy.DUAL_KEY_EVENT"
     const val ACTION_OPEN_START_MENU = "com.nendo.argosy.DUAL_OPEN_START_MENU"
     const val ACTION_CLOSE_START_MENU = "com.nendo.argosy.DUAL_CLOSE_START_MENU"
     const val ACTION_GAME_DETAIL_OPENED = "com.nendo.argosy.DUAL_GAME_DETAIL_OPENED"
@@ -14,8 +13,6 @@ object DualScreenBroadcasts {
     const val ACTION_SCREENSHOT_SELECTED = "com.nendo.argosy.DUAL_SCREENSHOT_SELECTED"
     const val ACTION_SCREENSHOT_CLEAR = "com.nendo.argosy.DUAL_SCREENSHOT_CLEAR"
 
-    const val EXTRA_KEY_CODE = "key_code"
-    const val EXTRA_KEY_ACTION = "key_action"
     const val EXTRA_GAME_ID = "game_id"
     const val EXTRA_TITLE = "title"
     const val EXTRA_COVER_PATH = "cover_path"

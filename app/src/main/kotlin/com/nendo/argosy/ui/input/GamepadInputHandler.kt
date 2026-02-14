@@ -78,6 +78,10 @@ class GamepadInputHandler @Inject constructor(
     fun eventFlow(): Flow<GamepadEvent> = _events.asSharedFlow()
     fun homeEventFlow(): Flow<Unit> = _homeEvents.receiveAsFlow()
 
+    fun injectEvent(event: GamepadEvent) {
+        _events.tryEmit(event)
+    }
+
     private val lastInputTimes = mutableMapOf<GamepadEvent, Long>()
     private val inputDebounceMs = 80L
     private var inputBlockedUntil = 0L

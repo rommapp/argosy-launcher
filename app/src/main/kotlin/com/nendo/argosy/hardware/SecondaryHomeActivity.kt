@@ -222,6 +222,14 @@ class SecondaryHomeActivity : ComponentActivity() {
         }
     }
 
+    private val startMenuCloseReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == DualScreenBroadcasts.ACTION_CLOSE_START_MENU) {
+                dualHomeViewModel.stopDrawerForwarding()
+            }
+        }
+    }
+
     private val refocusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == DualScreenBroadcasts.ACTION_REFOCUS_LOWER) {
@@ -387,7 +395,8 @@ class SecondaryHomeActivity : ComponentActivity() {
                         },
                         onScreenshotViewed = { index ->
                             broadcastScreenshotSelected(index)
-                        }
+                        },
+                        onDimTapped = { refocusMain() }
                     )
                 }
             }
@@ -453,6 +462,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             addAction(ACTION_LIBRARY_REFRESH)
             addAction(ACTION_DOWNLOAD_COMPLETED)
         }
+        val startMenuCloseFilter = IntentFilter(DualScreenBroadcasts.ACTION_CLOSE_START_MENU)
         val refocusFilter = IntentFilter(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
         val modalResultFilter = IntentFilter(DualScreenBroadcasts.ACTION_MODAL_RESULT)
         val directActionFilter = IntentFilter(DualScreenBroadcasts.ACTION_DIRECT_ACTION)
@@ -464,6 +474,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, sessionReceiver, sessionFilter, flag)
         ContextCompat.registerReceiver(this, homeAppsReceiver, homeAppsFilter, flag)
         ContextCompat.registerReceiver(this, libraryRefreshReceiver, libraryRefreshFilter, flag)
+        ContextCompat.registerReceiver(this, startMenuCloseReceiver, startMenuCloseFilter, flag)
         ContextCompat.registerReceiver(this, refocusReceiver, refocusFilter, flag)
         ContextCompat.registerReceiver(this, modalResultReceiver, modalResultFilter, flag)
         ContextCompat.registerReceiver(this, directActionResultReceiver, directActionFilter, flag)
@@ -665,10 +676,21 @@ class SecondaryHomeActivity : ComponentActivity() {
     }
 
     private fun handleDualHomeInput(event: GamepadEvent): InputResult {
+        if (dualHomeViewModel.isForwardingToDrawer.value) {
+            return InputResult.HANDLED
+        }
+
         val state = dualHomeViewModel.uiState.value
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
 
         return when (event) {
+            GamepadEvent.Menu -> {
+                dualHomeViewModel.startDrawerForwarding()
+                sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_START_MENU).apply {
+                    setPackage(packageName)
+                })
+                InputResult.HANDLED
+            }
             GamepadEvent.Left -> {
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
                 else dualHomeViewModel.selectPrevious()
@@ -1105,6 +1127,17 @@ class SecondaryHomeActivity : ComponentActivity() {
         startActivity(intent)
     }
 
+    private fun refocusMain() {
+        val intent = Intent().apply {
+            setClassName(packageName, "com.nendo.argosy.MainActivity")
+            addFlags(
+                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+        }
+        startActivity(intent)
+    }
+
     private fun handleGridInput(event: GamepadEvent): InputResult {
         return when (event) {
             GamepadEvent.Up -> {
@@ -1171,6 +1204,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             unregisterReceiver(sessionReceiver)
             unregisterReceiver(homeAppsReceiver)
             unregisterReceiver(libraryRefreshReceiver)
+            unregisterReceiver(startMenuCloseReceiver)
             unregisterReceiver(refocusReceiver)
             unregisterReceiver(modalResultReceiver)
             unregisterReceiver(directActionResultReceiver)
@@ -1206,7 +1240,8 @@ private fun SecondaryHomeContent(
     onGameSelected: (Long) -> Unit,
     onDetailBack: () -> Unit,
     onOptionAction: (DualGameDetailViewModel, GameDetailOption) -> Unit,
-    onScreenshotViewed: (Int) -> Unit
+    onScreenshotViewed: (Int) -> Unit,
+    onDimTapped: () -> Unit = {}
 ) {
     // Consume all back presses - SECONDARY_HOME should be a navigation dead-end
     BackHandler(enabled = true) {
@@ -1256,7 +1291,8 @@ private fun SecondaryHomeContent(
                             viewModel = dualHomeViewModel,
                             homeApps = homeApps,
                             onGameSelected = onGameSelected,
-                            onAppClick = onAppClick
+                            onAppClick = onAppClick,
+                            onDimTapped = onDimTapped
                         )
                     }
                     SecondaryHomeActivity.CompanionScreen.GAME_DETAIL -> {
@@ -1269,7 +1305,8 @@ private fun SecondaryHomeContent(
                                     )
                                 },
                                 onScreenshotViewed = onScreenshotViewed,
-                                onBack = onDetailBack
+                                onBack = onDetailBack,
+                                onDimTapped = onDimTapped
                             )
                         }
                     }
@@ -1302,7 +1339,8 @@ private fun DualGameDetailContent(
     viewModel: DualGameDetailViewModel,
     onOptionAction: (GameDetailOption) -> Unit,
     onScreenshotViewed: (Int) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onDimTapped: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val slots by viewModel.saveSlots.collectAsState()
@@ -1329,6 +1367,7 @@ private fun DualGameDetailContent(
         savesLoading = savesLoading,
         savesApplying = savesApplying,
         isDimmed = activeModal != ActiveModal.NONE,
+        onDimTapped = onDimTapped,
         onTabChanged = { viewModel.setTab(it) },
         onSlotTapped = { index ->
             viewModel.moveSlotSelection(index - viewModel.selectedSlotIndex.value)

@@ -55,11 +55,11 @@ private val SEVEN_Z_MAGIC_BYTES = byteArrayOf(0x37, 0x7A, 0xBC.toByte(), 0xAF.to
 
 private val ZIP_AS_ROM_PLATFORMS = setOf(
     "arcade", "mame", "fbneo", "fba",
-    "neogeo", "neogeocd",
+    "neogeo", "neogeoaes", "neogeomvs", "neogeocd",
     "cps1", "cps2", "cps3",
     "naomi", "naomi2", "atomiswave",
     "model2", "model3",
-    "hyperneogeo64",
+    "hyperneogeo64", "hyper-neo-geo-64",
     "vita", "psvita",
     "dos"
 )

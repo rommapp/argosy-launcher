@@ -20,16 +20,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.ui.util.touchOnly
 
 @Composable
 fun AlphabetSidebar(
     availableLetters: List<String>,
     currentLetter: String,
     onLetterClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    topPadding: Dp = Dimens.headerHeightLg,
+    bottomPadding: Dp = Dimens.footerHeight
 ) {
     val listState = rememberLazyListState()
     val currentIndex = availableLetters.indexOf(currentLetter).coerceAtLeast(0)
@@ -48,7 +51,7 @@ fun AlphabetSidebar(
         modifier = modifier
             .width(40.dp)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-            .padding(top = Dimens.headerHeightLg, bottom = Dimens.footerHeight)
+            .padding(top = topPadding, bottom = bottomPadding)
     ) {
         LazyColumn(
             state = listState,
@@ -73,7 +76,7 @@ fun AlphabetSidebar(
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                     modifier = Modifier
                         .graphicsLayer { scaleX = scale; scaleY = scale }
-                        .clickableNoFocus { onLetterClick(letter) }
+                        .touchOnly { onLetterClick(letter) }
                         .padding(vertical = 4.dp, horizontal = 8.dp)
                 )
             }

@@ -331,7 +331,7 @@ class ArgosyViewModel @Inject constructor(
         initialValue = DrawerState()
     )
 
-    val drawerItems = listOf(
+    private val allDrawerItems = listOf(
         DrawerItem(Screen.Home.route, "Home"),
         DrawerItem(Screen.Collections.route, "Collections"),
         DrawerItem(Screen.Library.route, "Library"),
@@ -339,6 +339,24 @@ class ArgosyViewModel @Inject constructor(
         DrawerItem(Screen.Apps.route, "Apps"),
         DrawerItem(Screen.Settings.route, "Settings")
     )
+
+    private val dualScreenHiddenRoutes = setOf(
+        Screen.Collections.route,
+        Screen.Library.route
+    )
+
+    private var _isDualScreenMode = false
+
+    val drawerItems: List<DrawerItem>
+        get() = if (_isDualScreenMode) {
+            allDrawerItems.filter { it.route !in dualScreenHiddenRoutes }
+        } else {
+            allDrawerItems
+        }
+
+    fun setDualScreenMode(enabled: Boolean) {
+        _isDualScreenMode = enabled
+    }
 
     private val _drawerFocusIndex = MutableStateFlow(0)
     val drawerFocusIndex: StateFlow<Int> = _drawerFocusIndex.asStateFlow()

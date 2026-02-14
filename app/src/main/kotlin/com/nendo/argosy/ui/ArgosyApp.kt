@@ -63,6 +63,8 @@ import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperScreen
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
+import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcase
+import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.theme.Dimens
@@ -81,7 +83,9 @@ fun ArgosyApp(
     isDualScreenDevice: Boolean = false,
     isCompanionActive: StateFlow<Boolean>? = null,
     dualScreenShowcase: StateFlow<DualHomeShowcaseState>? = null,
-    dualGameDetailState: StateFlow<DualGameDetailUpperState?>? = null
+    dualGameDetailState: StateFlow<DualGameDetailUpperState?>? = null,
+    dualViewMode: StateFlow<String>? = null,
+    dualCollectionShowcase: StateFlow<DualCollectionShowcaseState>? = null
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -109,8 +113,14 @@ fun ArgosyApp(
     val showcaseState by dualScreenShowcase?.collectAsState() ?: remember { mutableStateOf(DualHomeShowcaseState()) }
     val gameDetailUpperState by dualGameDetailState?.collectAsState() ?: remember { mutableStateOf(null) }
     val companionActive by isCompanionActive?.collectAsState() ?: remember { mutableStateOf(false) }
+    val viewMode by dualViewMode?.collectAsState() ?: remember { mutableStateOf("CAROUSEL") }
+    val collectionShowcaseState by dualCollectionShowcase?.collectAsState() ?: remember { mutableStateOf(DualCollectionShowcaseState()) }
     val isOnHomeScreen = currentRoute == Screen.Home.route
     val showDualOverlay = isDualScreenDevice && isOnHomeScreen && companionActive
+
+    LaunchedEffect(showDualOverlay) {
+        viewModel.setDualScreenMode(showDualOverlay)
+    }
 
     // Handle deep links from secondary home
     val activity = context as? com.nendo.argosy.MainActivity
@@ -749,17 +759,48 @@ fun ArgosyApp(
                             },
                             modifier = Modifier.blur(contentBlur)
                         )
+                    } else if (viewMode == "COLLECTIONS") {
+                        DualCollectionShowcase(
+                            state = collectionShowcaseState,
+                            footerHints = {
+                                com.nendo.argosy.ui.components.FooterBar(
+                                    hints = listOf(
+                                        com.nendo.argosy.ui.components.InputButton.DPAD to "Navigate",
+                                        com.nendo.argosy.ui.components.InputButton.A to "Open",
+                                        com.nendo.argosy.ui.components.InputButton.B to "Back"
+                                    )
+                                )
+                            },
+                            modifier = Modifier.blur(contentBlur)
+                        )
                     } else {
                         DualHomeUpperScreen(
                             state = showcaseState,
                             footerHints = {
                                 com.nendo.argosy.ui.components.FooterBar(
-                                    hints = listOf(
-                                        com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
-                                        com.nendo.argosy.ui.components.InputButton.A to "Play",
-                                        com.nendo.argosy.ui.components.InputButton.X to "Details",
-                                        com.nendo.argosy.ui.components.InputButton.Y to if (showcaseState.isFavorite) "Unfavorite" else "Favorite"
-                                    )
+                                    hints = when (viewMode) {
+                                        "COLLECTION_GAMES" -> listOf(
+                                            com.nendo.argosy.ui.components.InputButton.DPAD to "Navigate",
+                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
+                                            com.nendo.argosy.ui.components.InputButton.X to "Details",
+                                            com.nendo.argosy.ui.components.InputButton.B to "Back"
+                                        )
+                                        "LIBRARY_GRID" -> listOf(
+                                            com.nendo.argosy.ui.components.InputButton.LT_RT to "Letter",
+                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
+                                            com.nendo.argosy.ui.components.InputButton.X to "Details",
+                                            com.nendo.argosy.ui.components.InputButton.Y to "Filters",
+                                            com.nendo.argosy.ui.components.InputButton.B to "Back"
+                                        )
+                                        else -> listOf(
+                                            com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
+                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
+                                            com.nendo.argosy.ui.components.InputButton.X to "Details",
+                                            com.nendo.argosy.ui.components.InputButton.Y to if (showcaseState.isFavorite) "Unfavorite" else "Favorite",
+                                            com.nendo.argosy.ui.components.InputButton.DPAD_UP to "Collections",
+                                            com.nendo.argosy.ui.components.InputButton.SELECT to "Library"
+                                        )
+                                    }
                                 )
                             },
                             modifier = Modifier.blur(contentBlur)

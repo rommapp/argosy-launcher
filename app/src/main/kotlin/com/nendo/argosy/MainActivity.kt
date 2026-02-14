@@ -85,6 +85,15 @@ class MainActivity : ComponentActivity() {
     private val _isCompanionActive = kotlinx.coroutines.flow.MutableStateFlow(false)
     val isCompanionActive: kotlinx.coroutines.flow.StateFlow<Boolean> = _isCompanionActive
 
+    private val _dualViewMode = kotlinx.coroutines.flow.MutableStateFlow("CAROUSEL")
+    val dualViewMode: kotlinx.coroutines.flow.StateFlow<String> = _dualViewMode
+
+    private val _dualCollectionShowcase = kotlinx.coroutines.flow.MutableStateFlow(
+        com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState()
+    )
+    val dualCollectionShowcase: kotlinx.coroutines.flow.StateFlow<com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState> =
+        _dualCollectionShowcase
+
     var isOverlayFocused = false
 
     private val _pendingOverlayEvent = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
@@ -116,6 +125,27 @@ class MainActivity : ComponentActivity() {
                 }
                 DualScreenBroadcasts.ACTION_COMPANION_PAUSED -> {
                     _isCompanionActive.value = false
+                }
+            }
+        }
+    }
+
+    private val dualViewModeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED -> {
+                    val mode = intent.getStringExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE) ?: "CAROUSEL"
+                    _dualViewMode.value = mode
+                }
+                DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED -> {
+                    _dualCollectionShowcase.value = com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState(
+                        name = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY) ?: "",
+                        description = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION),
+                        coverPaths = intent.getStringArrayListExtra(DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS)?.toList() ?: emptyList(),
+                        gameCount = intent.getIntExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, 0),
+                        platformSummary = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY) ?: "",
+                        totalPlaytimeMinutes = intent.getIntExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, 0)
+                    )
                 }
             }
         }
@@ -591,7 +621,9 @@ class MainActivity : ComponentActivity() {
                         isDualScreenDevice = displayAffinityHelper.hasSecondaryDisplay,
                         isCompanionActive = isCompanionActive,
                         dualScreenShowcase = dualScreenShowcase,
-                        dualGameDetailState = dualGameDetailState
+                        dualGameDetailState = dualGameDetailState,
+                        dualViewMode = dualViewMode,
+                        dualCollectionShowcase = dualCollectionShowcase
                     )
                 }
             }
@@ -1250,6 +1282,7 @@ class MainActivity : ComponentActivity() {
             unregisterReceiver(overlayOpenReceiver)
             unregisterReceiver(dualGameDetailReceiver)
             unregisterReceiver(companionLifecycleReceiver)
+            unregisterReceiver(dualViewModeReceiver)
         } catch (_: Exception) {}
     }
 
@@ -1273,11 +1306,16 @@ class MainActivity : ComponentActivity() {
             addAction(DualScreenBroadcasts.ACTION_COMPANION_RESUMED)
             addAction(DualScreenBroadcasts.ACTION_COMPANION_PAUSED)
         }
+        val viewModeFilter = IntentFilter().apply {
+            addAction(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED)
+            addAction(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED)
+        }
         val flag = ContextCompat.RECEIVER_NOT_EXPORTED
         ContextCompat.registerReceiver(this, dualGameSelectedReceiver, showcaseFilter, flag)
         ContextCompat.registerReceiver(this, overlayOpenReceiver, overlayOpenFilter, flag)
         ContextCompat.registerReceiver(this, dualGameDetailReceiver, detailFilter, flag)
         ContextCompat.registerReceiver(this, companionLifecycleReceiver, companionFilter, flag)
+        ContextCompat.registerReceiver(this, dualViewModeReceiver, viewModeFilter, flag)
     }
 
     @SuppressLint("RestrictedApi")

@@ -60,6 +60,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
     fun observeAll(): Flow<List<GameEntity>>
 
+    @Query("SELECT * FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
+    suspend fun getAllSortedByTitle(): List<GameEntity>
+
     @Query("SELECT * FROM games WHERE source = :source AND isHidden = 0 ORDER BY sortTitle ASC")
     fun observeBySource(source: GameSource): Flow<List<GameEntity>>
 

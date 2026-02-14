@@ -70,4 +70,16 @@ object DualScreenBroadcasts {
 
     const val ACTION_COMPANION_RESUMED = "com.nendo.argosy.DUAL_COMPANION_RESUMED"
     const val ACTION_COMPANION_PAUSED = "com.nendo.argosy.DUAL_COMPANION_PAUSED"
+
+    const val ACTION_VIEW_MODE_CHANGED = "com.nendo.argosy.DUAL_VIEW_MODE_CHANGED"
+    const val EXTRA_VIEW_MODE = "view_mode"
+
+    const val ACTION_COLLECTION_FOCUSED = "com.nendo.argosy.DUAL_COLLECTION_FOCUSED"
+    const val EXTRA_COLLECTION_ID_FOCUSED = "collection_id_focused"
+    const val EXTRA_COLLECTION_NAME_DISPLAY = "collection_name_display"
+    const val EXTRA_COLLECTION_DESCRIPTION = "collection_description"
+    const val EXTRA_COLLECTION_COVER_PATHS = "collection_cover_paths"
+    const val EXTRA_COLLECTION_GAME_COUNT = "collection_game_count"
+    const val EXTRA_COLLECTION_PLATFORM_SUMMARY = "collection_platform_summary"
+    const val EXTRA_COLLECTION_TOTAL_PLAYTIME = "collection_total_playtime"
 }

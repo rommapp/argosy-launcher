@@ -389,6 +389,74 @@ class SecondaryHomeActivity : ComponentActivity() {
                         dualGameDetailViewModel = dualGameDetailViewModel,
                         onAppClick = { packageName -> launchApp(packageName) },
                         onGameSelected = { gameId -> selectGame(gameId) },
+                        onCollectionsClick = {
+                            dualHomeViewModel.enterCollections()
+                            broadcastViewModeChange()
+                            broadcastCollectionFocused()
+                        },
+                        onLibraryToggle = {
+                            dualHomeViewModel.toggleLibraryGrid {
+                                broadcastViewModeChange()
+                                val state = dualHomeViewModel.uiState.value
+                                if (state.viewMode == com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID)
+                                    broadcastLibraryGameSelection()
+                                else
+                                    broadcastCurrentGameSelection()
+                            }
+                        },
+                        onViewAllClick = {
+                            val platformId = dualHomeViewModel.uiState.value.currentPlatformId
+                            if (platformId != null) {
+                                dualHomeViewModel.enterLibraryGridForPlatform(platformId) {
+                                    broadcastViewModeChange()
+                                    broadcastLibraryGameSelection()
+                                }
+                            } else {
+                                dualHomeViewModel.enterLibraryGrid {
+                                    broadcastViewModeChange()
+                                    broadcastLibraryGameSelection()
+                                }
+                            }
+                        },
+                        onCollectionTapped = { index ->
+                            val items = dualHomeViewModel.uiState.value.collectionItems
+                            val item = items.getOrNull(index)
+                            if (item is com.nendo.argosy.ui.dualscreen.home.DualCollectionListItem.Collection) {
+                                dualHomeViewModel.enterCollectionGames(item.id)
+                                broadcastViewModeChange()
+                            }
+                        },
+                        onGridGameTapped = { index ->
+                            val state = dualHomeViewModel.uiState.value
+                            when (state.viewMode) {
+                                com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.COLLECTION_GAMES -> {
+                                    dualHomeViewModel.moveCollectionGamesFocus(
+                                        index - state.collectionGamesFocusedIndex
+                                    )
+                                    broadcastCollectionGameSelection()
+                                }
+                                com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID -> {
+                                    dualHomeViewModel.moveLibraryFocus(
+                                        index - state.libraryFocusedIndex
+                                    )
+                                    broadcastLibraryGameSelection()
+                                }
+                                else -> {}
+                            }
+                        },
+                        onLetterClick = { letter ->
+                            dualHomeViewModel.jumpToLetter(letter)
+                            broadcastLibraryGameSelection()
+                        },
+                        onFilterOptionTapped = { index ->
+                            dualHomeViewModel.moveFilterFocus(
+                                index - dualHomeViewModel.uiState.value.filterFocusedIndex
+                            )
+                            dualHomeViewModel.confirmFilter()
+                        },
+                        onFilterCategoryTapped = { category ->
+                            dualHomeViewModel.setFilterCategory(category)
+                        },
                         onDetailBack = { returnToHome() },
                         onOptionAction = { vm, option ->
                             handleOption(vm, option)
@@ -445,6 +513,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         dualHomeViewModel = DualHomeViewModel(
             gameDao = gameDao,
             platformDao = platformDao,
+            collectionDao = collectionDao,
             displayAffinityHelper = displayAffinityHelper,
             context = applicationContext
         )
@@ -646,6 +715,53 @@ class SecondaryHomeActivity : ComponentActivity() {
         )
     }
 
+    private fun broadcastViewModeChange() {
+        sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
+                setPackage(packageName)
+                putExtra(
+                    DualScreenBroadcasts.EXTRA_VIEW_MODE,
+                    dualHomeViewModel.uiState.value.viewMode.name
+                )
+            }
+        )
+    }
+
+    private fun broadcastCollectionFocused() {
+        val item = dualHomeViewModel.selectedCollectionItem() ?: return
+        sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED).apply {
+                setPackage(packageName)
+                putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY, item.name)
+                putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION, item.description)
+                putStringArrayListExtra(
+                    DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS,
+                    ArrayList(item.coverPaths)
+                )
+                putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, item.gameCount)
+                putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY, item.platformSummary)
+                putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, item.totalPlaytimeMinutes)
+            }
+        )
+    }
+
+    private fun broadcastLibraryGameSelection() {
+        val state = dualHomeViewModel.uiState.value
+        val game = state.libraryGames.getOrNull(state.libraryFocusedIndex) ?: return
+        com.nendo.argosy.ui.dualscreen.home.broadcastGameSelection(this, game)
+    }
+
+    private fun broadcastCollectionGameSelection() {
+        val game = dualHomeViewModel.focusedCollectionGame() ?: return
+        com.nendo.argosy.ui.dualscreen.home.broadcastGameSelection(this, game)
+    }
+
+    private fun broadcastCurrentGameSelection() {
+        val state = dualHomeViewModel.uiState.value
+        val game = state.selectedGame ?: return
+        com.nendo.argosy.ui.dualscreen.home.broadcastGameSelection(this, game)
+    }
+
     private fun broadcastDirectAction(type: String, gameId: Long) {
         sendBroadcast(
             Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
@@ -680,6 +796,19 @@ class SecondaryHomeActivity : ComponentActivity() {
             return InputResult.HANDLED
         }
 
+        return when (dualHomeViewModel.uiState.value.viewMode) {
+            com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.CAROUSEL ->
+                handleCarouselInput(event)
+            com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.COLLECTIONS ->
+                handleCollectionsInput(event)
+            com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.COLLECTION_GAMES ->
+                handleCollectionGamesInput(event)
+            com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID ->
+                handleLibraryGridInput(event)
+        }
+    }
+
+    private fun handleCarouselInput(event: GamepadEvent): InputResult {
         val state = dualHomeViewModel.uiState.value
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
 
@@ -712,7 +841,12 @@ class SecondaryHomeActivity : ComponentActivity() {
                 if (inAppBar) {
                     dualHomeViewModel.focusCarousel()
                     InputResult.HANDLED
-                } else InputResult.UNHANDLED
+                } else {
+                    dualHomeViewModel.enterCollections()
+                    broadcastViewModeChange()
+                    broadcastCollectionFocused()
+                    InputResult.HANDLED
+                }
             }
             GamepadEvent.PrevSection -> {
                 if (inAppBar) dualHomeViewModel.focusCarousel()
@@ -724,6 +858,17 @@ class SecondaryHomeActivity : ComponentActivity() {
                 dualHomeViewModel.nextSection()
                 InputResult.HANDLED
             }
+            GamepadEvent.Select -> {
+                dualHomeViewModel.toggleLibraryGrid {
+                    broadcastViewModeChange()
+                    val state = dualHomeViewModel.uiState.value
+                    if (state.viewMode == com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID)
+                        broadcastLibraryGameSelection()
+                    else
+                        broadcastCurrentGameSelection()
+                }
+                InputResult.HANDLED
+            }
             GamepadEvent.Confirm -> {
                 if (inAppBar) {
                     val packageName = homeApps.getOrNull(state.appBarIndex)
@@ -731,6 +876,20 @@ class SecondaryHomeActivity : ComponentActivity() {
                         launchApp(packageName)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
+                } else if (state.isViewAllFocused) {
+                    val platformId = state.currentPlatformId
+                    if (platformId != null) {
+                        dualHomeViewModel.enterLibraryGridForPlatform(platformId) {
+                            broadcastViewModeChange()
+                            broadcastLibraryGameSelection()
+                        }
+                    } else {
+                        dualHomeViewModel.enterLibraryGrid {
+                            broadcastViewModeChange()
+                            broadcastLibraryGameSelection()
+                        }
+                    }
+                    InputResult.HANDLED
                 } else {
                     val game = state.selectedGame
                     if (game != null && game.isPlayable) {
@@ -753,6 +912,217 @@ class SecondaryHomeActivity : ComponentActivity() {
                 InputResult.HANDLED
             }
             else -> InputResult.UNHANDLED
+        }
+    }
+
+    private fun handleCollectionsInput(event: GamepadEvent): InputResult {
+        return when (event) {
+            GamepadEvent.Up -> {
+                dualHomeViewModel.moveCollectionFocus(-1)
+                broadcastCollectionFocused()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Down -> {
+                dualHomeViewModel.moveCollectionFocus(1)
+                broadcastCollectionFocused()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                val collection = dualHomeViewModel.selectedCollectionItem()
+                if (collection != null) {
+                    dualHomeViewModel.enterCollectionGames(collection.id) {
+                        broadcastViewModeChange()
+                        broadcastCollectionGameSelection()
+                    }
+                }
+                InputResult.HANDLED
+            }
+            GamepadEvent.Back -> {
+                dualHomeViewModel.exitToCarousel()
+                broadcastViewModeChange()
+                broadcastCurrentGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {
+                dualHomeViewModel.startDrawerForwarding()
+                sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
+                    setPackage(packageName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
+                })
+                InputResult.HANDLED
+            }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun handleCollectionGamesInput(event: GamepadEvent): InputResult {
+        val columns = dualHomeViewModel.uiState.value.libraryColumns
+        return when (event) {
+            GamepadEvent.Left -> {
+                dualHomeViewModel.moveCollectionGamesFocus(-1)
+                broadcastCollectionGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Right -> {
+                dualHomeViewModel.moveCollectionGamesFocus(1)
+                broadcastCollectionGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Up -> {
+                dualHomeViewModel.moveCollectionGamesFocus(-columns)
+                broadcastCollectionGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Down -> {
+                dualHomeViewModel.moveCollectionGamesFocus(columns)
+                broadcastCollectionGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                val game = dualHomeViewModel.focusedCollectionGame()
+                if (game != null && game.isPlayable) {
+                    broadcastDirectAction("PLAY", game.id)
+                    InputResult.HANDLED
+                } else InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu -> {
+                val game = dualHomeViewModel.focusedCollectionGame()
+                if (game != null) {
+                    selectGame(game.id)
+                    InputResult.HANDLED
+                } else InputResult.HANDLED
+            }
+            GamepadEvent.Back -> {
+                dualHomeViewModel.exitCollectionGames()
+                broadcastViewModeChange()
+                broadcastCollectionFocused()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {
+                dualHomeViewModel.startDrawerForwarding()
+                sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
+                    setPackage(packageName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
+                })
+                InputResult.HANDLED
+            }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun handleLibraryGridInput(event: GamepadEvent): InputResult {
+        if (dualHomeViewModel.uiState.value.showFilterOverlay) {
+            return handleFilterInput(event)
+        }
+
+        val columns = dualHomeViewModel.uiState.value.libraryColumns
+        return when (event) {
+            GamepadEvent.Left -> {
+                dualHomeViewModel.moveLibraryFocus(-1)
+                broadcastLibraryGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Right -> {
+                dualHomeViewModel.moveLibraryFocus(1)
+                broadcastLibraryGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Up -> {
+                dualHomeViewModel.moveLibraryFocus(-columns)
+                broadcastLibraryGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Down -> {
+                dualHomeViewModel.moveLibraryFocus(columns)
+                broadcastLibraryGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.PrevTrigger -> {
+                dualHomeViewModel.previousLetter()
+                broadcastLibraryGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.NextTrigger -> {
+                dualHomeViewModel.nextLetter()
+                broadcastLibraryGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Select -> {
+                dualHomeViewModel.toggleLibraryGrid {
+                    broadcastViewModeChange()
+                    broadcastCurrentGameSelection()
+                }
+                InputResult.HANDLED
+            }
+            GamepadEvent.Back -> {
+                dualHomeViewModel.exitToCarousel()
+                broadcastViewModeChange()
+                broadcastCurrentGameSelection()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                val state = dualHomeViewModel.uiState.value
+                val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
+                if (game != null && game.isPlayable) {
+                    broadcastDirectAction("PLAY", game.id)
+                    InputResult.HANDLED
+                } else InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu -> {
+                val state = dualHomeViewModel.uiState.value
+                val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
+                if (game != null) {
+                    selectGame(game.id)
+                    InputResult.HANDLED
+                } else InputResult.HANDLED
+            }
+            GamepadEvent.SecondaryAction -> {
+                dualHomeViewModel.toggleFilterOverlay()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {
+                dualHomeViewModel.startDrawerForwarding()
+                sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
+                    setPackage(packageName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
+                })
+                InputResult.HANDLED
+            }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun handleFilterInput(event: GamepadEvent): InputResult {
+        return when (event) {
+            GamepadEvent.Up -> {
+                dualHomeViewModel.moveFilterFocus(-1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Down -> {
+                dualHomeViewModel.moveFilterFocus(1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.PrevSection -> {
+                dualHomeViewModel.previousFilterCategory()
+                InputResult.HANDLED
+            }
+            GamepadEvent.NextSection -> {
+                dualHomeViewModel.nextFilterCategory()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                dualHomeViewModel.confirmFilter()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Back, GamepadEvent.SecondaryAction -> {
+                dualHomeViewModel.toggleFilterOverlay()
+                InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu -> {
+                dualHomeViewModel.clearCategoryFilters()
+                InputResult.HANDLED
+            }
+            else -> InputResult.HANDLED
         }
     }
 
@@ -1234,6 +1604,14 @@ private fun SecondaryHomeContent(
     dualGameDetailViewModel: DualGameDetailViewModel?,
     onAppClick: (String) -> Unit,
     onGameSelected: (Long) -> Unit,
+    onCollectionsClick: () -> Unit,
+    onLibraryToggle: () -> Unit,
+    onViewAllClick: () -> Unit,
+    onCollectionTapped: (Int) -> Unit,
+    onGridGameTapped: (Int) -> Unit,
+    onLetterClick: (String) -> Unit,
+    onFilterOptionTapped: (Int) -> Unit,
+    onFilterCategoryTapped: (com.nendo.argosy.ui.dualscreen.home.DualFilterCategory) -> Unit,
     onDetailBack: () -> Unit,
     onOptionAction: (DualGameDetailViewModel, GameDetailOption) -> Unit,
     onScreenshotViewed: (Int) -> Unit,
@@ -1288,6 +1666,14 @@ private fun SecondaryHomeContent(
                             homeApps = homeApps,
                             onGameSelected = onGameSelected,
                             onAppClick = onAppClick,
+                            onCollectionsClick = onCollectionsClick,
+                            onLibraryToggle = onLibraryToggle,
+                            onViewAllClick = onViewAllClick,
+                            onCollectionTapped = onCollectionTapped,
+                            onGridGameTapped = onGridGameTapped,
+                            onLetterClick = onLetterClick,
+                            onFilterOptionTapped = onFilterOptionTapped,
+                            onFilterCategoryTapped = onFilterCategoryTapped,
                             onDimTapped = onDimTapped
                         )
                     }

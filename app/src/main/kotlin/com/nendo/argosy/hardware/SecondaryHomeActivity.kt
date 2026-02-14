@@ -1129,14 +1129,9 @@ class SecondaryHomeActivity : ComponentActivity() {
     }
 
     private fun refocusMain() {
-        val intent = Intent().apply {
-            setClassName(packageName, "com.nendo.argosy.MainActivity")
-            addFlags(
-                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-            )
-        }
-        startActivity(intent)
+        sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_REFOCUS_UPPER).setPackage(packageName)
+        )
     }
 
     private fun handleGridInput(event: GamepadEvent): InputResult {

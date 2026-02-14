@@ -163,12 +163,14 @@ fun ArgosyApp(
     var resumeCount by remember { mutableStateOf(0) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        inputDispatcher.blockInputFor(200)
-        inputDispatcher.resetToMainView()
-        viewModel.resetAllModals()
+        if (activity?.isOverlayFocused != true) {
+            inputDispatcher.blockInputFor(200)
+            inputDispatcher.resetToMainView()
+            viewModel.resetAllModals()
+            resumeCount++
+        }
         viewModel.refreshControllerDetection()
         try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
-        resumeCount++
     }
 
     val startDestination = when {
@@ -273,6 +275,18 @@ fun ArgosyApp(
             quickMenuViewModel.show()
             viewModel.soundManager.play(SoundType.OPEN_MODAL)
         }
+    }
+
+    val pendingOverlay by activity?.pendingOverlayEvent?.collectAsState()
+        ?: remember { mutableStateOf(null) }
+    LaunchedEffect(pendingOverlay) {
+        val eventName = pendingOverlay ?: return@LaunchedEffect
+        when (eventName) {
+            "LeftStickClick" -> openQuickMenu()
+            "RightStickClick" -> openQuickSettings()
+            else -> openDrawer()
+        }
+        activity?.clearPendingOverlay()
     }
 
     val saveConflictInputHandler = remember(viewModel) {

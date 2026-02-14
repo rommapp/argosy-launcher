@@ -6,6 +6,7 @@ package com.nendo.argosy.ui.dualscreen
 object DualScreenBroadcasts {
     const val ACTION_GAME_SELECTED = "com.nendo.argosy.DUAL_GAME_SELECTED"
     const val ACTION_REFOCUS_LOWER = "com.nendo.argosy.DUAL_REFOCUS_LOWER"
+    const val ACTION_REFOCUS_UPPER = "com.nendo.argosy.DUAL_REFOCUS_UPPER"
     const val ACTION_OPEN_OVERLAY = "com.nendo.argosy.DUAL_OPEN_OVERLAY"
     const val ACTION_CLOSE_OVERLAY = "com.nendo.argosy.DUAL_CLOSE_OVERLAY"
     const val EXTRA_EVENT_NAME = "event_name"

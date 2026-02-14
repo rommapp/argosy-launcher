@@ -87,17 +87,23 @@ class MainActivity : ComponentActivity() {
 
     var isOverlayFocused = false
 
+    private val _pendingOverlayEvent = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val pendingOverlayEvent: kotlinx.coroutines.flow.StateFlow<String?> = _pendingOverlayEvent
+
+    fun clearPendingOverlay() { _pendingOverlayEvent.value = null }
+
     private val overlayOpenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == DualScreenBroadcasts.ACTION_OPEN_OVERLAY) {
-                isOverlayFocused = true
-                refocusMain()
-                val event = when (intent.getStringExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME)) {
-                    "LeftStickClick" -> com.nendo.argosy.ui.input.GamepadEvent.LeftStickClick
-                    "RightStickClick" -> com.nendo.argosy.ui.input.GamepadEvent.RightStickClick
-                    else -> com.nendo.argosy.ui.input.GamepadEvent.Menu
+            when (intent?.action) {
+                DualScreenBroadcasts.ACTION_OPEN_OVERLAY -> {
+                    isOverlayFocused = true
+                    _pendingOverlayEvent.value =
+                        intent.getStringExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME) ?: "Menu"
+                    refocusMain()
                 }
-                gamepadInputHandler.injectEvent(event)
+                DualScreenBroadcasts.ACTION_REFOCUS_UPPER -> {
+                    refocusMain()
+                }
             }
         }
     }
@@ -1249,7 +1255,10 @@ class MainActivity : ComponentActivity() {
 
     private fun registerDualScreenReceiver() {
         val showcaseFilter = IntentFilter(DualScreenBroadcasts.ACTION_GAME_SELECTED)
-        val overlayOpenFilter = IntentFilter(DualScreenBroadcasts.ACTION_OPEN_OVERLAY)
+        val overlayOpenFilter = IntentFilter().apply {
+            addAction(DualScreenBroadcasts.ACTION_OPEN_OVERLAY)
+            addAction(DualScreenBroadcasts.ACTION_REFOCUS_UPPER)
+        }
         val detailFilter = IntentFilter().apply {
             addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED)
             addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED)
@@ -1302,7 +1311,11 @@ class MainActivity : ComponentActivity() {
     private fun refocusMain() {
         startActivity(
             Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION
+                )
             }
         )
     }
@@ -1330,7 +1343,9 @@ class MainActivity : ComponentActivity() {
             ambientAudioManager.fadeIn()
             ambientLedManager.setContext(AmbientLedContext.ARGOSY_UI)
             ambientLedManager.clearInGameColors()
-            gamepadInputHandler.blockInputFor(200)
+            if (!isOverlayFocused) {
+                gamepadInputHandler.blockInputFor(200)
+            }
         } else {
             focusLostTime = System.currentTimeMillis()
             launchRetryTracker.onFocusLost()

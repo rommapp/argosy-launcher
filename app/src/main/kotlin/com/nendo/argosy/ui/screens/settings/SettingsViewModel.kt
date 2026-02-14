@@ -153,7 +153,8 @@ class SettingsViewModel @Inject constructor(
     private val gradientColorExtractor: GradientColorExtractor,
     private val coreManager: LibretroCoreManager,
     private val inputConfigRepository: com.nendo.argosy.data.repository.InputConfigRepository,
-    private val frameRegistry: com.nendo.argosy.libretro.frame.FrameRegistry
+    private val frameRegistry: com.nendo.argosy.libretro.frame.FrameRegistry,
+    private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -585,7 +586,9 @@ class SettingsViewModel @Inject constructor(
                 ambientLedAudioColors = prefs.ambientLedAudioColors,
                 ambientLedColorMode = prefs.ambientLedColorMode,
                 ambientLedAvailable = displayDelegate.isAmbientLedAvailable(),
-                hasScreenCapturePermission = displayDelegate.hasScreenCapturePermission()
+                hasScreenCapturePermission = displayDelegate.hasScreenCapturePermission(),
+                hasSecondaryDisplay = displayAffinityHelper.hasSecondaryDisplay,
+                displayRoleOverride = prefs.displayRoleOverride
             ))
 
             val detectionResult = ControllerDetector.detectFromActiveGamepad()
@@ -1918,7 +1921,7 @@ class SettingsViewModel @Inject constructor(
                     state.storage.platformConfigs.size
                 )
                 SettingsSection.INTERFACE -> interfaceMaxFocusIndex(
-                    InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
+                    InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay)
                 )
                 SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
                 SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)
@@ -2384,6 +2387,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.setAppAffinityEnabled(enabled)
             _uiState.update { it.copy(appAffinityEnabled = enabled) }
+        }
+    }
+
+    fun cycleDisplayRoleOverride(direction: Int = 1) {
+        val entries = com.nendo.argosy.data.preferences.DisplayRoleOverride.entries
+        val current = _uiState.value.display.displayRoleOverride
+        val next = entries[(current.ordinal + direction + entries.size) % entries.size]
+        viewModelScope.launch {
+            preferencesRepository.setDisplayRoleOverride(next)
+            val sessionStore = com.nendo.argosy.data.preferences.SessionStateStore(context)
+            sessionStore.setDisplayRoleOverride(next.name)
+            displayDelegate.updateState(_uiState.value.display.copy(displayRoleOverride = next))
         }
     }
 
@@ -3380,7 +3395,7 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {
-                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay)
                 when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                     InterfaceItem.Theme -> {
                         val next = when (state.display.themeMode) {
@@ -3401,6 +3416,7 @@ class SettingsViewModel @Inject constructor(
                     InterfaceItem.UiScale -> cycleUiScale()
                     InterfaceItem.BoxArt -> navigateToBoxArt()
                     InterfaceItem.HomeScreen -> navigateToHomeScreen()
+                    InterfaceItem.DisplayRoles -> cycleDisplayRoleOverride()
                     InterfaceItem.ScreenDimmer -> toggleScreenDimmer()
                     InterfaceItem.DimAfter -> cycleScreenDimmerTimeout()
                     InterfaceItem.DimLevel -> cycleScreenDimmerLevel()

@@ -66,8 +66,15 @@ import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperScreen
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcase
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
+import com.nendo.argosy.ui.dualscreen.home.DualCollectionListItem
+import com.nendo.argosy.ui.dualscreen.home.DualFilterCategory
+import com.nendo.argosy.ui.dualscreen.home.DualHomeInputHandler
+import com.nendo.argosy.ui.dualscreen.home.DualHomeLowerContent
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
+import com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode
+import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
+import com.nendo.argosy.ui.dualscreen.home.broadcastGameSelection
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
@@ -82,6 +89,7 @@ fun ArgosyApp(
     viewModel: ArgosyViewModel = hiltViewModel(),
     quickMenuViewModel: QuickMenuViewModel = hiltViewModel(),
     isDualScreenDevice: Boolean = false,
+    isRolesSwapped: Boolean = false,
     isCompanionActive: StateFlow<Boolean>? = null,
     dualScreenShowcase: StateFlow<DualHomeShowcaseState>? = null,
     dualGameDetailState: StateFlow<DualGameDetailUpperState?>? = null,
@@ -117,7 +125,8 @@ fun ArgosyApp(
     val viewMode by dualViewMode?.collectAsState() ?: remember { mutableStateOf("CAROUSEL") }
     val collectionShowcaseState by dualCollectionShowcase?.collectAsState() ?: remember { mutableStateOf(DualCollectionShowcaseState()) }
     val isOnHomeScreen = currentRoute == Screen.Home.route
-    val showDualOverlay = isDualScreenDevice && isOnHomeScreen && companionActive
+    val showDualOverlay = isDualScreenDevice && isOnHomeScreen && companionActive && !isRolesSwapped
+    val showSwappedInteractive = isDualScreenDevice && isOnHomeScreen && isRolesSwapped
 
     val isDualActive = isDualScreenDevice && companionActive
     LaunchedEffect(isDualActive) {
@@ -853,6 +862,221 @@ fun ArgosyApp(
                                         )
                                     }
                                 )
+                            },
+                            modifier = Modifier.blur(contentBlur)
+                        )
+                    }
+                } else if (showSwappedInteractive) {
+                    val swappedVm = activity?.swappedDualHomeViewModel
+                    if (swappedVm != null) {
+                        val swappedHomeApps = remember { activity.homeAppsList }
+
+                        val swappedInputHandler = remember(swappedVm) {
+                            DualHomeInputHandler(
+                                viewModel = swappedVm,
+                                homeApps = { activity.homeAppsList },
+                                onBroadcastViewModeChange = {
+                                    activity.sendBroadcast(
+                                        Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
+                                            setPackage(activity.packageName)
+                                            putExtra(
+                                                DualScreenBroadcasts.EXTRA_VIEW_MODE,
+                                                swappedVm.uiState.value.viewMode.name
+                                            )
+                                        }
+                                    )
+                                },
+                                onBroadcastCollectionFocused = {
+                                    val item = swappedVm.selectedCollectionItem() ?: return@DualHomeInputHandler
+                                    activity.sendBroadcast(
+                                        Intent(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED).apply {
+                                            setPackage(activity.packageName)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY, item.name)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION, item.description)
+                                            putStringArrayListExtra(
+                                                DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS,
+                                                ArrayList(item.coverPaths)
+                                            )
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, item.gameCount)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY, item.platformSummary)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, item.totalPlaytimeMinutes)
+                                        }
+                                    )
+                                },
+                                onBroadcastCurrentGameSelection = {
+                                    val game = swappedVm.uiState.value.selectedGame ?: return@DualHomeInputHandler
+                                    broadcastGameSelection(context, game)
+                                },
+                                onBroadcastLibraryGameSelection = {
+                                    val state = swappedVm.uiState.value
+                                    val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
+                                        ?: return@DualHomeInputHandler
+                                    broadcastGameSelection(context, game)
+                                },
+                                onBroadcastCollectionGameSelection = {
+                                    val game = swappedVm.focusedCollectionGame() ?: return@DualHomeInputHandler
+                                    broadcastGameSelection(context, game)
+                                },
+                                onBroadcastDirectAction = { type, gameId ->
+                                    activity.sendBroadcast(
+                                        Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
+                                            setPackage(activity.packageName)
+                                            putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
+                                            putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
+                                        }
+                                    )
+                                },
+                                onSelectGame = { gameId ->
+                                    navController.navigate(Screen.GameDetail.createRoute(gameId)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenOverlay = { },
+                                onLaunchApp = { packageName ->
+                                    val launchIntent = context.packageManager
+                                        .getLaunchIntentForPackage(packageName)
+                                    if (launchIntent != null) {
+                                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        context.startActivity(launchIntent)
+                                    }
+                                }
+                            )
+                        }
+
+                        LaunchedEffect(Unit) {
+                            inputDispatcher.subscribeView(swappedInputHandler)
+                        }
+
+                        LaunchedEffect(isDrawerOpen, isQuickSettingsOpen, quickMenuState.isVisible) {
+                            if (isDrawerOpen || isQuickSettingsOpen || quickMenuState.isVisible) {
+                                swappedVm.startDrawerForwarding()
+                            } else {
+                                swappedVm.stopDrawerForwarding()
+                            }
+                        }
+
+                        DualHomeLowerContent(
+                            viewModel = swappedVm,
+                            homeApps = swappedHomeApps,
+                            onGameSelected = { gameId ->
+                                navController.navigate(Screen.GameDetail.createRoute(gameId)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onAppClick = { packageName ->
+                                val launchIntent = context.packageManager
+                                    .getLaunchIntentForPackage(packageName)
+                                if (launchIntent != null) {
+                                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(launchIntent)
+                                }
+                            },
+                            onCollectionsClick = {
+                                swappedVm.enterCollections()
+                                activity.sendBroadcast(
+                                    Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
+                                        setPackage(activity.packageName)
+                                        putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, DualHomeViewMode.COLLECTIONS.name)
+                                    }
+                                )
+                                val item = swappedVm.selectedCollectionItem()
+                                if (item != null) {
+                                    activity.sendBroadcast(
+                                        Intent(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED).apply {
+                                            setPackage(activity.packageName)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY, item.name)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION, item.description)
+                                            putStringArrayListExtra(
+                                                DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS,
+                                                ArrayList(item.coverPaths)
+                                            )
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, item.gameCount)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY, item.platformSummary)
+                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, item.totalPlaytimeMinutes)
+                                        }
+                                    )
+                                }
+                            },
+                            onLibraryToggle = {
+                                swappedVm.toggleLibraryGrid {
+                                    activity.sendBroadcast(
+                                        Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
+                                            setPackage(activity.packageName)
+                                            putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, swappedVm.uiState.value.viewMode.name)
+                                        }
+                                    )
+                                    if (swappedVm.uiState.value.viewMode == DualHomeViewMode.LIBRARY_GRID) {
+                                        val state = swappedVm.uiState.value
+                                        val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
+                                        if (game != null) broadcastGameSelection(context, game)
+                                    } else {
+                                        val game = swappedVm.uiState.value.selectedGame
+                                        if (game != null) broadcastGameSelection(context, game)
+                                    }
+                                }
+                            },
+                            onViewAllClick = {
+                                val platformId = swappedVm.uiState.value.currentPlatformId
+                                val afterSwitch = {
+                                    activity.sendBroadcast(
+                                        Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
+                                            setPackage(activity.packageName)
+                                            putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, DualHomeViewMode.LIBRARY_GRID.name)
+                                        }
+                                    )
+                                    val state = swappedVm.uiState.value
+                                    val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
+                                    if (game != null) broadcastGameSelection(context, game)
+                                    Unit
+                                }
+                                if (platformId != null) {
+                                    swappedVm.enterLibraryGridForPlatform(platformId) { afterSwitch() }
+                                } else {
+                                    swappedVm.enterLibraryGrid { afterSwitch() }
+                                }
+                            },
+                            onCollectionTapped = { index ->
+                                val items = swappedVm.uiState.value.collectionItems
+                                val item = items.getOrNull(index)
+                                if (item is DualCollectionListItem.Collection) {
+                                    swappedVm.enterCollectionGames(item.id) {
+                                        activity.sendBroadcast(
+                                            Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
+                                                setPackage(activity.packageName)
+                                                putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, DualHomeViewMode.COLLECTION_GAMES.name)
+                                            }
+                                        )
+                                    }
+                                }
+                            },
+                            onGridGameTapped = { index ->
+                                val state = swappedVm.uiState.value
+                                when (state.viewMode) {
+                                    DualHomeViewMode.COLLECTION_GAMES -> {
+                                        swappedVm.moveCollectionGamesFocus(index - state.collectionGamesFocusedIndex)
+                                        val game = swappedVm.focusedCollectionGame()
+                                        if (game != null) broadcastGameSelection(context, game)
+                                    }
+                                    DualHomeViewMode.LIBRARY_GRID -> {
+                                        swappedVm.moveLibraryFocus(index - state.libraryFocusedIndex)
+                                        val game = state.libraryGames.getOrNull(index)
+                                        if (game != null) broadcastGameSelection(context, game)
+                                    }
+                                    else -> {}
+                                }
+                            },
+                            onLetterClick = { letter ->
+                                swappedVm.jumpToLetter(letter)
+                                val state = swappedVm.uiState.value
+                                val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
+                                if (game != null) broadcastGameSelection(context, game)
+                            },
+                            onFilterOptionTapped = { index ->
+                                swappedVm.moveFilterFocus(index - swappedVm.uiState.value.filterFocusedIndex)
+                                swappedVm.confirmFilter()
+                            },
+                            onFilterCategoryTapped = { category ->
+                                swappedVm.setFilterCategory(category)
                             },
                             modifier = Modifier.blur(contentBlur)
                         )

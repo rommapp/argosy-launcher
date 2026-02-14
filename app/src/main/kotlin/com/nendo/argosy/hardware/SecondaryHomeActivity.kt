@@ -56,11 +56,19 @@ import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
+import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperScreen
+import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
+import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcase
+import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
+import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
+import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeScreen
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.util.DisplayAffinityHelper
+import com.nendo.argosy.util.DisplayRoleResolver
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -115,7 +123,15 @@ class SecondaryHomeActivity : ComponentActivity() {
     private lateinit var viewModel: SecondaryHomeViewModel
     private lateinit var dualHomeViewModel: DualHomeViewModel
     private lateinit var sessionStateStore: SessionStateStore
-    private var useDualScreenMode by mutableStateOf(true)
+    private lateinit var displayAffinityHelper: DisplayAffinityHelper
+    private var useDualScreenMode by mutableStateOf(false)
+    private var isShowcaseRole by mutableStateOf(false)
+
+    // Showcase state flows (used when isShowcaseRole = true)
+    private val _showcaseState = MutableStateFlow(DualHomeShowcaseState())
+    private val _showcaseViewMode = MutableStateFlow("CAROUSEL")
+    private val _showcaseCollectionState = MutableStateFlow(DualCollectionShowcaseState())
+    private val _showcaseGameDetailState = MutableStateFlow<DualGameDetailUpperState?>(null)
 
     // Input swap preferences (read from SessionStateStore, written by main process)
     private var swapAB = false
@@ -129,6 +145,10 @@ class SecondaryHomeActivity : ComponentActivity() {
 
     private fun loadInitialState() {
         sessionStateStore = SessionStateStore(applicationContext)
+
+        useDualScreenMode = displayAffinityHelper.hasSecondaryDisplay
+        val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
+        isShowcaseRole = resolver.isSwapped
 
         // Read initial state from SharedPreferences
         isArgosyForeground = sessionStateStore.isArgosyForeground()
@@ -341,6 +361,122 @@ class SecondaryHomeActivity : ComponentActivity() {
         }
     }
 
+    private val showcaseGameSelectedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == DualScreenBroadcasts.ACTION_GAME_SELECTED) {
+                _showcaseState.value = DualHomeShowcaseState(
+                    gameId = intent.getLongExtra("game_id", -1),
+                    title = intent.getStringExtra("title") ?: "",
+                    coverPath = intent.getStringExtra("cover_path"),
+                    backgroundPath = intent.getStringExtra("background_path"),
+                    platformName = intent.getStringExtra("platform_name") ?: "",
+                    platformSlug = intent.getStringExtra("platform_slug") ?: "",
+                    playTimeMinutes = intent.getIntExtra("play_time_minutes", 0),
+                    lastPlayedAt = intent.getLongExtra("last_played_at", 0),
+                    status = intent.getStringExtra("status"),
+                    communityRating = intent.getFloatExtra("community_rating", 0f).takeIf { it > 0f },
+                    userRating = intent.getIntExtra("user_rating", 0),
+                    userDifficulty = intent.getIntExtra("user_difficulty", 0),
+                    description = intent.getStringExtra("description"),
+                    developer = intent.getStringExtra("developer"),
+                    releaseYear = intent.getIntExtra("release_year", 0).takeIf { it > 0 },
+                    titleId = intent.getStringExtra("title_id"),
+                    isFavorite = intent.getBooleanExtra("is_favorite", false)
+                )
+            }
+        }
+    }
+
+    private val showcaseViewModeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED -> {
+                    _showcaseViewMode.value = intent.getStringExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE) ?: "CAROUSEL"
+                }
+                DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED -> {
+                    _showcaseCollectionState.value = DualCollectionShowcaseState(
+                        name = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY) ?: "",
+                        description = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION),
+                        coverPaths = intent.getStringArrayListExtra(DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS)?.toList() ?: emptyList(),
+                        gameCount = intent.getIntExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, 0),
+                        platformSummary = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY) ?: "",
+                        totalPlaytimeMinutes = intent.getIntExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, 0)
+                    )
+                }
+            }
+        }
+    }
+
+    private val showcaseGameDetailReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED -> {
+                    val gameId = intent.getLongExtra(DualScreenBroadcasts.EXTRA_GAME_ID, -1)
+                    if (gameId == -1L) return
+                    val showcase = _showcaseState.value
+                    _showcaseGameDetailState.value = if (showcase.gameId == gameId) {
+                        DualGameDetailUpperState(
+                            gameId = gameId,
+                            title = showcase.title,
+                            coverPath = showcase.coverPath,
+                            backgroundPath = showcase.backgroundPath,
+                            platformName = showcase.platformName,
+                            developer = showcase.developer,
+                            releaseYear = showcase.releaseYear,
+                            description = showcase.description,
+                            playTimeMinutes = showcase.playTimeMinutes,
+                            lastPlayedAt = showcase.lastPlayedAt,
+                            status = showcase.status,
+                            rating = showcase.userRating.takeIf { it > 0 },
+                            userDifficulty = showcase.userDifficulty,
+                            communityRating = showcase.communityRating,
+                            titleId = showcase.titleId
+                        )
+                    } else {
+                        DualGameDetailUpperState(gameId = gameId)
+                    }
+                }
+                DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED -> {
+                    _showcaseGameDetailState.value = null
+                }
+                DualScreenBroadcasts.ACTION_SCREENSHOT_SELECTED -> {
+                    val index = intent.getIntExtra(DualScreenBroadcasts.EXTRA_SCREENSHOT_INDEX, -1)
+                    _showcaseGameDetailState.value = _showcaseGameDetailState.value?.copy(
+                        viewerScreenshotIndex = index.takeIf { it >= 0 }
+                    )
+                }
+                DualScreenBroadcasts.ACTION_SCREENSHOT_CLEAR -> {
+                    _showcaseGameDetailState.value = _showcaseGameDetailState.value?.copy(
+                        viewerScreenshotIndex = null
+                    )
+                }
+                DualScreenBroadcasts.ACTION_INLINE_UPDATE -> {
+                    val field = intent.getStringExtra(DualScreenBroadcasts.EXTRA_INLINE_FIELD) ?: return
+                    when (field) {
+                        "rating" -> {
+                            val v = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
+                            _showcaseGameDetailState.value = _showcaseGameDetailState.value?.copy(
+                                rating = v.takeIf { it > 0 }
+                            )
+                        }
+                        "difficulty" -> {
+                            val v = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
+                            _showcaseGameDetailState.value = _showcaseGameDetailState.value?.copy(
+                                userDifficulty = v
+                            )
+                        }
+                        "status" -> {
+                            val v = intent.getStringExtra(DualScreenBroadcasts.EXTRA_INLINE_STRING_VALUE)
+                            _showcaseGameDetailState.value = _showcaseGameDetailState.value?.copy(
+                                status = v
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private val directActionResultReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != DualScreenBroadcasts.ACTION_DIRECT_ACTION) return
@@ -379,97 +515,109 @@ class SecondaryHomeActivity : ComponentActivity() {
                     LocalXYIconsSwapped provides xyIconsSwapped,
                     LocalSwapStartSelect provides startSelectSwapped
                 ) {
-                    SecondaryHomeContent(
-                        isInitialized = isInitialized,
-                        isArgosyForeground = isArgosyForeground,
-                        isGameActive = isGameActive,
-                        channelName = currentChannelName,
-                        isSaveDirty = isSaveDirty,
-                        homeApps = homeApps,
-                        viewModel = viewModel,
-                        dualHomeViewModel = dualHomeViewModel,
-                        useDualScreenMode = useDualScreenMode,
-                        currentScreen = currentScreen,
-                        dualGameDetailViewModel = dualGameDetailViewModel,
-                        onAppClick = { packageName -> launchApp(packageName) },
-                        onGameSelected = { gameId -> selectGame(gameId) },
-                        onCollectionsClick = {
-                            dualHomeViewModel.enterCollections()
-                            broadcastViewModeChange()
-                            broadcastCollectionFocused()
-                        },
-                        onLibraryToggle = {
-                            dualHomeViewModel.toggleLibraryGrid {
+                    if (isShowcaseRole) {
+                        ShowcaseRoleContent(
+                            isInitialized = isInitialized,
+                            isArgosyForeground = isArgosyForeground,
+                            isGameActive = isGameActive,
+                            showcaseState = _showcaseState,
+                            showcaseViewMode = _showcaseViewMode,
+                            collectionShowcaseState = _showcaseCollectionState,
+                            gameDetailState = _showcaseGameDetailState
+                        )
+                    } else {
+                        SecondaryHomeContent(
+                            isInitialized = isInitialized,
+                            isArgosyForeground = isArgosyForeground,
+                            isGameActive = isGameActive,
+                            channelName = currentChannelName,
+                            isSaveDirty = isSaveDirty,
+                            homeApps = homeApps,
+                            viewModel = viewModel,
+                            dualHomeViewModel = dualHomeViewModel,
+                            useDualScreenMode = useDualScreenMode,
+                            currentScreen = currentScreen,
+                            dualGameDetailViewModel = dualGameDetailViewModel,
+                            onAppClick = { packageName -> launchApp(packageName) },
+                            onGameSelected = { gameId -> selectGame(gameId) },
+                            onCollectionsClick = {
+                                dualHomeViewModel.enterCollections()
                                 broadcastViewModeChange()
+                                broadcastCollectionFocused()
+                            },
+                            onLibraryToggle = {
+                                dualHomeViewModel.toggleLibraryGrid {
+                                    broadcastViewModeChange()
+                                    val state = dualHomeViewModel.uiState.value
+                                    if (state.viewMode == com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID)
+                                        broadcastLibraryGameSelection()
+                                    else
+                                        broadcastCurrentGameSelection()
+                                }
+                            },
+                            onViewAllClick = {
+                                val platformId = dualHomeViewModel.uiState.value.currentPlatformId
+                                if (platformId != null) {
+                                    dualHomeViewModel.enterLibraryGridForPlatform(platformId) {
+                                        broadcastViewModeChange()
+                                        broadcastLibraryGameSelection()
+                                    }
+                                } else {
+                                    dualHomeViewModel.enterLibraryGrid {
+                                        broadcastViewModeChange()
+                                        broadcastLibraryGameSelection()
+                                    }
+                                }
+                            },
+                            onCollectionTapped = { index ->
+                                val items = dualHomeViewModel.uiState.value.collectionItems
+                                val item = items.getOrNull(index)
+                                if (item is com.nendo.argosy.ui.dualscreen.home.DualCollectionListItem.Collection) {
+                                    dualHomeViewModel.enterCollectionGames(item.id)
+                                    broadcastViewModeChange()
+                                }
+                            },
+                            onGridGameTapped = { index ->
                                 val state = dualHomeViewModel.uiState.value
-                                if (state.viewMode == com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID)
-                                    broadcastLibraryGameSelection()
-                                else
-                                    broadcastCurrentGameSelection()
-                            }
-                        },
-                        onViewAllClick = {
-                            val platformId = dualHomeViewModel.uiState.value.currentPlatformId
-                            if (platformId != null) {
-                                dualHomeViewModel.enterLibraryGridForPlatform(platformId) {
-                                    broadcastViewModeChange()
-                                    broadcastLibraryGameSelection()
+                                when (state.viewMode) {
+                                    com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.COLLECTION_GAMES -> {
+                                        dualHomeViewModel.moveCollectionGamesFocus(
+                                            index - state.collectionGamesFocusedIndex
+                                        )
+                                        broadcastCollectionGameSelection()
+                                    }
+                                    com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID -> {
+                                        dualHomeViewModel.moveLibraryFocus(
+                                            index - state.libraryFocusedIndex
+                                        )
+                                        broadcastLibraryGameSelection()
+                                    }
+                                    else -> {}
                                 }
-                            } else {
-                                dualHomeViewModel.enterLibraryGrid {
-                                    broadcastViewModeChange()
-                                    broadcastLibraryGameSelection()
-                                }
-                            }
-                        },
-                        onCollectionTapped = { index ->
-                            val items = dualHomeViewModel.uiState.value.collectionItems
-                            val item = items.getOrNull(index)
-                            if (item is com.nendo.argosy.ui.dualscreen.home.DualCollectionListItem.Collection) {
-                                dualHomeViewModel.enterCollectionGames(item.id)
-                                broadcastViewModeChange()
-                            }
-                        },
-                        onGridGameTapped = { index ->
-                            val state = dualHomeViewModel.uiState.value
-                            when (state.viewMode) {
-                                com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.COLLECTION_GAMES -> {
-                                    dualHomeViewModel.moveCollectionGamesFocus(
-                                        index - state.collectionGamesFocusedIndex
-                                    )
-                                    broadcastCollectionGameSelection()
-                                }
-                                com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID -> {
-                                    dualHomeViewModel.moveLibraryFocus(
-                                        index - state.libraryFocusedIndex
-                                    )
-                                    broadcastLibraryGameSelection()
-                                }
-                                else -> {}
-                            }
-                        },
-                        onLetterClick = { letter ->
-                            dualHomeViewModel.jumpToLetter(letter)
-                            broadcastLibraryGameSelection()
-                        },
-                        onFilterOptionTapped = { index ->
-                            dualHomeViewModel.moveFilterFocus(
-                                index - dualHomeViewModel.uiState.value.filterFocusedIndex
-                            )
-                            dualHomeViewModel.confirmFilter()
-                        },
-                        onFilterCategoryTapped = { category ->
-                            dualHomeViewModel.setFilterCategory(category)
-                        },
-                        onDetailBack = { returnToHome() },
-                        onOptionAction = { vm, option ->
-                            handleOption(vm, option)
-                        },
-                        onScreenshotViewed = { index ->
-                            broadcastScreenshotSelected(index)
-                        },
-                        onDimTapped = { refocusMain() }
-                    )
+                            },
+                            onLetterClick = { letter ->
+                                dualHomeViewModel.jumpToLetter(letter)
+                                broadcastLibraryGameSelection()
+                            },
+                            onFilterOptionTapped = { index ->
+                                dualHomeViewModel.moveFilterFocus(
+                                    index - dualHomeViewModel.uiState.value.filterFocusedIndex
+                                )
+                                dualHomeViewModel.confirmFilter()
+                            },
+                            onFilterCategoryTapped = { category ->
+                                dualHomeViewModel.setFilterCategory(category)
+                            },
+                            onDetailBack = { returnToHome() },
+                            onOptionAction = { vm, option ->
+                                handleOption(vm, option)
+                            },
+                            onScreenshotViewed = { index ->
+                                broadcastScreenshotSelected(index)
+                            },
+                            onDimTapped = { refocusMain() }
+                        )
+                    }
                 }
             }
         }
@@ -502,7 +650,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         collectionDao = database.collectionDao()
         emulatorConfigDao = database.emulatorConfigDao()
         val appsRepository = AppsRepository(applicationContext)
-        val displayAffinityHelper = DisplayAffinityHelper(applicationContext)
+        displayAffinityHelper = DisplayAffinityHelper(applicationContext)
 
         viewModel = SecondaryHomeViewModel(
             gameDao = gameDao,
@@ -554,6 +702,24 @@ class SecondaryHomeActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, modalResultReceiver, modalResultFilter, flag)
         ContextCompat.registerReceiver(this, directActionResultReceiver, directActionFilter, flag)
         ContextCompat.registerReceiver(this, saveDataReceiver, saveDataFilter, flag)
+
+        if (isShowcaseRole) {
+            val showcaseGameFilter = IntentFilter(DualScreenBroadcasts.ACTION_GAME_SELECTED)
+            val showcaseViewModeFilter = IntentFilter().apply {
+                addAction(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED)
+                addAction(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED)
+            }
+            val showcaseDetailFilter = IntentFilter().apply {
+                addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED)
+                addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED)
+                addAction(DualScreenBroadcasts.ACTION_SCREENSHOT_SELECTED)
+                addAction(DualScreenBroadcasts.ACTION_SCREENSHOT_CLEAR)
+                addAction(DualScreenBroadcasts.ACTION_INLINE_UPDATE)
+            }
+            ContextCompat.registerReceiver(this, showcaseGameSelectedReceiver, showcaseGameFilter, flag)
+            ContextCompat.registerReceiver(this, showcaseViewModeReceiver, showcaseViewModeFilter, flag)
+            ContextCompat.registerReceiver(this, showcaseGameDetailReceiver, showcaseDetailFilter, flag)
+        }
     }
 
     private fun launchApp(packageName: String) {
@@ -780,7 +946,8 @@ class SecondaryHomeActivity : ComponentActivity() {
 
     override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
         val result = super.dispatchTouchEvent(event)
-        if (event.action == android.view.MotionEvent.ACTION_UP &&
+        if (!isShowcaseRole &&
+            event.action == android.view.MotionEvent.ACTION_UP &&
             dualHomeViewModel.forwardingMode.value == com.nendo.argosy.ui.dualscreen.home.ForwardingMode.BACKGROUND
         ) {
             window.decorView.post {
@@ -793,6 +960,8 @@ class SecondaryHomeActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (isShowcaseRole) return super.onKeyDown(keyCode, event)
+
         if (event.repeatCount == 0) {
             android.util.Log.d("SecondaryInput", "keyCode=$keyCode (${android.view.KeyEvent.keyCodeToString(keyCode)}), swapAB=$swapAB, swapXY=$swapXY")
             val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
@@ -1595,6 +1764,11 @@ class SecondaryHomeActivity : ComponentActivity() {
             unregisterReceiver(modalResultReceiver)
             unregisterReceiver(directActionResultReceiver)
             unregisterReceiver(saveDataReceiver)
+            if (isShowcaseRole) {
+                unregisterReceiver(showcaseGameSelectedReceiver)
+                unregisterReceiver(showcaseViewModeReceiver)
+                unregisterReceiver(showcaseGameDetailReceiver)
+            }
         } catch (e: Exception) {
             // Receiver may not be registered
         }
@@ -1699,7 +1873,8 @@ private fun SecondaryHomeContent(
                     }
                     SecondaryHomeActivity.CompanionScreen.GAME_DETAIL -> {
                         if (dualGameDetailViewModel != null) {
-                            key(dualGameDetailViewModel.uiState.value.gameId) {
+                            val detailState by dualGameDetailViewModel.uiState.collectAsState()
+                            key(detailState.gameId) {
                                 DualGameDetailContent(
                                     viewModel = dualGameDetailViewModel,
                                     onOptionAction = { option ->
@@ -1734,6 +1909,99 @@ private fun SecondaryHomeContent(
                 homeApps = homeApps,
                 onAppClick = onAppClick
             )
+        }
+    }
+}
+
+@Composable
+private fun ShowcaseRoleContent(
+    isInitialized: Boolean,
+    isArgosyForeground: Boolean,
+    isGameActive: Boolean,
+    showcaseState: kotlinx.coroutines.flow.StateFlow<DualHomeShowcaseState>,
+    showcaseViewMode: kotlinx.coroutines.flow.StateFlow<String>,
+    collectionShowcaseState: kotlinx.coroutines.flow.StateFlow<DualCollectionShowcaseState>,
+    gameDetailState: kotlinx.coroutines.flow.StateFlow<DualGameDetailUpperState?>
+) {
+    BackHandler(enabled = true) { }
+
+    val showShowcase = isInitialized && isArgosyForeground && !isGameActive
+    val showSplash = !isInitialized
+
+    val showcase by showcaseState.collectAsState()
+    val viewMode by showcaseViewMode.collectAsState()
+    val collectionState by collectionShowcaseState.collectAsState()
+    val detailState by gameDetailState.collectAsState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        AnimatedVisibility(
+            visible = showSplash,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_helm),
+                    contentDescription = null,
+                    modifier = Modifier.size(120.dp),
+                    alpha = 0.6f
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showShowcase,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            val emptyFooter: @Composable () -> Unit = {}
+
+            if (detailState != null) {
+                DualGameDetailUpperScreen(
+                    state = detailState!!,
+                    footerHints = emptyFooter
+                )
+            } else if (viewMode == "COLLECTIONS") {
+                DualCollectionShowcase(
+                    state = collectionState,
+                    footerHints = emptyFooter
+                )
+            } else {
+                DualHomeUpperScreen(
+                    state = showcase,
+                    footerHints = emptyFooter
+                )
+            }
+        }
+
+        // When not in showcase mode (game running, background, etc), show splash
+        AnimatedVisibility(
+            visible = isInitialized && !showShowcase,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_helm),
+                    contentDescription = null,
+                    modifier = Modifier.size(120.dp),
+                    alpha = 0.6f
+                )
+            }
         }
     }
 }

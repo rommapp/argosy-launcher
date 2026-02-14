@@ -55,6 +55,7 @@ import com.nendo.argosy.hardware.RecoveryDisplayService
 import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.util.DisplayAffinityHelper
+import com.nendo.argosy.util.DisplayRoleResolver
 import com.nendo.argosy.util.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -95,6 +96,13 @@ class MainActivity : ComponentActivity() {
         _dualCollectionShowcase
 
     var isOverlayFocused = false
+    var isRolesSwapped = false
+        private set
+    var swappedDualHomeViewModel: com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel? = null
+        private set
+
+    val homeAppsList: List<String>
+        get() = sessionStateStore.getHomeApps()?.toList() ?: emptyList()
 
     private val _pendingOverlayEvent = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
     val pendingOverlayEvent: kotlinx.coroutines.flow.StateFlow<String?> = _pendingOverlayEvent
@@ -409,7 +417,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                    if (!isCollectionAction) {
+                    if (!isCollectionAction && !isRolesSwapped) {
                         sendBroadcast(
                             Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
                                 .setPackage(packageName)
@@ -491,6 +499,9 @@ class MainActivity : ComponentActivity() {
     lateinit var platformDao: com.nendo.argosy.data.local.dao.PlatformDao
 
     @Inject
+    lateinit var collectionDao: com.nendo.argosy.data.local.dao.CollectionDao
+
+    @Inject
     lateinit var gamepadInputHandler: GamepadInputHandler
 
     @Inject
@@ -566,6 +577,21 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         hideSystemUI()
+
+        val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
+        isRolesSwapped = resolver.isSwapped
+        sessionStateStore.setRolesSwapped(isRolesSwapped)
+
+        if (isRolesSwapped) {
+            swappedDualHomeViewModel = com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel(
+                gameDao = gameDao,
+                platformDao = platformDao,
+                collectionDao = collectionDao,
+                displayAffinityHelper = displayAffinityHelper,
+                context = applicationContext
+            )
+        }
+
         registerDualScreenReceiver()
 
         activityScope.launch {
@@ -648,6 +674,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     ArgosyApp(
                         isDualScreenDevice = displayAffinityHelper.hasSecondaryDisplay,
+                        isRolesSwapped = isRolesSwapped,
                         isCompanionActive = isCompanionActive,
                         dualScreenShowcase = dualScreenShowcase,
                         dualGameDetailState = dualGameDetailState,
@@ -729,7 +756,8 @@ class MainActivity : ComponentActivity() {
             ambientAudioManager.fadeIn()
         } else {
             // First resume - push input focus to lower screen after startup completes
-            if (displayAffinityHelper.hasSecondaryDisplay) {
+            // (only in standard mode -- swapped mode keeps focus on main display)
+            if (displayAffinityHelper.hasSecondaryDisplay && !isRolesSwapped) {
                 window.decorView.postDelayed({
                     sendBroadcast(
                         Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER).setPackage(packageName)
@@ -1001,7 +1029,14 @@ class MainActivity : ComponentActivity() {
         gameLaunchDelegate.launchGame(
             scope = activityScope,
             gameId = gameId,
-            onLaunch = { intent -> startActivity(intent) }
+            onLaunch = { intent ->
+                val options = displayAffinityHelper.getActivityOptions(
+                    forEmulator = true,
+                    rolesSwapped = isRolesSwapped
+                )
+                if (options != null) startActivity(intent, options)
+                else startActivity(intent)
+            }
         )
     }
 
@@ -1366,7 +1401,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
-            if (_isCompanionActive.value && !isOverlayFocused) {
+            if (_isCompanionActive.value && !isOverlayFocused && !isRolesSwapped) {
                 sendBroadcast(
                     Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER).setPackage(packageName)
                 )

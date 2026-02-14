@@ -215,7 +215,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
-            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay)
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> { viewModel.adjustHue(-HUE_STEP); return InputResult.HANDLED }
                 InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(-HUE_STEP); return InputResult.HANDLED }
@@ -226,6 +226,7 @@ class SettingsInputHandler(
                 InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(-1); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(-5); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(-1); return InputResult.HANDLED }
+                InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(-1); return InputResult.HANDLED }
                 InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(-1); return InputResult.HANDLED }
                 InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(-1); return InputResult.HANDLED }
                 else -> {}
@@ -465,7 +466,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
-            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay)
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> { viewModel.adjustHue(HUE_STEP); return InputResult.HANDLED }
                 InterfaceItem.SecondaryColor -> { viewModel.adjustSecondaryHue(HUE_STEP); return InputResult.HANDLED }
@@ -476,6 +477,7 @@ class SettingsInputHandler(
                 InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(1); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(5); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(1); return InputResult.HANDLED }
+                InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(1); return InputResult.HANDLED }
                 InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(1); return InputResult.HANDLED }
                 InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(1); return InputResult.HANDLED }
                 else -> {}
@@ -756,7 +758,7 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.INTERFACE) {
-            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay)
             when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
                 InterfaceItem.AccentColor -> {
                     viewModel.resetToDefaultColor()
@@ -1134,7 +1136,7 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {
-                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay)
                 if (viewModel.jumpToPrevSection(interfaceSections(layoutState))) {
                     return InputResult.HANDLED
                 }
@@ -1187,7 +1189,7 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {
-                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled)
+                val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay)
                 if (viewModel.jumpToNextSection(interfaceSections(layoutState))) {
                     return InputResult.HANDLED
                 }

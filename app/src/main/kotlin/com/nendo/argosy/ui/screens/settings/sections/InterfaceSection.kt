@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.data.preferences.DisplayRoleOverride
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.CyclePreference
@@ -45,7 +46,8 @@ internal data class InterfaceLayoutState(
     val display: DisplayState,
     val bgmEnabled: Boolean,
     val bgmIsFolder: Boolean,
-    val uiSoundsEnabled: Boolean
+    val uiSoundsEnabled: Boolean,
+    val hasSecondaryDisplay: Boolean = false
 )
 
 internal sealed class InterfaceItem(
@@ -76,6 +78,11 @@ internal sealed class InterfaceItem(
     data object UiScale : InterfaceItem("uiScale", "appearance")
     data object BoxArt : InterfaceItem("boxArt", "appearance")
     data object HomeScreen : InterfaceItem("homeScreen", "appearance")
+    data object DisplayRoles : InterfaceItem(
+        key = "displayRoles",
+        section = "appearance",
+        visibleWhen = { it.hasSecondaryDisplay }
+    )
 
     // Screen Safety
     data object ScreenDimmer : InterfaceItem("screenDimmer", "screenSafety")
@@ -153,7 +160,7 @@ internal sealed class InterfaceItem(
 
         val ALL: List<InterfaceItem> = listOf(
             AppearanceHeader,
-            Theme, AccentColor, SecondaryColor, GridDensity, UiScale, BoxArt, HomeScreen,
+            Theme, AccentColor, SecondaryColor, GridDensity, UiScale, BoxArt, HomeScreen, DisplayRoles,
             ScreenSafetyHeader,
             ScreenDimmer, DimAfter, DimLevel,
             AmbientLedHeader,
@@ -196,11 +203,12 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val layoutState = remember(
         display.ambientLedAvailable,
         display.ambientLedEnabled,
+        display.hasSecondaryDisplay,
         bgmEnabled,
         bgmIsFolder,
         uiSoundsEnabled
     ) {
-        InterfaceLayoutState(display, bgmEnabled, bgmIsFolder, uiSoundsEnabled)
+        InterfaceLayoutState(display, bgmEnabled, bgmIsFolder, uiSoundsEnabled, display.hasSecondaryDisplay)
     }
 
     val currentHue = display.primaryColor?.let { colorIntToHue(it) }
@@ -209,6 +217,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val visibleItems = remember(
         display.ambientLedAvailable,
         display.ambientLedEnabled,
+        display.hasSecondaryDisplay,
         bgmEnabled,
         bgmIsFolder,
         uiSoundsEnabled
@@ -218,6 +227,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val sections = remember(
         display.ambientLedAvailable,
         display.ambientLedEnabled,
+        display.hasSecondaryDisplay,
         bgmEnabled,
         bgmIsFolder,
         uiSoundsEnabled
@@ -324,6 +334,13 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     subtitle = "Background and footer settings",
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToHomeScreen() }
+                )
+
+                InterfaceItem.DisplayRoles -> CyclePreference(
+                    title = "Display Roles",
+                    value = display.displayRoleOverride.displayName,
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleDisplayRoleOverride() }
                 )
 
                 InterfaceItem.ScreenDimmer -> SwitchPreference(

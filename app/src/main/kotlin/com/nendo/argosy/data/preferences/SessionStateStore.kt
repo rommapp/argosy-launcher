@@ -86,6 +86,19 @@ class SessionStateStore(context: Context) {
     fun getSwapXY(): Boolean = prefs.getBoolean(KEY_SWAP_XY, false)
     fun getSwapStartSelect(): Boolean = prefs.getBoolean(KEY_SWAP_START_SELECT, false)
 
+    fun setDisplayRoleOverride(override: String) {
+        prefs.edit().putString(KEY_DISPLAY_ROLE_OVERRIDE, override).apply()
+    }
+
+    fun getDisplayRoleOverride(): String =
+        prefs.getString(KEY_DISPLAY_ROLE_OVERRIDE, "AUTO") ?: "AUTO"
+
+    fun setRolesSwapped(swapped: Boolean) {
+        prefs.edit().putBoolean(KEY_ROLES_SWAPPED, swapped).apply()
+    }
+
+    fun isRolesSwapped(): Boolean = prefs.getBoolean(KEY_ROLES_SWAPPED, false)
+
     companion object {
         private const val PREFS_NAME = "argosy_session_state"
         private const val KEY_HAS_SESSION = "has_session"
@@ -99,5 +112,7 @@ class SessionStateStore(context: Context) {
         private const val KEY_SWAP_AB = "swap_ab"
         private const val KEY_SWAP_XY = "swap_xy"
         private const val KEY_SWAP_START_SELECT = "swap_start_select"
+        private const val KEY_DISPLAY_ROLE_OVERRIDE = "display_role_override"
+        private const val KEY_ROLES_SWAPPED = "roles_swapped"
     }
 }

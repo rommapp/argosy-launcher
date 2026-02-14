@@ -157,6 +157,7 @@ class UserPreferencesRepository @Inject constructor(
 
         val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
         val APP_AFFINITY_ENABLED = booleanPreferencesKey("app_affinity_enabled")
+        val DISPLAY_ROLE_OVERRIDE = stringPreferencesKey("display_role_override")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -287,7 +288,8 @@ class UserPreferencesRepository @Inject constructor(
             ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE]),
             androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI],
             builtinLibretroEnabled = prefs[Keys.BUILTIN_LIBRETRO_ENABLED] ?: true,
-            appAffinityEnabled = true
+            appAffinityEnabled = true,
+            displayRoleOverride = DisplayRoleOverride.fromString(prefs[Keys.DISPLAY_ROLE_OVERRIDE])
         )
     }
 
@@ -1210,6 +1212,12 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.APP_AFFINITY_ENABLED] = enabled
         }
     }
+
+    suspend fun setDisplayRoleOverride(override: DisplayRoleOverride) {
+        dataStore.edit { prefs ->
+            prefs[Keys.DISPLAY_ROLE_OVERRIDE] = override.name
+        }
+    }
 }
 
 data class BuiltinEmulatorSettings(
@@ -1368,7 +1376,8 @@ data class UserPreferences(
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,
     val androidDataSafUri: String? = null,
     val builtinLibretroEnabled: Boolean = true,
-    val appAffinityEnabled: Boolean = false
+    val appAffinityEnabled: Boolean = false,
+    val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO
 )
 
 enum class ThemeMode(val displayName: String) {
@@ -1535,5 +1544,16 @@ enum class AmbientLedColorMode(val displayName: String) {
     companion object {
         fun fromString(value: String?): AmbientLedColorMode =
             entries.find { it.name == value } ?: DOMINANT_3
+    }
+}
+
+enum class DisplayRoleOverride(val displayName: String) {
+    AUTO("Auto"),
+    STANDARD("Standard"),
+    SWAPPED("Swapped");
+
+    companion object {
+        fun fromString(value: String?): DisplayRoleOverride =
+            entries.find { it.name == value } ?: AUTO
     }
 }

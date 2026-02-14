@@ -28,6 +28,7 @@ import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.AmbientLedColorMode
+import com.nendo.argosy.data.preferences.DisplayRoleOverride
 import com.nendo.argosy.ui.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundPreset
 import com.nendo.argosy.ui.input.SoundType
@@ -176,7 +177,9 @@ data class DisplayState(
     val ambientLedAudioColors: Boolean = false,
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,
     val ambientLedAvailable: Boolean = false,
-    val hasScreenCapturePermission: Boolean = true
+    val hasScreenCapturePermission: Boolean = true,
+    val hasSecondaryDisplay: Boolean = false,
+    val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO
 )
 
 data class ControlsState(

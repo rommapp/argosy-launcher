@@ -124,6 +124,8 @@ class GameDetailViewModel @Inject constructor(
     private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper
 ) : ViewModel() {
 
+    private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
+
     private val _uiState = MutableStateFlow(GameDetailUiState())
     val uiState: StateFlow<GameDetailUiState> = _uiState.asStateFlow()
 
@@ -303,7 +305,10 @@ class GameDetailViewModel @Inject constructor(
                 when (result) {
                     is LaunchResult.Success -> {
                         soundManager.play(SoundType.LAUNCH_GAME)
-                        val options = displayAffinityHelper.getActivityOptions(forEmulator = true)
+                        val options = displayAffinityHelper.getActivityOptions(
+                            forEmulator = true,
+                            rolesSwapped = sessionStateStore.isRolesSwapped()
+                        )
                         _launchEvents.emit(LaunchEvent.LaunchIntent(result.intent, options))
                     }
                     is LaunchResult.Error -> {
@@ -1240,7 +1245,10 @@ class GameDetailViewModel @Inject constructor(
                     putExtra(com.nendo.argosy.libretro.LaunchMode.EXTRA_LAUNCH_MODE, launchMode.name)
                 }
                 soundManager.play(SoundType.LAUNCH_GAME)
-                val options = displayAffinityHelper.getActivityOptions(forEmulator = true)
+                val options = displayAffinityHelper.getActivityOptions(
+                    forEmulator = true,
+                    rolesSwapped = sessionStateStore.isRolesSwapped()
+                )
                 _launchEvents.emit(LaunchEvent.LaunchIntent(intentWithMode, options))
             }
             is LaunchResult.SelectDisc -> {

@@ -21,11 +21,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LaunchViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val gameDao: GameDao,
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val preferencesRepository: UserPreferencesRepository,
     private val displayAffinityHelper: DisplayAffinityHelper
 ) : ViewModel() {
+
+    private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
 
     val syncOverlayState: StateFlow<SyncOverlayState?> = gameLaunchDelegate.syncOverlayState
     val discPickerState: StateFlow<DiscPickerState?> = gameLaunchDelegate.discPickerState
@@ -49,7 +52,10 @@ class LaunchViewModel @Inject constructor(
 
             val prefs = preferencesRepository.preferences.first()
             val options = if (prefs.appAffinityEnabled) {
-                displayAffinityHelper.getActivityOptions(forEmulator = true)
+                displayAffinityHelper.getActivityOptions(
+                    forEmulator = true,
+                    rolesSwapped = sessionStateStore.isRolesSwapped()
+                )
             } else null
 
             gameLaunchDelegate.launchGame(

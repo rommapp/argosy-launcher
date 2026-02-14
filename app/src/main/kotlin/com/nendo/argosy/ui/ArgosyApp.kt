@@ -460,16 +460,14 @@ fun ArgosyApp(
         }
     }
 
-    // Notify companion when drawer closes: stop forwarding + refocus lower screen
-    LaunchedEffect(isDualScreenDevice) {
-        if (!isDualScreenDevice) return@LaunchedEffect
-        var wasOpen = false
-        viewModel.isDrawerOpen.collect { open ->
-            if (wasOpen && !open) {
-                activity?.let { a ->
-                    a.isDrawerFocused = false
+    // Notify companion when any upper overlay closes: stop forwarding + refocus lower screen
+    val notifyOverlayClosed: () -> Unit = remember {
+        {
+            activity?.let { a ->
+                if (a.isOverlayFocused) {
+                    a.isOverlayFocused = false
                     a.sendBroadcast(
-                        Intent(DualScreenBroadcasts.ACTION_CLOSE_START_MENU)
+                        Intent(DualScreenBroadcasts.ACTION_CLOSE_OVERLAY)
                             .setPackage(a.packageName)
                     )
                     a.sendBroadcast(
@@ -478,7 +476,33 @@ fun ArgosyApp(
                     )
                 }
             }
+        }
+    }
+
+    LaunchedEffect(isDualScreenDevice) {
+        if (!isDualScreenDevice) return@LaunchedEffect
+        var wasOpen = false
+        viewModel.isDrawerOpen.collect { open ->
+            if (wasOpen && !open) notifyOverlayClosed()
             wasOpen = open
+        }
+    }
+
+    LaunchedEffect(isDualScreenDevice) {
+        if (!isDualScreenDevice) return@LaunchedEffect
+        var wasOpen = false
+        viewModel.isQuickSettingsOpen.collect { open ->
+            if (wasOpen && !open) notifyOverlayClosed()
+            wasOpen = open
+        }
+    }
+
+    LaunchedEffect(isDualScreenDevice) {
+        if (!isDualScreenDevice) return@LaunchedEffect
+        var wasVisible = false
+        quickMenuViewModel.uiState.collect { state ->
+            if (wasVisible && !state.isVisible) notifyOverlayClosed()
+            wasVisible = state.isVisible
         }
     }
 

@@ -85,14 +85,19 @@ class MainActivity : ComponentActivity() {
     private val _isCompanionActive = kotlinx.coroutines.flow.MutableStateFlow(false)
     val isCompanionActive: kotlinx.coroutines.flow.StateFlow<Boolean> = _isCompanionActive
 
-    var isDrawerFocused = false
+    var isOverlayFocused = false
 
-    private val startMenuReceiver = object : BroadcastReceiver() {
+    private val overlayOpenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == DualScreenBroadcasts.ACTION_OPEN_START_MENU) {
-                isDrawerFocused = true
+            if (intent?.action == DualScreenBroadcasts.ACTION_OPEN_OVERLAY) {
+                isOverlayFocused = true
                 refocusMain()
-                gamepadInputHandler.injectEvent(com.nendo.argosy.ui.input.GamepadEvent.Menu)
+                val event = when (intent.getStringExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME)) {
+                    "LeftStickClick" -> com.nendo.argosy.ui.input.GamepadEvent.LeftStickClick
+                    "RightStickClick" -> com.nendo.argosy.ui.input.GamepadEvent.RightStickClick
+                    else -> com.nendo.argosy.ui.input.GamepadEvent.Menu
+                }
+                gamepadInputHandler.injectEvent(event)
             }
         }
     }
@@ -1236,7 +1241,7 @@ class MainActivity : ComponentActivity() {
         activityScope.cancel()
         try {
             unregisterReceiver(dualGameSelectedReceiver)
-            unregisterReceiver(startMenuReceiver)
+            unregisterReceiver(overlayOpenReceiver)
             unregisterReceiver(dualGameDetailReceiver)
             unregisterReceiver(companionLifecycleReceiver)
         } catch (_: Exception) {}
@@ -1244,7 +1249,7 @@ class MainActivity : ComponentActivity() {
 
     private fun registerDualScreenReceiver() {
         val showcaseFilter = IntentFilter(DualScreenBroadcasts.ACTION_GAME_SELECTED)
-        val startMenuFilter = IntentFilter(DualScreenBroadcasts.ACTION_OPEN_START_MENU)
+        val overlayOpenFilter = IntentFilter(DualScreenBroadcasts.ACTION_OPEN_OVERLAY)
         val detailFilter = IntentFilter().apply {
             addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED)
             addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED)
@@ -1261,7 +1266,7 @@ class MainActivity : ComponentActivity() {
         }
         val flag = ContextCompat.RECEIVER_NOT_EXPORTED
         ContextCompat.registerReceiver(this, dualGameSelectedReceiver, showcaseFilter, flag)
-        ContextCompat.registerReceiver(this, startMenuReceiver, startMenuFilter, flag)
+        ContextCompat.registerReceiver(this, overlayOpenReceiver, overlayOpenFilter, flag)
         ContextCompat.registerReceiver(this, dualGameDetailReceiver, detailFilter, flag)
         ContextCompat.registerReceiver(this, companionLifecycleReceiver, companionFilter, flag)
     }
@@ -1285,7 +1290,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
-            if (_isCompanionActive.value && !isDrawerFocused) {
+            if (_isCompanionActive.value && !isOverlayFocused) {
                 sendBroadcast(
                     Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER).setPackage(packageName)
                 )

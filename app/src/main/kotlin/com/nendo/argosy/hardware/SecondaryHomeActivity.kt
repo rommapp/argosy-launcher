@@ -222,9 +222,9 @@ class SecondaryHomeActivity : ComponentActivity() {
         }
     }
 
-    private val startMenuCloseReceiver = object : BroadcastReceiver() {
+    private val overlayCloseReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == DualScreenBroadcasts.ACTION_CLOSE_START_MENU) {
+            if (intent?.action == DualScreenBroadcasts.ACTION_CLOSE_OVERLAY) {
                 dualHomeViewModel.stopDrawerForwarding()
             }
         }
@@ -462,7 +462,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             addAction(ACTION_LIBRARY_REFRESH)
             addAction(ACTION_DOWNLOAD_COMPLETED)
         }
-        val startMenuCloseFilter = IntentFilter(DualScreenBroadcasts.ACTION_CLOSE_START_MENU)
+        val overlayCloseFilter = IntentFilter(DualScreenBroadcasts.ACTION_CLOSE_OVERLAY)
         val refocusFilter = IntentFilter(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
         val modalResultFilter = IntentFilter(DualScreenBroadcasts.ACTION_MODAL_RESULT)
         val directActionFilter = IntentFilter(DualScreenBroadcasts.ACTION_DIRECT_ACTION)
@@ -474,7 +474,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, sessionReceiver, sessionFilter, flag)
         ContextCompat.registerReceiver(this, homeAppsReceiver, homeAppsFilter, flag)
         ContextCompat.registerReceiver(this, libraryRefreshReceiver, libraryRefreshFilter, flag)
-        ContextCompat.registerReceiver(this, startMenuCloseReceiver, startMenuCloseFilter, flag)
+        ContextCompat.registerReceiver(this, overlayCloseReceiver, overlayCloseFilter, flag)
         ContextCompat.registerReceiver(this, refocusReceiver, refocusFilter, flag)
         ContextCompat.registerReceiver(this, modalResultReceiver, modalResultFilter, flag)
         ContextCompat.registerReceiver(this, directActionResultReceiver, directActionFilter, flag)
@@ -684,10 +684,11 @@ class SecondaryHomeActivity : ComponentActivity() {
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
 
         return when (event) {
-            GamepadEvent.Menu -> {
+            GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {
                 dualHomeViewModel.startDrawerForwarding()
-                sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_START_MENU).apply {
+                sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
                     setPackage(packageName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
                 })
                 InputResult.HANDLED
             }
@@ -1204,7 +1205,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             unregisterReceiver(sessionReceiver)
             unregisterReceiver(homeAppsReceiver)
             unregisterReceiver(libraryRefreshReceiver)
-            unregisterReceiver(startMenuCloseReceiver)
+            unregisterReceiver(overlayCloseReceiver)
             unregisterReceiver(refocusReceiver)
             unregisterReceiver(modalResultReceiver)
             unregisterReceiver(directActionResultReceiver)

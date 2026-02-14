@@ -68,6 +68,8 @@ object DualScreenBroadcasts {
     const val EXTRA_ACTIVE_CHANNEL = "active_channel"
     const val EXTRA_ACTIVE_SAVE_TIMESTAMP = "active_save_timestamp"
 
+    const val ACTION_BACKGROUND_FORWARD = "com.nendo.argosy.DUAL_BACKGROUND_FORWARD"
+
     const val ACTION_COMPANION_RESUMED = "com.nendo.argosy.DUAL_COMPANION_RESUMED"
     const val ACTION_COMPANION_PAUSED = "com.nendo.argosy.DUAL_COMPANION_PAUSED"
 

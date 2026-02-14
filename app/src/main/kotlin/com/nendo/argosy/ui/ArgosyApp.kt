@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -118,8 +119,9 @@ fun ArgosyApp(
     val isOnHomeScreen = currentRoute == Screen.Home.route
     val showDualOverlay = isDualScreenDevice && isOnHomeScreen && companionActive
 
-    LaunchedEffect(showDualOverlay) {
-        viewModel.setDualScreenMode(showDualOverlay)
+    val isDualActive = isDualScreenDevice && companionActive
+    LaunchedEffect(isDualActive) {
+        viewModel.setDualScreenMode(isDualActive)
     }
 
     // Handle deep links from secondary home
@@ -507,16 +509,53 @@ fun ArgosyApp(
         if (!isDualScreenDevice) return@LaunchedEffect
         var wasOpen = false
         viewModel.isDrawerOpen.collect { open ->
-            if (wasOpen && !open) notifyOverlayClosed()
+            if (wasOpen && !open) {
+                val onHome = navController.currentDestination?.route == Screen.Home.route
+                if (onHome) {
+                    notifyOverlayClosed()
+                } else {
+                    activity?.let { a ->
+                        a.sendBroadcast(
+                            Intent(DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD)
+                                .setPackage(a.packageName)
+                        )
+                    }
+                }
+            }
             wasOpen = open
         }
+    }
+
+    // When returning to Home from Apps/Settings in dual-screen mode, refocus lower
+    LaunchedEffect(isDualScreenDevice, companionActive) {
+        if (!isDualScreenDevice || !companionActive) return@LaunchedEffect
+        var wasOnHome = true
+        snapshotFlow { navBackStackEntry?.destination?.route == Screen.Home.route }
+            .collect { onHome ->
+                if (!wasOnHome && onHome) {
+                    notifyOverlayClosed()
+                }
+                wasOnHome = onHome
+            }
     }
 
     LaunchedEffect(isDualScreenDevice) {
         if (!isDualScreenDevice) return@LaunchedEffect
         var wasOpen = false
         viewModel.isQuickSettingsOpen.collect { open ->
-            if (wasOpen && !open) notifyOverlayClosed()
+            if (wasOpen && !open) {
+                val onHome = navController.currentDestination?.route == Screen.Home.route
+                if (onHome) {
+                    notifyOverlayClosed()
+                } else {
+                    activity?.let { a ->
+                        a.sendBroadcast(
+                            Intent(DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD)
+                                .setPackage(a.packageName)
+                        )
+                    }
+                }
+            }
             wasOpen = open
         }
     }
@@ -525,7 +564,19 @@ fun ArgosyApp(
         if (!isDualScreenDevice) return@LaunchedEffect
         var wasVisible = false
         quickMenuViewModel.uiState.collect { state ->
-            if (wasVisible && !state.isVisible) notifyOverlayClosed()
+            if (wasVisible && !state.isVisible) {
+                val onHome = navController.currentDestination?.route == Screen.Home.route
+                if (onHome) {
+                    notifyOverlayClosed()
+                } else {
+                    activity?.let { a ->
+                        a.sendBroadcast(
+                            Intent(DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD)
+                                .setPackage(a.packageName)
+                        )
+                    }
+                }
+            }
             wasVisible = state.isVisible
         }
     }

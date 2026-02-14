@@ -25,6 +25,7 @@ import com.nendo.argosy.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -224,8 +225,11 @@ class SecondaryHomeActivity : ComponentActivity() {
 
     private val overlayCloseReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == DualScreenBroadcasts.ACTION_CLOSE_OVERLAY) {
-                dualHomeViewModel.stopDrawerForwarding()
+            when (intent?.action) {
+                DualScreenBroadcasts.ACTION_CLOSE_OVERLAY ->
+                    dualHomeViewModel.stopDrawerForwarding()
+                DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD ->
+                    dualHomeViewModel.startBackgroundForwarding()
             }
         }
     }
@@ -531,7 +535,9 @@ class SecondaryHomeActivity : ComponentActivity() {
             addAction(ACTION_LIBRARY_REFRESH)
             addAction(ACTION_DOWNLOAD_COMPLETED)
         }
-        val overlayCloseFilter = IntentFilter(DualScreenBroadcasts.ACTION_CLOSE_OVERLAY)
+        val overlayCloseFilter = IntentFilter(DualScreenBroadcasts.ACTION_CLOSE_OVERLAY).apply {
+            addAction(DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD)
+        }
         val refocusFilter = IntentFilter(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
         val modalResultFilter = IntentFilter(DualScreenBroadcasts.ACTION_MODAL_RESULT)
         val directActionFilter = IntentFilter(DualScreenBroadcasts.ACTION_DIRECT_ACTION)
@@ -772,6 +778,20 @@ class SecondaryHomeActivity : ComponentActivity() {
         )
     }
 
+    override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
+        val result = super.dispatchTouchEvent(event)
+        if (event.action == android.view.MotionEvent.ACTION_UP &&
+            dualHomeViewModel.forwardingMode.value == com.nendo.argosy.ui.dualscreen.home.ForwardingMode.BACKGROUND
+        ) {
+            window.decorView.post {
+                if (currentScreen == CompanionScreen.HOME) {
+                    refocusMain()
+                }
+            }
+        }
+        return result
+    }
+
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
         if (event.repeatCount == 0) {
             android.util.Log.d("SecondaryInput", "keyCode=$keyCode (${android.view.KeyEvent.keyCodeToString(keyCode)}), swapAB=$swapAB, swapXY=$swapXY")
@@ -792,7 +812,7 @@ class SecondaryHomeActivity : ComponentActivity() {
     }
 
     private fun handleDualHomeInput(event: GamepadEvent): InputResult {
-        if (dualHomeViewModel.isForwardingToDrawer.value) {
+        if (dualHomeViewModel.forwardingMode.value != com.nendo.argosy.ui.dualscreen.home.ForwardingMode.NONE) {
             return InputResult.HANDLED
         }
 
@@ -1679,17 +1699,19 @@ private fun SecondaryHomeContent(
                     }
                     SecondaryHomeActivity.CompanionScreen.GAME_DETAIL -> {
                         if (dualGameDetailViewModel != null) {
-                            DualGameDetailContent(
-                                viewModel = dualGameDetailViewModel,
-                                onOptionAction = { option ->
-                                    onOptionAction(
-                                        dualGameDetailViewModel, option
-                                    )
-                                },
-                                onScreenshotViewed = onScreenshotViewed,
-                                onBack = onDetailBack,
-                                onDimTapped = onDimTapped
-                            )
+                            key(dualGameDetailViewModel.uiState.value.gameId) {
+                                DualGameDetailContent(
+                                    viewModel = dualGameDetailViewModel,
+                                    onOptionAction = { option ->
+                                        onOptionAction(
+                                            dualGameDetailViewModel, option
+                                        )
+                                    },
+                                    onScreenshotViewed = onScreenshotViewed,
+                                    onBack = onDetailBack,
+                                    onDimTapped = onDimTapped
+                                )
+                            }
                         }
                     }
                 }

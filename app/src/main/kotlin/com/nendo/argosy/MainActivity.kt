@@ -181,29 +181,55 @@ class MainActivity : ComponentActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED -> {
+                    val gameId = intent.getLongExtra(DualScreenBroadcasts.EXTRA_GAME_ID, -1)
+                    if (gameId == -1L) return
                     val showcase = _dualScreenShowcase.value
-                    val gameId = showcase.gameId
-                    _dualGameDetailState.value = DualGameDetailUpperState(
-                        gameId = gameId,
-                        title = showcase.title,
-                        coverPath = showcase.coverPath,
-                        backgroundPath = showcase.backgroundPath,
-                        platformName = showcase.platformName,
-                        developer = showcase.developer,
-                        releaseYear = showcase.releaseYear,
-                        description = showcase.description,
-                        playTimeMinutes = showcase.playTimeMinutes,
-                        lastPlayedAt = showcase.lastPlayedAt,
-                        status = showcase.status,
-                        rating = showcase.userRating.takeIf { it > 0 },
-                        userDifficulty = showcase.userDifficulty,
-                        communityRating = showcase.communityRating,
-                        titleId = showcase.titleId
-                    )
+                    if (showcase.gameId == gameId) {
+                        _dualGameDetailState.value = DualGameDetailUpperState(
+                            gameId = gameId,
+                            title = showcase.title,
+                            coverPath = showcase.coverPath,
+                            backgroundPath = showcase.backgroundPath,
+                            platformName = showcase.platformName,
+                            developer = showcase.developer,
+                            releaseYear = showcase.releaseYear,
+                            description = showcase.description,
+                            playTimeMinutes = showcase.playTimeMinutes,
+                            lastPlayedAt = showcase.lastPlayedAt,
+                            status = showcase.status,
+                            rating = showcase.userRating.takeIf { it > 0 },
+                            userDifficulty = showcase.userDifficulty,
+                            communityRating = showcase.communityRating,
+                            titleId = showcase.titleId
+                        )
+                    } else {
+                        _dualGameDetailState.value = DualGameDetailUpperState(gameId = gameId)
+                    }
                     broadcastUnifiedSaves(gameId)
                     activityScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                         val game = gameDao.getById(gameId)
                             ?: return@launch
+                        if (showcase.gameId != gameId) {
+                            val platform = platformDao.getById(game.platformId)
+                            _dualGameDetailState.update { state ->
+                                state?.copy(
+                                    title = game.title,
+                                    coverPath = game.coverPath,
+                                    backgroundPath = game.backgroundPath,
+                                    platformName = platform?.name ?: "",
+                                    developer = game.developer,
+                                    releaseYear = game.releaseYear,
+                                    description = game.description,
+                                    playTimeMinutes = game.playTimeMinutes,
+                                    lastPlayedAt = game.lastPlayed?.toEpochMilli() ?: 0,
+                                    status = game.status,
+                                    rating = game.userRating.takeIf { it > 0 },
+                                    userDifficulty = game.userDifficulty,
+                                    communityRating = game.rating,
+                                    titleId = game.raId?.toString()
+                                )
+                            }
+                        }
                         val remoteUrls = game.screenshotPaths
                             ?.split(",")?.map { it.trim() }
                             ?.filter { it.isNotBlank() }
@@ -460,6 +486,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var gameDao: com.nendo.argosy.data.local.dao.GameDao
+
+    @Inject
+    lateinit var platformDao: com.nendo.argosy.data.local.dao.PlatformDao
 
     @Inject
     lateinit var gamepadInputHandler: GamepadInputHandler

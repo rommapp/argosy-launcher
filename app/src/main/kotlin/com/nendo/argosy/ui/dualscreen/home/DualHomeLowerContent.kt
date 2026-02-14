@@ -36,7 +36,7 @@ fun DualHomeLowerContent(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isForwarding by viewModel.isForwardingToDrawer.collectAsState()
+    val forwardingMode by viewModel.forwardingMode.collectAsState()
     val context = LocalContext.current
 
     Box(
@@ -109,7 +109,7 @@ fun DualHomeLowerContent(
             }
         }
 
-        if (isForwarding) {
+        if (forwardingMode == ForwardingMode.OVERLAY) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

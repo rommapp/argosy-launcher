@@ -51,6 +51,8 @@ enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
 
 enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID }
 
+enum class ForwardingMode { NONE, OVERLAY, BACKGROUND }
+
 sealed class DualCollectionListItem {
     data class Header(val title: String) : DualCollectionListItem()
     data class Collection(
@@ -143,14 +145,15 @@ class DualHomeViewModel(
     private val _uiState = MutableStateFlow(DualHomeUiState())
     val uiState: StateFlow<DualHomeUiState> = _uiState.asStateFlow()
 
-    private val _isForwardingToDrawer = MutableStateFlow(false)
-    val isForwardingToDrawer: StateFlow<Boolean> = _isForwardingToDrawer.asStateFlow()
+    private val _forwardingMode = MutableStateFlow(ForwardingMode.NONE)
+    val forwardingMode: StateFlow<ForwardingMode> = _forwardingMode.asStateFlow()
 
     private var allLibraryGames: List<DualHomeGameUi> = emptyList()
     private var letterOverlayJob: kotlinx.coroutines.Job? = null
 
-    fun startDrawerForwarding() { _isForwardingToDrawer.value = true }
-    fun stopDrawerForwarding() { _isForwardingToDrawer.value = false }
+    fun startDrawerForwarding() { _forwardingMode.value = ForwardingMode.OVERLAY }
+    fun startBackgroundForwarding() { _forwardingMode.value = ForwardingMode.BACKGROUND }
+    fun stopDrawerForwarding() { _forwardingMode.value = ForwardingMode.NONE }
 
     init {
         loadData()

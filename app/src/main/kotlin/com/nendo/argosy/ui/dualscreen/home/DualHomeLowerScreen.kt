@@ -8,8 +8,14 @@ package com.nendo.argosy.ui.dualscreen.home
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -49,13 +55,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.sin
 import coil.compose.AsyncImage
 import com.nendo.argosy.hardware.CompanionAppBar
 import com.nendo.argosy.ui.components.AlphabetSidebar
@@ -84,7 +97,8 @@ data class DualHomeGameUi(
     val titleId: String?,
     val genre: String? = null,
     val gameModes: String? = null,
-    val franchises: String? = null
+    val franchises: String? = null,
+    val downloadProgress: Float? = null
 )
 
 private val CARD_WIDTH = 100.dp
@@ -571,15 +585,26 @@ private fun LibraryGridCard(
                     )
                 } else Modifier
             )
-            .touchOnly(onClick)
+            .touchOnly(onClick),
+        contentAlignment = Alignment.Center
     ) {
         if (game.coverPath != null) {
-            AsyncImage(
-                model = File(game.coverPath),
-                contentDescription = game.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            val imageData = File(game.coverPath)
+            if (game.downloadProgress != null) {
+                DownloadProgressCover(
+                    imageData = imageData,
+                    progress = game.downloadProgress,
+                    badgeSize = 32.dp,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                AsyncImage(
+                    model = imageData,
+                    contentDescription = game.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -742,15 +767,26 @@ private fun CarouselGameCard(
                     )
                 } else Modifier
             )
-            .touchOnly(onClick)
+            .touchOnly(onClick),
+        contentAlignment = Alignment.Center
     ) {
         if (game.coverPath != null) {
-            AsyncImage(
-                model = File(game.coverPath),
-                contentDescription = game.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            val imageData = File(game.coverPath)
+            if (game.downloadProgress != null) {
+                DownloadProgressCover(
+                    imageData = imageData,
+                    progress = game.downloadProgress,
+                    badgeSize = 36.dp,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                AsyncImage(
+                    model = imageData,
+                    contentDescription = game.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -839,6 +875,112 @@ private fun PositionIndicator(
                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                         }
                     )
+            )
+        }
+    }
+}
+
+private const val WAVE_CYCLES = 1.5f
+private const val WAVE_PHASE_DURATION_MS = 3000
+private const val WAVE_AMPLITUDE_DURATION_MS = 2200
+
+@Composable
+private fun DownloadProgressCover(
+    imageData: Any,
+    progress: Float,
+    badgeSize: Dp,
+    modifier: Modifier = Modifier
+) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 2000, easing = LinearEasing),
+        label = "water_level"
+    )
+    val transition = rememberInfiniteTransition(label = "water")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2f * Math.PI.toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(WAVE_PHASE_DURATION_MS, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "wave_phase"
+    )
+    val amplitudeScale by transition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(WAVE_AMPLITUDE_DURATION_MS, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "wave_amp"
+    )
+    val grayscaleMatrix = ColorMatrix().apply { setToSaturation(0f) }
+    val waveFrequency = WAVE_CYCLES * 2f * Math.PI.toFloat()
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        AsyncImage(
+            model = imageData,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    val amp = 5.dp.toPx() * amplitudeScale
+                    val waterY = size.height * (1f - animatedProgress)
+                    val path = Path().apply {
+                        moveTo(0f, size.height)
+                        lineTo(0f, waterY)
+                        val steps = (size.width / 2f).toInt().coerceAtLeast(1)
+                        for (i in 0..steps) {
+                            val x = size.width * i / steps
+                            val y = waterY + amp * sin(phase + x / size.width * waveFrequency)
+                            lineTo(x, y)
+                        }
+                        lineTo(size.width, size.height)
+                        close()
+                    }
+                    clipPath(path) { this@drawWithContent.drawContent() }
+                }
+        )
+        AsyncImage(
+            model = imageData,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            colorFilter = ColorFilter.colorMatrix(grayscaleMatrix),
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    val amp = 5.dp.toPx() * amplitudeScale
+                    val waterY = size.height * (1f - animatedProgress)
+                    val path = Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(0f, waterY)
+                        val steps = (size.width / 2f).toInt().coerceAtLeast(1)
+                        for (i in 0..steps) {
+                            val x = size.width * i / steps
+                            val y = waterY + amp * sin(phase + x / size.width * waveFrequency)
+                            lineTo(x, y)
+                        }
+                        lineTo(size.width, 0f)
+                        close()
+                    }
+                    clipPath(path) { this@drawWithContent.drawContent() }
+                }
+        )
+        Box(
+            modifier = Modifier
+                .size(badgeSize)
+                .background(
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "${(progress * 100).toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

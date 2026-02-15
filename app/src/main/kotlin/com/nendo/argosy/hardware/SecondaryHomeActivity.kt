@@ -784,6 +784,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             gameDao = gameDao,
             platformDao = platformDao,
             collectionDao = collectionDao,
+            downloadQueueDao = database.downloadQueueDao(),
             displayAffinityHelper = displayAffinityHelper,
             context = applicationContext
         )

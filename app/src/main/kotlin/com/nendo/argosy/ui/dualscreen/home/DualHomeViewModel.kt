@@ -11,6 +11,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.CollectionDao
+import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
@@ -140,6 +141,7 @@ class DualHomeViewModel(
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
     private val collectionDao: CollectionDao,
+    private val downloadQueueDao: DownloadQueueDao,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val context: Context
 ) : ViewModel() {
@@ -159,6 +161,7 @@ class DualHomeViewModel(
 
     init {
         loadData()
+        observeDownloads()
     }
 
     private fun loadData() {
@@ -172,6 +175,62 @@ class DualHomeViewModel(
             }
             loadGamesForCurrentSection()
         }
+    }
+
+    private fun observeDownloads() {
+        viewModelScope.launch {
+            var previouslyDownloading = emptySet<Long>()
+
+            downloadQueueDao.observeActiveDownloads().collect { entities ->
+                val downloadsByGameId = entities.associateBy { it.gameId }
+                val currentlyDownloading = downloadsByGameId.keys
+
+                val completedDownloads = previouslyDownloading - currentlyDownloading
+                previouslyDownloading = currentlyDownloading
+
+                if (completedDownloads.isNotEmpty()) {
+                    loadGamesForCurrentSectionSuspend()
+                    if (_uiState.value.viewMode == DualHomeViewMode.LIBRARY_GRID) {
+                        val platformId = _uiState.value.activeFilters.platformId
+                        if (platformId != null) {
+                            loadLibraryGamesForPlatform(platformId)
+                        } else {
+                            loadLibraryGames()
+                        }
+                    }
+                    if (_uiState.value.viewMode == DualHomeViewMode.COLLECTION_GAMES) {
+                        val collectionId = selectedCollectionItem()?.id
+                        if (collectionId != null) {
+                            enterCollectionGames(collectionId)
+                        }
+                    }
+                } else {
+                    _uiState.update { state ->
+                        state.copy(
+                            games = state.games.map { game ->
+                                game.copy(downloadProgress = progressForGame(game.id, downloadsByGameId))
+                            },
+                            libraryGames = state.libraryGames.map { game ->
+                                game.copy(downloadProgress = progressForGame(game.id, downloadsByGameId))
+                            },
+                            collectionGames = state.collectionGames.map { game ->
+                                game.copy(downloadProgress = progressForGame(game.id, downloadsByGameId))
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun progressForGame(
+        gameId: Long,
+        downloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity>
+    ): Float? {
+        val entity = downloads[gameId] ?: return null
+        return if (entity.totalBytes > 0) {
+            (entity.bytesDownloaded.toFloat() / entity.totalBytes).coerceIn(0f, 1f)
+        } else 0f
     }
 
     private suspend fun buildSections(): List<DualHomeSection> {

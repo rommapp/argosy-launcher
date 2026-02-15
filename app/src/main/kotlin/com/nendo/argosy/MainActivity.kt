@@ -532,6 +532,9 @@ class MainActivity : ComponentActivity() {
     lateinit var collectionDao: com.nendo.argosy.data.local.dao.CollectionDao
 
     @Inject
+    lateinit var downloadQueueDao: com.nendo.argosy.data.local.dao.DownloadQueueDao
+
+    @Inject
     lateinit var gamepadInputHandler: GamepadInputHandler
 
     @Inject
@@ -621,6 +624,7 @@ class MainActivity : ComponentActivity() {
                 gameDao = gameDao,
                 platformDao = platformDao,
                 collectionDao = collectionDao,
+                downloadQueueDao = downloadQueueDao,
                 displayAffinityHelper = displayAffinityHelper,
                 context = applicationContext
             )

@@ -23,6 +23,9 @@ interface DownloadQueueDao {
     @Query("SELECT * FROM download_queue ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<DownloadQueueEntity>>
 
+    @Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'DOWNLOADING', 'EXTRACTING', 'PAUSED', 'WAITING_FOR_STORAGE')")
+    fun observeActiveDownloads(): Flow<List<DownloadQueueEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: DownloadQueueEntity): Long
 

@@ -40,8 +40,8 @@ internal sealed class ControlsItem(
 
     companion object {
         val ALL: List<ControlsItem> = listOf(
-            HapticFeedback, VibrationStrength, ControllerLayout,
-            SwapAB, SwapXY, SwapStartSelect, InputFocus
+            InputFocus, HapticFeedback, VibrationStrength, ControllerLayout,
+            SwapAB, SwapXY, SwapStartSelect
         )
     }
 }

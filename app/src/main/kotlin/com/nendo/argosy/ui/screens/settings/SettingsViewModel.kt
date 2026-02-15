@@ -78,6 +78,8 @@ import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.ControlsItem
+import com.nendo.argosy.ui.screens.settings.sections.controlsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.controlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
@@ -3528,32 +3530,19 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.CONTROLS -> {
-                val showVibrationSlider = state.controls.hapticEnabled && state.controls.vibrationSupported
-                if (showVibrationSlider) {
-                    when (state.focusedIndex) {
-                        0 -> {
-                            val newEnabled = !state.controls.hapticEnabled
-                            setHapticEnabled(newEnabled)
-                            return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
-                        }
-                        1 -> cycleVibrationStrength()
-                        2 -> cycleControllerLayout()
-                        3 -> { setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
-                        4 -> { setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
-                        5 -> { setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
+                when (controlsItemAtFocusIndex(state.focusedIndex, state.controls)) {
+                    ControlsItem.HapticFeedback -> {
+                        val newEnabled = !state.controls.hapticEnabled
+                        setHapticEnabled(newEnabled)
+                        return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
                     }
-                } else {
-                    when (state.focusedIndex) {
-                        0 -> {
-                            val newEnabled = !state.controls.hapticEnabled
-                            setHapticEnabled(newEnabled)
-                            return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
-                        }
-                        1 -> cycleControllerLayout()
-                        2 -> { setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
-                        3 -> { setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
-                        4 -> { setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
-                    }
+                    ControlsItem.VibrationStrength -> cycleVibrationStrength()
+                    ControlsItem.ControllerLayout -> cycleControllerLayout()
+                    ControlsItem.SwapAB -> { setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
+                    ControlsItem.SwapXY -> { setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
+                    ControlsItem.SwapStartSelect -> { setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
+                    ControlsItem.InputFocus -> { cycleDualScreenInputFocus(); return InputResult.HANDLED }
+                    null -> {}
                 }
                 InputResult.HANDLED
             }

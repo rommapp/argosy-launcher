@@ -137,6 +137,13 @@ fun ArgosyApp(
         viewModel.setDualScreenMode(isDualActive)
     }
 
+    LaunchedEffect(showDualOverlay, isDrawerOpen, isQuickSettingsOpen, quickMenuState.isVisible) {
+        if (showDualOverlay) {
+            (context as? com.nendo.argosy.MainActivity)?.isOverlayFocused =
+                isDrawerOpen || isQuickSettingsOpen || quickMenuState.isVisible
+        }
+    }
+
     // Handle deep links from secondary home
     val activity = context as? com.nendo.argosy.MainActivity
     val pendingDeepLink by activity?.pendingDeepLink?.collectAsState() ?: remember { mutableStateOf(null) }

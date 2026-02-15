@@ -195,7 +195,9 @@ data class ControlsState(
     val swapXY: Boolean = false,
     val swapStartSelect: Boolean = false,
     val accuratePlayTimeEnabled: Boolean = false,
-    val hasUsageStatsPermission: Boolean = false
+    val hasUsageStatsPermission: Boolean = false,
+    val hasSecondaryDisplay: Boolean = false,
+    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO
 )
 
 data class SoundState(

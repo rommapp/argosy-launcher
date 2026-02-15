@@ -70,6 +70,10 @@ object DualScreenBroadcasts {
 
     const val ACTION_BACKGROUND_FORWARD = "com.nendo.argosy.DUAL_BACKGROUND_FORWARD"
 
+    const val ACTION_FORWARD_KEY = "com.nendo.argosy.DUAL_FORWARD_KEY"
+    const val EXTRA_KEY_CODE = "key_code"
+    const val EXTRA_KEY_ACTION = "key_action"
+
     const val ACTION_COMPANION_RESUMED = "com.nendo.argosy.DUAL_COMPANION_RESUMED"
     const val ACTION_COMPANION_PAUSED = "com.nendo.argosy.DUAL_COMPANION_PAUSED"
 

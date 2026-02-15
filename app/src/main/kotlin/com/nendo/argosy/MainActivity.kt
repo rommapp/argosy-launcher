@@ -1460,6 +1460,17 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (_isCompanionActive.value && !isRolesSwapped && !isOverlayFocused && dualScreenInputFocus == "TOP") {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                sendBroadcast(
+                    Intent(DualScreenBroadcasts.ACTION_FORWARD_KEY).apply {
+                        setPackage(packageName)
+                        putExtra(DualScreenBroadcasts.EXTRA_KEY_CODE, event.keyCode)
+                    }
+                )
+            }
+            return true
+        }
         if (dualScreenInputFocus == "BOTTOM") return super.dispatchKeyEvent(event)
         if (event.action == KeyEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
@@ -1467,7 +1478,6 @@ class MainActivity : ComponentActivity() {
         if (gamepadInputHandler.handleKeyEvent(event)) {
             return true
         }
-        // Only handle Home key when not in emulator (gamepad handler didn't consume it)
         if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_HOME) {
             gamepadInputHandler.emitHomeEvent()
             return true

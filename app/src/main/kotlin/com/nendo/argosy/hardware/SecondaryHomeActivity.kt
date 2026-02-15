@@ -365,6 +365,26 @@ class SecondaryHomeActivity : ComponentActivity() {
         }
     }
 
+    private val forwardedKeyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != DualScreenBroadcasts.ACTION_FORWARD_KEY) return
+            val keyCode = intent.getIntExtra(DualScreenBroadcasts.EXTRA_KEY_CODE, 0)
+            if (keyCode == 0) return
+            val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+                ?: return
+            val result = if (useDualScreenMode && isArgosyForeground && !isGameActive) {
+                when (currentScreen) {
+                    CompanionScreen.HOME -> handleDualHomeInput(gamepadEvent)
+                    CompanionScreen.GAME_DETAIL -> handleDualDetailInput(gamepadEvent)
+                }
+            } else if (useDualScreenMode && isGameActive) {
+                handleCompanionInput(gamepadEvent)
+            } else {
+                handleGridInput(gamepadEvent)
+            }
+        }
+    }
+
     private val refocusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == DualScreenBroadcasts.ACTION_REFOCUS_LOWER) {
@@ -817,6 +837,8 @@ class SecondaryHomeActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, homeAppsReceiver, homeAppsFilter, flag)
         ContextCompat.registerReceiver(this, libraryRefreshReceiver, libraryRefreshFilter, flag)
         ContextCompat.registerReceiver(this, overlayCloseReceiver, overlayCloseFilter, flag)
+        val forwardKeyFilter = IntentFilter(DualScreenBroadcasts.ACTION_FORWARD_KEY)
+        ContextCompat.registerReceiver(this, forwardedKeyReceiver, forwardKeyFilter, flag)
         ContextCompat.registerReceiver(this, refocusReceiver, refocusFilter, flag)
         ContextCompat.registerReceiver(this, modalResultReceiver, modalResultFilter, flag)
         ContextCompat.registerReceiver(this, directActionResultReceiver, directActionFilter, flag)
@@ -1089,7 +1111,6 @@ class SecondaryHomeActivity : ComponentActivity() {
         if (dualScreenInputFocus == "TOP") return super.onKeyDown(keyCode, event)
 
         if (event.repeatCount == 0) {
-            android.util.Log.d("SecondaryInput", "keyCode=$keyCode (${android.view.KeyEvent.keyCodeToString(keyCode)}), swapAB=$swapAB, swapXY=$swapXY")
             val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
             if (gamepadEvent != null) {
                 val result = if (useDualScreenMode && isArgosyForeground && !isGameActive) {
@@ -2009,6 +2030,7 @@ class SecondaryHomeActivity : ComponentActivity() {
             unregisterReceiver(homeAppsReceiver)
             unregisterReceiver(libraryRefreshReceiver)
             unregisterReceiver(overlayCloseReceiver)
+            unregisterReceiver(forwardedKeyReceiver)
             unregisterReceiver(refocusReceiver)
             unregisterReceiver(modalResultReceiver)
             unregisterReceiver(directActionResultReceiver)

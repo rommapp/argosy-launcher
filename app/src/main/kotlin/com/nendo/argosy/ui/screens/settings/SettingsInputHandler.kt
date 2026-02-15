@@ -9,7 +9,9 @@ import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
+import com.nendo.argosy.ui.screens.settings.sections.ControlsItem
 import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.controlsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
@@ -227,7 +229,6 @@ class SettingsInputHandler(
                 InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(-5); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(-1); return InputResult.HANDLED }
                 InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(-1); return InputResult.HANDLED }
-                InterfaceItem.InputFocus -> { viewModel.cycleDualScreenInputFocus(-1); return InputResult.HANDLED }
                 InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(-1); return InputResult.HANDLED }
                 InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(-1); return InputResult.HANDLED }
                 else -> {}
@@ -313,11 +314,15 @@ class SettingsInputHandler(
             }
         }
 
-        if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.controls.vibrationSupported && state.focusedIndex == 1) {
-            viewModel.adjustVibrationStrength(-0.1f)
-            return InputResult.HANDLED
+        if (state.currentSection == SettingsSection.CONTROLS) {
+            when (controlsItemAtFocusIndex(state.focusedIndex, state.controls)) {
+                ControlsItem.VibrationStrength -> if (state.controls.hapticEnabled && state.controls.vibrationSupported) {
+                    viewModel.adjustVibrationStrength(-0.1f); return InputResult.HANDLED
+                }
+                ControlsItem.InputFocus -> { viewModel.cycleDualScreenInputFocus(-1); return InputResult.HANDLED }
+                else -> {}
+            }
         }
-
 
         if (state.currentSection == SettingsSection.SERVER) {
             if (state.server.rommConfiguring && state.focusedIndex == 2) {
@@ -479,7 +484,6 @@ class SettingsInputHandler(
                 InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(5); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(1); return InputResult.HANDLED }
                 InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(1); return InputResult.HANDLED }
-                InterfaceItem.InputFocus -> { viewModel.cycleDualScreenInputFocus(1); return InputResult.HANDLED }
                 InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(1); return InputResult.HANDLED }
                 InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(1); return InputResult.HANDLED }
                 else -> {}
@@ -565,9 +569,14 @@ class SettingsInputHandler(
             }
         }
 
-        if (state.currentSection == SettingsSection.CONTROLS && state.controls.hapticEnabled && state.controls.vibrationSupported && state.focusedIndex == 1) {
-            viewModel.adjustVibrationStrength(0.1f)
-            return InputResult.HANDLED
+        if (state.currentSection == SettingsSection.CONTROLS) {
+            when (controlsItemAtFocusIndex(state.focusedIndex, state.controls)) {
+                ControlsItem.VibrationStrength -> if (state.controls.hapticEnabled && state.controls.vibrationSupported) {
+                    viewModel.adjustVibrationStrength(0.1f); return InputResult.HANDLED
+                }
+                ControlsItem.InputFocus -> { viewModel.cycleDualScreenInputFocus(1); return InputResult.HANDLED }
+                else -> {}
+            }
         }
 
         if (state.currentSection == SettingsSection.SERVER) {

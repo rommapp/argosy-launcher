@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.preferences.DisplayRoleOverride
-import com.nendo.argosy.data.preferences.DualScreenInputFocus
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.CyclePreference
@@ -84,12 +83,6 @@ internal sealed class InterfaceItem(
         section = "appearance",
         visibleWhen = { it.hasSecondaryDisplay }
     )
-    data object InputFocus : InterfaceItem(
-        key = "inputFocus",
-        section = "appearance",
-        visibleWhen = { it.hasSecondaryDisplay }
-    )
-
     // Screen Safety
     data object ScreenDimmer : InterfaceItem("screenDimmer", "screenSafety")
     data object DimAfter : InterfaceItem("dimAfter", "screenSafety")
@@ -166,7 +159,7 @@ internal sealed class InterfaceItem(
 
         val ALL: List<InterfaceItem> = listOf(
             AppearanceHeader,
-            Theme, AccentColor, SecondaryColor, GridDensity, UiScale, BoxArt, HomeScreen, DisplayRoles, InputFocus,
+            Theme, AccentColor, SecondaryColor, GridDensity, UiScale, BoxArt, HomeScreen, DisplayRoles,
             ScreenSafetyHeader,
             ScreenDimmer, DimAfter, DimLevel,
             AmbientLedHeader,
@@ -347,13 +340,6 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     value = display.displayRoleOverride.displayName,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleDisplayRoleOverride() }
-                )
-
-                InterfaceItem.InputFocus -> CyclePreference(
-                    title = "Input Focus",
-                    value = display.dualScreenInputFocus.displayName,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleDualScreenInputFocus() }
                 )
 
                 InterfaceItem.ScreenDimmer -> SwitchPreference(

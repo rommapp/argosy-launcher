@@ -609,7 +609,9 @@ class SettingsViewModel @Inject constructor(
                 swapAB = prefs.swapAB,
                 swapXY = prefs.swapXY,
                 swapStartSelect = prefs.swapStartSelect,
-                accuratePlayTimeEnabled = prefs.accuratePlayTimeEnabled
+                accuratePlayTimeEnabled = prefs.accuratePlayTimeEnabled,
+                hasSecondaryDisplay = displayAffinityHelper.hasSecondaryDisplay,
+                dualScreenInputFocus = prefs.dualScreenInputFocus
             ))
             controlsDelegate.refreshUsageStatsPermission()
 
@@ -2406,12 +2408,13 @@ class SettingsViewModel @Inject constructor(
 
     fun cycleDualScreenInputFocus(direction: Int = 1) {
         val entries = com.nendo.argosy.data.preferences.DualScreenInputFocus.entries
-        val current = _uiState.value.display.dualScreenInputFocus
+        val current = _uiState.value.controls.dualScreenInputFocus
         val next = entries[(current.ordinal + direction + entries.size) % entries.size]
         viewModelScope.launch {
             preferencesRepository.setDualScreenInputFocus(next)
             val sessionStore = com.nendo.argosy.data.preferences.SessionStateStore(context)
             sessionStore.setDualScreenInputFocus(next.name)
+            controlsDelegate.updateState(_uiState.value.controls.copy(dualScreenInputFocus = next))
             displayDelegate.updateState(_uiState.value.display.copy(dualScreenInputFocus = next))
         }
     }

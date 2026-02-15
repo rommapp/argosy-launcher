@@ -20,7 +20,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
-private sealed class ControlsItem(
+internal sealed class ControlsItem(
     val key: String,
     val visibleWhen: (ControlsState) -> Boolean = { true }
 ) {
@@ -33,11 +33,15 @@ private sealed class ControlsItem(
     data object SwapAB : ControlsItem("swapAB")
     data object SwapXY : ControlsItem("swapXY")
     data object SwapStartSelect : ControlsItem("swapStartSelect")
+    data object InputFocus : ControlsItem(
+        key = "inputFocus",
+        visibleWhen = { it.hasSecondaryDisplay }
+    )
 
     companion object {
         val ALL: List<ControlsItem> = listOf(
             HapticFeedback, VibrationStrength, ControllerLayout,
-            SwapAB, SwapXY, SwapStartSelect
+            SwapAB, SwapXY, SwapStartSelect, InputFocus
         )
     }
 }
@@ -50,12 +54,15 @@ private val controlsLayout = SettingsLayout<ControlsItem, ControlsState>(
 
 internal fun controlsMaxFocusIndex(controls: ControlsState): Int = controlsLayout.maxFocusIndex(controls)
 
+internal fun controlsItemAtFocusIndex(index: Int, controls: ControlsState): ControlsItem? =
+    controlsLayout.itemAtFocusIndex(index, controls)
+
 @Composable
 fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val controls = uiState.controls
 
-    val visibleItems = remember(controls.hapticEnabled, controls.vibrationSupported) {
+    val visibleItems = remember(controls.hapticEnabled, controls.vibrationSupported, controls.hasSecondaryDisplay) {
         controlsLayout.visibleItems(controls)
     }
 
@@ -135,6 +142,13 @@ fun ControlsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isEnabled = controls.swapStartSelect,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setSwapStartSelect(it) }
+                )
+
+                ControlsItem.InputFocus -> CyclePreference(
+                    title = "Input Focus",
+                    value = controls.dualScreenInputFocus.displayName,
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleDualScreenInputFocus() }
                 )
             }
         }

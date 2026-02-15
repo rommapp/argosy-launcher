@@ -227,6 +227,7 @@ class SettingsInputHandler(
                 InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(-5); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(-1); return InputResult.HANDLED }
                 InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(-1); return InputResult.HANDLED }
+                InterfaceItem.InputFocus -> { viewModel.cycleDualScreenInputFocus(-1); return InputResult.HANDLED }
                 InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(-1); return InputResult.HANDLED }
                 InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(-1); return InputResult.HANDLED }
                 else -> {}
@@ -478,6 +479,7 @@ class SettingsInputHandler(
                 InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(5); return InputResult.HANDLED }
                 InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(1); return InputResult.HANDLED }
                 InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(1); return InputResult.HANDLED }
+                InterfaceItem.InputFocus -> { viewModel.cycleDualScreenInputFocus(1); return InputResult.HANDLED }
                 InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(1); return InputResult.HANDLED }
                 InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(1); return InputResult.HANDLED }
                 else -> {}

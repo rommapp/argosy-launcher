@@ -360,10 +360,9 @@ class DualHomeViewModel(
     }
 
     fun focusAppBar(appCount: Int) {
-        if (appCount <= 0) return
         _uiState.update { it.copy(
             focusZone = DualHomeFocusZone.APP_BAR,
-            appBarIndex = it.appBarIndex.coerceIn(0, appCount - 1)
+            appBarIndex = if (appCount > 0) it.appBarIndex.coerceIn(0, appCount - 1) else -1
         )}
     }
 
@@ -379,7 +378,7 @@ class DualHomeViewModel(
 
     fun selectPreviousApp() {
         _uiState.update { it.copy(
-            appBarIndex = (it.appBarIndex - 1).coerceAtLeast(0)
+            appBarIndex = (it.appBarIndex - 1).coerceAtLeast(-1)
         )}
     }
 

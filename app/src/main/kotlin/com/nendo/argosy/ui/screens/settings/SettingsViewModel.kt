@@ -589,7 +589,8 @@ class SettingsViewModel @Inject constructor(
                 ambientLedAvailable = displayDelegate.isAmbientLedAvailable(),
                 hasScreenCapturePermission = displayDelegate.hasScreenCapturePermission(),
                 hasSecondaryDisplay = displayAffinityHelper.hasSecondaryDisplay,
-                displayRoleOverride = prefs.displayRoleOverride
+                displayRoleOverride = prefs.displayRoleOverride,
+                dualScreenInputFocus = prefs.dualScreenInputFocus
             ))
 
             val detectionResult = ControllerDetector.detectFromActiveGamepad()
@@ -2400,6 +2401,18 @@ class SettingsViewModel @Inject constructor(
             val sessionStore = com.nendo.argosy.data.preferences.SessionStateStore(context)
             sessionStore.setDisplayRoleOverride(next.name)
             displayDelegate.updateState(_uiState.value.display.copy(displayRoleOverride = next))
+        }
+    }
+
+    fun cycleDualScreenInputFocus(direction: Int = 1) {
+        val entries = com.nendo.argosy.data.preferences.DualScreenInputFocus.entries
+        val current = _uiState.value.display.dualScreenInputFocus
+        val next = entries[(current.ordinal + direction + entries.size) % entries.size]
+        viewModelScope.launch {
+            preferencesRepository.setDualScreenInputFocus(next)
+            val sessionStore = com.nendo.argosy.data.preferences.SessionStateStore(context)
+            sessionStore.setDualScreenInputFocus(next.name)
+            displayDelegate.updateState(_uiState.value.display.copy(dualScreenInputFocus = next))
         }
     }
 

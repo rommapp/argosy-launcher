@@ -32,6 +32,7 @@ fun DualHomeLowerContent(
     onLetterClick: (String) -> Unit,
     onFilterOptionTapped: (Int) -> Unit,
     onFilterCategoryTapped: (DualFilterCategory) -> Unit,
+    onOpenDrawer: () -> Unit = {},
     onDimTapped: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -63,7 +64,8 @@ fun DualHomeLowerContent(
                     onAppClick = onAppClick,
                     onCollectionsClick = onCollectionsClick,
                     onLibraryToggle = onLibraryToggle,
-                    onViewAllClick = onViewAllClick
+                    onViewAllClick = onViewAllClick,
+                    onOpenDrawer = onOpenDrawer
                 )
             }
             DualHomeViewMode.COLLECTIONS -> {

@@ -49,6 +49,12 @@ data class SecondaryAppUi(
     val label: String
 )
 
+data class DrawerAppUi(
+    val packageName: String,
+    val label: String,
+    val isPinned: Boolean
+)
+
 data class SecondaryHomeUiState(
     val sections: List<HomeSection> = emptyList(),
     val currentSectionIndex: Int = 0,
@@ -58,7 +64,11 @@ data class SecondaryHomeUiState(
     val screenWidthDp: Int = 0,
     val isLoading: Boolean = true,
     val focusedGameIndex: Int = 0,
-    val isHoldingFocusedGame: Boolean = false
+    val isHoldingFocusedGame: Boolean = false,
+    val isDrawerOpen: Boolean = false,
+    val allApps: List<DrawerAppUi> = emptyList(),
+    val drawerFocusedIndex: Int = 0,
+    val companionAppBarIndex: Int = -1
 ) {
     val currentSection: HomeSection?
         get() = sections.getOrNull(currentSectionIndex)
@@ -415,6 +425,135 @@ class SecondaryHomeViewModel @Inject constructor(
 
     fun stopHoldingFocusedGame() {
         _uiState.update { it.copy(isHoldingFocusedGame = false) }
+    }
+
+    fun openDrawer() {
+        viewModelScope.launch {
+            val pinnedPackages = _uiState.value.homeApps.map { it.packageName }.toSet()
+            val installed = appsRepository.getInstalledApps(includeSystemApps = true)
+            val drawerApps = installed
+                .sortedBy { it.label.lowercase() }
+                .map { DrawerAppUi(it.packageName, it.label, it.packageName in pinnedPackages) }
+            _uiState.update {
+                it.copy(isDrawerOpen = true, allApps = drawerApps, drawerFocusedIndex = 0)
+            }
+        }
+    }
+
+    fun closeDrawer() {
+        _uiState.update { it.copy(isDrawerOpen = false) }
+    }
+
+    fun togglePinFromDrawer(packageName: String) {
+        val state = _uiState.value
+        val app = state.allApps.find { it.packageName == packageName } ?: return
+        val currentPinned = state.homeApps.map { it.packageName }.toSet()
+        val newPinned = if (app.isPinned) currentPinned - packageName else currentPinned + packageName
+        persistPinnedApps(newPinned)
+        refreshDrawerPinState(newPinned)
+    }
+
+    fun unpinFromBar(packageName: String) {
+        val currentPinned = _uiState.value.homeApps.map { it.packageName }.toSet()
+        val newPinned = currentPinned - packageName
+        persistPinnedApps(newPinned)
+    }
+
+    private fun persistPinnedApps(pinnedPackages: Set<String>) {
+        viewModelScope.launch {
+            if (preferencesRepository != null) {
+                preferencesRepository.setSecondaryHomeApps(pinnedPackages)
+            } else {
+                val sessionStore = com.nendo.argosy.data.preferences.SessionStateStore(context)
+                sessionStore.setHomeApps(pinnedPackages)
+                val intent = Intent("com.nendo.argosy.COMPANION_HOME_APPS_CHANGED").apply {
+                    setPackage(context.packageName)
+                    putStringArrayListExtra("home_apps", ArrayList(pinnedPackages))
+                }
+                context.sendBroadcast(intent)
+            }
+            val installedApps = appsRepository.getInstalledApps(includeSystemApps = true)
+            val homeApps = installedApps
+                .filter { it.packageName in pinnedPackages }
+                .map { SecondaryAppUi(it.packageName, it.label) }
+            _uiState.update { it.copy(homeApps = homeApps) }
+        }
+    }
+
+    private fun refreshDrawerPinState(pinnedPackages: Set<String>) {
+        _uiState.update { state ->
+            state.copy(
+                allApps = state.allApps.map { it.copy(isPinned = it.packageName in pinnedPackages) }
+            )
+        }
+    }
+
+    fun moveDrawerFocusUp() {
+        val state = _uiState.value
+        if (state.allApps.isEmpty()) return
+        val columns = drawerColumns(state.screenWidthDp)
+        val newIndex = (state.drawerFocusedIndex - columns).coerceAtLeast(0)
+        _uiState.update { it.copy(drawerFocusedIndex = newIndex) }
+    }
+
+    fun moveDrawerFocusDown() {
+        val state = _uiState.value
+        if (state.allApps.isEmpty()) return
+        val columns = drawerColumns(state.screenWidthDp)
+        val newIndex = (state.drawerFocusedIndex + columns).coerceAtMost(state.allApps.size - 1)
+        _uiState.update { it.copy(drawerFocusedIndex = newIndex) }
+    }
+
+    fun moveDrawerFocusLeft() {
+        val state = _uiState.value
+        if (state.allApps.isEmpty()) return
+        val columns = drawerColumns(state.screenWidthDp)
+        if (state.drawerFocusedIndex % columns > 0) {
+            _uiState.update { it.copy(drawerFocusedIndex = state.drawerFocusedIndex - 1) }
+        }
+    }
+
+    fun moveDrawerFocusRight() {
+        val state = _uiState.value
+        if (state.allApps.isEmpty()) return
+        val columns = drawerColumns(state.screenWidthDp)
+        if (state.drawerFocusedIndex % columns < columns - 1 &&
+            state.drawerFocusedIndex < state.allApps.size - 1
+        ) {
+            _uiState.update { it.copy(drawerFocusedIndex = state.drawerFocusedIndex + 1) }
+        }
+    }
+
+    fun launchDrawerApp(): Pair<Intent?, android.os.Bundle?>? {
+        val state = _uiState.value
+        val app = state.allApps.getOrNull(state.drawerFocusedIndex) ?: return null
+        return getAppLaunchIntent(app.packageName)
+    }
+
+    fun toggleDrawerFocusedPin() {
+        val state = _uiState.value
+        val app = state.allApps.getOrNull(state.drawerFocusedIndex) ?: return
+        togglePinFromDrawer(app.packageName)
+    }
+
+    private fun drawerColumns(screenWidthDp: Int): Int = 4
+
+    fun companionSelectNextApp(appCount: Int) {
+        _uiState.update { it.copy(
+            companionAppBarIndex = (it.companionAppBarIndex + 1).coerceAtMost(appCount - 1)
+        )}
+    }
+
+    fun companionSelectPreviousApp() {
+        _uiState.update { it.copy(
+            companionAppBarIndex = (it.companionAppBarIndex - 1).coerceAtLeast(-1)
+        )}
+    }
+
+    fun companionFocusAppBar(appCount: Int) {
+        _uiState.update { it.copy(
+            companionAppBarIndex = if (appCount > 0) it.companionAppBarIndex.coerceIn(0, appCount - 1) else -1
+        )}
     }
 
     private fun GameEntity.toUi() = SecondaryGameUi(

@@ -1,13 +1,27 @@
 package com.nendo.argosy.hardware
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,10 +30,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -28,8 +47,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import com.nendo.argosy.ui.screens.secondaryhome.DrawerAppUi
+import com.nendo.argosy.ui.theme.Dimens
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,35 +80,75 @@ fun CompanionContent(
     sessionTimer: CompanionSessionTimer?,
     homeApps: List<String>,
     onAppClick: (String) -> Unit,
-    onTabChanged: (CompanionPanel) -> Unit
+    onTabChanged: (CompanionPanel) -> Unit,
+    isDrawerOpen: Boolean = false,
+    drawerApps: List<DrawerAppUi> = emptyList(),
+    onOpenDrawer: () -> Unit = {},
+    onCloseDrawer: () -> Unit = {},
+    onPinToggle: (String) -> Unit = {},
+    onDrawerAppClick: (String) -> Unit = {}
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        CompanionTabHeader(
-            currentPanel = state.currentPanel,
-            onTabChanged = onTabChanged
-        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            CompanionTabHeader(
+                currentPanel = state.currentPanel,
+                onTabChanged = onTabChanged
+            )
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            when (state.currentPanel) {
-                CompanionPanel.DASHBOARD -> DashboardPanel(
-                    state = state,
-                    sessionTimer = sessionTimer
-                )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                when (state.currentPanel) {
+                    CompanionPanel.DASHBOARD -> DashboardPanel(
+                        state = state,
+                        sessionTimer = sessionTimer
+                    )
+                }
             }
-        }
 
-        if (homeApps.isNotEmpty()) {
             CompanionAppBar(
                 apps = homeApps,
-                onAppClick = onAppClick
+                onAppClick = onAppClick,
+                onOpenDrawer = onOpenDrawer
+            )
+        }
+
+        AnimatedVisibility(
+            visible = isDrawerOpen,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onCloseDrawer
+                    )
+            )
+        }
+
+        AnimatedVisibility(
+            visible = isDrawerOpen,
+            enter = slideInVertically(initialOffsetY = { it }),
+            exit = slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            CompanionDrawer(
+                apps = drawerApps,
+                onPinToggle = onPinToggle,
+                onAppClick = { pkg ->
+                    onCloseDrawer()
+                    onDrawerAppClick(pkg)
+                }
             )
         }
     }
@@ -407,7 +474,8 @@ private fun SaveStateIndicator(
 internal fun CompanionAppBar(
     apps: List<String>,
     onAppClick: (String) -> Unit,
-    focusedIndex: Int = -1
+    focusedIndex: Int = -1,
+    onOpenDrawer: () -> Unit = {}
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
@@ -417,7 +485,7 @@ internal fun CompanionAppBar(
         }
     }
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(
@@ -428,12 +496,45 @@ internal fun CompanionAppBar(
                     )
                 )
             )
-            .padding(vertical = 12.dp)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Column(
+            modifier = Modifier
+                .width(64.dp)
+                .touchOnly(onOpenDrawer)
+                .padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .then(
+                        if (focusedIndex == -1) Modifier.border(
+                            width = 2.dp,
+                            color = Color.White,
+                            shape = RoundedCornerShape(12.dp)
+                        ) else Modifier
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add app",
+                    tint = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(end = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.weight(1f)
         ) {
             items(apps.size) { index ->
                 CompanionAppItem(
@@ -476,5 +577,144 @@ internal fun CompanionAppItem(
         )
 
         Spacer(modifier = Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun CompanionDrawer(
+    apps: List<DrawerAppUi>,
+    onPinToggle: (String) -> Unit,
+    onAppClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.65f)
+            .background(
+                Color(0xFF2A2A2A),
+                RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {}
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color.White.copy(alpha = 0.3f))
+            )
+        }
+
+        Text(
+            text = "All Apps",
+            style = MaterialTheme.typography.titleSmall,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
+            contentPadding = PaddingValues(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            itemsIndexed(apps, key = { _, app -> app.packageName }) { _, app ->
+                CompanionDrawerAppItem(
+                    app = app,
+                    onClick = { onAppClick(app.packageName) },
+                    onPinToggle = { onPinToggle(app.packageName) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompanionDrawerAppItem(
+    app: DrawerAppUi,
+    onClick: () -> Unit,
+    onPinToggle: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val scale = remember { Animatable(1f) }
+    var actionTriggered by remember { mutableStateOf(false) }
+    var touchAnimationJob by remember { mutableStateOf<Job?>(null) }
+
+    Column(
+        modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
+            .pointerInput(app.packageName) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    actionTriggered = false
+                    touchAnimationJob = scope.launch {
+                        delay(250)
+                        scale.animateTo(1.2f, tween(durationMillis = 500, easing = EaseIn))
+                        actionTriggered = true
+                        onPinToggle()
+                        scale.animateTo(1f, tween(150))
+                    }
+                    val up = waitForUpOrCancellation()
+                    if (!actionTriggered) {
+                        touchAnimationJob?.cancel()
+                        scope.launch { scale.animateTo(1f, tween(150)) }
+                        if (up != null && scale.value < 1.05f) onClick()
+                    }
+                }
+            }
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box {
+            AsyncImage(
+                model = AppIconData(app.packageName),
+                contentDescription = app.label,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            if (app.isPinned) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(18.dp)
+                        .background(Color(0xFF6750A4), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PushPin,
+                        contentDescription = "Pinned",
+                        tint = Color.White,
+                        modifier = Modifier.size(11.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = app.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

@@ -11,9 +11,15 @@ import androidx.core.content.ContextCompat
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -215,6 +221,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         swapAB = sessionStateStore.getSwapAB()
         swapXY = sessionStateStore.getSwapXY()
         swapStartSelect = sessionStateStore.getSwapStartSelect()
+        dualScreenInputFocus = sessionStateStore.getDualScreenInputFocus()
 
         val isNintendoLayout = ControllerDetector.detectFromActiveGamepad().layout == DetectedLayout.NINTENDO
         abIconsSwapped = isNintendoLayout xor swapAB
@@ -286,6 +293,7 @@ class SecondaryHomeActivity : ComponentActivity() {
                 val gameId = intent.getLongExtra(EXTRA_GAME_ID, -1)
                 if (gameId > 0) {
                     isGameActive = true
+                    viewModel.companionFocusAppBar(homeApps.size)
                     isHardcore = intent.getBooleanExtra(
                         EXTRA_IS_HARDCORE, false
                     )
@@ -999,14 +1007,16 @@ class SecondaryHomeActivity : ComponentActivity() {
         )
     }
 
-    private fun broadcastViewModeChange() {
+    private fun broadcastViewModeChange(drawerOpen: Boolean? = null) {
+        val state = dualHomeViewModel.uiState.value
         sendBroadcast(
             Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
                 setPackage(packageName)
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_VIEW_MODE,
-                    dualHomeViewModel.uiState.value.viewMode.name
-                )
+                putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, state.viewMode.name)
+                putExtra(DualScreenBroadcasts.EXTRA_IS_APP_BAR_FOCUSED,
+                    state.focusZone == DualHomeFocusZone.APP_BAR)
+                putExtra(DualScreenBroadcasts.EXTRA_IS_DRAWER_OPEN,
+                    drawerOpen ?: viewModel.uiState.value.isDrawerOpen)
             }
         )
     }
@@ -1071,8 +1081,11 @@ class SecondaryHomeActivity : ComponentActivity() {
         return result
     }
 
+    private var dualScreenInputFocus = "AUTO"
+
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
         if (isShowcaseRole) return super.onKeyDown(keyCode, event)
+        if (dualScreenInputFocus == "TOP") return super.onKeyDown(keyCode, event)
 
         if (event.repeatCount == 0) {
             android.util.Log.d("SecondaryInput", "keyCode=$keyCode (${android.view.KeyEvent.keyCodeToString(keyCode)}), swapAB=$swapAB, swapXY=$swapXY")
@@ -1083,6 +1096,8 @@ class SecondaryHomeActivity : ComponentActivity() {
                         CompanionScreen.HOME -> handleDualHomeInput(gamepadEvent)
                         CompanionScreen.GAME_DETAIL -> handleDualDetailInput(gamepadEvent)
                     }
+                } else if (useDualScreenMode && isGameActive) {
+                    handleCompanionInput(gamepadEvent)
                 } else {
                     handleGridInput(gamepadEvent)
                 }
@@ -1093,6 +1108,7 @@ class SecondaryHomeActivity : ComponentActivity() {
     }
 
     private fun handleDualHomeInput(event: GamepadEvent): InputResult {
+        if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
         if (dualHomeViewModel.forwardingMode.value != com.nendo.argosy.ui.dualscreen.home.ForwardingMode.NONE) {
             return InputResult.HANDLED
         }
@@ -1139,14 +1155,16 @@ class SecondaryHomeActivity : ComponentActivity() {
                 InputResult.HANDLED
             }
             GamepadEvent.Down -> {
-                if (!inAppBar && homeApps.isNotEmpty()) {
+                if (!inAppBar) {
                     dualHomeViewModel.focusAppBar(homeApps.size)
+                    broadcastViewModeChange()
                     InputResult.HANDLED
                 } else InputResult.UNHANDLED
             }
             GamepadEvent.Up -> {
                 if (inAppBar) {
                     dualHomeViewModel.focusCarousel()
+                    broadcastViewModeChange()
                     InputResult.HANDLED
                 } else {
                     dualHomeViewModel.enterCollections()
@@ -1156,30 +1174,45 @@ class SecondaryHomeActivity : ComponentActivity() {
                 }
             }
             GamepadEvent.PrevSection -> {
-                if (inAppBar) dualHomeViewModel.focusCarousel()
+                if (inAppBar) {
+                    dualHomeViewModel.focusCarousel()
+                    broadcastViewModeChange()
+                }
                 dualHomeViewModel.previousSection()
                 persistCarouselPosition()
                 InputResult.HANDLED
             }
             GamepadEvent.NextSection -> {
-                if (inAppBar) dualHomeViewModel.focusCarousel()
+                if (inAppBar) {
+                    dualHomeViewModel.focusCarousel()
+                    broadcastViewModeChange()
+                }
                 dualHomeViewModel.nextSection()
                 persistCarouselPosition()
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {
-                dualHomeViewModel.toggleLibraryGrid {
-                    broadcastViewModeChange()
-                    val state = dualHomeViewModel.uiState.value
-                    if (state.viewMode == com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID)
-                        broadcastLibraryGameSelection()
-                    else
-                        broadcastCurrentGameSelection()
+                if (inAppBar) {
+                    viewModel.openDrawer()
+                    broadcastViewModeChange(drawerOpen = true)
+                } else {
+                    dualHomeViewModel.toggleLibraryGrid {
+                        broadcastViewModeChange()
+                        val state = dualHomeViewModel.uiState.value
+                        if (state.viewMode == com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID)
+                            broadcastLibraryGameSelection()
+                        else
+                            broadcastCurrentGameSelection()
+                    }
                 }
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
-                if (inAppBar) {
+                if (inAppBar && state.appBarIndex == -1) {
+                    viewModel.openDrawer()
+                    broadcastViewModeChange(drawerOpen = true)
+                    InputResult.HANDLED
+                } else if (inAppBar) {
                     val packageName = homeApps.getOrNull(state.appBarIndex)
                     if (packageName != null) {
                         launchApp(packageName)
@@ -1817,6 +1850,8 @@ class SecondaryHomeActivity : ComponentActivity() {
     }
 
     private fun handleGridInput(event: GamepadEvent): InputResult {
+        if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
+
         return when (event) {
             GamepadEvent.Up -> {
                 viewModel.moveFocusUp()
@@ -1848,6 +1883,84 @@ class SecondaryHomeActivity : ComponentActivity() {
             }
             GamepadEvent.ContextMenu -> {
                 launchFocusedGame()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Select -> {
+                viewModel.openDrawer()
+                broadcastViewModeChange(drawerOpen = true)
+                InputResult.HANDLED
+            }
+            else -> InputResult.UNHANDLED
+        }
+    }
+
+    private fun handleDrawerInput(event: GamepadEvent): InputResult {
+        return when (event) {
+            GamepadEvent.Up -> {
+                viewModel.moveDrawerFocusUp()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Down -> {
+                viewModel.moveDrawerFocusDown()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Left -> {
+                viewModel.moveDrawerFocusLeft()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Right -> {
+                viewModel.moveDrawerFocusRight()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                val (intent, options) = viewModel.launchDrawerApp() ?: return InputResult.HANDLED
+                viewModel.closeDrawer()
+                broadcastViewModeChange(drawerOpen = false)
+                if (options != null) startActivity(intent, options) else intent?.let { startActivity(it) }
+                InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu -> {
+                viewModel.toggleDrawerFocusedPin()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Back, GamepadEvent.Select -> {
+                viewModel.closeDrawer()
+                broadcastViewModeChange(drawerOpen = false)
+                InputResult.HANDLED
+            }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun handleCompanionInput(event: GamepadEvent): InputResult {
+        if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
+
+        val state = viewModel.uiState.value
+        val appBarIndex = state.companionAppBarIndex
+
+        return when (event) {
+            GamepadEvent.Left -> {
+                viewModel.companionSelectPreviousApp()
+                InputResult.HANDLED
+            }
+            GamepadEvent.Right -> {
+                viewModel.companionSelectNextApp(homeApps.size)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                if (appBarIndex == -1) {
+                    viewModel.openDrawer()
+                    InputResult.HANDLED
+                } else {
+                    val packageName = homeApps.getOrNull(appBarIndex)
+                    if (packageName != null) {
+                        launchApp(packageName)
+                        InputResult.HANDLED
+                    } else InputResult.UNHANDLED
+                }
+            }
+            GamepadEvent.Select -> {
+                viewModel.openDrawer()
                 InputResult.HANDLED
             }
             else -> InputResult.UNHANDLED
@@ -1994,6 +2107,7 @@ private fun SecondaryHomeContent(
                             onLetterClick = onLetterClick,
                             onFilterOptionTapped = onFilterOptionTapped,
                             onFilterCategoryTapped = onFilterCategoryTapped,
+                            onOpenDrawer = { viewModel.openDrawer() },
                             onDimTapped = onDimTapped
                         )
                     }
@@ -2032,7 +2146,46 @@ private fun SecondaryHomeContent(
                 sessionTimer = companionSessionTimer,
                 homeApps = homeApps,
                 onAppClick = onAppClick,
-                onTabChanged = onTabChanged
+                onTabChanged = onTabChanged,
+                onOpenDrawer = { viewModel.openDrawer() }
+            )
+        }
+
+        // All Apps Drawer overlay (shared across library and companion modes)
+        val drawerState by viewModel.uiState.collectAsState()
+        AnimatedVisibility(
+            visible = drawerState.isDrawerOpen,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { viewModel.closeDrawer() }
+                    )
+            )
+        }
+
+        AnimatedVisibility(
+            visible = drawerState.isDrawerOpen,
+            enter = slideInVertically(initialOffsetY = { it }),
+            exit = slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            com.nendo.argosy.ui.screens.secondaryhome.AllAppsDrawerOverlay(
+                apps = drawerState.allApps,
+                focusedIndex = drawerState.drawerFocusedIndex,
+                screenWidthDp = drawerState.screenWidthDp,
+                onPinToggle = { viewModel.togglePinFromDrawer(it) },
+                onAppClick = { pkg ->
+                    viewModel.closeDrawer()
+                    onAppClick(pkg)
+                },
+                onClose = { viewModel.closeDrawer() }
             )
         }
     }

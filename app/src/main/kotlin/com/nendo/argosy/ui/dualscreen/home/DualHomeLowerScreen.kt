@@ -113,6 +113,7 @@ fun DualHomeLowerScreen(
     onCollectionsClick: () -> Unit,
     onLibraryToggle: () -> Unit,
     onViewAllClick: () -> Unit,
+    onOpenDrawer: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -229,13 +230,12 @@ fun DualHomeLowerScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        if (homeApps.isNotEmpty()) {
-            CompanionAppBar(
-                apps = homeApps,
-                onAppClick = onAppClick,
-                focusedIndex = if (appBarFocused) appBarIndex else -1
-            )
-        }
+        CompanionAppBar(
+            apps = homeApps,
+            onAppClick = onAppClick,
+            focusedIndex = if (appBarFocused) appBarIndex else -2,
+            onOpenDrawer = onOpenDrawer
+        )
     }
 }
 

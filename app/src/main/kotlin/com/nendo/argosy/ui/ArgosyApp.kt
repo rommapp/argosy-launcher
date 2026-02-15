@@ -94,7 +94,9 @@ fun ArgosyApp(
     dualScreenShowcase: StateFlow<DualHomeShowcaseState>? = null,
     dualGameDetailState: StateFlow<DualGameDetailUpperState?>? = null,
     dualViewMode: StateFlow<String>? = null,
-    dualCollectionShowcase: StateFlow<DualCollectionShowcaseState>? = null
+    dualCollectionShowcase: StateFlow<DualCollectionShowcaseState>? = null,
+    dualAppBarFocused: StateFlow<Boolean>? = null,
+    dualDrawerOpen: StateFlow<Boolean>? = null
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -124,6 +126,8 @@ fun ArgosyApp(
     val companionActive by isCompanionActive?.collectAsState() ?: remember { mutableStateOf(false) }
     val viewMode by dualViewMode?.collectAsState() ?: remember { mutableStateOf("CAROUSEL") }
     val collectionShowcaseState by dualCollectionShowcase?.collectAsState() ?: remember { mutableStateOf(DualCollectionShowcaseState()) }
+    val appBarFocused by dualAppBarFocused?.collectAsState() ?: remember { mutableStateOf(false) }
+    val drawerOpen by dualDrawerOpen?.collectAsState() ?: remember { mutableStateOf(false) }
     val isOnHomeScreen = currentRoute == Screen.Home.route
     val showDualOverlay = isDualScreenDevice && isOnHomeScreen && companionActive && !isRolesSwapped
     val showSwappedInteractive = isDualScreenDevice && isOnHomeScreen && isRolesSwapped
@@ -853,7 +857,14 @@ fun ArgosyApp(
                                             com.nendo.argosy.ui.components.InputButton.Y to "Filters",
                                             com.nendo.argosy.ui.components.InputButton.B to "Back"
                                         )
-                                        else -> listOf(
+                                        else -> if (drawerOpen) listOf(
+                                            com.nendo.argosy.ui.components.InputButton.A to "Open",
+                                            com.nendo.argosy.ui.components.InputButton.X to "Pin/Unpin",
+                                            com.nendo.argosy.ui.components.InputButton.B to "Close"
+                                        ) else if (appBarFocused) listOf(
+                                            com.nendo.argosy.ui.components.InputButton.A to "Select",
+                                            com.nendo.argosy.ui.components.InputButton.SELECT to "All Apps"
+                                        ) else listOf(
                                             com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
                                             com.nendo.argosy.ui.components.InputButton.A to actionLabel,
                                             com.nendo.argosy.ui.components.InputButton.X to "Details",

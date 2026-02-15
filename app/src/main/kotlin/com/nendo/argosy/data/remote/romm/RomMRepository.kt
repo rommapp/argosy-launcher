@@ -467,6 +467,8 @@ class RomMRepository @Inject constructor(
         }
 
         val backgroundUrl = rom.backgroundUrls.firstOrNull()
+            ?: screenshotUrls.getOrNull(1)
+            ?: screenshotUrls.getOrNull(0)
         val cachedBackground = when {
             !contentChanged && existing?.backgroundPath?.startsWith("/") == true -> existing.backgroundPath
             backgroundUrl != null -> {
@@ -1056,6 +1058,8 @@ class RomMRepository @Inject constructor(
             }
 
             val backgroundUrl = rom.backgroundUrls.firstOrNull()
+                ?: screenshotUrls.getOrNull(1)
+                ?: screenshotUrls.getOrNull(0)
             val coverUrl = rom.coverLarge?.let { buildMediaUrl(it) }
 
             if (backgroundUrl != null) {

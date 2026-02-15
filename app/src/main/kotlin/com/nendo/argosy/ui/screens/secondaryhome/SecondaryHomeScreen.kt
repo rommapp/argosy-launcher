@@ -9,6 +9,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +21,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +42,8 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -86,101 +94,140 @@ fun SecondaryHomeScreen(
         viewModel.setScreenWidth(screenWidthDp)
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        SectionHeader(
-            sectionTitle = uiState.currentSection?.title ?: "",
-            onPrevious = { viewModel.previousSection() },
-            onNext = { viewModel.nextSection() },
-            hasPrevious = uiState.sections.size > 1,
-            hasNext = uiState.sections.size > 1
-        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            SectionHeader(
+                sectionTitle = uiState.currentSection?.title ?: "",
+                onPrevious = { viewModel.previousSection() },
+                onNext = { viewModel.nextSection() },
+                hasPrevious = uiState.sections.size > 1,
+                hasNext = uiState.sections.size > 1
+            )
 
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            val gridState = rememberLazyGridState()
-
-            LaunchedEffect(uiState.focusedGameIndex) {
-                if (uiState.games.isNotEmpty()) {
-                    gridState.animateScrollToItem(uiState.focusedGameIndex)
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-            }
+            } else {
+                val gridState = rememberLazyGridState()
 
-            val gridSpacing = uiState.gridSpacingDp.dp
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(uiState.columnsCount),
-                state = gridState,
-                contentPadding = PaddingValues(gridSpacing),
-                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
-                verticalArrangement = Arrangement.spacedBy(gridSpacing),
-                modifier = Modifier.weight(1f)
-            ) {
-                itemsIndexed(uiState.games, key = { _, game -> game.id }) { index, game ->
-                    GameGridItem(
-                        game = game,
-                        isFocused = index == uiState.focusedGameIndex,
-                        isHoldingFromGamepad = index == uiState.focusedGameIndex && uiState.isHoldingFocusedGame,
-                        onClick = {
-                            viewModel.setFocusedGameIndex(index)
-                            val (intent, options) = viewModel.getGameDetailIntent(game.id)
-                            if (options != null) {
-                                context.startActivity(intent, options)
-                            } else {
-                                context.startActivity(intent)
-                            }
-                        },
-                        onLongPressAction = {
-                            if (game.isPlayable) {
-                                val (intent, options) = viewModel.launchGame(game.id)
-                                intent?.let {
-                                    if (options != null) {
-                                        context.startActivity(it, options)
-                                    } else {
-                                        context.startActivity(it)
-                                    }
-                                }
-                            } else {
-                                viewModel.startDownload(game.id)
-                            }
-                        }
-                    )
-                }
-            }
-        }
-
-        AppsRow(
-            apps = uiState.homeApps,
-            onAppClick = { packageName ->
-                val (intent, options) = viewModel.getAppLaunchIntent(packageName)
-                intent?.let {
-                    if (options != null) {
-                        context.startActivity(it, options)
-                    } else {
-                        context.startActivity(it)
+                LaunchedEffect(uiState.focusedGameIndex) {
+                    if (uiState.games.isNotEmpty()) {
+                        gridState.animateScrollToItem(uiState.focusedGameIndex)
                     }
                 }
-            },
-            onEmptyClick = {
-                val (intent, options) = viewModel.getAppsScreenIntent()
-                if (options != null) {
-                    context.startActivity(intent, options)
-                } else {
-                    context.startActivity(intent)
+
+                val gridSpacing = uiState.gridSpacingDp.dp
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(uiState.columnsCount),
+                    state = gridState,
+                    contentPadding = PaddingValues(gridSpacing),
+                    horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                    verticalArrangement = Arrangement.spacedBy(gridSpacing),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    itemsIndexed(uiState.games, key = { _, game -> game.id }) { index, game ->
+                        GameGridItem(
+                            game = game,
+                            isFocused = index == uiState.focusedGameIndex,
+                            isHoldingFromGamepad = index == uiState.focusedGameIndex && uiState.isHoldingFocusedGame,
+                            onClick = {
+                                viewModel.setFocusedGameIndex(index)
+                                val (intent, options) = viewModel.getGameDetailIntent(game.id)
+                                if (options != null) {
+                                    context.startActivity(intent, options)
+                                } else {
+                                    context.startActivity(intent)
+                                }
+                            },
+                            onLongPressAction = {
+                                if (game.isPlayable) {
+                                    val (intent, options) = viewModel.launchGame(game.id)
+                                    intent?.let {
+                                        if (options != null) {
+                                            context.startActivity(it, options)
+                                        } else {
+                                            context.startActivity(it)
+                                        }
+                                    }
+                                } else {
+                                    viewModel.startDownload(game.id)
+                                }
+                            }
+                        )
+                    }
                 }
             }
-        )
+
+            AppsRow(
+                apps = uiState.homeApps,
+                onAppClick = { packageName ->
+                    val (intent, options) = viewModel.getAppLaunchIntent(packageName)
+                    intent?.let {
+                        if (options != null) {
+                            context.startActivity(it, options)
+                        } else {
+                            context.startActivity(it)
+                        }
+                    }
+                },
+                onUnpin = { packageName -> viewModel.unpinFromBar(packageName) },
+                onOpenDrawer = { viewModel.openDrawer() }
+            )
+        }
+
+        AnimatedVisibility(
+            visible = uiState.isDrawerOpen,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null,
+                        onClick = { viewModel.closeDrawer() }
+                    )
+            )
+        }
+
+        AnimatedVisibility(
+            visible = uiState.isDrawerOpen,
+            enter = slideInVertically(initialOffsetY = { it }),
+            exit = slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            AllAppsDrawerOverlay(
+                apps = uiState.allApps,
+                focusedIndex = uiState.drawerFocusedIndex,
+                screenWidthDp = uiState.screenWidthDp,
+                onPinToggle = { viewModel.togglePinFromDrawer(it) },
+                onAppClick = { packageName ->
+                    viewModel.closeDrawer()
+                    val (intent, options) = viewModel.getAppLaunchIntent(packageName)
+                    intent?.let {
+                        if (options != null) {
+                            context.startActivity(it, options)
+                        } else {
+                            context.startActivity(it)
+                        }
+                    }
+                },
+                onClose = { viewModel.closeDrawer() }
+            )
+        }
     }
 }
 
@@ -482,38 +529,44 @@ private fun GameGridItem(
 private fun AppsRow(
     apps: List<SecondaryAppUi>,
     onAppClick: (String) -> Unit,
-    onEmptyClick: () -> Unit
+    onUnpin: (String) -> Unit,
+    onOpenDrawer: () -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            .padding(vertical = Dimens.spacingSm)
+            .padding(vertical = Dimens.spacingSm),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        AddAppButton(onClick = onOpenDrawer)
+
         if (apps.isEmpty()) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .height(72.dp)
                     .focusProperties { canFocus = false }
-                    .clickable(onClick = onEmptyClick),
+                    .clickable(onClick = onOpenDrawer),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Add apps for quick access",
+                    text = "Hold to pin apps for quick access",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
             LazyRow(
-                contentPadding = PaddingValues(horizontal = Dimens.spacingMd),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+                contentPadding = PaddingValues(end = Dimens.spacingMd),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                modifier = Modifier.weight(1f)
             ) {
                 items(apps, key = { it.packageName }) { app ->
                     AppItem(
                         app = app,
-                        onClick = { onAppClick(app.packageName) }
+                        onClick = { onAppClick(app.packageName) },
+                        onLongPressAction = { onUnpin(app.packageName) }
                     )
                 }
             }
@@ -524,13 +577,47 @@ private fun AppsRow(
 @Composable
 private fun AppItem(
     app: SecondaryAppUi,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongPressAction: (() -> Unit)? = null
 ) {
+    val scope = rememberCoroutineScope()
+    val scale = remember { Animatable(1f) }
+    var actionTriggered by remember { mutableStateOf(false) }
+    var touchAnimationJob by remember { mutableStateOf<Job?>(null) }
+
     Column(
         modifier = Modifier
             .width(72.dp)
             .focusProperties { canFocus = false }
-            .clickable(onClick = onClick)
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
+            .then(
+                if (onLongPressAction != null) {
+                    Modifier.pointerInput(app.packageName) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            actionTriggered = false
+                            touchAnimationJob = scope.launch {
+                                delay(250)
+                                scale.animateTo(1.2f, tween(durationMillis = 500, easing = EaseIn))
+                                actionTriggered = true
+                                onLongPressAction()
+                                scale.animateTo(1f, tween(150))
+                            }
+                            val up = waitForUpOrCancellation()
+                            if (!actionTriggered) {
+                                touchAnimationJob?.cancel()
+                                scope.launch { scale.animateTo(1f, tween(150)) }
+                                if (up != null && scale.value < 1.05f) onClick()
+                            }
+                        }
+                    }
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                }
+            )
             .padding(Dimens.spacingXs),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -541,6 +628,209 @@ private fun AppItem(
                 .size(48.dp)
                 .clip(RoundedCornerShape(Dimens.radiusSm))
         )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
+
+        Text(
+            text = app.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun AddAppButton(onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(64.dp)
+            .clickable(onClick = onClick)
+            .padding(Dimens.spacingXs),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(Dimens.radiusSm))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add app",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
+
+        Text(
+            text = "Apps",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+fun AllAppsDrawerOverlay(
+    apps: List<DrawerAppUi>,
+    focusedIndex: Int,
+    screenWidthDp: Int,
+    onPinToggle: (String) -> Unit,
+    onAppClick: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    val columns = 4
+    val drawerGridState = rememberLazyGridState()
+
+    LaunchedEffect(focusedIndex) {
+        if (apps.isNotEmpty() && focusedIndex in apps.indices) {
+            val viewportHeight = drawerGridState.layoutInfo.viewportSize.height
+            val itemHeight = drawerGridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
+            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+            drawerGridState.animateScrollToItem(focusedIndex, -centerOffset)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.65f)
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            )
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null,
+                onClick = {}
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+            )
+        }
+
+        Text(
+            text = "All Apps",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            state = drawerGridState,
+            contentPadding = PaddingValues(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            itemsIndexed(apps, key = { _, app -> app.packageName }) { index, app ->
+                DrawerAppItem(
+                    app = app,
+                    isFocused = index == focusedIndex,
+                    onClick = { onAppClick(app.packageName) },
+                    onPinToggle = { onPinToggle(app.packageName) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawerAppItem(
+    app: DrawerAppUi,
+    isFocused: Boolean,
+    onClick: () -> Unit,
+    onPinToggle: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val scale = remember { Animatable(1f) }
+    var actionTriggered by remember { mutableStateOf(false) }
+    var touchAnimationJob by remember { mutableStateOf<Job?>(null) }
+
+    Column(
+        modifier = Modifier
+            .focusProperties { canFocus = false }
+            .then(
+                if (isFocused) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(Dimens.radiusSm)
+                ) else Modifier
+            )
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
+            .pointerInput(app.packageName) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    actionTriggered = false
+                    touchAnimationJob = scope.launch {
+                        delay(250)
+                        scale.animateTo(1.2f, tween(durationMillis = 500, easing = EaseIn))
+                        actionTriggered = true
+                        onPinToggle()
+                        scale.animateTo(1f, tween(150))
+                    }
+                    val up = waitForUpOrCancellation()
+                    if (!actionTriggered) {
+                        touchAnimationJob?.cancel()
+                        scope.launch { scale.animateTo(1f, tween(150)) }
+                        if (up != null && scale.value < 1.05f) onClick()
+                    }
+                }
+            }
+            .padding(Dimens.spacingXs),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box {
+            AsyncImage(
+                model = AppIconData(app.packageName),
+                contentDescription = app.label,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(Dimens.radiusSm))
+            )
+
+            if (app.isPinned) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(18.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PushPin,
+                        contentDescription = "Pinned",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(11.dp)
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(Dimens.spacingXs))
 

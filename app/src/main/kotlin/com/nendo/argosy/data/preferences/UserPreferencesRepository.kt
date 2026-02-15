@@ -160,6 +160,7 @@ class UserPreferencesRepository @Inject constructor(
         val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
         val APP_AFFINITY_ENABLED = booleanPreferencesKey("app_affinity_enabled")
         val DISPLAY_ROLE_OVERRIDE = stringPreferencesKey("display_role_override")
+        val DUAL_SCREEN_INPUT_FOCUS = stringPreferencesKey("dual_screen_input_focus")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -293,7 +294,8 @@ class UserPreferencesRepository @Inject constructor(
             androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI],
             builtinLibretroEnabled = prefs[Keys.BUILTIN_LIBRETRO_ENABLED] ?: true,
             appAffinityEnabled = true,
-            displayRoleOverride = DisplayRoleOverride.fromString(prefs[Keys.DISPLAY_ROLE_OVERRIDE])
+            displayRoleOverride = DisplayRoleOverride.fromString(prefs[Keys.DISPLAY_ROLE_OVERRIDE]),
+            dualScreenInputFocus = DualScreenInputFocus.fromString(prefs[Keys.DUAL_SCREEN_INPUT_FOCUS])
         )
     }
 
@@ -1243,6 +1245,12 @@ class UserPreferencesRepository @Inject constructor(
             prefs[Keys.DISPLAY_ROLE_OVERRIDE] = override.name
         }
     }
+
+    suspend fun setDualScreenInputFocus(focus: DualScreenInputFocus) {
+        dataStore.edit { prefs ->
+            prefs[Keys.DUAL_SCREEN_INPUT_FOCUS] = focus.name
+        }
+    }
 }
 
 data class BuiltinEmulatorSettings(
@@ -1404,7 +1412,8 @@ data class UserPreferences(
     val androidDataSafUri: String? = null,
     val builtinLibretroEnabled: Boolean = true,
     val appAffinityEnabled: Boolean = false,
-    val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO
+    val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO,
+    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO
 )
 
 enum class ThemeMode(val displayName: String) {
@@ -1581,6 +1590,17 @@ enum class DisplayRoleOverride(val displayName: String) {
 
     companion object {
         fun fromString(value: String?): DisplayRoleOverride =
+            entries.find { it.name == value } ?: AUTO
+    }
+}
+
+enum class DualScreenInputFocus(val displayName: String) {
+    AUTO("Auto"),
+    TOP("Top Screen"),
+    BOTTOM("Bottom Screen");
+
+    companion object {
+        fun fromString(value: String?): DualScreenInputFocus =
             entries.find { it.name == value } ?: AUTO
     }
 }

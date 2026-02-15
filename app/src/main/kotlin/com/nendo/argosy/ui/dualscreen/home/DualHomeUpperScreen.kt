@@ -119,9 +119,11 @@ fun DualHomeUpperScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Full-bleed background image (no blur)
-        if (state.backgroundPath != null || state.coverPath != null) {
+        val bgPath = state.backgroundPath ?: state.coverPath
+        if (bgPath != null) {
+            val imageModel = if (bgPath.startsWith("/")) File(bgPath) else bgPath
             AsyncImage(
-                model = File(state.backgroundPath ?: state.coverPath!!),
+                model = imageModel,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

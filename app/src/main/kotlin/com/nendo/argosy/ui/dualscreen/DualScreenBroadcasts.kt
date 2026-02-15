@@ -75,6 +75,8 @@ object DualScreenBroadcasts {
 
     const val ACTION_VIEW_MODE_CHANGED = "com.nendo.argosy.DUAL_VIEW_MODE_CHANGED"
     const val EXTRA_VIEW_MODE = "view_mode"
+    const val EXTRA_IS_APP_BAR_FOCUSED = "is_app_bar_focused"
+    const val EXTRA_IS_DRAWER_OPEN = "is_drawer_open"
 
     const val ACTION_COLLECTION_FOCUSED = "com.nendo.argosy.DUAL_COLLECTION_FOCUSED"
     const val EXTRA_COLLECTION_ID_FOCUSED = "collection_id_focused"

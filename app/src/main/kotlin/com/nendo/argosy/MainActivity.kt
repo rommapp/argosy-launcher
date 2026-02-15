@@ -89,6 +89,12 @@ class MainActivity : ComponentActivity() {
     private val _dualViewMode = kotlinx.coroutines.flow.MutableStateFlow("CAROUSEL")
     val dualViewMode: kotlinx.coroutines.flow.StateFlow<String> = _dualViewMode
 
+    private val _dualAppBarFocused = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val dualAppBarFocused: kotlinx.coroutines.flow.StateFlow<Boolean> = _dualAppBarFocused
+
+    private val _dualDrawerOpen = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val dualDrawerOpen: kotlinx.coroutines.flow.StateFlow<Boolean> = _dualDrawerOpen
+
     private val _dualCollectionShowcase = kotlinx.coroutines.flow.MutableStateFlow(
         com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState()
     )
@@ -98,6 +104,7 @@ class MainActivity : ComponentActivity() {
     var isOverlayFocused = false
     var isRolesSwapped = false
         private set
+    private var dualScreenInputFocus = "AUTO"
     var swappedDualHomeViewModel: com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel? = null
         private set
 
@@ -145,6 +152,12 @@ class MainActivity : ComponentActivity() {
                 DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED -> {
                     val mode = intent.getStringExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE) ?: "CAROUSEL"
                     _dualViewMode.value = mode
+                    _dualAppBarFocused.value = intent.getBooleanExtra(
+                        DualScreenBroadcasts.EXTRA_IS_APP_BAR_FOCUSED, false
+                    )
+                    _dualDrawerOpen.value = intent.getBooleanExtra(
+                        DualScreenBroadcasts.EXTRA_IS_DRAWER_OPEN, false
+                    )
                 }
                 DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED -> {
                     _dualCollectionShowcase.value = com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState(
@@ -589,6 +602,7 @@ class MainActivity : ComponentActivity() {
         val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
         isRolesSwapped = resolver.isSwapped
         sessionStateStore.setRolesSwapped(isRolesSwapped)
+        dualScreenInputFocus = sessionStateStore.getDualScreenInputFocus()
 
         if (isRolesSwapped) {
             swappedDualHomeViewModel = com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel(
@@ -674,6 +688,10 @@ class MainActivity : ComponentActivity() {
                     swapXY = prefs.swapXY,
                     swapStartSelect = prefs.swapStartSelect
                 )
+
+                // Sync dual-screen input focus for both processes
+                dualScreenInputFocus = prefs.dualScreenInputFocus.name
+                sessionStateStore.setDualScreenInputFocus(prefs.dualScreenInputFocus.name)
             }
         }
 
@@ -687,7 +705,9 @@ class MainActivity : ComponentActivity() {
                         dualScreenShowcase = dualScreenShowcase,
                         dualGameDetailState = dualGameDetailState,
                         dualViewMode = dualViewMode,
-                        dualCollectionShowcase = dualCollectionShowcase
+                        dualCollectionShowcase = dualCollectionShowcase,
+                        dualAppBarFocused = dualAppBarFocused,
+                        dualDrawerOpen = dualDrawerOpen
                     )
                 }
             }
@@ -1374,7 +1394,17 @@ class MainActivity : ComponentActivity() {
             unregisterReceiver(dualGameDetailReceiver)
             unregisterReceiver(companionLifecycleReceiver)
             unregisterReceiver(dualViewModeReceiver)
+            unregisterReceiver(companionHomeAppsReceiver)
         } catch (_: Exception) {}
+    }
+
+    private val companionHomeAppsReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
+            val apps = intent?.getStringArrayListExtra("home_apps")?.toSet() ?: return
+            activityScope.launch {
+                preferencesRepository.setSecondaryHomeApps(apps)
+            }
+        }
     }
 
     private fun registerDualScreenReceiver() {
@@ -1408,10 +1438,13 @@ class MainActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, dualGameDetailReceiver, detailFilter, flag)
         ContextCompat.registerReceiver(this, companionLifecycleReceiver, companionFilter, flag)
         ContextCompat.registerReceiver(this, dualViewModeReceiver, viewModeFilter, flag)
+        val companionHomeAppsFilter = IntentFilter("com.nendo.argosy.COMPANION_HOME_APPS_CHANGED")
+        ContextCompat.registerReceiver(this, companionHomeAppsReceiver, companionHomeAppsFilter, flag)
     }
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (dualScreenInputFocus == "BOTTOM") return super.dispatchKeyEvent(event)
         if (event.action == KeyEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
         }

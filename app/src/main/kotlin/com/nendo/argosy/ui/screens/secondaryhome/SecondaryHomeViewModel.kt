@@ -530,6 +530,11 @@ class SecondaryHomeViewModel @Inject constructor(
         return getAppLaunchIntent(app.packageName)
     }
 
+    fun focusedDrawerAppPackageName(): String? {
+        val state = _uiState.value
+        return state.allApps.getOrNull(state.drawerFocusedIndex)?.packageName
+    }
+
     fun toggleDrawerFocusedPin() {
         val state = _uiState.value
         val app = state.allApps.getOrNull(state.drawerFocusedIndex) ?: return

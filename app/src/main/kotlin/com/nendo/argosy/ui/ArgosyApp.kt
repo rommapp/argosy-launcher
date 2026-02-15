@@ -868,9 +868,11 @@ fun ArgosyApp(
                                         else -> if (drawerOpen) listOf(
                                             com.nendo.argosy.ui.components.InputButton.A to "Open",
                                             com.nendo.argosy.ui.components.InputButton.X to "Pin/Unpin",
+                                            com.nendo.argosy.ui.components.InputButton.Y to "Open Top",
                                             com.nendo.argosy.ui.components.InputButton.B to "Close"
                                         ) else if (appBarFocused) listOf(
                                             com.nendo.argosy.ui.components.InputButton.A to "Select",
+                                            com.nendo.argosy.ui.components.InputButton.Y to "Open Top",
                                             com.nendo.argosy.ui.components.InputButton.SELECT to "All Apps"
                                         ) else listOf(
                                             com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
@@ -958,6 +960,18 @@ fun ArgosyApp(
                                     if (launchIntent != null) {
                                         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                         context.startActivity(launchIntent)
+                                    }
+                                },
+                                onLaunchAppAlternate = { packageName ->
+                                    val launchIntent = context.packageManager
+                                        .getLaunchIntentForPackage(packageName)
+                                    if (launchIntent != null) {
+                                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        val options = activity.displayAffinityHelper
+                                            .getActivityOptions(forEmulator = false)
+                                        if (options != null) {
+                                            context.startActivity(launchIntent, options)
+                                        }
                                     }
                                 }
                             )

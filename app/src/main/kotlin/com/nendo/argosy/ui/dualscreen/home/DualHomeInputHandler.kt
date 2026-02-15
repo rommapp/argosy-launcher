@@ -15,7 +15,8 @@ class DualHomeInputHandler(
     private val onBroadcastDirectAction: (String, Long) -> Unit,
     private val onSelectGame: (Long) -> Unit,
     private val onOpenOverlay: (String) -> Unit,
-    private val onLaunchApp: (String) -> Unit
+    private val onLaunchApp: (String) -> Unit,
+    private val onLaunchAppAlternate: (String) -> Unit = {}
 ) : InputHandler {
 
     fun handleForViewMode(): InputResult {
@@ -136,9 +137,16 @@ class DualHomeInputHandler(
                 } else InputResult.UNHANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.SecondaryAction -> {
-                if (inAppBar) return InputResult.UNHANDLED
-                viewModel.toggleFavorite()
-                InputResult.HANDLED
+                if (inAppBar) {
+                    val packageName = apps.getOrNull(state.appBarIndex)
+                    if (packageName != null) {
+                        onLaunchAppAlternate(packageName)
+                        InputResult.HANDLED
+                    } else InputResult.UNHANDLED
+                } else {
+                    viewModel.toggleFavorite()
+                    InputResult.HANDLED
+                }
             }
             else -> InputResult.UNHANDLED
         }

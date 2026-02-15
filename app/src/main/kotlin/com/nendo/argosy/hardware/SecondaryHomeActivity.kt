@@ -1,10 +1,12 @@
 package com.nendo.argosy.hardware
 
+import android.app.ActivityOptions
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.view.Display
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.core.content.ContextCompat
@@ -876,6 +878,22 @@ class SecondaryHomeActivity : ComponentActivity() {
         }
     }
 
+    private fun launchAppOnOtherDisplay(packageName: String) {
+        try {
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                launchedExternalApp = true
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val options = ActivityOptions.makeBasic()
+                    .setLaunchDisplayId(Display.DEFAULT_DISPLAY)
+                    .toBundle()
+                startActivity(launchIntent, options)
+            }
+        } catch (e: Exception) {
+            launchedExternalApp = false
+        }
+    }
+
     private fun selectGame(gameId: Long) {
         if (!useDualScreenMode) {
             val (intent, options) = dualHomeViewModel.getGameDetailIntent(gameId)
@@ -1272,9 +1290,16 @@ class SecondaryHomeActivity : ComponentActivity() {
                 } else InputResult.UNHANDLED
             }
             GamepadEvent.SecondaryAction -> {
-                if (inAppBar) return InputResult.UNHANDLED
-                dualHomeViewModel.toggleFavorite()
-                InputResult.HANDLED
+                if (inAppBar) {
+                    val packageName = homeApps.getOrNull(state.appBarIndex)
+                    if (packageName != null) {
+                        launchAppOnOtherDisplay(packageName)
+                        InputResult.HANDLED
+                    } else InputResult.UNHANDLED
+                } else {
+                    dualHomeViewModel.toggleFavorite()
+                    InputResult.HANDLED
+                }
             }
             else -> InputResult.UNHANDLED
         }
@@ -1955,6 +1980,14 @@ class SecondaryHomeActivity : ComponentActivity() {
             }
             GamepadEvent.ContextMenu -> {
                 viewModel.toggleDrawerFocusedPin()
+                InputResult.HANDLED
+            }
+            GamepadEvent.SecondaryAction -> {
+                val packageName = viewModel.focusedDrawerAppPackageName()
+                    ?: return InputResult.HANDLED
+                viewModel.closeDrawer()
+                broadcastViewModeChange(drawerOpen = false)
+                launchAppOnOtherDisplay(packageName)
                 InputResult.HANDLED
             }
             GamepadEvent.Back, GamepadEvent.Select -> {

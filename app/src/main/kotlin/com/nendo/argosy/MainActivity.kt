@@ -180,7 +180,8 @@ class MainActivity : ComponentActivity() {
                     developer = intent.getStringExtra("developer"),
                     releaseYear = intent.getIntExtra("release_year", 0).takeIf { it > 0 },
                     titleId = intent.getStringExtra("title_id"),
-                    isFavorite = intent.getBooleanExtra("is_favorite", false)
+                    isFavorite = intent.getBooleanExtra("is_favorite", false),
+                    isDownloaded = intent.getBooleanExtra("is_downloaded", true)
                 )
             }
         }
@@ -487,6 +488,12 @@ class MainActivity : ComponentActivity() {
                                 s?.copy(status = v)
                             }
                         }
+                    }
+                }
+                "com.nendo.argosy.DOWNLOAD_COMPLETED" -> {
+                    val gameId = intent.getLongExtra("game_id", -1)
+                    if (gameId > 0 && _dualScreenShowcase.value.gameId == gameId) {
+                        _dualScreenShowcase.update { it.copy(isDownloaded = true) }
                     }
                 }
             }
@@ -1385,6 +1392,7 @@ class MainActivity : ComponentActivity() {
             addAction(DualScreenBroadcasts.ACTION_MODAL_RESULT)
             addAction(DualScreenBroadcasts.ACTION_DIRECT_ACTION)
             addAction(DualScreenBroadcasts.ACTION_INLINE_UPDATE)
+            addAction("com.nendo.argosy.DOWNLOAD_COMPLETED")
         }
         val companionFilter = IntentFilter().apply {
             addAction(DualScreenBroadcasts.ACTION_COMPANION_RESUMED)

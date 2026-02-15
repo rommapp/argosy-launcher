@@ -14,12 +14,18 @@ class SessionStateStore(context: Context) {
         Context.MODE_PRIVATE
     )
 
-    fun setActiveSession(gameId: Long, channelName: String?, isHardcore: Boolean) {
+    fun setActiveSession(
+        gameId: Long,
+        channelName: String?,
+        isHardcore: Boolean,
+        sessionStartTimeMillis: Long
+    ) {
         prefs.edit()
             .putLong(KEY_GAME_ID, gameId)
             .putString(KEY_CHANNEL_NAME, channelName)
             .putBoolean(KEY_IS_HARDCORE, isHardcore)
             .putBoolean(KEY_HAS_SESSION, true)
+            .putLong(KEY_SESSION_START_TIME, sessionStartTimeMillis)
             .apply()
     }
 
@@ -29,6 +35,7 @@ class SessionStateStore(context: Context) {
             .putLong(KEY_GAME_ID, -1)
             .remove(KEY_CHANNEL_NAME)
             .putBoolean(KEY_IS_HARDCORE, false)
+            .putLong(KEY_SESSION_START_TIME, 0)
             .putString(KEY_COMPANION_SCREEN, "HOME")
             .putLong(KEY_DETAIL_GAME_ID, -1)
             .apply()
@@ -41,6 +48,9 @@ class SessionStateStore(context: Context) {
     fun getChannelName(): String? = prefs.getString(KEY_CHANNEL_NAME, null)
 
     fun isHardcore(): Boolean = prefs.getBoolean(KEY_IS_HARDCORE, false)
+
+    fun getSessionStartTimeMillis(): Long =
+        prefs.getLong(KEY_SESSION_START_TIME, 0)
 
     fun setSaveDirty(isDirty: Boolean) {
         prefs.edit().putBoolean(KEY_SAVE_DIRTY, isDirty).apply()
@@ -145,5 +155,6 @@ class SessionStateStore(context: Context) {
         private const val KEY_DETAIL_GAME_ID = "detail_game_id"
         private const val KEY_CAROUSEL_SECTION_INDEX = "carousel_section_index"
         private const val KEY_CAROUSEL_SELECTED_INDEX = "carousel_selected_index"
+        private const val KEY_SESSION_START_TIME = "session_start_time"
     }
 }

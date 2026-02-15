@@ -80,7 +80,10 @@ data class DualHomeGameUi(
     val description: String?,
     val developer: String?,
     val releaseYear: Int?,
-    val titleId: String?
+    val titleId: String?,
+    val genre: String? = null,
+    val gameModes: String? = null,
+    val franchises: String? = null
 )
 
 private val CARD_WIDTH = 100.dp
@@ -591,6 +594,26 @@ fun DualFilterOverlay(
     onCategoryTapped: (DualFilterCategory) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(focusedIndex) {
+        if (options.isNotEmpty() && focusedIndex in options.indices) {
+            val viewportHeight = listState.layoutInfo.viewportSize.height
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            val itemHeight = visibleItems.firstOrNull()?.size ?: 0
+            if (itemHeight > 0 && viewportHeight > 0) {
+                val centerOffset = (viewportHeight - itemHeight) / 2
+                val paddingBuffer = (itemHeight * 0.2f).toInt()
+                listState.animateScrollToItem(
+                    index = focusedIndex,
+                    scrollOffset = -centerOffset + paddingBuffer
+                )
+            } else {
+                listState.animateScrollToItem(focusedIndex)
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -620,6 +643,7 @@ fun DualFilterOverlay(
         }
 
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -826,6 +850,7 @@ fun broadcastGameSelection(context: Context, game: DualHomeGameUi) {
         putExtra("release_year", game.releaseYear ?: 0)
         putExtra("title_id", game.titleId)
         putExtra("is_favorite", game.isFavorite)
+        putExtra("is_downloaded", game.isPlayable)
     }
     context.sendBroadcast(intent)
 }

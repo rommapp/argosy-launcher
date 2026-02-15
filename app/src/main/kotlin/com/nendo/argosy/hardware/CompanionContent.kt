@@ -2,7 +2,6 @@ package com.nendo.argosy.hardware
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,21 +14,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,38 +43,40 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.coil.AppIconData
+import com.nendo.argosy.ui.theme.ALauncherColors
+import com.nendo.argosy.ui.util.touchOnly
+import kotlinx.coroutines.delay
 
-/**
- * Companion mode content for secondary display.
- * Shows header with channel/game info, save state indicator, and app bar.
- * Used when Argosy is not in foreground (game running, other app, etc.)
- */
 @Composable
 fun CompanionContent(
-    channelName: String?,
-    isHardcore: Boolean,
-    gameName: String?,
-    isDirty: Boolean,
+    state: CompanionInGameState,
+    sessionTimer: CompanionSessionTimer?,
     homeApps: List<String>,
-    onAppClick: (String) -> Unit
+    onAppClick: (String) -> Unit,
+    onTabChanged: (CompanionPanel) -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        CompanionHeader(
-            channelName = channelName,
-            isHardcore = isHardcore,
-            gameName = gameName,
-            isDirty = isDirty
+        CompanionTabHeader(
+            currentPanel = state.currentPanel,
+            onTabChanged = onTabChanged
         )
 
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-        )
+        ) {
+            when (state.currentPanel) {
+                CompanionPanel.DASHBOARD -> DashboardPanel(
+                    state = state,
+                    sessionTimer = sessionTimer
+                )
+            }
+        }
 
         if (homeApps.isNotEmpty()) {
             CompanionAppBar(
@@ -80,65 +88,293 @@ fun CompanionContent(
 }
 
 @Composable
-private fun CompanionHeader(
-    channelName: String?,
-    isHardcore: Boolean,
-    gameName: String?,
-    isDirty: Boolean
+private fun CompanionTabHeader(
+    currentPanel: CompanionPanel,
+    onTabChanged: (CompanionPanel) -> Unit
 ) {
-    val headerText = when {
-        isHardcore -> "Hardcore Mode"
-        channelName != null -> channelName
-        else -> gameName ?: "Playing"
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        CompanionPanel.entries.forEach { panel ->
+            val isSelected = panel == currentPanel
+            val backgroundColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(backgroundColor)
+                    .then(
+                        if (!isSelected) Modifier.touchOnly { onTabChanged(panel) }
+                        else Modifier
+                    )
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = panel.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = contentColor
+                )
+            }
+        }
     }
+}
 
+@Composable
+private fun DashboardPanel(
+    state: CompanionInGameState,
+    sessionTimer: CompanionSessionTimer?
+) {
+    if (!state.isLoaded) return
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 16.dp)
+    ) {
+        item { HeroGameCard(state) }
+        item { SessionTimerCard(sessionTimer) }
+        if (state.achievementCount > 0) {
+            item { AchievementProgress(state) }
+        }
+        item { PlayStatsCard(state) }
+    }
+}
+
+@Composable
+private fun HeroGameCard(state: CompanionInGameState) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xCC1E1E1E),
-                        Color.Transparent
+            .height(180.dp)
+    ) {
+        if (state.coverPath != null) {
+            AsyncImage(
+                model = state.coverPath,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.85f)
+                        ),
+                        startY = 40f
                     )
                 )
+        )
+
+        SaveStateIndicator(
+            isDirty = state.isDirty,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp)
+        )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = state.title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = state.platformName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+                if (state.developer != null) {
+                    MetadataDot()
+                    Text(
+                        text = state.developer,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (state.releaseYear != null) {
+                    MetadataDot()
+                    Text(
+                        text = state.releaseYear.toString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetadataDot() {
+    Text(
+        text = "  \u00B7  ",
+        style = MaterialTheme.typography.bodySmall,
+        color = Color.White.copy(alpha = 0.4f)
+    )
+}
+
+@Composable
+private fun SessionTimerCard(sessionTimer: CompanionSessionTimer?) {
+    if (sessionTimer == null) return
+
+    var activeMillis by remember { mutableLongStateOf(sessionTimer.getActiveMillis()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            activeMillis = sessionTimer.getActiveMillis()
+        }
+    }
+
+    val totalSeconds = activeMillis / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    val formatted = "%d:%02d:%02d".format(hours, minutes, seconds)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Session",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.6f)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = formatted,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            letterSpacing = 1.sp
+        )
+    }
+}
+
+@Composable
+private fun AchievementProgress(state: CompanionInGameState) {
+    val progress = if (state.achievementCount > 0) {
+        state.earnedAchievementCount.toFloat() / state.achievementCount
+    } else 0f
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = headerText,
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (channelName != null && gameName != null) {
-                    Text(
-                        text = gameName,
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            SaveStateIndicator(isDirty = isDirty)
+            Text(
+                text = "Achievements",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.6f)
+            )
+            Text(
+                text = "${state.earnedAchievementCount} / ${state.achievementCount}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = ALauncherColors.TrophyAmber
+            )
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = ALauncherColors.TrophyAmber,
+            trackColor = Color.White.copy(alpha = 0.12f),
+            strokeCap = StrokeCap.Round
+        )
     }
 }
 
 @Composable
-private fun SaveStateIndicator(isDirty: Boolean) {
-    Box(
+private fun PlayStatsCard(state: CompanionInGameState) {
+    Column(
         modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(top = 8.dp)
+    ) {
+        val hours = state.playTimeMinutes / 60
+        val mins = state.playTimeMinutes % 60
+        val timeText = when {
+            hours > 0 && mins > 0 -> "${hours}h ${mins}m"
+            hours > 0 -> "${hours}h"
+            mins > 0 -> "${mins}m"
+            else -> "0m"
+        }
+
+        StatRow(label = "Total Play Time", value = timeText)
+        Spacer(modifier = Modifier.height(8.dp))
+        StatRow(label = "Times Played", value = state.playCount.toString())
+    }
+}
+
+@Composable
+private fun StatRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.6f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+private fun SaveStateIndicator(
+    isDirty: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
             .size(32.dp)
             .clip(CircleShape)
             .background(
@@ -172,7 +408,7 @@ internal fun CompanionAppBar(
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-    androidx.compose.runtime.LaunchedEffect(focusedIndex) {
+    LaunchedEffect(focusedIndex) {
         if (focusedIndex >= 0) {
             listState.animateScrollToItem(focusedIndex)
         }
@@ -216,7 +452,7 @@ internal fun CompanionAppItem(
     Column(
         modifier = Modifier
             .width(64.dp)
-            .clickable(onClick = onClick)
+            .touchOnly(onClick)
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

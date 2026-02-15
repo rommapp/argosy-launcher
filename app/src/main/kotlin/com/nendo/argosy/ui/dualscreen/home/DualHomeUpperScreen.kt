@@ -103,7 +103,8 @@ data class DualHomeShowcaseState(
     val developer: String? = null,
     val releaseYear: Int? = null,
     val titleId: String? = null,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val isDownloaded: Boolean = true
 )
 
 @Composable

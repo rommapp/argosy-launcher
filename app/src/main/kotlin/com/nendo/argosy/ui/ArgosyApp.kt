@@ -837,24 +837,25 @@ fun ArgosyApp(
                         DualHomeUpperScreen(
                             state = showcaseState,
                             footerHints = {
+                                val actionLabel = if (showcaseState.isDownloaded) "Play" else "Download"
                                 com.nendo.argosy.ui.components.FooterBar(
                                     hints = when (viewMode) {
                                         "COLLECTION_GAMES" -> listOf(
                                             com.nendo.argosy.ui.components.InputButton.DPAD to "Navigate",
-                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
+                                            com.nendo.argosy.ui.components.InputButton.A to actionLabel,
                                             com.nendo.argosy.ui.components.InputButton.X to "Details",
                                             com.nendo.argosy.ui.components.InputButton.B to "Back"
                                         )
                                         "LIBRARY_GRID" -> listOf(
                                             com.nendo.argosy.ui.components.InputButton.LT_RT to "Letter",
-                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
+                                            com.nendo.argosy.ui.components.InputButton.A to actionLabel,
                                             com.nendo.argosy.ui.components.InputButton.X to "Details",
                                             com.nendo.argosy.ui.components.InputButton.Y to "Filters",
                                             com.nendo.argosy.ui.components.InputButton.B to "Back"
                                         )
                                         else -> listOf(
                                             com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
-                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
+                                            com.nendo.argosy.ui.components.InputButton.A to actionLabel,
                                             com.nendo.argosy.ui.components.InputButton.X to "Details",
                                             com.nendo.argosy.ui.components.InputButton.Y to if (showcaseState.isFavorite) "Unfavorite" else "Favorite",
                                             com.nendo.argosy.ui.components.InputButton.DPAD_UP to "Collections",

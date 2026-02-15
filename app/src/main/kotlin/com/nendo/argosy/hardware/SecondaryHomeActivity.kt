@@ -37,6 +37,7 @@ import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailLowerScreen
@@ -121,6 +122,9 @@ class SecondaryHomeActivity : ComponentActivity() {
     private var homeApps by mutableStateOf<List<String>>(emptyList())
     private var primaryColor by mutableStateOf<Int?>(null)
 
+    private var companionInGameState by mutableStateOf(CompanionInGameState())
+    private var companionSessionTimer: CompanionSessionTimer? = null
+
     private lateinit var viewModel: SecondaryHomeViewModel
     private lateinit var dualHomeViewModel: DualHomeViewModel
     private lateinit var sessionStateStore: SessionStateStore
@@ -166,6 +170,14 @@ class SecondaryHomeActivity : ComponentActivity() {
 
         isHardcore = sessionStateStore.isHardcore()
 
+        val activeGameId = sessionStateStore.getGameId()
+        if (isGameActive && activeGameId > 0) {
+            loadCompanionGameData(activeGameId)
+            companionSessionTimer = CompanionSessionTimer().also {
+                it.start(applicationContext)
+            }
+        }
+
         // Restore carousel position
         val savedSection = sessionStateStore.getCarouselSectionIndex()
         val savedSelected = sessionStateStore.getCarouselSelectedIndex()
@@ -210,6 +222,31 @@ class SecondaryHomeActivity : ComponentActivity() {
         startSelectSwapped = swapStartSelect
     }
 
+    private fun loadCompanionGameData(gameId: Long) {
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val platform = platformDao.getById(game.platformId)
+            val startTime = sessionStateStore.getSessionStartTimeMillis()
+            companionInGameState = CompanionInGameState(
+                gameId = gameId,
+                title = game.title,
+                coverPath = game.coverPath,
+                platformName = platform?.getDisplayName() ?: game.platformSlug,
+                developer = game.developer,
+                releaseYear = game.releaseYear,
+                playTimeMinutes = game.playTimeMinutes,
+                playCount = game.playCount,
+                achievementCount = game.achievementCount,
+                earnedAchievementCount = game.earnedAchievementCount,
+                sessionStartTimeMillis = startTime,
+                channelName = sessionStateStore.getChannelName(),
+                isHardcore = sessionStateStore.isHardcore(),
+                isDirty = sessionStateStore.isSaveDirty(),
+                isLoaded = true
+            )
+        }
+    }
+
     private fun persistCarouselPosition() {
         val state = dualHomeViewModel.uiState.value
         sessionStateStore.setCarouselPosition(
@@ -236,7 +273,9 @@ class SecondaryHomeActivity : ComponentActivity() {
     private val saveStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == ACTION_SAVE_STATE_CHANGED) {
-                isSaveDirty = intent.getBooleanExtra(EXTRA_IS_DIRTY, false)
+                val isDirty = intent.getBooleanExtra(EXTRA_IS_DIRTY, false)
+                isSaveDirty = isDirty
+                companionInGameState = companionInGameState.copy(isDirty = isDirty)
             }
         }
     }
@@ -257,12 +296,20 @@ class SecondaryHomeActivity : ComponentActivity() {
                     currentScreen = CompanionScreen.HOME
                     dualGameDetailViewModel = null
                     sessionStateStore.setCompanionScreen("HOME")
+                    loadCompanionGameData(gameId)
+                    companionSessionTimer?.stop(applicationContext)
+                    companionSessionTimer = CompanionSessionTimer().also {
+                        it.start(applicationContext)
+                    }
                 } else {
                     isGameActive = false
                     isHardcore = false
                     currentChannelName = null
                     isSaveDirty = false
                     sessionStateStore.setCompanionScreen("HOME")
+                    companionInGameState = CompanionInGameState()
+                    companionSessionTimer?.stop(applicationContext)
+                    companionSessionTimer = null
                 }
                 isInitialized = true
             }
@@ -285,6 +332,15 @@ class SecondaryHomeActivity : ComponentActivity() {
             when (intent?.action) {
                 ACTION_LIBRARY_REFRESH, ACTION_DOWNLOAD_COMPLETED -> {
                     viewModel.refresh()
+                    dualHomeViewModel.refresh()
+                    if (intent.action == ACTION_DOWNLOAD_COMPLETED) {
+                        val gameId = intent.getLongExtra(EXTRA_GAME_ID, -1)
+                        if (gameId > 0 && _showcaseState.value.gameId == gameId) {
+                            _showcaseState.value = _showcaseState.value.copy(
+                                isDownloaded = true
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -428,7 +484,8 @@ class SecondaryHomeActivity : ComponentActivity() {
                     developer = intent.getStringExtra("developer"),
                     releaseYear = intent.getIntExtra("release_year", 0).takeIf { it > 0 },
                     titleId = intent.getStringExtra("title_id"),
-                    isFavorite = intent.getBooleanExtra("is_favorite", false)
+                    isFavorite = intent.getBooleanExtra("is_favorite", false),
+                    isDownloaded = intent.getBooleanExtra("is_downloaded", true)
                 )
             }
         }
@@ -577,9 +634,8 @@ class SecondaryHomeActivity : ComponentActivity() {
                             isInitialized = isInitialized,
                             isArgosyForeground = isArgosyForeground,
                             isGameActive = isGameActive,
-                            isHardcore = isHardcore,
-                            channelName = currentChannelName,
-                            isSaveDirty = isSaveDirty,
+                            companionInGameState = companionInGameState,
+                            companionSessionTimer = companionSessionTimer,
                             homeApps = homeApps,
                             viewModel = viewModel,
                             dualHomeViewModel = dualHomeViewModel,
@@ -663,7 +719,12 @@ class SecondaryHomeActivity : ComponentActivity() {
                             onScreenshotViewed = { index ->
                                 broadcastScreenshotSelected(index)
                             },
-                            onDimTapped = { refocusMain() }
+                            onDimTapped = { refocusMain() },
+                            onTabChanged = { panel ->
+                                companionInGameState = companionInGameState.copy(
+                                    currentPanel = panel
+                                )
+                            }
                         )
                     }
                 }
@@ -1140,8 +1201,9 @@ class SecondaryHomeActivity : ComponentActivity() {
                     InputResult.HANDLED
                 } else {
                     val game = state.selectedGame
-                    if (game != null && game.isPlayable) {
-                        broadcastDirectAction("PLAY", game.id)
+                    if (game != null) {
+                        val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
+                        broadcastDirectAction(action, game.id)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
                 }
@@ -1228,10 +1290,11 @@ class SecondaryHomeActivity : ComponentActivity() {
             }
             GamepadEvent.Confirm -> {
                 val game = dualHomeViewModel.focusedCollectionGame()
-                if (game != null && game.isPlayable) {
-                    broadcastDirectAction("PLAY", game.id)
-                    InputResult.HANDLED
-                } else InputResult.HANDLED
+                if (game != null) {
+                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
+                    broadcastDirectAction(action, game.id)
+                }
+                InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
                 val game = dualHomeViewModel.focusedCollectionGame()
@@ -1311,10 +1374,11 @@ class SecondaryHomeActivity : ComponentActivity() {
             GamepadEvent.Confirm -> {
                 val state = dualHomeViewModel.uiState.value
                 val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
-                if (game != null && game.isPlayable) {
-                    broadcastDirectAction("PLAY", game.id)
-                    InputResult.HANDLED
-                } else InputResult.HANDLED
+                if (game != null) {
+                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
+                    broadcastDirectAction(action, game.id)
+                }
+                InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
                 val state = dualHomeViewModel.uiState.value
@@ -1831,6 +1895,8 @@ class SecondaryHomeActivity : ComponentActivity() {
         } catch (e: Exception) {
             // Receiver may not be registered
         }
+        companionSessionTimer?.stop(applicationContext)
+        companionSessionTimer = null
         super.onDestroy()
     }
 }
@@ -1847,9 +1913,8 @@ private fun SecondaryHomeContent(
     isInitialized: Boolean,
     isArgosyForeground: Boolean,
     isGameActive: Boolean,
-    isHardcore: Boolean,
-    channelName: String?,
-    isSaveDirty: Boolean,
+    companionInGameState: CompanionInGameState,
+    companionSessionTimer: CompanionSessionTimer?,
     homeApps: List<String>,
     viewModel: SecondaryHomeViewModel,
     dualHomeViewModel: DualHomeViewModel,
@@ -1869,7 +1934,8 @@ private fun SecondaryHomeContent(
     onDetailBack: () -> Unit,
     onOptionAction: (DualGameDetailViewModel, GameDetailOption) -> Unit,
     onScreenshotViewed: (Int) -> Unit,
-    onDimTapped: () -> Unit = {}
+    onDimTapped: () -> Unit = {},
+    onTabChanged: (CompanionPanel) -> Unit = {}
 ) {
     // Consume all back presses - SECONDARY_HOME should be a navigation dead-end
     BackHandler(enabled = true) {
@@ -1962,12 +2028,11 @@ private fun SecondaryHomeContent(
             exit = fadeOut()
         ) {
             CompanionContent(
-                channelName = channelName,
-                isHardcore = isHardcore,
-                gameName = null,
-                isDirty = isSaveDirty,
+                state = companionInGameState,
+                sessionTimer = companionSessionTimer,
                 homeApps = homeApps,
-                onAppClick = onAppClick
+                onAppClick = onAppClick,
+                onTabChanged = onTabChanged
             )
         }
     }

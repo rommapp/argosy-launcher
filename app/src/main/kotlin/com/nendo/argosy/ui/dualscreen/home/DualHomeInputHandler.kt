@@ -120,8 +120,9 @@ class DualHomeInputHandler(
                     InputResult.HANDLED
                 } else {
                     val game = state.selectedGame
-                    if (game != null && game.isPlayable) {
-                        onBroadcastDirectAction("PLAY", game.id)
+                    if (game != null) {
+                        val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
+                        onBroadcastDirectAction(action, game.id)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
                 }
@@ -207,8 +208,9 @@ class DualHomeInputHandler(
             }
             com.nendo.argosy.ui.input.GamepadEvent.Confirm -> {
                 val game = viewModel.focusedCollectionGame()
-                if (game != null && game.isPlayable) {
-                    onBroadcastDirectAction("PLAY", game.id)
+                if (game != null) {
+                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
+                    onBroadcastDirectAction(action, game.id)
                 }
                 InputResult.HANDLED
             }
@@ -287,8 +289,9 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.Confirm -> {
                 val state = viewModel.uiState.value
                 val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
-                if (game != null && game.isPlayable) {
-                    onBroadcastDirectAction("PLAY", game.id)
+                if (game != null) {
+                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
+                    onBroadcastDirectAction(action, game.id)
                 }
                 InputResult.HANDLED
             }

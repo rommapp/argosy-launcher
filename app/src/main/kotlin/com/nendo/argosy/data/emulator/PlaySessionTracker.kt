@@ -101,7 +101,9 @@ class PlaySessionTracker @Inject constructor(
     private fun broadcastSessionChanged(gameId: Long?, channelName: String?, isHardcore: Boolean) {
         // Write to SharedPreferences for companion process to read on startup
         if (gameId != null && gameId > 0) {
-            sessionStateStore.setActiveSession(gameId, channelName, isHardcore)
+            val startMillis = _activeSession.value?.startTime?.toEpochMilli()
+                ?: System.currentTimeMillis()
+            sessionStateStore.setActiveSession(gameId, channelName, isHardcore, startMillis)
         } else {
             sessionStateStore.clearSession()
         }

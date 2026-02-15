@@ -68,7 +68,7 @@ sealed class DualCollectionListItem {
 }
 
 enum class DualFilterCategory(val label: String) {
-    SEARCH("Search"), SOURCE("Source"), GENRE("Genre"), PLAYERS("Players")
+    SEARCH("Search"), SOURCE("Source"), GENRE("Genre"), PLAYERS("Players"), FRANCHISE("Franchise")
 }
 
 data class DualFilterOption(
@@ -80,6 +80,7 @@ data class DualActiveFilters(
     val source: String = "ALL",
     val genres: Set<String> = emptySet(),
     val players: Set<String> = emptySet(),
+    val franchises: Set<String> = emptySet(),
     val searchQuery: String = "",
     val platformId: Long? = null
 )
@@ -648,6 +649,13 @@ class DualHomeViewModel(
                     state.activeFilters.players + label
                 state.activeFilters.copy(players = updated)
             }
+            DualFilterCategory.FRANCHISE -> {
+                val updated = if (state.activeFilters.franchises.contains(label))
+                    state.activeFilters.franchises - label
+                else
+                    state.activeFilters.franchises + label
+                state.activeFilters.copy(franchises = updated)
+            }
             DualFilterCategory.SEARCH -> state.activeFilters
         }
         _uiState.update { it.copy(activeFilters = newFilters) }
@@ -660,6 +668,7 @@ class DualHomeViewModel(
             DualFilterCategory.SOURCE -> state.activeFilters.copy(source = "ALL")
             DualFilterCategory.GENRE -> state.activeFilters.copy(genres = emptySet())
             DualFilterCategory.PLAYERS -> state.activeFilters.copy(players = emptySet())
+            DualFilterCategory.FRANCHISE -> state.activeFilters.copy(franchises = emptySet())
             DualFilterCategory.SEARCH -> state.activeFilters.copy(searchQuery = "")
         }
         _uiState.update { it.copy(activeFilters = newFilters) }
@@ -802,16 +811,26 @@ class DualHomeViewModel(
         games: List<DualHomeGameUi>,
         filters: DualActiveFilters
     ): List<DualHomeGameUi> {
-        var result = games
-        when (filters.source) {
-            "PLAYABLE" -> result = result.filter { it.isPlayable }
-            "FAVORITES" -> result = result.filter { it.isFavorite }
+        return games.filter { game ->
+            val matchesSource = when (filters.source) {
+                "PLAYABLE" -> game.isPlayable
+                "FAVORITES" -> game.isFavorite
+                else -> true
+            }
+            val matchesSearch = filters.searchQuery.isBlank() ||
+                game.title.contains(filters.searchQuery, ignoreCase = true)
+            val matchesGenre = filters.genres.isEmpty() ||
+                filters.genres.contains(game.genre)
+            val matchesPlayers = filters.players.isEmpty() ||
+                game.gameModes?.split(",")
+                    ?.map { it.trim() }
+                    ?.any { it in filters.players } == true
+            val matchesFranchise = filters.franchises.isEmpty() ||
+                game.franchises?.split(",")
+                    ?.map { it.trim() }
+                    ?.any { it in filters.franchises } == true
+            matchesSource && matchesSearch && matchesGenre && matchesPlayers && matchesFranchise
         }
-        if (filters.searchQuery.isNotBlank()) {
-            val query = filters.searchQuery.lowercase()
-            result = result.filter { it.title.lowercase().contains(query) }
-        }
-        return result
     }
 
     private fun buildFilterOptions(
@@ -826,7 +845,7 @@ class DualHomeViewModel(
             )
             DualFilterCategory.GENRE -> {
                 val genres = allLibraryGames
-                    .mapNotNull { it.description }
+                    .mapNotNull { it.genre }
                     .flatMap { it.split(",") }
                     .map { it.trim() }
                     .filter { it.isNotBlank() }
@@ -836,10 +855,23 @@ class DualHomeViewModel(
             }
             DualFilterCategory.PLAYERS -> {
                 val players = allLibraryGames
-                    .mapNotNull { it.status }
+                    .mapNotNull { it.gameModes }
+                    .flatMap { it.split(",") }
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
                     .distinct()
                     .sorted()
                 players.map { DualFilterOption(it, filters.players.contains(it)) }
+            }
+            DualFilterCategory.FRANCHISE -> {
+                val franchises = allLibraryGames
+                    .mapNotNull { it.franchises }
+                    .flatMap { it.split(",") }
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .sorted()
+                franchises.map { DualFilterOption(it, filters.franchises.contains(it)) }
             }
             DualFilterCategory.SEARCH -> emptyList()
         }
@@ -868,7 +900,10 @@ class DualHomeViewModel(
             description = description,
             developer = developer,
             releaseYear = releaseYear,
-            titleId = null
+            titleId = null,
+            genre = genre,
+            gameModes = gameModes,
+            franchises = franchises
         )
     }
 }

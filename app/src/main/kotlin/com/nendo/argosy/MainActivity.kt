@@ -196,6 +196,15 @@ class MainActivity : ComponentActivity() {
                     isFavorite = intent.getBooleanExtra("is_favorite", false),
                     isDownloaded = intent.getBooleanExtra("is_downloaded", true)
                 )
+
+                val gameId = intent.getLongExtra("game_id", -1)
+                if (gameId > 0) {
+                    activityScope.launch(Dispatchers.IO) {
+                        val entity = gameDao.getById(gameId) ?: return@launch
+                        val rommId = entity.rommId ?: return@launch
+                        fetchAchievementsUseCase(rommId, gameId)
+                    }
+                }
             }
         }
     }
@@ -569,6 +578,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var emulatorResolver: EmulatorResolver
+
+    @Inject
+    lateinit var fetchAchievementsUseCase: com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(this) }
 

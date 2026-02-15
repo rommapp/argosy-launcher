@@ -851,6 +851,7 @@ fun ArgosyApp(
                                             com.nendo.argosy.ui.components.InputButton.B to "Back"
                                         )
                                         "LIBRARY_GRID" -> listOf(
+                                            com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
                                             com.nendo.argosy.ui.components.InputButton.LT_RT to "Letter",
                                             com.nendo.argosy.ui.components.InputButton.A to actionLabel,
                                             com.nendo.argosy.ui.components.InputButton.X to "Details",

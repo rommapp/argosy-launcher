@@ -452,6 +452,7 @@ fun DualHomeLibraryGrid(
     columns: Int,
     availableLetters: List<String>,
     currentLetter: String,
+    platformLabel: String = "All",
     showLetterOverlay: Boolean = false,
     overlayLetter: String = "",
     onGameTapped: (Int) -> Unit,
@@ -470,37 +471,49 @@ fun DualHomeLibraryGrid(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(columns),
-                state = gridState,
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                itemsIndexed(games, key = { _, g -> g.id }) { index, game ->
-                    LibraryGridCard(
-                        game = game,
-                        isFocused = index == focusedIndex,
-                        onClick = { onGameTapped(index) }
+            Text(
+                text = "$platformLabel (${games.size})",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 6.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Row(modifier = Modifier.weight(1f)) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    state = gridState,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    itemsIndexed(games, key = { _, g -> g.id }) { index, game ->
+                        LibraryGridCard(
+                            game = game,
+                            isFocused = index == focusedIndex,
+                            onClick = { onGameTapped(index) }
+                        )
+                    }
+                }
+
+                if (availableLetters.size >= 9) {
+                    AlphabetSidebar(
+                        availableLetters = availableLetters,
+                        currentLetter = currentLetter,
+                        onLetterClick = onLetterClick,
+                        modifier = Modifier.fillMaxHeight(),
+                        topPadding = 0.dp,
+                        bottomPadding = 0.dp
                     )
                 }
-            }
-
-            if (availableLetters.size >= 9) {
-                AlphabetSidebar(
-                    availableLetters = availableLetters,
-                    currentLetter = currentLetter,
-                    onLetterClick = onLetterClick,
-                    modifier = Modifier.fillMaxHeight(),
-                    topPadding = 0.dp,
-                    bottomPadding = 0.dp
-                )
             }
         }
 

@@ -1421,6 +1421,18 @@ class SecondaryHomeActivity : ComponentActivity() {
                     InputResult.HANDLED
                 } else InputResult.HANDLED
             }
+            GamepadEvent.PrevSection -> {
+                dualHomeViewModel.cycleLibraryPlatform(-1) {
+                    broadcastLibraryGameSelection()
+                }
+                InputResult.HANDLED
+            }
+            GamepadEvent.NextSection -> {
+                dualHomeViewModel.cycleLibraryPlatform(1) {
+                    broadcastLibraryGameSelection()
+                }
+                InputResult.HANDLED
+            }
             GamepadEvent.SecondaryAction -> {
                 dualHomeViewModel.toggleFilterOverlay()
                 InputResult.HANDLED

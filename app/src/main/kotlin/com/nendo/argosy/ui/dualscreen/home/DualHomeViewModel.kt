@@ -111,7 +111,8 @@ data class DualHomeUiState(
     val filterFocusedIndex: Int = 0,
     val activeFilters: DualActiveFilters = DualActiveFilters(),
     val showLetterOverlay: Boolean = false,
-    val overlayLetter: String = ""
+    val overlayLetter: String = "",
+    val libraryPlatformLabel: String = "All"
 ) {
     val currentSection: DualHomeSection?
         get() = sections.getOrNull(currentSectionIndex)
@@ -453,15 +454,20 @@ class DualHomeViewModel(
     fun enterLibraryGrid(onLoaded: (() -> Unit)? = null) {
         _uiState.update { it.copy(
             viewMode = DualHomeViewMode.LIBRARY_GRID,
-            activeFilters = DualActiveFilters()
+            activeFilters = DualActiveFilters(),
+            libraryPlatformLabel = "All"
         )}
         loadLibraryGames(onLoaded)
     }
 
     fun enterLibraryGridForPlatform(platformId: Long, onLoaded: (() -> Unit)? = null) {
+        val platformName = _uiState.value.sections
+            .filterIsInstance<DualHomeSection.Platform>()
+            .find { it.id == platformId }?.displayName ?: "All"
         _uiState.update { it.copy(
             viewMode = DualHomeViewMode.LIBRARY_GRID,
-            activeFilters = DualActiveFilters(platformId = platformId)
+            activeFilters = DualActiveFilters(platformId = platformId),
+            libraryPlatformLabel = platformName
         )}
         loadLibraryGamesForPlatform(platformId, onLoaded)
     }
@@ -473,6 +479,34 @@ class DualHomeViewModel(
             onLoaded?.invoke()
         } else {
             enterLibraryGrid(onLoaded)
+        }
+    }
+
+    fun cycleLibraryPlatform(direction: Int, onLoaded: (() -> Unit)? = null) {
+        val platformSections = _uiState.value.sections.filterIsInstance<DualHomeSection.Platform>()
+        val currentPlatformId = _uiState.value.activeFilters.platformId
+
+        // Build list: null (All) + platform IDs
+        val options = listOf<Long?>(null) + platformSections.map { it.id }
+        val currentIndex = if (currentPlatformId == null) 0
+            else options.indexOf(currentPlatformId).takeIf { it >= 0 } ?: 0
+        val nextIndex = (currentIndex + direction + options.size) % options.size
+        val nextPlatformId = options[nextIndex]
+
+        val nextLabel = if (nextPlatformId != null) {
+            platformSections.find { it.id == nextPlatformId }?.displayName ?: "All"
+        } else "All"
+
+        _uiState.update { it.copy(
+            activeFilters = it.activeFilters.copy(platformId = nextPlatformId),
+            libraryFocusedIndex = 0,
+            libraryPlatformLabel = nextLabel
+        )}
+
+        if (nextPlatformId != null) {
+            loadLibraryGamesForPlatform(nextPlatformId, onLoaded)
+        } else {
+            loadLibraryGames(onLoaded)
         }
     }
 

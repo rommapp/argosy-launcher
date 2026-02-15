@@ -102,6 +102,7 @@ fun DualHomeLowerContent(
                         columns = uiState.libraryColumns,
                         availableLetters = uiState.availableLetters,
                         currentLetter = uiState.currentLetter,
+                        platformLabel = uiState.libraryPlatformLabel,
                         showLetterOverlay = uiState.showLetterOverlay,
                         overlayLetter = uiState.overlayLetter,
                         onGameTapped = onGridGameTapped,

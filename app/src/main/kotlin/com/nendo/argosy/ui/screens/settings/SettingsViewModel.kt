@@ -37,6 +37,7 @@ import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.github.UpdateState
+import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.update.AppInstaller
 import com.nendo.argosy.libretro.LibretroCoreManager
@@ -227,14 +228,14 @@ class SettingsViewModel @Inject constructor(
     private fun observeConnectionState() {
         romMRepository.connectionState.onEach { connectionState ->
             val status = when (connectionState) {
-                is RomMRepository.ConnectionState.Connected -> ConnectionStatus.ONLINE
+                is ConnectionState.Connected -> ConnectionStatus.ONLINE
                 else -> {
                     val prefs = preferencesRepository.userPreferences.first()
                     if (prefs.rommBaseUrl.isNullOrBlank()) ConnectionStatus.NOT_CONFIGURED
                     else ConnectionStatus.OFFLINE
                 }
             }
-            val version = (connectionState as? RomMRepository.ConnectionState.Connected)?.version
+            val version = (connectionState as? ConnectionState.Connected)?.version
             serverDelegate.updateState(_uiState.value.server.copy(
                 connectionStatus = status,
                 rommVersion = version
@@ -540,10 +541,10 @@ class SettingsViewModel @Inject constructor(
             val connectionState = romMRepository.connectionState.value
             val connectionStatus = when {
                 prefs.rommBaseUrl.isNullOrBlank() -> ConnectionStatus.NOT_CONFIGURED
-                connectionState is RomMRepository.ConnectionState.Connected -> ConnectionStatus.ONLINE
+                connectionState is ConnectionState.Connected -> ConnectionStatus.ONLINE
                 else -> ConnectionStatus.OFFLINE
             }
-            val rommVersion = (connectionState as? RomMRepository.ConnectionState.Connected)?.version
+            val rommVersion = (connectionState as? ConnectionState.Connected)?.version
 
             val downloadedSize = gameRepository.getDownloadedGamesSize()
             val downloadedCount = gameRepository.getDownloadedGamesCount()

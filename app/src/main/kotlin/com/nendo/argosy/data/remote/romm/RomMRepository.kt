@@ -25,28 +25,19 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
-import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,6 +48,7 @@ private const val FAVORITES_COLLECTION_NAME = "Favorites"
 
 @Singleton
 class RomMRepository @Inject constructor(
+    private val connectionManager: RomMConnectionManager,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
@@ -72,9 +64,8 @@ class RomMRepository @Inject constructor(
     private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>,
     private val syncCoordinator: dagger.Lazy<SyncCoordinator>
 ) {
-    private var api: RomMApi? = null
-    private var baseUrl: String = ""
-    private var accessToken: String? = null
+    private val api: RomMApi? get() = connectionManager.getApi()
+    private val baseUrl: String get() = connectionManager.getBaseUrl()
     private val syncMutex = Mutex()
     private var raProgressionRefreshedThisSession = false
 
@@ -83,36 +74,11 @@ class RomMRepository @Inject constructor(
     private val _syncProgress = MutableStateFlow(SyncProgress())
     val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
 
-    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+    val connectionState: StateFlow<ConnectionState> get() = connectionManager.connectionState
 
-    sealed class ConnectionState {
-        data object Disconnected : ConnectionState()
-        data object Connecting : ConnectionState()
-        data class Connected(val version: String) : ConnectionState()
-        data class Failed(val reason: String) : ConnectionState()
-    }
+    fun isConnected(): Boolean = connectionManager.isConnected()
 
-    private fun getConnectedVersion(): String? {
-        return (_connectionState.value as? ConnectionState.Connected)?.version
-    }
-
-    private fun isVersionAtLeast(minVersion: String): Boolean {
-        val current = getConnectedVersion() ?: return false
-        return compareVersions(current, minVersion) >= 0
-    }
-
-    private fun compareVersions(v1: String, v2: String): Int {
-        val parts1 = v1.split("-")[0].split(".").mapNotNull { it.toIntOrNull() }
-        val parts2 = v2.split("-")[0].split(".").mapNotNull { it.toIntOrNull() }
-        val maxLen = maxOf(parts1.size, parts2.size)
-        for (i in 0 until maxLen) {
-            val p1 = parts1.getOrElse(i) { 0 }
-            val p2 = parts2.getOrElse(i) { 0 }
-            if (p1 != p2) return p1.compareTo(p2)
-        }
-        return 0
-    }
+    fun isVersionAtLeast(minVersion: String): Boolean = connectionManager.isVersionAtLeast(minVersion)
 
     private fun buildRomsQueryParams(
         platformId: Long? = null,
@@ -136,12 +102,10 @@ class RomMRepository @Inject constructor(
     }
 
     suspend fun initialize() {
-        val prefs = userPreferencesRepository.preferences.first()
-        Logger.info(TAG, "initialize: baseUrl=${prefs.rommBaseUrl?.take(30)}, hasToken=${prefs.rommToken != null}")
-        if (!prefs.rommBaseUrl.isNullOrBlank()) {
-            val result = connect(prefs.rommBaseUrl, prefs.rommToken)
-            Logger.info(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
-            if (result is RomMResult.Success && prefs.rommToken != null) {
+        connectionManager.initialize()
+        if (connectionManager.isConnected()) {
+            val prefs = userPreferencesRepository.preferences.first()
+            if (prefs.rommToken != null) {
                 refreshRAProgressionOnStartup()
             }
         }
@@ -211,85 +175,11 @@ class RomMRepository @Inject constructor(
         return cachedRAProgression[raGameId] ?: emptyList()
     }
 
-    suspend fun connect(url: String, token: String? = null): RomMResult<String> {
-        _connectionState.value = ConnectionState.Connecting
+    suspend fun connect(url: String, token: String? = null): RomMResult<String> =
+        connectionManager.connect(url, token)
 
-        val urlsToTry = buildUrlsToTry(url)
-        var lastError: String? = null
-
-        for (candidateUrl in urlsToTry) {
-            val normalizedUrl = candidateUrl.trimEnd('/') + "/"
-            try {
-                val newApi = createApi(normalizedUrl, token)
-                val response = newApi.heartbeat()
-
-                if (response.isSuccessful) {
-                    baseUrl = normalizedUrl
-                    accessToken = token
-                    api = newApi
-                    saveSyncRepository.get().setApi(api)
-                    biosRepository.setApi(api)
-                    val version = response.body()?.version ?: "unknown"
-                    _connectionState.value = ConnectionState.Connected(version)
-                    Logger.info(TAG, "connect: success at $normalizedUrl, version=$version")
-                    return RomMResult.Success(normalizedUrl)
-                } else {
-                    lastError = "Server returned ${response.code()}"
-                    Logger.info(TAG, "connect: heartbeat failed at $normalizedUrl with ${response.code()}")
-                }
-            } catch (e: Exception) {
-                lastError = e.message ?: "Connection failed"
-                Logger.info(TAG, "connect: exception at $normalizedUrl: ${e.message}")
-            }
-        }
-
-        _connectionState.value = ConnectionState.Failed(lastError ?: "Connection failed")
-        return RomMResult.Error(lastError ?: "Connection failed")
-    }
-
-    private fun buildUrlsToTry(url: String): List<String> {
-        val trimmed = url.trim()
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            return listOf(trimmed)
-        }
-
-        val hostPart = trimmed.removePrefix("//")
-        val isIpAddress = hostPart.split("/").first().split(":").first().let { host ->
-            host.matches(Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")) ||
-                host == "localhost"
-        }
-
-        return if (isIpAddress) {
-            listOf("http://$hostPart", "https://$hostPart")
-        } else {
-            listOf("https://$hostPart", "http://$hostPart")
-        }
-    }
-
-    suspend fun login(username: String, password: String): RomMResult<String> {
-        val currentApi = api ?: return RomMResult.Error("Not connected")
-
-        return try {
-            val scope = "me.read me.write platforms.read roms.read assets.read assets.write roms.user.read roms.user.write collections.read collections.write firmware.read"
-            val response = currentApi.login(username, password, scope)
-            if (response.isSuccessful) {
-                val token = response.body()?.accessToken
-                    ?: return RomMResult.Error("No token received")
-
-                accessToken = token
-                api = createApi(baseUrl, token)
-                saveSyncRepository.get().setApi(api)
-                biosRepository.setApi(api)
-
-                userPreferencesRepository.setRomMCredentials(baseUrl, token, username)
-                RomMResult.Success(token)
-            } else {
-                RomMResult.Error("Login failed", response.code())
-            }
-        } catch (e: Exception) {
-            RomMResult.Error(e.message ?: "Login failed")
-        }
-    }
+    suspend fun login(username: String, password: String): RomMResult<String> =
+        connectionManager.login(username, password)
 
     suspend fun syncLibrary(
         onProgress: ((current: Int, total: Int, platformName: String) -> Unit)? = null
@@ -1334,51 +1224,9 @@ class RomMRepository @Inject constructor(
         }
     }
 
-    fun isConnected(): Boolean = _connectionState.value is ConnectionState.Connected
+    fun disconnect() = connectionManager.disconnect()
 
-    fun disconnect() {
-        api = null
-        biosRepository.setApi(null)
-        accessToken = null
-        baseUrl = ""
-        _connectionState.value = ConnectionState.Disconnected
-    }
-
-    private fun createApi(baseUrl: String, token: String?): RomMApi {
-        val moshi = Moshi.Builder().build()
-
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.HEADERS
-        }
-
-        val authInterceptor = Interceptor { chain ->
-            val request = if (token != null) {
-                chain.request().newBuilder()
-                    .addHeader("Authorization", "Bearer $token")
-                    .build()
-            } else {
-                chain.request()
-            }
-            chain.proceed(request)
-        }
-
-        val client = OkHttpClient.Builder()
-            .addInterceptor(authInterceptor)
-            .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .connectionPool(okhttp3.ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
-            .dns(okhttp3.Dns.SYSTEM)
-            .build()
-
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(client)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(RomMApi::class.java)
-    }
+    suspend fun checkConnection(retryCount: Int = 2) = connectionManager.checkConnection(retryCount)
 
     suspend fun updateUserRating(gameId: Long, rating: Int): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
@@ -1424,43 +1272,6 @@ class RomMRepository @Inject constructor(
         } catch (e: Exception) {
             Logger.error(TAG, "updateRomUserProps failed: ${e.message}")
             false
-        }
-    }
-
-    suspend fun checkConnection(retryCount: Int = 2) {
-        if (api == null) {
-            Logger.info(TAG, "checkConnection: api is null, initializing")
-            initialize()
-            return
-        }
-
-        val currentApi = api ?: return
-        try {
-            val response = currentApi.heartbeat()
-            if (response.isSuccessful) {
-                val version = response.body()?.version ?: "unknown"
-                _connectionState.value = ConnectionState.Connected(version)
-                Logger.info(TAG, "checkConnection: connected, version=$version")
-            } else {
-                Logger.info(TAG, "checkConnection: heartbeat failed with ${response.code()}, reinitializing")
-                _connectionState.value = ConnectionState.Disconnected
-                api = null
-                initialize()
-            }
-        } catch (e: Exception) {
-            Logger.info(TAG, "checkConnection: exception: ${e.message}, retries left=$retryCount")
-            _connectionState.value = ConnectionState.Disconnected
-            api = null
-            if (retryCount > 0) {
-                delay(1000)
-                initialize()
-                if (_connectionState.value !is ConnectionState.Connected && retryCount > 1) {
-                    delay(2000)
-                    checkConnection(retryCount - 1)
-                }
-            } else {
-                initialize()
-            }
         }
     }
 
@@ -1516,7 +1327,7 @@ class RomMRepository @Inject constructor(
 
     suspend fun syncFavorites(): RomMResult<Unit> {
         val currentApi = api ?: return RomMResult.Error("Not connected")
-        if (_connectionState.value !is ConnectionState.Connected) {
+        if (!connectionManager.isConnected()) {
             return RomMResult.Error("Not connected")
         }
 
@@ -1569,7 +1380,7 @@ class RomMRepository @Inject constructor(
 
     suspend fun syncFavorite(rommId: Long, isFavorite: Boolean): Boolean {
         val currentApi = api ?: return false
-        if (_connectionState.value !is ConnectionState.Connected) return false
+        if (!connectionManager.isConnected()) return false
 
         return try {
             val collection = getOrCreateFavoritesCollection() ?: return false
@@ -1594,7 +1405,7 @@ class RomMRepository @Inject constructor(
 
     suspend fun refreshFavoritesIfNeeded(): RomMResult<Unit> {
         val currentApi = api ?: return RomMResult.Error("Not connected")
-        if (_connectionState.value !is ConnectionState.Connected) {
+        if (!connectionManager.isConnected()) {
             return RomMResult.Error("Not connected")
         }
 
@@ -1662,8 +1473,8 @@ class RomMRepository @Inject constructor(
             Logger.info(TAG, "syncCollections: not connected (no api)")
             return@withContext RomMResult.Error("Not connected")
         }
-        if (_connectionState.value !is ConnectionState.Connected) {
-            Logger.info(TAG, "syncCollections: not connected (state=${_connectionState.value})")
+        if (!connectionManager.isConnected()) {
+            Logger.info(TAG, "syncCollections: not connected (state=${connectionManager.connectionState.value})")
             return@withContext RomMResult.Error("Not connected")
         }
 
@@ -1781,7 +1592,7 @@ class RomMRepository @Inject constructor(
         val localId = collectionDao.insertCollection(entity)
 
         val currentApi = api
-        if (currentApi == null || _connectionState.value !is ConnectionState.Connected) {
+        if (currentApi == null || !connectionManager.isConnected()) {
             return RomMResult.Success(localId)
         }
 
@@ -1815,7 +1626,7 @@ class RomMRepository @Inject constructor(
 
         val currentApi = api
         val rommId = collection.rommId
-        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+        if (currentApi == null || rommId == null || !connectionManager.isConnected()) {
             return RomMResult.Success(Unit)
         }
 
@@ -1840,7 +1651,7 @@ class RomMRepository @Inject constructor(
 
         val currentApi = api
         val rommId = collection.rommId
-        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+        if (currentApi == null || rommId == null || !connectionManager.isConnected()) {
             return RomMResult.Success(Unit)
         }
 
@@ -1861,7 +1672,7 @@ class RomMRepository @Inject constructor(
         val collection = collectionDao.getCollectionById(collectionId)
         val currentApi = api
         val rommId = collection?.rommId
-        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+        if (currentApi == null || rommId == null || !connectionManager.isConnected()) {
             return RomMResult.Success(Unit)
         }
 
@@ -1884,7 +1695,7 @@ class RomMRepository @Inject constructor(
         val collection = collectionDao.getCollectionById(collectionId)
         val currentApi = api
         val rommId = collection?.rommId
-        if (currentApi == null || rommId == null || _connectionState.value !is ConnectionState.Connected) {
+        if (currentApi == null || rommId == null || !connectionManager.isConnected()) {
             return RomMResult.Success(Unit)
         }
 

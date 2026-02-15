@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.domain.usecase.save.CheckNewSavesUseCase
 import dagger.assisted.Assisted
@@ -70,7 +71,7 @@ class SaveSyncWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
-        val isConnected = romMRepository.connectionState.value is RomMRepository.ConnectionState.Connected
+        val isConnected = romMRepository.connectionState.value is ConnectionState.Connected
         if (!isConnected) {
             Logger.info(TAG, "[SaveSync] WORKER | RomM not connected, skipping sync")
             return Result.success()

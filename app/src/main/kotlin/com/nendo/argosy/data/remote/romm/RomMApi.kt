@@ -139,6 +139,63 @@ interface RomMApi {
         @Path("fileName", encoded = true) fileName: String
     ): Response<ResponseBody>
 
+    // Device endpoints (RomM 4.7.0+)
+
+    @POST("api/devices")
+    suspend fun registerDevice(
+        @Body device: RomMDeviceRegistration
+    ): Response<RomMDevice>
+
+    @GET("api/devices")
+    suspend fun getDevices(): Response<List<RomMDevice>>
+
+    @PUT("api/devices/{id}")
+    suspend fun updateDevice(
+        @Path("id") deviceId: String,
+        @Body device: RomMDeviceRegistration
+    ): Response<RomMDevice>
+
+    // Device-aware save endpoints (RomM 4.7.0+)
+
+    @Multipart
+    @POST("api/saves")
+    suspend fun uploadSaveWithDevice(
+        @Query("rom_id") romId: Long,
+        @Query("emulator") emulator: String?,
+        @Query("device_id") deviceId: String,
+        @Query("overwrite") overwrite: Boolean = false,
+        @Part saveFile: MultipartBody.Part
+    ): Response<RomMSave>
+
+    @Multipart
+    @PUT("api/saves/{id}")
+    suspend fun updateSaveWithDevice(
+        @Path("id") saveId: Long,
+        @Query("device_id") deviceId: String,
+        @Part saveFile: MultipartBody.Part
+    ): Response<RomMSave>
+
+    @Streaming
+    @GET("api/saves/{id}/content/{fileName}")
+    suspend fun downloadSaveContentWithDevice(
+        @Path("id") saveId: Long,
+        @Path("fileName", encoded = true) fileName: String,
+        @Query("device_id") deviceId: String,
+        @Query("optimistic") optimistic: Boolean = true
+    ): Response<ResponseBody>
+
+    @GET("api/saves")
+    suspend fun getSavesByRomWithDevice(
+        @Query("rom_id") romId: Long,
+        @Query("device_id") deviceId: String
+    ): Response<List<RomMSave>>
+
+    @GET("api/saves/{id}")
+    suspend fun getSaveWithDevice(
+        @Path("id") saveId: Long,
+        @Query("device_id") deviceId: String
+    ): Response<RomMSave>
+
     @Streaming
     @GET
     suspend fun downloadRaw(

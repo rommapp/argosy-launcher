@@ -123,6 +123,7 @@ class SaveSyncRepository @Inject constructor(
     private val syncQueueManager: SyncQueueManager
 ) {
     private var api: RomMApi? = null
+    private var deviceId: String? = null
 
     val syncQueueState: StateFlow<SyncQueueState> = syncQueueManager.state
 
@@ -131,6 +132,12 @@ class SaveSyncRepository @Inject constructor(
     }
 
     fun getApi(): RomMApi? = api
+
+    fun setDeviceId(id: String?) {
+        deviceId = id
+    }
+
+    fun getDeviceId(): String? = deviceId
 
     fun clearCompletedOperations() = syncQueueManager.clearCompletedOperations()
 

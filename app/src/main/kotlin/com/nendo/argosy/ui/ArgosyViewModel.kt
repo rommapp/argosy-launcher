@@ -24,6 +24,7 @@ import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.ui.components.SaveConflictInfo
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.hardware.BrightnessController
 import com.nendo.argosy.hardware.VolumeController
@@ -184,7 +185,7 @@ class ArgosyViewModel @Inject constructor(
         viewModelScope.launch {
             var wasConnected = false
             romMRepository.connectionState.collect { state ->
-                val isConnected = state is RomMRepository.ConnectionState.Connected
+                val isConnected = state is ConnectionState.Connected
                 if (isConnected && !wasConnected) {
                     syncCoordinator.processQueue()
                 }
@@ -320,8 +321,8 @@ class ArgosyViewModel @Inject constructor(
     ) { connection, downloads, emulatorUpdates ->
         val downloadCount = downloads.activeDownloads.size + downloads.queue.size
         DrawerState(
-            rommConnected = connection is RomMRepository.ConnectionState.Connected,
-            rommConnecting = connection is RomMRepository.ConnectionState.Connecting,
+            rommConnected = connection is ConnectionState.Connected,
+            rommConnecting = connection is ConnectionState.Connecting,
             downloadCount = downloadCount,
             emulatorUpdatesAvailable = emulatorUpdates
         )

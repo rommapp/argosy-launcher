@@ -8,6 +8,7 @@ import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncStatus as DbSyncStatus
 import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
@@ -45,7 +46,7 @@ class SyncCoordinator @Inject constructor(
 
     suspend fun processQueue(): ProcessResult = withContext(Dispatchers.IO) {
         val romM = romMRepository.get()
-        if (romM.connectionState.value !is RomMRepository.ConnectionState.Connected) {
+        if (romM.connectionState.value !is ConnectionState.Connected) {
             Logger.debug(TAG, "processQueue: Not connected to RomM, skipping")
             return@withContext ProcessResult.NotConnected
         }
@@ -60,7 +61,7 @@ class SyncCoordinator @Inject constructor(
                 Logger.debug(TAG, "processQueue: Processing ${items.size} items at priority $priority")
 
                 for (item in items) {
-                    if (romM.connectionState.value !is RomMRepository.ConnectionState.Connected) {
+                    if (romM.connectionState.value !is ConnectionState.Connected) {
                         Logger.debug(TAG, "processQueue: Connection lost, stopping")
                         break
                     }

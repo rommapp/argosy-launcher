@@ -17,7 +17,8 @@ data class RomMSave(
     @Json(name = "file_size_bytes") val fileSizeBytes: Long = 0,
     @Json(name = "download_path") val downloadPath: String? = null,
     @Json(name = "updated_at") val updatedAt: String,
-    @Json(name = "created_at") val createdAt: String? = null
+    @Json(name = "created_at") val createdAt: String? = null,
+    @Json(name = "device_syncs") val deviceSyncs: List<RomMDeviceSync>? = null
 )
 
 @JsonClass(generateAdapter = true)

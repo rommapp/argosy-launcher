@@ -26,6 +26,8 @@ class UserPreferencesRepository @Inject constructor(
         val ROMM_URL = stringPreferencesKey("romm_url")
         val ROMM_USERNAME = stringPreferencesKey("romm_username")
         val ROMM_TOKEN = stringPreferencesKey("romm_token")
+        val ROMM_DEVICE_ID = stringPreferencesKey("romm_device_id")
+        val ROMM_DEVICE_CLIENT_VERSION = stringPreferencesKey("romm_device_client_version")
         val RA_USERNAME = stringPreferencesKey("ra_username")
         val RA_TOKEN = stringPreferencesKey("ra_token")
         val ROM_STORAGE_PATH = stringPreferencesKey("rom_storage_path")
@@ -166,6 +168,8 @@ class UserPreferencesRepository @Inject constructor(
             rommBaseUrl = prefs[Keys.ROMM_URL],
             rommUsername = prefs[Keys.ROMM_USERNAME],
             rommToken = prefs[Keys.ROMM_TOKEN],
+            rommDeviceId = prefs[Keys.ROMM_DEVICE_ID],
+            rommDeviceClientVersion = prefs[Keys.ROMM_DEVICE_CLIENT_VERSION],
             raUsername = prefs[Keys.RA_USERNAME],
             raToken = prefs[Keys.RA_TOKEN],
             romStoragePath = prefs[Keys.ROM_STORAGE_PATH],
@@ -352,9 +356,14 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null) {
         dataStore.edit { prefs ->
+            val previousUrl = prefs[Keys.ROMM_URL]
             prefs[Keys.ROMM_URL] = baseUrl
             prefs[Keys.ROMM_TOKEN] = token
             if (username != null) prefs[Keys.ROMM_USERNAME] = username
+            if (previousUrl != null && previousUrl != baseUrl) {
+                prefs.remove(Keys.ROMM_DEVICE_ID)
+                prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
+            }
         }
     }
 
@@ -363,6 +372,22 @@ class UserPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ROMM_URL)
             prefs.remove(Keys.ROMM_TOKEN)
             prefs.remove(Keys.ROMM_USERNAME)
+            prefs.remove(Keys.ROMM_DEVICE_ID)
+            prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
+        }
+    }
+
+    suspend fun setRommDeviceId(deviceId: String, clientVersion: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.ROMM_DEVICE_ID] = deviceId
+            prefs[Keys.ROMM_DEVICE_CLIENT_VERSION] = clientVersion
+        }
+    }
+
+    suspend fun clearRommDeviceId() {
+        dataStore.edit { prefs ->
+            prefs.remove(Keys.ROMM_DEVICE_ID)
+            prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
         }
     }
 
@@ -1290,6 +1315,8 @@ data class UserPreferences(
     val rommBaseUrl: String? = null,
     val rommUsername: String? = null,
     val rommToken: String? = null,
+    val rommDeviceId: String? = null,
+    val rommDeviceClientVersion: String? = null,
     val raUsername: String? = null,
     val raToken: String? = null,
     val romStoragePath: String? = null,

@@ -137,16 +137,26 @@ private fun DashboardPanel(
 ) {
     if (!state.isLoaded) return
 
+    var sessionMillis by remember { mutableLongStateOf(sessionTimer?.getActiveMillis() ?: 0L) }
+
+    LaunchedEffect(sessionTimer) {
+        if (sessionTimer == null) return@LaunchedEffect
+        while (true) {
+            delay(1000)
+            sessionMillis = sessionTimer.getActiveMillis()
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item { HeroGameCard(state) }
-        item { SessionTimerCard(sessionTimer) }
+        item { SessionTimerCard(sessionMillis) }
         if (state.achievementCount > 0) {
             item { AchievementProgress(state) }
         }
-        item { PlayStatsCard(state) }
+        item { PlayStatsCard(state, sessionMillis) }
     }
 }
 
@@ -242,17 +252,8 @@ private fun MetadataDot() {
 }
 
 @Composable
-private fun SessionTimerCard(sessionTimer: CompanionSessionTimer?) {
-    if (sessionTimer == null) return
-
-    var activeMillis by remember { mutableLongStateOf(sessionTimer.getActiveMillis()) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            activeMillis = sessionTimer.getActiveMillis()
-        }
-    }
+private fun SessionTimerCard(activeMillis: Long) {
+    if (activeMillis <= 0L) return
 
     val totalSeconds = activeMillis / 1000
     val hours = totalSeconds / 3600
@@ -326,15 +327,17 @@ private fun AchievementProgress(state: CompanionInGameState) {
 }
 
 @Composable
-private fun PlayStatsCard(state: CompanionInGameState) {
+private fun PlayStatsCard(state: CompanionInGameState, sessionMillis: Long) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
             .padding(top = 8.dp)
     ) {
-        val hours = state.playTimeMinutes / 60
-        val mins = state.playTimeMinutes % 60
+        val sessionMinutes = (sessionMillis / 60_000).toInt()
+        val totalMinutes = state.playTimeMinutes + sessionMinutes
+        val hours = totalMinutes / 60
+        val mins = totalMinutes % 60
         val timeText = when {
             hours > 0 && mins > 0 -> "${hours}h ${mins}m"
             hours > 0 -> "${hours}h"

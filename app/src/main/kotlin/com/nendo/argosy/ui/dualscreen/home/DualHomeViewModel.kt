@@ -629,6 +629,40 @@ class DualHomeViewModel(
         _uiState.update { it.copy(filterFocusedIndex = newIndex) }
     }
 
+    fun jumpFilterToNextLetter() {
+        val state = _uiState.value
+        val options = state.filterOptions
+        if (options.isEmpty()) return
+        val currentLetter = options[state.filterFocusedIndex].label.firstOrNull()?.uppercaseChar()
+        val nextIndex = options.indexOfFirst { opt ->
+            val first = opt.label.firstOrNull()?.uppercaseChar()
+            first != null && first != currentLetter
+                && options.indexOf(opt) > state.filterFocusedIndex
+        }
+        if (nextIndex >= 0) {
+            _uiState.update { it.copy(filterFocusedIndex = nextIndex) }
+        }
+    }
+
+    fun jumpFilterToPreviousLetter() {
+        val state = _uiState.value
+        val options = state.filterOptions
+        if (options.isEmpty()) return
+        val currentLetter = options[state.filterFocusedIndex].label.firstOrNull()?.uppercaseChar()
+        val prevGroupStart = options.indexOfLast { opt ->
+            val first = opt.label.firstOrNull()?.uppercaseChar()
+            first != null && first != currentLetter
+                && options.indexOf(opt) < state.filterFocusedIndex
+        }
+        if (prevGroupStart >= 0) {
+            val targetLetter = options[prevGroupStart].label.firstOrNull()?.uppercaseChar()
+            val groupStart = options.indexOfFirst { opt ->
+                opt.label.firstOrNull()?.uppercaseChar() == targetLetter
+            }
+            _uiState.update { it.copy(filterFocusedIndex = groupStart.coerceAtLeast(0)) }
+        }
+    }
+
     fun confirmFilter() {
         val state = _uiState.value
         val option = state.filterOptions.getOrNull(state.filterFocusedIndex) ?: return

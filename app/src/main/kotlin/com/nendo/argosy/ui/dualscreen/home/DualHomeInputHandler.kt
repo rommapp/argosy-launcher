@@ -348,6 +348,14 @@ class DualHomeInputHandler(
                 viewModel.nextFilterCategory()
                 InputResult.HANDLED
             }
+            com.nendo.argosy.ui.input.GamepadEvent.PrevTrigger -> {
+                viewModel.jumpFilterToPreviousLetter()
+                InputResult.HANDLED
+            }
+            com.nendo.argosy.ui.input.GamepadEvent.NextTrigger -> {
+                viewModel.jumpFilterToNextLetter()
+                InputResult.HANDLED
+            }
             com.nendo.argosy.ui.input.GamepadEvent.Confirm -> {
                 viewModel.confirmFilter()
                 InputResult.HANDLED

@@ -130,6 +130,7 @@ enum class FocusMove {
 data class LibraryGameUi(
     val id: Long,
     val title: String,
+    val sortTitle: String,
     val platformId: Long,
     val platformSlug: String,
     val platformDisplayName: String,
@@ -552,7 +553,7 @@ class LibraryViewModel @Inject constructor(
                         val matchesPlayers = filters.players.isEmpty() ||
                             game.gameModes?.split(",")?.map { it.trim() }?.any { it in filters.players } == true
                         matchesSearch && matchesGenre && matchesPlayers
-                    }.sortedBy { it.title.lowercase() }
+                    }.sortedBy { it.sortTitle }
 
                     val availableLetters = computeAvailableLetters(filteredGames)
 
@@ -576,12 +577,12 @@ class LibraryViewModel @Inject constructor(
 
     private fun computeAvailableLetters(games: List<GameListItem>): List<String> {
         val letters = games.mapNotNull { game ->
-            val first = game.title.uppercase().firstOrNull()
+            val first = game.sortTitle.uppercase().firstOrNull()
             if (first?.isLetter() == true) first.toString() else null
         }.distinct().sorted()
 
         return if (games.any { game ->
-            val first = game.title.firstOrNull()
+            val first = game.sortTitle.firstOrNull()
             first != null && !first.isLetter()
         }) {
             listOf("#") + letters
@@ -592,7 +593,7 @@ class LibraryViewModel @Inject constructor(
 
     private fun computeLetterForGame(game: LibraryGameUi?): String {
         if (game == null) return ""
-        val first = game.title.uppercase().firstOrNull() ?: return "#"
+        val first = game.sortTitle.uppercase().firstOrNull() ?: return "#"
         return if (first.isLetter()) first.toString() else "#"
     }
 
@@ -1127,6 +1128,7 @@ class LibraryViewModel @Inject constructor(
         return LibraryGameUi(
             id = id,
             title = title,
+            sortTitle = sortTitle,
             platformId = platformId,
             platformSlug = platformSlug,
             platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
@@ -1147,6 +1149,7 @@ class LibraryViewModel @Inject constructor(
         return LibraryGameUi(
             id = id,
             title = title,
+            sortTitle = sortTitle,
             platformId = platformId,
             platformSlug = platformSlug,
             platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,

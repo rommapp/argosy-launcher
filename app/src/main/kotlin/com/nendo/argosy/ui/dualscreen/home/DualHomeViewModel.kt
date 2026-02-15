@@ -746,7 +746,7 @@ class DualHomeViewModel(
 
     private fun computeLetters(games: List<DualHomeGameUi>): List<String> {
         return games.map { game ->
-            val ch = game.title.first().uppercaseChar()
+            val ch = game.sortTitle.first().uppercaseChar()
             if (ch.isDigit()) "#" else ch.toString()
         }.distinct().let { raw ->
             val hasHash = raw.contains("#")
@@ -756,7 +756,7 @@ class DualHomeViewModel(
     }
 
     private fun letterForGame(game: DualHomeGameUi): String {
-        val ch = game.title.first().uppercaseChar()
+        val ch = game.sortTitle.first().uppercaseChar()
         return if (ch.isDigit()) "#" else ch.toString()
     }
 
@@ -885,6 +885,7 @@ class DualHomeViewModel(
         return DualHomeGameUi(
             id = id,
             title = title,
+            sortTitle = sortTitle,
             coverPath = coverPath,
             platformName = platformSlug,
             platformSlug = platformSlug,

@@ -65,6 +65,7 @@ import java.io.File
 data class DualHomeGameUi(
     val id: Long,
     val title: String,
+    val sortTitle: String,
     val coverPath: String?,
     val platformName: String,
     val platformSlug: String,

@@ -412,6 +412,7 @@ class GetUnifiedSavesUseCaseTest {
         saveSize = 8192,
         cachePath = "$gameId/${cachedAt.epochSecond}/save.srm",
         note = note,
+        channelName = note,
         isLocked = isLocked
     )
 

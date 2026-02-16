@@ -288,8 +288,7 @@ object EmulatorRegistry {
             id = "citron",
             packageName = "org.citron.emu",
             displayName = "Citron",
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://git.citron-emu.org/citron/emulator/releases"
+            supportedPlatforms = setOf("switch")
         ),
         // NOTE: Kenji-NX is an active fork of Ryujinx for Android
         EmulatorDef(
@@ -958,8 +957,7 @@ object EmulatorRegistry {
             baseId = "citron",
             displayNamePrefix = "Citron",
             packagePatterns = listOf("org.citron.*"),
-            supportedPlatforms = setOf("switch"),
-            downloadUrl = "https://git.citron-emu.org/citron/emulator/releases"
+            supportedPlatforms = setOf("switch")
         ),
         EmulatorFamily(
             baseId = "eden",

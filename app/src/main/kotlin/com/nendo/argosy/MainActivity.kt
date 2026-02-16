@@ -1186,6 +1186,8 @@ class MainActivity : ComponentActivity() {
                             Log.w(TAG, "Channel switch restore failed: ${result.message}")
                         }
                     }
+                } else {
+                    restoreCachedSaveUseCase.clearActiveSave(gameId, emulatorId)
                 }
             }
 

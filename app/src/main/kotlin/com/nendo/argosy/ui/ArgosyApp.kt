@@ -314,8 +314,8 @@ fun ArgosyApp(
     LaunchedEffect(pendingOverlay) {
         val eventName = pendingOverlay ?: return@LaunchedEffect
         when (eventName) {
-            "LeftStickClick" -> openQuickMenu()
-            "RightStickClick" -> openQuickSettings()
+            DualScreenBroadcasts.OVERLAY_QUICK_MENU -> openQuickMenu()
+            DualScreenBroadcasts.OVERLAY_QUICK_SETTINGS -> openQuickSettings()
             else -> openDrawer()
         }
         activity?.clearPendingOverlay()

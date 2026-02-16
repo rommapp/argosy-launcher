@@ -1175,7 +1175,11 @@ class SecondaryHomeActivity : ComponentActivity() {
                 dualHomeViewModel.startDrawerForwarding()
                 sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
                     setPackage(packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, when (event) {
+                        GamepadEvent.LeftStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_MENU
+                        GamepadEvent.RightStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_SETTINGS
+                        else -> DualScreenBroadcasts.OVERLAY_MENU
+                    })
                 })
                 InputResult.HANDLED
             }
@@ -1338,7 +1342,11 @@ class SecondaryHomeActivity : ComponentActivity() {
                 dualHomeViewModel.startDrawerForwarding()
                 sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
                     setPackage(packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, when (event) {
+                        GamepadEvent.LeftStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_MENU
+                        GamepadEvent.RightStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_SETTINGS
+                        else -> DualScreenBroadcasts.OVERLAY_MENU
+                    })
                 })
                 InputResult.HANDLED
             }
@@ -1394,7 +1402,11 @@ class SecondaryHomeActivity : ComponentActivity() {
                 dualHomeViewModel.startDrawerForwarding()
                 sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
                     setPackage(packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, when (event) {
+                        GamepadEvent.LeftStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_MENU
+                        GamepadEvent.RightStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_SETTINGS
+                        else -> DualScreenBroadcasts.OVERLAY_MENU
+                    })
                 })
                 InputResult.HANDLED
             }
@@ -1489,7 +1501,11 @@ class SecondaryHomeActivity : ComponentActivity() {
                 dualHomeViewModel.startDrawerForwarding()
                 sendBroadcast(Intent(DualScreenBroadcasts.ACTION_OPEN_OVERLAY).apply {
                     setPackage(packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, event::class.simpleName)
+                    putExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME, when (event) {
+                        GamepadEvent.LeftStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_MENU
+                        GamepadEvent.RightStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_SETTINGS
+                        else -> DualScreenBroadcasts.OVERLAY_MENU
+                    })
                 })
                 InputResult.HANDLED
             }

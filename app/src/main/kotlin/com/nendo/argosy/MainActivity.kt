@@ -122,7 +122,8 @@ class MainActivity : ComponentActivity() {
                 DualScreenBroadcasts.ACTION_OPEN_OVERLAY -> {
                     isOverlayFocused = true
                     _pendingOverlayEvent.value =
-                        intent.getStringExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME) ?: "Menu"
+                        intent.getStringExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME)
+                            ?: DualScreenBroadcasts.OVERLAY_MENU
                     refocusMain()
                 }
                 DualScreenBroadcasts.ACTION_REFOCUS_UPPER -> {

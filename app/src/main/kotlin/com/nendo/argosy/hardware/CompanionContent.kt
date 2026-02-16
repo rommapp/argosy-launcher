@@ -53,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.screens.secondaryhome.DrawerAppUi
 import com.nendo.argosy.ui.theme.Dimens
 import kotlinx.coroutines.Job
@@ -94,6 +95,13 @@ fun CompanionContent(
             .background(Color.Black)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+            SystemStatusBar(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                contentColor = Color.White.copy(alpha = 0.7f)
+            )
+
             CompanionTabHeader(
                 currentPanel = state.currentPanel,
                 onTabChanged = onTabChanged

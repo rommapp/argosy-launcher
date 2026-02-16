@@ -867,9 +867,8 @@ private fun GameDetailModals(
         state = uiState.saveChannel,
         savePath = uiState.saveChannel.savePath,
         onRenameTextChange = viewModel::updateRenameText,
-        onTabSelect = viewModel::switchSaveTab,
-        onEntryClick = viewModel::setSaveCacheFocusIndex,
-        onEntryLongClick = viewModel::handleSaveCacheLongPress,
+        onSlotClick = viewModel::setSlotIndex,
+        onHistoryClick = viewModel::setHistoryIndex,
         onDismiss = viewModel::dismissSaveCacheDialog
     )
 

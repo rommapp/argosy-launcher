@@ -53,7 +53,7 @@ import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailTab
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel
 import com.nendo.argosy.ui.dualscreen.gamedetail.GameDetailOption
-import com.nendo.argosy.ui.dualscreen.gamedetail.SaveFocusColumn
+import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.dualscreen.home.DualHomeFocusZone
 import com.nendo.argosy.ui.dualscreen.home.DualHomeLowerContent
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
@@ -1097,12 +1097,13 @@ class SecondaryHomeActivity : ComponentActivity() {
         com.nendo.argosy.ui.dualscreen.home.broadcastGameSelection(this, game)
     }
 
-    private fun broadcastDirectAction(type: String, gameId: Long) {
+    private fun broadcastDirectAction(type: String, gameId: Long, channelName: String? = null) {
         sendBroadcast(
             Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
                 setPackage(packageName)
                 putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
                 putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
+                channelName?.let { putExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME, it) }
             }
         )
     }
@@ -1763,7 +1764,7 @@ class SecondaryHomeActivity : ComponentActivity() {
         when (option) {
             GameDetailOption.PLAY -> {
                 if (vm.uiState.value.isPlayable) {
-                    broadcastDirectAction("PLAY", gameId)
+                    broadcastDirectAction("PLAY", gameId, vm.uiState.value.activeChannel)
                 } else {
                     broadcastDirectAction("DOWNLOAD", gameId)
                 }

@@ -501,9 +501,9 @@ class StateCacheManager @Inject constructor(
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
             val response = if (state.rommSaveId != null) {
-                api.updateSave(state.rommSaveId, filePart)
+                api.updateSave(state.rommSaveId, saveFile = filePart)
             } else {
-                api.uploadSave(rommId, state.emulatorId, filePart)
+                api.uploadSave(rommId, state.emulatorId, saveFile = filePart)
             }
 
             if (response.isSuccessful) {

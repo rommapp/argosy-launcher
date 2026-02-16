@@ -17,18 +17,19 @@ class ResolveConflictUseCase @Inject constructor(
     suspend operator fun invoke(
         gameId: Long,
         emulatorId: String,
-        resolution: Resolution
+        resolution: Resolution,
+        channelName: String? = null
     ): Result {
         return when (resolution) {
             Resolution.KEEP_LOCAL -> {
-                when (val result = saveSyncRepository.uploadSave(gameId, emulatorId)) {
+                when (val result = saveSyncRepository.uploadSave(gameId, emulatorId, channelName = channelName)) {
                     is SaveSyncResult.Success -> Result.Success
                     is SaveSyncResult.Error -> Result.Error(result.message)
                     else -> Result.Error("Unexpected result")
                 }
             }
             Resolution.KEEP_SERVER -> {
-                when (val result = saveSyncRepository.downloadSave(gameId, emulatorId)) {
+                when (val result = saveSyncRepository.downloadSave(gameId, emulatorId, channelName = channelName)) {
                     is SaveSyncResult.Success -> Result.Success
                     is SaveSyncResult.Error -> Result.Error(result.message)
                     else -> Result.Error("Unexpected result")

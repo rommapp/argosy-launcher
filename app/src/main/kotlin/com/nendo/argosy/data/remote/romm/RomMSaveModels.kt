@@ -18,6 +18,7 @@ data class RomMSave(
     @Json(name = "download_path") val downloadPath: String? = null,
     @Json(name = "updated_at") val updatedAt: String,
     @Json(name = "created_at") val createdAt: String? = null,
+    @Json(name = "slot") val slot: String? = null,
     @Json(name = "device_syncs") val deviceSyncs: List<RomMDeviceSync>? = null
 )
 
@@ -25,4 +26,9 @@ data class RomMSave(
 data class RomMSaveListResponse(
     @Json(name = "items") val items: List<RomMSave>? = null,
     @Json(name = "total") val total: Int? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMDeleteSavesRequest(
+    @Json(name = "saves") val saves: List<Long>
 )

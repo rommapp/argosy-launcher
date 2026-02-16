@@ -46,6 +46,8 @@ import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.sync.SaveFilePayload
 import com.nendo.argosy.data.remote.romm.RomMApi
+import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
+import com.nendo.argosy.data.remote.romm.RomMDeviceIdRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -70,11 +72,12 @@ import javax.inject.Singleton
 private const val TAG = "SaveSyncRepository"
 private const val DEFAULT_SAVE_NAME = "argosy-latest"
 private const val MIN_VALID_SAVE_SIZE_BYTES = 100L
+private const val AUTOCLEANUP_LIMIT = 10
 private val TIMESTAMP_ONLY_PATTERN = Regex("""^\d{4}-\d{2}-\d{2}[_-]\d{2}[_-]\d{2}[_-]\d{2}$""")
 
 
 sealed class SaveSyncResult {
-    data object Success : SaveSyncResult()
+    data class Success(val rommSaveId: Long? = null, val serverTimestamp: Instant? = null) : SaveSyncResult()
     data class Conflict(
         val gameId: Long,
         val localTimestamp: Instant,
@@ -124,6 +127,7 @@ class SaveSyncRepository @Inject constructor(
 ) {
     private var api: RomMApi? = null
     private var deviceId: String? = null
+    private val sessionOnOlderSave = mutableMapOf<Long, Boolean>()
 
     val syncQueueState: StateFlow<SyncQueueState> = syncQueueManager.state
 
@@ -138,6 +142,29 @@ class SaveSyncRepository @Inject constructor(
     }
 
     fun getDeviceId(): String? = deviceId
+
+    fun setSessionOnOlderSave(gameId: Long, isOlder: Boolean) {
+        sessionOnOlderSave[gameId] = isOlder
+    }
+
+    fun clearSessionOnOlderSave(gameId: Long) {
+        sessionOnOlderSave.remove(gameId)
+    }
+
+    fun isSessionOnOlderSave(gameId: Long): Boolean =
+        sessionOnOlderSave[gameId] ?: false
+
+    suspend fun deleteServerSaves(saveIds: List<Long>): Boolean = withContext(Dispatchers.IO) {
+        if (saveIds.isEmpty()) return@withContext true
+        val api = this@SaveSyncRepository.api ?: return@withContext false
+        try {
+            val response = api.deleteSaves(RomMDeleteSavesRequest(saveIds))
+            response.isSuccessful
+        } catch (e: Exception) {
+            Logger.error(TAG, "deleteServerSaves: failed for $saveIds", e)
+            false
+        }
+    }
 
     fun clearCompletedOperations() = syncQueueManager.clearCompletedOperations()
 
@@ -295,7 +322,7 @@ class SaveSyncRepository @Inject constructor(
         val api = this@SaveSyncRepository.api ?: return@withContext emptyList()
 
         val response = try {
-            api.getSavesByRom(rommId)
+            if (deviceId != null) api.getSavesByRomWithDevice(rommId, deviceId!!) else api.getSavesByRom(rommId)
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD | getSavesByRom failed | gameId=$gameId, rommId=$rommId", e)
             return@withContext emptyList()
@@ -519,7 +546,7 @@ class SaveSyncRepository @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 if (prepared.isTemporary) fileToUpload.delete()
                 tempTrailerFile?.delete()
-                return@withContext SaveSyncResult.Success
+                return@withContext SaveSyncResult.Success()
             }
 
             val romFile = game.localPath?.let { File(it) }
@@ -537,9 +564,11 @@ class SaveSyncRepository @Inject constructor(
             val serverSaves = checkSavesForGame(gameId, rommId)
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Server saves found | count=${serverSaves.size}, files=${serverSaves.map { it.fileName }}")
 
-            // For GCI format, prefer ZIP bundles over single .gci files
             val latestServerSave = if (channelName != null) {
-                serverSaves.find { File(it.fileName).nameWithoutExtension.equals(channelName, ignoreCase = true) }
+                serverSaves
+                    .filter { it.slot == channelName }
+                    .maxByOrNull { parseTimestamp(it.updatedAt) }
+                    ?: serverSaves.find { File(it.fileName).nameWithoutExtension.equals(channelName, ignoreCase = true) }
             } else {
                 val candidates = serverSaves.filter { isLatestSaveFileName(it.fileName, romBaseName) }
                 if (isGciBundle && candidates.size > 1) {
@@ -560,12 +589,19 @@ class SaveSyncRepository @Inject constructor(
                             romBaseName != null && baseName.equals(romBaseName, ignoreCase = true)
                     }
                 }
-                // For GCI bundles, prefer ZIP over single .gci
                 if (isGciBundle && candidates.size > 1) {
                     candidates.find { it.fileName.endsWith(".zip", ignoreCase = true) }
                         ?: candidates.firstOrNull()
                 } else {
                     candidates.firstOrNull()
+                }
+            }
+
+            if (!forceOverwrite && channelName != null && deviceId != null) {
+                if (isSessionOnOlderSave(gameId)) {
+                    Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Session started on older save -- conflict for channel=$channelName")
+                    val serverTime = latestServerSave?.let { parseTimestamp(it.updatedAt) } ?: Instant.now()
+                    return@withContext SaveSyncResult.Conflict(gameId, localModified, serverTime)
                 }
             }
 
@@ -591,7 +627,7 @@ class SaveSyncRepository @Inject constructor(
             if (needsGciMigration) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | GCI migration: deleting old single-file save | saveId=${existingServerSave!!.id}, fileName=${existingServerSave.fileName}")
                 try {
-                    val deleteResponse = api.deleteSave(existingServerSave.id)
+                    val deleteResponse = api.deleteSaves(RomMDeleteSavesRequest(listOf(existingServerSave.id)))
                     if (deleteResponse.isSuccessful) {
                         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | GCI migration: old save deleted successfully")
                     } else {
@@ -603,7 +639,8 @@ class SaveSyncRepository @Inject constructor(
             }
 
             val serverSaveIdToUpdate = if (needsGciMigration) {
-                // Don't update, create new
+                null
+            } else if (channelName != null) {
                 null
             } else if (serverSaves.isNotEmpty()) {
                 existingServerSave?.id
@@ -625,17 +662,27 @@ class SaveSyncRepository @Inject constructor(
             val requestBody = uploadFile.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
+            val useAutocleanup = channelName != null
             var response = if (serverSaveIdToUpdate != null) {
-                api.updateSave(serverSaveIdToUpdate, filePart)
+                if (deviceId != null) api.updateSaveWithDevice(serverSaveIdToUpdate, deviceId!!, slot = channelName, filePart)
+                else api.updateSave(serverSaveIdToUpdate, slot = channelName, filePart)
             } else {
-                api.uploadSave(rommId, resolvedEmulatorId, filePart)
+                if (deviceId != null) api.uploadSaveWithDevice(rommId, resolvedEmulatorId, deviceId!!, overwrite = forceOverwrite, slot = channelName, autocleanup = useAutocleanup, autocleanupLimit = if (useAutocleanup) AUTOCLEANUP_LIMIT else null, saveFile = filePart)
+                else api.uploadSave(rommId, resolvedEmulatorId, slot = channelName, autocleanup = useAutocleanup, autocleanupLimit = if (useAutocleanup) AUTOCLEANUP_LIMIT else null, filePart)
             }
 
-            if (!response.isSuccessful && serverSaveIdToUpdate != null) {
+            if (!response.isSuccessful && response.code() != 409 && serverSaveIdToUpdate != null) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Update failed, retrying as new upload | status=${response.code()}")
                 val retryRequestBody = uploadFile.asRequestBody("application/octet-stream".toMediaType())
                 val retryFilePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, retryRequestBody)
-                response = api.uploadSave(rommId, resolvedEmulatorId, retryFilePart)
+                response = if (deviceId != null) api.uploadSaveWithDevice(rommId, resolvedEmulatorId, deviceId!!, overwrite = forceOverwrite, slot = channelName, autocleanup = useAutocleanup, autocleanupLimit = if (useAutocleanup) AUTOCLEANUP_LIMIT else null, saveFile = retryFilePart)
+                else api.uploadSave(rommId, resolvedEmulatorId, slot = channelName, autocleanup = useAutocleanup, autocleanupLimit = if (useAutocleanup) AUTOCLEANUP_LIMIT else null, retryFilePart)
+            }
+
+            if (response.code() == 409) {
+                val serverTime = latestServerSave?.let { parseTimestamp(it.updatedAt) } ?: Instant.now()
+                Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Decision=CONFLICT | Server returned 409 (device out of sync)")
+                return@withContext SaveSyncResult.Conflict(gameId, localModified, serverTime)
             }
 
             if (response.isSuccessful) {
@@ -668,7 +715,7 @@ class SaveSyncRepository @Inject constructor(
                     durationMs = System.currentTimeMillis() - uploadStartTime
                 )
 
-                SaveSyncResult.Success
+                SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTimestamp)
             } else {
                 val errorBody = response.errorBody()?.string()
                 Logger.error(TAG, "[SaveSync] UPLOAD gameId=$gameId | HTTP failed | status=${response.code()}, body=$errorBody")
@@ -696,6 +743,97 @@ class SaveSyncRepository @Inject constructor(
         } finally {
             if (prepared.isTemporary) fileToUpload.delete()
             tempTrailerFile?.delete()
+        }
+    }
+
+    suspend fun uploadCacheEntry(
+        gameId: Long,
+        rommId: Long,
+        emulatorId: String,
+        channelName: String,
+        cacheFile: File,
+        contentHash: String?,
+        overwrite: Boolean = false
+    ): SaveSyncResult = withContext(Dispatchers.IO) {
+        Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId channel=$channelName | Starting cache upload | file=${cacheFile.name}, size=${cacheFile.length()}, overwrite=$overwrite")
+        val api = this@SaveSyncRepository.api
+            ?: return@withContext SaveSyncResult.NotConfigured
+
+        if (!cacheFile.exists() || cacheFile.length() <= MIN_VALID_SAVE_SIZE_BYTES) {
+            Logger.warn(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Cache file missing or empty | exists=${cacheFile.exists()}, size=${cacheFile.length()}")
+            return@withContext SaveSyncResult.Error("Cache file not valid")
+        }
+
+        val game = gameDao.getById(gameId)
+            ?: return@withContext SaveSyncResult.Error("Game not found")
+
+        val resolvedEmulatorId = if (emulatorId == "default" || emulatorId.isBlank()) {
+            resolveEmulatorForGame(game) ?: return@withContext SaveSyncResult.Error("Cannot determine emulator")
+        } else {
+            emulatorId
+        }
+
+        if (!overwrite && deviceId != null) {
+            if (isSessionOnOlderSave(gameId)) {
+                val serverSaves = checkSavesForGame(gameId, rommId)
+                val latestForSlot = serverSaves
+                    .filter { it.slot == channelName }
+                    .maxByOrNull { parseTimestamp(it.updatedAt) }
+                val serverTime = latestForSlot?.let { parseTimestamp(it.updatedAt) } ?: Instant.now()
+                val localTime = Instant.ofEpochMilli(cacheFile.lastModified())
+                Logger.warn(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Session started on older save -- conflict for channel=$channelName | local=$localTime, server=$serverTime")
+                return@withContext SaveSyncResult.Conflict(gameId, localTime, serverTime)
+            }
+        }
+
+        try {
+            val ext = cacheFile.extension
+            val uploadFileName = if (ext.isNotEmpty()) "$channelName.$ext" else channelName
+
+            val requestBody = cacheFile.asRequestBody("application/octet-stream".toMediaType())
+            val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
+
+            val response = if (deviceId != null) {
+                api.uploadSaveWithDevice(
+                    romId = rommId,
+                    emulator = resolvedEmulatorId,
+                    deviceId = deviceId!!,
+                    overwrite = overwrite,
+                    slot = channelName,
+                    autocleanup = true,
+                    autocleanupLimit = AUTOCLEANUP_LIMIT,
+                    saveFile = filePart
+                )
+            } else {
+                api.uploadSave(
+                    romId = rommId,
+                    emulator = resolvedEmulatorId,
+                    slot = channelName,
+                    autocleanup = true,
+                    autocleanupLimit = AUTOCLEANUP_LIMIT,
+                    saveFile = filePart
+                )
+            }
+
+            if (response.code() == 409) {
+                Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Server returned 409 (device out of sync for slot=$channelName)")
+                return@withContext SaveSyncResult.Conflict(gameId, Instant.now(), Instant.now())
+            }
+
+            if (response.isSuccessful) {
+                val serverSave = response.body()
+                    ?: return@withContext SaveSyncResult.Error("Empty response from server")
+                val serverTime = parseTimestamp(serverSave.updatedAt)
+                Logger.info(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Complete | serverSaveId=${serverSave.id}, channel=$channelName, serverTime=$serverTime")
+                SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTime)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | HTTP failed | status=${response.code()}, body=$errorBody")
+                SaveSyncResult.Error("Upload failed: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Exception during upload", e)
+            SaveSyncResult.Error(e.message ?: "Upload failed")
         }
     }
 
@@ -747,7 +885,7 @@ class SaveSyncRepository @Inject constructor(
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
 
         val serverSave = try {
-            api.getSave(saveId).body()
+            (if (deviceId != null) api.getSaveWithDevice(saveId, deviceId!!) else api.getSave(saveId)).body()
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | getSave API call failed", e)
             return@withContext SaveSyncResult.Error("Failed to get save info: ${e.message}")
@@ -1139,7 +1277,7 @@ class SaveSyncRepository @Inject constructor(
                 durationMs = System.currentTimeMillis() - downloadStartTime
             )
 
-            SaveSyncResult.Success
+            SaveSyncResult.Success()
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Exception during download", e)
 
@@ -1167,7 +1305,7 @@ class SaveSyncRepository @Inject constructor(
         val api = this@SaveSyncRepository.api ?: return@withContext false
 
         val serverSave = try {
-            api.getSave(serverSaveId).body()
+            (if (deviceId != null) api.getSaveWithDevice(serverSaveId, deviceId!!) else api.getSave(serverSaveId)).body()
         } catch (e: Exception) {
             Logger.error(TAG, "downloadSaveById: getSave failed", e)
             return@withContext false
@@ -1549,11 +1687,16 @@ class SaveSyncRepository @Inject constructor(
                 return@withContext PreLaunchSyncResult.NoConnection
             }
 
-            // Skip sync if user explicitly chose to keep local save
-            val activeSaveApplied = gameDao.getActiveSaveApplied(gameId)
-            if (activeSaveApplied == true) {
-                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Skipping - user chose to keep local (activeSaveApplied=true)")
-                return@withContext PreLaunchSyncResult.LocalIsNewer
+            // Flush any pending device sync notification before checking server state
+            flushPendingDeviceSync(gameId)
+
+            if (deviceId == null || activeChannel == null) {
+                // Old flow: pre-4.7 servers or no active channel
+                val activeSaveApplied = gameDao.getActiveSaveApplied(gameId)
+                if (activeSaveApplied == true) {
+                    Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Skipping - user chose to keep local (activeSaveApplied=true)")
+                    return@withContext PreLaunchSyncResult.LocalIsNewer
+                }
             }
 
             try {
@@ -1566,9 +1709,12 @@ class SaveSyncRepository @Inject constructor(
 
                 val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
                 val serverSave = if (activeChannel != null) {
-                    val channelSave = matchingSaves.find { it.fileNameNoExt == activeChannel }
+                    val channelSave = matchingSaves
+                        .filter { it.slot == activeChannel }
+                        .maxByOrNull { parseTimestamp(it.updatedAt) }
+                        ?: matchingSaves.find { it.fileNameNoExt == activeChannel }
                     if (channelSave != null) {
-                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Using active channel save | channel=$activeChannel")
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Using active channel save | channel=$activeChannel, slot=${channelSave.slot}")
                         channelSave
                     } else {
                         Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Active channel '$activeChannel' not found on server, no fallback")
@@ -1594,7 +1740,7 @@ class SaveSyncRepository @Inject constructor(
                 }
 
                 val serverTime = parseTimestamp(serverSave.updatedAt)
-                val selectedChannel = serverSave.fileNameNoExt
+                val selectedChannel = serverSave.slot ?: serverSave.fileNameNoExt
                 val existing = if (selectedChannel != null) {
                     saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, selectedChannel)
                         ?: saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, selectedChannel)
@@ -1623,10 +1769,8 @@ class SaveSyncRepository @Inject constructor(
                 val deltaStr = deltaMs?.let { if (it >= 0) "+${it/1000}s" else "${it/1000}s" } ?: "N/A"
                 Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Timestamp compare | server=$serverTime, local=$localTime (db=$localDbTime, file=$localFileTime), delta=$deltaStr")
 
-                // Safety check: Compare local save hash against cached save hash to detect unsaved changes
-                // This catches cases where session end didn't trigger (external emulators) and local has changed
-                // Run BEFORE timestamp comparison - filesystem state takes priority
-                if (localFile != null && validatedPath != null) {
+                // Legacy flow (pre-4.7 servers without device sync): hash-based local modification detection
+                if (deviceId == null && localFile != null && validatedPath != null) {
                     val activeSaveTimestamp = gameDao.getActiveSaveTimestamp(gameId)
                     val cachedSave = if (activeSaveTimestamp != null) {
                         saveCacheManager.get().getByTimestamp(gameId, activeSaveTimestamp)
@@ -1646,13 +1790,11 @@ class SaveSyncRepository @Inject constructor(
                             )
                         }
                     } else {
-                        // No specific cached hash to compare - check if local differs from ANY known cache
                         val localHash = saveCacheManager.get().calculateLocalSaveHash(validatedPath)
                         Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No cached hash to compare, checking against all caches (localHash=$localHash)")
                         if (localHash != null) {
                             val matchingCache = saveCacheManager.get().getByGameAndHash(gameId, localHash)
                             if (matchingCache == null) {
-                                // Local file has unknown hash - treat as modified
                                 Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_MODIFIED | Local hash not found in any cache, prompting user")
                                 return@withContext PreLaunchSyncResult.LocalModified(
                                     localSavePath = validatedPath,
@@ -1666,12 +1808,43 @@ class SaveSyncRepository @Inject constructor(
                     }
                 }
 
-                if (localFile != null && localTime != null && !serverTime.isAfter(localTime)) {
-                    Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_NEWER | Local is newer or equal, skipping download")
-                    return@withContext PreLaunchSyncResult.LocalIsNewer
+                val deviceSyncEntry = deviceId?.let { devId ->
+                    serverSave.deviceSyncs?.find { it.deviceId == devId }
+                }
+                val isDeviceCurrent = deviceSyncEntry?.isCurrent
+
+                // Check if local save has diverged from the server timeline
+                val isLocalDiverged = if (activeChannel != null && deviceId != null) {
+                    val activeSaveTimestamp = gameDao.getActiveSaveTimestamp(gameId)
+                    val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, activeChannel)
+                    activeSaveTimestamp != null &&
+                        latestCache != null &&
+                        activeSaveTimestamp < latestCache.cachedAt.toEpochMilli()
+                } else false
+
+                if (isDeviceCurrent != null) {
+                    if (isDeviceCurrent) {
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_CURRENT | Device is_current=true, skipping download")
+                        return@withContext PreLaunchSyncResult.LocalIsNewer
+                    }
+                    if (isLocalDiverged) {
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_MODIFIED | Device is_current=false AND local save diverged from server timeline")
+                        return@withContext PreLaunchSyncResult.LocalModified(
+                            localSavePath = validatedPath ?: "",
+                            serverTimestamp = serverTime,
+                            channelName = selectedChannel
+                        )
+                    }
+                    Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=SERVER_NEWER | Device is_current=false")
+                } else {
+                    if (localFile != null && localTime != null && !serverTime.isAfter(localTime)) {
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_NEWER | Timestamp fallback: local is newer or equal, skipping download")
+                        return@withContext PreLaunchSyncResult.LocalIsNewer
+                    }
+                    Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=SERVER_NEWER | Timestamp fallback: server is newer")
                 }
 
-                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=SERVER_NEWER | Will download channel=$selectedChannel")
+                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Will download channel=$selectedChannel")
                 saveSyncDao.upsert(
                     SaveSyncEntity(
                         id = existing?.id ?: 0,
@@ -1775,7 +1948,10 @@ class SaveSyncRepository @Inject constructor(
         val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
         val matchingSaves = serverSaves.filter { it.emulator == emulatorId || it.emulator == null }
         val serverSave = if (channelName != null) {
-            matchingSaves.find { it.fileNameNoExt == channelName }
+            matchingSaves
+                .filter { it.slot == channelName }
+                .maxByOrNull { parseTimestamp(it.updatedAt) }
+                ?: matchingSaves.find { it.fileNameNoExt == channelName }
         } else {
             matchingSaves.filter { isLatestSaveFileName(it.fileName, romBaseName) }.firstOrNull()
         }
@@ -1806,10 +1982,18 @@ class SaveSyncRepository @Inject constructor(
         val isHashConflict = syncEntity?.lastUploadedHash != null
             && localHash != null
             && localHash != syncEntity.lastUploadedHash
-        val isTimestampConflict = serverTime.isAfter(localModified)
 
-        if (isTimestampConflict || isHashConflict) {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Conflict detected: timestamp=$isTimestampConflict, hash=$isHashConflict")
+        val deviceSyncEntry = deviceId?.let { devId ->
+            serverSave.deviceSyncs?.find { it.deviceId == devId }
+        }
+        val isServerNewer = if (deviceSyncEntry != null) {
+            !deviceSyncEntry.isCurrent
+        } else {
+            serverTime.isAfter(localModified)
+        }
+
+        if (isServerNewer || isHashConflict) {
+            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Conflict detected: serverNewer=$isServerNewer (is_current=${deviceSyncEntry?.isCurrent}), hash=$isHashConflict")
             ConflictInfo(
                 gameId = gameId,
                 gameName = game.title,
@@ -1899,25 +2083,53 @@ class SaveSyncRepository @Inject constructor(
         return false
     }
 
+    suspend fun clearSaveAtPath(targetPath: String): Boolean = withContext(Dispatchers.IO) {
+        if (!fal.exists(targetPath)) return@withContext true
+        val deleted = if (fal.isDirectory(targetPath)) {
+            fal.deleteRecursively(targetPath)
+        } else {
+            fal.delete(targetPath)
+        }
+        if (!deleted || fal.exists(targetPath)) {
+            Logger.error(TAG, "clearSaveAtPath: Failed to delete $targetPath")
+            return@withContext false
+        }
+        true
+    }
+
     suspend fun downloadSaveAsChannel(
         gameId: Long,
         serverSaveId: Long,
         channelName: String,
-        emulatorId: String?
+        emulatorId: String?,
+        skipDeviceId: Boolean = false
     ): Boolean = withContext(Dispatchers.IO) {
         val api = this@SaveSyncRepository.api ?: return@withContext false
 
+        val useDeviceId = if (skipDeviceId) null else deviceId
         val serverSave = try {
-            api.getSave(serverSaveId).body()
+            val resp = if (useDeviceId != null) {
+                api.getSaveWithDevice(serverSaveId, useDeviceId)
+            } else {
+                api.getSave(serverSaveId)
+            }
+            resp.body()
         } catch (e: Exception) {
             Logger.error(TAG, "downloadSaveAsChannel: getSave failed", e)
             return@withContext false
         } ?: return@withContext false
 
-        val downloadPath = serverSave.downloadPath ?: return@withContext false
-
         val response = try {
-            api.downloadRaw(downloadPath)
+            val dlPath = serverSave.downloadPath
+            if (dlPath != null) {
+                api.downloadRaw(dlPath)
+            } else if (useDeviceId != null) {
+                api.downloadSaveContentWithDevice(
+                    serverSaveId, serverSave.fileName, useDeviceId
+                )
+            } else {
+                api.downloadSaveContent(serverSaveId, serverSave.fileName)
+            }
         } catch (e: Exception) {
             Logger.error(TAG, "downloadSaveAsChannel: download failed", e)
             return@withContext false
@@ -1941,16 +2153,94 @@ class SaveSyncRepository @Inject constructor(
                 return@withContext false
             }
 
-            val cacheResult = saveCacheManager.get().cacheCurrentSave(
+            val serverTime = parseTimestamp(serverSave.updatedAt)
+            val cacheResult = saveCacheManager.get().cacheServerDownload(
                 gameId = gameId,
                 emulatorId = emulatorId ?: "unknown",
-                savePath = tempFile.absolutePath,
+                downloadedFile = tempFile,
                 channelName = channelName,
-                isLocked = true
+                serverTimestamp = serverTime,
+                isLocked = true,
+                needsRemoteSync = false,
+                rommSaveId = serverSaveId
             )
 
             Logger.debug(TAG, "downloadSaveAsChannel: result=$cacheResult, channel=$channelName")
             cacheResult.success
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    suspend fun downloadAndCacheSave(
+        serverSaveId: Long,
+        gameId: Long,
+        channelName: String?
+    ): Boolean = withContext(Dispatchers.IO) {
+        val api = this@SaveSyncRepository.api ?: return@withContext false
+
+        val serverSave = try {
+            val resp = if (deviceId != null) {
+                api.getSaveWithDevice(serverSaveId, deviceId!!)
+            } else {
+                api.getSave(serverSaveId)
+            }
+            resp.body()
+        } catch (e: Exception) {
+            Logger.error(TAG, "downloadAndCacheSave: getSave failed", e)
+            return@withContext false
+        } ?: return@withContext false
+
+        val response = try {
+            val dlPath = serverSave.downloadPath
+            if (dlPath != null) {
+                api.downloadRaw(dlPath)
+            } else if (deviceId != null) {
+                api.downloadSaveContentWithDevice(
+                    serverSaveId, serverSave.fileName, deviceId!!
+                )
+            } else {
+                api.downloadSaveContent(serverSaveId, serverSave.fileName)
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "downloadAndCacheSave: download failed", e)
+            return@withContext false
+        }
+
+        if (!response.isSuccessful) {
+            Logger.error(TAG, "downloadAndCacheSave: HTTP ${response.code()}")
+            return@withContext false
+        }
+
+        val tempFile = File(context.cacheDir, "save_precache_${System.currentTimeMillis()}.tmp")
+        try {
+            response.body()?.byteStream()?.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return@withContext false
+
+            if (tempFile.length() == 0L) return@withContext false
+
+            val game = gameDao.getById(gameId)
+            val emulatorId = game?.let {
+                emulatorResolver.getEmulatorIdForGame(gameId, it.platformId, it.platformSlug)
+            } ?: "unknown"
+
+            val serverTime = parseTimestamp(serverSave.updatedAt)
+            val result = saveCacheManager.get().cacheServerDownload(
+                gameId = gameId,
+                emulatorId = emulatorId,
+                downloadedFile = tempFile,
+                channelName = channelName,
+                serverTimestamp = serverTime,
+                isLocked = channelName != null,
+                needsRemoteSync = false,
+                rommSaveId = serverSaveId
+            )
+
+            Logger.debug(TAG, "downloadAndCacheSave: result=$result, saveId=$serverSaveId")
+            result.success
         } finally {
             tempFile.delete()
         }
@@ -2023,18 +2313,45 @@ class SaveSyncRepository @Inject constructor(
                         )
                     }
 
-                    SaveSyncResult.Success
+                    SaveSyncResult.Success()
                 }
 
                 HardcoreResolutionChoice.KEEP_LOCAL -> {
                     Logger.info(TAG, "[SaveSync] RESOLVE gameId=${resolution.gameId} | KEEP_LOCAL | Skipping sync")
-                    SaveSyncResult.Success
+                    SaveSyncResult.Success()
                 }
             }
         } finally {
             if (tempFile.exists()) {
                 tempFile.delete()
             }
+        }
+    }
+
+    suspend fun flushPendingDeviceSync(gameId: Long) {
+        val pendingSaveId = gameDao.getPendingDeviceSyncSaveId(gameId) ?: return
+        Logger.debug(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId, pendingSaveId=$pendingSaveId")
+        try {
+            confirmDeviceSynced(pendingSaveId)
+            gameDao.setPendingDeviceSyncSaveId(gameId, null)
+            Logger.debug(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId | Flushed successfully")
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId | Failed, will retry later", e)
+        }
+    }
+
+    suspend fun confirmDeviceSynced(saveId: Long) {
+        val api = this.api ?: return
+        val devId = deviceId ?: return
+        try {
+            val response = api.confirmSaveDownloaded(saveId, RomMDeviceIdRequest(devId))
+            if (response.isSuccessful) {
+                Logger.debug(TAG, "[SaveSync] confirmDeviceSynced | saveId=$saveId | Server acknowledged")
+            } else {
+                Logger.warn(TAG, "[SaveSync] confirmDeviceSynced | saveId=$saveId | HTTP ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[SaveSync] confirmDeviceSynced | saveId=$saveId | Failed", e)
         }
     }
 

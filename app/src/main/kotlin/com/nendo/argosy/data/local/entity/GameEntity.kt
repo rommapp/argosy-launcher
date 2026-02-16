@@ -93,6 +93,7 @@ data class GameEntity(
     val activeSaveChannel: String? = null,
     val activeSaveTimestamp: Long? = null,
     val activeSaveApplied: Boolean = false,
+    val pendingDeviceSyncSaveId: Long? = null,
 
     val titleId: String? = null,
     val titleIdLocked: Boolean = false,

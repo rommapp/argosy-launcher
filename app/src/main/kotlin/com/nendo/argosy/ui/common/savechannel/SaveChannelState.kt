@@ -3,14 +3,18 @@ package com.nendo.argosy.ui.common.savechannel
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 
-enum class SaveTab { SLOTS, TIMELINE, STATES }
+enum class SaveTab { SAVES, STATES }
 
 data class SaveChannelState(
     val isVisible: Boolean = false,
     val isLoading: Boolean = false,
-    val selectedTab: SaveTab = SaveTab.TIMELINE,
-    val slotsEntries: List<UnifiedSaveEntry> = emptyList(),
-    val timelineEntries: List<UnifiedSaveEntry> = emptyList(),
+    val isSyncing: Boolean = false,
+    val selectedTab: SaveTab = SaveTab.SAVES,
+    val saveSlots: List<SaveSlotItem> = emptyList(),
+    val saveHistory: List<SaveHistoryItem> = emptyList(),
+    val saveFocusColumn: SaveFocusColumn = SaveFocusColumn.SLOTS,
+    val selectedSlotIndex: Int = 0,
+    val selectedHistoryIndex: Int = 0,
     val statesEntries: List<UnifiedStateEntry> = emptyList(),
     val focusIndex: Int = 0,
     val activeChannel: String? = null,
@@ -33,42 +37,55 @@ data class SaveChannelState(
     val showStateDeleteConfirmation: Boolean = false,
     val stateDeleteTarget: UnifiedStateEntry? = null,
     val showStateReplaceAutoConfirmation: Boolean = false,
-    val stateReplaceAutoTarget: UnifiedStateEntry? = null
+    val stateReplaceAutoTarget: UnifiedStateEntry? = null,
+    val isDeviceAwareMode: Boolean = false,
+    val legacyChannels: List<String> = emptyList(),
+    val showMigrateConfirmation: Boolean = false,
+    val migrateChannelName: String? = null,
+    val showDeleteLegacyConfirmation: Boolean = false,
+    val deleteLegacyChannelName: String? = null
 ) {
-    val hasSaveSlots: Boolean get() = slotsEntries.isNotEmpty()
+    val hasSaveSlots: Boolean get() = saveSlots.any { !it.isCreateAction }
     val hasStates: Boolean get() = supportsStates && statesEntries.isNotEmpty()
-
-    val currentTabEntries: List<UnifiedSaveEntry>
-        get() = when (selectedTab) {
-            SaveTab.SLOTS -> slotsEntries
-            SaveTab.TIMELINE -> timelineEntries
-            SaveTab.STATES -> emptyList()
-        }
 
     val currentTabSize: Int
         get() = when (selectedTab) {
-            SaveTab.SLOTS -> slotsEntries.size
-            SaveTab.TIMELINE -> timelineEntries.size
+            SaveTab.SAVES -> when (saveFocusColumn) {
+                SaveFocusColumn.SLOTS -> saveSlots.size
+                SaveFocusColumn.HISTORY -> saveHistory.size
+            }
             SaveTab.STATES -> statesEntries.size
         }
 
-    val focusedEntry: UnifiedSaveEntry?
-        get() = currentTabEntries.getOrNull(focusIndex)
+    val focusedSlot: SaveSlotItem?
+        get() = saveSlots.getOrNull(selectedSlotIndex)
+
+    val focusedHistoryItem: SaveHistoryItem?
+        get() = saveHistory.getOrNull(selectedHistoryIndex)
 
     val focusedStateEntry: UnifiedStateEntry?
-        get() = if (selectedTab == SaveTab.STATES) statesEntries.getOrNull(focusIndex) else null
+        get() = if (selectedTab == SaveTab.STATES) {
+            statesEntries.getOrNull(focusIndex)
+        } else null
 
-    val canCreateChannel: Boolean
-        get() = selectedTab == SaveTab.TIMELINE && focusedEntry?.canBecomeChannel == true
+    val canDeleteSlot: Boolean
+        get() = selectedTab == SaveTab.SAVES &&
+            saveFocusColumn == SaveFocusColumn.SLOTS &&
+            focusedSlot?.let { !it.isCreateAction && it.channelName != null } == true
 
-    val canDeleteChannel: Boolean
-        get() = selectedTab == SaveTab.SLOTS && focusedEntry?.isChannel == true
+    val canRenameSlot: Boolean
+        get() = selectedTab == SaveTab.SAVES &&
+            saveFocusColumn == SaveFocusColumn.SLOTS &&
+            focusedSlot?.let { !it.isCreateAction && it.channelName != null } == true
 
-    val canRenameChannel: Boolean
-        get() = selectedTab == SaveTab.SLOTS && focusedEntry?.isChannel == true
+    val canLockAsSlot: Boolean
+        get() = selectedTab == SaveTab.SAVES &&
+            saveFocusColumn == SaveFocusColumn.HISTORY &&
+            focusedHistoryItem != null
 
     val canDeleteState: Boolean
-        get() = selectedTab == SaveTab.STATES && focusedStateEntry?.localCacheId != null
+        get() = selectedTab == SaveTab.STATES &&
+            focusedStateEntry?.localCacheId != null
 
     val canReplaceAutoWithSlot: Boolean
         get() = selectedTab == SaveTab.STATES &&

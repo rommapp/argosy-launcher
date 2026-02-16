@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.entity.SyncStatus as DbSyncStatus
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.data.repository.StateCacheManager
@@ -30,6 +31,7 @@ class SyncCoordinator @Inject constructor(
     private val gameDao: GameDao,
     private val romMRepository: Lazy<RomMRepository>,
     private val saveSyncRepository: Lazy<SaveSyncRepository>,
+    private val saveCacheManager: Lazy<SaveCacheManager>,
     private val stateCacheManager: Lazy<StateCacheManager>,
     private val syncQueueManager: SyncQueueManager
 ) {
@@ -112,6 +114,7 @@ class SyncCoordinator @Inject constructor(
         val result = saveSyncRepository.get().uploadSave(
             gameId = item.gameId,
             emulatorId = payload.emulatorId,
+            channelName = payload.channelName,
             forceOverwrite = false
         )
 
@@ -156,18 +159,27 @@ class SyncCoordinator @Inject constructor(
 
         Logger.debug(TAG, "processDirtySaveCaches: Found ${dirtySaves.size} saves needing sync")
 
-        // Phase 1: Pre-check all saves for conflicts
+        // Flush any pending device sync notifications before uploading
+        val affectedGameIds = dirtySaves.map { it.gameId }.distinct()
+        for (gid in affectedGameIds) {
+            saveSyncRepository.get().flushPendingDeviceSync(gid)
+        }
+
+        val channelCaches = dirtySaves.filter { it.channelName != null }
+        val nonChannelCaches = dirtySaves.filter { it.channelName == null }
+
+        // Phase 1: Pre-check non-channel saves for conflicts (channel saves skip conflict check)
         val conflicts = mutableMapOf<Long, Pair<SaveCacheEntity, ConflictInfo>>()
         val resolutions = mutableMapOf<Long, ConflictResolution>()
 
-        for (cache in dirtySaves) {
+        for (cache in nonChannelCaches) {
             val game = gameDao.getById(cache.gameId) ?: continue
             if (game.rommId == null) continue
 
             val conflictInfo = saveSyncRepository.get().checkForConflict(
                 gameId = cache.gameId,
                 emulatorId = cache.emulatorId,
-                channelName = cache.channelName
+                channelName = null
             )
             if (conflictInfo != null) {
                 conflicts[cache.gameId] = cache to conflictInfo
@@ -192,9 +204,82 @@ class SyncCoordinator @Inject constructor(
             syncQueueManager.clearResolutions()
         }
 
-        // Phase 3: Process saves based on resolutions
         var synced = 0
-        for (cache in dirtySaves) {
+
+        // Phase 3a: Upload channel caches directly from cached files
+        for (cache in channelCaches) {
+            val game = gameDao.getById(cache.gameId) ?: continue
+            if (game.rommId == null) continue
+
+            val cacheFile = saveCacheManager.get().getCacheFile(cache)
+            if (!cacheFile.exists()) {
+                Logger.warn(TAG, "processDirtySaveCaches: Cache file missing for id=${cache.id}, path=${cache.cachePath}")
+                saveCacheDao.markSyncError(cache.id, "Cache file missing")
+                continue
+            }
+
+            syncQueueManager.addOperation(SyncOperation(
+                gameId = cache.gameId,
+                gameName = game.title,
+                channelName = cache.channelName,
+                coverPath = game.coverPath,
+                direction = SyncDirection.UPLOAD,
+                status = SyncStatus.IN_PROGRESS
+            ))
+
+            val result = saveSyncRepository.get().uploadCacheEntry(
+                gameId = cache.gameId,
+                rommId = game.rommId,
+                emulatorId = cache.emulatorId,
+                channelName = cache.channelName!!,
+                cacheFile = cacheFile,
+                contentHash = cache.contentHash
+            )
+
+            when (result) {
+                is SaveSyncResult.Success -> {
+                    saveCacheDao.markSynced(cache.id, Instant.now())
+                    if (result.rommSaveId != null) {
+                        saveCacheDao.updateRommSaveId(cache.id, result.rommSaveId)
+                    }
+                    if (result.serverTimestamp != null) {
+                        val oldCachedAtMillis = cache.cachedAt.toEpochMilli()
+                        saveCacheDao.updateCachedAt(cache.id, result.serverTimestamp)
+                        val game = gameDao.getById(cache.gameId)
+                        if (game?.activeSaveTimestamp == oldCachedAtMillis) {
+                            gameDao.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
+                        }
+                    }
+                    syncQueueManager.completeOperation(cache.gameId)
+                    synced++
+                    Logger.debug(TAG, "processDirtySaveCaches: Synced channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} rommSaveId=${result.rommSaveId}")
+                }
+                is SaveSyncResult.Conflict -> {
+                    saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName, excludeId = -1)
+                    syncQueueManager.addConflict(ConflictInfo(
+                        gameId = cache.gameId,
+                        gameName = game.title,
+                        channelName = cache.channelName,
+                        localTimestamp = cache.cachedAt,
+                        serverTimestamp = result.serverTimestamp,
+                        isHashConflict = false
+                    ))
+                    Logger.warn(TAG, "processDirtySaveCaches: Conflict for channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} | cleared dirty flag, awaiting resolution")
+                }
+                is SaveSyncResult.Error -> {
+                    saveCacheDao.markSyncError(cache.id, result.message)
+                    syncQueueManager.completeOperation(cache.gameId, result.message)
+                    Logger.warn(TAG, "processDirtySaveCaches: Failed channel cache id=${cache.id} gameId=${cache.gameId} | ${result.message}")
+                }
+                else -> {
+                    syncQueueManager.completeOperation(cache.gameId, "Skipped")
+                    Logger.debug(TAG, "processDirtySaveCaches: Skipped channel cache id=${cache.id} | result=$result")
+                }
+            }
+        }
+
+        // Phase 3b: Process non-channel saves with conflict resolution
+        for (cache in nonChannelCaches) {
             val game = gameDao.getById(cache.gameId) ?: continue
             if (game.rommId == null) continue
 
@@ -209,7 +294,7 @@ class SyncCoordinator @Inject constructor(
                 val downloadResult = saveSyncRepository.get().downloadSave(
                     gameId = cache.gameId,
                     emulatorId = cache.emulatorId,
-                    channelName = cache.channelName
+                    channelName = null
                 )
                 if (downloadResult is SaveSyncResult.Success) {
                     saveCacheDao.markSynced(cache.id, Instant.now())
@@ -224,7 +309,7 @@ class SyncCoordinator @Inject constructor(
             syncQueueManager.addOperation(SyncOperation(
                 gameId = cache.gameId,
                 gameName = game.title,
-                channelName = cache.channelName,
+                channelName = null,
                 coverPath = game.coverPath,
                 direction = SyncDirection.UPLOAD,
                 status = SyncStatus.PENDING
@@ -235,13 +320,24 @@ class SyncCoordinator @Inject constructor(
             val result = saveSyncRepository.get().uploadSave(
                 gameId = cache.gameId,
                 emulatorId = cache.emulatorId,
-                channelName = cache.channelName,
+                channelName = null,
                 forceOverwrite = forceOverwrite
             )
 
             when (result) {
                 is SaveSyncResult.Success -> {
                     saveCacheDao.markSynced(cache.id, Instant.now())
+                    if (result.rommSaveId != null) {
+                        saveCacheDao.updateRommSaveId(cache.id, result.rommSaveId)
+                    }
+                    if (result.serverTimestamp != null) {
+                        val oldCachedAtMillis = cache.cachedAt.toEpochMilli()
+                        saveCacheDao.updateCachedAt(cache.id, result.serverTimestamp)
+                        val game = gameDao.getById(cache.gameId)
+                        if (game?.activeSaveTimestamp == oldCachedAtMillis) {
+                            gameDao.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
+                        }
+                    }
                     syncQueueManager.completeOperation(cache.gameId)
                     synced++
                     Logger.debug(TAG, "processDirtySaveCaches: Synced gameId=${cache.gameId}")
@@ -266,8 +362,8 @@ class SyncCoordinator @Inject constructor(
     }
 
     // Queue operations for callers to add items
-    suspend fun queueSaveUpload(gameId: Long, rommId: Long, emulatorId: String) {
-        val payload = SaveFilePayload(emulatorId)
+    suspend fun queueSaveUpload(gameId: Long, rommId: Long, emulatorId: String, channelName: String? = null) {
+        val payload = SaveFilePayload(emulatorId, channelName)
         // Remove any existing pending for same game+type
         pendingSyncQueueDao.deleteByGameAndType(gameId, SyncType.SAVE_FILE)
         pendingSyncQueueDao.insert(
@@ -315,14 +411,20 @@ class SyncCoordinator @Inject constructor(
 }
 
 // Payload classes for JSON serialization
-data class SaveFilePayload(val emulatorId: String) {
-    fun toJson(): String = """{"emulatorId":"$emulatorId"}"""
+data class SaveFilePayload(val emulatorId: String, val channelName: String? = null) {
+    fun toJson(): String {
+        val channel = if (channelName != null) ""","channelName":"$channelName"""" else ""
+        return """{"emulatorId":"$emulatorId"$channel}"""
+    }
 
     companion object {
         fun fromJson(json: String): SaveFilePayload? {
             return try {
                 val emulatorId = json.substringAfter("\"emulatorId\":\"").substringBefore("\"")
-                SaveFilePayload(emulatorId)
+                val channelName = if (json.contains("\"channelName\":"))
+                    json.substringAfter("\"channelName\":\"").substringBefore("\"")
+                else null
+                SaveFilePayload(emulatorId, channelName)
             } catch (e: Exception) {
                 null
             }

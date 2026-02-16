@@ -39,7 +39,7 @@ class SaveCacheManager @Inject constructor(
     }
 
     sealed class CacheResult {
-        data class Created(val timestamp: Long) : CacheResult()
+        data class Created(val timestamp: Long, val cacheId: Long = 0) : CacheResult()
         data object Duplicate : CacheResult()
         data object Failed : CacheResult()
 
@@ -156,9 +156,8 @@ class SaveCacheManager @Inject constructor(
 
             if (channelName != null) {
                 gameDao.updateActiveSaveChannel(gameId, channelName)
-                if (needsRemoteSync) {
-                    saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, insertedId)
-                }
+                saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = insertedId)
+            } else {
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
             }
             val slotInfo = when {
@@ -180,10 +179,105 @@ class SaveCacheManager @Inject constructor(
             )
 
             pruneOldCaches(gameId)
-            CacheResult.Created(now.toEpochMilli())
+            CacheResult.Created(now.toEpochMilli(), insertedId)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache save", e)
             tempFile?.delete()
+            CacheResult.Failed
+        }
+    }
+
+    suspend fun cacheServerDownload(
+        gameId: Long,
+        emulatorId: String,
+        downloadedFile: File,
+        channelName: String?,
+        serverTimestamp: Instant? = null,
+        isLocked: Boolean = false,
+        needsRemoteSync: Boolean = false,
+        rommSaveId: Long? = null
+    ): CacheResult = withContext(Dispatchers.IO) {
+        if (!downloadedFile.exists() || downloadedFile.length() == 0L) {
+            Log.w(TAG, "Downloaded file missing or empty: ${downloadedFile.absolutePath}")
+            return@withContext CacheResult.Failed
+        }
+
+        try {
+            val isZip = downloadedFile.inputStream().use { input ->
+                val magic = ByteArray(2)
+                input.read(magic) == 2 &&
+                    magic[0] == 0x50.toByte() &&
+                    magic[1] == 0x4B.toByte()
+            }
+
+            val contentHash = if (isZip) {
+                val tempDir = File(context.cacheDir, "hash_extract_${System.currentTimeMillis()}")
+                tempDir.mkdirs()
+                val hash = if (saveArchiver.unzipToFolder(downloadedFile, tempDir)) {
+                    saveArchiver.calculateFolderHash(tempDir)
+                } else {
+                    saveArchiver.calculateFileHash(downloadedFile)
+                }
+                tempDir.deleteRecursively()
+                hash
+            } else {
+                saveArchiver.calculateFileHash(downloadedFile)
+            }
+
+            val now = serverTimestamp ?: Instant.now()
+            val timestamp = TIMESTAMP_FORMAT.format(now)
+            val gameDir = File(cacheBaseDir, "$gameId/$timestamp")
+            gameDir.mkdirs()
+
+            val (cachePath, cachedFile) = if (isZip) {
+                val finalZip = File(gameDir, "save.zip")
+                downloadedFile.copyTo(finalZip, overwrite = true)
+                "$gameId/$timestamp/save.zip" to finalZip
+            } else {
+                val destFile = File(gameDir, downloadedFile.name)
+                downloadedFile.copyTo(destFile, overwrite = true)
+                "$gameId/$timestamp/${downloadedFile.name}" to destFile
+            }
+
+            val saveSize = cachedFile.length()
+
+            val entity = SaveCacheEntity(
+                gameId = gameId,
+                emulatorId = emulatorId,
+                cachedAt = now,
+                saveSize = saveSize,
+                cachePath = cachePath,
+                note = channelName,
+                isLocked = isLocked,
+                contentHash = contentHash,
+                channelName = channelName,
+                needsRemoteSync = needsRemoteSync,
+                rommSaveId = rommSaveId
+            )
+            val insertedId = saveCacheDao.insert(entity)
+
+            if (channelName != null) {
+                gameDao.updateActiveSaveChannel(gameId, channelName)
+                saveCacheDao.clearDirtyFlagForLatest(gameId)
+            }
+
+            Log.d(TAG, "Cached server download for game $gameId at $cachePath (zip=$isZip, channel=$channelName)")
+
+            SaveDebugLogger.logCacheCreated(
+                gameId = gameId,
+                gameName = null,
+                channel = channelName,
+                sizeBytes = saveSize,
+                contentHash = contentHash,
+                isHardcore = false,
+                needsRemoteSync = needsRemoteSync,
+                emulatorId = emulatorId
+            )
+
+            pruneOldCaches(gameId)
+            CacheResult.Created(now.toEpochMilli(), insertedId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to cache server download", e)
             CacheResult.Failed
         }
     }
@@ -281,9 +375,6 @@ class SaveCacheManager @Inject constructor(
 
         try {
             if (entity.cachePath.endsWith(".zip")) {
-                if (fal.exists(targetPath)) {
-                    fal.deleteRecursively(targetPath)
-                }
                 fal.mkdirs(targetPath)
                 val targetFile = fal.getTransformedFile(targetPath)
                 saveArchiver.unzipSingleFolder(cacheFile, targetFile)
@@ -380,7 +471,8 @@ class SaveCacheManager @Inject constructor(
                 cachePath = cachePath,
                 note = channelName,
                 isLocked = true,
-                contentHash = source.contentHash
+                contentHash = source.contentHash,
+                channelName = channelName
             )
 
             val newId = saveCacheDao.insert(entity)
@@ -528,6 +620,8 @@ class SaveCacheManager @Inject constructor(
 
         Log.d(TAG, "Deleted all ${caches.size} cached saves for game $gameId")
     }
+
+    fun getCacheFile(entity: SaveCacheEntity): File = File(cacheBaseDir, entity.cachePath)
 
     suspend fun calculateLocalSaveHash(savePath: String): String? = withContext(Dispatchers.IO) {
         if (!fal.exists(savePath)) return@withContext null

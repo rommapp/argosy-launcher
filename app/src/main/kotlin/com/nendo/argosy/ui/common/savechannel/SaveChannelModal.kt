@@ -1,15 +1,15 @@
 package com.nendo.argosy.ui.common.savechannel
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,20 +18,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import androidx.compose.runtime.LaunchedEffect
@@ -43,58 +44,38 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.domain.model.UnifiedStateEntry
-import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBarWithState
 import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
-import com.nendo.argosy.ui.theme.LocalLauncherTheme
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SaveChannelModal(
     state: SaveChannelState,
     savePath: String? = null,
     onRenameTextChange: (String) -> Unit,
-    onTabSelect: (SaveTab) -> Unit = {},
-    onEntryClick: (Int) -> Unit = {},
-    onEntryLongClick: (Int) -> Unit = {},
+    onSlotClick: (Int) -> Unit = {},
+    onHistoryClick: (Int) -> Unit = {},
     onDismiss: () -> Unit = {}
 ) {
     if (!state.isVisible) return
 
-    val listState = remember(state.selectedTab) {
-        LazyListState(firstVisibleItemIndex = state.focusIndex, firstVisibleItemScrollOffset = 0)
-    }
-    val itemHeight = Dimens.settingsItemMinHeight
-    val maxVisibleItems = 5
-    val entries = state.currentTabEntries
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
-    LaunchedEffect(state.selectedTab, state.focusIndex) {
-        listState.scrollToItem(state.focusIndex)
-    }
-
-    // Handle focus changes (including centering)
-    FocusedScroll(
-        listState = listState,
-        focusedIndex = state.focusIndex
-    )
-
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
-    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+    val overlayColor = if (isDarkTheme) {
+        Color.Black.copy(alpha = 0.7f)
+    } else {
+        Color.White.copy(alpha = 0.5f)
+    }
 
     Box(
         modifier = Modifier
@@ -111,9 +92,9 @@ fun SaveChannelModal(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(Dimens.radiusLg)
                 )
-                .width(Dimens.modalWidthLg)
+                .width(Dimens.modalWidthXl)
                 .clickableNoFocus {}
-                .padding(Dimens.spacingLg)
+                .padding(Dimens.spacingMd)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -127,7 +108,9 @@ fun SaveChannelModal(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     if (savePath != null) {
-                        val displayPath = formatTruncatedPath(savePath, maxSegments = 5)
+                        val displayPath = formatTruncatedPath(
+                            savePath, maxSegments = 5
+                        )
                         Text(
                             text = displayPath,
                             style = MaterialTheme.typography.bodySmall,
@@ -142,108 +125,29 @@ fun SaveChannelModal(
 
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            TabBar(
-                selectedTab = state.selectedTab,
-                hasSaveSlots = state.hasSaveSlots,
-                supportsStates = state.supportsStates,
-                hasStates = state.hasStates,
-                onTabSelect = onTabSelect
-            )
-
-            Spacer(modifier = Modifier.height(Dimens.radiusLg))
+            val itemHeight = Dimens.settingsItemMinHeight
+            val maxVisibleItems = 4
 
             if (state.isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f, fill = false)
-                        .heightIn(min = itemHeight * 2, max = itemHeight * maxVisibleItems),
+                        .heightIn(
+                            min = itemHeight * 2,
+                            max = itemHeight * maxVisibleItems
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
-            } else if (state.selectedTab == SaveTab.STATES) {
-                if (state.statesEntries.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f, fill = false)
-                            .heightIn(min = itemHeight * 2, max = itemHeight * maxVisibleItems),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No save states",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f, fill = false)
-                            .heightIn(max = itemHeight * maxVisibleItems)
-                            .clip(RoundedCornerShape(8.dp))
-                    ) {
-                        items(
-                            count = state.statesEntries.size,
-                            key = { index ->
-                                val entry = state.statesEntries[index]
-                                "state-${entry.slotNumber}-${entry.localCacheId ?: "empty"}"
-                            }
-                        ) { index ->
-                            val entry = state.statesEntries[index]
-                            StateSlotRow(
-                                entry = entry,
-                                isFocused = state.focusIndex == index,
-                                onClick = { onEntryClick(index) },
-                                onLongClick = { onEntryLongClick(index) }
-                            )
-                        }
-                    }
-                }
-            } else if (entries.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                        .heightIn(min = itemHeight * 2, max = itemHeight * maxVisibleItems),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (state.selectedTab == SaveTab.SLOTS) "No save slots" else "No cached saves",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .heightIn(max = itemHeight * maxVisibleItems)
-                        .clip(RoundedCornerShape(Dimens.radiusMd))
-                ) {
-                    items(
-                        count = entries.size,
-                        key = { index ->
-                            val entry = entries[index]
-                            "${entry.localCacheId ?: "null"}-${entry.serverSaveId ?: "null"}"
-                        }
-                    ) { index ->
-                        val entry = entries[index]
-                        val isActiveChannel = entry.isChannel &&
-                            entry.channelName != null &&
-                            entry.channelName == state.activeChannel
-                        SaveCacheEntryRow(
-                            entry = entry,
-                            isFocused = state.focusIndex == index,
-                            isActiveChannel = isActiveChannel,
-                            onClick = { onEntryClick(index) },
-                            onLongClick = { onEntryLongClick(index) }
-                        )
-                    }
-                }
+                SavesTabContent(
+                    state = state,
+                    maxHeight = itemHeight * maxVisibleItems,
+                    onSlotClick = onSlotClick,
+                    onHistoryClick = onHistoryClick
+                )
             }
 
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -252,23 +156,29 @@ fun SaveChannelModal(
             FooterBarWithState(hints = hints)
         }
 
-        if (state.showRestoreConfirmation && state.restoreSelectedEntry != null) {
+        if (state.showRestoreConfirmation &&
+            state.restoreSelectedEntry != null) {
             RestoreConfirmationOverlay()
         }
 
         if (state.showRenameDialog) {
             RenameChannelOverlay(
-                isCreate = state.selectedTab == SaveTab.TIMELINE,
+                isCreate = state.renameEntry == null ||
+                    !state.renameEntry.isChannel,
                 text = state.renameText,
                 onTextChange = onRenameTextChange
             )
         }
 
-        if (state.showDeleteConfirmation && state.deleteSelectedEntry != null) {
-            DeleteConfirmationOverlay(channelName = state.deleteSelectedEntry.channelName ?: "")
+        if (state.showDeleteConfirmation &&
+            state.deleteSelectedEntry != null) {
+            DeleteConfirmationOverlay(
+                channelName = state.deleteSelectedEntry.channelName ?: ""
+            )
         }
 
-        if (state.showVersionMismatchDialog && state.versionMismatchState != null) {
+        if (state.showVersionMismatchDialog &&
+            state.versionMismatchState != null) {
             VersionMismatchOverlay(
                 savedCoreId = state.versionMismatchState.coreId,
                 savedVersion = state.versionMismatchState.coreVersion,
@@ -277,19 +187,400 @@ fun SaveChannelModal(
             )
         }
 
-        if (state.showStateDeleteConfirmation && state.stateDeleteTarget != null) {
+        if (state.showStateDeleteConfirmation &&
+            state.stateDeleteTarget != null) {
             StateDeleteConfirmationOverlay(
                 slotNumber = state.stateDeleteTarget.slotNumber
             )
         }
 
-        if (state.showStateReplaceAutoConfirmation && state.stateReplaceAutoTarget != null) {
+        if (state.showStateReplaceAutoConfirmation &&
+            state.stateReplaceAutoTarget != null) {
             StateReplaceAutoConfirmationOverlay(
                 slotNumber = state.stateReplaceAutoTarget.slotNumber
             )
         }
+
+        if (state.showMigrateConfirmation &&
+            state.migrateChannelName != null) {
+            MigrateConfirmationOverlay(
+                channelName = state.migrateChannelName
+            )
+        }
+
+        if (state.showDeleteLegacyConfirmation &&
+            state.deleteLegacyChannelName != null) {
+            DeleteLegacyConfirmationOverlay(
+                channelName = state.deleteLegacyChannelName,
+                saveCount = state.saveSlots.firstOrNull {
+                    it.channelName == state.deleteLegacyChannelName
+                }?.saveCount ?: 0
+            )
+        }
     }
 }
+
+@Composable
+private fun SavesTabContent(
+    state: SaveChannelState,
+    maxHeight: androidx.compose.ui.unit.Dp,
+    onSlotClick: (Int) -> Unit,
+    onHistoryClick: (Int) -> Unit
+) {
+    val slotListState = rememberLazyListState()
+    val historyListState = rememberLazyListState()
+
+    LaunchedEffect(state.selectedSlotIndex) {
+        if (state.saveFocusColumn == SaveFocusColumn.SLOTS &&
+            state.selectedSlotIndex >= 0) {
+            slotListState.animateScrollToItem(state.selectedSlotIndex)
+        }
+    }
+
+    LaunchedEffect(state.selectedHistoryIndex) {
+        if (state.saveFocusColumn == SaveFocusColumn.HISTORY &&
+            state.selectedHistoryIndex >= 0) {
+            historyListState.animateScrollToItem(state.selectedHistoryIndex)
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = maxHeight)
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(0.4f)
+                .fillMaxHeight()
+        ) {
+            Text(
+                text = "Save Slots",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(
+                    horizontal = Dimens.spacingMd, vertical = 4.dp
+                )
+            )
+
+            LazyColumn(
+                state = slotListState,
+                contentPadding = PaddingValues(
+                    horizontal = Dimens.spacingSm, vertical = 4.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                itemsIndexed(state.saveSlots) { index, slot ->
+                    val isSelected = index == state.selectedSlotIndex &&
+                        state.saveFocusColumn == SaveFocusColumn.SLOTS
+                    when {
+                        slot.isCreateAction -> NewSlotRow(
+                            isSelected = isSelected,
+                            onClick = { onSlotClick(index) }
+                        )
+                        slot.isMigrationCandidate -> MigrationSlotRow(
+                            slot = slot,
+                            isSelected = isSelected,
+                            onClick = { onSlotClick(index) }
+                        )
+                        else -> SlotRow(
+                            slot = slot,
+                            isSelected = isSelected,
+                            onClick = { onSlotClick(index) }
+                        )
+                    }
+                }
+            }
+        }
+
+        VerticalDivider(
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f)
+        )
+
+        Column(
+            modifier = Modifier
+                .weight(0.6f)
+                .fillMaxHeight()
+        ) {
+            val slotName = state.saveSlots.getOrNull(state.selectedSlotIndex)
+                ?.let {
+                    if (it.isCreateAction) null else it.displayName
+                }
+            Text(
+                text = if (slotName != null) "History ($slotName)"
+                    else "History",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(
+                    horizontal = Dimens.spacingMd, vertical = 4.dp
+                )
+            )
+
+            if (state.saveHistory.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(Dimens.spacingLg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No saves yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = historyListState,
+                    contentPadding = PaddingValues(
+                        horizontal = Dimens.spacingSm, vertical = 4.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    itemsIndexed(state.saveHistory) { index, item ->
+                        HistoryRow(
+                            item = item,
+                            isSelected = index == state.selectedHistoryIndex &&
+                                state.saveFocusColumn == SaveFocusColumn.HISTORY,
+                            onClick = { onHistoryClick(index) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SlotRow(
+    slot: SaveSlotItem,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val accentColor = MaterialTheme.colorScheme.primary
+    val textColor = if (slot.isActive) accentColor
+        else MaterialTheme.colorScheme.onSurface
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.6f)
+                else Color.Transparent
+            )
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            )
+            .clickableNoFocus(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            if (slot.isActive) {
+                Icon(
+                    imageVector = Icons.Filled.Circle,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(8.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = slot.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (slot.isActive) FontWeight.Bold
+                    else FontWeight.Normal,
+                color = textColor
+            )
+        }
+        if (slot.saveCount > 0) {
+            Text(
+                text = "${slot.saveCount}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun NewSlotRow(
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.6f)
+                else Color.Transparent
+            )
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            )
+            .clickableNoFocus(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Add,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = "New Slot",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun MigrationSlotRow(
+    slot: SaveSlotItem,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val dimmedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.4f)
+                else Color.Transparent
+            )
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary
+                        .copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            )
+            .clickableNoFocus(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Save,
+                contentDescription = null,
+                tint = dimmedColor,
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = slot.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = dimmedColor
+            )
+        }
+        Text(
+            text = "[Legacy]",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+                .copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+private fun HistoryRow(
+    item: SaveHistoryItem,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    .copy(alpha = 0.6f)
+                else Color.Transparent
+            )
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            )
+            .clickableNoFocus(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = formatTimestamp(item.timestamp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (item.isActiveRestorePoint) {
+                    Icon(
+                        imageVector = Icons.Filled.CheckCircle,
+                        contentDescription = "Active restore point",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                if (item.isLatest) {
+                    Text(
+                        text = "Latest",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            Text(
+                text = formatSize(item.size),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        val syncTag = if (item.isSynced) "Synced" else "Local"
+        val syncColor = if (item.isSynced) Color(0xFF4CAF50)
+            else MaterialTheme.colorScheme.onSurfaceVariant
+        Text(
+            text = "[$syncTag]",
+            style = MaterialTheme.typography.labelSmall,
+            color = syncColor
+        )
+    }
+}
+
 
 @Composable
 private fun ActiveSaveIndicator(activeChannel: String?) {
@@ -310,73 +601,6 @@ private fun ActiveSaveIndicator(activeChannel: String?) {
     }
 }
 
-@Composable
-private fun TabBar(
-    selectedTab: SaveTab,
-    hasSaveSlots: Boolean,
-    supportsStates: Boolean,
-    hasStates: Boolean,
-    onTabSelect: (SaveTab) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        TabButton(
-            label = "Save Slots",
-            isSelected = selectedTab == SaveTab.SLOTS,
-            isEnabled = hasSaveSlots,
-            onClick = { onTabSelect(SaveTab.SLOTS) }
-        )
-        TabButton(
-            label = "Recent Saves",
-            isSelected = selectedTab == SaveTab.TIMELINE,
-            isEnabled = true,
-            onClick = { onTabSelect(SaveTab.TIMELINE) }
-        )
-        if (supportsStates) {
-            TabButton(
-                label = "States",
-                isSelected = selectedTab == SaveTab.STATES,
-                isEnabled = hasStates,
-                onClick = { onTabSelect(SaveTab.STATES) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun TabButton(
-    label: String,
-    isSelected: Boolean,
-    isEnabled: Boolean,
-    onClick: () -> Unit
-) {
-    val backgroundColor = when {
-        isSelected -> MaterialTheme.colorScheme.primary
-        !isEnabled -> Color.Transparent
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
-    val contentColor = when {
-        isSelected -> MaterialTheme.colorScheme.onPrimary
-        !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(Dimens.radiusMd))
-            .background(backgroundColor)
-            .clickableNoFocus(enabled = isEnabled && !isSelected, onClick = onClick)
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = contentColor
-        )
-    }
-}
 
 private fun formatTruncatedPath(path: String, maxSegments: Int = 3): String {
     val segments = path.split("/").filter { it.isNotEmpty() }
@@ -390,186 +614,67 @@ private fun formatTruncatedPath(path: String, maxSegments: Int = 3): String {
 private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
     val hints = mutableListOf<FooterHintItem>()
 
-    when (state.selectedTab) {
-        SaveTab.SLOTS -> {
-            hints.add(FooterHintItem(InputButton.A, "Activate"))
-            if (state.canDeleteChannel) {
+    when (state.saveFocusColumn) {
+        SaveFocusColumn.SLOTS -> {
+            val focused = state.focusedSlot
+            if (focused?.isMigrationCandidate == true) {
+                hints.add(FooterHintItem(InputButton.A, "Migrate"))
                 hints.add(FooterHintItem(InputButton.Y, "Delete"))
-            }
-            if (state.canRenameChannel) {
-                hints.add(FooterHintItem(InputButton.X, "Rename"))
+            } else {
+                hints.add(FooterHintItem(InputButton.A, "Activate"))
+                if (state.canRenameSlot) {
+                    hints.add(FooterHintItem(InputButton.X, "Rename"))
+                }
+                if (state.canDeleteSlot) {
+                    hints.add(FooterHintItem(InputButton.Y, "Delete"))
+                }
             }
         }
-        SaveTab.TIMELINE -> {
+        SaveFocusColumn.HISTORY -> {
             hints.add(FooterHintItem(InputButton.A, "Restore"))
-            if (state.canCreateChannel) {
+            if (state.canLockAsSlot) {
                 hints.add(FooterHintItem(InputButton.Y, "Lock"))
             }
         }
-        SaveTab.STATES -> {
-            val focusedState = state.focusedStateEntry
-            val canRestore = focusedState != null && focusedState.localCacheId != null
-            hints.add(FooterHintItem(InputButton.A, "Restore", enabled = canRestore))
-            if (state.canDeleteState) {
-                hints.add(FooterHintItem(InputButton.Y, "Delete"))
-            }
-            if (state.canReplaceAutoWithSlot) {
-                hints.add(FooterHintItem(InputButton.X, "Set as Auto"))
-            }
-        }
     }
+
+    hints.add(FooterHintItem(InputButton.RB, "Sync"))
 
     return hints
 }
 
-private val goldColor = Color(0xFFFFD700)
+private fun formatTimestamp(timestamp: Long): String {
+    val date = java.util.Date(timestamp)
+    val now = java.util.Date()
+    val diffMs = now.time - timestamp
+    val diffDays = diffMs / (1000 * 60 * 60 * 24)
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun SaveCacheEntryRow(
-    entry: UnifiedSaveEntry,
-    isFocused: Boolean,
-    isActiveChannel: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    val dateFormatter = remember {
-        java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
-            .withZone(java.time.ZoneId.systemDefault())
-    }
-    val formattedDate = remember(entry.timestamp) {
-        dateFormatter.format(entry.timestamp)
-    }
-    val formattedSize = remember(entry.size) {
-        when {
-            entry.size < 1024 -> "${entry.size} B"
-            entry.size < 1024 * 1024 -> "${entry.size / 1024} KB"
-            else -> String.format(java.util.Locale.US, "%.1f MB", entry.size / (1024.0 * 1024.0))
-        }
-    }
-
-    val isHardcore = entry.isHardcore
-    val backgroundColor = when {
-        isFocused && isHardcore -> goldColor.copy(alpha = 0.3f)
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        isHardcore -> goldColor.copy(alpha = 0.1f)
-        else -> Color.Transparent
-    }
-    val contentColor = when {
-        isFocused && isHardcore -> goldColor
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        isHardcore -> goldColor
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-
-    val sourceText = when (entry.source) {
-        UnifiedSaveEntry.Source.LOCAL -> "Local"
-        UnifiedSaveEntry.Source.SERVER -> "Server"
-        UnifiedSaveEntry.Source.BOTH -> "Synced"
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(Dimens.settingsItemMinHeight)
-            .clip(RoundedCornerShape(Dimens.radiusMd))
-            .background(backgroundColor)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
+    return when {
+        diffDays == 0L -> {
+            val format = java.text.SimpleDateFormat(
+                "h:mm a", java.util.Locale.getDefault()
             )
-            .padding(horizontal = Dimens.radiusLg),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
-    ) {
-        when {
-            entry.cheatsUsed -> {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Cheats used",
-                    tint = LocalLauncherTheme.current.semanticColors.warning,
-                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
-                )
-            }
-            entry.isChannel -> {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Channel",
-                    tint = if (isActiveChannel) MaterialTheme.colorScheme.primary else contentColor.copy(alpha = 0.7f),
-                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
-                )
-            }
-            entry.isActive -> {
-                Icon(
-                    imageVector = Icons.Default.Save,
-                    contentDescription = "Active",
-                    tint = if (isHardcore) goldColor else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
-                )
-            }
-            else -> {
-                Spacer(modifier = Modifier.width(Dimens.iconSm + Dimens.borderMedium))
-            }
+            "Today ${format.format(date)}"
         }
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                if (isHardcore) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = "Hardcore",
-                        tint = goldColor,
-                        modifier = Modifier.size(Dimens.iconSm)
-                    )
-                }
-                Text(
-                    text = entry.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (entry.isActive) {
-                    Text(
-                        text = "[ACTIVE]",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isHardcore) goldColor else MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                Text(
-                    text = formattedDate,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = formattedSize,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.7f)
-                )
-            }
+        diffDays == 1L -> "Yesterday"
+        diffDays < 7 -> "$diffDays days ago"
+        else -> {
+            val format = java.text.SimpleDateFormat(
+                "MMM d", java.util.Locale.getDefault()
+            )
+            format.format(date)
         }
-
-        Text(
-            text = "[$sourceText]",
-            style = MaterialTheme.typography.bodySmall,
-            color = when (entry.source) {
-                UnifiedSaveEntry.Source.LOCAL -> LocalLauncherTheme.current.semanticColors.warning
-                UnifiedSaveEntry.Source.SERVER -> MaterialTheme.colorScheme.secondary
-                UnifiedSaveEntry.Source.BOTH -> if (isHardcore) goldColor else MaterialTheme.colorScheme.primary
-            }
-        )
     }
 }
+
+private fun formatSize(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        else -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
+    }
+}
+
 
 @Composable
 private fun RestoreConfirmationOverlay() {
@@ -604,7 +709,8 @@ private fun RenameChannelOverlay(
         )
     ) {
         Text(
-            text = if (isCreate) "Enter a name for this save slot" else "Enter a new name",
+            text = if (isCreate) "Enter a name for this save slot"
+                else "Enter a new name",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -622,6 +728,62 @@ private fun RenameChannelOverlay(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
+        )
+    }
+}
+
+@Composable
+private fun MigrateConfirmationOverlay(channelName: String) {
+    NestedModal(
+        title = "MIGRATE SAVE",
+        footerHints = listOf(
+            InputButton.A to "Migrate",
+            InputButton.B to "Cancel"
+        )
+    ) {
+        Text(
+            text = "Migrate \"$channelName\" to new save system?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Text(
+            text = "This will register it as a named save slot.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+}
+
+@Composable
+private fun DeleteLegacyConfirmationOverlay(
+    channelName: String,
+    saveCount: Int
+) {
+    val countLabel = if (saveCount == 1) "1 backup" else "$saveCount backups"
+    NestedModal(
+        title = "DELETE LEGACY SAVE",
+        footerHints = listOf(
+            InputButton.A to "Delete",
+            InputButton.B to "Cancel"
+        )
+    ) {
+        Text(
+            text = "Delete \"$channelName\" and $countLabel?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Text(
+            text = "This will remove it from the server and local storage. This cannot be undone.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
         )
     }
 }
@@ -649,151 +811,6 @@ private fun DeleteConfirmationOverlay(channelName: String) {
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun StateSlotRow(
-    entry: UnifiedStateEntry,
-    isFocused: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    val isEmpty = entry.localCacheId == null
-    val hasScreenshot = entry.screenshotPath != null
-    val rowHeight = if (hasScreenshot) Dimens.headerHeight else Dimens.settingsItemMinHeight
-
-    val dateFormatter = remember {
-        java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
-            .withZone(java.time.ZoneId.systemDefault())
-    }
-    val formattedDate = remember(entry.timestamp) {
-        if (isEmpty) "--" else dateFormatter.format(entry.timestamp)
-    }
-    val formattedSize = remember(entry.size) {
-        if (isEmpty) "" else when {
-            entry.size < 1024 -> "${entry.size} B"
-            entry.size < 1024 * 1024 -> "${entry.size / 1024} KB"
-            else -> String.format(java.util.Locale.US, "%.1f MB", entry.size / (1024.0 * 1024.0))
-        }
-    }
-
-    val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        Color.Transparent
-    }
-    val contentColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else if (isEmpty) {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-
-    val slotLabel = if (entry.slotNumber == -1) "Auto" else "Slot ${entry.slotNumber}"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(rowHeight)
-            .clip(RoundedCornerShape(Dimens.radiusMd))
-            .background(backgroundColor)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
-            .padding(horizontal = Dimens.radiusLg, vertical = Dimens.spacingSm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
-    ) {
-        if (hasScreenshot) {
-            AsyncImage(
-                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                    .data(java.io.File(entry.screenshotPath!!))
-                    .memoryCacheKey(entry.screenshotPath)
-                    .diskCacheKey(entry.screenshotPath)
-                    .build(),
-                contentDescription = "State screenshot",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(width = Dimens.iconXl + Dimens.iconLg, height = Dimens.settingsItemMinHeight)
-                    .clip(RoundedCornerShape(Dimens.radiusSm))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-        }
-
-        when (entry.versionStatus) {
-            UnifiedStateEntry.VersionStatus.MISMATCH -> {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Version mismatch",
-                    tint = LocalLauncherTheme.current.semanticColors.warning,
-                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
-                )
-            }
-            else -> {
-                if (!hasScreenshot) {
-                    Spacer(modifier = Modifier.width(Dimens.iconSm + Dimens.borderMedium))
-                }
-            }
-        }
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                Text(
-                    text = slotLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (entry.coreId != null) {
-                    Text(
-                        text = entry.coreId,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = contentColor.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                Text(
-                    text = formattedDate,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.7f)
-                )
-                if (formattedSize.isNotEmpty()) {
-                    Text(
-                        text = formattedSize,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.7f)
-                    )
-                }
-            }
-        }
-
-        if (!isEmpty) {
-            val (syncText, syncColor) = when (entry.syncStatus) {
-                UnifiedStateEntry.SyncStatus.SYNCED -> "Synced" to MaterialTheme.colorScheme.primary
-                UnifiedStateEntry.SyncStatus.PENDING_UPLOAD -> "Pending" to LocalLauncherTheme.current.semanticColors.info
-                UnifiedStateEntry.SyncStatus.SERVER_ONLY -> "Server" to MaterialTheme.colorScheme.secondary
-                UnifiedStateEntry.SyncStatus.LOCAL_ONLY -> "Local" to LocalLauncherTheme.current.semanticColors.warning
-            }
-            Text(
-                text = "[$syncText]",
-                style = MaterialTheme.typography.bodySmall,
-                color = syncColor
-            )
-        }
     }
 }
 

@@ -46,6 +46,10 @@ class RestoreCachedSaveUseCase @Inject constructor(
             emulatorId, game.title, game.platformSlug, game.localPath
         ) ?: return Result.Error("Cannot determine save location")
 
+        if (!saveSyncRepository.clearSaveAtPath(targetPath)) {
+            return Result.Error("Failed to clear existing save at target path")
+        }
+
         val restoreSuccess = when (entry.source) {
             UnifiedSaveEntry.Source.LOCAL,
             UnifiedSaveEntry.Source.BOTH -> {
@@ -75,6 +79,17 @@ class RestoreCachedSaveUseCase @Inject constructor(
         val targetChannel = entry.channelName
         gameDao.updateActiveSaveChannel(gameId, targetChannel)
 
+        // Track which server save this device is now on (persists for offline case)
+        if (entry.serverSaveId != null) {
+            gameDao.setPendingDeviceSyncSaveId(gameId, entry.serverSaveId)
+            try {
+                saveSyncRepository.confirmDeviceSynced(entry.serverSaveId)
+                gameDao.setPendingDeviceSyncSaveId(gameId, null)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to confirm device sync for saveId=${entry.serverSaveId}, will retry before next sync", e)
+            }
+        }
+
         if (syncToServer && game.rommId != null) {
             return when (val uploadResult = saveSyncRepository.uploadSave(gameId, emulatorId, targetChannel)) {
                 is SaveSyncResult.Success -> Result.RestoredAndSynced
@@ -87,5 +102,22 @@ class RestoreCachedSaveUseCase @Inject constructor(
         }
 
         return Result.Restored
+    }
+
+    suspend fun clearActiveSave(gameId: Long, emulatorId: String): Boolean {
+        val game = gameDao.getById(gameId) ?: return true
+        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(
+            gameId, game.platformId, game.platformSlug
+        )
+        val targetPath = saveSyncRepository.discoverSavePath(
+            emulatorId = emulatorId,
+            gameTitle = game.title,
+            platformSlug = game.platformSlug,
+            romPath = game.localPath,
+            cachedTitleId = game.titleId,
+            emulatorPackage = emulatorPackage,
+            gameId = gameId
+        ) ?: return true
+        return saveSyncRepository.clearSaveAtPath(targetPath)
     }
 }

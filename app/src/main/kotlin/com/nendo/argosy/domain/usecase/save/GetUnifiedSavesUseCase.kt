@@ -40,27 +40,31 @@ class GetUnifiedSavesUseCase @Inject constructor(
     ): List<UnifiedSaveEntry> {
         val result = mutableListOf<UnifiedSaveEntry>()
         val usedServerIds = mutableSetOf<Long>()
+        val serverSaveById = serverSaves.associateBy { it.id }
 
-        // Find the most recent cache for each channel (only these should match server saves)
+        // Find the most recent cache for each channel (only these should match server saves by name)
         val mostRecentByChannel = localCaches
-            .filter { it.note != null }
-            .groupBy { it.note }
+            .filter { it.channelName != null }
+            .groupBy { it.channelName }
             .mapValues { (_, caches) -> caches.maxByOrNull { it.cachedAt }?.id }
 
         // Find the most recent non-channel cache (for "Latest" matching)
         val mostRecentNonChannel = localCaches
-            .filter { it.note == null }
+            .filter { it.channelName == null }
             .maxByOrNull { it.cachedAt }?.id
 
         for (cache in localCaches) {
-            val channelName = cache.note
+            val channelName = cache.channelName
             val isMostRecentForChannel = if (channelName != null) {
                 mostRecentByChannel[channelName] == cache.id
             } else {
                 mostRecentNonChannel == cache.id
             }
 
-            val matchingServer = if (isMostRecentForChannel) {
+            // Direct match by rommSaveId takes priority over name-based matching
+            val matchingServer = if (cache.rommSaveId != null) {
+                serverSaveById[cache.rommSaveId]
+            } else if (isMostRecentForChannel) {
                 serverSaves.find { serverSave -> matchesLocalCache(serverSave, channelName, romBaseName) }
             } else {
                 null
@@ -68,12 +72,14 @@ class GetUnifiedSavesUseCase @Inject constructor(
 
             if (matchingServer != null) {
                 usedServerIds.add(matchingServer.id)
-                val serverChannelName = parseServerChannelName(matchingServer.fileName, romBaseName)
+                val serverChannelName = matchingServer.slot
+                    ?: parseServerChannelName(matchingServer.fileName, romBaseName)
                 val isLatest = isLatestFileName(matchingServer.fileName, romBaseName)
                 val mergedChannelName = channelName ?: serverChannelName
-                // If this is a named channel (not latest), it should be locked regardless of local cache state
-                // This ensures session saves (unlocked) don't demote synced channel slots
                 val isLocked = mergedChannelName != null || cache.isLocked
+                val deviceSyncCurrent = saveSyncRepository.getDeviceId()?.let { devId ->
+                    matchingServer.deviceSyncs?.find { it.deviceId == devId }?.isCurrent
+                }
                 result.add(
                     UnifiedSaveEntry(
                         localCacheId = cache.id,
@@ -87,12 +93,12 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         isLocked = isLocked,
                         isHardcore = cache.isHardcore,
                         cheatsUsed = cache.cheatsUsed,
-                        isRollback = cache.isRollback
+                        isRollback = cache.isRollback,
+                        isUserCreatedSlot = cache.isLocked,
+                        isCurrent = deviceSyncCurrent ?: false
                     )
                 )
             } else {
-                // Only lock if this is the most recent for its channel AND has a channel name
-                // Older entries for the same channel should appear in timeline, not slots
                 val shouldBeLocked = isMostRecentForChannel && channelName != null
                 result.add(
                     UnifiedSaveEntry(
@@ -104,7 +110,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
                         isLocked = shouldBeLocked,
                         isHardcore = cache.isHardcore,
                         cheatsUsed = cache.cheatsUsed,
-                        isRollback = cache.isRollback
+                        isRollback = cache.isRollback,
+                        isUserCreatedSlot = cache.isLocked
                     )
                 )
             }
@@ -114,9 +121,13 @@ class GetUnifiedSavesUseCase @Inject constructor(
             if (serverSave.id in usedServerIds) continue
 
             val timestamp = parseServerTimestamp(serverSave.updatedAt) ?: Instant.now()
-            val serverChannelName = parseServerChannelName(serverSave.fileName, romBaseName)
+            val serverChannelName = serverSave.slot
+                ?: parseServerChannelName(serverSave.fileName, romBaseName)
             val isLatest = isLatestFileName(serverSave.fileName, romBaseName)
             val isLocked = serverChannelName != null
+            val deviceSyncCurrent = saveSyncRepository.getDeviceId()?.let { devId ->
+                serverSave.deviceSyncs?.find { it.deviceId == devId }?.isCurrent
+            }
 
             result.add(
                 UnifiedSaveEntry(
@@ -127,7 +138,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
                     source = UnifiedSaveEntry.Source.SERVER,
                     serverFileName = serverSave.fileName,
                     isLatest = isLatest,
-                    isLocked = isLocked
+                    isLocked = isLocked,
+                    isCurrent = deviceSyncCurrent ?: false
                 )
             )
         }
@@ -140,12 +152,13 @@ class GetUnifiedSavesUseCase @Inject constructor(
         channelName: String?,
         romBaseName: String?
     ): Boolean {
-        val serverBaseName = File(serverSave.fileName).nameWithoutExtension
-        return if (channelName != null) {
-            channelName.equals(serverBaseName, ignoreCase = true)
-        } else {
-            isLatestName(serverBaseName, romBaseName)
+        if (channelName != null) {
+            if (serverSave.slot != null) return serverSave.slot.equals(channelName, ignoreCase = true)
+            val serverBaseName = File(serverSave.fileName).nameWithoutExtension
+            return channelName.equals(serverBaseName, ignoreCase = true)
         }
+        val serverBaseName = File(serverSave.fileName).nameWithoutExtension
+        return isLatestName(serverBaseName, romBaseName)
     }
 
     private fun isTimestampSaveName(baseName: String): Boolean {

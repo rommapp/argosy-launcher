@@ -403,7 +403,9 @@ class GameDetailViewModel @Inject constructor(
             }
 
             val emulatorId = emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, game.platformSlug)
-            val canManageSaves = downloadStatus == GameDownloadStatus.DOWNLOADED &&
+            val prefs = preferencesRepository.userPreferences.first()
+            val canManageSaves = prefs.saveSyncEnabled &&
+                downloadStatus == GameDownloadStatus.DOWNLOADED &&
                 game.rommId != null &&
                 emulatorId != null &&
                 SavePathRegistry.getConfig(emulatorId) != null
@@ -642,7 +644,7 @@ class GameDetailViewModel @Inject constructor(
             )
         } else {
             SaveStatusInfo(
-                status = SaveSyncStatus.NO_SAVE,
+                status = if (cacheTimestamp != null) SaveSyncStatus.LOCAL_ONLY else SaveSyncStatus.NO_SAVE,
                 channelName = activeChannel,
                 activeSaveTimestamp = effectiveTimestamp,
                 lastSyncTime = lastSyncTime
@@ -651,22 +653,16 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private fun handleSaveStatusChanged(event: SaveStatusEvent) {
-        val status = if (event.isLocalOnly) {
-            SaveSyncStatus.LOCAL_ONLY
-        } else {
-            _uiState.value.saveStatusInfo?.status?.takeIf {
-                it != SaveSyncStatus.LOCAL_ONLY
-            } ?: SaveSyncStatus.SYNCED
-        }
+        val currentStatus = _uiState.value.saveStatusInfo?.status ?: SaveSyncStatus.NO_SAVE
 
         _uiState.update { state ->
             state.copy(
                 saveChannel = state.saveChannel.copy(activeChannel = event.channelName),
                 saveStatusInfo = SaveStatusInfo(
-                    status = status,
+                    status = currentStatus,
                     channelName = event.channelName,
                     activeSaveTimestamp = event.timestamp,
-                    lastSyncTime = if (event.isLocalOnly) null else state.saveStatusInfo?.lastSyncTime
+                    lastSyncTime = state.saveStatusInfo?.lastSyncTime
                 )
             )
         }
@@ -1662,8 +1658,24 @@ class GameDetailViewModel @Inject constructor(
         saveChannelDelegate.setFocusIndex(index)
     }
 
+    fun setSlotIndex(index: Int) {
+        saveChannelDelegate.setSlotIndex(index)
+    }
+
+    fun setHistoryIndex(index: Int) {
+        saveChannelDelegate.setHistoryIndex(index)
+    }
+
     fun handleSaveCacheLongPress(index: Int) {
         saveChannelDelegate.handleLongPress(index)
+    }
+
+    fun focusSlotsColumn() {
+        saveChannelDelegate.focusSlotsColumn()
+    }
+
+    fun focusHistoryColumn() {
+        saveChannelDelegate.focusHistoryColumn()
     }
 
     fun switchSaveTab(tab: com.nendo.argosy.ui.common.savechannel.SaveTab) {
@@ -1720,12 +1732,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun confirmRename() {
-        val state = _uiState.value.saveChannel
-        if (state.selectedTab == com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE) {
-            saveChannelDelegate.confirmCreateChannel(viewModelScope)
-        } else {
-            saveChannelDelegate.confirmRenameChannel(viewModelScope)
-        }
+        saveChannelDelegate.confirmRename(viewModelScope)
     }
 
     fun saveChannelSecondaryAction() {
@@ -1742,6 +1749,33 @@ class GameDetailViewModel @Inject constructor(
 
     fun confirmDeleteChannel() {
         saveChannelDelegate.confirmDeleteChannel(viewModelScope, ::handleSaveStatusChanged)
+    }
+
+    fun dismissMigrateConfirmation() {
+        saveChannelDelegate.dismissMigrateConfirmation()
+    }
+
+    fun confirmMigrateChannel() {
+        val game = _uiState.value.game ?: return
+        viewModelScope.launch {
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(
+                currentGameId, game.platformId, game.platformSlug
+            ) ?: "unknown"
+            saveChannelDelegate.confirmMigrateChannel(
+                scope = viewModelScope,
+                emulatorId = emulatorId,
+                onSaveStatusChanged = ::handleSaveStatusChanged,
+                onRestored = { }
+            )
+        }
+    }
+
+    fun dismissDeleteLegacyConfirmation() {
+        saveChannelDelegate.dismissDeleteLegacyConfirmation()
+    }
+
+    fun confirmDeleteLegacyChannel() {
+        saveChannelDelegate.confirmDeleteLegacyChannel(viewModelScope)
     }
 
     fun refreshGameData() {
@@ -2159,20 +2193,13 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             when {
-                saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog -> {
+                saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog || saveState.showMigrateConfirmation || saveState.showDeleteLegacyConfirmation -> {
                     return InputResult.UNHANDLED
                 }
                 saveState.isVisible -> {
                     when (saveState.selectedTab) {
-                        com.nendo.argosy.ui.common.savechannel.SaveTab.STATES -> {
-                            switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE)
-                        }
-                        com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE -> {
-                            if (saveState.hasSaveSlots) {
-                                switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS)
-                            }
-                        }
-                        com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS -> {}
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.SAVES -> focusSlotsColumn()
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.STATES -> {}
                     }
                     return InputResult.HANDLED
                 }
@@ -2203,19 +2230,12 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             when {
-                saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog -> {
+                saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog || saveState.showMigrateConfirmation || saveState.showDeleteLegacyConfirmation -> {
                     return InputResult.UNHANDLED
                 }
                 saveState.isVisible -> {
                     when (saveState.selectedTab) {
-                        com.nendo.argosy.ui.common.savechannel.SaveTab.SLOTS -> {
-                            switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE)
-                        }
-                        com.nendo.argosy.ui.common.savechannel.SaveTab.TIMELINE -> {
-                            if (saveState.hasStates) {
-                                switchSaveTab(com.nendo.argosy.ui.common.savechannel.SaveTab.STATES)
-                            }
-                        }
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.SAVES -> focusHistoryColumn()
                         com.nendo.argosy.ui.common.savechannel.SaveTab.STATES -> {}
                     }
                     return InputResult.HANDLED
@@ -2246,7 +2266,10 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
-            if (saveState.isVisible || saveState.showRestoreConfirmation ||
+            if (saveState.isVisible) {
+                return InputResult.UNHANDLED
+            }
+            if (saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
                 state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions ||
                 state.showMoreOptions || pickerState.hasAnyPickerOpen || state.showMissingDiscPrompt ||
@@ -2261,7 +2284,11 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
-            if (saveState.isVisible || saveState.showRestoreConfirmation ||
+            if (saveState.isVisible) {
+                saveChannelDelegate.syncServerSaves(viewModelScope)
+                return InputResult.HANDLED
+            }
+            if (saveState.showRestoreConfirmation ||
                 state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker ||
                 state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions ||
                 state.showMoreOptions || pickerState.hasAnyPickerOpen || state.showMissingDiscPrompt ||
@@ -2280,6 +2307,8 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showRenameDialog -> confirmRename()
                 saveState.showDeleteConfirmation -> confirmDeleteChannel()
                 saveState.showRestoreConfirmation -> restoreSave(syncToServer = false)
+                saveState.showMigrateConfirmation -> confirmMigrateChannel()
+                saveState.showDeleteLegacyConfirmation -> confirmDeleteLegacyChannel()
                 saveState.isVisible -> confirmSaveCacheSelection()
                 state.showScreenshotViewer -> closeScreenshotViewer()
                 state.showPermissionModal -> return InputResult.UNHANDLED
@@ -2309,6 +2338,8 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showRenameDialog -> dismissRenameDialog()
                 saveState.showDeleteConfirmation -> dismissDeleteConfirmation()
                 saveState.showRestoreConfirmation -> dismissRestoreConfirmation()
+                saveState.showMigrateConfirmation -> dismissMigrateConfirmation()
+                saveState.showDeleteLegacyConfirmation -> dismissDeleteLegacyConfirmation()
                 saveState.isVisible -> dismissSaveCacheDialog()
                 state.showScreenshotViewer -> closeScreenshotViewer()
                 state.showAchievementList -> hideAchievementList()
@@ -2397,7 +2428,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onSecondaryAction(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
-            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation) {
+            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showMigrateConfirmation && !saveState.showDeleteLegacyConfirmation) {
                 saveChannelSecondaryAction()
                 return InputResult.HANDLED
             }
@@ -2408,7 +2439,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onContextMenu(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
-            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation) {
+            if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showMigrateConfirmation && !saveState.showDeleteLegacyConfirmation) {
                 saveChannelTertiaryAction()
                 return InputResult.HANDLED
             }

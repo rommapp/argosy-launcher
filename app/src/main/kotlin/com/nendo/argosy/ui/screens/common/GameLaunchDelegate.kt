@@ -451,7 +451,7 @@ class GameLaunchDelegate @Inject constructor(
 
                 _syncOverlayState.value = SyncOverlayState(
                     gameTitle,
-                    SyncProgress.PostSession.CheckingSave(null)
+                    SyncProgress.PostSession.CheckingSave(session.channelName)
                 )
 
                 val result = playSessionTracker.endSession()

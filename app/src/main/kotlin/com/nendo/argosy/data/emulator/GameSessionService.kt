@@ -69,6 +69,7 @@ class GameSessionService : Service() {
     private var sessionStartTime: Long = 0
     private var isOverlayVisible = false
     private var isWaitingForDirectory = false
+    private var lastMidGameCacheId: Long = -1
 
     private var helmIcon: ImageView? = null
     private var checkIcon: ImageView? = null
@@ -123,6 +124,7 @@ class GameSessionService : Service() {
                 currentChannelName = channelName
                 currentIsHardcore = isHardcore
                 sessionStartTime = if (startTime > 0) startTime else System.currentTimeMillis()
+                lastMidGameCacheId = -1
 
                 startForegroundWithNotification(gameTitle, NotificationState.PLAYING)
 
@@ -272,6 +274,11 @@ class GameSessionService : Service() {
 
         serviceScope.launch {
             try {
+                if (lastMidGameCacheId > 0) {
+                    saveCacheManager.deleteCachedSave(lastMidGameCacheId)
+                    lastMidGameCacheId = -1
+                }
+
                 val result = saveCacheManager.cacheCurrentSave(
                     gameId = gameId,
                     emulatorId = emulatorId,
@@ -279,15 +286,14 @@ class GameSessionService : Service() {
                     channelName = currentChannelName,
                     isLocked = false,
                     isHardcore = currentIsHardcore,
-                    skipDuplicateCheck = false,
+                    skipDuplicateCheck = true,
                     needsRemoteSync = true
                 )
                 when (result) {
                     is SaveCacheManager.CacheResult.Created -> {
-                        Logger.info(TAG, "Live cache created for gameId=$gameId, updating activeSaveTimestamp to ${result.timestamp}")
+                        lastMidGameCacheId = result.cacheId
+                        Logger.info(TAG, "Live cache created for gameId=$gameId (cacheId=${result.cacheId}), updating activeSaveTimestamp to ${result.timestamp}")
                         gameDao.updateActiveSaveTimestamp(gameId, result.timestamp)
-                        val verifyTs = gameDao.getActiveSaveTimestamp(gameId)
-                        Logger.info(TAG, "Live cache: verified activeSaveTimestamp in DB = $verifyTs")
                     }
                     is SaveCacheManager.CacheResult.Duplicate -> {
                         Logger.debug(TAG, "Live cache skipped (duplicate) for gameId=$gameId")

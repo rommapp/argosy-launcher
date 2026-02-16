@@ -80,6 +80,9 @@ class RomMConnectionManager @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         Logger.info(TAG, "initialize: baseUrl=${prefs.rommBaseUrl?.take(30)}, hasToken=${prefs.rommToken != null}")
         cachedDeviceId = prefs.rommDeviceId
+        if (cachedDeviceId != null) {
+            saveSyncRepository.get().setDeviceId(cachedDeviceId)
+        }
         if (!prefs.rommBaseUrl.isNullOrBlank()) {
             val result = connect(prefs.rommBaseUrl, prefs.rommToken)
             Logger.info(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
@@ -107,6 +110,9 @@ class RomMConnectionManager @Inject constructor(
                     val version = response.body()?.version ?: "unknown"
                     _connectionState.value = ConnectionState.Connected(version)
                     Logger.info(TAG, "connect: success at $normalizedUrl, version=$version")
+                    if (token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
+                        registerDeviceIfNeeded()
+                    }
                     return RomMResult.Success(normalizedUrl)
                 } else {
                     lastError = "Server returned ${response.code()}"
@@ -247,10 +253,10 @@ class RomMConnectionManager @Inject constructor(
             if (response.isSuccessful) {
                 val device = response.body()
                 if (device != null) {
-                    cachedDeviceId = device.id
-                    saveSyncRepository.get().setDeviceId(device.id)
-                    userPreferencesRepository.setRommDeviceId(device.id, clientVersion)
-                    Logger.info(TAG, "Device registered: ${device.id}")
+                    cachedDeviceId = device.deviceId
+                    saveSyncRepository.get().setDeviceId(device.deviceId)
+                    userPreferencesRepository.setRommDeviceId(device.deviceId, clientVersion)
+                    Logger.info(TAG, "Device registered: ${device.deviceId}")
                 }
             } else {
                 Logger.error(TAG, "Device registration failed: ${response.code()}")

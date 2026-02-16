@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.dualscreen.gamedetail
 
+import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputResult
 
@@ -12,7 +13,7 @@ class DualGameDetailInputHandler(
     private val onBroadcastModalState: (DualGameDetailViewModel, ActiveModal) -> Unit,
     private val onBroadcastModalClose: () -> Unit,
     private val onBroadcastInlineUpdate: (String, Any) -> Unit,
-    private val onBroadcastDirectAction: (String, Long) -> Unit,
+    private val onBroadcastDirectAction: (String, Long, String?) -> Unit,
     private val onBroadcastEmulatorModalOpen: (List<com.nendo.argosy.data.emulator.InstalledEmulator>, String?) -> Unit,
     private val onBroadcastCollectionModalOpen: (DualGameDetailViewModel) -> Unit,
     private val onBroadcastSaveNamePrompt: (String, Long?) -> Unit,
@@ -179,9 +180,9 @@ class DualGameDetailInputHandler(
         when (option) {
             GameDetailOption.PLAY -> {
                 if (vm.uiState.value.isPlayable) {
-                    onBroadcastDirectAction("PLAY", gameId)
+                    onBroadcastDirectAction("PLAY", gameId, vm.uiState.value.activeChannel)
                 } else {
-                    onBroadcastDirectAction("DOWNLOAD", gameId)
+                    onBroadcastDirectAction("DOWNLOAD", gameId, null)
                 }
             }
             GameDetailOption.RATING -> {
@@ -217,9 +218,9 @@ class DualGameDetailInputHandler(
                     onBroadcastCollectionModalOpen(vm)
                 }
             }
-            GameDetailOption.REFRESH_METADATA -> onBroadcastDirectAction("REFRESH_METADATA", gameId)
-            GameDetailOption.DELETE -> onBroadcastDirectAction("DELETE", gameId)
-            GameDetailOption.HIDE -> onBroadcastDirectAction("HIDE", gameId)
+            GameDetailOption.REFRESH_METADATA -> onBroadcastDirectAction("REFRESH_METADATA", gameId, null)
+            GameDetailOption.DELETE -> onBroadcastDirectAction("DELETE", gameId, null)
+            GameDetailOption.HIDE -> onBroadcastDirectAction("HIDE", gameId, null)
         }
     }
 

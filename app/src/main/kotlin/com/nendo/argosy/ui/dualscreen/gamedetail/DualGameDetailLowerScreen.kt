@@ -67,6 +67,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
+import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
+import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
 import com.nendo.argosy.ui.util.touchOnly
 import java.io.File
 import java.text.SimpleDateFormat

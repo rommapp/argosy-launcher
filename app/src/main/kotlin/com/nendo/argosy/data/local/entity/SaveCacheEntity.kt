@@ -31,7 +31,8 @@ data class SaveCacheEntity(
     val channelName: String? = null,
     val needsRemoteSync: Boolean = false,
     val lastSyncedAt: Instant? = null,
-    val remoteSyncError: String? = null
+    val remoteSyncError: String? = null,
+    val rommSaveId: Long? = null
 ) {
     companion object {
         @Deprecated("Hardcore saves now use isHardcore flag instead of special slot name")

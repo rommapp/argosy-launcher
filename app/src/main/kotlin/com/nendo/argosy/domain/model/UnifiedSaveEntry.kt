@@ -15,7 +15,9 @@ data class UnifiedSaveEntry(
     val isLocked: Boolean = false,
     val isHardcore: Boolean = false,
     val cheatsUsed: Boolean = false,
-    val isRollback: Boolean = false
+    val isRollback: Boolean = false,
+    val isUserCreatedSlot: Boolean = false,
+    val isCurrent: Boolean = false
 ) {
     enum class Source { LOCAL, SERVER, BOTH }
 

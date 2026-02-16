@@ -24,12 +24,24 @@ data class RomMDevice(
 )
 
 @JsonClass(generateAdapter = true)
+data class RomMDeviceRegistrationResponse(
+    @Json(name = "device_id") val deviceId: String,
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "created_at") val createdAt: String? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class RomMDeviceSync(
     @Json(name = "device_id") val deviceId: String,
     @Json(name = "device_name") val deviceName: String? = null,
     @Json(name = "last_synced_at") val lastSyncedAt: String? = null,
     @Json(name = "is_untracked") val isUntracked: Boolean = false,
     @Json(name = "is_current") val isCurrent: Boolean = false
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMDeviceIdRequest(
+    @Json(name = "device_id") val deviceId: String
 )
 
 @JsonClass(generateAdapter = true)

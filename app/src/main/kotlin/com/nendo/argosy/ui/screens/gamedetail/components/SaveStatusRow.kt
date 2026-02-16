@@ -51,11 +51,7 @@ data class SaveStatusInfo(
         }
 
     val effectiveStatus: SaveSyncStatus
-        get() = when {
-            activeSaveTimestamp != null -> SaveSyncStatus.LOCAL_ONLY
-            channelName != null -> SaveSyncStatus.LOCAL_ONLY
-            else -> status
-        }
+        get() = status
 
     val displayTime: String?
         get() = when {

@@ -456,8 +456,11 @@ class MainActivity : ComponentActivity() {
                         DualScreenBroadcasts.EXTRA_GAME_ID, -1
                     )
                     if (gameId < 0) return
+                    val channelName = intent.getStringExtra(
+                        DualScreenBroadcasts.EXTRA_CHANNEL_NAME
+                    )
                     when (type) {
-                        "PLAY" -> handleDualPlay(gameId)
+                        "PLAY" -> handleDualPlay(gameId, channelName)
                         "DOWNLOAD" -> handleDualDownload(gameId)
                         "REFRESH_METADATA" -> handleDualRefresh(gameId)
                         "DELETE" -> handleDualDelete(gameId)
@@ -1071,10 +1074,11 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun handleDualPlay(gameId: Long) {
+    private fun handleDualPlay(gameId: Long, channelName: String? = null) {
         gameLaunchDelegate.launchGame(
             scope = activityScope,
             gameId = gameId,
+            channelName = channelName,
             onLaunch = { intent ->
                 val options = displayAffinityHelper.getActivityOptions(
                     forEmulator = true,

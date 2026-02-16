@@ -29,7 +29,10 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
     }
 
     sealed class Result {
-        data object Uploaded : Result()
+        data class Uploaded(
+            val rommSaveId: Long? = null,
+            val serverTimestamp: Instant? = null
+        ) : Result()
         data object Queued : Result()
         data class Conflict(
             val gameId: Long,
@@ -69,7 +72,8 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         emulatorPackage: String,
         sessionStartTime: Long = 0L,
         coreName: String? = null,
-        isHardcore: Boolean = false
+        isHardcore: Boolean = false,
+        channelName: String? = null
     ): Result {
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session end sync starting | emulatorPackage=$emulatorPackage, core=$coreName, sessionStart=$sessionStartTime, hardcore=$isHardcore")
 
@@ -160,7 +164,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         } else {
             Instant.ofEpochMilli(saveFile.lastModified())
         }
-        val activeChannel = game.activeSaveChannel
+        val activeChannel = channelName ?: game.activeSaveChannel
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Save ready for upload | path=$savePath, size=${saveSize}bytes, modified=$localModified, channel=$activeChannel")
 
         saveSyncRepository.createOrUpdateSyncEntity(
@@ -174,8 +178,11 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
 
         return when (val syncResult = saveSyncRepository.uploadSave(gameId, emulatorId, activeChannel, isHardcore = isHardcore)) {
             is SaveSyncResult.Success -> {
-                Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=UPLOADED | Save synced successfully")
-                Result.Uploaded
+                Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=UPLOADED | Save synced successfully | rommSaveId=${syncResult.rommSaveId}")
+                Result.Uploaded(
+                    rommSaveId = syncResult.rommSaveId,
+                    serverTimestamp = syncResult.serverTimestamp
+                )
             }
             is SaveSyncResult.Conflict -> {
                 Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=CONFLICT | local=${syncResult.localTimestamp}, server=${syncResult.serverTimestamp}")

@@ -156,6 +156,7 @@ class UserPreferencesRepository @Inject constructor(
         val ACTIVE_SESSION_START_TIME = stringPreferencesKey("active_session_start_time")
         val ACTIVE_SESSION_CORE_NAME = stringPreferencesKey("active_session_core_name")
         val ACTIVE_SESSION_IS_HARDCORE = booleanPreferencesKey("active_session_is_hardcore")
+        val ACTIVE_SESSION_CHANNEL_NAME = stringPreferencesKey("active_session_channel_name")
 
         val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
         val APP_AFFINITY_ENABLED = booleanPreferencesKey("app_affinity_enabled")
@@ -1161,7 +1162,8 @@ class UserPreferencesRepository @Inject constructor(
         val emulatorPackage: String,
         val startTime: Instant,
         val coreName: String?,
-        val isHardcore: Boolean
+        val isHardcore: Boolean,
+        val channelName: String? = null
     )
 
     suspend fun persistActiveSession(
@@ -1169,7 +1171,8 @@ class UserPreferencesRepository @Inject constructor(
         emulatorPackage: String,
         startTime: Instant,
         coreName: String?,
-        isHardcore: Boolean
+        isHardcore: Boolean,
+        channelName: String? = null
     ) {
         dataStore.edit { prefs ->
             prefs[Keys.ACTIVE_SESSION_GAME_ID] = gameId.toString()
@@ -1178,6 +1181,8 @@ class UserPreferencesRepository @Inject constructor(
             if (coreName != null) prefs[Keys.ACTIVE_SESSION_CORE_NAME] = coreName
             else prefs.remove(Keys.ACTIVE_SESSION_CORE_NAME)
             prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] = isHardcore
+            if (channelName != null) prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME] = channelName
+            else prefs.remove(Keys.ACTIVE_SESSION_CHANNEL_NAME)
         }
     }
 
@@ -1188,6 +1193,7 @@ class UserPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ACTIVE_SESSION_START_TIME)
             prefs.remove(Keys.ACTIVE_SESSION_CORE_NAME)
             prefs.remove(Keys.ACTIVE_SESSION_IS_HARDCORE)
+            prefs.remove(Keys.ACTIVE_SESSION_CHANNEL_NAME)
         }
     }
 
@@ -1204,7 +1210,8 @@ class UserPreferencesRepository @Inject constructor(
             emulatorPackage = emulator,
             startTime = startTime,
             coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
-            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false
+            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
+            channelName = prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME]
         )
     }
 
@@ -1220,7 +1227,8 @@ class UserPreferencesRepository @Inject constructor(
             emulatorPackage = emulator,
             startTime = startTime,
             coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
-            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false
+            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
+            channelName = prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME]
         )
     }
 

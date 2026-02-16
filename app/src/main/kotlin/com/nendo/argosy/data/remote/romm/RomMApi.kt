@@ -117,6 +117,9 @@ interface RomMApi {
     suspend fun uploadSave(
         @Query("rom_id") romId: Long,
         @Query("emulator") emulator: String?,
+        @Query("slot") slot: String? = null,
+        @Query("autocleanup") autocleanup: Boolean = false,
+        @Query("autocleanup_limit") autocleanupLimit: Int? = null,
         @Part saveFile: MultipartBody.Part
     ): Response<RomMSave>
 
@@ -124,13 +127,14 @@ interface RomMApi {
     @PUT("api/saves/{id}")
     suspend fun updateSave(
         @Path("id") saveId: Long,
+        @Query("slot") slot: String? = null,
         @Part saveFile: MultipartBody.Part
     ): Response<RomMSave>
 
-    @DELETE("api/saves/{id}")
-    suspend fun deleteSave(
-        @Path("id") saveId: Long
-    ): Response<Unit>
+    @POST("api/saves/delete")
+    suspend fun deleteSaves(
+        @Body body: RomMDeleteSavesRequest
+    ): Response<List<Long>>
 
     @Streaming
     @GET("api/saves/{id}/content/{fileName}")
@@ -144,7 +148,7 @@ interface RomMApi {
     @POST("api/devices")
     suspend fun registerDevice(
         @Body device: RomMDeviceRegistration
-    ): Response<RomMDevice>
+    ): Response<RomMDeviceRegistrationResponse>
 
     @GET("api/devices")
     suspend fun getDevices(): Response<List<RomMDevice>>
@@ -164,6 +168,9 @@ interface RomMApi {
         @Query("emulator") emulator: String?,
         @Query("device_id") deviceId: String,
         @Query("overwrite") overwrite: Boolean = false,
+        @Query("slot") slot: String? = null,
+        @Query("autocleanup") autocleanup: Boolean = false,
+        @Query("autocleanup_limit") autocleanupLimit: Int? = null,
         @Part saveFile: MultipartBody.Part
     ): Response<RomMSave>
 
@@ -172,6 +179,7 @@ interface RomMApi {
     suspend fun updateSaveWithDevice(
         @Path("id") saveId: Long,
         @Query("device_id") deviceId: String,
+        @Query("slot") slot: String? = null,
         @Part saveFile: MultipartBody.Part
     ): Response<RomMSave>
 
@@ -194,6 +202,12 @@ interface RomMApi {
     suspend fun getSaveWithDevice(
         @Path("id") saveId: Long,
         @Query("device_id") deviceId: String
+    ): Response<RomMSave>
+
+    @POST("api/saves/{id}/downloaded")
+    suspend fun confirmSaveDownloaded(
+        @Path("id") saveId: Long,
+        @Body body: RomMDeviceIdRequest
     ): Response<RomMSave>
 
     @Streaming

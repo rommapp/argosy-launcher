@@ -20,7 +20,7 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE id = :id")
     suspend fun getById(id: Long): SaveCacheEntity?
 
-    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND note = :channelName LIMIT 1")
+    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND channelName = :channelName LIMIT 1")
     suspend fun getByGameAndChannel(gameId: Long, channelName: String): SaveCacheEntity?
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND contentHash = :hash LIMIT 1")
@@ -45,7 +45,7 @@ interface SaveCacheDao {
 
     @Query("""
         SELECT * FROM save_cache
-        WHERE gameId = :gameId AND isHardcore = 0 AND slotName = :channelName
+        WHERE gameId = :gameId AND isHardcore = 0 AND channelName = :channelName
         ORDER BY cachedAt DESC
         LIMIT 1
     """)
@@ -60,7 +60,7 @@ interface SaveCacheDao {
     @Insert
     suspend fun insert(entity: SaveCacheEntity): Long
 
-    @Query("UPDATE save_cache SET note = :note, isLocked = (:note IS NOT NULL) WHERE id = :id")
+    @Query("UPDATE save_cache SET note = :note, channelName = :note, isLocked = (:note IS NOT NULL) WHERE id = :id")
     suspend fun setNote(id: Long, note: String?)
 
     @Query("DELETE FROM save_cache WHERE id = :id")
@@ -93,7 +93,7 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND cachedAt = :timestamp LIMIT 1")
     suspend fun getByTimestamp(gameId: Long, timestamp: Long): SaveCacheEntity?
 
-    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND note = :channelName ORDER BY cachedAt DESC LIMIT 1")
+    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND channelName = :channelName ORDER BY cachedAt DESC LIMIT 1")
     suspend fun getMostRecentInChannel(gameId: Long, channelName: String): SaveCacheEntity?
 
     @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
@@ -147,4 +147,10 @@ interface SaveCacheDao {
 
     @Query("UPDATE save_cache SET needsRemoteSync = 0 WHERE gameId = :gameId AND needsRemoteSync = 1")
     suspend fun clearAllDirtyFlags(gameId: Long)
+
+    @Query("UPDATE save_cache SET rommSaveId = :rommSaveId WHERE id = :id")
+    suspend fun updateRommSaveId(id: Long, rommSaveId: Long)
+
+    @Query("UPDATE save_cache SET cachedAt = :cachedAt WHERE id = :id")
+    suspend fun updateCachedAt(id: Long, cachedAt: Instant)
 }

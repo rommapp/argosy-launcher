@@ -84,7 +84,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         EmulatorUpdateEntity::class,
         PendingSyncQueueEntity::class
     ],
-    version = 75,
+    version = 78,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1124,6 +1124,28 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_73_74 = object : Migration(73, 74) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE platforms ADD COLUMN fsSlug TEXT DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_76_77 = object : Migration(76, 77) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN pendingDeviceSyncSaveId INTEGER")
+            }
+        }
+
+        val MIGRATION_77_78 = object : Migration(77, 78) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    UPDATE save_cache
+                    SET channelName = note
+                    WHERE channelName IS NULL AND note IS NOT NULL AND isLocked = 1
+                """)
+            }
+        }
+
+        val MIGRATION_75_76 = object : Migration(75, 76) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE save_cache ADD COLUMN rommSaveId INTEGER")
             }
         }
 

@@ -316,16 +316,15 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.dsemu.drastic"
         ),
-        // NOTE: Nightly builds (Oct 2025+) use intent.data URI, Beta uses PATH extra
-        // We send both for compatibility - nightly checks data first, beta falls back to PATH
         EmulatorDef(
             id = "melonds",
             packageName = "me.magnum.melonds",
             displayName = "melonDS",
             supportedPlatforms = setOf("nds"),
+            launchAction = "me.magnum.melonds.LAUNCH_ROM",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "me.magnum.melonds.ui.emulator.EmulatorActivity",
-                intentExtras = mapOf("PATH" to ExtraValue.FilePath)
+                intentExtras = mapOf("uri" to ExtraValue.FileUri)
             ),
             downloadUrl = "https://github.com/rafaelvcaetano/melonDS-android/releases/tag/nightly-release",
             githubRepo = "rafaelvcaetano/melonDS-android"

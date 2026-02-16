@@ -564,7 +564,6 @@ class GameLauncher @Inject constructor(
         config: LaunchConfig.Custom,
         forResume: Boolean
     ): Intent {
-        val usesIntentDataUri = shouldUseIntentDataUri(emulator)
         val needsUriPermission = config.intentExtras.values.any { it is ExtraValue.FilePath || it is ExtraValue.FileUri }
 
         // Pre-grant URI permission to emulator package for Android 11+ Scoped Storage compatibility
@@ -586,7 +585,7 @@ class GameLauncher @Inject constructor(
 
             addCategory(Intent.CATEGORY_DEFAULT)
 
-            if (emulator.launchAction == Intent.ACTION_VIEW && usesIntentDataUri) {
+            if (emulator.launchAction == Intent.ACTION_VIEW) {
                 val uri = if (config.useFileUri) {
                     Uri.fromFile(romFile)
                 } else {
@@ -607,7 +606,7 @@ class GameLauncher @Inject constructor(
             }
 
             var hasFileUri = false
-            val shouldSkipExtras = emulator.launchAction == Intent.ACTION_VIEW && usesIntentDataUri
+            val shouldSkipExtras = emulator.launchAction == Intent.ACTION_VIEW
             if (!shouldSkipExtras) {
                 config.intentExtras.forEach { (key, extraValue) ->
                     // Using when as expression enforces compile-time exhaustiveness for sealed class
@@ -644,23 +643,6 @@ class GameLauncher @Inject constructor(
         }
     }
 
-    private fun shouldUseIntentDataUri(emulator: EmulatorDef): Boolean {
-        if (emulator.packageName != "me.magnum.melonds") return true
-
-        val installed = emulatorDetector.installedEmulators.value
-            .find { it.def.packageName == emulator.packageName }
-            ?: return true
-
-        // melonDS Nightly builds (Oct 2025+) support intent.data URI
-        // Beta 1.10.0 (versionCode 33) only supports PATH extra
-        val supportsIntentData = installed.versionCode > 33 ||
-            installed.versionName?.contains("nightly", ignoreCase = true) == true
-
-        Logger.debug(TAG, "melonDS version: ${installed.versionName} (${installed.versionCode}), " +
-            "supportsIntentData=$supportsIntentData")
-
-        return supportsIntentData
-    }
 
     private fun buildCustomSchemeIntent(
         emulator: EmulatorDef,

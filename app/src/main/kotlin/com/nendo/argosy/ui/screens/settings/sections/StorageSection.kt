@@ -29,9 +29,9 @@ import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
-private data class StorageLayoutState(val platformsExpanded: Boolean)
+internal data class StorageLayoutState(val platformsExpanded: Boolean)
 
-private sealed class StorageItem(
+internal sealed class StorageItem(
     val key: String,
     val section: String,
     val visibleWhen: (StorageLayoutState) -> Boolean = { true }
@@ -92,6 +92,27 @@ internal fun storageMaxFocusIndex(platformsExpanded: Boolean, platformCount: Int
     val expandedItems = if (platformsExpanded) platformCount else 0
     return (fixedFocusableCount + expandedItems - 1).coerceAtLeast(0)
 }
+
+internal data class StorageLayoutInfo(
+    val layout: SettingsLayout<StorageItem, StorageLayoutState>,
+    val state: StorageLayoutState
+)
+
+internal fun createStorageLayoutInfo(
+    platformConfigs: List<PlatformStorageConfig>,
+    platformsExpanded: Boolean
+): StorageLayoutInfo {
+    val items = StorageItem.buildItems(platformConfigs)
+    val layout = createStorageLayout(items)
+    val state = StorageLayoutState(platformsExpanded)
+    return StorageLayoutInfo(layout, state)
+}
+
+internal fun storageItemAtFocusIndex(index: Int, info: StorageLayoutInfo): StorageItem? =
+    info.layout.itemAtFocusIndex(index, info.state)
+
+internal fun storageSections(info: StorageLayoutInfo): List<com.nendo.argosy.ui.components.ListSection> =
+    info.layout.buildSections(info.state)
 
 @Composable
 fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {

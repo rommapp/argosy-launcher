@@ -26,6 +26,13 @@ import com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAcc
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceSections
+import com.nendo.argosy.ui.screens.settings.sections.BoxArtItem
+import com.nendo.argosy.ui.screens.settings.sections.boxArtItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.StorageItem
+import com.nendo.argosy.ui.screens.settings.sections.StorageLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.storageItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.storageSections
 
 class SettingsInputHandler(
     private val viewModel: SettingsViewModel,
@@ -45,6 +52,9 @@ class SettingsInputHandler(
         )
         return emulatorsItemAtFocusIndex(state.focusedIndex, layoutInfo)
     }
+
+    private fun getStorageLayoutInfo(state: SettingsUiState): StorageLayoutInfo =
+        createStorageLayoutInfo(state.storage.platformConfigs, state.storage.platformsExpanded)
 
     private fun hasAlertDialogOpen(state: SettingsUiState): Boolean =
         state.steam.showAddGameDialog
@@ -253,64 +263,38 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.BOX_ART) {
-            val borderStyle = state.display.boxArtBorderStyle
-            val showGlassTint = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GLASS
-            val showGradient = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GRADIENT
-            val showAdvancedMode = state.display.gradientAdvancedMode
-            val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
-            val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
-            val showGlowIntensity = state.display.boxArtOuterEffect == com.nendo.argosy.data.preferences.BoxArtOuterEffect.GLOW
-            val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
-            var idx = 4
-            val glassTintIdx = if (showGlassTint) idx++ else -1
-            val gradientPresetIdx = if (showGradient) idx++ else -1
-            val gradientAdvancedIdx = if (showGradient) idx++ else -1
-            val sampleGridIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val sampleRadiusIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val minSatIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val minBrightIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val hueDistIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val satBoostIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val brightClampIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val iconPosIdx = idx++
-            val iconPadIdx = if (showIconPadding) idx++ else -1
-            val outerEffectIdx = idx++
-            val outerThicknessIdx = if (showOuterThickness) idx++ else -1
-            val glowIntensityIdx = if (showGlowIntensity) idx++ else -1
-            val glowColorIdx = if (showGlowIntensity) idx++ else -1
-            val innerEffectIdx = idx++
-            val innerThicknessIdx = if (showInnerThickness) idx++ else -1
-            when (state.focusedIndex) {
-                0 -> viewModel.cycleBoxArtShape(-1)
-                1 -> viewModel.cycleBoxArtCornerRadius(-1)
-                2 -> viewModel.cycleBoxArtBorderThickness(-1)
-                3 -> viewModel.cycleBoxArtBorderStyle(-1)
-                glassTintIdx -> viewModel.cycleGlassBorderTint(-1)
-                gradientPresetIdx -> viewModel.cycleGradientPreset(-1)
-                gradientAdvancedIdx -> viewModel.toggleGradientAdvancedMode()
-                sampleGridIdx -> viewModel.cycleGradientSampleGrid(-1)
-                sampleRadiusIdx -> viewModel.cycleGradientRadius(-1)
-                minSatIdx -> viewModel.cycleGradientMinSaturation(-1)
-                minBrightIdx -> viewModel.cycleGradientMinValue(-1)
-                hueDistIdx -> viewModel.cycleGradientHueDistance(-1)
-                satBoostIdx -> viewModel.cycleGradientSaturationBump(-1)
-                brightClampIdx -> viewModel.cycleGradientValueClamp(-1)
-                iconPosIdx -> viewModel.cycleSystemIconPosition(-1)
-                iconPadIdx -> viewModel.cycleSystemIconPadding(-1)
-                outerEffectIdx -> viewModel.cycleBoxArtOuterEffect(-1)
-                outerThicknessIdx -> viewModel.cycleBoxArtOuterEffectThickness(-1)
-                glowIntensityIdx -> viewModel.cycleBoxArtGlowStrength(-1)
-                glowColorIdx -> viewModel.cycleGlowColorMode(-1)
-                innerEffectIdx -> viewModel.cycleBoxArtInnerEffect(-1)
-                innerThicknessIdx -> viewModel.cycleBoxArtInnerEffectThickness(-1)
+            when (boxArtItemAtFocusIndex(state.focusedIndex, state.display)) {
+                BoxArtItem.Shape -> viewModel.cycleBoxArtShape(-1)
+                BoxArtItem.CornerRadius -> viewModel.cycleBoxArtCornerRadius(-1)
+                BoxArtItem.BorderThickness -> viewModel.cycleBoxArtBorderThickness(-1)
+                BoxArtItem.BorderStyle -> viewModel.cycleBoxArtBorderStyle(-1)
+                BoxArtItem.GlassTint -> viewModel.cycleGlassBorderTint(-1)
+                BoxArtItem.GradientPresetItem -> viewModel.cycleGradientPreset(-1)
+                BoxArtItem.GradientAdvanced -> viewModel.toggleGradientAdvancedMode()
+                BoxArtItem.SampleGrid -> viewModel.cycleGradientSampleGrid(-1)
+                BoxArtItem.SampleRadius -> viewModel.cycleGradientRadius(-1)
+                BoxArtItem.MinSaturation -> viewModel.cycleGradientMinSaturation(-1)
+                BoxArtItem.MinBrightness -> viewModel.cycleGradientMinValue(-1)
+                BoxArtItem.HueDistance -> viewModel.cycleGradientHueDistance(-1)
+                BoxArtItem.SaturationBoost -> viewModel.cycleGradientSaturationBump(-1)
+                BoxArtItem.BrightnessClamp -> viewModel.cycleGradientValueClamp(-1)
+                BoxArtItem.IconPos -> viewModel.cycleSystemIconPosition(-1)
+                BoxArtItem.IconPad -> viewModel.cycleSystemIconPadding(-1)
+                BoxArtItem.OuterEffect -> viewModel.cycleBoxArtOuterEffect(-1)
+                BoxArtItem.OuterThickness -> viewModel.cycleBoxArtOuterEffectThickness(-1)
+                BoxArtItem.GlowIntensity -> viewModel.cycleBoxArtGlowStrength(-1)
+                BoxArtItem.GlowColor -> viewModel.cycleGlowColorMode(-1)
+                BoxArtItem.InnerEffect -> viewModel.cycleBoxArtInnerEffect(-1)
+                BoxArtItem.InnerThickness -> viewModel.cycleBoxArtInnerEffectThickness(-1)
+                else -> {}
             }
             return InputResult.HANDLED
         }
 
         if (state.currentSection == SettingsSection.STORAGE) {
-            if (state.focusedIndex == 0) {
-                viewModel.adjustMaxConcurrentDownloads(-1)
-                return InputResult.HANDLED
+            when (storageItemAtFocusIndex(state.focusedIndex, getStorageLayoutInfo(state))) {
+                StorageItem.MaxDownloads -> { viewModel.adjustMaxConcurrentDownloads(-1); return InputResult.HANDLED }
+                else -> {}
             }
         }
 
@@ -333,9 +317,9 @@ class SettingsInputHandler(
                 val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                     state.server.connectionStatus == ConnectionStatus.OFFLINE
                 val steamBaseIndex = when {
-                    isConnected && state.syncSettings.saveSyncEnabled -> 6
-                    isConnected -> 4
-                    else -> 1
+                    isConnected && state.syncSettings.saveSyncEnabled -> 10
+                    isConnected -> 8
+                    else -> 2
                 }
                 val launcherIndex = state.focusedIndex - steamBaseIndex
                 if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
@@ -508,64 +492,38 @@ class SettingsInputHandler(
         }
 
         if (state.currentSection == SettingsSection.BOX_ART) {
-            val borderStyle = state.display.boxArtBorderStyle
-            val showGlassTint = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GLASS
-            val showGradient = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GRADIENT
-            val showAdvancedMode = state.display.gradientAdvancedMode
-            val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
-            val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
-            val showGlowIntensity = state.display.boxArtOuterEffect == com.nendo.argosy.data.preferences.BoxArtOuterEffect.GLOW
-            val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
-            var idx = 4
-            val glassTintIdx = if (showGlassTint) idx++ else -1
-            val gradientPresetIdx = if (showGradient) idx++ else -1
-            val gradientAdvancedIdx = if (showGradient) idx++ else -1
-            val sampleGridIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val sampleRadiusIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val minSatIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val minBrightIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val hueDistIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val satBoostIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val brightClampIdx = if (showGradient && showAdvancedMode) idx++ else -1
-            val iconPosIdx = idx++
-            val iconPadIdx = if (showIconPadding) idx++ else -1
-            val outerEffectIdx = idx++
-            val outerThicknessIdx = if (showOuterThickness) idx++ else -1
-            val glowIntensityIdx = if (showGlowIntensity) idx++ else -1
-            val glowColorIdx = if (showGlowIntensity) idx++ else -1
-            val innerEffectIdx = idx++
-            val innerThicknessIdx = if (showInnerThickness) idx++ else -1
-            when (state.focusedIndex) {
-                0 -> viewModel.cycleBoxArtShape(1)
-                1 -> viewModel.cycleBoxArtCornerRadius(1)
-                2 -> viewModel.cycleBoxArtBorderThickness(1)
-                3 -> viewModel.cycleBoxArtBorderStyle(1)
-                glassTintIdx -> viewModel.cycleGlassBorderTint(1)
-                gradientPresetIdx -> viewModel.cycleGradientPreset(1)
-                gradientAdvancedIdx -> viewModel.toggleGradientAdvancedMode()
-                sampleGridIdx -> viewModel.cycleGradientSampleGrid(1)
-                sampleRadiusIdx -> viewModel.cycleGradientRadius(1)
-                minSatIdx -> viewModel.cycleGradientMinSaturation(1)
-                minBrightIdx -> viewModel.cycleGradientMinValue(1)
-                hueDistIdx -> viewModel.cycleGradientHueDistance(1)
-                satBoostIdx -> viewModel.cycleGradientSaturationBump(1)
-                brightClampIdx -> viewModel.cycleGradientValueClamp(1)
-                iconPosIdx -> viewModel.cycleSystemIconPosition(1)
-                iconPadIdx -> viewModel.cycleSystemIconPadding(1)
-                outerEffectIdx -> viewModel.cycleBoxArtOuterEffect(1)
-                outerThicknessIdx -> viewModel.cycleBoxArtOuterEffectThickness(1)
-                glowIntensityIdx -> viewModel.cycleBoxArtGlowStrength(1)
-                glowColorIdx -> viewModel.cycleGlowColorMode(1)
-                innerEffectIdx -> viewModel.cycleBoxArtInnerEffect(1)
-                innerThicknessIdx -> viewModel.cycleBoxArtInnerEffectThickness(1)
+            when (boxArtItemAtFocusIndex(state.focusedIndex, state.display)) {
+                BoxArtItem.Shape -> viewModel.cycleBoxArtShape(1)
+                BoxArtItem.CornerRadius -> viewModel.cycleBoxArtCornerRadius(1)
+                BoxArtItem.BorderThickness -> viewModel.cycleBoxArtBorderThickness(1)
+                BoxArtItem.BorderStyle -> viewModel.cycleBoxArtBorderStyle(1)
+                BoxArtItem.GlassTint -> viewModel.cycleGlassBorderTint(1)
+                BoxArtItem.GradientPresetItem -> viewModel.cycleGradientPreset(1)
+                BoxArtItem.GradientAdvanced -> viewModel.toggleGradientAdvancedMode()
+                BoxArtItem.SampleGrid -> viewModel.cycleGradientSampleGrid(1)
+                BoxArtItem.SampleRadius -> viewModel.cycleGradientRadius(1)
+                BoxArtItem.MinSaturation -> viewModel.cycleGradientMinSaturation(1)
+                BoxArtItem.MinBrightness -> viewModel.cycleGradientMinValue(1)
+                BoxArtItem.HueDistance -> viewModel.cycleGradientHueDistance(1)
+                BoxArtItem.SaturationBoost -> viewModel.cycleGradientSaturationBump(1)
+                BoxArtItem.BrightnessClamp -> viewModel.cycleGradientValueClamp(1)
+                BoxArtItem.IconPos -> viewModel.cycleSystemIconPosition(1)
+                BoxArtItem.IconPad -> viewModel.cycleSystemIconPadding(1)
+                BoxArtItem.OuterEffect -> viewModel.cycleBoxArtOuterEffect(1)
+                BoxArtItem.OuterThickness -> viewModel.cycleBoxArtOuterEffectThickness(1)
+                BoxArtItem.GlowIntensity -> viewModel.cycleBoxArtGlowStrength(1)
+                BoxArtItem.GlowColor -> viewModel.cycleGlowColorMode(1)
+                BoxArtItem.InnerEffect -> viewModel.cycleBoxArtInnerEffect(1)
+                BoxArtItem.InnerThickness -> viewModel.cycleBoxArtInnerEffectThickness(1)
+                else -> {}
             }
             return InputResult.HANDLED
         }
 
         if (state.currentSection == SettingsSection.STORAGE) {
-            if (state.focusedIndex == 0) {
-                viewModel.adjustMaxConcurrentDownloads(1)
-                return InputResult.HANDLED
+            when (storageItemAtFocusIndex(state.focusedIndex, getStorageLayoutInfo(state))) {
+                StorageItem.MaxDownloads -> { viewModel.adjustMaxConcurrentDownloads(1); return InputResult.HANDLED }
+                else -> {}
             }
         }
 
@@ -588,9 +546,9 @@ class SettingsInputHandler(
                 val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                     state.server.connectionStatus == ConnectionStatus.OFFLINE
                 val steamBaseIndex = when {
-                    isConnected && state.syncSettings.saveSyncEnabled -> 6
-                    isConnected -> 4
-                    else -> 1
+                    isConnected && state.syncSettings.saveSyncEnabled -> 10
+                    isConnected -> 8
+                    else -> 2
                 }
                 val launcherIndex = state.focusedIndex - steamBaseIndex
                 if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
@@ -1143,7 +1101,7 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             SettingsSection.STORAGE -> {
-                viewModel.jumpToStoragePrevSection()
+                viewModel.jumpToPrevSection(storageSections(getStorageLayoutInfo(state)))
                 return InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {
@@ -1196,7 +1154,7 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             SettingsSection.STORAGE -> {
-                viewModel.jumpToStorageNextSection()
+                viewModel.jumpToNextSection(storageSections(getStorageLayoutInfo(state)))
                 return InputResult.HANDLED
             }
             SettingsSection.INTERFACE -> {

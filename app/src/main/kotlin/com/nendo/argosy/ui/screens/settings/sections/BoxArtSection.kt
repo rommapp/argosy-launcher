@@ -43,7 +43,7 @@ import com.nendo.argosy.ui.theme.BoxArtStyleConfig
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 
-private sealed class BoxArtItem(
+internal sealed class BoxArtItem(
     val key: String,
     val section: String,
     val visibleWhen: (DisplayState) -> Boolean = { true }
@@ -191,6 +191,9 @@ private val boxArtLayout = SettingsLayout<BoxArtItem, DisplayState>(
 )
 
 internal fun boxArtMaxFocusIndex(display: DisplayState): Int = boxArtLayout.maxFocusIndex(display)
+
+internal fun boxArtItemAtFocusIndex(index: Int, display: DisplayState): BoxArtItem? =
+    boxArtLayout.itemAtFocusIndex(index, display)
 
 @Composable
 fun BoxArtSection(

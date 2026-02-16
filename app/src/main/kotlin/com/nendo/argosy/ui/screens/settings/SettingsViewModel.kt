@@ -75,6 +75,8 @@ import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
 import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.BoxArtItem
+import com.nendo.argosy.ui.screens.settings.sections.boxArtItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoMaxFocusIndex
@@ -93,6 +95,9 @@ import com.nendo.argosy.ui.screens.settings.sections.MainSettingsItem
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.permissionsMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.StorageItem
+import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.storageItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageMaxFocusIndex
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -1713,8 +1718,8 @@ class SettingsViewModel @Inject constructor(
                 val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
                     state.server.connectionStatus == ConnectionStatus.OFFLINE
                 val steamBaseIndex = when {
-                    isConnected && state.syncSettings.saveSyncEnabled -> 9
-                    isConnected -> 7
+                    isConnected && state.syncSettings.saveSyncEnabled -> 10
+                    isConnected -> 8
                     else -> 2
                 }
                 state.focusedIndex - steamBaseIndex
@@ -1920,7 +1925,7 @@ class SettingsViewModel @Inject constructor(
                     if (launcherCount > 0) steamBaseIndex + launcherCount else steamBaseIndex
                 }
                 SettingsSection.SYNC_SETTINGS -> 3
-                SettingsSection.STEAM_SETTINGS -> 2 + state.steam.installedLaunchers.size
+                SettingsSection.STEAM_SETTINGS -> 1 + state.steam.installedLaunchers.size
                 SettingsSection.RETRO_ACHIEVEMENTS -> if (state.retroAchievements.showLoginForm) 3 else 0
                 SettingsSection.STORAGE -> storageMaxFocusIndex(
                     state.storage.platformsExpanded,
@@ -2929,40 +2934,6 @@ class SettingsViewModel @Inject constructor(
         storageDelegate.togglePlatformsExpanded()
     }
 
-    fun jumpToStorageNextSection() {
-        val state = _uiState.value
-        val storage = state.storage
-        val expandedPlatforms = if (storage.platformsExpanded) storage.platformConfigs.size else 0
-        val sectionStarts = listOf(
-            0,  // DOWNLOADS
-            2,  // FILE LOCATIONS
-            5,  // PLATFORM STORAGE
-            6 + expandedPlatforms  // SAVE DATA
-        )
-        val currentSection = sectionStarts.lastOrNull { it <= state.focusedIndex } ?: 0
-        val nextSectionStart = sectionStarts.firstOrNull { it > currentSection } ?: sectionStarts.last()
-        _uiState.update { it.copy(focusedIndex = nextSectionStart) }
-    }
-
-    fun jumpToStoragePrevSection() {
-        val state = _uiState.value
-        val storage = state.storage
-        val expandedPlatforms = if (storage.platformsExpanded) storage.platformConfigs.size else 0
-        val sectionStarts = listOf(
-            0,  // DOWNLOADS
-            2,  // FILE LOCATIONS
-            5,  // PLATFORM STORAGE
-            6 + expandedPlatforms  // SAVE DATA
-        )
-        val currentSectionIdx = sectionStarts.indexOfLast { it <= state.focusedIndex }.coerceAtLeast(0)
-        val prevSectionStart = if (state.focusedIndex == sectionStarts[currentSectionIdx] && currentSectionIdx > 0) {
-            sectionStarts[currentSectionIdx - 1]
-        } else {
-            sectionStarts[currentSectionIdx]
-        }
-        _uiState.update { it.copy(focusedIndex = prevSectionStart) }
-    }
-
     fun jumpToNextSection(sections: List<com.nendo.argosy.ui.components.ListSection>): Boolean {
         val currentFocus = _uiState.value.focusedIndex
         val nextSection = sections.firstOrNull { it.focusStartIndex > currentFocus }
@@ -3394,22 +3365,19 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.STORAGE -> {
-                val platformsExpandIndex = 5
-
-                when (state.focusedIndex) {
-                    0 -> cycleMaxConcurrentDownloads()
-                    1 -> cycleInstantDownloadThreshold()
-                    2 -> openFolderPicker()
-                    3 -> openImageCachePicker()
-                    4 -> validateImageCache()
-                    platformsExpandIndex -> togglePlatformsExpanded()
-                    else -> {
-                        if (state.focusedIndex > platformsExpandIndex) {
-                            val platformIndex = state.focusedIndex - platformsExpandIndex - 1
-                            val config = state.storage.platformConfigs.getOrNull(platformIndex)
-                            config?.let { openPlatformSettingsModal(it.platformId) }
-                        }
-                    }
+                val info = createStorageLayoutInfo(
+                    state.storage.platformConfigs, state.storage.platformsExpanded
+                )
+                when (val item = storageItemAtFocusIndex(state.focusedIndex, info)) {
+                    StorageItem.MaxDownloads -> cycleMaxConcurrentDownloads()
+                    StorageItem.Threshold -> cycleInstantDownloadThreshold()
+                    StorageItem.GlobalRomPath -> openFolderPicker()
+                    StorageItem.ImageCache -> openImageCachePicker()
+                    StorageItem.ValidateCache -> validateImageCache()
+                    StorageItem.PlatformsExpand -> togglePlatformsExpanded()
+                    is StorageItem.PlatformItem -> openPlatformSettingsModal(item.config.platformId)
+                    StorageItem.PurgeAll -> requestPurgeAll()
+                    else -> {}
                 }
                 InputResult.HANDLED
             }
@@ -3502,30 +3470,30 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SettingsSection.BOX_ART -> {
-                val borderStyle = state.display.boxArtBorderStyle
-                val showGlassTint = borderStyle == com.nendo.argosy.data.preferences.BoxArtBorderStyle.GLASS
-                val showIconPadding = state.display.systemIconPosition != com.nendo.argosy.data.preferences.SystemIconPosition.OFF
-                val showOuterThickness = state.display.boxArtOuterEffect != com.nendo.argosy.data.preferences.BoxArtOuterEffect.OFF
-                val showInnerThickness = state.display.boxArtInnerEffect != com.nendo.argosy.data.preferences.BoxArtInnerEffect.OFF
-                var idx = 3
-                val glassTintIdx = if (showGlassTint) idx++ else -1
-                val iconPosIdx = idx++
-                val iconPadIdx = if (showIconPadding) idx++ else -1
-                val outerEffectIdx = idx++
-                val outerThicknessIdx = if (showOuterThickness) idx++ else -1
-                val innerEffectIdx = idx++
-                val innerThicknessIdx = if (showInnerThickness) idx++ else -1
-                when (state.focusedIndex) {
-                    0 -> cycleBoxArtCornerRadius()
-                    1 -> cycleBoxArtBorderThickness()
-                    2 -> cycleBoxArtBorderStyle()
-                    glassTintIdx -> cycleGlassBorderTint()
-                    iconPosIdx -> cycleSystemIconPosition()
-                    iconPadIdx -> cycleSystemIconPadding()
-                    outerEffectIdx -> cycleBoxArtOuterEffect()
-                    outerThicknessIdx -> cycleBoxArtOuterEffectThickness()
-                    innerEffectIdx -> cycleBoxArtInnerEffect()
-                    innerThicknessIdx -> cycleBoxArtInnerEffectThickness()
+                when (boxArtItemAtFocusIndex(state.focusedIndex, state.display)) {
+                    BoxArtItem.Shape -> cycleBoxArtShape()
+                    BoxArtItem.CornerRadius -> cycleBoxArtCornerRadius()
+                    BoxArtItem.BorderThickness -> cycleBoxArtBorderThickness()
+                    BoxArtItem.BorderStyle -> cycleBoxArtBorderStyle()
+                    BoxArtItem.GlassTint -> cycleGlassBorderTint()
+                    BoxArtItem.GradientPresetItem -> cycleGradientPreset()
+                    BoxArtItem.GradientAdvanced -> toggleGradientAdvancedMode()
+                    BoxArtItem.SampleGrid -> cycleGradientSampleGrid(1)
+                    BoxArtItem.SampleRadius -> cycleGradientRadius(1)
+                    BoxArtItem.MinSaturation -> cycleGradientMinSaturation(1)
+                    BoxArtItem.MinBrightness -> cycleGradientMinValue(1)
+                    BoxArtItem.HueDistance -> cycleGradientHueDistance(1)
+                    BoxArtItem.SaturationBoost -> cycleGradientSaturationBump(1)
+                    BoxArtItem.BrightnessClamp -> cycleGradientValueClamp(1)
+                    BoxArtItem.IconPos -> cycleSystemIconPosition()
+                    BoxArtItem.IconPad -> cycleSystemIconPadding()
+                    BoxArtItem.OuterEffect -> cycleBoxArtOuterEffect()
+                    BoxArtItem.OuterThickness -> cycleBoxArtOuterEffectThickness()
+                    BoxArtItem.GlowIntensity -> cycleBoxArtGlowStrength()
+                    BoxArtItem.GlowColor -> cycleGlowColorMode()
+                    BoxArtItem.InnerEffect -> cycleBoxArtInnerEffect()
+                    BoxArtItem.InnerThickness -> cycleBoxArtInnerEffectThickness()
+                    else -> {}
                 }
                 InputResult.HANDLED
             }

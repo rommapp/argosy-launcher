@@ -627,7 +627,7 @@ private fun GameDetailContent(
             ) {
                 val focusedItem = menuState.focusedItem
                 val canShowPlayOptions = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED &&
-                    game.achievements.isNotEmpty()
+                    game.isBuiltInEmulator
                 FooterBar(
                     hints = buildList {
                         add(InputButton.LB_RB to "Prev/Next Game")

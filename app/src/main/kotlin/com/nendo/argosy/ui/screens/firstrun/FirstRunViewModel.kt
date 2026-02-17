@@ -12,6 +12,7 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.LibretroCoreRegistry
+import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,7 +82,8 @@ class FirstRunViewModel @Inject constructor(
     private val romMRepository: RomMRepository,
     private val platformRepository: PlatformRepository,
     private val permissionHelper: PermissionHelper,
-    private val coreManager: LibretroCoreManager
+    private val coreManager: LibretroCoreManager,
+    private val gamepadInputHandler: GamepadInputHandler
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FirstRunUiState())
@@ -218,6 +220,7 @@ class FirstRunViewModel @Inject constructor(
                         else it
                     }
                     val allComplete = updatedCores.all { it.status == CoreDownloadStatus.COMPLETE || it.status == CoreDownloadStatus.FAILED }
+                    if (allComplete) gamepadInputHandler.blockInputFor(300)
                     state.copy(
                         coreDownloads = updatedCores,
                         coreDownloadComplete = allComplete
@@ -248,6 +251,7 @@ class FirstRunViewModel @Inject constructor(
                     else it
                 }
                 val allComplete = updatedCores.all { it.status == CoreDownloadStatus.COMPLETE || it.status == CoreDownloadStatus.FAILED }
+                if (allComplete) gamepadInputHandler.blockInputFor(300)
                 state.copy(
                     coreDownloads = updatedCores,
                     coreDownloadComplete = allComplete
@@ -372,10 +376,12 @@ class FirstRunViewModel @Inject constructor(
                     when (val summary = romMRepository.getLibrarySummary()) {
                         is RomMResult.Success -> {
                             val (platformCount, gameCount) = summary.data
+                            gamepadInputHandler.blockInputFor(300)
                             _uiState.update { state ->
                                 state.copy(
                                     isConnecting = false,
                                     currentStep = FirstRunStep.ROMM_SUCCESS,
+                                    focusedIndex = 0,
                                     rommGameCount = gameCount,
                                     rommPlatformCount = platformCount
                                 )

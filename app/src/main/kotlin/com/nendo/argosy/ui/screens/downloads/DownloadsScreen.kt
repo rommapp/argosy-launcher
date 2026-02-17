@@ -164,7 +164,7 @@ fun DownloadsScreen(
                 }
                 val speedText = if (totalSpeed > 0) formatSpeed(totalSpeed) else null
                 item { SectionHeader(headerText, speedText) }
-                itemsIndexed(activeItems) { index, download ->
+                itemsIndexed(activeItems, key = { _, d -> d.id }) { index, download ->
                     DownloadItem(
                         download = download,
                         isInActiveList = true,
@@ -176,7 +176,7 @@ fun DownloadsScreen(
 
             if (queuedItems.isNotEmpty()) {
                 item { SectionHeader("Queued") }
-                itemsIndexed(queuedItems) { index, download ->
+                itemsIndexed(queuedItems, key = { _, d -> d.id }) { index, download ->
                     DownloadItem(
                         download = download,
                         isInActiveList = false,
@@ -189,7 +189,7 @@ fun DownloadsScreen(
             if (uiState.completedItems.isNotEmpty()) {
                 item { SectionHeader("Finished") }
                 val completedStartIndex = activeItems.size + queuedItems.size
-                itemsIndexed(uiState.completedItems) { index, download ->
+                itemsIndexed(uiState.completedItems, key = { _, d -> d.id }) { index, download ->
                     CompletedDownloadItem(
                         download = download,
                         isFocused = (completedStartIndex + index) == uiState.focusedIndex

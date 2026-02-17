@@ -11,7 +11,6 @@ import com.nendo.argosy.data.remote.github.FetchReleaseResult
 import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
@@ -54,7 +53,6 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val soundManager: SoundFeedbackManager,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorConfigDao: EmulatorConfigDao,
-    private val gameDao: GameDao,
     private val coreManager: LibretroCoreManager,
     private val coreVersionDao: CoreVersionDao,
     private val emulatorUpdateManager: EmulatorUpdateManager,

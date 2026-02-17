@@ -21,8 +21,8 @@ import com.nendo.argosy.data.preferences.AmbientLedColorMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.hardware.LEDController
 import com.nendo.argosy.hardware.ScreenCaptureManager
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameListItem
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.screens.settings.DisplayState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,7 +37,7 @@ import javax.inject.Inject
 
 class DisplaySettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val ledController: LEDController,
     private val screenCaptureManager: ScreenCaptureManager
 ) {
@@ -56,20 +56,20 @@ class DisplaySettingsDelegate @Inject constructor(
 
     fun loadPreviewGame(scope: CoroutineScope) {
         scope.launch {
-            _previewGame.value = gameDao.getFirstGameWithCover()
+            _previewGame.value = gameRepository.getFirstGameWithCover()
         }
     }
 
     suspend fun loadPreviewGames(platformSlugs: Set<String>? = null): List<GameListItem> {
         if (platformSlugs != null && platformSlugs.isNotEmpty()) {
-            val filtered = gameDao.getRecentlyPlayedOnPlatforms(platformSlugs.toList(), 10)
+            val filtered = gameRepository.getRecentlyPlayedOnPlatforms(platformSlugs.toList(), 10)
             if (filtered.isNotEmpty()) return filtered
         }
-        return gameDao.getRecentlyPlayedWithCovers(10)
+        return gameRepository.getRecentlyPlayedWithCovers(10)
     }
 
     suspend fun getFirstCachedScreenshot(gameId: Long): String? {
-        val paths = gameDao.getCachedScreenshotPaths(gameId) ?: return null
+        val paths = gameRepository.getCachedScreenshotPaths(gameId) ?: return null
         val validPaths = paths.split(",").filter { it.startsWith("/") && java.io.File(it).exists() }
         return when {
             validPaths.size > 1 -> validPaths[1]
@@ -79,7 +79,7 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     suspend fun getScreenshotUrls(gameId: Long): List<String> {
-        val raw = gameDao.getScreenshotPaths(gameId) ?: return emptyList()
+        val raw = gameRepository.getScreenshotPaths(gameId) ?: return emptyList()
         return raw.split(",").filter { it.isNotBlank() }
     }
 

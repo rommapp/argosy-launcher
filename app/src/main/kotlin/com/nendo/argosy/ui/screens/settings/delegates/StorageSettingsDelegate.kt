@@ -5,9 +5,8 @@ import android.os.Environment
 import android.util.Log
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.ALauncherDatabase
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.storage.ManagedStorageAccessor
 import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
@@ -38,8 +37,7 @@ private const val TAG = "StorageSettingsDelegate"
 class StorageSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val gameRepository: GameRepository,
-    private val platformDao: PlatformDao,
-    private val gameDao: GameDao,
+    private val platformRepository: PlatformRepository,
     private val migrateStorageUseCase: MigrateStorageUseCase,
     private val migratePlatformStorageUseCase: MigratePlatformStorageUseCase,
     private val purgePlatformUseCase: PurgePlatformUseCase,
@@ -220,12 +218,12 @@ class StorageSettingsDelegate @Inject constructor(
     fun loadPlatformConfigs(scope: CoroutineScope) {
         scope.launch {
             val globalPath = _state.value.romStoragePath
-            val platforms = platformDao.observeConfigurablePlatforms().first()
+            val platforms = platformRepository.observeConfigurablePlatforms().first()
             val emulatorInfo = pendingEmulatorInfo
 
             val configs = platforms.map { platform ->
                 val effectivePath = platform.customRomPath ?: "$globalPath/${platform.slug}"
-                val downloadedCount = gameDao.countDownloadedByPlatform(platform.id)
+                val downloadedCount = gameRepository.countDownloadedByPlatform(platform.id)
                 val info = emulatorInfo?.get(platform.id)
                 PlatformStorageConfig(
                     platformId = platform.id,
@@ -287,7 +285,7 @@ class StorageSettingsDelegate @Inject constructor(
 
     fun togglePlatformSync(scope: CoroutineScope, platformId: Long, enabled: Boolean) {
         scope.launch {
-            platformDao.updateSyncEnabled(platformId, enabled)
+            platformRepository.updateSyncEnabled(platformId, enabled)
             updatePlatformConfigInState(platformId) { it.copy(syncEnabled = enabled) }
         }
     }
@@ -314,7 +312,7 @@ class StorageSettingsDelegate @Inject constructor(
 
     fun setPlatformPath(scope: CoroutineScope, platformId: Long, newPath: String) {
         scope.launch {
-            val platform = platformDao.getById(platformId) ?: return@launch
+            val platform = platformRepository.getById(platformId) ?: return@launch
             val globalPath = _state.value.romStoragePath
             val oldPath = platform.customRomPath ?: "$globalPath/${platform.slug}"
 
@@ -332,7 +330,7 @@ class StorageSettingsDelegate @Inject constructor(
                     )
                 }
             } else {
-                platformDao.updateCustomRomPath(platformId, newPath)
+                platformRepository.updateCustomRomPath(platformId, newPath)
                 updatePlatformConfigInState(platformId) {
                     it.copy(customRomPath = newPath, effectivePath = newPath)
                 }
@@ -343,7 +341,7 @@ class StorageSettingsDelegate @Inject constructor(
 
     fun resetPlatformToGlobal(scope: CoroutineScope, platformId: Long) {
         scope.launch {
-            val platform = platformDao.getById(platformId) ?: return@launch
+            val platform = platformRepository.getById(platformId) ?: return@launch
             val customPath = platform.customRomPath ?: return@launch
             val globalPath = _state.value.romStoragePath
             val newPath = "$globalPath/${platform.slug}"
@@ -362,7 +360,7 @@ class StorageSettingsDelegate @Inject constructor(
                     )
                 }
             } else {
-                platformDao.updateCustomRomPath(platformId, null)
+                platformRepository.updateCustomRomPath(platformId, null)
                 updatePlatformConfigInState(platformId) {
                     it.copy(customRomPath = null, effectivePath = newPath)
                 }
@@ -396,12 +394,12 @@ class StorageSettingsDelegate @Inject constructor(
 
         scope.launch {
             if (info.isResetToGlobal) {
-                platformDao.updateCustomRomPath(info.platformId, null)
+                platformRepository.updateCustomRomPath(info.platformId, null)
                 updatePlatformConfigInState(info.platformId) {
                     it.copy(customRomPath = null, effectivePath = info.newPath)
                 }
             } else {
-                platformDao.updateCustomRomPath(info.platformId, info.newPath)
+                platformRepository.updateCustomRomPath(info.platformId, info.newPath)
                 updatePlatformConfigInState(info.platformId) {
                     it.copy(customRomPath = info.newPath, effectivePath = info.newPath)
                 }

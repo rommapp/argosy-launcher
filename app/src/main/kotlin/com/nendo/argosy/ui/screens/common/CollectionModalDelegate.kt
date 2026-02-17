@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.screens.common
 
-import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
+import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CollectionModalDelegate @Inject constructor(
-    private val collectionDao: CollectionDao,
+    private val collectionRepository: CollectionRepository,
     private val romMRepository: RomMRepository,
     private val soundManager: SoundFeedbackManager
 ) {
@@ -35,9 +35,9 @@ class CollectionModalDelegate @Inject constructor(
 
     fun show(scope: CoroutineScope, gameId: Long) {
         scope.launch {
-            val allCollections = collectionDao.getAllCollections()
+            val allCollections = collectionRepository.getAllCollections()
                 .filter { it.name.isNotBlank() }
-            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+            val gameCollectionIds = collectionRepository.getCollectionIdsForGame(gameId)
 
             val collectionItems = allCollections.map { collection ->
                 CollectionItemUi(
@@ -107,10 +107,10 @@ class CollectionModalDelegate @Inject constructor(
         scope.launch {
             val isInCollection = state.collections.find { it.id == collectionId }?.isInCollection ?: false
             if (isInCollection) {
-                collectionDao.removeGameFromCollection(collectionId, gameId)
+                collectionRepository.removeGameFromCollection(collectionId, gameId)
                 romMRepository.removeGameFromCollectionWithSync(gameId, collectionId)
             } else {
-                collectionDao.addGameToCollection(
+                collectionRepository.addGameToCollection(
                     CollectionGameEntity(
                         collectionId = collectionId,
                         gameId = gameId
@@ -139,10 +139,10 @@ class CollectionModalDelegate @Inject constructor(
         if (gameId == 0L) return
 
         scope.launch {
-            val collectionId = collectionDao.insertCollection(
+            val collectionId = collectionRepository.insertCollection(
                 CollectionEntity(name = name)
             )
-            collectionDao.addGameToCollection(
+            collectionRepository.addGameToCollection(
                 CollectionGameEntity(
                     collectionId = collectionId,
                     gameId = gameId
@@ -150,9 +150,9 @@ class CollectionModalDelegate @Inject constructor(
             )
             romMRepository.createCollectionWithSync(name)
 
-            val allCollections = collectionDao.getAllCollections()
+            val allCollections = collectionRepository.getAllCollections()
                 .filter { it.name.isNotBlank() }
-            val gameCollectionIds = collectionDao.getCollectionIdsForGame(gameId)
+            val gameCollectionIds = collectionRepository.getCollectionIdsForGame(gameId)
 
             val collectionItems = allCollections.map { collection ->
                 CollectionItemUi(

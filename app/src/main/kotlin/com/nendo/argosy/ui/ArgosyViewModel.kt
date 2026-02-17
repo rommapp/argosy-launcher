@@ -15,7 +15,6 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.ConflictInfo
@@ -121,7 +120,6 @@ class ArgosyViewModel @Inject constructor(
     private val modalResetSignal: ModalResetSignal,
     private val playSessionTracker: PlaySessionTracker,
     private val saveSyncRepository: SaveSyncRepository,
-    private val gameDao: GameDao,
     private val libretroMigrationUseCase: LibretroMigrationUseCase,
     private val emulatorUpdateManager: EmulatorUpdateManager,
     private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator,
@@ -197,7 +195,7 @@ class ArgosyViewModel @Inject constructor(
     private fun observeSaveConflicts() {
         viewModelScope.launch {
             playSessionTracker.conflictEvents.collect { event ->
-                val game = gameDao.getById(event.gameId)
+                val game = gameRepository.getById(event.gameId)
                 _saveConflictInfo.value = SaveConflictInfo(
                     gameId = event.gameId,
                     gameName = game?.title ?: "Unknown Game",

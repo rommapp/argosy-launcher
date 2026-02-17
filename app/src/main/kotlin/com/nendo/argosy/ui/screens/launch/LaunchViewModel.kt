@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.screens.common.DiscPickerState
@@ -22,7 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class LaunchViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val preferencesRepository: UserPreferencesRepository,
     private val displayAffinityHelper: DisplayAffinityHelper
@@ -47,7 +47,7 @@ class LaunchViewModel @Inject constructor(
 
     fun startLaunchFlow(gameId: Long, channelName: String?, discId: Long?) {
         viewModelScope.launch {
-            val game = gameDao.getById(gameId)
+            val game = gameRepository.getById(gameId)
             _gameTitle.value = game?.title ?: "Game"
 
             val prefs = preferencesRepository.preferences.first()

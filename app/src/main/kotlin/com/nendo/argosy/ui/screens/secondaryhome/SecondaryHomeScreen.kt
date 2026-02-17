@@ -1,19 +1,12 @@
 package com.nendo.argosy.ui.screens.secondaryhome
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseIn
-import androidx.compose.animation.core.EaseOut
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,10 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,8 +55,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -75,10 +63,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.coil.AppIconData
+import com.nendo.argosy.ui.common.GamepadLongPressEffect
+import com.nendo.argosy.ui.common.LongPressAnimationConfig
+import com.nendo.argosy.ui.common.longPressGesture
+import com.nendo.argosy.ui.common.longPressGraphicsLayer
+import com.nendo.argosy.ui.common.rememberLongPressAnimationState
 import com.nendo.argosy.ui.theme.Dimens
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
@@ -305,42 +295,23 @@ private fun GameGridItem(
     val isDownloading = game.downloadProgress != null
     val progress = game.downloadProgress ?: 0f
 
-    val scope = rememberCoroutineScope()
-    val scale = remember { Animatable(1f) }
-    val alpha = remember { Animatable(1f) }
-    val whiteOverlay = remember { Animatable(0f) }
-    var touchAnimationJob by remember { mutableStateOf<Job?>(null) }
-    var gamepadAnimationJob by remember { mutableStateOf<Job?>(null) }
-    var actionTriggered by remember { mutableStateOf(false) }
-    var isAnimating by remember { mutableStateOf(false) }
+    val longPressState = rememberLongPressAnimationState(
+        config = LongPressAnimationConfig(
+            targetScale = 1.3f,
+            tapThreshold = 1.1f,
+            withFadeEffect = true,
+        ),
+    )
 
-    LaunchedEffect(isHoldingFromGamepad) {
-        if (isHoldingFromGamepad) {
-            isAnimating = true
-            gamepadAnimationJob = launch {
-                delay(250)
-                scale.animateTo(
-                    targetValue = 1.3f,
-                    animationSpec = tween(durationMillis = 500, easing = EaseIn)
-                )
-            }
-        } else if (gamepadAnimationJob != null) {
-            gamepadAnimationJob?.cancel()
-            gamepadAnimationJob = null
-            launch { scale.animateTo(1f, tween(150)) }
-            launch { alpha.animateTo(1f, tween(150)) }
-            launch { whiteOverlay.animateTo(0f, tween(150)) }
-            isAnimating = false
-        }
-    }
+    GamepadLongPressEffect(isHoldingFromGamepad, longPressState)
 
-    val showDownloadProgress = isDownloading && !isAnimating
+    val showDownloadProgress = isDownloading && !longPressState.isAnimating
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .then(
-                if (isFocused && !isAnimating) {
+                if (isFocused && !longPressState.isAnimating) {
                     Modifier.border(
                         width = 3.dp,
                         color = MaterialTheme.colorScheme.primary,
@@ -348,81 +319,13 @@ private fun GameGridItem(
                     )
                 } else Modifier
             )
-            .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-                this.alpha = alpha.value
-            }
-            .pointerInput(game.id) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    actionTriggered = false
-
-                    touchAnimationJob = scope.launch {
-                        isAnimating = true
-
-                        // Phase 1: Wait 250ms before starting scale animation
-                        delay(250)
-
-                        // Phase 2: Scale from 1.0 to 1.3 over 500ms (slow at first, accelerates)
-                        scale.animateTo(
-                            targetValue = 1.3f,
-                            animationSpec = tween(durationMillis = 500, easing = EaseIn)
-                        )
-
-                        // Trigger the action at 750ms
-                        actionTriggered = true
-                        onLongPressAction()
-
-                        // Phase 3: Quick scale to 2x while fading (fast at first, decelerates)
-                        launch {
-                            scale.animateTo(
-                                targetValue = 2f,
-                                animationSpec = tween(durationMillis = 100, easing = EaseOut)
-                            )
-                        }
-                        launch {
-                            alpha.animateTo(
-                                targetValue = 0f,
-                                animationSpec = tween(durationMillis = 100, easing = EaseOut)
-                            )
-                        }
-                        launch {
-                            whiteOverlay.animateTo(
-                                targetValue = 1f,
-                                animationSpec = tween(durationMillis = 100, easing = EaseOut)
-                            )
-                        }
-
-                        // Wait for fade animation to complete, then reset
-                        delay(100)
-                        scale.snapTo(1f)
-                        alpha.snapTo(1f)
-                        whiteOverlay.snapTo(0f)
-                        isAnimating = false
-                    }
-
-                    val up = waitForUpOrCancellation()
-
-                    // Cancel animation and reset if released early (before action triggered)
-                    if (!actionTriggered) {
-                        touchAnimationJob?.cancel()
-                        touchAnimationJob = null
-
-                        scope.launch {
-                            launch { scale.animateTo(1f, tween(150)) }
-                            launch { alpha.animateTo(1f, tween(150)) }
-                            launch { whiteOverlay.animateTo(0f, tween(150)) }
-                            isAnimating = false
-                        }
-
-                        // If released quickly (before animation started significantly), treat as tap
-                        if (up != null && scale.value < 1.1f) {
-                            onClick()
-                        }
-                    }
-                }
-            }
+            .longPressGraphicsLayer(longPressState)
+            .longPressGesture(
+                key = game.id,
+                state = longPressState,
+                onClick = onClick,
+                onLongPress = onLongPressAction,
+            )
             .padding(Dimens.spacingXs)
     ) {
         Column(
@@ -501,11 +404,11 @@ private fun GameGridItem(
                 }
 
                 // White overlay for fade-to-white effect
-                if (whiteOverlay.value > 0f) {
+                if (longPressState.whiteOverlay.value > 0f) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.White.copy(alpha = whiteOverlay.value))
+                            .background(Color.White.copy(alpha = longPressState.whiteOverlay.value))
                     )
                 }
             }
@@ -580,40 +483,27 @@ private fun AppItem(
     onClick: () -> Unit,
     onLongPressAction: (() -> Unit)? = null
 ) {
-    val scope = rememberCoroutineScope()
-    val scale = remember { Animatable(1f) }
-    var actionTriggered by remember { mutableStateOf(false) }
-    var touchAnimationJob by remember { mutableStateOf<Job?>(null) }
+    val longPressState = rememberLongPressAnimationState(
+        config = LongPressAnimationConfig(
+            targetScale = 1.2f,
+            tapThreshold = 1.05f,
+            withFadeEffect = false,
+        ),
+    )
 
     Column(
         modifier = Modifier
             .width(72.dp)
             .focusProperties { canFocus = false }
-            .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-            }
+            .longPressGraphicsLayer(longPressState, applyAlpha = false)
             .then(
                 if (onLongPressAction != null) {
-                    Modifier.pointerInput(app.packageName) {
-                        awaitEachGesture {
-                            awaitFirstDown(requireUnconsumed = false)
-                            actionTriggered = false
-                            touchAnimationJob = scope.launch {
-                                delay(250)
-                                scale.animateTo(1.2f, tween(durationMillis = 500, easing = EaseIn))
-                                actionTriggered = true
-                                onLongPressAction()
-                                scale.animateTo(1f, tween(150))
-                            }
-                            val up = waitForUpOrCancellation()
-                            if (!actionTriggered) {
-                                touchAnimationJob?.cancel()
-                                scope.launch { scale.animateTo(1f, tween(150)) }
-                                if (up != null && scale.value < 1.05f) onClick()
-                            }
-                        }
-                    }
+                    Modifier.longPressGesture(
+                        key = app.packageName,
+                        state = longPressState,
+                        onClick = onClick,
+                        onLongPress = onLongPressAction,
+                    )
                 } else {
                     Modifier.clickable(onClick = onClick)
                 }
@@ -764,10 +654,13 @@ private fun DrawerAppItem(
     onClick: () -> Unit,
     onPinToggle: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    val scale = remember { Animatable(1f) }
-    var actionTriggered by remember { mutableStateOf(false) }
-    var touchAnimationJob by remember { mutableStateOf<Job?>(null) }
+    val longPressState = rememberLongPressAnimationState(
+        config = LongPressAnimationConfig(
+            targetScale = 1.2f,
+            tapThreshold = 1.05f,
+            withFadeEffect = false,
+        ),
+    )
 
     Column(
         modifier = Modifier
@@ -779,29 +672,13 @@ private fun DrawerAppItem(
                     shape = RoundedCornerShape(Dimens.radiusSm)
                 ) else Modifier
             )
-            .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-            }
-            .pointerInput(app.packageName) {
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
-                    actionTriggered = false
-                    touchAnimationJob = scope.launch {
-                        delay(250)
-                        scale.animateTo(1.2f, tween(durationMillis = 500, easing = EaseIn))
-                        actionTriggered = true
-                        onPinToggle()
-                        scale.animateTo(1f, tween(150))
-                    }
-                    val up = waitForUpOrCancellation()
-                    if (!actionTriggered) {
-                        touchAnimationJob?.cancel()
-                        scope.launch { scale.animateTo(1f, tween(150)) }
-                        if (up != null && scale.value < 1.05f) onClick()
-                    }
-                }
-            }
+            .longPressGraphicsLayer(longPressState, applyAlpha = false)
+            .longPressGesture(
+                key = app.packageName,
+                state = longPressState,
+                onClick = onClick,
+                onLongPress = onPinToggle,
+            )
             .padding(Dimens.spacingXs),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

@@ -1,17 +1,11 @@
 package com.nendo.argosy.data.preferences
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.ui.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
@@ -19,1143 +13,263 @@ import javax.inject.Singleton
 
 @Singleton
 class UserPreferencesRepository @Inject constructor(
-    private val dataStore: DataStore<Preferences>
+    private val displayPrefs: DisplayPreferencesRepository,
+    private val syncPrefs: SyncPreferencesRepository,
+    private val controlsPrefs: ControlsPreferencesRepository,
+    private val storagePrefs: StoragePreferencesRepository,
+    private val appPrefs: AppPreferencesRepository,
+    private val builtinPrefs: BuiltinEmulatorPreferencesRepository,
+    private val sessionPrefs: SessionPreferencesRepository
 ) {
-    private object Keys {
-        val FIRST_RUN_COMPLETE = booleanPreferencesKey("first_run_complete")
-        val ROMM_URL = stringPreferencesKey("romm_url")
-        val ROMM_USERNAME = stringPreferencesKey("romm_username")
-        val ROMM_TOKEN = stringPreferencesKey("romm_token")
-        val ROMM_DEVICE_ID = stringPreferencesKey("romm_device_id")
-        val ROMM_DEVICE_CLIENT_VERSION = stringPreferencesKey("romm_device_client_version")
-        val RA_USERNAME = stringPreferencesKey("ra_username")
-        val RA_TOKEN = stringPreferencesKey("ra_token")
-        val ROM_STORAGE_PATH = stringPreferencesKey("rom_storage_path")
-
-        val THEME_MODE = stringPreferencesKey("theme_mode")
-        val PRIMARY_COLOR = intPreferencesKey("primary_color")
-        val SECONDARY_COLOR = intPreferencesKey("secondary_color")
-        val TERTIARY_COLOR = intPreferencesKey("tertiary_color")
-
-        val HAPTIC_ENABLED = booleanPreferencesKey("haptic_enabled")
-        val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
-        val SOUND_VOLUME = intPreferencesKey("sound_volume")
-        val SWAP_AB = booleanPreferencesKey("nintendo_button_layout")  // Keep old key for migration
-        val SWAP_XY = booleanPreferencesKey("swap_xy")
-        val CONTROLLER_LAYOUT = stringPreferencesKey("controller_layout")  // "auto", "xbox", "nintendo" - display only
-        val SWAP_START_SELECT = booleanPreferencesKey("swap_start_select")
-        val LAST_ROMM_SYNC = stringPreferencesKey("last_romm_sync")
-        val LAST_FAVORITES_SYNC = stringPreferencesKey("last_favorites_sync")
-        val LAST_FAVORITES_CHECK = stringPreferencesKey("last_favorites_check")
-
-        val SYNC_FILTER_REGIONS = stringPreferencesKey("sync_filter_regions")
-        val SYNC_FILTER_REGION_MODE = stringPreferencesKey("sync_filter_region_mode")
-        val SYNC_FILTER_EXCLUDE_BETA = booleanPreferencesKey("sync_filter_exclude_beta")
-        val SYNC_FILTER_EXCLUDE_PROTO = booleanPreferencesKey("sync_filter_exclude_proto")
-        val SYNC_FILTER_EXCLUDE_DEMO = booleanPreferencesKey("sync_filter_exclude_demo")
-        val SYNC_FILTER_EXCLUDE_HACK = booleanPreferencesKey("sync_filter_exclude_hack")
-        val SYNC_FILTER_DELETE_ORPHANS = booleanPreferencesKey("sync_filter_delete_orphans")
-        val SYNC_SCREENSHOTS_ENABLED = booleanPreferencesKey("sync_screenshots_enabled")
-
-        val HIDDEN_APPS = stringPreferencesKey("hidden_apps")
-        val SECONDARY_HOME_APPS = stringPreferencesKey("secondary_home_apps")
-        val VISIBLE_SYSTEM_APPS = stringPreferencesKey("visible_system_apps")
-        val APP_ORDER = stringPreferencesKey("app_order")
-        val MAX_CONCURRENT_DOWNLOADS = intPreferencesKey("max_concurrent_downloads")
-        val INSTANT_DOWNLOAD_THRESHOLD_MB = intPreferencesKey("instant_download_threshold_mb")
-        val UI_DENSITY = stringPreferencesKey("ui_density")
-        val SOUND_CONFIGS = stringPreferencesKey("sound_configs")
-        val BETA_UPDATES_ENABLED = booleanPreferencesKey("beta_updates_enabled")
-        val SAVE_SYNC_ENABLED = booleanPreferencesKey("save_sync_enabled")
-        val EXPERIMENTAL_FOLDER_SAVE_SYNC = booleanPreferencesKey("experimental_folder_save_sync")
-        val STATE_CACHE_ENABLED = booleanPreferencesKey("state_cache_enabled")
-        val SAVE_CACHE_LIMIT = intPreferencesKey("save_cache_limit")
-
-        val BACKGROUND_BLUR = intPreferencesKey("background_blur")
-        val BACKGROUND_SATURATION = intPreferencesKey("background_saturation")
-        val BACKGROUND_OPACITY = intPreferencesKey("background_opacity")
-        val USE_GAME_BACKGROUND = booleanPreferencesKey("use_game_background")
-        val CUSTOM_BACKGROUND_PATH = stringPreferencesKey("custom_background_path")
-        val USE_ACCENT_COLOR_FOOTER = booleanPreferencesKey("use_accent_color_footer")
-
-        val FILE_LOGGING_ENABLED = booleanPreferencesKey("file_logging_enabled")
-        val FILE_LOGGING_PATH = stringPreferencesKey("file_logging_path")
-        val FILE_LOG_LEVEL = stringPreferencesKey("file_log_level")
-        val SAVE_DEBUG_LOGGING_ENABLED = booleanPreferencesKey("save_debug_logging_enabled")
-
-        val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
-        val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
-        val BOX_ART_BORDER_THICKNESS = stringPreferencesKey("box_art_border_thickness")
-        val BOX_ART_BORDER_STYLE = stringPreferencesKey("box_art_border_style")
-        val GLASS_BORDER_TINT = stringPreferencesKey("glass_border_tint")
-        val BOX_ART_GLOW_STRENGTH = stringPreferencesKey("box_art_glow_strength")
-        val BOX_ART_OUTER_EFFECT = stringPreferencesKey("box_art_outer_effect")
-        val BOX_ART_OUTER_EFFECT_THICKNESS = stringPreferencesKey("box_art_outer_effect_thickness")
-        val GLOW_COLOR_MODE = stringPreferencesKey("glow_color_mode")
-        val BOX_ART_INNER_EFFECT = stringPreferencesKey("box_art_inner_effect")
-        val BOX_ART_INNER_EFFECT_THICKNESS = stringPreferencesKey("box_art_inner_effect_thickness")
-        val GRADIENT_PRESET = stringPreferencesKey("gradient_preset")
-        val GRADIENT_ADVANCED_MODE = booleanPreferencesKey("gradient_advanced_mode")
-        val SYSTEM_ICON_POSITION = stringPreferencesKey("system_icon_position")
-        val SYSTEM_ICON_PADDING = stringPreferencesKey("system_icon_padding")
-        val DEFAULT_VIEW = stringPreferencesKey("default_view")
-        val RECOMMENDED_GAME_IDS = stringPreferencesKey("recommended_game_ids")
-        val LAST_RECOMMENDATION_GENERATION = stringPreferencesKey("last_recommendation_generation")
-        val RECOMMENDATION_PENALTIES = stringPreferencesKey("recommendation_penalties")
-        val LAST_PENALTY_DECAY_WEEK = stringPreferencesKey("last_penalty_decay_week")
-        val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
-        val LIBRARY_RECENT_SEARCHES = stringPreferencesKey("library_recent_searches")
-        val ACCURATE_PLAY_TIME_ENABLED = booleanPreferencesKey("accurate_play_time_enabled")
-
-        val AMBIENT_AUDIO_ENABLED = booleanPreferencesKey("ambient_audio_enabled")
-        val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
-        val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
-        val AMBIENT_AUDIO_SHUFFLE = booleanPreferencesKey("ambient_audio_shuffle")
-        val IMAGE_CACHE_PATH = stringPreferencesKey("image_cache_path")
-
-        val SCREEN_DIMMER_ENABLED = booleanPreferencesKey("screen_dimmer_enabled")
-        val SCREEN_DIMMER_TIMEOUT_MINUTES = intPreferencesKey("screen_dimmer_timeout_minutes")
-        val SCREEN_DIMMER_LEVEL = intPreferencesKey("screen_dimmer_level")
-        val CUSTOM_BIOS_PATH = stringPreferencesKey("custom_bios_path")
-
-        val VIDEO_WALLPAPER_ENABLED = booleanPreferencesKey("video_wallpaper_enabled")
-        val VIDEO_WALLPAPER_DELAY_SECONDS = intPreferencesKey("video_wallpaper_delay_seconds")
-        val VIDEO_WALLPAPER_MUTED = booleanPreferencesKey("video_wallpaper_muted")
-        val UI_SCALE = intPreferencesKey("ui_scale")
-
-        val AMBIENT_LED_ENABLED = booleanPreferencesKey("ambient_led_enabled")
-        val AMBIENT_LED_BRIGHTNESS = intPreferencesKey("ambient_led_brightness")
-        val AMBIENT_LED_AUDIO_BRIGHTNESS = booleanPreferencesKey("ambient_led_audio_brightness")
-        val AMBIENT_LED_AUDIO_COLORS = booleanPreferencesKey("ambient_led_audio_colors")
-        val AMBIENT_LED_COLOR_MODE = stringPreferencesKey("ambient_led_color_mode")
-
-        val BUILTIN_SHADER = stringPreferencesKey("builtin_shader")
-        val BUILTIN_SHADER_CHAIN = stringPreferencesKey("builtin_shader_chain")
-        val BUILTIN_FILTER = stringPreferencesKey("builtin_filter")
-        val BUILTIN_LIBRETRO_ENABLED = booleanPreferencesKey("builtin_libretro_enabled")
-        val BUILTIN_ASPECT_RATIO = stringPreferencesKey("builtin_aspect_ratio")
-        val BUILTIN_SKIP_DUPLICATE_FRAMES = booleanPreferencesKey("builtin_skip_duplicate_frames")
-        val BUILTIN_LOW_LATENCY_AUDIO = booleanPreferencesKey("builtin_low_latency_audio")
-        val BUILTIN_FORCE_SOFTWARE_TIMING = booleanPreferencesKey("builtin_force_software_timing")
-        val BUILTIN_RUMBLE_ENABLED = booleanPreferencesKey("builtin_rumble_enabled")
-        val BUILTIN_BLACK_FRAME_INSERTION = booleanPreferencesKey("builtin_black_frame_insertion")
-        val BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1 = booleanPreferencesKey("builtin_limit_hotkeys_to_player1")
-        val BUILTIN_ANALOG_AS_DPAD = booleanPreferencesKey("builtin_analog_as_dpad")
-        val BUILTIN_DPAD_AS_ANALOG = booleanPreferencesKey("builtin_dpad_as_analog")
-        val BUILTIN_CORE_SELECTIONS = stringPreferencesKey("builtin_core_selections")
-        val BUILTIN_FAST_FORWARD_SPEED = intPreferencesKey("builtin_fast_forward_speed")
-        val BUILTIN_ROTATION = intPreferencesKey("builtin_rotation")
-        val BUILTIN_OVERSCAN_CROP = intPreferencesKey("builtin_overscan_crop")
-        val BUILTIN_REWIND_ENABLED = booleanPreferencesKey("builtin_rewind_enabled")
-        val BUILTIN_FRAMES_ENABLED = booleanPreferencesKey("builtin_frames_enabled")
-        val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
-        val ANDROID_DATA_SAF_URI = stringPreferencesKey("android_data_saf_uri")
-
-        val ACTIVE_SESSION_GAME_ID = stringPreferencesKey("active_session_game_id")
-        val ACTIVE_SESSION_EMULATOR = stringPreferencesKey("active_session_emulator")
-        val ACTIVE_SESSION_START_TIME = stringPreferencesKey("active_session_start_time")
-        val ACTIVE_SESSION_CORE_NAME = stringPreferencesKey("active_session_core_name")
-        val ACTIVE_SESSION_IS_HARDCORE = booleanPreferencesKey("active_session_is_hardcore")
-        val ACTIVE_SESSION_CHANNEL_NAME = stringPreferencesKey("active_session_channel_name")
-
-        val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
-        val APP_AFFINITY_ENABLED = booleanPreferencesKey("app_affinity_enabled")
-        val DISPLAY_ROLE_OVERRIDE = stringPreferencesKey("display_role_override")
-        val DUAL_SCREEN_INPUT_FOCUS = stringPreferencesKey("dual_screen_input_focus")
-    }
-
-    val userPreferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
+    val userPreferences: Flow<UserPreferences> = combine(
+        displayPrefs.preferences,
+        syncPrefs.preferences,
+        controlsPrefs.preferences,
+        storagePrefs.preferences,
+        appPrefs.preferences
+    ) { display, sync, controls, storage, app ->
         UserPreferences(
-            firstRunComplete = prefs[Keys.FIRST_RUN_COMPLETE] ?: false,
-            rommBaseUrl = prefs[Keys.ROMM_URL],
-            rommUsername = prefs[Keys.ROMM_USERNAME],
-            rommToken = prefs[Keys.ROMM_TOKEN],
-            rommDeviceId = prefs[Keys.ROMM_DEVICE_ID],
-            rommDeviceClientVersion = prefs[Keys.ROMM_DEVICE_CLIENT_VERSION],
-            raUsername = prefs[Keys.RA_USERNAME],
-            raToken = prefs[Keys.RA_TOKEN],
-            romStoragePath = prefs[Keys.ROM_STORAGE_PATH],
-            themeMode = ThemeMode.fromString(prefs[Keys.THEME_MODE]),
-            primaryColor = prefs[Keys.PRIMARY_COLOR],
-            secondaryColor = prefs[Keys.SECONDARY_COLOR],
-            tertiaryColor = prefs[Keys.TERTIARY_COLOR],
-            hapticEnabled = prefs[Keys.HAPTIC_ENABLED] ?: true,
-            soundEnabled = prefs[Keys.SOUND_ENABLED] ?: false,
-            soundVolume = prefs[Keys.SOUND_VOLUME] ?: 40,
-            swapAB = prefs[Keys.SWAP_AB] ?: false,
-            swapXY = prefs[Keys.SWAP_XY] ?: false,
-            controllerLayout = prefs[Keys.CONTROLLER_LAYOUT] ?: "auto",
-            swapStartSelect = prefs[Keys.SWAP_START_SELECT] ?: false,
-            lastRommSync = prefs[Keys.LAST_ROMM_SYNC]?.let { Instant.parse(it) },
-            lastFavoritesSync = prefs[Keys.LAST_FAVORITES_SYNC]?.let { Instant.parse(it) },
-            lastFavoritesCheck = prefs[Keys.LAST_FAVORITES_CHECK]?.let { Instant.parse(it) },
-            syncFilters = SyncFilterPreferences(
-                enabledRegions = prefs[Keys.SYNC_FILTER_REGIONS]
-                    ?.split(",")
-                    ?.filter { it.isNotBlank() }
-                    ?.toSet()
-                    ?: SyncFilterPreferences.DEFAULT_REGIONS,
-                regionMode = prefs[Keys.SYNC_FILTER_REGION_MODE]
-                    ?.let { RegionFilterMode.valueOf(it) }
-                    ?: RegionFilterMode.INCLUDE,
-                excludeBeta = prefs[Keys.SYNC_FILTER_EXCLUDE_BETA] ?: true,
-                excludePrototype = prefs[Keys.SYNC_FILTER_EXCLUDE_PROTO] ?: true,
-                excludeDemo = prefs[Keys.SYNC_FILTER_EXCLUDE_DEMO] ?: true,
-                excludeHack = prefs[Keys.SYNC_FILTER_EXCLUDE_HACK] ?: false,
-                deleteOrphans = prefs[Keys.SYNC_FILTER_DELETE_ORPHANS] ?: true
-            ),
-            syncScreenshotsEnabled = prefs[Keys.SYNC_SCREENSHOTS_ENABLED] ?: false,
-            backgroundBlur = prefs[Keys.BACKGROUND_BLUR] ?: 40,
-            backgroundSaturation = prefs[Keys.BACKGROUND_SATURATION] ?: 100,
-            backgroundOpacity = prefs[Keys.BACKGROUND_OPACITY] ?: 100,
-            useGameBackground = prefs[Keys.USE_GAME_BACKGROUND] ?: true,
-            customBackgroundPath = prefs[Keys.CUSTOM_BACKGROUND_PATH],
-            useAccentColorFooter = prefs[Keys.USE_ACCENT_COLOR_FOOTER] ?: false,
-            hiddenApps = prefs[Keys.HIDDEN_APPS]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?.toSet()
-                ?: emptySet(),
-            secondaryHomeApps = prefs[Keys.SECONDARY_HOME_APPS]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?.toSet()
-                ?: emptySet(),
-            visibleSystemApps = prefs[Keys.VISIBLE_SYSTEM_APPS]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?.toSet()
-                ?: emptySet(),
-            appOrder = prefs[Keys.APP_ORDER]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?: emptyList(),
-            maxConcurrentDownloads = prefs[Keys.MAX_CONCURRENT_DOWNLOADS] ?: 1,
-            instantDownloadThresholdMb = prefs[Keys.INSTANT_DOWNLOAD_THRESHOLD_MB] ?: 50,
-            gridDensity = GridDensity.fromString(prefs[Keys.UI_DENSITY]),
-            soundConfigs = parseSoundConfigs(prefs[Keys.SOUND_CONFIGS]),
-            betaUpdatesEnabled = prefs[Keys.BETA_UPDATES_ENABLED] ?: false,
-            saveSyncEnabled = prefs[Keys.SAVE_SYNC_ENABLED] ?: false,
-            experimentalFolderSaveSync = prefs[Keys.EXPERIMENTAL_FOLDER_SAVE_SYNC] ?: false,
-            stateCacheEnabled = prefs[Keys.STATE_CACHE_ENABLED] ?: true,
-            saveCacheLimit = prefs[Keys.SAVE_CACHE_LIMIT] ?: 10,
-            fileLoggingEnabled = prefs[Keys.FILE_LOGGING_ENABLED] ?: false,
-            fileLoggingPath = prefs[Keys.FILE_LOGGING_PATH],
-            fileLogLevel = LogLevel.fromString(prefs[Keys.FILE_LOG_LEVEL]),
-            saveDebugLoggingEnabled = prefs[Keys.SAVE_DEBUG_LOGGING_ENABLED] ?: false,
-            saveWatcherEnabled = prefs[Keys.SAVE_WATCHER_ENABLED] ?: false,
-            boxArtShape = BoxArtShape.fromString(prefs[Keys.BOX_ART_SHAPE]),
-            boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
-            boxArtBorderThickness = BoxArtBorderThickness.fromString(prefs[Keys.BOX_ART_BORDER_THICKNESS]),
-            boxArtBorderStyle = BoxArtBorderStyle.fromString(prefs[Keys.BOX_ART_BORDER_STYLE]),
-            glassBorderTint = GlassBorderTint.fromString(prefs[Keys.GLASS_BORDER_TINT]),
-            boxArtGlowStrength = BoxArtGlowStrength.fromString(prefs[Keys.BOX_ART_GLOW_STRENGTH]),
-            boxArtOuterEffect = BoxArtOuterEffect.fromString(prefs[Keys.BOX_ART_OUTER_EFFECT]),
-            boxArtOuterEffectThickness = BoxArtOuterEffectThickness.fromString(prefs[Keys.BOX_ART_OUTER_EFFECT_THICKNESS]),
-            glowColorMode = GlowColorMode.fromString(prefs[Keys.GLOW_COLOR_MODE]),
-            boxArtInnerEffect = BoxArtInnerEffect.fromString(prefs[Keys.BOX_ART_INNER_EFFECT]),
-            boxArtInnerEffectThickness = BoxArtInnerEffectThickness.fromString(prefs[Keys.BOX_ART_INNER_EFFECT_THICKNESS]),
-            gradientPreset = GradientPreset.fromString(prefs[Keys.GRADIENT_PRESET]),
-            gradientAdvancedMode = prefs[Keys.GRADIENT_ADVANCED_MODE] ?: false,
-            systemIconPosition = SystemIconPosition.fromString(prefs[Keys.SYSTEM_ICON_POSITION]),
-            systemIconPadding = SystemIconPadding.fromString(prefs[Keys.SYSTEM_ICON_PADDING]),
-            defaultView = DefaultView.fromString(prefs[Keys.DEFAULT_VIEW]),
-            recommendedGameIds = prefs[Keys.RECOMMENDED_GAME_IDS]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?.mapNotNull { it.toLongOrNull() }
-                ?: emptyList(),
-            lastRecommendationGeneration = prefs[Keys.LAST_RECOMMENDATION_GENERATION]?.let { Instant.parse(it) },
-            recommendationPenalties = parseRecommendationPenalties(prefs[Keys.RECOMMENDATION_PENALTIES]),
-            lastPenaltyDecayWeek = prefs[Keys.LAST_PENALTY_DECAY_WEEK],
-            lastSeenVersion = prefs[Keys.LAST_SEEN_VERSION],
-            libraryRecentSearches = prefs[Keys.LIBRARY_RECENT_SEARCHES]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?: emptyList(),
-            accuratePlayTimeEnabled = prefs[Keys.ACCURATE_PLAY_TIME_ENABLED] ?: false,
-            ambientAudioEnabled = prefs[Keys.AMBIENT_AUDIO_ENABLED] ?: false,
-            ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
-            ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
-            ambientAudioShuffle = prefs[Keys.AMBIENT_AUDIO_SHUFFLE] ?: false,
-            imageCachePath = prefs[Keys.IMAGE_CACHE_PATH],
-            screenDimmerEnabled = prefs[Keys.SCREEN_DIMMER_ENABLED] ?: true,
-            screenDimmerTimeoutMinutes = prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] ?: 2,
-            screenDimmerLevel = prefs[Keys.SCREEN_DIMMER_LEVEL] ?: 50,
-            customBiosPath = prefs[Keys.CUSTOM_BIOS_PATH],
-            videoWallpaperEnabled = prefs[Keys.VIDEO_WALLPAPER_ENABLED] ?: false,
-            videoWallpaperDelaySeconds = prefs[Keys.VIDEO_WALLPAPER_DELAY_SECONDS] ?: 3,
-            videoWallpaperMuted = prefs[Keys.VIDEO_WALLPAPER_MUTED] ?: false,
-            uiScale = prefs[Keys.UI_SCALE] ?: 100,
-            ambientLedEnabled = prefs[Keys.AMBIENT_LED_ENABLED] ?: false,
-            ambientLedBrightness = prefs[Keys.AMBIENT_LED_BRIGHTNESS] ?: 100,
-            ambientLedAudioBrightness = prefs[Keys.AMBIENT_LED_AUDIO_BRIGHTNESS] ?: true,
-            ambientLedAudioColors = prefs[Keys.AMBIENT_LED_AUDIO_COLORS] ?: false,
-            ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE]),
-            androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI],
-            builtinLibretroEnabled = prefs[Keys.BUILTIN_LIBRETRO_ENABLED] ?: true,
-            appAffinityEnabled = true,
-            displayRoleOverride = DisplayRoleOverride.fromString(prefs[Keys.DISPLAY_ROLE_OVERRIDE]),
-            dualScreenInputFocus = DualScreenInputFocus.fromString(prefs[Keys.DUAL_SCREEN_INPUT_FOCUS])
+            firstRunComplete = app.firstRunComplete,
+            rommBaseUrl = sync.rommBaseUrl,
+            rommUsername = sync.rommUsername,
+            rommToken = sync.rommToken,
+            rommDeviceId = sync.rommDeviceId,
+            rommDeviceClientVersion = sync.rommDeviceClientVersion,
+            raUsername = sync.raUsername,
+            raToken = sync.raToken,
+            romStoragePath = storage.romStoragePath,
+            themeMode = display.themeMode,
+            primaryColor = display.primaryColor,
+            secondaryColor = display.secondaryColor,
+            tertiaryColor = display.tertiaryColor,
+            hapticEnabled = controls.hapticEnabled,
+            soundEnabled = controls.soundEnabled,
+            soundVolume = controls.soundVolume,
+            swapAB = controls.swapAB,
+            swapXY = controls.swapXY,
+            controllerLayout = controls.controllerLayout,
+            swapStartSelect = controls.swapStartSelect,
+            lastRommSync = sync.lastRommSync,
+            lastFavoritesSync = sync.lastFavoritesSync,
+            lastFavoritesCheck = sync.lastFavoritesCheck,
+            syncFilters = sync.syncFilters,
+            syncScreenshotsEnabled = sync.syncScreenshotsEnabled,
+            backgroundBlur = display.backgroundBlur,
+            backgroundSaturation = display.backgroundSaturation,
+            backgroundOpacity = display.backgroundOpacity,
+            useGameBackground = display.useGameBackground,
+            customBackgroundPath = display.customBackgroundPath,
+            useAccentColorFooter = display.useAccentColorFooter,
+            hiddenApps = app.hiddenApps,
+            secondaryHomeApps = app.secondaryHomeApps,
+            visibleSystemApps = app.visibleSystemApps,
+            appOrder = app.appOrder,
+            maxConcurrentDownloads = storage.maxConcurrentDownloads,
+            instantDownloadThresholdMb = storage.instantDownloadThresholdMb,
+            gridDensity = display.gridDensity,
+            soundConfigs = controls.soundConfigs,
+            betaUpdatesEnabled = app.betaUpdatesEnabled,
+            saveSyncEnabled = sync.saveSyncEnabled,
+            experimentalFolderSaveSync = sync.experimentalFolderSaveSync,
+            stateCacheEnabled = sync.stateCacheEnabled,
+            saveCacheLimit = sync.saveCacheLimit,
+            fileLoggingEnabled = app.fileLoggingEnabled,
+            fileLoggingPath = app.fileLoggingPath,
+            fileLogLevel = app.fileLogLevel,
+            saveDebugLoggingEnabled = sync.saveDebugLoggingEnabled,
+            saveWatcherEnabled = sync.saveWatcherEnabled,
+            boxArtShape = display.boxArtShape,
+            boxArtCornerRadius = display.boxArtCornerRadius,
+            boxArtBorderThickness = display.boxArtBorderThickness,
+            boxArtBorderStyle = display.boxArtBorderStyle,
+            glassBorderTint = display.glassBorderTint,
+            boxArtGlowStrength = display.boxArtGlowStrength,
+            boxArtOuterEffect = display.boxArtOuterEffect,
+            boxArtOuterEffectThickness = display.boxArtOuterEffectThickness,
+            glowColorMode = display.glowColorMode,
+            boxArtInnerEffect = display.boxArtInnerEffect,
+            boxArtInnerEffectThickness = display.boxArtInnerEffectThickness,
+            gradientPreset = display.gradientPreset,
+            gradientAdvancedMode = display.gradientAdvancedMode,
+            systemIconPosition = display.systemIconPosition,
+            systemIconPadding = display.systemIconPadding,
+            defaultView = display.defaultView,
+            recommendedGameIds = app.recommendedGameIds,
+            lastRecommendationGeneration = app.lastRecommendationGeneration,
+            recommendationPenalties = app.recommendationPenalties,
+            lastPenaltyDecayWeek = app.lastPenaltyDecayWeek,
+            lastSeenVersion = app.lastSeenVersion,
+            libraryRecentSearches = app.libraryRecentSearches,
+            accuratePlayTimeEnabled = controls.accuratePlayTimeEnabled,
+            ambientAudioEnabled = controls.ambientAudioEnabled,
+            ambientAudioVolume = controls.ambientAudioVolume,
+            ambientAudioUri = controls.ambientAudioUri,
+            ambientAudioShuffle = controls.ambientAudioShuffle,
+            imageCachePath = sync.imageCachePath,
+            screenDimmerEnabled = display.screenDimmerEnabled,
+            screenDimmerTimeoutMinutes = display.screenDimmerTimeoutMinutes,
+            screenDimmerLevel = display.screenDimmerLevel,
+            customBiosPath = storage.customBiosPath,
+            videoWallpaperEnabled = display.videoWallpaperEnabled,
+            videoWallpaperDelaySeconds = display.videoWallpaperDelaySeconds,
+            videoWallpaperMuted = display.videoWallpaperMuted,
+            uiScale = display.uiScale,
+            ambientLedEnabled = display.ambientLedEnabled,
+            ambientLedBrightness = display.ambientLedBrightness,
+            ambientLedAudioBrightness = display.ambientLedAudioBrightness,
+            ambientLedAudioColors = display.ambientLedAudioColors,
+            ambientLedColorMode = display.ambientLedColorMode,
+            androidDataSafUri = sync.androidDataSafUri,
+            builtinLibretroEnabled = true,
+            appAffinityEnabled = app.appAffinityEnabled,
+            displayRoleOverride = display.displayRoleOverride,
+            dualScreenInputFocus = display.dualScreenInputFocus
         )
-    }
-
-    private fun parseRecommendationPenalties(raw: String?): Map<Long, Float> {
-        if (raw.isNullOrBlank()) return emptyMap()
-        return raw.split(",")
-            .mapNotNull { entry ->
-                val parts = entry.split(":")
-                if (parts.size == 2) {
-                    val gameId = parts[0].toLongOrNull()
-                    val penalty = parts[1].toFloatOrNull()
-                    if (gameId != null && penalty != null) gameId to penalty else null
-                } else null
-            }
-            .toMap()
-    }
-
-    private fun parseSoundConfigs(raw: String?): Map<SoundType, SoundConfig> {
-        if (raw.isNullOrBlank()) return emptyMap()
-        return raw.split(";")
-            .mapNotNull { entry ->
-                val parts = entry.split("=", limit = 2)
-                if (parts.size != 2) return@mapNotNull null
-                val soundType = try { SoundType.valueOf(parts[0]) } catch (e: Exception) { return@mapNotNull null }
-                val value = parts[1]
-                val config = when {
-                    value.startsWith("custom:") -> SoundConfig(customFilePath = value.removePrefix("custom:"))
-                    else -> SoundConfig(presetName = value)
-                }
-                soundType to config
-            }
-            .toMap()
-    }
-
-    private fun serializeSoundConfigs(configs: Map<SoundType, SoundConfig>): String {
-        return configs.entries.joinToString(";") { (type, config) ->
-            val value = when {
-                config.customFilePath != null -> "custom:${config.customFilePath}"
-                config.presetName != null -> config.presetName
-                else -> return@joinToString ""
-            }
-            "${type.name}=$value"
-        }
     }
 
     val preferences: Flow<UserPreferences> = userPreferences
 
-    suspend fun setFirstRunComplete() {
-        dataStore.edit { prefs ->
-            prefs[Keys.FIRST_RUN_COMPLETE] = true
-        }
-    }
-
-    suspend fun setRommConfig(url: String?, username: String?) {
-        dataStore.edit { prefs ->
-            if (url != null) prefs[Keys.ROMM_URL] = url else prefs.remove(Keys.ROMM_URL)
-            if (username != null) prefs[Keys.ROMM_USERNAME] = username else prefs.remove(Keys.ROMM_USERNAME)
-        }
-    }
-
-    suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null) {
-        dataStore.edit { prefs ->
-            val previousUrl = prefs[Keys.ROMM_URL]
-            prefs[Keys.ROMM_URL] = baseUrl
-            prefs[Keys.ROMM_TOKEN] = token
-            if (username != null) prefs[Keys.ROMM_USERNAME] = username
-            if (previousUrl != null && previousUrl != baseUrl) {
-                prefs.remove(Keys.ROMM_DEVICE_ID)
-                prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
-            }
-        }
-    }
-
-    suspend fun clearRomMCredentials() {
-        dataStore.edit { prefs ->
-            prefs.remove(Keys.ROMM_URL)
-            prefs.remove(Keys.ROMM_TOKEN)
-            prefs.remove(Keys.ROMM_USERNAME)
-            prefs.remove(Keys.ROMM_DEVICE_ID)
-            prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
-        }
-    }
-
-    suspend fun setRommDeviceId(deviceId: String, clientVersion: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.ROMM_DEVICE_ID] = deviceId
-            prefs[Keys.ROMM_DEVICE_CLIENT_VERSION] = clientVersion
-        }
-    }
-
-    suspend fun clearRommDeviceId() {
-        dataStore.edit { prefs ->
-            prefs.remove(Keys.ROMM_DEVICE_ID)
-            prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
-        }
-    }
-
-    suspend fun setRACredentials(username: String, token: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.RA_USERNAME] = username
-            prefs[Keys.RA_TOKEN] = token
-        }
-    }
-
-    suspend fun clearRACredentials() {
-        dataStore.edit { prefs ->
-            prefs.remove(Keys.RA_USERNAME)
-            prefs.remove(Keys.RA_TOKEN)
-        }
-    }
-
-    suspend fun setRomStoragePath(path: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.ROM_STORAGE_PATH] = path
-        }
-    }
-
-    suspend fun setThemeMode(mode: ThemeMode) {
-        dataStore.edit { prefs ->
-            prefs[Keys.THEME_MODE] = mode.name
-        }
-    }
-
-    suspend fun setCustomColors(primary: Int?, secondary: Int?, tertiary: Int?) {
-        dataStore.edit { prefs ->
-            if (primary != null) prefs[Keys.PRIMARY_COLOR] = primary else prefs.remove(Keys.PRIMARY_COLOR)
-            if (secondary != null) prefs[Keys.SECONDARY_COLOR] = secondary else prefs.remove(Keys.SECONDARY_COLOR)
-            if (tertiary != null) prefs[Keys.TERTIARY_COLOR] = tertiary else prefs.remove(Keys.TERTIARY_COLOR)
-        }
-    }
-
-    suspend fun setSecondaryColor(color: Int?) {
-        dataStore.edit { prefs ->
-            if (color != null) prefs[Keys.SECONDARY_COLOR] = color
-            else prefs.remove(Keys.SECONDARY_COLOR)
-        }
-    }
-
-    suspend fun setHapticEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.HAPTIC_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setSoundEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SOUND_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setSoundVolume(volume: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SOUND_VOLUME] = volume.coerceIn(0, 100)
-        }
-    }
-
-    suspend fun setSwapAB(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SWAP_AB] = enabled
-        }
-    }
-
-    suspend fun setSwapXY(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SWAP_XY] = enabled
-        }
-    }
-
-    suspend fun setControllerLayout(layout: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.CONTROLLER_LAYOUT] = layout
-        }
-    }
-
-    suspend fun setSwapStartSelect(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SWAP_START_SELECT] = enabled
-        }
-    }
-
-    suspend fun setLastRommSyncTime(time: Instant) {
-        dataStore.edit { prefs ->
-            prefs[Keys.LAST_ROMM_SYNC] = time.toString()
-        }
-    }
-
-    suspend fun setLastFavoritesSyncTime(time: Instant) {
-        dataStore.edit { prefs ->
-            prefs[Keys.LAST_FAVORITES_SYNC] = time.toString()
-        }
-    }
-
-    suspend fun setLastFavoritesCheckTime(time: Instant) {
-        dataStore.edit { prefs ->
-            prefs[Keys.LAST_FAVORITES_CHECK] = time.toString()
-        }
-    }
-
-    suspend fun setSyncFilterRegions(regions: Set<String>) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_FILTER_REGIONS] = regions.joinToString(",")
-        }
-    }
-
-    suspend fun setSyncFilterRegionMode(mode: RegionFilterMode) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_FILTER_REGION_MODE] = mode.name
-        }
-    }
-
-    suspend fun setSyncFilterExcludeBeta(exclude: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_FILTER_EXCLUDE_BETA] = exclude
-        }
-    }
-
-    suspend fun setSyncFilterExcludePrototype(exclude: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_FILTER_EXCLUDE_PROTO] = exclude
-        }
-    }
-
-    suspend fun setSyncFilterExcludeDemo(exclude: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_FILTER_EXCLUDE_DEMO] = exclude
-        }
-    }
-
-    suspend fun setSyncFilterExcludeHack(exclude: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_FILTER_EXCLUDE_HACK] = exclude
-        }
-    }
-
-    suspend fun setSyncFilterDeleteOrphans(delete: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_FILTER_DELETE_ORPHANS] = delete
-        }
-    }
-
-    suspend fun setSyncScreenshotsEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYNC_SCREENSHOTS_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setHiddenApps(apps: Set<String>) {
-        dataStore.edit { prefs ->
-            if (apps.isEmpty()) {
-                prefs.remove(Keys.HIDDEN_APPS)
-            } else {
-                prefs[Keys.HIDDEN_APPS] = apps.joinToString(",")
-            }
-        }
-    }
-
-    suspend fun setSecondaryHomeApps(apps: Set<String>) {
-        dataStore.edit { prefs ->
-            if (apps.isEmpty()) {
-                prefs.remove(Keys.SECONDARY_HOME_APPS)
-            } else {
-                prefs[Keys.SECONDARY_HOME_APPS] = apps.joinToString(",")
-            }
-        }
-    }
-
-    suspend fun setVisibleSystemApps(apps: Set<String>) {
-        dataStore.edit { prefs ->
-            if (apps.isEmpty()) {
-                prefs.remove(Keys.VISIBLE_SYSTEM_APPS)
-            } else {
-                prefs[Keys.VISIBLE_SYSTEM_APPS] = apps.joinToString(",")
-            }
-        }
-    }
-
-    suspend fun setAppOrder(order: List<String>) {
-        dataStore.edit { prefs ->
-            if (order.isEmpty()) {
-                prefs.remove(Keys.APP_ORDER)
-            } else {
-                prefs[Keys.APP_ORDER] = order.joinToString(",")
-            }
-        }
-    }
-
-    suspend fun setMaxConcurrentDownloads(count: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.MAX_CONCURRENT_DOWNLOADS] = count.coerceIn(1, 5)
-        }
-    }
-
-    suspend fun setInstantDownloadThresholdMb(value: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.INSTANT_DOWNLOAD_THRESHOLD_MB] = value
-        }
-    }
-
-    suspend fun setGridDensity(density: GridDensity) {
-        dataStore.edit { prefs ->
-            prefs[Keys.UI_DENSITY] = density.name
-        }
-    }
-
-    suspend fun setSoundConfigs(configs: Map<SoundType, SoundConfig>) {
-        dataStore.edit { prefs ->
-            if (configs.isEmpty()) {
-                prefs.remove(Keys.SOUND_CONFIGS)
-            } else {
-                prefs[Keys.SOUND_CONFIGS] = serializeSoundConfigs(configs)
-            }
-        }
-    }
-
-    suspend fun setSoundConfig(type: SoundType, config: SoundConfig?) {
-        dataStore.edit { prefs ->
-            val current = parseSoundConfigs(prefs[Keys.SOUND_CONFIGS])
-            val updated = if (config != null) {
-                current + (type to config)
-            } else {
-                current - type
-            }
-            if (updated.isEmpty()) {
-                prefs.remove(Keys.SOUND_CONFIGS)
-            } else {
-                prefs[Keys.SOUND_CONFIGS] = serializeSoundConfigs(updated)
-            }
-        }
-    }
-
-    suspend fun setBetaUpdatesEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BETA_UPDATES_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setSaveSyncEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SAVE_SYNC_ENABLED] = enabled
-            if (enabled) {
-                prefs[Keys.EXPERIMENTAL_FOLDER_SAVE_SYNC] = true
-            }
-        }
-    }
-
-    suspend fun setExperimentalFolderSaveSync(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.EXPERIMENTAL_FOLDER_SAVE_SYNC] = enabled
-        }
-    }
-
-    suspend fun setSaveCacheLimit(limit: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SAVE_CACHE_LIMIT] = limit
-        }
-    }
-
-    suspend fun setBackgroundBlur(blur: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BACKGROUND_BLUR] = blur.coerceIn(0, 100)
-        }
-    }
-
-    suspend fun setBackgroundSaturation(saturation: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BACKGROUND_SATURATION] = saturation.coerceIn(0, 100)
-        }
-    }
-
-    suspend fun setBackgroundOpacity(opacity: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BACKGROUND_OPACITY] = opacity.coerceIn(0, 100)
-        }
-    }
-
-    suspend fun setUseGameBackground(use: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.USE_GAME_BACKGROUND] = use
-        }
-    }
-
-    suspend fun setUseAccentColorFooter(use: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.USE_ACCENT_COLOR_FOOTER] = use
-        }
-    }
-
-    suspend fun setCustomBackgroundPath(path: String?) {
-        dataStore.edit { prefs ->
-            if (path != null) prefs[Keys.CUSTOM_BACKGROUND_PATH] = path
-            else prefs.remove(Keys.CUSTOM_BACKGROUND_PATH)
-        }
-    }
-
-    suspend fun setFileLoggingEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.FILE_LOGGING_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setFileLoggingPath(path: String?) {
-        dataStore.edit { prefs ->
-            if (path != null) prefs[Keys.FILE_LOGGING_PATH] = path
-            else prefs.remove(Keys.FILE_LOGGING_PATH)
-        }
-    }
-
-    suspend fun setFileLogLevel(level: LogLevel) {
-        dataStore.edit { prefs ->
-            prefs[Keys.FILE_LOG_LEVEL] = level.name
-        }
-    }
-
-    suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SAVE_DEBUG_LOGGING_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setBoxArtShape(shape: BoxArtShape) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_SHAPE] = shape.name
-        }
-    }
-
-    suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_CORNER_RADIUS] = radius.name
-        }
-    }
-
-    suspend fun setBoxArtBorderThickness(thickness: BoxArtBorderThickness) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_BORDER_THICKNESS] = thickness.name
-        }
-    }
-
-    suspend fun setBoxArtBorderStyle(style: BoxArtBorderStyle) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_BORDER_STYLE] = style.name
-        }
-    }
-
-    suspend fun setGlassBorderTint(tint: GlassBorderTint) {
-        dataStore.edit { prefs ->
-            prefs[Keys.GLASS_BORDER_TINT] = tint.name
-        }
-    }
-
-    suspend fun setBoxArtGlowStrength(strength: BoxArtGlowStrength) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_GLOW_STRENGTH] = strength.name
-        }
-    }
-
-    suspend fun setBoxArtOuterEffect(effect: BoxArtOuterEffect) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_OUTER_EFFECT] = effect.name
-        }
-    }
-
-    suspend fun setBoxArtOuterEffectThickness(thickness: BoxArtOuterEffectThickness) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_OUTER_EFFECT_THICKNESS] = thickness.name
-        }
-    }
-
-    suspend fun setGlowColorMode(mode: GlowColorMode) {
-        dataStore.edit { prefs ->
-            prefs[Keys.GLOW_COLOR_MODE] = mode.name
-        }
-    }
-
-    suspend fun setBoxArtInnerEffect(effect: BoxArtInnerEffect) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_INNER_EFFECT] = effect.name
-        }
-    }
-
-    suspend fun setBoxArtInnerEffectThickness(thickness: BoxArtInnerEffectThickness) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BOX_ART_INNER_EFFECT_THICKNESS] = thickness.name
-        }
-    }
-
-    suspend fun setGradientPreset(preset: GradientPreset) {
-        dataStore.edit { prefs ->
-            prefs[Keys.GRADIENT_PRESET] = preset.name
-        }
-    }
-
-    suspend fun setGradientAdvancedMode(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.GRADIENT_ADVANCED_MODE] = enabled
-        }
-    }
-
-    suspend fun setSystemIconPosition(position: SystemIconPosition) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYSTEM_ICON_POSITION] = position.name
-        }
-    }
-
-    suspend fun setSystemIconPadding(padding: SystemIconPadding) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SYSTEM_ICON_PADDING] = padding.name
-        }
-    }
-
-    suspend fun setDefaultView(view: DefaultView) {
-        dataStore.edit { prefs ->
-            prefs[Keys.DEFAULT_VIEW] = view.name
-        }
-    }
-
-    suspend fun setRecommendations(gameIds: List<Long>, timestamp: Instant) {
-        dataStore.edit { prefs ->
-            if (gameIds.isEmpty()) {
-                prefs.remove(Keys.RECOMMENDED_GAME_IDS)
-            } else {
-                prefs[Keys.RECOMMENDED_GAME_IDS] = gameIds.joinToString(",")
-            }
-            prefs[Keys.LAST_RECOMMENDATION_GENERATION] = timestamp.toString()
-        }
-    }
-
-    suspend fun clearRecommendations() {
-        dataStore.edit { prefs ->
-            prefs.remove(Keys.RECOMMENDED_GAME_IDS)
-            prefs.remove(Keys.LAST_RECOMMENDATION_GENERATION)
-        }
-    }
-
-    suspend fun setRecommendationPenalties(penalties: Map<Long, Float>, weekKey: String) {
-        dataStore.edit { prefs ->
-            val filtered = penalties.filter { it.value > 0f }
-            if (filtered.isEmpty()) {
-                prefs.remove(Keys.RECOMMENDATION_PENALTIES)
-            } else {
-                prefs[Keys.RECOMMENDATION_PENALTIES] = filtered.entries.joinToString(",") { "${it.key}:${it.value}" }
-            }
-            prefs[Keys.LAST_PENALTY_DECAY_WEEK] = weekKey
-        }
-    }
-
-    suspend fun setLastSeenVersion(version: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.LAST_SEEN_VERSION] = version
-        }
-    }
-
-    suspend fun addLibraryRecentSearch(query: String) {
-        if (query.isBlank()) return
-        dataStore.edit { prefs ->
-            val current = prefs[Keys.LIBRARY_RECENT_SEARCHES]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?: emptyList()
-            val updated = listOf(query) + current.filter { it != query }
-            prefs[Keys.LIBRARY_RECENT_SEARCHES] = updated.take(10).joinToString(",")
-        }
-    }
-
-    suspend fun setAccuratePlayTimeEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.ACCURATE_PLAY_TIME_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setAmbientAudioEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_AUDIO_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setAmbientAudioVolume(volume: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_AUDIO_VOLUME] = volume.coerceIn(0, 100)
-        }
-    }
-
-    suspend fun setAmbientAudioUri(uri: String?) {
-        dataStore.edit { prefs ->
-            if (uri != null) prefs[Keys.AMBIENT_AUDIO_URI] = uri
-            else prefs.remove(Keys.AMBIENT_AUDIO_URI)
-        }
-    }
-
-    suspend fun setAmbientAudioShuffle(shuffle: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_AUDIO_SHUFFLE] = shuffle
-        }
-    }
-
-    suspend fun setImageCachePath(path: String?) {
-        dataStore.edit { prefs ->
-            if (path != null) prefs[Keys.IMAGE_CACHE_PATH] = path
-            else prefs.remove(Keys.IMAGE_CACHE_PATH)
-        }
-    }
-
-    suspend fun setScreenDimmerEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SCREEN_DIMMER_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setScreenDimmerTimeoutMinutes(minutes: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] = minutes.coerceIn(1, 5)
-        }
-    }
-
-    suspend fun setScreenDimmerLevel(level: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SCREEN_DIMMER_LEVEL] = level.coerceIn(40, 70)
-        }
-    }
-
-    suspend fun setCustomBiosPath(path: String?) {
-        dataStore.edit { prefs ->
-            if (path != null) {
-                prefs[Keys.CUSTOM_BIOS_PATH] = path
-            } else {
-                prefs.remove(Keys.CUSTOM_BIOS_PATH)
-            }
-        }
-    }
-
-    suspend fun setVideoWallpaperEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.VIDEO_WALLPAPER_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setVideoWallpaperDelaySeconds(seconds: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.VIDEO_WALLPAPER_DELAY_SECONDS] = seconds.coerceIn(0, 10)
-        }
-    }
-
-    suspend fun setVideoWallpaperMuted(muted: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.VIDEO_WALLPAPER_MUTED] = muted
-        }
-    }
-
-    suspend fun setUiScale(scale: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.UI_SCALE] = scale.coerceIn(75, 150)
-        }
-    }
-
-    suspend fun setAmbientLedEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_LED_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setAmbientLedBrightness(brightness: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_LED_BRIGHTNESS] = brightness.coerceIn(0, 100)
-        }
-    }
-
-    suspend fun setAmbientLedAudioBrightness(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_LED_AUDIO_BRIGHTNESS] = enabled
-        }
-    }
-
-    suspend fun setAmbientLedAudioColors(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_LED_AUDIO_COLORS] = enabled
-        }
-    }
-
-    suspend fun setAmbientLedColorMode(mode: AmbientLedColorMode) {
-        dataStore.edit { prefs ->
-            prefs[Keys.AMBIENT_LED_COLOR_MODE] = mode.name
-        }
-    }
-
-    suspend fun setBuiltinShader(shader: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_SHADER] = shader
-        }
-    }
-
-    suspend fun setBuiltinShaderChain(chainJson: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_SHADER_CHAIN] = chainJson
-        }
-    }
-
-    suspend fun setBuiltinFilter(filter: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_FILTER] = filter
-        }
-    }
-
-    suspend fun setBuiltinSkipDuplicateFrames(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_SKIP_DUPLICATE_FRAMES] = enabled
-        }
-    }
-
-    suspend fun setBuiltinLowLatencyAudio(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_LOW_LATENCY_AUDIO] = enabled
-        }
-    }
-
-    suspend fun setBuiltinForceSoftwareTiming(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_FORCE_SOFTWARE_TIMING] = enabled
-        }
-    }
-
-    suspend fun setBuiltinRumbleEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_RUMBLE_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setBuiltinBlackFrameInsertion(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] = enabled
-        }
-    }
-
-    suspend fun setBuiltinCoreForPlatform(platformSlug: String, coreId: String) {
-        dataStore.edit { prefs ->
-            val current = prefs[Keys.BUILTIN_CORE_SELECTIONS]
-                ?.split(",")
-                ?.filter { it.isNotBlank() }
-                ?.associate {
-                    val parts = it.split(":")
-                    parts[0] to parts.getOrElse(1) { "" }
-                }
-                ?.toMutableMap()
-                ?: mutableMapOf()
-
-            current[platformSlug] = coreId
-
-            prefs[Keys.BUILTIN_CORE_SELECTIONS] = current.entries
-                .joinToString(",") { "${it.key}:${it.value}" }
-        }
-    }
-
-    fun getBuiltinCoreSelections(): Flow<Map<String, String>> = dataStore.data.map { prefs ->
-        prefs[Keys.BUILTIN_CORE_SELECTIONS]
-            ?.split(",")
-            ?.filter { it.isNotBlank() && it.contains(":") }
-            ?.associate {
-                val parts = it.split(":")
-                parts[0] to parts.getOrElse(1) { "" }
-            }
-            ?: emptyMap()
-    }
-
-    fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = dataStore.data.map { prefs ->
-        BuiltinEmulatorSettings(
-            shader = prefs[Keys.BUILTIN_SHADER] ?: "None",
-            shaderChainJson = prefs[Keys.BUILTIN_SHADER_CHAIN] ?: "",
-            filter = prefs[Keys.BUILTIN_FILTER] ?: "Auto",
-            aspectRatio = prefs[Keys.BUILTIN_ASPECT_RATIO] ?: "Core Provided",
-            skipDuplicateFrames = prefs[Keys.BUILTIN_SKIP_DUPLICATE_FRAMES] ?: false,
-            lowLatencyAudio = prefs[Keys.BUILTIN_LOW_LATENCY_AUDIO] ?: true,
-            forceSoftwareTiming = prefs[Keys.BUILTIN_FORCE_SOFTWARE_TIMING] ?: false,
-            rumbleEnabled = prefs[Keys.BUILTIN_RUMBLE_ENABLED] ?: true,
-            blackFrameInsertion = prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] ?: false,
-            framesEnabled = prefs[Keys.BUILTIN_FRAMES_ENABLED] ?: false,
-            limitHotkeysToPlayer1 = prefs[Keys.BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1] ?: true,
-            analogAsDpad = prefs[Keys.BUILTIN_ANALOG_AS_DPAD] ?: false,
-            dpadAsAnalog = prefs[Keys.BUILTIN_DPAD_AS_ANALOG] ?: false,
-            fastForwardSpeed = prefs[Keys.BUILTIN_FAST_FORWARD_SPEED] ?: 4,
-            rotation = prefs[Keys.BUILTIN_ROTATION] ?: -1,
-            overscanCrop = prefs[Keys.BUILTIN_OVERSCAN_CROP] ?: 0,
-            rewindEnabled = prefs[Keys.BUILTIN_REWIND_ENABLED] ?: true
-        )
-    }
-
-    suspend fun setBuiltinRewindEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_REWIND_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setBuiltinFramesEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_FRAMES_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setBuiltinAspectRatio(aspectRatio: String) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_ASPECT_RATIO] = aspectRatio
-        }
-    }
-
-    suspend fun setBuiltinFastForwardSpeed(speed: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_FAST_FORWARD_SPEED] = speed.coerceIn(2, 8)
-        }
-    }
-
-    suspend fun setBuiltinRotation(rotation: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_ROTATION] = rotation
-        }
-    }
-
-    suspend fun setBuiltinOverscanCrop(crop: Int) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_OVERSCAN_CROP] = crop.coerceIn(0, 16)
-        }
-    }
-
-    suspend fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1] = enabled
-        }
-    }
-
-    suspend fun setBuiltinAnalogAsDpad(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_ANALOG_AS_DPAD] = enabled
-        }
-    }
-
-    suspend fun setBuiltinDpadAsAnalog(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_DPAD_AS_ANALOG] = enabled
-        }
-    }
-
-    fun isBuiltinMigrationComplete(): Flow<Boolean> = dataStore.data.map { prefs ->
-        prefs[Keys.BUILTIN_MIGRATION_V1] ?: false
-    }
-
-    suspend fun setBuiltinMigrationComplete() {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_MIGRATION_V1] = true
-        }
-    }
-
-    suspend fun setAndroidDataSafUri(uri: String?) {
-        dataStore.edit { prefs ->
-            if (uri != null) prefs[Keys.ANDROID_DATA_SAF_URI] = uri
-            else prefs.remove(Keys.ANDROID_DATA_SAF_URI)
-        }
-    }
-
-    suspend fun setBuiltinLibretroEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.BUILTIN_LIBRETRO_ENABLED] = enabled
-        }
-    }
+    // --- Display delegates ---
+
+    suspend fun setThemeMode(mode: ThemeMode) = displayPrefs.setThemeMode(mode)
+    suspend fun setCustomColors(primary: Int?, secondary: Int?, tertiary: Int?) = displayPrefs.setCustomColors(primary, secondary, tertiary)
+    suspend fun setSecondaryColor(color: Int?) = displayPrefs.setSecondaryColor(color)
+    suspend fun setGridDensity(density: GridDensity) = displayPrefs.setGridDensity(density)
+    suspend fun setUiScale(scale: Int) = displayPrefs.setUiScale(scale)
+    suspend fun setBackgroundBlur(blur: Int) = displayPrefs.setBackgroundBlur(blur)
+    suspend fun setBackgroundSaturation(saturation: Int) = displayPrefs.setBackgroundSaturation(saturation)
+    suspend fun setBackgroundOpacity(opacity: Int) = displayPrefs.setBackgroundOpacity(opacity)
+    suspend fun setUseGameBackground(use: Boolean) = displayPrefs.setUseGameBackground(use)
+    suspend fun setCustomBackgroundPath(path: String?) = displayPrefs.setCustomBackgroundPath(path)
+    suspend fun setUseAccentColorFooter(use: Boolean) = displayPrefs.setUseAccentColorFooter(use)
+    suspend fun setBoxArtShape(shape: BoxArtShape) = displayPrefs.setBoxArtShape(shape)
+    suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) = displayPrefs.setBoxArtCornerRadius(radius)
+    suspend fun setBoxArtBorderThickness(thickness: BoxArtBorderThickness) = displayPrefs.setBoxArtBorderThickness(thickness)
+    suspend fun setBoxArtBorderStyle(style: BoxArtBorderStyle) = displayPrefs.setBoxArtBorderStyle(style)
+    suspend fun setGlassBorderTint(tint: GlassBorderTint) = displayPrefs.setGlassBorderTint(tint)
+    suspend fun setBoxArtGlowStrength(strength: BoxArtGlowStrength) = displayPrefs.setBoxArtGlowStrength(strength)
+    suspend fun setBoxArtOuterEffect(effect: BoxArtOuterEffect) = displayPrefs.setBoxArtOuterEffect(effect)
+    suspend fun setBoxArtOuterEffectThickness(thickness: BoxArtOuterEffectThickness) = displayPrefs.setBoxArtOuterEffectThickness(thickness)
+    suspend fun setGlowColorMode(mode: GlowColorMode) = displayPrefs.setGlowColorMode(mode)
+    suspend fun setBoxArtInnerEffect(effect: BoxArtInnerEffect) = displayPrefs.setBoxArtInnerEffect(effect)
+    suspend fun setBoxArtInnerEffectThickness(thickness: BoxArtInnerEffectThickness) = displayPrefs.setBoxArtInnerEffectThickness(thickness)
+    suspend fun setGradientPreset(preset: GradientPreset) = displayPrefs.setGradientPreset(preset)
+    suspend fun setGradientAdvancedMode(enabled: Boolean) = displayPrefs.setGradientAdvancedMode(enabled)
+    suspend fun setSystemIconPosition(position: SystemIconPosition) = displayPrefs.setSystemIconPosition(position)
+    suspend fun setSystemIconPadding(padding: SystemIconPadding) = displayPrefs.setSystemIconPadding(padding)
+    suspend fun setDefaultView(view: DefaultView) = displayPrefs.setDefaultView(view)
+    suspend fun setVideoWallpaperEnabled(enabled: Boolean) = displayPrefs.setVideoWallpaperEnabled(enabled)
+    suspend fun setVideoWallpaperDelaySeconds(seconds: Int) = displayPrefs.setVideoWallpaperDelaySeconds(seconds)
+    suspend fun setVideoWallpaperMuted(muted: Boolean) = displayPrefs.setVideoWallpaperMuted(muted)
+    suspend fun setAmbientLedEnabled(enabled: Boolean) = displayPrefs.setAmbientLedEnabled(enabled)
+    suspend fun setAmbientLedBrightness(brightness: Int) = displayPrefs.setAmbientLedBrightness(brightness)
+    suspend fun setAmbientLedAudioBrightness(enabled: Boolean) = displayPrefs.setAmbientLedAudioBrightness(enabled)
+    suspend fun setAmbientLedAudioColors(enabled: Boolean) = displayPrefs.setAmbientLedAudioColors(enabled)
+    suspend fun setAmbientLedColorMode(mode: AmbientLedColorMode) = displayPrefs.setAmbientLedColorMode(mode)
+    suspend fun setScreenDimmerEnabled(enabled: Boolean) = displayPrefs.setScreenDimmerEnabled(enabled)
+    suspend fun setScreenDimmerTimeoutMinutes(minutes: Int) = displayPrefs.setScreenDimmerTimeoutMinutes(minutes)
+    suspend fun setScreenDimmerLevel(level: Int) = displayPrefs.setScreenDimmerLevel(level)
+    suspend fun setDisplayRoleOverride(override: DisplayRoleOverride) = displayPrefs.setDisplayRoleOverride(override)
+    suspend fun setDualScreenInputFocus(focus: DualScreenInputFocus) = displayPrefs.setDualScreenInputFocus(focus)
+
+    // --- Sync delegates ---
+
+    suspend fun setRommConfig(url: String?, username: String?) = syncPrefs.setRommConfig(url, username)
+    suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null) = syncPrefs.setRomMCredentials(baseUrl, token, username)
+    suspend fun clearRomMCredentials() = syncPrefs.clearRomMCredentials()
+    suspend fun setRommDeviceId(deviceId: String, clientVersion: String) = syncPrefs.setRommDeviceId(deviceId, clientVersion)
+    suspend fun clearRommDeviceId() = syncPrefs.clearRommDeviceId()
+    suspend fun setRACredentials(username: String, token: String) = syncPrefs.setRACredentials(username, token)
+    suspend fun clearRACredentials() = syncPrefs.clearRACredentials()
+    suspend fun setLastRommSyncTime(time: Instant) = syncPrefs.setLastRommSyncTime(time)
+    suspend fun setLastFavoritesSyncTime(time: Instant) = syncPrefs.setLastFavoritesSyncTime(time)
+    suspend fun setLastFavoritesCheckTime(time: Instant) = syncPrefs.setLastFavoritesCheckTime(time)
+    suspend fun setSyncFilterRegions(regions: Set<String>) = syncPrefs.setSyncFilterRegions(regions)
+    suspend fun setSyncFilterRegionMode(mode: RegionFilterMode) = syncPrefs.setSyncFilterRegionMode(mode)
+    suspend fun setSyncFilterExcludeBeta(exclude: Boolean) = syncPrefs.setSyncFilterExcludeBeta(exclude)
+    suspend fun setSyncFilterExcludePrototype(exclude: Boolean) = syncPrefs.setSyncFilterExcludePrototype(exclude)
+    suspend fun setSyncFilterExcludeDemo(exclude: Boolean) = syncPrefs.setSyncFilterExcludeDemo(exclude)
+    suspend fun setSyncFilterExcludeHack(exclude: Boolean) = syncPrefs.setSyncFilterExcludeHack(exclude)
+    suspend fun setSyncFilterDeleteOrphans(delete: Boolean) = syncPrefs.setSyncFilterDeleteOrphans(delete)
+    suspend fun setSyncScreenshotsEnabled(enabled: Boolean) = syncPrefs.setSyncScreenshotsEnabled(enabled)
+    suspend fun setSaveSyncEnabled(enabled: Boolean) = syncPrefs.setSaveSyncEnabled(enabled)
+    suspend fun setExperimentalFolderSaveSync(enabled: Boolean) = syncPrefs.setExperimentalFolderSaveSync(enabled)
+    suspend fun setSaveCacheLimit(limit: Int) = syncPrefs.setSaveCacheLimit(limit)
+    suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) = syncPrefs.setSaveDebugLoggingEnabled(enabled)
+    suspend fun setImageCachePath(path: String?) = syncPrefs.setImageCachePath(path)
+    suspend fun setAndroidDataSafUri(uri: String?) = syncPrefs.setAndroidDataSafUri(uri)
+    fun saveWatcherEnabled(): Flow<Boolean> = syncPrefs.saveWatcherEnabled()
+    suspend fun setSaveWatcherEnabled(enabled: Boolean) = syncPrefs.setSaveWatcherEnabled(enabled)
+
+    // --- Controls delegates ---
+
+    suspend fun setHapticEnabled(enabled: Boolean) = controlsPrefs.setHapticEnabled(enabled)
+    suspend fun setSoundEnabled(enabled: Boolean) = controlsPrefs.setSoundEnabled(enabled)
+    suspend fun setSoundVolume(volume: Int) = controlsPrefs.setSoundVolume(volume)
+    suspend fun setSoundConfigs(configs: Map<SoundType, SoundConfig>) = controlsPrefs.setSoundConfigs(configs)
+    suspend fun setSoundConfig(type: SoundType, config: SoundConfig?) = controlsPrefs.setSoundConfig(type, config)
+    suspend fun setSwapAB(enabled: Boolean) = controlsPrefs.setSwapAB(enabled)
+    suspend fun setSwapXY(enabled: Boolean) = controlsPrefs.setSwapXY(enabled)
+    suspend fun setControllerLayout(layout: String) = controlsPrefs.setControllerLayout(layout)
+    suspend fun setSwapStartSelect(enabled: Boolean) = controlsPrefs.setSwapStartSelect(enabled)
+    suspend fun setAccuratePlayTimeEnabled(enabled: Boolean) = controlsPrefs.setAccuratePlayTimeEnabled(enabled)
+    suspend fun setAmbientAudioEnabled(enabled: Boolean) = controlsPrefs.setAmbientAudioEnabled(enabled)
+    suspend fun setAmbientAudioVolume(volume: Int) = controlsPrefs.setAmbientAudioVolume(volume)
+    suspend fun setAmbientAudioUri(uri: String?) = controlsPrefs.setAmbientAudioUri(uri)
+    suspend fun setAmbientAudioShuffle(shuffle: Boolean) = controlsPrefs.setAmbientAudioShuffle(shuffle)
+
+    // --- Storage delegates ---
+
+    suspend fun setRomStoragePath(path: String) = storagePrefs.setRomStoragePath(path)
+    suspend fun setMaxConcurrentDownloads(count: Int) = storagePrefs.setMaxConcurrentDownloads(count)
+    suspend fun setInstantDownloadThresholdMb(value: Int) = storagePrefs.setInstantDownloadThresholdMb(value)
+    suspend fun setCustomBiosPath(path: String?) = storagePrefs.setCustomBiosPath(path)
+
+    // --- App delegates ---
+
+    suspend fun setFirstRunComplete() = appPrefs.setFirstRunComplete()
+    suspend fun setBetaUpdatesEnabled(enabled: Boolean) = appPrefs.setBetaUpdatesEnabled(enabled)
+    suspend fun setHiddenApps(apps: Set<String>) = appPrefs.setHiddenApps(apps)
+    suspend fun setSecondaryHomeApps(apps: Set<String>) = appPrefs.setSecondaryHomeApps(apps)
+    suspend fun setVisibleSystemApps(apps: Set<String>) = appPrefs.setVisibleSystemApps(apps)
+    suspend fun setAppOrder(order: List<String>) = appPrefs.setAppOrder(order)
+    suspend fun setLastSeenVersion(version: String) = appPrefs.setLastSeenVersion(version)
+    suspend fun addLibraryRecentSearch(query: String) = appPrefs.addLibraryRecentSearch(query)
+    suspend fun setRecommendations(gameIds: List<Long>, timestamp: Instant) = appPrefs.setRecommendations(gameIds, timestamp)
+    suspend fun clearRecommendations() = appPrefs.clearRecommendations()
+    suspend fun setRecommendationPenalties(penalties: Map<Long, Float>, weekKey: String) = appPrefs.setRecommendationPenalties(penalties, weekKey)
+    suspend fun setFileLoggingEnabled(enabled: Boolean) = appPrefs.setFileLoggingEnabled(enabled)
+    suspend fun setFileLoggingPath(path: String?) = appPrefs.setFileLoggingPath(path)
+    suspend fun setFileLogLevel(level: LogLevel) = appPrefs.setFileLogLevel(level)
+    suspend fun setAppAffinityEnabled(enabled: Boolean) = appPrefs.setAppAffinityEnabled(enabled)
+
+    // --- Builtin emulator delegates ---
+
+    suspend fun setBuiltinShader(shader: String) = builtinPrefs.setBuiltinShader(shader)
+    suspend fun setBuiltinShaderChain(chainJson: String) = builtinPrefs.setBuiltinShaderChain(chainJson)
+    suspend fun setBuiltinFilter(filter: String) = builtinPrefs.setBuiltinFilter(filter)
+    suspend fun setBuiltinLibretroEnabled(enabled: Boolean) = builtinPrefs.setBuiltinLibretroEnabled(enabled)
+    suspend fun setBuiltinAspectRatio(aspectRatio: String) = builtinPrefs.setBuiltinAspectRatio(aspectRatio)
+    suspend fun setBuiltinSkipDuplicateFrames(enabled: Boolean) = builtinPrefs.setBuiltinSkipDuplicateFrames(enabled)
+    suspend fun setBuiltinLowLatencyAudio(enabled: Boolean) = builtinPrefs.setBuiltinLowLatencyAudio(enabled)
+    suspend fun setBuiltinForceSoftwareTiming(enabled: Boolean) = builtinPrefs.setBuiltinForceSoftwareTiming(enabled)
+    suspend fun setBuiltinRumbleEnabled(enabled: Boolean) = builtinPrefs.setBuiltinRumbleEnabled(enabled)
+    suspend fun setBuiltinBlackFrameInsertion(enabled: Boolean) = builtinPrefs.setBuiltinBlackFrameInsertion(enabled)
+    suspend fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = builtinPrefs.setBuiltinLimitHotkeysToPlayer1(enabled)
+    suspend fun setBuiltinAnalogAsDpad(enabled: Boolean) = builtinPrefs.setBuiltinAnalogAsDpad(enabled)
+    suspend fun setBuiltinDpadAsAnalog(enabled: Boolean) = builtinPrefs.setBuiltinDpadAsAnalog(enabled)
+    suspend fun setBuiltinCoreForPlatform(platformSlug: String, coreId: String) = builtinPrefs.setBuiltinCoreForPlatform(platformSlug, coreId)
+    suspend fun setBuiltinFastForwardSpeed(speed: Int) = builtinPrefs.setBuiltinFastForwardSpeed(speed)
+    suspend fun setBuiltinRotation(rotation: Int) = builtinPrefs.setBuiltinRotation(rotation)
+    suspend fun setBuiltinOverscanCrop(crop: Int) = builtinPrefs.setBuiltinOverscanCrop(crop)
+    suspend fun setBuiltinRewindEnabled(enabled: Boolean) = builtinPrefs.setBuiltinRewindEnabled(enabled)
+    suspend fun setBuiltinFramesEnabled(enabled: Boolean) = builtinPrefs.setBuiltinFramesEnabled(enabled)
+    suspend fun setBuiltinMigrationComplete() = builtinPrefs.setBuiltinMigrationComplete()
+    fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = builtinPrefs.getBuiltinEmulatorSettings()
+    fun getBuiltinCoreSelections(): Flow<Map<String, String>> = builtinPrefs.getBuiltinCoreSelections()
+    fun isBuiltinMigrationComplete(): Flow<Boolean> = builtinPrefs.isBuiltinMigrationComplete()
+
+    // --- Session delegates ---
 
     data class PersistedSession(
         val gameId: Long,
@@ -1166,6 +280,19 @@ class UserPreferencesRepository @Inject constructor(
         val channelName: String? = null
     )
 
+    val activeSessionFlow: Flow<PersistedSession?> = sessionPrefs.activeSessionFlow.map { session ->
+        session?.let {
+            PersistedSession(
+                gameId = it.gameId,
+                emulatorPackage = it.emulatorPackage,
+                startTime = it.startTime,
+                coreName = it.coreName,
+                isHardcore = it.isHardcore,
+                channelName = it.channelName
+            )
+        }
+    }
+
     suspend fun persistActiveSession(
         gameId: Long,
         emulatorPackage: String,
@@ -1173,91 +300,20 @@ class UserPreferencesRepository @Inject constructor(
         coreName: String?,
         isHardcore: Boolean,
         channelName: String? = null
-    ) {
-        dataStore.edit { prefs ->
-            prefs[Keys.ACTIVE_SESSION_GAME_ID] = gameId.toString()
-            prefs[Keys.ACTIVE_SESSION_EMULATOR] = emulatorPackage
-            prefs[Keys.ACTIVE_SESSION_START_TIME] = startTime.toString()
-            if (coreName != null) prefs[Keys.ACTIVE_SESSION_CORE_NAME] = coreName
-            else prefs.remove(Keys.ACTIVE_SESSION_CORE_NAME)
-            prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] = isHardcore
-            if (channelName != null) prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME] = channelName
-            else prefs.remove(Keys.ACTIVE_SESSION_CHANNEL_NAME)
-        }
-    }
+    ) = sessionPrefs.persistActiveSession(gameId, emulatorPackage, startTime, coreName, isHardcore, channelName)
 
-    suspend fun clearActiveSession() {
-        dataStore.edit { prefs ->
-            prefs.remove(Keys.ACTIVE_SESSION_GAME_ID)
-            prefs.remove(Keys.ACTIVE_SESSION_EMULATOR)
-            prefs.remove(Keys.ACTIVE_SESSION_START_TIME)
-            prefs.remove(Keys.ACTIVE_SESSION_CORE_NAME)
-            prefs.remove(Keys.ACTIVE_SESSION_IS_HARDCORE)
-            prefs.remove(Keys.ACTIVE_SESSION_CHANNEL_NAME)
-        }
-    }
+    suspend fun clearActiveSession() = sessionPrefs.clearActiveSession()
 
     suspend fun getPersistedSession(): PersistedSession? {
-        val prefs = dataStore.data.first()
-        val gameId = prefs[Keys.ACTIVE_SESSION_GAME_ID]?.toLongOrNull() ?: return null
-        val emulator = prefs[Keys.ACTIVE_SESSION_EMULATOR] ?: return null
-        val startTime = prefs[Keys.ACTIVE_SESSION_START_TIME]?.let {
-            try { Instant.parse(it) } catch (e: Exception) { null }
-        } ?: return null
-
+        val session = sessionPrefs.getPersistedSession() ?: return null
         return PersistedSession(
-            gameId = gameId,
-            emulatorPackage = emulator,
-            startTime = startTime,
-            coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
-            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
-            channelName = prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME]
+            gameId = session.gameId,
+            emulatorPackage = session.emulatorPackage,
+            startTime = session.startTime,
+            coreName = session.coreName,
+            isHardcore = session.isHardcore,
+            channelName = session.channelName
         )
-    }
-
-    val activeSessionFlow: Flow<PersistedSession?> = dataStore.data.map { prefs ->
-        val gameId = prefs[Keys.ACTIVE_SESSION_GAME_ID]?.toLongOrNull() ?: return@map null
-        val emulator = prefs[Keys.ACTIVE_SESSION_EMULATOR] ?: return@map null
-        val startTime = prefs[Keys.ACTIVE_SESSION_START_TIME]?.let {
-            try { Instant.parse(it) } catch (e: Exception) { null }
-        } ?: return@map null
-
-        PersistedSession(
-            gameId = gameId,
-            emulatorPackage = emulator,
-            startTime = startTime,
-            coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
-            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
-            channelName = prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME]
-        )
-    }
-
-    fun saveWatcherEnabled(): Flow<Boolean> = dataStore.data.map {
-        it[Keys.SAVE_WATCHER_ENABLED] ?: false
-    }
-
-    suspend fun setSaveWatcherEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SAVE_WATCHER_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setAppAffinityEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.APP_AFFINITY_ENABLED] = enabled
-        }
-    }
-
-    suspend fun setDisplayRoleOverride(override: DisplayRoleOverride) {
-        dataStore.edit { prefs ->
-            prefs[Keys.DISPLAY_ROLE_OVERRIDE] = override.name
-        }
-    }
-
-    suspend fun setDualScreenInputFocus(focus: DualScreenInputFocus) {
-        dataStore.edit { prefs ->
-            prefs[Keys.DUAL_SCREEN_INPUT_FOCUS] = focus.name
-        }
     }
 }
 
@@ -1300,7 +356,7 @@ data class BuiltinEmulatorSettings(
         get() = when (filter) {
             "Nearest" -> 0
             "Bilinear" -> 1
-            else -> -1  // Auto
+            else -> -1
         }
 
     val isIntegerScaling: Boolean

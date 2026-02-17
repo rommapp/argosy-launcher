@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.screens.common
 
 import androidx.compose.ui.graphics.Color
-import com.nendo.argosy.data.cache.GradientColorExtractor
+import com.nendo.argosy.ui.common.GradientColorExtractor
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import kotlinx.coroutines.CoroutineScope

@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.ui.common.color
+import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable

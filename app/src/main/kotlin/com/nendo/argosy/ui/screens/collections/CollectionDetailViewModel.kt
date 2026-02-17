@@ -3,8 +3,8 @@ package com.nendo.argosy.ui.screens.collections
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.CollectionDao
-import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.repository.CollectionRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -48,6 +48,24 @@ data class CollectionGameUi(
     val rommId: Long?
 )
 
+fun GameEntity.toCollectionGameUi(platformDisplayName: String) = CollectionGameUi(
+    id = id,
+    title = title,
+    platformId = platformId,
+    platformDisplayName = platformDisplayName,
+    coverPath = coverPath,
+    developer = developer,
+    releaseYear = releaseYear,
+    genre = genre,
+    userRating = userRating,
+    userDifficulty = userDifficulty,
+    achievementCount = achievementCount,
+    playTimeMinutes = playTimeMinutes,
+    isFavorite = isFavorite,
+    isDownloaded = localPath != null,
+    rommId = rommId
+)
+
 data class CollectionDetailUiState(
     val collection: CollectionEntity? = null,
     val games: List<CollectionGameUi> = emptyList(),
@@ -72,8 +90,8 @@ data class CollectionDetailUiState(
 @HiltViewModel
 class CollectionDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val collectionDao: CollectionDao,
-    private val platformDao: PlatformDao,
+    private val collectionRepository: CollectionRepository,
+    private val platformRepository: PlatformRepository,
     private val romMRepository: RomMRepository,
     private val isPinnedUseCase: IsPinnedUseCase,
     private val pinCollectionUseCase: PinCollectionUseCase,
@@ -119,14 +137,14 @@ class CollectionDetailViewModel @Inject constructor(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<CollectionDetailUiState> = _refreshTrigger.flatMapLatest {
         combine(
-            collectionDao.observeCollectionById(collectionId),
-            collectionDao.observeGamesInCollection(collectionId),
-            platformDao.observeAllPlatforms(),
+            collectionRepository.observeCollectionById(collectionId),
+            collectionRepository.observeGamesInCollection(collectionId),
+            platformRepository.observeAllPlatforms(),
             _modalState
         ) { collection, games, platforms, modalState ->
             val platformMap = platforms.associate { it.id to it.getDisplayName() }
             val gamesUi = games.map { game ->
-                game.toUi(platformMap[game.platformId] ?: "Unknown")
+                game.toCollectionGameUi(platformMap[game.platformId] ?: "Unknown")
             }
             CollectionDetailUiState(
                 collection = collection,
@@ -147,24 +165,6 @@ class CollectionDetailViewModel @Inject constructor(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CollectionDetailUiState()
-    )
-
-    private fun GameEntity.toUi(platformDisplayName: String) = CollectionGameUi(
-        id = id,
-        title = title,
-        platformId = platformId,
-        platformDisplayName = platformDisplayName,
-        coverPath = coverPath,
-        developer = developer,
-        releaseYear = releaseYear,
-        genre = genre,
-        userRating = userRating,
-        userDifficulty = userDifficulty,
-        achievementCount = achievementCount,
-        playTimeMinutes = playTimeMinutes,
-        isFavorite = isFavorite,
-        isDownloaded = localPath != null,
-        rommId = rommId
     )
 
     fun moveUp() {

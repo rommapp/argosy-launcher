@@ -5,11 +5,11 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
+import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.CollectionRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -33,8 +33,8 @@ const val MEDIA_GRID_COLUMNS = 3
 
 class DualGameDetailViewModel(
     private val gameDao: GameDao,
-    private val platformDao: PlatformDao,
-    private val collectionDao: CollectionDao,
+    private val platformRepository: PlatformRepository,
+    private val collectionRepository: CollectionRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val context: Context
@@ -222,7 +222,7 @@ class DualGameDetailViewModel(
     fun loadGame(gameId: Long) {
         viewModelScope.launch {
             val game = gameDao.getById(gameId) ?: return@launch
-            val platform = platformDao.getById(game.platformId)
+            val platform = platformRepository.getById(game.platformId)
             val platformName = platform?.getDisplayName() ?: game.platformSlug
 
             val remoteUrls = game.screenshotPaths
@@ -650,9 +650,9 @@ class DualGameDetailViewModel(
     fun openCollectionModal() {
         viewModelScope.launch {
             val gameId = _uiState.value.gameId
-            val allCollections = collectionDao.getAllCollections()
+            val allCollections = collectionRepository.getAllCollections()
                 .filter { it.name.isNotBlank() && it.isUserCreated }
-            val memberIds = collectionDao.getCollectionIdsForGame(gameId)
+            val memberIds = collectionRepository.getCollectionIdsForGame(gameId)
             _collectionItems.value = allCollections.map {
                 DualCollectionItem(
                     it.id, it.name, memberIds.contains(it.id)
@@ -668,9 +668,9 @@ class DualGameDetailViewModel(
             ?: return
         viewModelScope.launch {
             if (item.isInCollection) {
-                collectionDao.removeGameFromCollection(collectionId, gameId)
+                collectionRepository.removeGameFromCollection(collectionId, gameId)
             } else {
-                collectionDao.addGameToCollection(
+                collectionRepository.addGameToCollection(
                     CollectionGameEntity(collectionId, gameId)
                 )
             }
@@ -688,18 +688,18 @@ class DualGameDetailViewModel(
         val gameId = _uiState.value.gameId
         if (gameId < 0) return
         viewModelScope.launch {
-            val collectionId = collectionDao.insertCollection(
+            val collectionId = collectionRepository.insertCollection(
                 CollectionEntity(name = name)
             )
-            collectionDao.addGameToCollection(
+            collectionRepository.addGameToCollection(
                 CollectionGameEntity(
                     collectionId = collectionId,
                     gameId = gameId
                 )
             )
-            val allCollections = collectionDao.getAllCollections()
+            val allCollections = collectionRepository.getAllCollections()
                 .filter { it.name.isNotBlank() && it.isUserCreated }
-            val memberIds = collectionDao.getCollectionIdsForGame(gameId)
+            val memberIds = collectionRepository.getCollectionIdsForGame(gameId)
             _collectionItems.value = allCollections.map {
                 DualCollectionItem(
                     it.id, it.name, memberIds.contains(it.id)

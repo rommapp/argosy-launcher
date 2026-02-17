@@ -3,7 +3,6 @@ package com.nendo.argosy.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.preferences.dataStore
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileAccessLayerImpl
@@ -29,14 +28,6 @@ object AppModule {
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
         return context.dataStore
-    }
-
-    @Provides
-    @Singleton
-    fun provideUserPreferencesRepository(
-        dataStore: DataStore<Preferences>
-    ): UserPreferencesRepository {
-        return UserPreferencesRepository(dataStore)
     }
 
     @Provides

@@ -10,11 +10,11 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
+import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.CollectionRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -139,8 +139,8 @@ data class DualHomeUiState(
 
 class DualHomeViewModel(
     private val gameDao: GameDao,
-    private val platformDao: PlatformDao,
-    private val collectionDao: CollectionDao,
+    private val platformRepository: PlatformRepository,
+    private val collectionRepository: CollectionRepository,
     private val downloadQueueDao: DownloadQueueDao,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val context: Context
@@ -248,7 +248,7 @@ class DualHomeViewModel(
             sections.add(DualHomeSection.Favorites)
         }
 
-        val platforms = platformDao.getPlatformsWithGames()
+        val platforms = platformRepository.getPlatformsWithGames()
             .filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
         platforms.forEach { platform ->
             sections.add(
@@ -486,7 +486,7 @@ class DualHomeViewModel(
 
     fun enterCollectionGames(collectionId: Long, onLoaded: (() -> Unit)? = null) {
         viewModelScope.launch {
-            val games = collectionDao.getGamesInCollection(collectionId)
+            val games = collectionRepository.getGamesInCollection(collectionId)
                 .filter { !it.isHidden }
                 .map { it.toUi() }
             val item = _uiState.value.collectionItems
@@ -807,7 +807,7 @@ class DualHomeViewModel(
         viewModelScope.launch {
             val items = mutableListOf<DualCollectionListItem>()
 
-            val userCollections = collectionDao.getAllByType(CollectionType.REGULAR)
+            val userCollections = collectionRepository.getAllByType(CollectionType.REGULAR)
                 .filter { it.name.isNotBlank() && it.name.lowercase() != "favorites" }
             if (userCollections.isNotEmpty()) {
                 items.add(DualCollectionListItem.Header("MY COLLECTIONS"))
@@ -816,7 +816,7 @@ class DualHomeViewModel(
                 }
             }
 
-            val genres = collectionDao.getAllByType(CollectionType.GENRE)
+            val genres = collectionRepository.getAllByType(CollectionType.GENRE)
                 .filter { it.name.isNotBlank() }
             if (genres.isNotEmpty()) {
                 items.add(DualCollectionListItem.Header("GENRES"))
@@ -825,7 +825,7 @@ class DualHomeViewModel(
                 }
             }
 
-            val gameModes = collectionDao.getAllByType(CollectionType.GAME_MODE)
+            val gameModes = collectionRepository.getAllByType(CollectionType.GAME_MODE)
                 .filter { it.name.isNotBlank() }
             if (gameModes.isNotEmpty()) {
                 items.add(DualCollectionListItem.Header("GAME MODES"))
@@ -848,8 +848,8 @@ class DualHomeViewModel(
     private suspend fun buildCollectionItem(
         entity: CollectionEntity
     ): DualCollectionListItem.Collection {
-        val games = collectionDao.getGamesInCollection(entity.id)
-        val coverPaths = collectionDao.getCollectionCoverPaths(entity.id)
+        val games = collectionRepository.getGamesInCollection(entity.id)
+        val coverPaths = collectionRepository.getCollectionCoverPaths(entity.id)
         val platformGroups = games.groupBy { it.platformSlug }
         val platformSummary = platformGroups.entries
             .sortedByDescending { it.value.size }

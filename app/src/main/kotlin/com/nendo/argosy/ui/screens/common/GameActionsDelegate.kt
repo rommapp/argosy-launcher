@@ -1,8 +1,8 @@
 package com.nendo.argosy.ui.screens.common
 
 import com.nendo.argosy.data.cache.ImageCacheManager
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
@@ -20,7 +20,7 @@ sealed class RefreshAndroidResult {
 
 @Singleton
 class GameActionsDelegate @Inject constructor(
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val deleteGameUseCase: DeleteGameUseCase,
     private val downloadGameUseCase: DownloadGameUseCase,
     private val soundManager: SoundFeedbackManager,
@@ -29,14 +29,14 @@ class GameActionsDelegate @Inject constructor(
     private val imageCacheManager: ImageCacheManager
 ) {
     suspend fun toggleFavorite(gameId: Long): Boolean? {
-        val game = gameDao.getById(gameId) ?: return null
+        val game = gameRepository.getById(gameId) ?: return null
         val newFavoriteState = !game.isFavorite
 
         val rommId = game.rommId
         if (rommId != null) {
             romMRepository.toggleFavoriteWithSync(gameId, rommId, newFavoriteState)
         } else {
-            gameDao.updateFavorite(gameId, newFavoriteState)
+            gameRepository.updateFavorite(gameId, newFavoriteState)
         }
 
         soundManager.play(if (newFavoriteState) SoundType.FAVORITE else SoundType.UNFAVORITE)
@@ -44,11 +44,11 @@ class GameActionsDelegate @Inject constructor(
     }
 
     suspend fun hideGame(gameId: Long) {
-        gameDao.updateHidden(gameId, true)
+        gameRepository.updateHidden(gameId, true)
     }
 
     suspend fun unhideGame(gameId: Long) {
-        gameDao.updateHidden(gameId, false)
+        gameRepository.updateHidden(gameId, false)
     }
 
     suspend fun deleteLocalFile(gameId: Long) {
@@ -76,7 +76,7 @@ class GameActionsDelegate @Inject constructor(
     }
 
     suspend fun refreshAndroidGameData(gameId: Long): RefreshAndroidResult {
-        val game = gameDao.getById(gameId)
+        val game = gameRepository.getById(gameId)
             ?: return RefreshAndroidResult.Error("Game not found")
         val packageName = game.packageName
             ?: return RefreshAndroidResult.Error("Package name not available")
@@ -93,7 +93,7 @@ class GameActionsDelegate @Inject constructor(
                         ?.joinToString(",") ?: game.screenshotPaths,
                     backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
                 )
-                gameDao.update(updated)
+                gameRepository.update(updated)
 
                 details.coverUrl?.let { url ->
                     imageCacheManager.queueCoverCacheByGameId(url, gameId)

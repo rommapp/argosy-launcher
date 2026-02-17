@@ -2,8 +2,8 @@ package com.nendo.argosy.ui.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -39,8 +39,8 @@ data class SearchUiState(
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val gameDao: GameDao,
-    private val platformDao: PlatformDao,
+    private val gameRepository: GameRepository,
+    private val platformRepository: PlatformRepository,
     private val gameNavigationContext: GameNavigationContext
 ) : ViewModel() {
 
@@ -66,9 +66,9 @@ class SearchViewModel @Inject constructor(
             _uiState.update { it.copy(isSearching = true) }
             delay(300)
 
-            val games = gameDao.search(query).first()
+            val games = gameRepository.search(query).first()
             val results = games.map { game ->
-                val platform = platformDao.getById(game.platformId)
+                val platform = platformRepository.getById(game.platformId)
                 game.toSearchResult(platform?.name ?: "Unknown")
             }
 

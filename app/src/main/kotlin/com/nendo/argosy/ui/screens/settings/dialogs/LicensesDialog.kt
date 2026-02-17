@@ -83,7 +83,7 @@ fun LicensesDialog(onDismiss: () -> Unit) {
                             .padding(horizontal = Dimens.spacingLg),
                         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                     ) {
-                        items(licenses) { entry ->
+                        items(licenses, key = { it.name }) { entry ->
                             LicenseItem(entry)
                         }
 

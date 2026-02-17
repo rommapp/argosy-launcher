@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -86,7 +86,7 @@ data class SecondaryHomeUiState(
 @HiltViewModel
 class SecondaryHomeViewModel @Inject constructor(
     private val gameDao: GameDao,
-    private val platformDao: PlatformDao,
+    private val platformRepository: PlatformRepository,
     private val appsRepository: AppsRepository,
     private val preferencesRepository: UserPreferencesRepository?,
     private val displayAffinityHelper: DisplayAffinityHelper,
@@ -201,7 +201,7 @@ class SecondaryHomeViewModel @Inject constructor(
             sections.add(HomeSection.Favorites)
         }
 
-        val platforms = platformDao.getPlatformsWithGames()
+        val platforms = platformRepository.getPlatformsWithGames()
         platforms.forEach { platform ->
             sections.add(HomeSection.Platform(platform.name, platform.id, platform.slug))
         }

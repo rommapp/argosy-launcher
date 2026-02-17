@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.ui.common.color
+import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.components.CenteredModal
 import com.nendo.argosy.ui.components.InputButton

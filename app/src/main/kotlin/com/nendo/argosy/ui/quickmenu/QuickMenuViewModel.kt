@@ -2,9 +2,9 @@ package com.nendo.argosy.ui.quickmenu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SearchCandidate
+import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.usecase.quickmenu.GetTopUnplayedUseCase
@@ -75,8 +75,8 @@ private const val LIST_LIMIT = 20
 
 @HiltViewModel
 class QuickMenuViewModel @Inject constructor(
-    private val gameDao: GameDao,
-    private val platformDao: PlatformDao,
+    private val gameRepository: GameRepository,
+    private val platformRepository: PlatformRepository,
     private val getTopUnplayedUseCase: GetTopUnplayedUseCase,
     private val librarySyncBus: LibrarySyncBus,
     private val preferencesRepository: UserPreferencesRepository
@@ -277,7 +277,7 @@ class QuickMenuViewModel @Inject constructor(
     }
 
     private suspend fun loadMostPlayed() {
-        val games = gameDao.getPlayedGames().take(LIST_LIMIT)
+        val games = gameRepository.getPlayedGames().take(LIST_LIMIT)
         val rows = games.map { it.toGameRowUi(MetadataType.PLAY_TIME) { formatPlayTime(it.playTimeMinutes) } }
         _uiState.update { it.copy(mostPlayedGames = rows) }
     }
@@ -289,19 +289,19 @@ class QuickMenuViewModel @Inject constructor(
     }
 
     private suspend fun loadRecent() {
-        val games = gameDao.getRecentlyPlayed(LIST_LIMIT)
+        val games = gameRepository.getRecentlyPlayed(LIST_LIMIT)
         val rows = games.map { it.toGameRowUi(MetadataType.RELATIVE_TIME) { formatRelativeTime(it.lastPlayed) } }
         _uiState.update { it.copy(recentGames = rows) }
     }
 
     private suspend fun loadFavorites() {
-        val games = gameDao.getFavorites().take(LIST_LIMIT)
+        val games = gameRepository.getFavorites().take(LIST_LIMIT)
         val rows = games.map { it.toGameRowUi(MetadataType.NONE) { "" } }
         _uiState.update { it.copy(favoriteGames = rows) }
     }
 
     private suspend fun loadRandomGame() {
-        val game = gameDao.getRandomGame()
+        val game = gameRepository.getRandomGame()
         val card = game?.toGameCardUi()
         _uiState.update { it.copy(randomGame = card) }
     }
@@ -316,7 +316,7 @@ class QuickMenuViewModel @Inject constructor(
 
         searchJob = viewModelScope.launch {
             delay(300)
-            val candidates = searchCandidates ?: gameDao.getSearchCandidates().also {
+            val candidates = searchCandidates ?: gameRepository.getSearchCandidates().also {
                 searchCandidates = it
             }
             val matched = FuzzySearch.search(query, candidates, limit = 10)
@@ -325,7 +325,7 @@ class QuickMenuViewModel @Inject constructor(
                 return@launch
             }
             val matchedIds = matched.map { it.id }
-            val games = gameDao.getByIds(matchedIds)
+            val games = gameRepository.getByIds(matchedIds)
             val gamesById = games.associateBy { it.id }
             val orderedGames = matchedIds.mapNotNull { gamesById[it] }
             val rows = orderedGames.map { it.toGameRowUi(MetadataType.RATING) { formatRating(it.rating) } }
@@ -371,7 +371,7 @@ class QuickMenuViewModel @Inject constructor(
 
     private suspend fun getPlatformName(platformId: Long): String {
         return platformCache.getOrPut(platformId) {
-            platformDao.getById(platformId)?.name ?: "Unknown"
+            platformRepository.getById(platformId)?.name ?: "Unknown"
         }
     }
 

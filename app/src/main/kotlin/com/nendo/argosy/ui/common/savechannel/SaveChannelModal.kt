@@ -270,7 +270,7 @@ private fun SavesTabContent(
                 ),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                itemsIndexed(state.saveSlots) { index, slot ->
+                itemsIndexed(state.saveSlots, key = { _, slot -> slot.displayName }) { index, slot ->
                     val isSelected = index == state.selectedSlotIndex &&
                         state.saveFocusColumn == SaveFocusColumn.SLOTS
                     when {
@@ -337,7 +337,7 @@ private fun SavesTabContent(
                     ),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    itemsIndexed(state.saveHistory) { index, item ->
+                    itemsIndexed(state.saveHistory, key = { _, item -> item.cacheId }) { index, item ->
                         HistoryRow(
                             item = item,
                             isSelected = index == state.selectedHistoryIndex &&

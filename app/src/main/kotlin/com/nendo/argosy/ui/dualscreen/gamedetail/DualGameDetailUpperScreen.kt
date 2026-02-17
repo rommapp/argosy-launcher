@@ -565,7 +565,7 @@ private fun DualEmulatorPickerContent(
                         onClick = { onSelect(0) }
                     )
                 }
-                itemsIndexed(emulatorNames) { index, name ->
+                itemsIndexed(emulatorNames, key = { _, n -> n }) { index, name ->
                     val itemIndex = index + 1
                     val isSelected = focusIndex == itemIndex
                     val isCurrent = name == currentEmulatorName
@@ -677,7 +677,7 @@ private fun DualCollectionModalContent(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
-                itemsIndexed(items) { index, item ->
+                itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
                     val isSelected = focusIndex == index
                     Row(
                         modifier = Modifier

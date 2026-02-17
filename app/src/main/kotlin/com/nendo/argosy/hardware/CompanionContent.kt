@@ -1,9 +1,6 @@
 package com.nendo.argosy.hardware
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseIn
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -11,9 +8,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,17 +41,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
+import com.nendo.argosy.ui.common.LongPressAnimationConfig
+import com.nendo.argosy.ui.common.longPressGesture
+import com.nendo.argosy.ui.common.longPressGraphicsLayer
+import com.nendo.argosy.ui.common.rememberLongPressAnimationState
 import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.screens.secondaryhome.DrawerAppUi
 import com.nendo.argosy.ui.theme.Dimens
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -544,7 +536,7 @@ internal fun CompanionAppBar(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.weight(1f)
         ) {
-            items(apps.size) { index ->
+            items(apps.size, key = { apps[it] }) { index ->
                 CompanionAppItem(
                     packageName = apps[index],
                     isFocused = index == focusedIndex,
@@ -654,36 +646,23 @@ private fun CompanionDrawerAppItem(
     onClick: () -> Unit,
     onPinToggle: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    val scale = remember { Animatable(1f) }
-    var actionTriggered by remember { mutableStateOf(false) }
-    var touchAnimationJob by remember { mutableStateOf<Job?>(null) }
+    val longPressState = rememberLongPressAnimationState(
+        config = LongPressAnimationConfig(
+            targetScale = 1.2f,
+            tapThreshold = 1.05f,
+            withFadeEffect = false,
+        ),
+    )
 
     Column(
         modifier = Modifier
-            .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-            }
-            .pointerInput(app.packageName) {
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
-                    actionTriggered = false
-                    touchAnimationJob = scope.launch {
-                        delay(250)
-                        scale.animateTo(1.2f, tween(durationMillis = 500, easing = EaseIn))
-                        actionTriggered = true
-                        onPinToggle()
-                        scale.animateTo(1f, tween(150))
-                    }
-                    val up = waitForUpOrCancellation()
-                    if (!actionTriggered) {
-                        touchAnimationJob?.cancel()
-                        scope.launch { scale.animateTo(1f, tween(150)) }
-                        if (up != null && scale.value < 1.05f) onClick()
-                    }
-                }
-            }
+            .longPressGraphicsLayer(longPressState, applyAlpha = false)
+            .longPressGesture(
+                key = app.packageName,
+                state = longPressState,
+                onClick = onClick,
+                onLongPress = onPinToggle,
+            )
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

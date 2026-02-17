@@ -14,8 +14,8 @@ import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SessionEndResult
 import com.nendo.argosy.data.emulator.TitleIdDetector
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
@@ -68,7 +68,7 @@ data class DiscPickerState(
 
 class GameLaunchDelegate @Inject constructor(
     private val application: Application,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val saveCacheDao: com.nendo.argosy.data.local.dao.SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
@@ -87,7 +87,7 @@ class GameLaunchDelegate @Inject constructor(
     }
 
     private suspend fun isActiveSaveHardcore(gameId: Long): Boolean {
-        val activeChannel = gameDao.getActiveSaveChannel(gameId) ?: return false
+        val activeChannel = gameRepository.getActiveSaveChannel(gameId) ?: return false
         val save = saveCacheDao.getMostRecentInChannel(gameId, activeChannel)
         return save?.isHardcore == true
     }
@@ -166,7 +166,7 @@ class GameLaunchDelegate @Inject constructor(
                     return@launch
                 }
 
-                val game = gameDao.getById(gameId) ?: return@launch
+                val game = gameRepository.getById(gameId) ?: return@launch
                 val gameTitle = game.title
 
                 val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
@@ -262,9 +262,9 @@ class GameLaunchDelegate @Inject constructor(
                                 )
                                 android.util.Log.d("GameLaunchDelegate", "Cache result after LocalModified keep: $cacheResult")
                                 if (cacheResult is SaveCacheManager.CacheResult.Created) {
-                                    gameDao.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
+                                    gameRepository.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
                                 }
-                                gameDao.updateActiveSaveApplied(gameId, true)
+                                gameRepository.updateActiveSaveApplied(gameId, true)
                             }
                         }
                         LocalModifiedChoice.RESTORE_SELECTED -> {
@@ -273,7 +273,7 @@ class GameLaunchDelegate @Inject constructor(
                                 saveCacheManager.cacheAsRollback(gameId, emulatorId, info.localSavePath)
                                 val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId, info.channelName)
                                 android.util.Log.d("GameLaunchDelegate", "Download result after LocalModified restore: $downloadResult")
-                                gameDao.updateActiveSaveApplied(gameId, true)
+                                gameRepository.updateActiveSaveApplied(gameId, true)
                             }
                         }
                     }
@@ -414,7 +414,7 @@ class GameLaunchDelegate @Inject constructor(
                     return@launch
                 }
 
-                val game = gameDao.getById(session.gameId)
+                val game = gameRepository.getById(session.gameId)
                 val gameTitle = game?.title ?: "Game"
                 val emulatorName = EmulatorRegistry.getById(emulatorId)?.displayName
 

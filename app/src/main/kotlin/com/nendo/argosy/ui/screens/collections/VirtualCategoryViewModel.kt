@@ -3,7 +3,7 @@ package com.nendo.argosy.ui.screens.collections
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.domain.usecase.collection.CategoryType
@@ -62,7 +62,7 @@ data class VirtualCategoryUiState(
 class VirtualCategoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getGamesByCategoryUseCase: GetGamesByCategoryUseCase,
-    private val platformDao: PlatformDao,
+    private val platformRepository: PlatformRepository,
     private val isPinnedUseCase: IsPinnedUseCase,
     private val pinCollectionUseCase: PinCollectionUseCase,
     private val unpinCollectionUseCase: UnpinCollectionUseCase,
@@ -103,13 +103,13 @@ class VirtualCategoryViewModel @Inject constructor(
 
     val uiState: StateFlow<VirtualCategoryUiState> = combine(
         getGamesByCategoryUseCase(categoryType, category),
-        platformDao.observeAllPlatforms(),
+        platformRepository.observeAllPlatforms(),
         _focusedIndex,
         combine(_isPinned, _isRefreshing, _downloadAllProgress) { a, b, c -> Triple(a, b, c) }
     ) { games, platforms, focusedIndex, (isPinned, isRefreshing, downloadProgress) ->
         val platformMap = platforms.associate { it.id to it.getDisplayName() }
         val gamesUi = games.map { game ->
-            game.toUi(platformMap[game.platformId] ?: "Unknown")
+            game.toCollectionGameUi(platformMap[game.platformId] ?: "Unknown")
         }
         VirtualCategoryUiState(
             type = type,
@@ -125,24 +125,6 @@ class VirtualCategoryViewModel @Inject constructor(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = VirtualCategoryUiState(type = type, categoryName = category)
-    )
-
-    private fun GameEntity.toUi(platformDisplayName: String) = CollectionGameUi(
-        id = id,
-        title = title,
-        platformId = platformId,
-        platformDisplayName = platformDisplayName,
-        coverPath = coverPath,
-        developer = developer,
-        releaseYear = releaseYear,
-        genre = genre,
-        userRating = userRating,
-        userDifficulty = userDifficulty,
-        achievementCount = achievementCount,
-        playTimeMinutes = playTimeMinutes,
-        isFavorite = isFavorite,
-        isDownloaded = localPath != null,
-        rommId = rommId
     )
 
     fun moveUp() {

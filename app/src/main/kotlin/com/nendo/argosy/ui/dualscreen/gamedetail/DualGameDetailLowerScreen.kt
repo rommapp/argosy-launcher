@@ -67,6 +67,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.ui.common.color
+import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
@@ -801,7 +803,7 @@ private fun OptionsTabContent(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         groups.forEachIndexed { groupIdx, group ->
-            items(group.size) { i ->
+            items(group.size, key = { group[it].option }) { i ->
                 val entry = group[i]
                 val itemIndex = groups.take(groupIdx)
                     .sumOf { it.size } + i

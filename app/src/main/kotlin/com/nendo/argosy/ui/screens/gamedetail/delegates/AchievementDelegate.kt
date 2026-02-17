@@ -2,8 +2,8 @@ package com.nendo.argosy.ui.screens.gamedetail.delegates
 
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.AchievementDao
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.screens.gamedetail.toAchievementUi
 import com.nendo.argosy.data.remote.romm.RomMEarnedAchievement
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class AchievementDelegate @Inject constructor(
     private val achievementDao: AchievementDao,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val raRepository: RetroAchievementsRepository,
     private val romMRepository: RomMRepository,
     private val imageCacheManager: ImageCacheManager,
@@ -56,7 +56,7 @@ class AchievementDelegate @Inject constructor(
     }
 
     private suspend fun fetchAndCacheAchievements(rommId: Long, gameId: Long): List<AchievementUi> {
-        val game = gameDao.getById(gameId)
+        val game = gameRepository.getById(gameId)
         val raId = game?.raId
 
         if (raId != null) {
@@ -91,9 +91,9 @@ class AchievementDelegate @Inject constructor(
             )
         }
         achievementDao.replaceForGame(gameId, entities)
-        gameDao.updateAchievementsFetchedAt(gameId, System.currentTimeMillis())
+        gameRepository.updateAchievementsFetchedAt(gameId, System.currentTimeMillis())
 
-        gameDao.updateAchievementCount(gameId, raData.totalCount, raData.earnedCount)
+        gameRepository.updateAchievementCount(gameId, raData.totalCount, raData.earnedCount)
         achievementUpdateBus.emit(
             AchievementUpdateBus.AchievementUpdate(gameId, raData.totalCount, raData.earnedCount)
         )
@@ -152,10 +152,10 @@ class AchievementDelegate @Inject constructor(
                     )
                 }
                 achievementDao.replaceForGame(gameId, entities)
-                gameDao.updateAchievementsFetchedAt(gameId, System.currentTimeMillis())
+                gameRepository.updateAchievementsFetchedAt(gameId, System.currentTimeMillis())
 
                 val earnedCount = entities.count { it.isUnlocked }
-                gameDao.updateAchievementCount(gameId, entities.size, earnedCount)
+                gameRepository.updateAchievementCount(gameId, entities.size, earnedCount)
                 achievementUpdateBus.emit(
                     AchievementUpdateBus.AchievementUpdate(gameId, entities.size, earnedCount)
                 )

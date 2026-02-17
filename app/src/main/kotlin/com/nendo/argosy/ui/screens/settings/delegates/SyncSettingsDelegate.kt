@@ -8,8 +8,8 @@ import android.os.Environment
 import androidx.core.content.ContextCompat
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
-import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
@@ -44,7 +44,7 @@ class SyncSettingsDelegate @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
     private val saveCacheDao: SaveCacheDao,
     private val stateCacheDao: StateCacheDao,
-    private val platformDao: PlatformDao,
+    private val platformRepository: PlatformRepository,
     private val rommRepository: RomMRepository,
     private val imageCacheManager: ImageCacheManager,
     private val notificationManager: NotificationManager
@@ -76,8 +76,8 @@ class SyncSettingsDelegate @Inject constructor(
             val pendingUploads = saveCacheDao.countNeedingRemoteSync()
             val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
             val totalPending = pendingUploads + pendingDownloads
-            val enabledPlatformCount = platformDao.getEnabledPlatformCount()
-            val totalPlatformCount = platformDao.getTotalPlatformCount()
+            val enabledPlatformCount = platformRepository.getEnabledPlatformCount()
+            val totalPlatformCount = platformRepository.getTotalPlatformCount()
             val saveCount = saveCacheDao.count()
             val stateCount = stateCacheDao.count()
             val pathCount = saveSyncDao.countWithPaths()
@@ -439,7 +439,7 @@ class SyncSettingsDelegate @Inject constructor(
                 notificationManager.showError("Failed to fetch platforms: ${result.exceptionOrNull()?.message}")
             }
 
-            val platforms = platformDao.getAllPlatformsOrdered().map { entity ->
+            val platforms = platformRepository.getAllPlatformsOrdered().map { entity ->
                 PlatformFilterItem(
                     id = entity.id,
                     name = entity.name,
@@ -481,9 +481,9 @@ class SyncSettingsDelegate @Inject constructor(
 
     fun togglePlatformSyncEnabled(scope: CoroutineScope, platformId: Long) {
         scope.launch {
-            val platform = platformDao.getById(platformId) ?: return@launch
+            val platform = platformRepository.getById(platformId) ?: return@launch
             val newEnabled = !platform.syncEnabled
-            platformDao.updateSyncEnabled(platformId, newEnabled)
+            platformRepository.updateSyncEnabled(platformId, newEnabled)
 
             _state.update { state ->
                 val updatedList = state.platformFiltersList.map { item ->

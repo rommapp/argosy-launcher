@@ -3,8 +3,8 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.GpuDriverManager
 import com.nendo.argosy.data.local.dao.FirmwareDao
-import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.ui.screens.settings.BiosFirmwareItem
 import com.nendo.argosy.ui.screens.settings.BiosPlatformGroup
@@ -27,7 +27,7 @@ import javax.inject.Inject
 class BiosSettingsDelegate @Inject constructor(
     private val biosRepository: BiosRepository,
     private val firmwareDao: FirmwareDao,
-    private val platformDao: PlatformDao,
+    private val platformRepository: PlatformRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val gpuDriverManager: GpuDriverManager
 ) {
@@ -53,7 +53,7 @@ class BiosSettingsDelegate @Inject constructor(
     suspend fun loadBiosState() {
         val prefs = preferencesRepository.preferences.first()
         val allFirmware = firmwareDao.getAll()
-        val platforms = platformDao.getAllPlatforms()
+        val platforms = platformRepository.getAllPlatforms()
 
         val platformGroups = allFirmware
             .groupBy { it.platformSlug }
@@ -196,7 +196,7 @@ class BiosSettingsDelegate @Inject constructor(
             _state.update { it.copy(isDistributing = true) }
 
             val detailedResults = biosRepository.distributeAllBiosToEmulatorsDetailed()
-            val platforms = platformDao.getAllPlatforms()
+            val platforms = platformRepository.getAllPlatforms()
 
             val resultItems = detailedResults.map { result ->
                 val emulatorDef = EmulatorRegistry.getById(result.emulatorId)

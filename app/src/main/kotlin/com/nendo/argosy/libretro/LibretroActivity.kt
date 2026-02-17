@@ -3,7 +3,6 @@ package com.nendo.argosy.libretro
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.RectF
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,7 +19,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -29,8 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.unit.dp
-import com.nendo.argosy.libretro.ui.RAConnectionInfo
 import com.nendo.argosy.libretro.ui.RAConnectionNotification
 import com.nendo.argosy.ui.input.ControllerDetector
 import com.nendo.argosy.ui.input.DetectedLayout
@@ -49,30 +45,18 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.entity.CheatEntity
-import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
-import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.data.local.entity.HotkeyAction
-import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
-import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.data.repository.ControllerInfo
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.InputSource
-import com.nendo.argosy.data.repository.MappingPlatforms
-import com.nendo.argosy.data.repository.RAAwardResult
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import com.nendo.argosy.libretro.scanner.MemoryScanner
+import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.libretro.ui.cheats.CheatDisplayItem
 import com.nendo.argosy.libretro.ui.cheats.CheatsScreen
 import com.nendo.argosy.libretro.ui.cheats.CheatsTab
 import com.nendo.argosy.libretro.ui.AchievementPopup
-import com.nendo.argosy.libretro.ui.AchievementUnlock
 import com.nendo.argosy.libretro.ui.InGameMenu
 import com.nendo.argosy.libretro.ui.InGameMenuAction
 import com.nendo.argosy.libretro.ui.InGameControlsAction
@@ -85,29 +69,23 @@ import com.nendo.argosy.libretro.ui.LibretroMenuInputHandler
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.ui.screens.settings.libretro.InGameLibretroSettingsAccessor
-import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
-import com.nendo.argosy.ui.theme.ALauncherTheme
-import com.swordfish.libretrodroid.GLRetroView
-import com.swordfish.libretrodroid.GLRetroViewData
-import com.swordfish.libretrodroid.LibretroDroid
-import androidx.compose.ui.graphics.asImageBitmap
 import com.nendo.argosy.libretro.frame.FrameDownloader
 import com.nendo.argosy.libretro.frame.FrameManager
 import com.nendo.argosy.libretro.frame.FrameRegistry
 import com.nendo.argosy.libretro.ui.InGameFrameScreen
-import com.nendo.argosy.libretro.shader.ShaderChainConfig
 import com.nendo.argosy.libretro.shader.ShaderChainManager
 import com.nendo.argosy.libretro.shader.ShaderDownloader
 import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.libretro.shader.ShaderRegistry
-import com.swordfish.libretrodroid.ShaderConfig
+import com.nendo.argosy.ui.theme.ALauncherTheme
+import com.swordfish.libretrodroid.GLRetroView
+import com.swordfish.libretrodroid.GLRetroViewData
+import com.swordfish.libretrodroid.LibretroDroid
 import com.swordfish.libretrodroid.Variable
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
-import kotlin.math.abs
-import java.security.MessageDigest
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -121,27 +99,30 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var cheatsRepository: CheatsRepository
     @Inject lateinit var raRepository: RetroAchievementsRepository
     @Inject lateinit var achievementUpdateBus: AchievementUpdateBus
-    @Inject lateinit var saveCacheManager: com.nendo.argosy.data.repository.SaveCacheManager
+    @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var ambientLedManager: AmbientLedManager
     @Inject lateinit var effectiveLibretroSettingsResolver: EffectiveLibretroSettingsResolver
     @Inject lateinit var platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
-    @Inject lateinit var frameRegistry: com.nendo.argosy.libretro.frame.FrameRegistry
+    @Inject lateinit var frameRegistry: FrameRegistry
 
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
     private val inputMapper = ControllerInputMapper()
-    private lateinit var hotkeyManager: HotkeyManager
+    private lateinit var inputConfig: InputConfigCoordinator
+    private lateinit var hotkeyDispatcher: HotkeyDispatcher
+    private lateinit var motionProcessor: MotionEventProcessor
     private var vibrator: Vibrator? = null
-    private lateinit var statesDir: File
-    private lateinit var savesDir: File
     private lateinit var romPath: String
+
+    private lateinit var saveStateManager: SaveStateManager
+    private lateinit var videoSettings: VideoSettingsManager
+    private lateinit var cheatManager: CheatSessionManager
+    private var raSession: RetroAchievementsSessionManager? = null
 
     private var gameId: Long = -1L
     private var platformId: Long = -1L
     private var platformSlug: String = ""
     private var coreName: String? = null
-    private var startPressed = false
-    private var selectPressed = false
     private var menuVisible by mutableStateOf(false)
     private var cheatsMenuVisible by mutableStateOf(false)
     private var settingsVisible by mutableStateOf(false)
@@ -151,48 +132,16 @@ class LibretroActivity : ComponentActivity() {
     private var inGameFrameManager: FrameManager? = null
     private var capturedGameFrame: Bitmap? = null
     private var lastCheatsTab by mutableStateOf(CheatsTab.CHEATS)
-    private var cheatsNeedReset = false
-    private var hasQuickSave by mutableStateOf(false)
-    private var cheats by mutableStateOf<List<CheatEntity>>(emptyList())
     private var gameName: String = ""
-    private var lastSramHash: String? = null
-    private var aspectRatioMode: String = "Auto"
-    private var screenWidth: Int = 0
-    private var screenHeight: Int = 0
-    private var fastForwardSpeed: Int = 4
-    private var overscanCrop: Int = 0
-    private var rotationDegrees: Int = -1
     private var isFastForwarding = false
     private var isRewinding = false
-    private var rewindEnabled = false
     private var canEnableBFI = false
 
-    private var currentShader by mutableStateOf("None")
-    private var resolvedCustomShader: ShaderConfig = ShaderConfig.Default
-    private lateinit var globalSettings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
-    private var currentFilter by mutableStateOf("Auto")
-    private var currentAspectRatio by mutableStateOf("Core Provided")
-    private var currentRotation by mutableStateOf("Auto")
-    private var currentOverscanCrop by mutableStateOf("Off")
-    private var currentBFI by mutableStateOf(false)
-    private var currentFastForwardSpeed by mutableStateOf("4x")
-    private var currentRewindEnabled by mutableStateOf(true)
-    private var currentSkipDupFrames by mutableStateOf(false)
-    private var currentLowLatencyAudio by mutableStateOf(true)
-    private var currentForceSoftwareTiming by mutableStateOf(false)
-    private var currentRumbleEnabled by mutableStateOf(true)
-    private var currentAnalogAsDpad by mutableStateOf(false)
-    private var currentDpadAsAnalog by mutableStateOf(false)
-    private var currentFrame by mutableStateOf<String?>(null)
-    private var controllerOrderCount by mutableStateOf(0)
-    private var controllerOrderList by mutableStateOf<List<ControllerOrderEntity>>(emptyList())
-    private var hotkeyList by mutableStateOf<List<HotkeyEntity>>(emptyList())
     private var lastCaptureTime = 0L
     private var lastRewindTime = 0L
     private var limitHotkeysToPlayer1 by mutableStateOf(true)
     private val frameIntervalMs = 16L
     private val rewindSpeed = 2
-    private val memoryScanner = MemoryScanner()
     private var firstFrameRendered = false
     private var swapAB by mutableStateOf(false)
     private var swapXY by mutableStateOf(false)
@@ -202,80 +151,135 @@ class LibretroActivity : ComponentActivity() {
     private lateinit var gamepadInputBridge: LibretroGamepadInputHandler
     private var activeMenuHandler: InputHandler? = null
 
-    private var sessionTainted = false
+    private var restoredSram: ByteArray? = null
     private var hardcoreMode by mutableStateOf(false)
-    private var raSessionActive by mutableStateOf(false)
-    private var gameRaId: Long? = null
-    private var heartbeatJob: Job? = null
     private var launchMode = LaunchMode.RESUME
 
-    private val achievementInfo = mutableMapOf<Long, AchievementPatchInfo>()
-    private var totalAchievements by mutableStateOf(0)
-    private var earnedAchievements by mutableStateOf(0)
-    private var currentAchievementUnlock by mutableStateOf<AchievementUnlock?>(null)
-    private val achievementUnlockQueue = mutableListOf<AchievementUnlock>()
-    private var raConnectionInfo by mutableStateOf<RAConnectionInfo?>(null)
-
-    private data class AchievementPatchInfo(
-        val title: String,
-        val description: String?,
-        val points: Int,
-        val badgeName: String?
-    )
+    private val isAnyMenuOpen: Boolean
+        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("LibretroActivity", "onCreate: savedInstanceState=${savedInstanceState != null}")
+        Log.d(TAG, "onCreate: savedInstanceState=${savedInstanceState != null}")
         enableEdgeToEdge()
         enterImmersiveMode()
 
-        romPath = intent.getStringExtra(EXTRA_ROM_PATH) ?: return finish()
-        val corePath = intent.getStringExtra(EXTRA_CORE_PATH) ?: return finish()
-        val systemPath = intent.getStringExtra(EXTRA_SYSTEM_DIR)
-        gameName = intent.getStringExtra(EXTRA_GAME_NAME) ?: File(romPath).nameWithoutExtension
-        gameId = intent.getLongExtra(EXTRA_GAME_ID, -1L)
-        coreName = intent.getStringExtra(EXTRA_CORE_NAME)
-        launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
-        hardcoreMode = launchMode.isHardcore
+        if (!parseIntentExtras()) return
 
-        // Validate ROM file exists and is accessible
         val romFile = File(romPath)
-        if (!romFile.exists()) {
-            Log.e("LibretroActivity", "ROM file not found: $romPath")
-            Toast.makeText(this, "Game file not found", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-        if (!romFile.canRead()) {
-            Log.e("LibretroActivity", "ROM file not readable: $romPath")
-            Toast.makeText(this, "Cannot access game file", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-        Log.d("LibretroActivity", "ROM validated: exists=${romFile.exists()}, size=${romFile.length()}, path=$romPath")
+        if (!validateRomFile(romFile)) return
 
-        val systemDir = if (systemPath != null) File(systemPath) else File(filesDir, "libretro/system")
+        val systemDir = intent.getStringExtra(EXTRA_SYSTEM_DIR)
+            ?.let { File(it) }
+            ?: File(filesDir, "libretro/system")
         systemDir.mkdirs()
-        savesDir = File(filesDir, "libretro/saves").apply { mkdirs() }
-        statesDir = File(filesDir, "libretro/states").apply { mkdirs() }
+        val savesDir = File(filesDir, "libretro/saves").apply { mkdirs() }
+        val statesDir = File(filesDir, "libretro/states").apply { mkdirs() }
 
-        hasQuickSave = getQuickSaveFile().exists()
-
-        // Restore appropriate save based on launch mode
-        val existingSram = kotlinx.coroutines.runBlocking {
-            restoreSaveForLaunchMode()
-        }
-        lastSramHash = existingSram?.let { hashBytes(it) }
+        initializeSaveState(savesDir, statesDir)
 
         val game = kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }
         platformId = game?.platformId ?: -1L
         platformSlug = game?.platformSlug ?: ""
-        globalSettings = kotlinx.coroutines.runBlocking {
+        val globalSettings = kotlinx.coroutines.runBlocking {
             preferencesRepository.getBuiltinEmulatorSettings().first()
         }
         val settings = kotlinx.coroutines.runBlocking {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
+
+        initializeInputHandlers()
+        initializeVideoSettings(globalSettings, settings)
+        detectBFICapability()
+
+        val corePath = intent.getStringExtra(EXTRA_CORE_PATH)!!
+        createRetroView(corePath, systemDir, savesDir, settings, restoredSram)
+        setupRetroViewListeners()
+        configureRetroView(settings)
+        inputConfig = InputConfigCoordinator(
+            inputConfigRepository = inputConfigRepository,
+            portResolver = portResolver,
+            inputMapper = inputMapper,
+            platformSlug = platformSlug,
+            limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
+            scope = lifecycleScope
+        )
+        inputConfig.initialize()
+
+        if (settings.rumbleEnabled) {
+            setupRumble()
+        }
+        if (videoSettings.rewindEnabled && !hardcoreMode) {
+            setupRewind()
+        }
+
+        initializeCheatManager()
+        initializeHotkeyDispatcher()
+        motionProcessor = MotionEventProcessor(
+            inputMapper = inputMapper,
+            portResolver = portResolver,
+            videoSettings = videoSettings,
+            getRetroView = { retroView }
+        )
+
+        buildContentView()
+
+        if (gameId != -1L) {
+            val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
+            playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName, hardcoreMode, isNewGame)
+            cheatManager.loadCheats(hardcoreMode)
+            initializeRASession()
+        }
+    }
+
+    private fun parseIntentExtras(): Boolean {
+        romPath = intent.getStringExtra(EXTRA_ROM_PATH) ?: run { finish(); return false }
+        intent.getStringExtra(EXTRA_CORE_PATH) ?: run { finish(); return false }
+        gameName = intent.getStringExtra(EXTRA_GAME_NAME) ?: File(romPath).nameWithoutExtension
+        gameId = intent.getLongExtra(EXTRA_GAME_ID, -1L)
+        coreName = intent.getStringExtra(EXTRA_CORE_NAME)
+        launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
+        hardcoreMode = launchMode.isHardcore
+        return true
+    }
+
+    private fun validateRomFile(romFile: File): Boolean {
+        if (!romFile.exists()) {
+            Log.e(TAG, "ROM file not found: $romPath")
+            Toast.makeText(this, "Game file not found", Toast.LENGTH_LONG).show()
+            finish()
+            return false
+        }
+        if (!romFile.canRead()) {
+            Log.e(TAG, "ROM file not readable: $romPath")
+            Toast.makeText(this, "Cannot access game file", Toast.LENGTH_LONG).show()
+            finish()
+            return false
+        }
+        Log.d(TAG, "ROM validated: exists=${romFile.exists()}, size=${romFile.length()}, path=$romPath")
+        return true
+    }
+
+    private fun initializeSaveState(savesDir: File, statesDir: File) {
+        saveStateManager = SaveStateManager(
+            savesDir = savesDir,
+            statesDir = statesDir,
+            romPath = romPath,
+            gameId = gameId,
+            gameDao = gameDao,
+            saveCacheManager = saveCacheManager
+        )
+        val restoreResult = kotlinx.coroutines.runBlocking {
+            saveStateManager.restoreSaveForLaunchMode(launchMode)
+        }
+        restoredSram = restoreResult.sramData
+        if (restoreResult.switchToHardcore) {
+            hardcoreMode = true
+        }
+        saveStateManager.initializeFromExistingSave(restoreResult.sramData)
+    }
+
+    private fun initializeInputHandlers() {
         val inputPrefs = kotlinx.coroutines.runBlocking {
             preferencesRepository.preferences.first()
         }
@@ -297,40 +301,51 @@ class LibretroActivity : ComponentActivity() {
             menuInputHandler = menuInputHandler,
             getActiveHandler = { activeMenuHandler }
         )
-        aspectRatioMode = settings.aspectRatio
-        fastForwardSpeed = settings.fastForwardSpeed
-        overscanCrop = settings.overscanCrop
-        rotationDegrees = settings.rotation
-        rewindEnabled = settings.rewindEnabled
+    }
 
-        currentShader = settings.shader
-        if (settings.shader == "Custom") {
-            resolvedCustomShader = ShaderRegistry(this).resolveChain(settings.shaderChainConfig)
-        }
-        currentFilter = settings.filter
-        currentAspectRatio = settings.aspectRatio
-        currentRotation = settings.rotationDisplay
-        currentOverscanCrop = settings.overscanCropDisplay
-        currentBFI = settings.blackFrameInsertion
-        currentFastForwardSpeed = settings.fastForwardSpeedDisplay
-        currentRewindEnabled = settings.rewindEnabled
-        currentSkipDupFrames = settings.skipDuplicateFrames
-        currentLowLatencyAudio = settings.lowLatencyAudio
-        currentForceSoftwareTiming = settings.forceSoftwareTiming
-        currentRumbleEnabled = settings.rumbleEnabled
-        currentAnalogAsDpad = settings.analogAsDpad
-        currentDpadAsAnalog = settings.dpadAsAnalog
+    private fun initializeVideoSettings(
+        globalSettings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings,
+        settings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
+    ) {
+        videoSettings = VideoSettingsManager(
+            platformId = platformId,
+            platformSlug = platformSlug,
+            globalSettings = globalSettings,
+            platformLibretroSettingsDao = platformLibretroSettingsDao,
+            effectiveLibretroSettingsResolver = effectiveLibretroSettingsResolver,
+            preferencesRepository = preferencesRepository,
+            frameRegistry = frameRegistry,
+            scope = lifecycleScope,
+            shaderRegistryProvider = { ShaderRegistry(this) },
+            getRetroView = { retroView }
+        )
+        videoSettings.applySettings(settings)
+        videoSettings.resolveCustomShader(settings)
         limitHotkeysToPlayer1 = settings.limitHotkeysToPlayer1
+        videoSettings.onRewindToggled = { enabled ->
+            if (enabled && !hardcoreMode) {
+                setupRewind()
+            } else if (!enabled) {
+                retroView.destroyRewindBuffer()
+            }
+        }
+    }
 
+    private fun detectBFICapability() {
         val displayManager = getSystemService(android.content.Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager
         val display = displayManager.getDisplay(android.view.Display.DEFAULT_DISPLAY)
         canEnableBFI = (display?.supportedModes?.maxOfOrNull { it.refreshRate } ?: 60f) >= 120f
+    }
 
-        Log.d("LibretroActivity", "Core: $coreName, platformSlug: $platformSlug, rewindEnabled: $rewindEnabled")
-
-        val effectiveShader = if (settings.shader == "Custom") resolvedCustomShader else settings.shaderConfig
-        Log.d("LibretroActivity", "[Startup] Creating GLRetroView: core=$coreName, effectiveShader=${effectiveShader::class.simpleName}")
-        val coreVariables = getCoreVariables(coreName)
+    private fun createRetroView(
+        corePath: String,
+        systemDir: File,
+        savesDir: File,
+        settings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings,
+        existingSram: ByteArray?
+    ) {
+        val effectiveShader = if (settings.shader == "Custom") videoSettings.resolvedCustomShader else settings.shaderConfig
+        Log.d(TAG, "[Startup] Creating GLRetroView: core=$coreName, effectiveShader=${effectiveShader::class.simpleName}")
         retroView = GLRetroView(
             this,
             GLRetroViewData(this).apply {
@@ -344,15 +359,13 @@ class LibretroActivity : ComponentActivity() {
                 preferLowLatencyAudio = settings.lowLatencyAudio
                 forceSoftwareTiming = settings.forceSoftwareTiming
                 rumbleEventsEnabled = settings.rumbleEnabled
-                variables = coreVariables
+                variables = getCoreVariables(coreName)
             }
         )
-        Log.d("LibretroActivity", "[Startup] GLRetroView created, adding lifecycle observer")
-
         lifecycle.addObserver(retroView)
-        Log.d("LibretroActivity", "[Startup] Lifecycle observer added, setting up error/event listeners")
+    }
 
-        // Observe game load errors from GLRetroView
+    private fun setupRetroViewListeners() {
         lifecycleScope.launch {
             retroView.getGLRetroErrors().collect { errorCode ->
                 val errorMessage = when (errorCode) {
@@ -363,23 +376,22 @@ class LibretroActivity : ComponentActivity() {
                     LibretroDroid.ERROR_CHEAT -> "Cheat system error"
                     else -> "An unexpected error occurred"
                 }
-                Log.e("LibretroActivity", "GLRetroView error: code=$errorCode, message=$errorMessage")
-                Log.e("LibretroActivity", "Context: gameId=$gameId, core=$coreName, rom=$romPath")
+                Log.e(TAG, "GLRetroView error: code=$errorCode, message=$errorMessage")
+                Log.e(TAG, "Context: gameId=$gameId, core=$coreName, rom=$romPath")
                 Toast.makeText(this@LibretroActivity, errorMessage, Toast.LENGTH_LONG).show()
                 finish()
             }
         }
 
-        // Track startup milestones (surface creation and first frame)
         lifecycleScope.launch {
             retroView.getGLRetroEvents().collect { event ->
                 when (event) {
                     is GLRetroView.GLRetroEvents.SurfaceCreated -> {
-                        Log.i("LibretroActivity", "[Startup] GL surface created - render pipeline ready")
-                        currentFrame?.let { frameId ->
+                        Log.i(TAG, "[Startup] GL surface created - render pipeline ready")
+                        videoSettings.currentFrame?.let { frameId ->
                             val bitmap = frameRegistry.loadFrame(frameId)
                             if (bitmap != null) {
-                                Log.i("LibretroActivity", "[Startup] Setting initial frame: $frameId (${bitmap.width}x${bitmap.height})")
+                                Log.i(TAG, "[Startup] Setting initial frame: $frameId (${bitmap.width}x${bitmap.height})")
                                 retroView.setBackgroundFrame(bitmap)
                             }
                         }
@@ -387,200 +399,66 @@ class LibretroActivity : ComponentActivity() {
                     is GLRetroView.GLRetroEvents.FrameRendered -> {
                         if (!firstFrameRendered) {
                             firstFrameRendered = true
-                            Log.i("LibretroActivity", "[Startup] First frame rendered - emulation running successfully")
-                            Log.d("LibretroActivity", "[Startup] gameId=$gameId, core=$coreName, hardcore=$hardcoreMode")
+                            Log.i(TAG, "[Startup] First frame rendered - emulation running successfully")
+                            Log.d(TAG, "[Startup] gameId=$gameId, core=$coreName, hardcore=$hardcoreMode")
                         }
                     }
                 }
             }
         }
+    }
 
+    private fun configureRetroView(settings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings) {
         retroView.audioEnabled = true
         retroView.filterMode = settings.filterMode
         retroView.blackFrameInsertion = settings.blackFrameInsertion
         retroView.portResolver = portResolver
         retroView.keyMapper = inputMapper
+    }
 
-        currentFrame = settings.frame
+    private fun initializeCheatManager() {
+        cheatManager = CheatSessionManager(
+            gameId = gameId,
+            cheatDao = cheatDao,
+            gameDao = gameDao,
+            cheatsRepository = cheatsRepository,
+            scope = lifecycleScope
+        )
+        cheatManager.setRetroView(retroView)
+    }
 
-        setupInputConfig()
+    private fun initializeHotkeyDispatcher() {
+        hotkeyDispatcher = HotkeyDispatcher(
+            saveStateManager = saveStateManager,
+            videoSettings = videoSettings,
+            hotkeyManager = inputConfig.hotkeyManager,
+            getRetroView = { retroView },
+            showToast = { msg -> Toast.makeText(this, msg, Toast.LENGTH_SHORT).show() },
+            isHardcoreMode = { hardcoreMode },
+            onShowMenu = ::showMenu,
+            onFastForwardChanged = { ff ->
+                if (ff && !isFastForwarding) {
+                    isFastForwarding = true
+                    retroView.frameSpeed = videoSettings.fastForwardSpeed
+                }
+            },
+            onRewindChanged = { rw ->
+                if (rw && !isRewinding) {
+                    isRewinding = true
+                    lastRewindTime = 0L
+                    retroView.frameSpeed = 1
+                }
+            },
+            onQuit = ::finish
+        )
+    }
 
-        if (settings.rumbleEnabled) {
-            setupRumble()
-        }
-
-        if (rewindEnabled && !hardcoreMode) {
-            setupRewind()
-        }
-
+    private fun buildContentView() {
         val container = FrameLayout(this).apply {
             addView(retroView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-
             addView(
                 ComposeView(this@LibretroActivity).apply {
-                    setContent {
-                        ALauncherTheme {
-                            CompositionLocalProvider(
-                                LocalGamepadInputHandler provides gamepadInputBridge,
-                                LocalABIconsSwapped provides swapAB,
-                                LocalXYIconsSwapped provides swapXY,
-                                LocalSwapStartSelect provides swapStartSelect
-                            ) {
-                                if (menuVisible) {
-                                    activeMenuHandler = InGameMenu(
-                                        gameName = gameName,
-                                        hasQuickSave = hasQuickSave && !hardcoreMode,
-                                        cheatsAvailable = !hardcoreMode && PlatformWeightRegistry.supportsCheats(platformSlug),
-                                        focusedIndex = menuFocusIndex,
-                                        onFocusChange = { menuFocusIndex = it },
-                                        onAction = ::handleMenuAction,
-                                        isHardcoreMode = hardcoreMode
-                                    )
-                                }
-                                if (cheatsMenuVisible) {
-                                    activeMenuHandler = CheatsScreen(
-                                        cheats = cheats.map { CheatDisplayItem(it.id, it.description, it.code, it.enabled, it.isUserCreated, it.lastUsedAt) },
-                                        scanner = memoryScanner,
-                                        initialTab = lastCheatsTab,
-                                        onToggleCheat = ::handleToggleCheat,
-                                        onCreateCheat = ::handleCreateCheat,
-                                        onUpdateCheat = ::handleUpdateCheat,
-                                        onDeleteCheat = ::handleDeleteCheat,
-                                        onGetRam = { retroView.getSystemRam() },
-                                        onTabChange = { lastCheatsTab = it },
-                                        onDismiss = {
-                                            cheatsMenuVisible = false
-                                            menuVisible = true
-                                            memoryScanner.markGameRan()
-                                            flushCheatReset()
-                                        }
-                                    )
-                                }
-                                if (settingsVisible) {
-                                    activeMenuHandler = InGameSettingsScreen(
-                                        accessor = InGameLibretroSettingsAccessor(
-                                            getCurrentValue = ::getVideoSettingValue,
-                                            globalValue = ::getGlobalVideoSettingValue,
-                                            onCycle = ::cycleVideoSetting,
-                                            onToggle = ::toggleVideoSetting,
-                                            onReset = ::resetVideoSetting,
-                                            onActionCallback = { setting ->
-                                                if (setting.key == "filter" && currentShader == "Custom") {
-                                                    settingsVisible = false
-                                                    openInGameShaderChainEditor()
-                                                } else if (setting.key == "frame") {
-                                                    settingsVisible = false
-                                                    openInGameFrameEditor()
-                                                }
-                                            }
-                                        ),
-                                        platformSlug = platformSlug,
-                                        canEnableBFI = canEnableBFI,
-                                        controlsState = InGameControlsState(
-                                            rumbleEnabled = currentRumbleEnabled,
-                                            analogAsDpad = currentAnalogAsDpad,
-                                            dpadAsAnalog = currentDpadAsAnalog,
-                                            limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
-                                            controllerOrderCount = controllerOrderCount
-                                        ),
-                                        onControlsAction = ::handleControlsAction,
-                                        modalCallbacks = InGameModalCallbacks(
-                                            controllerOrder = controllerOrderList,
-                                            hotkeys = hotkeyList,
-                                            connectedControllers = inputConfigRepository.getConnectedControllers(),
-                                            onAssignController = { port, device ->
-                                                lifecycleScope.launch {
-                                                    inputConfigRepository.assignControllerToPort(port, device)
-                                                    refreshControllerOrder()
-                                                }
-                                            },
-                                            onClearControllerOrder = {
-                                                lifecycleScope.launch {
-                                                    inputConfigRepository.clearControllerOrder()
-                                                    refreshControllerOrder()
-                                                }
-                                            },
-                                            onGetMapping = { controller, platformId ->
-                                                val device = android.view.InputDevice.getDevice(controller.deviceId)
-                                                if (device != null) {
-                                                    inputConfigRepository.getOrCreateExtendedMappingForDevice(device, platformId) to null
-                                                } else {
-                                                    emptyMap<InputSource, Int>() to null
-                                                }
-                                            },
-                                            onSaveMapping = { controller, mapping, presetName, isAutoDetected, platformId ->
-                                                val device = android.view.InputDevice.getDevice(controller.deviceId)
-                                                if (device != null) {
-                                                    inputConfigRepository.saveExtendedMapping(device, mapping, presetName, isAutoDetected, platformId)
-                                                    refreshInputMappings()
-                                                }
-                                            },
-                                            onApplyPreset = { controller, presetName ->
-                                                val device = android.view.InputDevice.getDevice(controller.deviceId)
-                                                if (device != null) {
-                                                    inputConfigRepository.applyPreset(device, presetName)
-                                                    refreshInputMappings()
-                                                }
-                                            },
-                                            onSaveHotkey = { action, keyCodes ->
-                                                inputConfigRepository.setHotkey(action, keyCodes)
-                                                refreshHotkeys()
-                                            },
-                                            onClearHotkey = { action ->
-                                                inputConfigRepository.deleteHotkey(action)
-                                                refreshHotkeys()
-                                            }
-                                        ),
-                                        onDismiss = {
-                                            settingsVisible = false
-                                            menuVisible = true
-                                        }
-                                    )
-                                }
-                                if (shaderChainEditorVisible) {
-                                    val manager = inGameShaderChainManager
-                                    if (manager != null) {
-                                        activeMenuHandler = InGameShaderChainScreen(
-                                            manager = manager,
-                                            onDismiss = ::closeInGameShaderChainEditor
-                                        )
-                                    }
-                                }
-                                if (frameEditorVisible) {
-                                    val manager = inGameFrameManager
-                                    if (manager != null) {
-                                        activeMenuHandler = InGameFrameScreen(
-                                            manager = manager,
-                                            isOffline = false,
-                                            onConfirm = ::confirmInGameFrameEditor,
-                                            onDismiss = ::closeInGameFrameEditor
-                                        )
-                                    }
-                                }
-                                if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible && !frameEditorVisible) {
-                                    activeMenuHandler = null
-                                }
-
-                                Box(modifier = Modifier.fillMaxSize()) {
-                                    AchievementPopup(
-                                        achievement = currentAchievementUnlock,
-                                        onDismiss = ::showNextAchievementUnlock,
-                                        modifier = Modifier
-                                            .align(Alignment.TopCenter)
-                                            .statusBarsPadding()
-                                    )
-
-                                    RAConnectionNotification(
-                                        connectionInfo = raConnectionInfo,
-                                        onDismiss = { raConnectionInfo = null },
-                                        modifier = Modifier
-                                            .align(Alignment.TopCenter)
-                                            .statusBarsPadding()
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    setContent { InGameOverlay() }
                 },
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
@@ -590,465 +468,206 @@ class LibretroActivity : ComponentActivity() {
         setContentView(container)
 
         container.post {
-            screenWidth = container.width
-            screenHeight = container.height
-            Log.d("LibretroActivity", "Container size: ${screenWidth}x${screenHeight}, aspectRatioMode: $aspectRatioMode")
-
+            videoSettings.setScreenSize(container.width, container.height)
+            Log.d(TAG, "Container size: ${container.width}x${container.height}, aspectRatioMode: ${videoSettings.aspectRatioMode}")
             Handler(Looper.getMainLooper()).postDelayed({
-                Log.d("LibretroActivity", "Applying aspect ratio after delay: $aspectRatioMode")
-                applyAspectRatio()
-                applyOverscanCrop()
-                applyRotation()
+                Log.d(TAG, "Applying aspect ratio after delay: ${videoSettings.aspectRatioMode}")
+                videoSettings.applyAspectRatio()
+                videoSettings.applyOverscanCrop()
+                videoSettings.applyRotation()
             }, 500)
         }
+    }
 
-        if (gameId != -1L) {
-            val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
-            playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName, hardcoreMode, isNewGame)
-            loadCheats()
-            initializeRASession()
+    @androidx.compose.runtime.Composable
+    private fun InGameOverlay() {
+        ALauncherTheme {
+            CompositionLocalProvider(
+                LocalGamepadInputHandler provides gamepadInputBridge,
+                LocalABIconsSwapped provides swapAB,
+                LocalXYIconsSwapped provides swapXY,
+                LocalSwapStartSelect provides swapStartSelect
+            ) {
+                if (menuVisible) {
+                    activeMenuHandler = InGameMenu(
+                        gameName = gameName,
+                        hasQuickSave = saveStateManager.hasQuickSave && !hardcoreMode,
+                        cheatsAvailable = !hardcoreMode && PlatformWeightRegistry.supportsCheats(platformSlug),
+                        focusedIndex = menuFocusIndex,
+                        onFocusChange = { menuFocusIndex = it },
+                        onAction = ::handleMenuAction,
+                        isHardcoreMode = hardcoreMode
+                    )
+                }
+                if (cheatsMenuVisible) {
+                    activeMenuHandler = CheatsScreen(
+                        cheats = cheatManager.cheats.map { CheatDisplayItem(it.id, it.description, it.code, it.enabled, it.isUserCreated, it.lastUsedAt) },
+                        scanner = cheatManager.memoryScanner,
+                        initialTab = lastCheatsTab,
+                        onToggleCheat = cheatManager::handleToggleCheat,
+                        onCreateCheat = cheatManager::handleCreateCheat,
+                        onUpdateCheat = cheatManager::handleUpdateCheat,
+                        onDeleteCheat = cheatManager::handleDeleteCheat,
+                        onGetRam = { retroView.getSystemRam() },
+                        onTabChange = { lastCheatsTab = it },
+                        onDismiss = {
+                            cheatsMenuVisible = false
+                            menuVisible = true
+                            cheatManager.memoryScanner.markGameRan()
+                            cheatManager.flushCheatReset()
+                        }
+                    )
+                }
+                if (settingsVisible) {
+                    activeMenuHandler = buildSettingsScreen()
+                }
+                if (shaderChainEditorVisible) {
+                    val manager = inGameShaderChainManager
+                    if (manager != null) {
+                        activeMenuHandler = InGameShaderChainScreen(
+                            manager = manager,
+                            onDismiss = ::closeInGameShaderChainEditor
+                        )
+                    }
+                }
+                if (frameEditorVisible) {
+                    val manager = inGameFrameManager
+                    if (manager != null) {
+                        activeMenuHandler = InGameFrameScreen(
+                            manager = manager,
+                            isOffline = false,
+                            onConfirm = ::confirmInGameFrameEditor,
+                            onDismiss = ::closeInGameFrameEditor
+                        )
+                    }
+                }
+                if (!isAnyMenuOpen) {
+                    activeMenuHandler = null
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AchievementPopup(
+                        achievement = raSession?.currentAchievementUnlock,
+                        onDismiss = { raSession?.showNextUnlock() },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .statusBarsPadding()
+                    )
+                    RAConnectionNotification(
+                        connectionInfo = raSession?.raConnectionInfo,
+                        onDismiss = { raSession?.dismissConnectionInfo() },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .statusBarsPadding()
+                    )
+                }
+            }
         }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun buildSettingsScreen(): InputHandler {
+        return InGameSettingsScreen(
+            accessor = InGameLibretroSettingsAccessor(
+                getCurrentValue = videoSettings::getVideoSettingValue,
+                globalValue = videoSettings::getGlobalVideoSettingValue,
+                onCycle = videoSettings::cycleVideoSetting,
+                onToggle = videoSettings::toggleVideoSetting,
+                onReset = videoSettings::resetVideoSetting,
+                onActionCallback = { setting ->
+                    if (setting.key == "filter" && videoSettings.currentShader == "Custom") {
+                        settingsVisible = false
+                        openInGameShaderChainEditor()
+                    } else if (setting.key == "frame") {
+                        settingsVisible = false
+                        openInGameFrameEditor()
+                    }
+                }
+            ),
+            platformSlug = platformSlug,
+            canEnableBFI = canEnableBFI,
+            controlsState = InGameControlsState(
+                rumbleEnabled = videoSettings.currentRumbleEnabled,
+                analogAsDpad = videoSettings.currentAnalogAsDpad,
+                dpadAsAnalog = videoSettings.currentDpadAsAnalog,
+                limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
+                controllerOrderCount = inputConfig.controllerOrderCount
+            ),
+            onControlsAction = ::handleControlsAction,
+            modalCallbacks = buildModalCallbacks(),
+            onDismiss = {
+                settingsVisible = false
+                menuVisible = true
+            }
+        )
+    }
+
+    private fun buildModalCallbacks(): InGameModalCallbacks {
+        val repo = inputConfig.inputConfigRepository
+        return InGameModalCallbacks(
+            controllerOrder = inputConfig.controllerOrderList,
+            hotkeys = inputConfig.hotkeyList,
+            connectedControllers = repo.getConnectedControllers(),
+            onAssignController = { port, device ->
+                lifecycleScope.launch {
+                    repo.assignControllerToPort(port, device)
+                    inputConfig.refreshControllerOrder()
+                }
+            },
+            onClearControllerOrder = {
+                lifecycleScope.launch {
+                    repo.clearControllerOrder()
+                    inputConfig.refreshControllerOrder()
+                }
+            },
+            onGetMapping = { controller, mappingPlatformId ->
+                val device = InputDevice.getDevice(controller.deviceId)
+                if (device != null) {
+                    repo.getOrCreateExtendedMappingForDevice(device, mappingPlatformId) to null
+                } else {
+                    emptyMap<InputSource, Int>() to null
+                }
+            },
+            onSaveMapping = { controller, mapping, presetName, isAutoDetected, mappingPlatformId ->
+                val device = InputDevice.getDevice(controller.deviceId)
+                if (device != null) {
+                    repo.saveExtendedMapping(device, mapping, presetName, isAutoDetected, mappingPlatformId)
+                    inputConfig.refreshInputMappings()
+                }
+            },
+            onApplyPreset = { controller, presetName ->
+                val device = InputDevice.getDevice(controller.deviceId)
+                if (device != null) {
+                    repo.applyPreset(device, presetName)
+                    inputConfig.refreshInputMappings()
+                }
+            },
+            onSaveHotkey = { action, keyCodes ->
+                repo.setHotkey(action, keyCodes)
+                inputConfig.refreshHotkeys()
+            },
+            onClearHotkey = { action ->
+                repo.deleteHotkey(action)
+                inputConfig.refreshHotkeys()
+            }
+        )
     }
 
     private fun initializeRASession() {
-        lifecycleScope.launch {
-            val isLoggedIn = raRepository.isLoggedIn()
-            Log.d("LibretroActivity", "RA login check: isLoggedIn=$isLoggedIn")
-            if (!isLoggedIn) {
-                Log.d("LibretroActivity", "Not logged in to RA, skipping session")
-                return@launch
-            }
-
-            val game = gameDao.getById(gameId) ?: return@launch
-            gameRaId = game.raId
-            Log.d("LibretroActivity", "Game loaded: title=${game.title}, raId=$gameRaId")
-
-            if (gameRaId == null) {
-                Log.d("LibretroActivity", "Game has no RA ID, skipping RA session")
-                return@launch
-            }
-
-            Log.d("LibretroActivity", "Starting RA session for raId=$gameRaId, hardcore=$hardcoreMode")
-            val sessionResult = raRepository.startSession(gameRaId!!, hardcoreMode)
-            if (sessionResult.success) {
-                raSessionActive = true
-                val preUnlocked = sessionResult.unlockedAchievements
-                Log.d("LibretroActivity", "RA session started for game $gameRaId (hardcore=$hardcoreMode), pre-unlocked=${preUnlocked.size}: $preUnlocked")
-
-                val patchData = raRepository.getGamePatchData(gameRaId!!)
-                if (patchData != null) {
-                    // Compute and store ROM hash if not already cached
-                    val raConsoleId = patchData.consoleId ?: 0
-                    if (game.romHash == null && raConsoleId > 0) {
-                        try {
-                            val hash = com.swordfish.libretrodroid.LibretroDroid.computeRomHash(romPath, raConsoleId)
-                            if (hash != null) {
-                                Log.d("LibretroActivity", "Computed ROM hash: $hash")
-                                gameDao.updateRomHash(gameId, hash)
-                            } else {
-                                Log.w("LibretroActivity", "Failed to compute ROM hash for $romPath (console $raConsoleId)")
-                            }
-                        } catch (e: Exception) {
-                            Log.e("LibretroActivity", "Error computing ROM hash", e)
-                        }
-                    } else if (game.romHash != null) {
-                        Log.d("LibretroActivity", "Using cached ROM hash: ${game.romHash}")
-                    }
-
-                    // Filter out warning pseudo-achievements (e.g., "Unknown Emulator" warnings)
-                    val validAchievements = patchData.achievements?.filter { ach ->
-                        !ach.title.contains("Unknown Emulator", ignoreCase = true) &&
-                        !ach.title.contains("Emulator Warning", ignoreCase = true) &&
-                        ach.memAddr.isNotBlank()
-                    } ?: emptyList()
-
-                    // Store info for popup display
-                    validAchievements.forEach { patch ->
-                        achievementInfo[patch.id] = AchievementPatchInfo(
-                            title = patch.title,
-                            description = patch.description,
-                            points = patch.points,
-                            badgeName = patch.badgeName
-                        )
-                    }
-
-                    // Update diagnostic counters
-                    totalAchievements = validAchievements.size
-                    earnedAchievements = preUnlocked.count { it in validAchievements.map { a -> a.id }.toSet() }
-
-                    // Show connection notification
-                    raConnectionInfo = RAConnectionInfo(
-                        isHardcore = hardcoreMode,
-                        earnedCount = earnedAchievements,
-                        totalCount = totalAchievements
-                    )
-
-                    // Filter to only unearned achievements and send to native
-                    val toWatch = validAchievements
-                        .filter { it.id !in preUnlocked }
-
-                    if (toWatch.isNotEmpty()) {
-                        val achievementDefs = toWatch.map { patch ->
-                            com.swordfish.libretrodroid.AchievementDef(patch.id, patch.memAddr)
-                        }.toTypedArray()
-
-                        Log.d("LibretroActivity", "Sending ${achievementDefs.size} achievements to native for console $raConsoleId")
-                        com.swordfish.libretrodroid.LibretroDroid.initAchievements(achievementDefs, raConsoleId)
-
-                        retroView.achievementUnlockListener = { achievementId ->
-                            onAchievementUnlocked(achievementId)
-                        }
-                    } else {
-                        Log.d("LibretroActivity", "No achievements to watch (all pre-unlocked)")
-                    }
-                }
-
-                startHeartbeatLoop()
-            } else {
-                Log.w("LibretroActivity", "Failed to start RA session")
-            }
-        }
-    }
-
-    private fun startHeartbeatLoop() {
-        heartbeatJob = lifecycleScope.launch {
-            while (isActive && raSessionActive) {
-                delay(240_000L) // 4 minutes
-                val raId = gameRaId ?: break
-                raRepository.sendHeartbeat(raId, null)
-                Log.d("LibretroActivity", "RA heartbeat sent for game $raId")
-            }
-        }
-    }
-
-    private fun onAchievementUnlocked(achievementId: Long) {
-        val info = achievementInfo[achievementId]
-
-        Log.i("LibretroActivity", "=== ACHIEVEMENT UNLOCKED ===")
-        Log.i("LibretroActivity", "  ID: $achievementId")
-        Log.i("LibretroActivity", "  Title: ${info?.title}")
-        Log.i("LibretroActivity", "  Points: ${info?.points}")
-        Log.i("LibretroActivity", "  Hardcore: $hardcoreMode")
-
-        earnedAchievements++
-
-        lifecycleScope.launch {
-            // 1. Submit to RA server
-            Log.d("LibretroActivity", "Submitting achievement $achievementId to RA server...")
-            val result = raRepository.awardAchievement(
-                gameId = gameId,
-                achievementRaId = achievementId,
-                forHardcoreMode = hardcoreMode
-            )
-
-            when (result) {
-                is RAAwardResult.Success -> {
-                    Log.i("LibretroActivity", "Achievement $achievementId awarded to RA successfully")
-                }
-                is RAAwardResult.AlreadyAwarded -> {
-                    Log.d("LibretroActivity", "Achievement $achievementId already awarded on RA")
-                }
-                is RAAwardResult.Queued -> {
-                    Log.d("LibretroActivity", "Achievement $achievementId queued for later submission")
-                    com.nendo.argosy.data.sync.AchievementSubmissionWorker.schedule(this@LibretroActivity)
-                }
-                is RAAwardResult.Error -> {
-                    Log.e("LibretroActivity", "Failed to award achievement to RA: ${result.message}")
-                }
-            }
-
-            // 2. Update local database
-            val now = System.currentTimeMillis()
-            if (hardcoreMode) {
-                achievementDao.markUnlockedHardcore(gameId, achievementId, now)
-                Log.d("LibretroActivity", "Marked achievement $achievementId as hardcore unlocked in local DB")
-            } else {
-                achievementDao.markUnlocked(gameId, achievementId, now)
-                Log.d("LibretroActivity", "Marked achievement $achievementId as unlocked in local DB")
-            }
-
-            // 3. Update game's earned count
-            gameDao.incrementEarnedAchievementCount(gameId)
-            Log.d("LibretroActivity", "Incremented earned achievement count for game $gameId")
-
-            // 4. Emit update to bus for UI refresh
-            val totalCount = achievementDao.countByGameId(gameId)
-            val earnedCount = achievementDao.countUnlockedByGameId(gameId)
-            achievementUpdateBus.emit(
-                AchievementUpdateBus.AchievementUpdate(
-                    gameId = gameId,
-                    totalCount = totalCount,
-                    earnedCount = earnedCount
-                )
-            )
-            Log.d("LibretroActivity", "Emitted achievement update: $earnedCount/$totalCount earned for game $gameId")
-        }
-
-        val badgeUrl = info?.badgeName?.let {
-            "https://media.retroachievements.org/Badge/$it.png"
-        }
-
-        val unlock = AchievementUnlock(
-            id = achievementId,
-            title = info?.title ?: "Achievement",
-            description = info?.description,
-            points = info?.points ?: 0,
-            badgeUrl = badgeUrl,
-            isHardcore = hardcoreMode
+        val session = RetroAchievementsSessionManager(
+            gameId = gameId,
+            romPath = romPath,
+            hardcoreMode = hardcoreMode,
+            gameDao = gameDao,
+            achievementDao = achievementDao,
+            raRepository = raRepository,
+            achievementUpdateBus = achievementUpdateBus,
+            ambientLedManager = ambientLedManager,
+            scope = lifecycleScope,
+            context = this
         )
-
-        achievementUnlockQueue.add(unlock)
-        ambientLedManager.flashAchievement(hardcoreMode)
-        if (currentAchievementUnlock == null) {
-            showNextAchievementUnlock()
-        }
-    }
-
-    private fun showNextAchievementUnlock() {
-        currentAchievementUnlock = if (achievementUnlockQueue.isNotEmpty()) {
-            achievementUnlockQueue.removeAt(0)
-        } else {
-            null
-        }
-    }
-
-    private fun loadCheats() {
-        lifecycleScope.launch {
-            val game = gameDao.getById(gameId)
-            Log.d("LibretroActivity", "loadCheats: game=$game, cheatsFetched=${game?.cheatsFetched}, configured=${cheatsRepository.isConfigured()}")
-
-            if (game != null && !game.cheatsFetched && cheatsRepository.isConfigured()) {
-                Log.d("LibretroActivity", "Fetching cheats from server for game $gameId (${game.title})")
-                try {
-                    val success = cheatsRepository.syncCheatsForGame(game)
-                    Log.d("LibretroActivity", "Cheats sync result: $success")
-                } catch (e: Exception) {
-                    Log.w("LibretroActivity", "Failed to fetch cheats: ${e.message}", e)
-                }
-            }
-
-            cheats = cheatDao.getCheatsForGame(gameId)
-            Log.d("LibretroActivity", "Loaded ${cheats.size} cheats for game $gameId")
-            if (cheats.any { it.enabled }) {
-                applyAllEnabledCheats()
-            }
-        }
-    }
-
-    private fun applyAspectRatio() {
-        if (screenWidth == 0 || screenHeight == 0) {
-            Log.w("LibretroActivity", "Cannot apply aspect ratio: screen size not available")
-            return
-        }
-
-        val screenRatio = screenWidth.toFloat() / screenHeight.toFloat()
-
-        if (aspectRatioMode == "Integer") {
-            Log.d("LibretroActivity", "Enabling integer scaling")
-            retroView.integerScaling = true
-            retroView.aspectRatioOverride = -1f
-            return
-        }
-
-        retroView.integerScaling = false
-        val overrideRatio = when (aspectRatioMode) {
-            "4:3" -> 4f / 3f
-            "16:9" -> 16f / 9f
-            "Stretch" -> screenRatio
-            else -> -1f
-        }
-
-        Log.d("LibretroActivity", "Setting aspect ratio override: $overrideRatio for mode: $aspectRatioMode")
-        retroView.aspectRatioOverride = overrideRatio
-    }
-
-    private fun applyOverscanCrop() {
-        if (overscanCrop == 0) {
-            retroView.viewport = RectF(0f, 0f, 1f, 1f)
-            return
-        }
-
-        val cropPercentX = overscanCrop / 256f
-        val cropPercentY = overscanCrop / 240f
-        val left = cropPercentX
-        val top = cropPercentY
-        val right = 1f - cropPercentX
-        val bottom = 1f - cropPercentY
-
-        Log.d("LibretroActivity", "Applying overscan crop: ${overscanCrop}px -> viewport($left, $top, $right, $bottom)")
-        retroView.viewport = RectF(left, top, right, bottom)
-    }
-
-    private fun applyRotation() {
-        Log.d("LibretroActivity", "Applying rotation: $rotationDegrees degrees")
-        retroView.rotation = rotationDegrees
-    }
-
-    private fun getQuickSaveFile(): File {
-        val romName = File(romPath).nameWithoutExtension
-        return File(statesDir, "$romName.state")
-    }
-
-    private fun getSramFile(): File {
-        val romName = File(romPath).nameWithoutExtension
-        return File(savesDir, "$romName.srm")
-    }
-
-    private suspend fun restoreSaveForLaunchMode(): ByteArray? {
-        if (gameId < 0) {
-            Log.w("LibretroActivity", "No valid gameId, using existing save")
-            return getSramFile().takeIf { it.exists() }?.readBytes()
-        }
-
-        return when (launchMode) {
-            LaunchMode.NEW_HARDCORE, LaunchMode.NEW_CASUAL -> {
-                Log.d("LibretroActivity", "New game mode - starting fresh (no save)")
-                val sramFile = getSramFile()
-                if (sramFile.exists()) {
-                    val result = saveCacheManager.cacheAsRollback(
-                        gameId,
-                        EmulatorRegistry.BUILTIN_PACKAGE,
-                        sramFile.absolutePath
-                    )
-                    when (result) {
-                        is SaveCacheManager.CacheResult.Created ->
-                            Log.d("LibretroActivity", "Created rollback backup before fresh start")
-                        is SaveCacheManager.CacheResult.Duplicate ->
-                            Log.d("LibretroActivity", "Rollback skipped - identical save already cached")
-                        is SaveCacheManager.CacheResult.Failed ->
-                            Log.w("LibretroActivity", "Failed to create rollback backup")
-                    }
-                    sramFile.delete()
-                    Log.d("LibretroActivity", "Deleted existing save file for fresh start")
-                }
-                null
-            }
-            LaunchMode.RESUME_HARDCORE -> {
-                Log.d("LibretroActivity", "Resuming hardcore - restoring hardcore save")
-                val hardcoreSave = saveCacheManager.getLatestHardcoreSave(gameId)
-                if (hardcoreSave != null) {
-                    val isValid = saveCacheManager.isValidHardcoreSave(hardcoreSave)
-                    if (!isValid) {
-                        Log.w("LibretroActivity", "Hardcore save missing trailer - save may have been modified externally")
-                    }
-                    val bytes = saveCacheManager.getSaveBytesFromEntity(hardcoreSave)
-                    if (bytes != null) {
-                        getSramFile().writeBytes(bytes)
-                        Log.d("LibretroActivity", "Restored hardcore save (${bytes.size} bytes, valid=$isValid)")
-                    }
-                    bytes
-                } else {
-                    Log.w("LibretroActivity", "No hardcore save found, starting fresh")
-                    null
-                }
-            }
-            LaunchMode.RESUME -> {
-                val game = gameDao.getById(gameId)
-                val activeSaveTimestamp = game?.activeSaveTimestamp
-                val activeChannel = game?.activeSaveChannel
-
-                val targetSave = when {
-                    activeSaveTimestamp != null -> {
-                        Log.d("LibretroActivity", "RESUME: Looking for activated save at timestamp $activeSaveTimestamp")
-                        saveCacheManager.getByTimestamp(gameId, activeSaveTimestamp)
-                    }
-                    activeChannel != null -> {
-                        Log.d("LibretroActivity", "RESUME: Looking for most recent save in channel '$activeChannel'")
-                        saveCacheManager.getMostRecentInChannel(gameId, activeChannel)
-                    }
-                    else -> {
-                        Log.d("LibretroActivity", "RESUME: Looking for most recent save overall")
-                        saveCacheManager.getMostRecentSave(gameId)
-                    }
-                }
-
-                if (targetSave != null) {
-                    if (targetSave.isHardcore) {
-                        val isValid = saveCacheManager.isValidHardcoreSave(targetSave)
-                        if (isValid) {
-                            hardcoreMode = true
-                            Log.d("LibretroActivity", "RESUME: Loading hardcore save, switching to hardcore mode")
-                        } else {
-                            Log.w("LibretroActivity", "RESUME: Hardcore save missing trailer, loading as casual")
-                        }
-                    }
-                    val bytes = saveCacheManager.getSaveBytesFromEntity(targetSave)
-                    if (bytes != null) {
-                        getSramFile().writeBytes(bytes)
-                        Log.d("LibretroActivity", "RESUME: Restored save (${bytes.size} bytes, hardcore=${targetSave.isHardcore})")
-                    }
-                    bytes
-                } else {
-                    Log.d("LibretroActivity", "RESUME: No cached saves, using existing .srm if present")
-                    getSramFile().takeIf { it.exists() }?.readBytes()
-                }
-            }
-        }
-    }
-
-    private fun saveSram() {
-        try {
-            val sramData = retroView.serializeSRAM()
-            if (sramData.isEmpty()) return
-
-            val currentHash = hashBytes(sramData)
-            if (currentHash == lastSramHash) return
-
-            getSramFile().writeBytes(sramData)
-            lastSramHash = currentHash
-        } catch (e: Exception) {
-            // SRAM save failed silently - some cores don't support SRAM
-        }
-    }
-
-    private fun hashBytes(data: ByteArray): String {
-        val digest = MessageDigest.getInstance("MD5")
-        return digest.digest(data).joinToString("") { "%02x".format(it) }
-    }
-
-    private fun setupInputConfig() {
-        hotkeyManager = HotkeyManager(inputConfigRepository)
-
-        lifecycleScope.launch {
-            inputConfigRepository.clearAutoDetectedMappings()
-
-            val controllerOrder = inputConfigRepository.getControllerOrder()
-            controllerOrderList = controllerOrder
-            controllerOrderCount = controllerOrder.size
-            portResolver.setControllerOrder(controllerOrder)
-
-            val mappingPlatformId = MappingPlatforms.dbPlatformIdForSlug(platformSlug)
-            val mappings = mutableMapOf<String, Map<com.nendo.argosy.data.repository.InputSource, Int>>()
-            for (controller in inputConfigRepository.getConnectedControllers()) {
-                val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(
-                    android.view.InputDevice.getDevice(controller.deviceId)!!,
-                    mappingPlatformId
-                )
-                mappings[controller.controllerId] = mapping
-            }
-            inputMapper.setExtendedMappings(mappings)
-            inputMapper.setPortResolver { device -> portResolver.getPort(device) }
-
-            val mappedButtons = mappings.mapValues { (_, mapping) ->
-                mapping.keys
-                    .filterIsInstance<com.nendo.argosy.data.repository.InputSource.Button>()
-                    .map { it.keyCode }
-                    .toSet()
-            }
-
-            inputConfigRepository.initializeDefaultHotkeys()
-            val hotkeys = inputConfigRepository.getEnabledHotkeys()
-            hotkeyManager.setHotkeys(hotkeys)
-            hotkeyList = inputConfigRepository.getHotkeys()
-            hotkeyManager.setControllerMappedButtons(mappedButtons)
-            hotkeyManager.setLimitToPlayer1(limitHotkeysToPlayer1)
-
-            if (controllerOrder.isNotEmpty()) {
-                hotkeyManager.setPlayer1ControllerId(controllerOrder.first().controllerId)
-            }
-
-            Log.d("LibretroActivity", "Input config loaded: ${controllerOrder.size} port assignments, ${mappings.size} mappings, ${hotkeys.size} hotkeys")
-        }
+        raSession = session
+        session.initialize(retroView)
     }
 
     private fun setupRumble() {
@@ -1077,11 +696,11 @@ class LibretroActivity : ComponentActivity() {
             retroView.getGLRetroEvents().collect { event ->
                 when (event) {
                     is GLRetroView.GLRetroEvents.SurfaceCreated -> {
-                        val slotCount = 900  // ~15 sec at 60fps
+                        val slotCount = 900
                         val maxStateSize = 4 * 1024 * 1024
                         retroView.initRewindBuffer(slotCount, maxStateSize)
-                        Log.d("LibretroActivity", "Rewind buffer initialized: $slotCount slots, ${maxStateSize / 1024}KB max state")
-                        applyAllEnabledCheats()
+                        Log.d(TAG, "Rewind buffer initialized: $slotCount slots, ${maxStateSize / 1024}KB max state")
+                        cheatManager.applyAllEnabledCheats(hardcoreMode)
                     }
                     is GLRetroView.GLRetroEvents.FrameRendered -> {
                         if (!menuVisible) {
@@ -1094,7 +713,7 @@ class LibretroActivity : ComponentActivity() {
                             } else {
                                 if (now - lastCaptureTime >= frameIntervalMs) {
                                     lastCaptureTime = now
-                                    val captureCount = if (isFastForwarding) fastForwardSpeed else 1
+                                    val captureCount = if (isFastForwarding) videoSettings.fastForwardSpeed else 1
                                     repeat(captureCount) { retroView.captureRewindState() }
                                 }
                             }
@@ -1106,7 +725,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun performRewind(): Boolean {
-        if (!rewindEnabled) return false
+        if (!videoSettings.rewindEnabled) return false
         return retroView.rewindFrame()
     }
 
@@ -1114,11 +733,19 @@ class LibretroActivity : ComponentActivity() {
         when (action) {
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
-                performQuickSave()
+                if (saveStateManager.performQuickSave(retroView)) {
+                    Toast.makeText(this, "State saved", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Failed to save state", Toast.LENGTH_SHORT).show()
+                }
                 hideMenu()
             }
             InGameMenuAction.QuickLoad -> {
-                performQuickLoad()
+                if (saveStateManager.performQuickLoad(retroView)) {
+                    Toast.makeText(this, "State loaded", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Failed to load state", Toast.LENGTH_SHORT).show()
+                }
                 hideMenu()
             }
             InGameMenuAction.Settings -> {
@@ -1150,7 +777,7 @@ class LibretroActivity : ComponentActivity() {
             },
             onChainChanged = { config ->
                 val shaderConfig = ShaderRegistry(this).resolveChain(config)
-                resolvedCustomShader = shaderConfig
+                videoSettings.resolvedCustomShader = shaderConfig
                 retroView.shader = shaderConfig
             }
         )
@@ -1167,29 +794,15 @@ class LibretroActivity : ComponentActivity() {
         val manager = inGameShaderChainManager ?: return
         val config = manager.getChainConfig()
         val shaderConfig = ShaderRegistry(this).resolveChain(config)
-        resolvedCustomShader = shaderConfig
+        videoSettings.resolvedCustomShader = shaderConfig
         retroView.shader = shaderConfig
-        persistInGameShaderChain(config)
+        videoSettings.persistShaderChain(config.toJson())
         manager.destroy()
         inGameShaderChainManager = null
         capturedGameFrame?.recycle()
         capturedGameFrame = null
         shaderChainEditorVisible = false
         settingsVisible = true
-    }
-
-    private fun persistInGameShaderChain(config: ShaderChainConfig) {
-        val json = config.toJson()
-        lifecycleScope.launch {
-            val current = platformLibretroSettingsDao.getByPlatformId(platformId)
-                ?: com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(platformId = platformId)
-            val updated = current.copy(shaderChain = json)
-            if (updated.hasAnyOverrides()) {
-                platformLibretroSettingsDao.upsert(updated)
-            } else {
-                platformLibretroSettingsDao.deleteByPlatformId(platformId)
-            }
-        }
     }
 
     private fun openInGameFrameEditor() {
@@ -1199,7 +812,7 @@ class LibretroActivity : ComponentActivity() {
             frameDownloader = FrameDownloader(registry.getFramesDir()),
             platformSlug = platformSlug,
             scope = lifecycleScope,
-            initialFrameId = currentFrame,
+            initialFrameId = videoSettings.currentFrame,
             onFrameChanged = { frameId ->
                 val bitmap = if (frameId != null) registry.loadFrame(frameId) else null
                 if (bitmap != null) {
@@ -1217,20 +830,22 @@ class LibretroActivity : ComponentActivity() {
     private fun confirmInGameFrameEditor() {
         val manager = inGameFrameManager ?: return
         val frameId = manager.selectedFrameId
-        currentFrame = frameId
-        persistInGameFrame(frameId)
-        if (frameId != null && !globalSettings.framesEnabled) {
+        videoSettings.currentFrame = frameId
+        videoSettings.persistFrame(frameId)
+        if (frameId != null) {
             lifecycleScope.launch {
-                preferencesRepository.setBuiltinFramesEnabled(true)
+                val globalSettings = preferencesRepository.getBuiltinEmulatorSettings().first()
+                if (!globalSettings.framesEnabled) {
+                    preferencesRepository.setBuiltinFramesEnabled(true)
+                }
             }
         }
         closeInGameFrameEditorInternal()
     }
 
     private fun closeInGameFrameEditor() {
-        val originalFrameId = currentFrame
-        val registry = frameRegistry
-        val bitmap = if (originalFrameId != null) registry.loadFrame(originalFrameId) else null
+        val originalFrameId = videoSettings.currentFrame
+        val bitmap = if (originalFrameId != null) frameRegistry.loadFrame(originalFrameId) else null
         if (bitmap != null) {
             retroView.setBackgroundFrame(bitmap)
         } else {
@@ -1247,319 +862,28 @@ class LibretroActivity : ComponentActivity() {
         settingsVisible = true
     }
 
-    private fun persistInGameFrame(frameId: String?) {
-        lifecycleScope.launch {
-            val current = platformLibretroSettingsDao.getByPlatformId(platformId)
-                ?: com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(platformId = platformId)
-            val updated = current.copy(frame = frameId)
-            if (updated.hasAnyOverrides()) {
-                platformLibretroSettingsDao.upsert(updated)
-            } else {
-                platformLibretroSettingsDao.deleteByPlatformId(platformId)
-            }
-        }
-    }
-
-    private fun getVideoSettingValue(setting: LibretroSettingDef): String = when (setting) {
-        LibretroSettingDef.Shader -> currentShader
-        LibretroSettingDef.Filter -> currentFilter
-        LibretroSettingDef.AspectRatio -> currentAspectRatio
-        LibretroSettingDef.Rotation -> currentRotation
-        LibretroSettingDef.OverscanCrop -> currentOverscanCrop
-        LibretroSettingDef.Frame -> currentFrame?.let {
-            frameRegistry.findById(it)?.displayName
-        } ?: "None"
-        LibretroSettingDef.BlackFrameInsertion -> currentBFI.toString()
-        LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed
-        LibretroSettingDef.RewindEnabled -> currentRewindEnabled.toString()
-        LibretroSettingDef.SkipDuplicateFrames -> currentSkipDupFrames.toString()
-        LibretroSettingDef.LowLatencyAudio -> currentLowLatencyAudio.toString()
-        LibretroSettingDef.ForceSoftwareTiming -> currentForceSoftwareTiming.toString()
-    }
-
-    private fun getGlobalVideoSettingValue(setting: LibretroSettingDef): String = when (setting) {
-        LibretroSettingDef.Shader -> globalSettings.shader
-        LibretroSettingDef.Filter -> globalSettings.filter
-        LibretroSettingDef.AspectRatio -> globalSettings.aspectRatio
-        LibretroSettingDef.Rotation -> globalSettings.rotationDisplay
-        LibretroSettingDef.OverscanCrop -> globalSettings.overscanCropDisplay
-        LibretroSettingDef.Frame -> getGlobalFrameForPlatform()?.let {
-            frameRegistry.findById(it)?.displayName
-        } ?: "None"
-        LibretroSettingDef.BlackFrameInsertion -> globalSettings.blackFrameInsertion.toString()
-        LibretroSettingDef.FastForwardSpeed -> globalSettings.fastForwardSpeedDisplay
-        LibretroSettingDef.RewindEnabled -> globalSettings.rewindEnabled.toString()
-        LibretroSettingDef.SkipDuplicateFrames -> globalSettings.skipDuplicateFrames.toString()
-        LibretroSettingDef.LowLatencyAudio -> globalSettings.lowLatencyAudio.toString()
-        LibretroSettingDef.ForceSoftwareTiming -> globalSettings.forceSoftwareTiming.toString()
-    }
-
-    private fun getGlobalFrameForPlatform(): String? {
-        if (!globalSettings.framesEnabled) return null
-        return frameRegistry.getFramesForPlatform(platformSlug).firstOrNull()?.id
-    }
-
-    private fun resetVideoSetting(setting: LibretroSettingDef) {
-        val globalValue = getGlobalVideoSettingValue(setting)
-        when (setting) {
-            LibretroSettingDef.Shader -> currentShader = globalValue
-            LibretroSettingDef.Filter -> currentFilter = globalValue
-            LibretroSettingDef.AspectRatio -> currentAspectRatio = globalValue
-            LibretroSettingDef.Rotation -> currentRotation = globalValue
-            LibretroSettingDef.OverscanCrop -> currentOverscanCrop = globalValue
-            LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed = globalValue
-            LibretroSettingDef.Frame -> currentFrame = getGlobalFrameForPlatform()
-            else -> {}
-        }
-        when (setting) {
-            LibretroSettingDef.BlackFrameInsertion -> {
-                currentBFI = globalSettings.blackFrameInsertion
-                applyVideoSettingChange(setting, currentBFI.toString())
-            }
-            LibretroSettingDef.RewindEnabled -> {
-                currentRewindEnabled = globalSettings.rewindEnabled
-                applyVideoSettingChange(setting, currentRewindEnabled.toString())
-            }
-            LibretroSettingDef.SkipDuplicateFrames -> {
-                currentSkipDupFrames = globalSettings.skipDuplicateFrames
-                applyVideoSettingChange(setting, currentSkipDupFrames.toString())
-            }
-            LibretroSettingDef.LowLatencyAudio -> {
-                currentLowLatencyAudio = globalSettings.lowLatencyAudio
-                applyVideoSettingChange(setting, currentLowLatencyAudio.toString())
-            }
-            LibretroSettingDef.ForceSoftwareTiming -> {
-                currentForceSoftwareTiming = globalSettings.forceSoftwareTiming
-                applyVideoSettingChange(setting, currentForceSoftwareTiming.toString())
-            }
-            LibretroSettingDef.Frame -> {
-                applyVideoSettingChange(setting, currentFrame ?: "None")
-            }
-            else -> applyVideoSettingChange(setting, globalValue)
-        }
-        lifecycleScope.launch {
-            val current = platformLibretroSettingsDao.getByPlatformId(platformId) ?: return@launch
-            val updated = when (setting) {
-                LibretroSettingDef.Shader -> current.copy(shader = null)
-                LibretroSettingDef.Filter -> current.copy(filter = null)
-                LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = null)
-                LibretroSettingDef.Rotation -> current.copy(rotation = null)
-                LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = null)
-                LibretroSettingDef.Frame -> current.copy(frame = null)
-                LibretroSettingDef.BlackFrameInsertion -> current.copy(blackFrameInsertion = null)
-                LibretroSettingDef.FastForwardSpeed -> current.copy(fastForwardSpeed = null)
-                LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = null)
-                LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = null)
-                LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = null)
-                LibretroSettingDef.ForceSoftwareTiming -> return@launch
-            }
-            if (updated.hasAnyOverrides()) {
-                platformLibretroSettingsDao.upsert(updated)
-            } else {
-                platformLibretroSettingsDao.deleteByPlatformId(platformId)
-            }
-        }
-    }
-
-    private fun cycleVideoSetting(setting: LibretroSettingDef, direction: Int) {
-        val type = setting.type as? LibretroSettingDef.SettingType.Cycle ?: return
-        val options = type.options
-        val current = getVideoSettingValue(setting)
-        val currentIndex = options.indexOf(current).coerceAtLeast(0)
-        val nextIndex = (currentIndex + direction + options.size) % options.size
-        val newValue = options[nextIndex]
-
-        when (setting) {
-            LibretroSettingDef.Shader -> currentShader = newValue
-            LibretroSettingDef.Filter -> currentFilter = newValue
-            LibretroSettingDef.AspectRatio -> currentAspectRatio = newValue
-            LibretroSettingDef.Rotation -> currentRotation = newValue
-            LibretroSettingDef.OverscanCrop -> currentOverscanCrop = newValue
-            LibretroSettingDef.FastForwardSpeed -> currentFastForwardSpeed = newValue
-            else -> {}
-        }
-
-        applyVideoSettingChange(setting, newValue)
-    }
-
-    private fun toggleVideoSetting(setting: LibretroSettingDef) {
-        when (setting) {
-            LibretroSettingDef.BlackFrameInsertion -> {
-                currentBFI = !currentBFI
-                applyVideoSettingChange(setting, currentBFI.toString())
-            }
-            LibretroSettingDef.RewindEnabled -> {
-                currentRewindEnabled = !currentRewindEnabled
-                applyVideoSettingChange(setting, currentRewindEnabled.toString())
-            }
-            LibretroSettingDef.SkipDuplicateFrames -> {
-                currentSkipDupFrames = !currentSkipDupFrames
-                applyVideoSettingChange(setting, currentSkipDupFrames.toString())
-            }
-            LibretroSettingDef.LowLatencyAudio -> {
-                currentLowLatencyAudio = !currentLowLatencyAudio
-                applyVideoSettingChange(setting, currentLowLatencyAudio.toString())
-            }
-            LibretroSettingDef.ForceSoftwareTiming -> {
-                currentForceSoftwareTiming = !currentForceSoftwareTiming
-                applyVideoSettingChange(setting, currentForceSoftwareTiming.toString())
-            }
-            else -> {}
-        }
-    }
-
-    private fun applyVideoSettingChange(setting: LibretroSettingDef, value: String) {
-        Log.d("LibretroActivity", "Video setting changed: ${setting.key} = $value")
-
-        when (setting) {
-            LibretroSettingDef.Shader -> {
-                val shaderConfig = when (value) {
-                    "CRT" -> ShaderConfig.CRT
-                    "LCD" -> ShaderConfig.LCD
-                    "Sharp" -> ShaderConfig.Sharp
-                    "CUT" -> ShaderConfig.CUT()
-                    "CUT2" -> ShaderConfig.CUT2()
-                    "CUT3" -> ShaderConfig.CUT3()
-                    "Custom" -> {
-                        if (resolvedCustomShader is ShaderConfig.Default) {
-                            val settings = kotlinx.coroutines.runBlocking {
-                                effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
-                            }
-                            resolvedCustomShader = ShaderRegistry(this).resolveChain(settings.shaderChainConfig)
-                        }
-                        resolvedCustomShader
-                    }
-                    else -> ShaderConfig.Default
-                }
-                retroView.shader = shaderConfig
-            }
-            LibretroSettingDef.Filter -> {
-                retroView.filterMode = when (value) {
-                    "Nearest" -> 0
-                    "Bilinear" -> 1
-                    else -> -1
-                }
-            }
-            LibretroSettingDef.AspectRatio -> {
-                aspectRatioMode = value
-                applyAspectRatio()
-            }
-            LibretroSettingDef.Rotation -> {
-                rotationDegrees = parseRotation(value)
-                applyRotation()
-            }
-            LibretroSettingDef.OverscanCrop -> {
-                overscanCrop = parseOverscan(value)
-                applyOverscanCrop()
-            }
-            LibretroSettingDef.BlackFrameInsertion -> {
-                retroView.blackFrameInsertion = value.toBooleanStrictOrNull() ?: false
-            }
-            LibretroSettingDef.FastForwardSpeed -> {
-                val speed = value.removeSuffix("x").toIntOrNull() ?: 4
-                fastForwardSpeed = speed
-            }
-            LibretroSettingDef.RewindEnabled -> {
-                val enabled = value.toBooleanStrictOrNull() ?: false
-                rewindEnabled = enabled
-                if (enabled && !hardcoreMode) {
-                    setupRewind()
-                } else if (!enabled) {
-                    retroView.destroyRewindBuffer()
-                }
-            }
-            LibretroSettingDef.Frame -> {
-                val frameId = if (value == "None") null else currentFrame
-                if (frameId != null) {
-                    val bitmap = frameRegistry.loadFrame(frameId)
-                    if (bitmap != null) {
-                        retroView.setBackgroundFrame(bitmap)
-                    } else {
-                        retroView.clearBackgroundFrame()
-                    }
-                } else {
-                    retroView.clearBackgroundFrame()
-                }
-            }
-            LibretroSettingDef.SkipDuplicateFrames,
-            LibretroSettingDef.LowLatencyAudio,
-            LibretroSettingDef.ForceSoftwareTiming -> {
-                // Non-runtime settings: persisted but only applied on next launch
-            }
-        }
-
-        persistVideoSetting(setting, value)
-    }
-
-    private fun persistVideoSetting(setting: LibretroSettingDef, value: String) {
-        lifecycleScope.launch {
-            val current = platformLibretroSettingsDao.getByPlatformId(platformId)
-                ?: com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(platformId = platformId)
-
-            val updated = when (setting) {
-                LibretroSettingDef.Shader -> current.copy(shader = value)
-                LibretroSettingDef.Filter -> current.copy(filter = value)
-                LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
-                LibretroSettingDef.Rotation -> current.copy(rotation = parseRotation(value))
-                LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = parseOverscan(value))
-                LibretroSettingDef.Frame -> current.copy(frame = if (value == "None") null else currentFrame)
-                LibretroSettingDef.BlackFrameInsertion -> current.copy(blackFrameInsertion = value.toBooleanStrictOrNull())
-                LibretroSettingDef.FastForwardSpeed -> current.copy(fastForwardSpeed = value.removeSuffix("x").toIntOrNull())
-                LibretroSettingDef.RewindEnabled -> current.copy(rewindEnabled = value.toBooleanStrictOrNull())
-                LibretroSettingDef.SkipDuplicateFrames -> current.copy(skipDuplicateFrames = value.toBooleanStrictOrNull())
-                LibretroSettingDef.LowLatencyAudio -> current.copy(lowLatencyAudio = value.toBooleanStrictOrNull())
-                LibretroSettingDef.ForceSoftwareTiming -> {
-                    lifecycleScope.launch {
-                        preferencesRepository.setBuiltinForceSoftwareTiming(value.toBooleanStrictOrNull() ?: false)
-                    }
-                    return@launch
-                }
-            }
-
-            if (updated.hasAnyOverrides()) {
-                platformLibretroSettingsDao.upsert(updated)
-            } else {
-                platformLibretroSettingsDao.deleteByPlatformId(platformId)
-            }
-        }
-    }
-
-    private fun parseRotation(value: String): Int = when (value) {
-        "Auto" -> -1
-        "0°" -> 0
-        "90°" -> 90
-        "180°" -> 180
-        "270°" -> 270
-        else -> value.removeSuffix("°").toIntOrNull() ?: -1
-    }
-
-    private fun parseOverscan(value: String): Int = when (value) {
-        "Off" -> 0
-        else -> value.removeSuffix("px").toIntOrNull() ?: 0
-    }
-
     private fun handleControlsAction(action: InGameControlsAction) {
         when (action) {
             is InGameControlsAction.SetRumble -> {
-                currentRumbleEnabled = action.enabled
+                videoSettings.currentRumbleEnabled = action.enabled
                 if (action.enabled) {
                     if (vibrator == null) setupRumble()
                 } else {
                     vibrator = null
                 }
-                persistControlSetting("rumbleEnabled", action.enabled)
+                videoSettings.persistControlSetting("rumbleEnabled", action.enabled)
             }
             is InGameControlsAction.SetAnalogAsDpad -> {
-                currentAnalogAsDpad = action.enabled
-                persistControlSetting("analogAsDpad", action.enabled)
+                videoSettings.currentAnalogAsDpad = action.enabled
+                videoSettings.persistControlSetting("analogAsDpad", action.enabled)
             }
             is InGameControlsAction.SetDpadAsAnalog -> {
-                currentDpadAsAnalog = action.enabled
-                persistControlSetting("dpadAsAnalog", action.enabled)
+                videoSettings.currentDpadAsAnalog = action.enabled
+                videoSettings.persistControlSetting("dpadAsAnalog", action.enabled)
             }
             is InGameControlsAction.SetLimitHotkeys -> {
                 limitHotkeysToPlayer1 = action.enabled
-                hotkeyManager.setLimitToPlayer1(action.enabled)
+                inputConfig.hotkeyManager.setLimitToPlayer1(action.enabled)
                 lifecycleScope.launch {
                     preferencesRepository.setBuiltinLimitHotkeysToPlayer1(action.enabled)
                 }
@@ -1567,172 +891,6 @@ class LibretroActivity : ComponentActivity() {
             InGameControlsAction.ShowControllerOrder,
             InGameControlsAction.ShowInputMapping,
             InGameControlsAction.ShowHotkeys -> {}
-        }
-    }
-
-    private fun persistControlSetting(field: String, value: Boolean) {
-        lifecycleScope.launch {
-            val current = platformLibretroSettingsDao.getByPlatformId(platformId)
-                ?: com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(platformId = platformId)
-            val updated = when (field) {
-                "analogAsDpad" -> current.copy(analogAsDpad = value)
-                "dpadAsAnalog" -> current.copy(dpadAsAnalog = value)
-                "rumbleEnabled" -> current.copy(rumbleEnabled = value)
-                else -> return@launch
-            }
-            if (updated.hasAnyOverrides()) {
-                platformLibretroSettingsDao.upsert(updated)
-            } else {
-                platformLibretroSettingsDao.deleteByPlatformId(platformId)
-            }
-        }
-    }
-
-    private suspend fun refreshControllerOrder() {
-        val order = inputConfigRepository.getControllerOrder()
-        controllerOrderList = order
-        controllerOrderCount = order.size
-        portResolver.setControllerOrder(order)
-        if (order.isNotEmpty()) {
-            hotkeyManager.setPlayer1ControllerId(order.first().controllerId)
-        }
-    }
-
-    private suspend fun refreshInputMappings() {
-        val mappingPlatformId = MappingPlatforms.dbPlatformIdForSlug(platformSlug)
-        val mappings = mutableMapOf<String, Map<InputSource, Int>>()
-        for (controller in inputConfigRepository.getConnectedControllers()) {
-            val device = android.view.InputDevice.getDevice(controller.deviceId) ?: continue
-            val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, mappingPlatformId)
-            mappings[controller.controllerId] = mapping
-        }
-        inputMapper.setExtendedMappings(mappings)
-
-        val mappedButtons = mappings.mapValues { (_, mapping) ->
-            mapping.keys
-                .filterIsInstance<InputSource.Button>()
-                .map { it.keyCode }
-                .toSet()
-        }
-        hotkeyManager.setControllerMappedButtons(mappedButtons)
-    }
-
-    private suspend fun refreshHotkeys() {
-        hotkeyList = inputConfigRepository.getHotkeys()
-        val enabledHotkeys = inputConfigRepository.getEnabledHotkeys()
-        hotkeyManager.setHotkeys(enabledHotkeys)
-    }
-
-    private fun handleToggleCheat(cheatId: Long, enabled: Boolean) {
-        lifecycleScope.launch {
-            if (enabled) {
-                sessionTainted = true
-                Log.d("LibretroActivity", "Session marked as tainted (cheats enabled)")
-            }
-            cheatDao.setEnabled(cheatId, enabled, System.currentTimeMillis())
-            cheats = cheatDao.getCheatsForGame(gameId)
-            applyCheat(cheatId, enabled)
-        }
-    }
-
-    private fun handleCreateCheat(address: Int, value: Int, description: String) {
-        lifecycleScope.launch {
-            val maxIndex = cheatDao.getMaxCheatIndex(gameId) ?: -1
-            val code = String.format("%06X:%02X", address, value)
-            val newCheat = CheatEntity(
-                gameId = gameId,
-                cheatIndex = maxIndex + 1,
-                description = description,
-                code = code,
-                enabled = true,
-                isUserCreated = true,
-                lastUsedAt = System.currentTimeMillis()
-            )
-            val newId = cheatDao.insert(newCheat)
-            cheats = cheatDao.getCheatsForGame(gameId)
-            applyCheat(newId, true)
-            Log.d("LibretroActivity", "Created custom cheat: $description -> $code")
-        }
-    }
-
-    private fun handleUpdateCheat(cheatId: Long, description: String, code: String) {
-        lifecycleScope.launch {
-            cheatDao.updateDescription(cheatId, description)
-            cheatDao.updateCode(cheatId, code)
-            val cheat = cheats.find { it.id == cheatId }
-            cheats = cheatDao.getCheatsForGame(gameId)
-            if (cheat?.enabled == true) {
-                val updatedCheat = cheats.find { it.id == cheatId }
-                if (updatedCheat != null) {
-                    retroView.setCheat(updatedCheat.cheatIndex, true, updatedCheat.code)
-                }
-            }
-            Log.d("LibretroActivity", "Updated cheat $cheatId: $description -> $code")
-        }
-    }
-
-    private fun handleDeleteCheat(cheatId: Long) {
-        lifecycleScope.launch {
-            val cheat = cheats.find { it.id == cheatId }
-            if (cheat?.enabled == true) {
-                retroView.setCheat(cheat.cheatIndex, false, cheat.code)
-            }
-            cheatDao.deleteById(cheatId)
-            cheats = cheatDao.getCheatsForGame(gameId)
-            Log.d("LibretroActivity", "Deleted cheat $cheatId")
-        }
-    }
-
-    private fun applyCheat(cheatId: Long, enabled: Boolean) {
-        val cheat = cheats.find { it.id == cheatId } ?: return
-        if (enabled) {
-            retroView.setCheat(cheat.cheatIndex, true, cheat.code)
-        } else {
-            retroView.setCheat(cheat.cheatIndex, false, cheat.code)
-            cheatsNeedReset = true
-        }
-        Log.d("LibretroActivity", "Applied cheat ${cheat.cheatIndex}: $enabled - ${cheat.description}")
-    }
-
-    private fun flushCheatReset() {
-        if (!cheatsNeedReset) return
-        cheatsNeedReset = false
-        val stateData = retroView.serializeState()
-        retroView.resetCheat()
-        retroView.unserializeState(stateData)
-        applyAllEnabledCheats()
-        Log.d("LibretroActivity", "Flushed cheat reset cycle")
-    }
-
-    private fun applyAllEnabledCheats() {
-        if (hardcoreMode) return
-        cheats.filter { it.enabled }.forEachIndexed { _, cheat ->
-            retroView.setCheat(cheat.cheatIndex, true, cheat.code)
-            Log.d("LibretroActivity", "Applied enabled cheat ${cheat.cheatIndex}: ${cheat.description}")
-        }
-    }
-
-    private fun performQuickSave() {
-        try {
-            val stateData = retroView.serializeState()
-            getQuickSaveFile().writeBytes(stateData)
-            hasQuickSave = true
-            Toast.makeText(this, "State saved", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Failed to save state", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun performQuickLoad() {
-        try {
-            val stateFile = getQuickSaveFile()
-            if (stateFile.exists()) {
-                val stateData = stateFile.readBytes()
-                retroView.unserializeState(stateData)
-                Toast.makeText(this, "State loaded", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Failed to load state", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -1773,7 +931,7 @@ class LibretroActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
+        if (isAnyMenuOpen) {
             if (gamepadInputBridge.handleKeyEvent(event)) return true
             if (menuInputHandler.mapKeyToEvent(event.keyCode) != null) return true
         }
@@ -1781,137 +939,44 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
-            return super.onKeyDown(keyCode, event)
-        }
+        if (isAnyMenuOpen) return super.onKeyDown(keyCode, event)
 
         val controllerId = event.device?.let { getControllerId(it) }
-        val triggeredAction = hotkeyManager.onKeyDown(keyCode, controllerId)
-
+        val triggeredAction = inputConfig.hotkeyManager.onKeyDown(keyCode, controllerId)
         if (triggeredAction != null) {
-            when (triggeredAction) {
-                HotkeyAction.IN_GAME_MENU -> {
-                    showMenu()
-                    hotkeyManager.clearState()
-                    return true
-                }
-                HotkeyAction.QUICK_SAVE -> {
-                    if (hardcoreMode) {
-                        Toast.makeText(this, "Save states disabled in Hardcore mode", Toast.LENGTH_SHORT).show()
-                    } else {
-                        performQuickSave()
-                    }
-                    hotkeyManager.clearState()
-                    return true
-                }
-                HotkeyAction.QUICK_LOAD -> {
-                    if (hardcoreMode) {
-                        Toast.makeText(this, "Save states disabled in Hardcore mode", Toast.LENGTH_SHORT).show()
-                    } else {
-                        performQuickLoad()
-                    }
-                    hotkeyManager.clearState()
-                    return true
-                }
-                HotkeyAction.FAST_FORWARD -> {
-                    if (!isFastForwarding) {
-                        isFastForwarding = true
-                        retroView.frameSpeed = fastForwardSpeed
-                    }
-                    return true
-                }
-                HotkeyAction.REWIND -> {
-                    if (hardcoreMode) {
-                        Toast.makeText(this, "Rewind disabled in Hardcore mode", Toast.LENGTH_SHORT).show()
-                        return true
-                    }
-                    if (rewindEnabled && !isRewinding) {
-                        isRewinding = true
-                        lastRewindTime = 0L
-                        retroView.frameSpeed = 1
-                    }
-                    return true
-                }
-                HotkeyAction.QUICK_SUSPEND -> {
-                    saveSram()
-                    finish()
-                    return true
-                }
-            }
+            return hotkeyDispatcher.dispatch(triggeredAction)
         }
 
-        if (shouldFilterShoulderButton(keyCode)) {
-            return true
-        }
+        if (shouldFilterShoulderButton(keyCode)) return true
 
         return retroView.onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
-            return super.onKeyUp(keyCode, event)
-        }
+        if (isAnyMenuOpen) return super.onKeyUp(keyCode, event)
 
-        hotkeyManager.onKeyUp(keyCode)
+        inputConfig.hotkeyManager.onKeyUp(keyCode)
 
-        if (!hotkeyManager.isHotkeyActive(HotkeyAction.FAST_FORWARD) && isFastForwarding) {
+        if (!inputConfig.hotkeyManager.isHotkeyActive(HotkeyAction.FAST_FORWARD) && isFastForwarding) {
             isFastForwarding = false
             retroView.frameSpeed = 1
         }
-
-        if (!hotkeyManager.isHotkeyActive(HotkeyAction.REWIND) && isRewinding) {
+        if (!inputConfig.hotkeyManager.isHotkeyActive(HotkeyAction.REWIND) && isRewinding) {
             isRewinding = false
         }
 
-        if (shouldFilterShoulderButton(keyCode)) {
-            return true
-        }
+        if (shouldFilterShoulderButton(keyCode)) return true
 
         return retroView.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event)
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
-        if (menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible) {
+        if (isAnyMenuOpen) {
             if (gamepadInputBridge.handleMotionEvent(event)) return true
             return super.onGenericMotionEvent(event)
         }
 
-        val syntheticEvents = inputMapper.processMotionEvent(event)
-        for (synthetic in syntheticEvents) {
-            retroView.sendKeyEvent(synthetic.action, synthetic.keyCode, synthetic.port)
-        }
-
-        if (event.source and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK) {
-            val device = event.device
-            val port = if (device != null) portResolver.getPort(device) else 0
-            if (port >= 0) {
-                val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
-                val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-                val stickX = event.getAxisValue(MotionEvent.AXIS_X)
-                val stickY = event.getAxisValue(MotionEvent.AXIS_Y)
-                val rStickX = event.getAxisValue(MotionEvent.AXIS_Z)
-                val rStickY = event.getAxisValue(MotionEvent.AXIS_RZ)
-
-                var dpadX = hatX
-                var dpadY = hatY
-                if (currentAnalogAsDpad) {
-                    if (abs(stickX) > abs(dpadX)) dpadX = stickX
-                    if (abs(stickY) > abs(dpadY)) dpadY = stickY
-                }
-                retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_DPAD, dpadX, dpadY, port)
-
-                var analogX = stickX
-                var analogY = stickY
-                if (currentDpadAsAnalog) {
-                    if (abs(hatX) > abs(analogX)) analogX = hatX
-                    if (abs(hatY) > abs(analogY)) analogY = hatY
-                }
-                retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_LEFT, analogX, analogY, port)
-
-                retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_RIGHT, rStickX, rStickY, port)
-            }
-            return true
-        }
+        if (motionProcessor.processGamepadMotion(event)) return true
 
         return retroView.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
     }
@@ -1919,7 +984,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         enterImmersiveMode()
-        if (!menuVisible && !cheatsMenuVisible && !settingsVisible && !shaderChainEditorVisible && !frameEditorVisible) {
+        if (!isAnyMenuOpen) {
             retroView.onResume()
         }
     }
@@ -1939,17 +1004,15 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
-        saveSram()
+        saveStateManager.saveSram(retroView)
         retroView.onPause()
         super.onPause()
     }
 
     override fun onDestroy() {
-        Log.d("LibretroActivity", "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
-        heartbeatJob?.cancel()
-        raSessionActive = false
-        com.swordfish.libretrodroid.LibretroDroid.clearAchievements()
-        if (rewindEnabled && !hardcoreMode) {
+        Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
+        raSession?.destroy()
+        if (videoSettings.rewindEnabled && !hardcoreMode) {
             retroView.destroyRewindBuffer()
         }
         if (isFinishing && gameId != -1L) {
@@ -1958,7 +1021,7 @@ class LibretroActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private fun getControllerId(device: android.view.InputDevice): String {
+    private fun getControllerId(device: InputDevice): String {
         return "${device.vendorId}:${device.productId}:${device.descriptor}"
     }
 
@@ -1979,6 +1042,8 @@ class LibretroActivity : ComponentActivity() {
     }
 
     companion object {
+        private const val TAG = "LibretroActivity"
+
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_CORE_PATH = "core_path"
         const val EXTRA_SYSTEM_DIR = "system_dir"

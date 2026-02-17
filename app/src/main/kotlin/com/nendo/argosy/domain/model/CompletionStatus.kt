@@ -1,26 +1,14 @@
 package com.nendo.argosy.domain.model
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.RemoveCircle
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import com.nendo.argosy.ui.theme.ALauncherColors
-
 enum class CompletionStatus(
     val apiValue: String,
-    val label: String,
-    val icon: ImageVector,
-    val color: Color
+    val label: String
 ) {
-    INCOMPLETE("incomplete", "Incomplete", Icons.Filled.PlayCircle, ALauncherColors.CompletionPlaying),
-    FINISHED("finished", "Finished", Icons.Filled.CheckCircle, ALauncherColors.CompletionBeaten),
-    COMPLETED_100("completed_100", "100%", Icons.Filled.EmojiEvents, ALauncherColors.CompletionCompleted),
-    RETIRED("retired", "Retired", Icons.Filled.RemoveCircle, Color(0xFF9E9E9E)),
-    NEVER_PLAYING("never_playing", "Won't Play", Icons.Filled.Block, Color(0xFF757575));
+    INCOMPLETE("incomplete", "Incomplete"),
+    FINISHED("finished", "Finished"),
+    COMPLETED_100("completed_100", "100%"),
+    RETIRED("retired", "Retired"),
+    NEVER_PLAYING("never_playing", "Won't Play");
 
     companion object {
         fun fromApiValue(value: String?): CompletionStatus? =

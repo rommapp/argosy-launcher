@@ -1,4 +1,4 @@
-package com.nendo.argosy.data.sync
+package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,8 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nendo.argosy.ui.components.GameTitle
-import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.ui.theme.Dimens
 import java.time.Duration
 import java.time.Instant

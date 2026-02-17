@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.screens.settings
 
 import com.nendo.argosy.data.cache.GradientExtractionConfig
-import com.nendo.argosy.data.cache.GradientExtractionResult
+import com.nendo.argosy.ui.common.GradientExtractionResult
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.ExtensionOption

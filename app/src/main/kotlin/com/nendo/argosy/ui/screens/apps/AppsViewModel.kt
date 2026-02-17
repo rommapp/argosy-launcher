@@ -7,8 +7,8 @@ import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.LocalPlatformIds
@@ -96,8 +96,8 @@ class AppsViewModel @Inject constructor(
     private val appsRepository: AppsRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val soundManager: SoundFeedbackManager,
-    private val gameDao: GameDao,
-    private val platformDao: PlatformDao,
+    private val gameRepository: GameRepository,
+    private val platformRepository: PlatformRepository,
     private val playStoreService: PlayStoreService,
     private val imageCacheManager: ImageCacheManager,
     private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
@@ -152,7 +152,7 @@ class AppsViewModel @Inject constructor(
             val showHidden = _uiState.value.showHiddenApps
             val allApps = appsRepository.getInstalledApps(includeSystemApps = true)
 
-            val homePackages = gameDao.getBySource(GameSource.ANDROID_APP)
+            val homePackages = gameRepository.getBySource(GameSource.ANDROID_APP)
                 .mapNotNull { it.packageName }
                 .toSet()
 
@@ -296,10 +296,10 @@ class AppsViewModel @Inject constructor(
 
     private fun toggleHomeStatus(packageName: String, label: String, isCurrentlyOnHome: Boolean) {
         viewModelScope.launch {
-            val existing = gameDao.getByPackageName(packageName)
+            val existing = gameRepository.getByPackageName(packageName)
 
             if (isCurrentlyOnHome) {
-                existing?.let { gameDao.delete(it) }
+                existing?.let { gameRepository.delete(it) }
             } else {
                 val gameId: Long
                 if (existing != null) {
@@ -322,7 +322,7 @@ class AppsViewModel @Inject constructor(
                         source = GameSource.ANDROID_APP,
                         packageName = packageName
                     )
-                    gameId = gameDao.insert(game)
+                    gameId = gameRepository.insert(game)
                 }
                 fetchMetadataForApp(gameId, packageName)
             }
@@ -360,7 +360,7 @@ class AppsViewModel @Inject constructor(
     private suspend fun fetchMetadataForApp(gameId: Long, packageName: String) {
         try {
             val details = playStoreService.getAppDetails(packageName).getOrNull() ?: return
-            val game = gameDao.getById(gameId) ?: return
+            val game = gameRepository.getById(gameId) ?: return
             val updated = game.copy(
                 description = details.description ?: game.description,
                 developer = details.developer ?: game.developer,
@@ -370,7 +370,7 @@ class AppsViewModel @Inject constructor(
                     ?.joinToString(",") ?: game.screenshotPaths,
                 backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
             )
-            gameDao.update(updated)
+            gameRepository.update(updated)
 
             details.coverUrl?.let { url ->
                 imageCacheManager.queueCoverCacheByGameId(url, gameId)
@@ -384,13 +384,13 @@ class AppsViewModel @Inject constructor(
     }
 
     private suspend fun ensureAndroidPlatformExists() {
-        val existing = platformDao.getById(LocalPlatformIds.ANDROID)
+        val existing = platformRepository.getById(LocalPlatformIds.ANDROID)
         if (existing == null) {
             val def = PlatformDefinitions.getBySlug("android")
             if (def != null) {
                 val entity = PlatformDefinitions.toLocalPlatformEntity(def)
                 if (entity != null) {
-                    platformDao.insert(entity)
+                    platformRepository.insert(entity)
                 }
             }
         }

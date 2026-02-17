@@ -10,15 +10,20 @@ import kotlinx.coroutines.withTimeoutOrNull
 import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.SearchCandidate
+import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -436,4 +441,154 @@ class GameRepository @Inject constructor(
         }
         removed
     }
+
+    // --- Direct DAO delegations ---
+
+    suspend fun getById(id: Long): GameEntity? = gameDao.getById(id)
+
+    fun observeById(id: Long): Flow<GameEntity?> = gameDao.observeById(id)
+
+    suspend fun getPlayedGames(): List<GameEntity> = gameDao.getPlayedGames()
+
+    suspend fun getRecentlyPlayed(limit: Int = 20): List<GameEntity> =
+        gameDao.getRecentlyPlayed(limit)
+
+    fun observeRecentlyPlayed(limit: Int = 20): Flow<List<GameEntity>> =
+        gameDao.observeRecentlyPlayed(limit)
+
+    suspend fun getFavorites(): List<GameEntity> = gameDao.getFavorites()
+
+    suspend fun getRandomGame(): GameEntity? = gameDao.getRandomGame()
+
+    suspend fun getSearchCandidates(): List<SearchCandidate> =
+        gameDao.getSearchCandidates()
+
+    suspend fun getByIds(ids: List<Long>): List<GameEntity> = gameDao.getByIds(ids)
+
+    suspend fun updateUserRating(gameId: Long, rating: Int) =
+        gameDao.updateUserRating(gameId, rating)
+
+    suspend fun updateUserDifficulty(gameId: Long, difficulty: Int) =
+        gameDao.updateUserDifficulty(gameId, difficulty)
+
+    suspend fun updateStatus(gameId: Long, status: String?) =
+        gameDao.updateStatus(gameId, status)
+
+    suspend fun updateFavorite(gameId: Long, favorite: Boolean) =
+        gameDao.updateFavorite(gameId, favorite)
+
+    suspend fun updateHidden(gameId: Long, hidden: Boolean) =
+        gameDao.updateHidden(gameId, hidden)
+
+    suspend fun getActiveSaveTimestamp(gameId: Long): Long? =
+        gameDao.getActiveSaveTimestamp(gameId)
+
+    suspend fun updateActiveSaveChannel(gameId: Long, channelName: String?) =
+        gameDao.updateActiveSaveChannel(gameId, channelName)
+
+    suspend fun updateActiveSaveTimestamp(gameId: Long, timestamp: Long?) =
+        gameDao.updateActiveSaveTimestamp(gameId, timestamp)
+
+    suspend fun updateActiveSaveApplied(gameId: Long, applied: Boolean) =
+        gameDao.updateActiveSaveApplied(gameId, applied)
+
+    suspend fun getActiveSaveChannel(gameId: Long): String? =
+        gameDao.getActiveSaveChannel(gameId)
+
+    suspend fun getBySource(source: GameSource): List<GameEntity> =
+        gameDao.getBySource(source)
+
+    suspend fun getByPackageName(packageName: String): GameEntity? =
+        gameDao.getByPackageName(packageName)
+
+    suspend fun delete(game: GameEntity) = gameDao.delete(game)
+
+    suspend fun delete(gameId: Long) = gameDao.delete(gameId)
+
+    suspend fun insert(game: GameEntity): Long = gameDao.insert(game)
+
+    suspend fun update(game: GameEntity) = gameDao.update(game)
+
+    fun search(query: String): Flow<List<GameEntity>> = gameDao.search(query)
+
+    suspend fun getDistinctGenres(): List<String> = gameDao.getDistinctGenres()
+
+    suspend fun getDistinctGameModes(): List<String> = gameDao.getDistinctGameModes()
+
+    fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>> =
+        gameDao.observeHiddenByPlatformList(platformId)
+
+    fun observeHiddenList(): Flow<List<GameListItem>> = gameDao.observeHiddenList()
+
+    fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>> =
+        gameDao.observePlayableByPlatformList(platformId)
+
+    fun observeFavoritesByPlatformList(platformId: Long): Flow<List<GameListItem>> =
+        gameDao.observeFavoritesByPlatformList(platformId)
+
+    fun observeByPlatformList(platformId: Long): Flow<List<GameListItem>> =
+        gameDao.observeByPlatformList(platformId)
+
+    fun observeAllList(): Flow<List<GameListItem>> = gameDao.observeAllList()
+
+    fun observePlayableList(): Flow<List<GameListItem>> = gameDao.observePlayableList()
+
+    fun observeFavoritesList(): Flow<List<GameListItem>> = gameDao.observeFavoritesList()
+
+    suspend fun getNewlyAddedPlayable(
+        threshold: Instant,
+        limit: Int = 20
+    ): List<GameEntity> = gameDao.getNewlyAddedPlayable(threshold, limit)
+
+    suspend fun countByPlatform(platformId: Long): Int =
+        gameDao.countByPlatform(platformId)
+
+    suspend fun getByPlatformSorted(
+        platformId: Long,
+        limit: Int = 20
+    ): List<GameEntity> = gameDao.getByPlatformSorted(platformId, limit)
+
+    suspend fun getAllSortedByTitle(): List<GameEntity> =
+        gameDao.getAllSortedByTitle()
+
+    suspend fun getByPlatform(platformId: Long): List<GameEntity> =
+        gameDao.getByPlatform(platformId)
+
+    suspend fun countDownloadedByPlatform(platformId: Long): Int =
+        gameDao.countDownloadedByPlatform(platformId)
+
+    suspend fun updateSteamLauncher(
+        gameId: Long,
+        launcher: String?,
+        setManually: Boolean
+    ) = gameDao.updateSteamLauncher(gameId, launcher, setManually)
+
+    suspend fun updateAchievementsFetchedAt(gameId: Long, timestamp: Long) =
+        gameDao.updateAchievementsFetchedAt(gameId, timestamp)
+
+    suspend fun updateAchievementCount(
+        gameId: Long,
+        count: Int,
+        earnedCount: Int = 0
+    ) = gameDao.updateAchievementCount(gameId, count, earnedCount)
+
+    suspend fun updateFileSize(gameId: Long, sizeBytes: Long) =
+        gameDao.updateFileSize(gameId, sizeBytes)
+
+    suspend fun getFirstGameWithCover(): GameListItem? =
+        gameDao.getFirstGameWithCover()
+
+    suspend fun getRecentlyPlayedWithCovers(limit: Int = 10): List<GameListItem> =
+        gameDao.getRecentlyPlayedWithCovers(limit)
+
+    suspend fun getRecentlyPlayedOnPlatforms(
+        platformSlugs: List<String>,
+        limit: Int = 10
+    ): List<GameListItem> = gameDao.getRecentlyPlayedOnPlatforms(platformSlugs, limit)
+
+    suspend fun getCachedScreenshotPaths(gameId: Long): String? =
+        gameDao.getCachedScreenshotPaths(gameId)
+
+    suspend fun getScreenshotPaths(gameId: Long): String? =
+        gameDao.getScreenshotPaths(gameId)
 }

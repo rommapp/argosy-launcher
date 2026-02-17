@@ -13,14 +13,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorDetector
-import com.nendo.argosy.data.local.dao.CollectionDao
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.repository.CollectionRepository
+import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
-import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
@@ -49,6 +48,7 @@ import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.screens.common.SyncOverlayState
 import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
+import com.nendo.argosy.ui.screens.home.toHomePlatformUi
 import com.nendo.argosy.ui.util.GridUtils
 import com.nendo.argosy.ui.ModalResetSignal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -258,9 +258,9 @@ sealed class LibraryEvent {
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
-    private val platformDao: PlatformDao,
-    private val gameDao: GameDao,
-    private val collectionDao: CollectionDao,
+    private val platformRepository: PlatformRepository,
+    private val gameRepository: GameRepository,
+    private val collectionRepository: CollectionRepository,
     private val gameNavigationContext: GameNavigationContext,
     private val notificationManager: NotificationManager,
     private val preferencesRepository: UserPreferencesRepository,
@@ -416,10 +416,10 @@ class LibraryViewModel @Inject constructor(
     private fun loadPlatforms() {
         viewModelScope.launch {
             Log.d(TAG, "loadPlatforms: starting observation")
-            platformDao.observeVisiblePlatforms().collect { platforms ->
+            platformRepository.observeVisiblePlatforms().collect { platforms ->
                 Log.d(TAG, "loadPlatforms: received ${platforms.size} platforms")
                 cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName() }
-                val platformUis = platforms.map { it.toUi() }
+                val platformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
 
                 val pendingPlatformIndex = pendingInitialPlatformId?.let { platformId ->
                     platformUis.indexOfFirst { it.id == platformId }.takeIf { it >= 0 }
@@ -481,13 +481,13 @@ class LibraryViewModel @Inject constructor(
 
     private fun loadFilterOptions() {
         viewModelScope.launch {
-            val genres = gameDao.getDistinctGenres()
+            val genres = gameRepository.getDistinctGenres()
                 .map { it.trim() }
                 .filter { it.isNotBlank() }
                 .distinct()
                 .sorted()
 
-            val players = gameDao.getDistinctGameModes()
+            val players = gameRepository.getDistinctGameModes()
                 .flatMap { it.split(",") }
                 .map { it.trim() }
                 .filter { it.isNotBlank() }
@@ -518,23 +518,23 @@ class LibraryViewModel @Inject constructor(
             val baseFlow = if (filters.source == SourceFilter.HIDDEN) {
                 if (platformIndex >= 0) {
                     val platformId = state.platforms[platformIndex].id
-                    gameDao.observeHiddenByPlatformList(platformId)
+                    gameRepository.observeHiddenByPlatformList(platformId)
                 } else {
-                    gameDao.observeHiddenList()
+                    gameRepository.observeHiddenList()
                 }
             } else if (platformIndex >= 0) {
                 val platformId = state.platforms[platformIndex].id
                 when (filters.source) {
-                    SourceFilter.PLAYABLE -> gameDao.observePlayableByPlatformList(platformId)
-                    SourceFilter.FAVORITES -> gameDao.observeFavoritesByPlatformList(platformId)
-                    else -> gameDao.observeByPlatformList(platformId)
+                    SourceFilter.PLAYABLE -> gameRepository.observePlayableByPlatformList(platformId)
+                    SourceFilter.FAVORITES -> gameRepository.observeFavoritesByPlatformList(platformId)
+                    else -> gameRepository.observeByPlatformList(platformId)
                 }
             } else {
                 when (filters.source) {
-                    SourceFilter.ALL -> gameDao.observeAllList()
-                    SourceFilter.PLAYABLE -> gameDao.observePlayableList()
-                    SourceFilter.FAVORITES -> gameDao.observeFavoritesList()
-                    SourceFilter.HIDDEN -> gameDao.observeHiddenList()
+                    SourceFilter.ALL -> gameRepository.observeAllList()
+                    SourceFilter.PLAYABLE -> gameRepository.observePlayableList()
+                    SourceFilter.FAVORITES -> gameRepository.observeFavoritesList()
+                    SourceFilter.HIDDEN -> gameRepository.observeHiddenList()
                 }
             }
 
@@ -1027,7 +1027,7 @@ class LibraryViewModel @Inject constructor(
 
     fun uninstallAndroidApp(gameId: Long) {
         viewModelScope.launch {
-            val game = gameDao.getById(gameId) ?: return@launch
+            val game = gameRepository.getById(gameId) ?: return@launch
             val packageName = game.packageName ?: return@launch
 
             val intent = Intent(Intent.ACTION_DELETE).apply {
@@ -1113,16 +1113,6 @@ class LibraryViewModel @Inject constructor(
     fun createCollectionFromModal(name: String) {
         collectionModalDelegate.createAndAdd(viewModelScope, name)
     }
-
-    private fun PlatformEntity.toUi() = HomePlatformUi(
-        id = id,
-        slug = slug,
-        name = name,
-        shortName = shortName,
-        displayName = getDisplayName(),
-        logoPath = logoPath,
-        hasEmulator = emulatorDetector.hasAnyEmulator(slug)
-    )
 
     private fun GameEntity.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): LibraryGameUi {
         return LibraryGameUi(

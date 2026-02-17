@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -162,11 +163,11 @@ fun GameDetailScreen(
     var achievementTopY by remember { mutableIntStateOf(0) }
 
     val game = uiState.game
-    val hasDescription = game?.description?.isNotEmpty() == true
-    val hasScreenshots = game?.screenshots?.isNotEmpty() == true
-    val hasAchievements = game?.achievements?.isNotEmpty() == true
-    val screenshotCount = game?.screenshots?.size ?: 0
-    val achievementColumnCount = game?.achievements?.chunked(3)?.size ?: 0
+    val hasDescription by remember { derivedStateOf { uiState.game?.description?.isNotEmpty() == true } }
+    val hasScreenshots by remember { derivedStateOf { uiState.game?.screenshots?.isNotEmpty() == true } }
+    val hasAchievements by remember { derivedStateOf { uiState.game?.achievements?.isNotEmpty() == true } }
+    val screenshotCount by remember { derivedStateOf { uiState.game?.screenshots?.size ?: 0 } }
+    val achievementColumnCount by remember { derivedStateOf { uiState.game?.achievements?.chunked(3)?.size ?: 0 } }
 
     LaunchedEffect(uiState.game?.id) {
         scrollState.scrollTo(0)

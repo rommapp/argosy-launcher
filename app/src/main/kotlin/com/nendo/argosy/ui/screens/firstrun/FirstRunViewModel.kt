@@ -5,7 +5,7 @@ import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.app.Application
-import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -79,7 +79,7 @@ class FirstRunViewModel @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
-    private val platformDao: PlatformDao,
+    private val platformRepository: PlatformRepository,
     private val permissionHelper: PermissionHelper,
     private val coreManager: LibretroCoreManager
 ) : ViewModel() {
@@ -146,7 +146,7 @@ class FirstRunViewModel @Inject constructor(
                     _uiState.update { it.copy(platforms = result.data) }
                 }
                 is RomMResult.Error -> {
-                    val platforms = platformDao.observeAllPlatforms().first()
+                    val platforms = platformRepository.observeAllPlatforms().first()
                     _uiState.update { it.copy(platforms = platforms) }
                 }
             }
@@ -263,8 +263,8 @@ class FirstRunViewModel @Inject constructor(
     fun togglePlatform(platformId: Long) {
         viewModelScope.launch {
             val platform = _uiState.value.platforms.find { it.id == platformId } ?: return@launch
-            platformDao.updateSyncEnabled(platformId, !platform.syncEnabled)
-            val updatedPlatforms = platformDao.observeAllPlatforms().first()
+            platformRepository.updateSyncEnabled(platformId, !platform.syncEnabled)
+            val updatedPlatforms = platformRepository.observeAllPlatforms().first()
             _uiState.update { it.copy(platforms = updatedPlatforms) }
         }
     }
@@ -275,9 +275,9 @@ class FirstRunViewModel @Inject constructor(
             val allEnabled = platforms.all { it.syncEnabled }
             val newState = !allEnabled
             platforms.forEach { platform ->
-                platformDao.updateSyncEnabled(platform.id, newState)
+                platformRepository.updateSyncEnabled(platform.id, newState)
             }
-            val updatedPlatforms = platformDao.observeAllPlatforms().first()
+            val updatedPlatforms = platformRepository.observeAllPlatforms().first()
             _uiState.update { it.copy(platforms = updatedPlatforms) }
         }
     }

@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.common.savechannel
 
 import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
-import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
@@ -36,7 +36,7 @@ class SaveChannelDelegate @Inject constructor(
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
     private val stateCacheManager: StateCacheManager,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val notificationManager: NotificationManager,
     private val soundManager: SoundFeedbackManager,
     private val titleIdDownloadObserver: TitleIdDownloadObserver
@@ -81,7 +81,7 @@ class SaveChannelDelegate @Inject constructor(
         soundManager.play(SoundType.OPEN_MODAL)
 
         scope.launch {
-            val activeSaveTimestamp = gameDao.getActiveSaveTimestamp(gameId)
+            val activeSaveTimestamp = gameRepository.getActiveSaveTimestamp(gameId)
             val entries = getUnifiedSavesUseCase(gameId)
             _rawEntries = entries
 
@@ -450,8 +450,8 @@ class SaveChannelDelegate @Inject constructor(
         val emulatorPackage = state.emulatorPackage
 
         scope.launch {
-            gameDao.updateActiveSaveChannel(currentGameId, channelName)
-            gameDao.updateActiveSaveTimestamp(currentGameId, null)
+            gameRepository.updateActiveSaveChannel(currentGameId, channelName)
+            gameRepository.updateActiveSaveTimestamp(currentGameId, null)
             _state.update {
                 it.copy(activeChannel = channelName, activeSaveTimestamp = null)
             }
@@ -480,7 +480,7 @@ class SaveChannelDelegate @Inject constructor(
                 )) {
                     is RestoreCachedSaveUseCase.Result.Restored,
                     is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                        gameDao.updateActiveSaveApplied(currentGameId, true)
+                        gameRepository.updateActiveSaveApplied(currentGameId, true)
                         val label = channelName ?: "Auto Save"
                         notificationManager.showSuccess("Using save slot: $label")
                         _state.update { it.copy(isVisible = false) }
@@ -545,7 +545,7 @@ class SaveChannelDelegate @Inject constructor(
         val isRestoringLatest = entry.isLatest
 
         scope.launch {
-            val game = gameDao.getById(currentGameId)
+            val game = gameRepository.getById(currentGameId)
 
             if (emulatorPackage != null && state.supportsStates) {
                 if (isRestoringLatest) {
@@ -577,7 +577,7 @@ class SaveChannelDelegate @Inject constructor(
             }
 
             val newTimestamp = if (isRestoringLatest) null else targetTimestamp
-            gameDao.updateActiveSaveTimestamp(currentGameId, newTimestamp)
+            gameRepository.updateActiveSaveTimestamp(currentGameId, newTimestamp)
             _state.update {
                 it.copy(
                     showRestoreConfirmation = false,
@@ -596,7 +596,7 @@ class SaveChannelDelegate @Inject constructor(
                 entry, currentGameId, emulatorId, syncToServer
             )) {
                 is RestoreCachedSaveUseCase.Result.Restored -> {
-                    gameDao.updateActiveSaveApplied(currentGameId, true)
+                    gameRepository.updateActiveSaveApplied(currentGameId, true)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel"
                     } else "Save restored"
@@ -604,7 +604,7 @@ class SaveChannelDelegate @Inject constructor(
                     onRestored()
                 }
                 is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                    gameDao.updateActiveSaveApplied(currentGameId, true)
+                    gameRepository.updateActiveSaveApplied(currentGameId, true)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel and synced"
                     } else "Save restored and synced"
@@ -766,7 +766,7 @@ class SaveChannelDelegate @Inject constructor(
             saveCacheManager.renameSave(cacheId, newName)
 
             if (state.activeChannel == entry.channelName) {
-                gameDao.updateActiveSaveChannel(currentGameId, newName)
+                gameRepository.updateActiveSaveChannel(currentGameId, newName)
                 _state.update { it.copy(activeChannel = newName) }
             }
 
@@ -822,8 +822,8 @@ class SaveChannelDelegate @Inject constructor(
             entry.localCacheId?.let { saveCacheManager.deleteSave(it) }
 
             if (state.activeChannel == channelName) {
-                gameDao.updateActiveSaveChannel(currentGameId, null)
-                gameDao.updateActiveSaveTimestamp(currentGameId, null)
+                gameRepository.updateActiveSaveChannel(currentGameId, null)
+                gameRepository.updateActiveSaveTimestamp(currentGameId, null)
                 _state.update {
                     it.copy(activeChannel = null, activeSaveTimestamp = null)
                 }
@@ -1049,7 +1049,7 @@ class SaveChannelDelegate @Inject constructor(
         val emulatorId = state.emulatorId ?: return
 
         scope.launch {
-            val game = gameDao.getById(currentGameId)
+            val game = gameRepository.getById(currentGameId)
             val romPath = game?.localPath
             if (romPath == null) {
                 notificationManager.showError("Game has no local path")

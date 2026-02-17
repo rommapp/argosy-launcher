@@ -119,10 +119,9 @@ class PlayOptionsDelegate @Inject constructor(
 
     suspend fun shouldShowModeSelection(
         gameId: Long,
-        isBuiltInEmulator: Boolean,
         hasAchievements: Boolean
     ): Boolean {
-        if (!isBuiltInEmulator || !hasAchievements) return false
+        if (!hasAchievements) return false
         val hasSaves = saveCacheManager.getCachesForGameOnce(gameId).isNotEmpty()
         val isRALoggedIn = raRepository.isLoggedIn()
         return !hasSaves && isRALoggedIn

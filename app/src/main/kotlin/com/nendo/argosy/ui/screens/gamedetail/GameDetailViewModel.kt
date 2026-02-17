@@ -694,8 +694,8 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val currentGame = _uiState.value.game ?: return@launch
 
-            if (currentGame.isBuiltInEmulator && currentGame.achievements.isNotEmpty()) {
-                if (playOptionsDelegate.shouldShowModeSelection(currentGameId, true, true)) {
+            if (currentGame.achievements.isNotEmpty()) {
+                if (playOptionsDelegate.shouldShowModeSelection(currentGameId, true)) {
                     playOptionsDelegate.showFreshGameModeSelection(viewModelScope, currentGameId)
                     return@launch
                 }
@@ -1505,7 +1505,7 @@ class GameDetailViewModel @Inject constructor(
                 saveChannelTertiaryAction(); return InputResult.HANDLED
             }
             if (state.showScreenshotViewer) { setCurrentScreenshotAsBackground(); return InputResult.HANDLED }
-            if (state.downloadStatus == GameDownloadStatus.DOWNLOADED && state.game?.isBuiltInEmulator == true) { showPlayOptions(); return InputResult.HANDLED }
+            if (state.downloadStatus == GameDownloadStatus.DOWNLOADED && state.game?.achievements?.isNotEmpty() == true) { showPlayOptions(); return InputResult.HANDLED }
             return InputResult.UNHANDLED
         }
 

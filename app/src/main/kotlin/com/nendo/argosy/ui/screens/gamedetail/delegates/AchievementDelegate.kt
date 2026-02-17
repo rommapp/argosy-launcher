@@ -59,14 +59,63 @@ class AchievementDelegate @Inject constructor(
         val game = gameRepository.getById(gameId)
         val raId = game?.raId
 
-        if (raId != null) {
-            val raAchievements = fetchAchievementsFromRA(raId, gameId)
-            if (raAchievements.isNotEmpty()) {
-                return raAchievements
+        val rommResults = fetchAchievementsFromRomM(rommId, gameId)
+        if (rommResults.isNotEmpty()) {
+            if (raId != null && raRepository.isLoggedIn()) {
+                return mergeRAProgress(raId, gameId, rommResults)
             }
+            return rommResults
         }
 
-        return fetchAchievementsFromRomM(rommId, gameId)
+        if (raId != null) {
+            return fetchAchievementsFromRA(raId, gameId)
+        }
+
+        return emptyList()
+    }
+
+    private suspend fun mergeRAProgress(
+        raId: Long,
+        gameId: Long,
+        rommResults: List<AchievementUi>
+    ): List<AchievementUi> {
+        val raData = raRepository.getGameAchievementsWithProgress(raId)
+            ?: return rommResults
+
+        val raUnlockedIds = raData.unlockedIds
+        if (raUnlockedIds.isEmpty()) return rommResults
+
+        val hasNewUnlocks = rommResults.any { !it.isUnlocked && it.raId in raUnlockedIds }
+        if (!hasNewUnlocks) return rommResults
+
+        val now = System.currentTimeMillis()
+        val entities = achievementDao.getByGameId(gameId)
+        val updatedEntities = entities.map { entity ->
+            if (entity.unlockedAt == null && entity.raId in raUnlockedIds) {
+                entity.copy(unlockedAt = now)
+            } else {
+                entity
+            }
+        }
+        achievementDao.replaceForGame(gameId, updatedEntities)
+
+        val earnedCount = updatedEntities.count { it.isUnlocked }
+        gameRepository.updateAchievementCount(gameId, updatedEntities.size, earnedCount)
+        achievementUpdateBus.emit(
+            AchievementUpdateBus.AchievementUpdate(gameId, updatedEntities.size, earnedCount)
+        )
+
+        return rommResults.map { ui ->
+            if (!ui.isUnlocked && ui.raId in raUnlockedIds) {
+                val entity = updatedEntities.find { it.raId == ui.raId }
+                ui.copy(
+                    isUnlocked = true,
+                    badgeUrl = entity?.badgeUrl ?: ui.badgeUrl
+                )
+            } else {
+                ui
+            }
+        }
     }
 
     private suspend fun fetchAchievementsFromRA(raId: Long, gameId: Long): List<AchievementUi> {

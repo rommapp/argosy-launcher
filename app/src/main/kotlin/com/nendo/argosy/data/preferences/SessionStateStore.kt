@@ -143,6 +143,18 @@ class SessionStateStore(context: Context) {
     fun getCarouselSelectedIndex(): Int =
         prefs.getInt(KEY_CAROUSEL_SELECTED_INDEX, 0)
 
+    fun setWizardActive(active: Boolean) {
+        prefs.edit().putBoolean(KEY_WIZARD_ACTIVE, active).apply()
+    }
+
+    fun isWizardActive(): Boolean = prefs.getBoolean(KEY_WIZARD_ACTIVE, false)
+
+    fun setFirstRunComplete(complete: Boolean) {
+        prefs.edit().putBoolean(KEY_FIRST_RUN_COMPLETE, complete).apply()
+    }
+
+    fun isFirstRunComplete(): Boolean = prefs.getBoolean(KEY_FIRST_RUN_COMPLETE, false)
+
     companion object {
         private const val PREFS_NAME = "argosy_session_state"
         private const val KEY_HAS_SESSION = "has_session"
@@ -164,5 +176,7 @@ class SessionStateStore(context: Context) {
         private const val KEY_CAROUSEL_SECTION_INDEX = "carousel_section_index"
         private const val KEY_CAROUSEL_SELECTED_INDEX = "carousel_selected_index"
         private const val KEY_SESSION_START_TIME = "session_start_time"
+        private const val KEY_WIZARD_ACTIVE = "wizard_active"
+        private const val KEY_FIRST_RUN_COMPLETE = "first_run_complete"
     }
 }

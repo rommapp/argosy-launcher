@@ -43,6 +43,8 @@ class SecondaryHomeBroadcastReceiverManager(
         const val EXTRA_CHANNEL_NAME = "channel_name"
         const val EXTRA_IS_HARDCORE = "is_hardcore"
         const val EXTRA_HOME_APPS = "home_apps"
+        const val ACTION_WIZARD_STATE = "com.nendo.argosy.WIZARD_STATE"
+        const val EXTRA_WIZARD_ACTIVE = "wizard_active"
     }
 
     interface ReceiverHost {
@@ -58,6 +60,7 @@ class SecondaryHomeBroadcastReceiverManager(
         val homeApps: List<String>
 
         fun onForegroundChanged(isForeground: Boolean)
+        fun onWizardStateChanged(isActive: Boolean)
         fun onSaveDirtyChanged(isDirty: Boolean)
         fun onSessionStarted(
             gameId: Long, isHardcore: Boolean, channelName: String?
@@ -73,10 +76,24 @@ class SecondaryHomeBroadcastReceiverManager(
     private val foregroundReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
-                ACTION_ARGOSY_FOREGROUND ->
+                ACTION_ARGOSY_FOREGROUND -> {
                     host.onForegroundChanged(true)
+                    if (intent.hasExtra(EXTRA_WIZARD_ACTIVE)) {
+                        host.onWizardStateChanged(intent.getBooleanExtra(EXTRA_WIZARD_ACTIVE, false))
+                    }
+                }
                 ACTION_ARGOSY_BACKGROUND ->
                     host.onForegroundChanged(false)
+            }
+        }
+    }
+
+    private val wizardStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_WIZARD_STATE) {
+                host.onWizardStateChanged(
+                    intent.getBooleanExtra(EXTRA_WIZARD_ACTIVE, false)
+                )
             }
         }
     }
@@ -436,6 +453,8 @@ class SecondaryHomeBroadcastReceiverManager(
             addAction(ACTION_ARGOSY_BACKGROUND)
         }, flag)
 
+        register(wizardStateReceiver,
+            IntentFilter(ACTION_WIZARD_STATE), flag)
         register(saveStateReceiver,
             IntentFilter(ACTION_SAVE_STATE_CHANGED), flag)
         register(sessionReceiver,

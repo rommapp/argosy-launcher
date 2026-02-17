@@ -44,6 +44,7 @@ class SecondaryHomeActivity :
         private set
     override var isGameActive by mutableStateOf(false)
         private set
+    private var isWizardActive by mutableStateOf(false)
     private var currentChannelName by mutableStateOf<String?>(null)
     private var isSaveDirty by mutableStateOf(false)
     private var isHardcore by mutableStateOf(false)
@@ -100,6 +101,7 @@ class SecondaryHomeActivity :
                             isInitialized = isInitialized,
                             isArgosyForeground = isArgosyForeground,
                             isGameActive = isGameActive,
+                            isWizardActive = isWizardActive,
                             showcaseState = _showcaseState,
                             showcaseViewMode = _showcaseViewMode,
                             collectionShowcaseState = _showcaseCollectionState,
@@ -110,6 +112,7 @@ class SecondaryHomeActivity :
                             isInitialized = isInitialized,
                             isArgosyForeground = isArgosyForeground,
                             isGameActive = isGameActive,
+                            isWizardActive = isWizardActive,
                             companionInGameState = companionInGameState,
                             companionSessionTimer = companionSessionTimer,
                             homeApps = homeApps,
@@ -221,6 +224,10 @@ class SecondaryHomeActivity :
 
     override fun onForegroundChanged(isForeground: Boolean) {
         isArgosyForeground = isForeground; isInitialized = true
+    }
+
+    override fun onWizardStateChanged(isActive: Boolean) {
+        isWizardActive = isActive
     }
 
     override fun onSaveDirtyChanged(isDirty: Boolean) {
@@ -352,6 +359,8 @@ class SecondaryHomeActivity :
         isShowcaseRole = initial.isShowcaseRole
         isArgosyForeground = initial.isArgosyForeground
         isGameActive = initial.isGameActive
+        isWizardActive = stateManager.sessionStateStore.isWizardActive() ||
+            !stateManager.sessionStateStore.isFirstRunComplete()
         currentChannelName = initial.currentChannelName
         isSaveDirty = initial.isSaveDirty
         homeApps = initial.homeApps

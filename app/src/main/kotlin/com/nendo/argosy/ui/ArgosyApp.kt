@@ -137,6 +137,18 @@ fun ArgosyApp(
         viewModel.setDualScreenMode(isDualActive)
     }
 
+    val isOnWizard = currentRoute == Screen.FirstRun.route
+    var wasOnWizard by remember { mutableStateOf(isOnWizard) }
+    LaunchedEffect(uiState.isFirstRun, isOnWizard) {
+        val wizardActive = uiState.isFirstRun || isOnWizard
+        (context as? com.nendo.argosy.MainActivity)?.dualScreenManager
+            ?.broadcastWizardState(wizardActive)
+        if (wasOnWizard && !isOnWizard) {
+            viewModel.triggerPostWizardSync()
+        }
+        wasOnWizard = isOnWizard
+    }
+
     LaunchedEffect(showDualOverlay, isDrawerOpen, isQuickSettingsOpen, quickMenuState.isVisible) {
         if (showDualOverlay) {
             (context as? com.nendo.argosy.MainActivity)?.isOverlayFocused =
@@ -205,10 +217,12 @@ fun ArgosyApp(
         try { rootFocusRequester.requestFocus() } catch (_: Exception) {}
     }
 
-    val startDestination = when {
-        uiState.isFirstRun -> Screen.FirstRun.route
-        uiState.defaultView == DefaultView.LIBRARY -> Screen.Library.route
-        else -> Screen.Home.route
+    val startDestination = remember(uiState.isLoading) {
+        when {
+            uiState.isFirstRun -> Screen.FirstRun.route
+            uiState.defaultView == DefaultView.LIBRARY -> Screen.Library.route
+            else -> Screen.Home.route
+        }
     }
 
     // Create drawer input handler

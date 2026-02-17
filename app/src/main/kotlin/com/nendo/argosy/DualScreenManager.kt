@@ -1029,13 +1029,17 @@ class DualScreenManager(
 
     fun broadcastForegroundState(isForeground: Boolean) {
         sessionStateStore.setArgosyForeground(isForeground)
+        val isWizard = sessionStateStore.isWizardActive()
         val action = if (isForeground) {
             "com.nendo.argosy.FOREGROUND"
         } else {
             "com.nendo.argosy.BACKGROUND"
         }
         context.sendBroadcast(
-            Intent(action).apply { setPackage(context.packageName) }
+            Intent(action).apply {
+                setPackage(context.packageName)
+                putExtra(EXTRA_WIZARD_ACTIVE, isWizard)
+            }
         )
         if (isForeground) {
             scope.launch {
@@ -1043,6 +1047,24 @@ class DualScreenManager(
                 updateHomeApps(prefs.secondaryHomeApps)
             }
         }
+    }
+
+    fun broadcastWizardState(isActive: Boolean) {
+        sessionStateStore.setWizardActive(isActive)
+        if (!isActive) {
+            sessionStateStore.setFirstRunComplete(true)
+        }
+        context.sendBroadcast(
+            Intent(ACTION_WIZARD_STATE).apply {
+                setPackage(context.packageName)
+                putExtra(EXTRA_WIZARD_ACTIVE, isActive)
+            }
+        )
+    }
+
+    companion object {
+        const val ACTION_WIZARD_STATE = "com.nendo.argosy.WIZARD_STATE"
+        const val EXTRA_WIZARD_ACTIVE = "wizard_active"
     }
 
     fun updateHomeApps(homeApps: Set<String>) {

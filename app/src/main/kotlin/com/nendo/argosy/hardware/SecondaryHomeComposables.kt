@@ -49,6 +49,7 @@ fun SecondaryHomeContent(
     isInitialized: Boolean,
     isArgosyForeground: Boolean,
     isGameActive: Boolean,
+    isWizardActive: Boolean = false,
     companionInGameState: CompanionInGameState,
     companionSessionTimer: CompanionSessionTimer?,
     homeApps: List<String>,
@@ -75,9 +76,9 @@ fun SecondaryHomeContent(
 ) {
     BackHandler(enabled = true) { }
 
-    val showLibrary = isInitialized && isArgosyForeground && !isGameActive
-    val showCompanion = isInitialized && !showLibrary
-    val showSplash = !isInitialized
+    val showLibrary = isInitialized && isArgosyForeground && !isGameActive && !isWizardActive
+    val showCompanion = isInitialized && !showLibrary && !isWizardActive
+    val showSplash = !isInitialized || isWizardActive
 
     Box(
         modifier = Modifier
@@ -200,6 +201,7 @@ fun ShowcaseRoleContent(
     isInitialized: Boolean,
     isArgosyForeground: Boolean,
     isGameActive: Boolean,
+    isWizardActive: Boolean = false,
     showcaseState: StateFlow<DualHomeShowcaseState>,
     showcaseViewMode: StateFlow<String>,
     collectionShowcaseState: StateFlow<DualCollectionShowcaseState>,
@@ -207,8 +209,8 @@ fun ShowcaseRoleContent(
 ) {
     BackHandler(enabled = true) { }
 
-    val showShowcase = isInitialized && isArgosyForeground && !isGameActive
-    val showSplash = !isInitialized
+    val showShowcase = isInitialized && isArgosyForeground && !isGameActive && !isWizardActive
+    val showSplash = !isInitialized || isWizardActive
 
     val showcase by showcaseState.collectAsState()
     val viewMode by showcaseViewMode.collectAsState()

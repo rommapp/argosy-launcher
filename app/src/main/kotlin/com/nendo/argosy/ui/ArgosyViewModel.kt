@@ -125,7 +125,8 @@ class ArgosyViewModel @Inject constructor(
     private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator,
     private val syncQueueManager: SyncQueueManager,
     private val brightnessController: BrightnessController,
-    private val volumeController: VolumeController
+    private val volumeController: VolumeController,
+    private val syncLibraryUseCase: com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
 ) : ViewModel() {
 
     private val contentResolver get() = application.contentResolver
@@ -274,6 +275,15 @@ class ArgosyViewModel @Inject constructor(
     private suspend fun syncCollectionsOnStartup() {
         if (romMRepository.isConnected()) {
             romMRepository.syncCollections()
+        }
+    }
+
+    fun triggerPostWizardSync() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            romMRepository.initialize()
+            if (romMRepository.isConnected()) {
+                syncLibraryUseCase(initializeFirst = false)
+            }
         }
     }
 

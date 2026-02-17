@@ -311,6 +311,9 @@ class MainActivity : ComponentActivity() {
                     Intent(DualScreenBroadcasts.ACTION_FORWARD_KEY).apply {
                         setPackage(packageName)
                         putExtra(DualScreenBroadcasts.EXTRA_KEY_CODE, event.keyCode)
+                        putExtra("swap_ab", sessionStateStore.getSwapAB())
+                        putExtra("swap_xy", sessionStateStore.getSwapXY())
+                        putExtra("swap_start_select", sessionStateStore.getSwapStartSelect())
                     }
                 )
             }

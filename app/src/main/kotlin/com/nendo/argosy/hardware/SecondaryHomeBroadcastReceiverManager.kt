@@ -174,8 +174,11 @@ class SecondaryHomeBroadcastReceiverManager(
             if (intent?.action != DualScreenBroadcasts.ACTION_FORWARD_KEY) return
             val keyCode = intent.getIntExtra(DualScreenBroadcasts.EXTRA_KEY_CODE, 0)
             if (keyCode == 0) return
+            val swapAB = intent.getBooleanExtra("swap_ab", host.swapAB)
+            val swapXY = intent.getBooleanExtra("swap_xy", host.swapXY)
+            val swapStartSelect = intent.getBooleanExtra("swap_start_select", host.swapStartSelect)
             val gamepadEvent = mapKeycodeToGamepadEvent(
-                keyCode, host.swapAB, host.swapXY, host.swapStartSelect
+                keyCode, swapAB, swapXY, swapStartSelect
             ) ?: return
             inputHandler.routeInput(
                 gamepadEvent, host.useDualScreenMode, host.isArgosyForeground,

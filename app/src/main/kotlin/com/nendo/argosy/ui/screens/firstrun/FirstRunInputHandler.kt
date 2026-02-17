@@ -31,8 +31,7 @@ class FirstRunInputHandler(
     override fun onConfirm(): InputResult {
         val state = viewModel.uiState.value
         if (state.currentStep == FirstRunStep.COMPLETE) {
-            viewModel.completeSetup()
-            onComplete()
+            viewModel.completeSetup(onDone = onComplete)
             return InputResult.HANDLED
         }
         viewModel.handleConfirm(onRequestPermission, onChooseFolder, onChooseImageCacheFolder, onRequestUsageStats)

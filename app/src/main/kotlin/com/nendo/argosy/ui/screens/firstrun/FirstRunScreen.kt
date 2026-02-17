@@ -254,8 +254,7 @@ fun FirstRunScreen(
                     platformCount = uiState.rommPlatformCount,
                     isFocused = true,
                     onStart = {
-                        viewModel.completeSetup()
-                        onComplete()
+                        viewModel.completeSetup(onDone = onComplete)
                     }
                 )
             }

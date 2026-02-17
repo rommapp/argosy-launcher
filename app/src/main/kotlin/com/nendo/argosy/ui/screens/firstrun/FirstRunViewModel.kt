@@ -482,7 +482,7 @@ class FirstRunViewModel @Inject constructor(
         nextStep()
     }
 
-    fun completeSetup() {
+    fun completeSetup(onDone: () -> Unit = {}) {
         val state = _uiState.value
 
         viewModelScope.launch {
@@ -498,6 +498,7 @@ class FirstRunViewModel @Inject constructor(
                 preferencesRepository.setSaveSyncEnabled(state.saveSyncEnabled)
             }
             preferencesRepository.setFirstRunComplete()
+            onDone()
         }
     }
 

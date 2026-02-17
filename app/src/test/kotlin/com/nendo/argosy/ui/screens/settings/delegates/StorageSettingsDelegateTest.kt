@@ -3,10 +3,9 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.storage.ManagedStorageAccessor
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
 import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
 import com.nendo.argosy.domain.usecase.PurgePlatformUseCase
@@ -35,8 +34,7 @@ class StorageSettingsDelegateTest {
 
     private lateinit var preferencesRepository: UserPreferencesRepository
     private lateinit var gameRepository: GameRepository
-    private lateinit var platformDao: PlatformDao
-    private lateinit var gameDao: GameDao
+    private lateinit var platformRepository: PlatformRepository
     private lateinit var migrateStorageUseCase: MigrateStorageUseCase
     private lateinit var migratePlatformStorageUseCase: MigratePlatformStorageUseCase
     private lateinit var purgePlatformUseCase: PurgePlatformUseCase
@@ -52,8 +50,7 @@ class StorageSettingsDelegateTest {
 
         preferencesRepository = mockk(relaxed = true)
         gameRepository = mockk(relaxed = true)
-        platformDao = mockk(relaxed = true)
-        gameDao = mockk(relaxed = true)
+        platformRepository = mockk(relaxed = true)
         migrateStorageUseCase = mockk(relaxed = true)
         migratePlatformStorageUseCase = mockk(relaxed = true)
         purgePlatformUseCase = mockk(relaxed = true)
@@ -65,8 +62,7 @@ class StorageSettingsDelegateTest {
         delegate = StorageSettingsDelegate(
             preferencesRepository = preferencesRepository,
             gameRepository = gameRepository,
-            platformDao = platformDao,
-            gameDao = gameDao,
+            platformRepository = platformRepository,
             migrateStorageUseCase = migrateStorageUseCase,
             migratePlatformStorageUseCase = migratePlatformStorageUseCase,
             purgePlatformUseCase = purgePlatformUseCase,

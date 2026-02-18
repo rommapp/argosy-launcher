@@ -28,6 +28,7 @@ fun StatusPickerModal(
         baseWidth = 320.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
+            InputButton.DPAD_VERTICAL to "Navigate",
             InputButton.A to "Confirm",
             InputButton.B to "Cancel"
         )

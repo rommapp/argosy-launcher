@@ -113,6 +113,12 @@ class DualGameDetailViewModel(
     private val _updatesPickerFocusIndex = MutableStateFlow(0)
     val updatesPickerFocusIndex: StateFlow<Int> = _updatesPickerFocusIndex.asStateFlow()
 
+    private val _emulatorPickerFocusIndex = MutableStateFlow(0)
+    val emulatorPickerFocusIndex: StateFlow<Int> = _emulatorPickerFocusIndex.asStateFlow()
+
+    private val _collectionPickerFocusIndex = MutableStateFlow(0)
+    val collectionPickerFocusIndex: StateFlow<Int> = _collectionPickerFocusIndex.asStateFlow()
+
     private var downloadObserverJob: Job? = null
     private var ratingDebounceJob: Job? = null
     private var difficultyDebounceJob: Job? = null
@@ -666,6 +672,7 @@ class DualGameDetailViewModel(
 
     fun openEmulatorPicker(emulators: List<InstalledEmulator>) {
         _emulatorPickerList.value = emulators
+        _emulatorPickerFocusIndex.value = 0
         _activeModal.value = ActiveModal.EMULATOR
     }
 
@@ -707,6 +714,7 @@ class DualGameDetailViewModel(
                     it.id, it.name, memberIds.contains(it.id)
                 )
             }
+            _collectionPickerFocusIndex.value = 0
             _activeModal.value = ActiveModal.COLLECTION
         }
     }
@@ -847,6 +855,18 @@ class DualGameDetailViewModel(
 
     fun getUpdatesFileCount(): Int =
         _updateFiles.value.size + _dlcFiles.value.size
+
+    fun moveEmulatorPickerFocus(delta: Int) {
+        val total = _emulatorPickerList.value.size + 1
+        val max = (total - 1).coerceAtLeast(0)
+        _emulatorPickerFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun moveCollectionPickerFocus(delta: Int) {
+        val total = _collectionItems.value.size + 1
+        val max = (total).coerceAtLeast(0)
+        _collectionPickerFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
 
     fun getDownloadableFiles(): List<UpdateFileUi> {
         val allFiles = _updateFiles.value + _dlcFiles.value

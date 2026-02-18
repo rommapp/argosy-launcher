@@ -674,6 +674,49 @@ class DualScreenManager(
                     s?.copy(updatesPickerFocusIndex = idx)
                 }
             }
+            "modal_rating" -> {
+                val v = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
+                _dualGameDetailState.update { s ->
+                    s?.copy(modalRatingValue = v)
+                }
+            }
+            "modal_status" -> {
+                val v = intent.getStringExtra(DualScreenBroadcasts.EXTRA_INLINE_STRING_VALUE)
+                _dualGameDetailState.update { s ->
+                    s?.copy(modalStatusSelected = v)
+                }
+            }
+            "emulator_focus" -> {
+                val idx = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
+                _dualGameDetailState.update { s ->
+                    s?.copy(emulatorFocusIndex = idx)
+                }
+            }
+            "collection_focus" -> {
+                val idx = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
+                _dualGameDetailState.update { s ->
+                    s?.copy(collectionFocusIndex = idx)
+                }
+            }
+            "collection_toggle" -> {
+                val collectionId = intent.getIntExtra(
+                    DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0
+                ).toLong()
+                _dualGameDetailState.update { s ->
+                    s?.copy(
+                        collectionItems = s.collectionItems.map {
+                            if (it.id == collectionId)
+                                it.copy(isInCollection = !it.isInCollection)
+                            else it
+                        }
+                    )
+                }
+            }
+            "collection_create" -> {
+                _dualGameDetailState.update { s ->
+                    s?.copy(showCreateDialog = true)
+                }
+            }
         }
     }
 

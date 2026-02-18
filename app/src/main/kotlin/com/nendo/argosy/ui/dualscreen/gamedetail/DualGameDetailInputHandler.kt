@@ -118,14 +118,128 @@ class DualGameDetailInputHandler(
         event: GamepadEvent
     ): InputResult {
         when (modal) {
-            ActiveModal.EMULATOR, ActiveModal.COLLECTION -> {
-                if (event == GamepadEvent.Back) {
-                    when (modal) {
-                        ActiveModal.EMULATOR -> vm.dismissPicker()
-                        ActiveModal.COLLECTION -> vm.dismissCollectionModal()
-                        else -> {}
+            ActiveModal.EMULATOR -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveEmulatorPickerFocus(-1)
+                        onBroadcastInlineUpdate(
+                            "emulator_focus",
+                            vm.emulatorPickerFocusIndex.value
+                        )
                     }
-                    onBroadcastModalClose()
+                    GamepadEvent.Down -> {
+                        vm.moveEmulatorPickerFocus(1)
+                        onBroadcastInlineUpdate(
+                            "emulator_focus",
+                            vm.emulatorPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.emulatorPickerFocusIndex.value
+                        vm.confirmEmulatorByIndex(idx)
+                        onBroadcastModalClose()
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        onBroadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.COLLECTION -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveCollectionPickerFocus(-1)
+                        onBroadcastInlineUpdate(
+                            "collection_focus",
+                            vm.collectionPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveCollectionPickerFocus(1)
+                        onBroadcastInlineUpdate(
+                            "collection_focus",
+                            vm.collectionPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.collectionPickerFocusIndex.value
+                        val items = vm.collectionItems.value
+                        if (idx < items.size) {
+                            val item = items[idx]
+                            vm.toggleCollection(item.id)
+                            onBroadcastInlineUpdate(
+                                "collection_toggle",
+                                item.id.toInt()
+                            )
+                        } else {
+                            onBroadcastInlineUpdate(
+                                "collection_create", 1
+                            )
+                        }
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissCollectionModal()
+                        onBroadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.RATING, ActiveModal.DIFFICULTY -> {
+                when (event) {
+                    GamepadEvent.Left -> {
+                        vm.adjustPickerValue(-1)
+                        onBroadcastInlineUpdate(
+                            "modal_rating",
+                            vm.ratingPickerValue.value
+                        )
+                    }
+                    GamepadEvent.Right -> {
+                        vm.adjustPickerValue(1)
+                        onBroadcastInlineUpdate(
+                            "modal_rating",
+                            vm.ratingPickerValue.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        vm.confirmPicker()
+                        onBroadcastModalClose()
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        onBroadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.STATUS -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveStatusSelection(-1)
+                        onBroadcastInlineUpdate(
+                            "modal_status",
+                            vm.statusPickerValue.value ?: ""
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveStatusSelection(1)
+                        onBroadcastInlineUpdate(
+                            "modal_status",
+                            vm.statusPickerValue.value ?: ""
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        vm.confirmPicker()
+                        onBroadcastModalClose()
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        onBroadcastModalClose()
+                    }
+                    else -> {}
                 }
                 return InputResult.HANDLED
             }
@@ -136,24 +250,10 @@ class DualGameDetailInputHandler(
                 }
                 return InputResult.HANDLED
             }
-            else -> {}
+            ActiveModal.SAVE_NAME, ActiveModal.NONE -> {}
         }
 
-        return when (event) {
-            GamepadEvent.Confirm -> {
-                val ratingValue = vm.ratingPickerValue.value
-                val statusValue = vm.statusPickerValue.value
-                vm.confirmPicker()
-                onBroadcastInlineUpdate("modal_confirm", "$ratingValue|$statusValue|${modal.name}")
-                InputResult.HANDLED
-            }
-            GamepadEvent.Back -> {
-                vm.dismissPicker()
-                onBroadcastModalClose()
-                InputResult.HANDLED
-            }
-            else -> InputResult.HANDLED
-        }
+        return InputResult.HANDLED
     }
 
     private fun handleInlineAdjust(vm: DualGameDetailViewModel, delta: Int) {

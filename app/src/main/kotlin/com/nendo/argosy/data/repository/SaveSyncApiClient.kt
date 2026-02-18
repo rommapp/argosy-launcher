@@ -393,7 +393,7 @@ class SaveSyncApiClient @Inject constructor(
                 fileToUpload
             }
 
-            val contentHash = saveArchiver.calculateFileHash(uploadFile)
+            val contentHash = saveArchiver.calculateContentHash(uploadFile)
             if (syncEntity?.lastUploadedHash == contentHash) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 if (prepared.isTemporary) fileToUpload.delete()
@@ -1100,13 +1100,17 @@ class SaveSyncApiClient @Inject constructor(
             val cacheIsLocked = !isLatestSave
 
             try {
-                saveCacheManager.get().cacheCurrentSave(
+                val cacheResult = saveCacheManager.get().cacheCurrentSave(
                     gameId = gameId,
                     emulatorId = resolvedEmulatorId,
                     savePath = targetPath,
                     channelName = cacheChannelName,
                     isLocked = cacheIsLocked
                 )
+                if (cacheResult is SaveCacheManager.CacheResult.Created) {
+                    gameDao.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
+                    gameDao.updateActiveSaveApplied(gameId, false)
+                }
             } catch (e: Exception) {
                 Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cache creation failed", e)
             }

@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.game
 
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
@@ -12,10 +13,8 @@ import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SteamRepository
 import com.nendo.argosy.data.repository.SteamResult
 import com.nendo.argosy.util.Logger
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
@@ -25,14 +24,13 @@ class DeleteGameUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val gameRepository: GameRepository,
     private val downloadQueueDao: DownloadQueueDao,
+    private val gameFileDao: GameFileDao,
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncDao: SaveSyncDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val orphanedFileDao: OrphanedFileDao,
     private val steamRepository: SteamRepository
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     suspend operator fun invoke(gameId: Long): Boolean {
         val game = gameDao.getById(gameId) ?: return false
 
@@ -45,18 +43,18 @@ class DeleteGameUseCase @Inject constructor(
 
         gameRepository.clearLocalPath(gameId)
         downloadQueueDao.deleteByGameId(gameId)
+        gameFileDao.clearLocalPathsByGameId(gameId)
 
         saveCacheManager.deleteAllCachesForGame(gameId)
         saveSyncDao.deleteByGame(gameId)
         pendingSyncQueueDao.deleteByGameId(gameId)
         gameDao.updateActiveSaveChannel(gameId, null)
         gameDao.updateActiveSaveTimestamp(gameId, null)
-        Logger.debug(TAG, "Deleted local file and all save data for game $gameId")
 
-        scope.launch {
+        withContext(Dispatchers.IO) {
             try {
                 val file = File(path)
-                if (!file.exists()) return@launch
+                if (!file.exists()) return@withContext
 
                 val deleted = if (file.isDirectory) {
                     file.deleteRecursively()
@@ -85,6 +83,7 @@ class DeleteGameUseCase @Inject constructor(
             }
         }
 
+        Logger.debug(TAG, "Deleted local file and all save data for game $gameId")
         return true
     }
 

@@ -71,7 +71,7 @@ class SaveCacheManager @Inject constructor(
 
         try {
             val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
-                val folderHash = saveArchiver.calculateFolderHash(saveFile)
+                val folderHash = saveArchiver.calculateFolderAsZipHash(saveFile)
                 tempFile = File(context.cacheDir, "temp_save_${System.currentTimeMillis()}.zip")
                 if (!saveArchiver.zipFolder(saveFile, tempFile)) {
                     Log.e(TAG, "Failed to zip save folder")
@@ -211,15 +211,7 @@ class SaveCacheManager @Inject constructor(
             }
 
             val contentHash = if (isZip) {
-                val tempDir = File(context.cacheDir, "hash_extract_${System.currentTimeMillis()}")
-                tempDir.mkdirs()
-                val hash = if (saveArchiver.unzipToFolder(downloadedFile, tempDir)) {
-                    saveArchiver.calculateFolderHash(tempDir)
-                } else {
-                    saveArchiver.calculateFileHash(downloadedFile)
-                }
-                tempDir.deleteRecursively()
-                hash
+                saveArchiver.calculateZipHash(downloadedFile)
             } else {
                 saveArchiver.calculateFileHash(downloadedFile)
             }
@@ -297,7 +289,7 @@ class SaveCacheManager @Inject constructor(
 
         try {
             val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
-                val folderHash = saveArchiver.calculateFolderHash(saveFile)
+                val folderHash = saveArchiver.calculateFolderAsZipHash(saveFile)
                 tempFile = File(context.cacheDir, "temp_rollback_${System.currentTimeMillis()}.zip")
                 if (!saveArchiver.zipFolder(saveFile, tempFile)) {
                     Log.e(TAG, "Failed to zip save folder for rollback")
@@ -628,9 +620,9 @@ class SaveCacheManager @Inject constructor(
         try {
             val saveFile = fal.getTransformedFile(savePath)
             if (fal.isDirectory(savePath)) {
-                saveArchiver.calculateFolderHash(saveFile)
+                saveArchiver.calculateFolderAsZipHash(saveFile)
             } else {
-                saveArchiver.calculateFileHash(saveFile)
+                saveArchiver.calculateContentHash(saveFile)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to calculate hash for $savePath", e)

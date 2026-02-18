@@ -218,6 +218,18 @@ class SyncCoordinator @Inject constructor(
                 continue
             }
 
+            val conflictInfo = saveSyncRepository.get().checkForConflict(
+                gameId = cache.gameId,
+                emulatorId = cache.emulatorId,
+                channelName = cache.channelName
+            )
+            if (conflictInfo != null) {
+                saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName!!, excludeId = -1)
+                syncQueueManager.addConflict(conflictInfo)
+                Logger.warn(TAG, "processDirtySaveCaches: Pre-upload conflict for channel cache id=${cache.id}")
+                continue
+            }
+
             syncQueueManager.addOperation(SyncOperation(
                 gameId = cache.gameId,
                 gameName = game.title,

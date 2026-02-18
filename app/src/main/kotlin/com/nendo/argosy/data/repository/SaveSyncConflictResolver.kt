@@ -187,12 +187,22 @@ class SaveSyncConflictResolver @Inject constructor(
                 }
                 val isDeviceCurrent = deviceSyncEntry?.isCurrent
 
-                val isLocalDiverged = if (activeChannel != null && deviceId != null) {
-                    val activeSaveTimestamp = gameDao.getActiveSaveTimestamp(gameId)
-                    val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, activeChannel)
-                    activeSaveTimestamp != null &&
-                        latestCache != null &&
-                        activeSaveTimestamp < latestCache.cachedAt.toEpochMilli()
+                val isLocalDiverged = if (deviceId != null && validatedPath != null) {
+                    val lastUploadedHash = existing?.lastUploadedHash
+                    val localHash = saveCacheManager.get()
+                        .calculateLocalSaveHash(validatedPath)
+                    if (lastUploadedHash != null && localHash != null) {
+                        (localHash != lastUploadedHash).also { diverged ->
+                            Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Hash divergence check | local=$localHash, lastUploaded=$lastUploadedHash, diverged=$diverged")
+                        }
+                    } else if (localHash != null && activeChannel != null) {
+                        val latestCache = saveCacheDao
+                            .getLatestCasualSaveInChannel(gameId, activeChannel)
+                        val diverged = latestCache?.contentHash != null &&
+                            localHash != latestCache.contentHash
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Hash fallback check | local=$localHash, cacheHash=${latestCache?.contentHash}, diverged=$diverged")
+                        diverged
+                    } else false
                 } else false
 
                 if (isDeviceCurrent != null) {

@@ -223,7 +223,11 @@ class SecondaryHomeActivity :
     }
 
     override fun onForegroundChanged(isForeground: Boolean) {
-        isArgosyForeground = isForeground; isInitialized = true
+        isArgosyForeground = isForeground
+        if (isForeground && isGameActive) {
+            onSessionEnded()
+        }
+        isInitialized = true
     }
 
     override fun onWizardStateChanged(isActive: Boolean) {

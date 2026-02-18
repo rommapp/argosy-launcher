@@ -909,7 +909,7 @@ class DownloadManager @Inject constructor(
         }
     }
 
-    private fun processDownloadedFile(
+    private suspend fun processDownloadedFile(
         targetFile: File,
         platformDir: File,
         platformSlug: String,
@@ -927,6 +927,7 @@ class DownloadManager @Inject constructor(
         }
 
         if (shouldExtract && onExtractionProgress != null) {
+            downloadQueueDao.updateState(progressId, DownloadState.EXTRACTING.name)
             onExtractionProgress(0L, targetFile.length())
         }
 

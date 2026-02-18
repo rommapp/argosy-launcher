@@ -578,34 +578,83 @@ class SaveArchiver @Inject constructor(
     }
 
     /**
-     * Calculate folder hash at a path, handling restricted Android/data paths.
+     * Mirrors RomM server's `compute_zip_hash()`: sort entries alphabetically,
+     * skip directories, MD5 each file individually, build "name:md5hex" lines
+     * joined by newline, then MD5 that combined string.
      */
-    fun calculateFolderHashAtPath(path: String): String {
-        val folder = getFileForPath(path)
-        return calculateFolderHash(folder)
-    }
-
-    fun calculateFolderHash(folder: File): String {
-        val md = MessageDigest.getInstance("MD5")
-        val excludedDirs = setOf("storage", "cache")
-        folder.walkTopDown()
-            .filter { it.isFile }
-            .filter { file ->
-                val relativePath = file.relativeTo(folder).path
-                !excludedDirs.any { dir -> relativePath.startsWith("$dir/") || relativePath.startsWith("$dir\\") }
-            }
-            .sortedBy { it.relativeTo(folder).path }
-            .forEach { file ->
-                md.update(file.relativeTo(folder).path.toByteArray())
-                file.inputStream().buffered().use { input ->
+    fun calculateZipHash(file: File): String {
+        ZipArchiveInputStream(BufferedInputStream(FileInputStream(file))).use { zis ->
+            val entries = mutableListOf<Pair<String, String>>()
+            var entry = zis.nextEntry
+            while (entry != null) {
+                if (!entry.isDirectory) {
+                    val md = MessageDigest.getInstance("MD5")
                     val buffer = ByteArray(BUFFER_SIZE)
                     var bytesRead: Int
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                    while (zis.read(buffer).also { bytesRead = it } != -1) {
                         md.update(buffer, 0, bytesRead)
                     }
+                    val fileHash = md.digest()
+                        .joinToString("") { "%02x".format(it) }
+                    entries.add(entry.name to fileHash)
                 }
+                entry = zis.nextEntry
             }
-        return md.digest().joinToString("") { "%02x".format(it) }
+            entries.sortBy { it.first }
+            val combined = entries
+                .joinToString("\n") { "${it.first}:${it.second}" }
+            val finalMd = MessageDigest.getInstance("MD5")
+            finalMd.update(combined.toByteArray(Charsets.UTF_8))
+            return finalMd.digest()
+                .joinToString("") { "%02x".format(it) }
+        }
+    }
+
+    /**
+     * Computes what the server would produce via `compute_zip_hash()` if this
+     * folder were zipped via [zipFolder]. Avoids creating a temp ZIP.
+     */
+    fun calculateFolderAsZipHash(folder: File): String {
+        val entries = mutableListOf<Pair<String, String>>()
+        folder.walkTopDown()
+            .filter { it.isFile }
+            .forEach { file ->
+                val entryName =
+                    "${folder.name}/${file.relativeTo(folder).path}"
+                val fileHash = calculateFileHash(file)
+                entries.add(entryName to fileHash)
+            }
+        entries.sortBy { it.first }
+        val combined = entries
+            .joinToString("\n") { "${it.first}:${it.second}" }
+        val finalMd = MessageDigest.getInstance("MD5")
+        finalMd.update(combined.toByteArray(Charsets.UTF_8))
+        return finalMd.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    /**
+     * Dispatch matching RomM server's `compute_content_hash()`:
+     * route ZIP files to [calculateZipHash], plain files to [calculateFileHash].
+     */
+    fun calculateContentHash(file: File): String {
+        return if (isZipFile(file)) calculateZipHash(file)
+        else calculateFileHash(file)
+    }
+
+    private fun isZipFile(file: File): Boolean {
+        if (file.length() < 4) return false
+        file.inputStream().use { stream ->
+            val magic = ByteArray(4)
+            if (stream.read(magic) < 4) return false
+            return magic[0] == 0x50.toByte() &&
+                magic[1] == 0x4B.toByte() &&
+                (magic[2] == 0x03.toByte() ||
+                    magic[2] == 0x05.toByte() ||
+                    magic[2] == 0x07.toByte()) &&
+                (magic[3] == 0x04.toByte() ||
+                    magic[3] == 0x06.toByte() ||
+                    magic[3] == 0x08.toByte())
+        }
     }
 
     data class HardcoreTrailer(val version: Int)

@@ -258,16 +258,10 @@ private fun HeroGameCard(state: CompanionInGameState) {
                 )
         )
 
-        SaveStateIndicator(
-            isDirty = state.isDirty,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(12.dp)
-        )
-
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
+                .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             Text(
@@ -280,31 +274,37 @@ private fun HeroGameCard(state: CompanionInGameState) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = state.platformName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-                if (state.developer != null) {
-                    MetadataDot()
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = state.developer,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                if (state.releaseYear != null) {
-                    MetadataDot()
-                    Text(
-                        text = state.releaseYear.toString(),
+                        text = state.platformName,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.7f)
                     )
+                    if (state.developer != null) {
+                        MetadataDot()
+                        Text(
+                            text = state.developer,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    if (state.releaseYear != null) {
+                        MetadataDot()
+                        Text(
+                            text = state.releaseYear.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
                 }
+
+                SaveStateIndicator(isDirty = state.isDirty)
             }
         }
     }

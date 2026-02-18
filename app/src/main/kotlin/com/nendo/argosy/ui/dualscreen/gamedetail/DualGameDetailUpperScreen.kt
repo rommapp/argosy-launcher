@@ -58,6 +58,7 @@ import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.screens.gamedetail.RatingType
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
 import com.nendo.argosy.ui.util.touchOnly
 import java.io.File
 import java.time.Instant
@@ -143,6 +144,14 @@ fun DualGameDetailUpperScreen(
                 text = state.saveNameText,
                 onTextChange = onSaveNameTextChange,
                 onConfirm = onSaveNameConfirm,
+                onDismiss = onModalDismiss
+            )
+            ActiveModal.UPDATES_DLC -> UpdatesPickerModal(
+                files = state.updateFiles + state.dlcFiles,
+                focusIndex = state.updatesPickerFocusIndex,
+                isEdenGame = state.isEdenGame,
+                onDownload = {},
+                onApplyAll = {},
                 onDismiss = onModalDismiss
             )
             ActiveModal.NONE -> {}

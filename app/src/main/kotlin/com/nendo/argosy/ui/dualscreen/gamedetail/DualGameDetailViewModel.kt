@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.CollectionRepository
@@ -14,8 +15,11 @@ import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.ui.screens.gamedetail.UpdateFileType
+import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
@@ -36,6 +40,7 @@ class DualGameDetailViewModel(
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
+    private val gameFileDao: GameFileDao,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val context: Context
 ) : ViewModel() {
@@ -95,6 +100,15 @@ class DualGameDetailViewModel(
         MutableStateFlow<List<DualCollectionItem>>(emptyList())
     val collectionItems: StateFlow<List<DualCollectionItem>> =
         _collectionItems.asStateFlow()
+
+    private val _updateFiles = MutableStateFlow<List<UpdateFileUi>>(emptyList())
+    val updateFiles: StateFlow<List<UpdateFileUi>> = _updateFiles.asStateFlow()
+
+    private val _dlcFiles = MutableStateFlow<List<UpdateFileUi>>(emptyList())
+    val dlcFiles: StateFlow<List<UpdateFileUi>> = _dlcFiles.asStateFlow()
+
+    private val _updatesPickerFocusIndex = MutableStateFlow(0)
+    val updatesPickerFocusIndex: StateFlow<Int> = _updatesPickerFocusIndex.asStateFlow()
 
     private var ratingDebounceJob: Job? = null
     private var difficultyDebounceJob: Job? = null
@@ -209,7 +223,7 @@ class DualGameDetailViewModel(
                 }
             }
             ActiveModal.EMULATOR, ActiveModal.COLLECTION,
-            ActiveModal.SAVE_NAME -> return
+            ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC -> return
             ActiveModal.NONE -> return
         }
         _activeModal.value = ActiveModal.NONE
@@ -711,4 +725,92 @@ class DualGameDetailViewModel(
     fun dismissCollectionModal() {
         _activeModal.value = ActiveModal.NONE
     }
+
+    fun openUpdatesModal() {
+        val gameId = _uiState.value.gameId
+        if (gameId < 0) return
+        viewModelScope.launch {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val platformSlug = game.platformSlug
+            val localPath = game.localPath
+            val remoteFiles = gameFileDao.getFilesForGame(gameId)
+
+            val localUpdateFileNames = if (localPath != null) {
+                ZipExtractor.listAllUpdateFiles(localPath, platformSlug)
+                    .map { it.name }.toSet()
+            } else emptySet()
+
+            val localDlcFileNames = if (localPath != null) {
+                ZipExtractor.listAllDlcFiles(localPath, platformSlug)
+                    .map { it.name }.toSet()
+            } else emptySet()
+
+            val dbUpdates = remoteFiles.filter { it.category == "update" }.map { file ->
+                val downloaded = file.fileName in localUpdateFileNames
+                UpdateFileUi(
+                    fileName = file.fileName, filePath = file.filePath,
+                    sizeBytes = file.fileSize, type = UpdateFileType.UPDATE,
+                    isDownloaded = downloaded, isAppliedToEmulator = false,
+                    gameFileId = file.id, rommFileId = file.rommFileId,
+                    romId = file.romId
+                )
+            }
+
+            val dbDlc = remoteFiles.filter { it.category == "dlc" }.map { file ->
+                val downloaded = file.fileName in localDlcFileNames
+                UpdateFileUi(
+                    fileName = file.fileName, filePath = file.filePath,
+                    sizeBytes = file.fileSize, type = UpdateFileType.DLC,
+                    isDownloaded = downloaded, isAppliedToEmulator = false,
+                    gameFileId = file.id, rommFileId = file.rommFileId,
+                    romId = file.romId
+                )
+            }
+
+            val localUpdates = if (localPath != null) {
+                ZipExtractor.listAllUpdateFiles(localPath, platformSlug)
+                    .filter { file -> dbUpdates.none { it.fileName == file.name } }
+                    .map { file ->
+                        UpdateFileUi(
+                            fileName = file.name, filePath = file.absolutePath,
+                            sizeBytes = file.length(), type = UpdateFileType.UPDATE,
+                            isDownloaded = true, isAppliedToEmulator = false
+                        )
+                    }
+            } else emptyList()
+
+            val localDlc = if (localPath != null) {
+                ZipExtractor.listAllDlcFiles(localPath, platformSlug)
+                    .filter { file -> dbDlc.none { it.fileName == file.name } }
+                    .map { file ->
+                        UpdateFileUi(
+                            fileName = file.name, filePath = file.absolutePath,
+                            sizeBytes = file.length(), type = UpdateFileType.DLC,
+                            isDownloaded = true, isAppliedToEmulator = false
+                        )
+                    }
+            } else emptyList()
+
+            _updateFiles.value = dbUpdates + localUpdates
+            _dlcFiles.value = dbDlc + localDlc
+            _updatesPickerFocusIndex.value = 0
+            _activeModal.value = ActiveModal.UPDATES_DLC
+        }
+    }
+
+    fun dismissUpdatesModal() {
+        _activeModal.value = ActiveModal.NONE
+        _updateFiles.value = emptyList()
+        _dlcFiles.value = emptyList()
+        _updatesPickerFocusIndex.value = 0
+    }
+
+    fun moveUpdatesFocus(delta: Int) {
+        val total = _updateFiles.value.size + _dlcFiles.value.size
+        val max = (total - 1).coerceAtLeast(0)
+        _updatesPickerFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun getUpdatesFileCount(): Int =
+        _updateFiles.value.size + _dlcFiles.value.size
 }

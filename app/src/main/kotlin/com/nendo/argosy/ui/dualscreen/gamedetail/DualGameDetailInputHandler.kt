@@ -129,6 +129,13 @@ class DualGameDetailInputHandler(
                 }
                 return InputResult.HANDLED
             }
+            ActiveModal.UPDATES_DLC -> {
+                if (event == GamepadEvent.Back) {
+                    vm.dismissUpdatesModal()
+                    onBroadcastModalClose()
+                }
+                return InputResult.HANDLED
+            }
             else -> {}
         }
 
@@ -218,6 +225,7 @@ class DualGameDetailInputHandler(
                     onBroadcastCollectionModalOpen(vm)
                 }
             }
+            GameDetailOption.UPDATES_DLC -> onBroadcastDirectAction("UPDATES_DLC", gameId, null)
             GameDetailOption.REFRESH_METADATA -> onBroadcastDirectAction("REFRESH_METADATA", gameId, null)
             GameDetailOption.DELETE -> onBroadcastDirectAction("DELETE", gameId, null)
             GameDetailOption.HIDE -> onBroadcastDirectAction("HIDE", gameId, null)

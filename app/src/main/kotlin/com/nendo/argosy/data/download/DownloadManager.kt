@@ -16,6 +16,8 @@ import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.download.nsz.NszDecompressor
+import com.nendo.argosy.data.emulator.EdenContentManager
+import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.M3uManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -134,7 +136,9 @@ class DownloadManager @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val soundManager: SoundFeedbackManager,
     private val m3uManager: M3uManager,
-    private val thermalManager: dagger.Lazy<DownloadThermalManager>
+    private val thermalManager: dagger.Lazy<DownloadThermalManager>,
+    private val emulatorResolver: EmulatorResolver,
+    private val edenContentManager: EdenContentManager
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
@@ -688,6 +692,7 @@ class DownloadManager @Inject constructor(
                                 finalPath,
                                 Instant.now()
                             )
+                            autoApplyToEdenIfNeeded(progress, finalPath)
                         }
                         progress.isDiscDownload && progress.discId != null -> {
                             Log.d(TAG, "Storing localPath to DB (disc): discId=${progress.discId}, path=$finalPath")
@@ -847,6 +852,7 @@ class DownloadManager @Inject constructor(
                                             finalPath,
                                             Instant.now()
                                         )
+                                        autoApplyToEdenIfNeeded(progress, finalPath)
                                     }
                                     progress.isDiscDownload && progress.discId != null -> {
                                         Log.d(TAG, "Storing localPath to DB (disc): discId=${progress.discId}, path=$finalPath")
@@ -1285,6 +1291,25 @@ class DownloadManager @Inject constructor(
             if (tempFile.exists()) tempFile.delete()
 
             downloadQueueDao.deleteByGameId(gameId)
+        }
+    }
+
+    private suspend fun autoApplyToEdenIfNeeded(progress: DownloadProgress, finalPath: String) {
+        if (!progress.isGameFileDownload) return
+        val category = progress.fileCategory ?: return
+        if (category != "update" && category != "dlc") return
+
+        try {
+            val game = gameDao.getById(progress.gameId) ?: return
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(
+                progress.gameId, game.platformId, game.platformSlug
+            )
+            if (emulatorId != "eden") return
+
+            val gameDir = File(finalPath).parentFile?.parent ?: return
+            edenContentManager.registerDirectory(gameDir)
+        } catch (e: Exception) {
+            Log.w(TAG, "Auto-apply to Eden failed: ${e.message}")
         }
     }
 

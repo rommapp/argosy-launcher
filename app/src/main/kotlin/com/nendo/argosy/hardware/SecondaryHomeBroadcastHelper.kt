@@ -8,6 +8,7 @@ import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualHomeFocusZone
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
+import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 
 class SecondaryHomeBroadcastHelper(
     private val context: Context,
@@ -127,6 +128,41 @@ class SecondaryHomeBroadcastHelper(
                 putExtra(
                     DualScreenBroadcasts.EXTRA_COLLECTION_CHECKED,
                     items.map { it.isInCollection }.toBooleanArray()
+                )
+            }
+        )
+    }
+
+    fun broadcastUpdatesModalOpen(vm: DualGameDetailViewModel) {
+        val updates = vm.updateFiles.value
+        val dlc = vm.dlcFiles.value
+        val allFiles = updates + dlc
+        context.sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
+                setPackage(context.packageName)
+                putExtra(
+                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
+                    ActiveModal.UPDATES_DLC.name
+                )
+                putStringArrayListExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_NAMES,
+                    ArrayList(allFiles.map { it.fileName })
+                )
+                putExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_SIZES,
+                    allFiles.map { it.sizeBytes }.toLongArray()
+                )
+                putStringArrayListExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_TYPES,
+                    ArrayList(allFiles.map { it.type.name })
+                )
+                putExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_DOWNLOADED,
+                    allFiles.map { it.isDownloaded }.toBooleanArray()
+                )
+                putExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_GAME_FILE_IDS,
+                    allFiles.map { it.gameFileId ?: -1L }.toLongArray()
                 )
             }
         )

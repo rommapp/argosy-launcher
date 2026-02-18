@@ -2,7 +2,6 @@ package com.nendo.argosy.ui.screens.gamedetail.modals
 
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,7 +43,9 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 fun UpdatesPickerModal(
     files: List<UpdateFileUi>,
     focusIndex: Int,
+    isEdenGame: Boolean,
     onDownload: (UpdateFileUi) -> Unit,
+    onApplyAll: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -62,6 +62,15 @@ fun UpdatesPickerModal(
 
     val focusedFile = files.getOrNull(focusIndex)
     val canDownload = focusedFile?.isDownloaded == false && focusedFile.gameFileId != null
+    val canApply = isEdenGame && focusedFile?.isDownloaded == true && !focusedFile.isAppliedToEmulator
+    val allApplied = isEdenGame && files.all { !it.isDownloaded || it.isAppliedToEmulator }
+    val hasUnapplied = isEdenGame && files.any { it.isDownloaded && !it.isAppliedToEmulator }
+
+    val subtitle = when {
+        isEdenGame && allApplied -> "Applied to Eden"
+        isEdenGame -> "Apply to register with Eden"
+        else -> "Must be installed through the emulator manually"
+    }
 
     Box(
         modifier = Modifier
@@ -84,9 +93,12 @@ fun UpdatesPickerModal(
             )
             Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Text(
-                text = "Must be installed through the emulator manually",
+                text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isEdenGame && allApplied)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -98,9 +110,10 @@ fun UpdatesPickerModal(
                     .clip(RoundedCornerShape(Dimens.radiusMd)),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
             ) {
-                itemsIndexed(files) { index, file ->
+                itemsIndexed(files, key = { _, file -> file.fileName }) { index, file ->
                     UpdateFileItem(
                         file = file,
+                        isEdenGame = isEdenGame,
                         isFocused = focusIndex == index,
                         onClick = {
                             if (!file.isDownloaded && file.gameFileId != null) {
@@ -116,7 +129,12 @@ fun UpdatesPickerModal(
             FooterBar(
                 hints = listOfNotNull(
                     InputButton.DPAD_VERTICAL to "Navigate",
-                    if (canDownload) InputButton.A to "Download" else null,
+                    when {
+                        canDownload -> InputButton.A to "Download"
+                        canApply -> InputButton.A to "Apply"
+                        else -> null
+                    },
+                    if (hasUnapplied) InputButton.X to "Apply All" else null,
                     InputButton.B to "Back"
                 )
             )
@@ -127,6 +145,7 @@ fun UpdatesPickerModal(
 @Composable
 private fun UpdateFileItem(
     file: UpdateFileUi,
+    isEdenGame: Boolean,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
@@ -185,7 +204,8 @@ private fun UpdateFileItem(
             )
             Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 Text(
                     text = typeLabel,
@@ -196,7 +216,17 @@ private fun UpdateFileItem(
                         .background(typeBgColor)
                         .padding(horizontal = Dimens.radiusSm, vertical = Dimens.borderMedium)
                 )
-                Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                if (isEdenGame && file.isDownloaded && file.isAppliedToEmulator) {
+                    Text(
+                        text = "APPLIED",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Dimens.radiusSm))
+                            .background(Color(0xFF4CAF50))
+                            .padding(horizontal = Dimens.radiusSm, vertical = Dimens.borderMedium)
+                    )
+                }
                 Text(
                     text = formatFileSize(file.sizeBytes),
                     style = MaterialTheme.typography.labelSmall,

@@ -3,6 +3,7 @@ package com.nendo.argosy.hardware
 import android.content.Context
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -23,6 +24,7 @@ class SecondaryHomeStateManager(
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
+    private val gameFileDao: GameFileDao,
     private val displayAffinityHelper: DisplayAffinityHelper
 ) {
 
@@ -100,6 +102,7 @@ class SecondaryHomeStateManager(
                 platformRepository = platformRepository,
                 collectionRepository = collectionRepository,
                 emulatorConfigDao = emulatorConfigDao,
+                gameFileDao = gameFileDao,
                 displayAffinityHelper = affinityHelper,
                 context = context
             )
@@ -181,6 +184,7 @@ class SecondaryHomeStateManager(
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,
+            gameFileDao = gameFileDao,
             displayAffinityHelper = affinityHelper,
             context = context
         )

@@ -298,6 +298,7 @@ class SecondaryHomeActivity :
         val platformRepository = PlatformRepository(database.platformDao())
         val collectionRepository = CollectionRepository(database.collectionDao())
         val emulatorConfigDao = database.emulatorConfigDao()
+        val gameFileDao = database.gameFileDao()
         val affinityHelper = DisplayAffinityHelper(applicationContext)
 
         viewModel = SecondaryHomeViewModel(
@@ -322,6 +323,7 @@ class SecondaryHomeActivity :
             context = applicationContext, gameDao = gameDao,
             platformRepository = platformRepository, collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,
+            gameFileDao = gameFileDao,
             displayAffinityHelper = affinityHelper
         )
 

@@ -283,6 +283,12 @@ class SecondaryHomeInputHandler(
                     broadcasts.broadcastCollectionModalOpen(vm)
                 }
             }
+            GameDetailOption.UPDATES_DLC -> {
+                lifecycleLaunch {
+                    vm.openUpdatesModal()
+                    broadcasts.broadcastUpdatesModalOpen(vm)
+                }
+            }
             GameDetailOption.REFRESH_METADATA -> {
                 broadcasts.broadcastDirectAction("REFRESH_METADATA", gameId)
             }
@@ -655,6 +661,45 @@ class SecondaryHomeInputHandler(
                         else -> {}
                     }
                     broadcasts.broadcastModalClose()
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.UPDATES_DLC -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveUpdatesFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "updates_focus",
+                            vm.updatesPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveUpdatesFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "updates_focus",
+                            vm.updatesPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val allFiles = vm.updateFiles.value + vm.dlcFiles.value
+                        val file = allFiles.getOrNull(
+                            vm.updatesPickerFocusIndex.value
+                        )
+                        if (file != null && !file.isDownloaded &&
+                            file.gameFileId != null
+                        ) {
+                            broadcasts.broadcastDirectAction(
+                                "DOWNLOAD_UPDATE_FILE",
+                                vm.uiState.value.gameId,
+                                file.gameFileId.toString()
+                            )
+                        }
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissUpdatesModal()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
                 }
                 return InputResult.HANDLED
             }

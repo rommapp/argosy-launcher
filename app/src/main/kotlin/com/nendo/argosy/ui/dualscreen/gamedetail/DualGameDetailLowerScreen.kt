@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.HorizontalDivider
@@ -745,6 +746,9 @@ private fun OptionsTabContent(
         GameDetailOption.CHANGE_EMULATOR -> OptionEntry(
             option, Icons.Filled.Settings, "Change Emulator", emulatorText
         )
+        GameDetailOption.UPDATES_DLC -> OptionEntry(
+            option, Icons.Filled.SystemUpdate, "Updates & DLC"
+        )
         GameDetailOption.ADD_TO_COLLECTION -> OptionEntry(
             option, Icons.Filled.FolderSpecial, "Add to Collection"
         )
@@ -768,6 +772,7 @@ private fun OptionsTabContent(
     )
     val managementGroup = setOf(
         GameDetailOption.CHANGE_EMULATOR,
+        GameDetailOption.UPDATES_DLC,
         GameDetailOption.ADD_TO_COLLECTION,
         GameDetailOption.REFRESH_METADATA
     )

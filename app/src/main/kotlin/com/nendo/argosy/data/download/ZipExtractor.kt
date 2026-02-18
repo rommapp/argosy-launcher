@@ -348,54 +348,65 @@ object ZipExtractor {
         return null
     }
 
-    fun getDlcFolder(localPath: String, platformSlug: String): File? {
+    fun getDlcFolder(localPath: String, platformSlug: String? = null): File? {
         val romFile = File(localPath)
         if (!romFile.exists()) return null
 
         val gameFolder = romFile.parentFile ?: return null
-        val config = getPlatformConfig(platformSlug) ?: return null
-        val dlcFolder = File(gameFolder, config.dlcFolder)
+        val config = platformSlug?.let { getPlatformConfig(it) }
+        val folderName = config?.dlcFolder ?: "dlc"
 
-        return if (dlcFolder.exists() && dlcFolder.isDirectory) {
-            dlcFolder
-        } else {
-            null
+        val candidates = listOf(folderName, "${folderName}s").distinct()
+        for (name in candidates) {
+            val folder = File(gameFolder, name)
+            if (folder.exists() && folder.isDirectory) {
+                return folder
+            }
         }
+        return null
     }
 
     fun listUpdateFiles(localPath: String, platformSlug: String? = null): List<File> {
         val config = platformSlug?.let { getPlatformConfig(it) }
         val updatesFolder = getUpdatesFolder(localPath, platformSlug) ?: return emptyList()
-        val updateExtensions = config?.updateExtensions ?: NSW_UPDATE_EXTENSIONS
+        val updateExtensions = config?.updateExtensions
 
         return updatesFolder.listFiles()
-            ?.filter { it.isFile && !it.name.startsWith("._") && it.extension.lowercase() in updateExtensions }
+            ?.filter { file ->
+                file.isFile && !file.name.startsWith("._") &&
+                    (updateExtensions == null || file.extension.lowercase() in updateExtensions)
+            }
             ?.sortedBy { it.name }
             ?: emptyList()
     }
 
-    fun listDlcFiles(localPath: String, platformSlug: String): List<File> {
-        val config = getPlatformConfig(platformSlug) ?: return emptyList()
+    fun listDlcFiles(localPath: String, platformSlug: String? = null): List<File> {
+        val config = platformSlug?.let { getPlatformConfig(it) }
         val dlcFolder = getDlcFolder(localPath, platformSlug) ?: return emptyList()
+        val dlcExtensions = config?.dlcExtensions
 
         return dlcFolder.listFiles()
-            ?.filter { it.isFile && !it.name.startsWith("._") && it.extension.lowercase() in config.dlcExtensions }
+            ?.filter { file ->
+                file.isFile && !file.name.startsWith("._") &&
+                    (dlcExtensions == null || file.extension.lowercase() in dlcExtensions)
+            }
             ?.sortedBy { it.name }
             ?: emptyList()
     }
 
     fun listAllUpdateFiles(localPath: String, platformSlug: String? = null): List<File> {
-        val config = platformSlug?.let { getPlatformConfig(it) } ?: return emptyList()
+        val config = platformSlug?.let { getPlatformConfig(it) }
         val gameFolder = File(localPath).parentFile ?: return emptyList()
         val results = mutableSetOf<File>()
 
         results.addAll(listUpdateFiles(localPath, platformSlug))
 
+        val updateExtensions = config?.updateExtensions
         gameFolder.listFiles()
             ?.filter { file ->
                 file.isFile &&
                     !file.name.startsWith("._") &&
-                    file.extension.lowercase() in config.updateExtensions &&
+                    (updateExtensions == null || file.extension.lowercase() in updateExtensions) &&
                     UPDATE_FILENAME_PATTERNS.any { file.name.contains(it, ignoreCase = true) }
             }
             ?.let { results.addAll(it) }
@@ -403,18 +414,19 @@ object ZipExtractor {
         return results.sortedBy { it.name }
     }
 
-    fun listAllDlcFiles(localPath: String, platformSlug: String): List<File> {
-        val config = getPlatformConfig(platformSlug) ?: return emptyList()
+    fun listAllDlcFiles(localPath: String, platformSlug: String? = null): List<File> {
+        val config = platformSlug?.let { getPlatformConfig(it) }
         val gameFolder = File(localPath).parentFile ?: return emptyList()
         val results = mutableSetOf<File>()
 
         results.addAll(listDlcFiles(localPath, platformSlug))
 
+        val dlcExtensions = config?.dlcExtensions
         gameFolder.listFiles()
             ?.filter { file ->
                 file.isFile &&
                     !file.name.startsWith("._") &&
-                    file.extension.lowercase() in config.dlcExtensions &&
+                    (dlcExtensions == null || file.extension.lowercase() in dlcExtensions) &&
                     DLC_FILENAME_PATTERNS.any { file.name.contains(it, ignoreCase = true) }
             }
             ?.let { results.addAll(it) }

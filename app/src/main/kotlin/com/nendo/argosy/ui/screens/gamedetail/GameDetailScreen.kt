@@ -748,7 +748,9 @@ private fun GameDetailModals(
         UpdatesPickerModal(
             files = uiState.updateFiles + uiState.dlcFiles,
             focusIndex = pickerState.updatesPickerFocusIndex,
+            isEdenGame = uiState.isEdenGame,
             onDownload = viewModel::downloadUpdateFile,
+            onApplyAll = viewModel::applyAllUpdatesToEmulator,
             onDismiss = viewModel.pickerModalDelegate::dismissUpdatesPicker
         )
     }

@@ -7,6 +7,7 @@ import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
+import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -16,7 +17,7 @@ enum class DualGameDetailTab {
     OPTIONS
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, COLLECTION, SAVE_NAME }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, COLLECTION, SAVE_NAME, UPDATES_DLC }
 
 enum class GameDetailOption {
     PLAY,
@@ -25,6 +26,7 @@ enum class GameDetailOption {
     STATUS,
     TOGGLE_FAVORITE,
     CHANGE_EMULATOR,
+    UPDATES_DLC,
     ADD_TO_COLLECTION,
     REFRESH_METADATA,
     DELETE,
@@ -79,6 +81,7 @@ fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
         add(GameDetailOption.STATUS)
         add(GameDetailOption.TOGGLE_FAVORITE)
         if (isEmulated) add(GameDetailOption.CHANGE_EMULATOR)
+        if (isDownloaded && platformSlug == "switch") add(GameDetailOption.UPDATES_DLC)
         add(GameDetailOption.ADD_TO_COLLECTION)
         if (isRommGame || isAndroidApp) add(GameDetailOption.REFRESH_METADATA)
         if (isDownloaded || isAndroidApp) add(GameDetailOption.DELETE)
@@ -119,7 +122,11 @@ data class DualGameDetailUpperState(
     val showCreateDialog: Boolean = false,
     val saveNamePromptAction: String? = null,
     val saveNameCacheId: Long? = null,
-    val saveNameText: String = ""
+    val saveNameText: String = "",
+    val updateFiles: List<UpdateFileUi> = emptyList(),
+    val dlcFiles: List<UpdateFileUi> = emptyList(),
+    val updatesPickerFocusIndex: Int = 0,
+    val isEdenGame: Boolean = false
 )
 
 data class SaveEntryData(

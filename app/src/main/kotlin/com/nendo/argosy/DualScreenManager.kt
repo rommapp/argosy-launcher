@@ -7,8 +7,10 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.model.GameSource
@@ -26,6 +28,8 @@ import com.nendo.argosy.ui.dualscreen.gamedetail.DualCollectionItem
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.ui.dualscreen.gamedetail.toJsonString
 import com.nendo.argosy.ui.dualscreen.gamedetail.toSaveEntryData
+import com.nendo.argosy.ui.screens.gamedetail.UpdateFileType
+import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
@@ -49,6 +53,8 @@ class DualScreenManager(
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
     private val downloadQueueDao: DownloadQueueDao,
+    private val gameFileDao: GameFileDao,
+    private val downloadManager: DownloadManager,
     private val gameActionsDelegate: GameActionsDelegate,
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val saveCacheManager: SaveCacheManager,
@@ -390,6 +396,51 @@ class DualScreenManager(
                     )
                 }
             }
+            ActiveModal.UPDATES_DLC -> {
+                val names = intent.getStringArrayListExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_NAMES
+                ) ?: arrayListOf()
+                val sizes = intent.getLongArrayExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_SIZES
+                ) ?: longArrayOf()
+                val types = intent.getStringArrayListExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_TYPES
+                ) ?: arrayListOf()
+                val downloaded = intent.getBooleanArrayExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_DOWNLOADED
+                ) ?: booleanArrayOf()
+                val gameFileIds = intent.getLongArrayExtra(
+                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_GAME_FILE_IDS
+                ) ?: longArrayOf()
+
+                val allFiles = names.mapIndexed { i, name ->
+                    UpdateFileUi(
+                        fileName = name,
+                        filePath = "",
+                        sizeBytes = sizes.getOrElse(i) { 0L },
+                        type = try {
+                            UpdateFileType.valueOf(types.getOrElse(i) { "UPDATE" })
+                        } catch (_: Exception) { UpdateFileType.UPDATE },
+                        isDownloaded = downloaded.getOrElse(i) { false },
+                        isAppliedToEmulator = false,
+                        gameFileId = gameFileIds.getOrElse(i) { -1L }
+                            .takeIf { it >= 0 }
+                    )
+                }
+
+                val updateFiles = allFiles.filter { it.type == UpdateFileType.UPDATE }
+                val dlcFiles = allFiles.filter { it.type == UpdateFileType.DLC }
+
+                _dualGameDetailState.update { state ->
+                    state?.copy(
+                        modalType = ActiveModal.UPDATES_DLC,
+                        updateFiles = updateFiles,
+                        dlcFiles = dlcFiles,
+                        updatesPickerFocusIndex = 0,
+                        isEdenGame = false
+                    )
+                }
+            }
             else -> handleDualModalOpen(
                 type = type,
                 value = intent.getIntExtra(
@@ -488,6 +539,30 @@ class DualScreenManager(
                 val timestamp = intent.getLongExtra(DualScreenBroadcasts.EXTRA_SAVE_TIMESTAMP, 0)
                 handleSaveSetRestorePoint(gameId, channelName, timestamp)
             }
+            "DOWNLOAD_UPDATE_FILE" -> {
+                val fileIdStr = intent.getStringExtra(
+                    DualScreenBroadcasts.EXTRA_CHANNEL_NAME
+                )
+                val fileId = fileIdStr?.toLongOrNull()
+                if (fileId != null) {
+                    scope.launch(Dispatchers.IO) {
+                        val gameFile = gameFileDao.getById(fileId) ?: return@launch
+                        val game = gameDao.getById(gameId) ?: return@launch
+                        val rommFileId = gameFile.rommFileId ?: return@launch
+                        downloadManager.enqueueGameFileDownload(
+                            gameId = gameId,
+                            gameFileId = fileId,
+                            rommFileId = rommFileId,
+                            fileName = gameFile.fileName,
+                            category = gameFile.category,
+                            gameTitle = game.title,
+                            platformSlug = game.platformSlug,
+                            coverPath = game.coverPath,
+                            expectedSizeBytes = gameFile.fileSize
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -510,6 +585,12 @@ class DualScreenManager(
                 val v = intent.getStringExtra(DualScreenBroadcasts.EXTRA_INLINE_STRING_VALUE)
                 _dualGameDetailState.update { s ->
                     s?.copy(status = v)
+                }
+            }
+            "updates_focus" -> {
+                val idx = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
+                _dualGameDetailState.update { s ->
+                    s?.copy(updatesPickerFocusIndex = idx)
                 }
             }
         }

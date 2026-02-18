@@ -93,4 +93,10 @@ object DualScreenBroadcasts {
     const val EXTRA_COLLECTION_GAME_COUNT = "collection_game_count"
     const val EXTRA_COLLECTION_PLATFORM_SUMMARY = "collection_platform_summary"
     const val EXTRA_COLLECTION_TOTAL_PLAYTIME = "collection_total_playtime"
+
+    const val EXTRA_UPDATE_FILE_NAMES = "update_file_names"
+    const val EXTRA_UPDATE_FILE_SIZES = "update_file_sizes"
+    const val EXTRA_UPDATE_FILE_TYPES = "update_file_types"
+    const val EXTRA_UPDATE_FILE_DOWNLOADED = "update_file_downloaded"
+    const val EXTRA_UPDATE_FILE_GAME_FILE_IDS = "update_file_game_file_ids"
 }

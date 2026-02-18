@@ -33,6 +33,8 @@ import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
+import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.util.DisplayAffinityHelper
@@ -65,6 +67,8 @@ class DualScreenManager(
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val sessionStateStore: SessionStateStore,
     private val preferencesRepository: UserPreferencesRepository,
+    private val edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager,
+    private val notificationManager: com.nendo.argosy.ui.notification.NotificationManager,
     var isRolesSwapped: Boolean = false
 ) {
 
@@ -218,6 +222,7 @@ class DualScreenManager(
             when (intent?.action) {
                 DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED -> handleGameDetailOpened(intent)
                 DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED -> {
+                    Log.d("UpdatesDLC", "ACTION_GAME_DETAIL_CLOSED received, currentModal=${_dualGameDetailState.value?.modalType}", Exception("stacktrace"))
                     _dualGameDetailState.value = null
                 }
                 DualScreenBroadcasts.ACTION_SCREENSHOT_SELECTED -> {
@@ -263,6 +268,10 @@ class DualScreenManager(
     private fun handleGameDetailOpened(intent: Intent) {
         val gameId = intent.getLongExtra(DualScreenBroadcasts.EXTRA_GAME_ID, -1)
         if (gameId == -1L) return
+        val current = _dualGameDetailState.value
+        if (current != null && current.gameId == gameId && current.modalType != ActiveModal.NONE) {
+            return
+        }
         val showcase = _dualScreenShowcase.value
         if (showcase.gameId == gameId) {
             _dualGameDetailState.value = DualGameDetailUpperState(
@@ -397,6 +406,7 @@ class DualScreenManager(
                 }
             }
             ActiveModal.UPDATES_DLC -> {
+                Log.d("UpdatesDLC", "handleModalOpen: UPDATES_DLC")
                 val names = intent.getStringArrayListExtra(
                     DualScreenBroadcasts.EXTRA_UPDATE_FILE_NAMES
                 ) ?: arrayListOf()
@@ -431,6 +441,8 @@ class DualScreenManager(
                 val updateFiles = allFiles.filter { it.type == UpdateFileType.UPDATE }
                 val dlcFiles = allFiles.filter { it.type == UpdateFileType.DLC }
 
+                Log.d("UpdatesDLC", "handleModalOpen: ${updateFiles.size} updates, ${dlcFiles.size} dlc, downloaded=${allFiles.map { "${it.fileName}:${it.isDownloaded}" }}")
+
                 _dualGameDetailState.update { state ->
                     state?.copy(
                         modalType = ActiveModal.UPDATES_DLC,
@@ -439,6 +451,23 @@ class DualScreenManager(
                         updatesPickerFocusIndex = 0,
                         isEdenGame = false
                     )
+                }
+
+                val currentGameId = _dualGameDetailState.value?.gameId ?: -1L
+                Log.d("UpdatesDLC", "handleModalOpen: checking Eden for gameId=$currentGameId")
+                if (currentGameId > 0) {
+                    scope.launch(Dispatchers.IO) {
+                        val game = gameDao.getById(currentGameId) ?: return@launch
+                        val emId = emulatorResolver.getEmulatorIdForGame(
+                            currentGameId, game.platformId, game.platformSlug
+                        )
+                        Log.d("UpdatesDLC", "handleModalOpen: emulatorId=$emId, isEden=${emId == "eden"}")
+                        if (emId == "eden") {
+                            _dualGameDetailState.update { s ->
+                                s?.copy(isEdenGame = true)
+                            }
+                        }
+                    }
                 }
             }
             else -> handleDualModalOpen(
@@ -469,6 +498,7 @@ class DualScreenManager(
         val dismissed = intent.getBooleanExtra(
             DualScreenBroadcasts.EXTRA_MODAL_DISMISSED, false
         )
+        Log.d("UpdatesDLC", "handleModalResult: type=$typeStr, dismissed=$dismissed, currentModal=${_dualGameDetailState.value?.modalType}", Exception("stacktrace"))
         val isCollectionAction =
             typeStr == ActiveModal.COLLECTION.name &&
                 (intent.hasExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOGGLE_ID) ||
@@ -559,6 +589,38 @@ class DualScreenManager(
                             platformSlug = game.platformSlug,
                             coverPath = game.coverPath,
                             expectedSizeBytes = gameFile.fileSize
+                        )
+                    }
+                }
+            }
+            "INSTALL_UPDATE_FILE" -> {
+                Log.d("UpdatesDLC", "handleDirectAction: INSTALL_UPDATE_FILE gameId=$gameId")
+                scope.launch(Dispatchers.IO) {
+                    val game = gameDao.getById(gameId)
+                    Log.d("UpdatesDLC", "INSTALL: game=${game?.title}, localPath=${game?.localPath}")
+                    if (game == null) return@launch
+                    val localPath = game.localPath ?: return@launch
+                    val gameDir = java.io.File(localPath).parent ?: return@launch
+                    Log.d("UpdatesDLC", "INSTALL: registering dir=$gameDir with Eden")
+                    val success = edenContentManager.registerDirectory(gameDir)
+                    Log.d("UpdatesDLC", "INSTALL: Eden registerDirectory result=$success")
+                    if (success) {
+                        _dualGameDetailState.update { s ->
+                            s?.copy(
+                                updateFiles = s.updateFiles.map {
+                                    it.copy(isAppliedToEmulator = true)
+                                },
+                                dlcFiles = s.dlcFiles.map {
+                                    it.copy(isAppliedToEmulator = true)
+                                }
+                            )
+                        }
+                        notificationManager.showSuccess(
+                            "Applied to Eden. Restart Eden to load changes."
+                        )
+                    } else {
+                        notificationManager.showError(
+                            "Failed to register directory with Eden"
                         )
                     }
                 }
@@ -654,6 +716,7 @@ class DualScreenManager(
     fun confirmDualModal() {
         val state = _dualGameDetailState.value ?: return
         val type = state.modalType
+        Log.d("UpdatesDLC", "confirmDualModal called, type=$type", Exception("stacktrace"))
         if (type == ActiveModal.NONE) return
 
         when (type) {
@@ -703,6 +766,7 @@ class DualScreenManager(
     }
 
     fun dismissDualModal() {
+        Log.d("UpdatesDLC", "dismissDualModal called, current modal=${_dualGameDetailState.value?.modalType}", Exception("stacktrace"))
         context.sendBroadcast(
             Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
                 setPackage(context.packageName)

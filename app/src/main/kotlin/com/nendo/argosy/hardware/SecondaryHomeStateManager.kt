@@ -1,6 +1,7 @@
 package com.nendo.argosy.hardware
 
 import android.content.Context
+import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -25,6 +26,7 @@ class SecondaryHomeStateManager(
     private val collectionRepository: CollectionRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val gameFileDao: GameFileDao,
+    private val downloadQueueDao: DownloadQueueDao,
     private val displayAffinityHelper: DisplayAffinityHelper
 ) {
 
@@ -103,6 +105,7 @@ class SecondaryHomeStateManager(
                 collectionRepository = collectionRepository,
                 emulatorConfigDao = emulatorConfigDao,
                 gameFileDao = gameFileDao,
+                downloadQueueDao = downloadQueueDao,
                 displayAffinityHelper = affinityHelper,
                 context = context
             )
@@ -185,6 +188,7 @@ class SecondaryHomeStateManager(
             collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,
             gameFileDao = gameFileDao,
+            downloadQueueDao = downloadQueueDao,
             displayAffinityHelper = affinityHelper,
             context = context
         )

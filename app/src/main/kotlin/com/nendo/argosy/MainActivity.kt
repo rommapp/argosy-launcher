@@ -82,6 +82,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var fetchAchievementsUseCase: FetchAchievementsUseCase
     @Inject lateinit var gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
+    @Inject lateinit var edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager
+    @Inject lateinit var notificationManager: com.nendo.argosy.ui.notification.NotificationManager
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -204,6 +206,8 @@ class MainActivity : ComponentActivity() {
             displayAffinityHelper = displayAffinityHelper,
             sessionStateStore = sessionStateStore,
             preferencesRepository = preferencesRepository,
+            edenContentManager = edenContentManager,
+            notificationManager = notificationManager,
             isRolesSwapped = isRolesSwapped
         )
 

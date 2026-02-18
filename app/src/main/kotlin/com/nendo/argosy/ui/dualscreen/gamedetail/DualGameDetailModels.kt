@@ -69,7 +69,9 @@ data class DualGameDetailUiState(
     val emulatorName: String? = null,
     val saveFocusColumn: SaveFocusColumn = SaveFocusColumn.SLOTS,
     val activeChannel: String? = null,
-    val activeSaveTimestamp: Long? = null
+    val activeSaveTimestamp: Long? = null,
+    val downloadProgress: Float? = null,
+    val downloadState: String? = null
 )
 
 fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
@@ -81,7 +83,7 @@ fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
         add(GameDetailOption.STATUS)
         add(GameDetailOption.TOGGLE_FAVORITE)
         if (isEmulated) add(GameDetailOption.CHANGE_EMULATOR)
-        if (isDownloaded && platformSlug == "switch") add(GameDetailOption.UPDATES_DLC)
+        if (isDownloaded) add(GameDetailOption.UPDATES_DLC)
         add(GameDetailOption.ADD_TO_COLLECTION)
         if (isRommGame || isAndroidApp) add(GameDetailOption.REFRESH_METADATA)
         if (isDownloaded || isAndroidApp) add(GameDetailOption.DELETE)

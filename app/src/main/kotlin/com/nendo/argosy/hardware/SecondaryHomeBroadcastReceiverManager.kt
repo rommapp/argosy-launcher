@@ -206,6 +206,7 @@ class SecondaryHomeBroadcastReceiverManager(
             if (dismissed) {
                 when (vm.activeModal.value) {
                     ActiveModal.COLLECTION -> vm.dismissCollectionModal()
+                    ActiveModal.UPDATES_DLC -> vm.dismissUpdatesModal()
                     ActiveModal.EMULATOR -> vm.dismissPicker()
                     else -> vm.dismissPicker()
                 }

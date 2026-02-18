@@ -651,7 +651,9 @@ class GameDetailViewModel @Inject constructor(
                 }
         } else emptyList()
 
-        return (dbUpdates + localUpdates) to (dbDlc + localDlc)
+        val sortedUpdates = (dbUpdates + localUpdates)
+            .sortedWith(UpdateFileVersionSort.LATEST_FIRST)
+        return sortedUpdates to (dbDlc + localDlc)
     }
 
     // --- Download delegate forwarding ---

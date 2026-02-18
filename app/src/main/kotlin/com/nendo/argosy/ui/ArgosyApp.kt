@@ -466,6 +466,10 @@ fun ArgosyApp(
     val dualModalActive = gameDetailUpperState?.modalType != null &&
         gameDetailUpperState?.modalType != ActiveModal.NONE
 
+    LaunchedEffect(gameDetailUpperState?.modalType) {
+        android.util.Log.d("UpdatesDLC", "ArgosyApp: modalType changed to ${gameDetailUpperState?.modalType}")
+    }
+
     LaunchedEffect(saveConflictInfo, backgroundConflictInfo, dualModalActive, resumeCount) {
         when {
             dualModalActive -> inputDispatcher.subscribeDrawer(dualModalInputHandler)

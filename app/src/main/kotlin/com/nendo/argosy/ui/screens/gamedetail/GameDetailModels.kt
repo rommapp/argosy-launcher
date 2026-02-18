@@ -28,6 +28,29 @@ enum class UpdateFileType {
     UPDATE, DLC
 }
 
+object UpdateFileVersionSort {
+    private val VERSION_PATTERN = Regex("""[vV]?(\d+(?:\.\d+)*)""")
+
+    fun parseVersion(fileName: String): List<Int> {
+        val match = VERSION_PATTERN.findAll(fileName)
+            .maxByOrNull { it.groupValues[1].length }
+            ?: return listOf(0)
+        return match.groupValues[1].split(".").map { it.toIntOrNull() ?: 0 }
+    }
+
+    val LATEST_FIRST = Comparator<UpdateFileUi> { a, b ->
+        val va = parseVersion(a.fileName)
+        val vb = parseVersion(b.fileName)
+        val maxLen = maxOf(va.size, vb.size)
+        for (i in 0 until maxLen) {
+            val pa = va.getOrElse(i) { 0 }
+            val pb = vb.getOrElse(i) { 0 }
+            if (pa != pb) return@Comparator pb - pa
+        }
+        0
+    }
+}
+
 data class CollectionItemUi(
     val id: Long,
     val name: String,

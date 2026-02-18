@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,8 +18,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.FolderZip
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,8 +50,6 @@ fun UpdatesPickerModal(
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
-    val itemHeight = 64.dp
-    val maxVisibleItems = 5
 
     FocusedScroll(
         listState = listState,
@@ -61,16 +60,10 @@ fun UpdatesPickerModal(
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
     val focusedFile = files.getOrNull(focusIndex)
-    val canDownload = focusedFile?.isDownloaded == false && focusedFile.gameFileId != null
-    val canApply = isEdenGame && focusedFile?.isDownloaded == true && !focusedFile.isAppliedToEmulator
-    val allApplied = isEdenGame && files.all { !it.isDownloaded || it.isAppliedToEmulator }
-    val hasUnapplied = isEdenGame && files.any { it.isDownloaded && !it.isAppliedToEmulator }
-
-    val subtitle = when {
-        isEdenGame && allApplied -> "Applied to Eden"
-        isEdenGame -> "Apply to register with Eden"
-        else -> "Must be installed through the emulator manually"
-    }
+    val focusedNeedsDownload = focusedFile != null && !focusedFile.isDownloaded && focusedFile.gameFileId != null
+    val focusedNeedsInstall = isEdenGame && focusedFile != null && focusedFile.isDownloaded && !focusedFile.isAppliedToEmulator
+    val hasAnyDownloadable = files.any { !it.isDownloaded && it.gameFileId != null }
+    val hasAnyInstallable = isEdenGame && files.any { it.isDownloaded && !it.isAppliedToEmulator }
 
     Box(
         modifier = Modifier
@@ -87,18 +80,9 @@ fun UpdatesPickerModal(
                 .padding(Dimens.spacingLg)
         ) {
             Text(
-                text = "UPDATES & DLC",
+                text = "Updates & DLC",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isEdenGame && allApplied)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -106,14 +90,13 @@ fun UpdatesPickerModal(
             LazyColumn(
                 state = listState,
                 modifier = Modifier
-                    .heightIn(max = itemHeight * maxVisibleItems)
+                    .weight(1f, fill = false)
                     .clip(RoundedCornerShape(Dimens.radiusMd)),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
             ) {
                 itemsIndexed(files, key = { _, file -> file.fileName }) { index, file ->
                     UpdateFileItem(
                         file = file,
-                        isEdenGame = isEdenGame,
                         isFocused = focusIndex == index,
                         onClick = {
                             if (!file.isDownloaded && file.gameFileId != null) {
@@ -130,11 +113,15 @@ fun UpdatesPickerModal(
                 hints = listOfNotNull(
                     InputButton.DPAD_VERTICAL to "Navigate",
                     when {
-                        canDownload -> InputButton.A to "Download"
-                        canApply -> InputButton.A to "Apply"
+                        focusedNeedsDownload -> InputButton.A to "Download"
+                        focusedNeedsInstall -> InputButton.A to "Install"
                         else -> null
                     },
-                    if (hasUnapplied) InputButton.X to "Apply All" else null,
+                    when {
+                        hasAnyDownloadable -> InputButton.X to "Download All"
+                        hasAnyInstallable -> InputButton.X to "Install All"
+                        else -> null
+                    },
                     InputButton.B to "Back"
                 )
             )
@@ -145,7 +132,6 @@ fun UpdatesPickerModal(
 @Composable
 private fun UpdateFileItem(
     file: UpdateFileUi,
-    isEdenGame: Boolean,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
@@ -154,15 +140,29 @@ private fun UpdateFileItem(
     } else {
         Color.Transparent
     }
-    val contentColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
+
+    val dimmed = !file.isDownloaded
+    val contentColor = when {
+        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
+        dimmed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.onSurface
     }
-    val secondaryColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+    val secondaryColor = when {
+        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        dimmed -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val icon = when {
+        file.isAppliedToEmulator -> Icons.Filled.CheckCircle
+        file.isDownloaded -> Icons.Outlined.FolderZip
+        else -> Icons.Outlined.CloudDownload
+    }
+    val iconTint = when {
+        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
+        file.isAppliedToEmulator -> MaterialTheme.colorScheme.primary
+        file.isDownloaded -> MaterialTheme.colorScheme.onSurface
+        else -> secondaryColor
     }
 
     val typeLabel = when (file.type) {
@@ -179,18 +179,14 @@ private fun UpdateFileItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickableNoFocus(enabled = !file.isDownloaded, onClick = onClick)
+            .clickableNoFocus(onClick = onClick)
             .padding(horizontal = Dimens.radiusLg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = if (file.isDownloaded) Icons.Outlined.Check else Icons.Outlined.CloudDownload,
-            contentDescription = if (file.isDownloaded) "Downloaded" else "Available to download",
-            tint = if (file.isDownloaded) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                secondaryColor
-            },
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
             modifier = Modifier.size(Dimens.iconSm)
         )
         Spacer(modifier = Modifier.width(Dimens.radiusLg))
@@ -216,17 +212,6 @@ private fun UpdateFileItem(
                         .background(typeBgColor)
                         .padding(horizontal = Dimens.radiusSm, vertical = Dimens.borderMedium)
                 )
-                if (isEdenGame && file.isDownloaded && file.isAppliedToEmulator) {
-                    Text(
-                        text = "APPLIED",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(Dimens.radiusSm))
-                            .background(Color(0xFF4CAF50))
-                            .padding(horizontal = Dimens.radiusSm, vertical = Dimens.borderMedium)
-                    )
-                }
                 Text(
                     text = formatFileSize(file.sizeBytes),
                     style = MaterialTheme.typography.labelSmall,

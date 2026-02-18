@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FolderSpecial
+import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -140,6 +141,8 @@ fun DualGameDetailLowerScreen(
                     DualGameDetailTab.OPTIONS -> OptionsTabContent(
                         visibleOptions = visibleOptions,
                         isPlayable = state.isPlayable,
+                        downloadProgress = state.downloadProgress,
+                        downloadState = state.downloadState,
                         isFavorite = state.isFavorite,
                         userRating = state.rating,
                         userDifficulty = state.userDifficulty,
@@ -663,6 +666,8 @@ private data class OptionEntry(
 private fun OptionsTabContent(
     visibleOptions: List<GameDetailOption>,
     isPlayable: Boolean,
+    downloadProgress: Float?,
+    downloadState: String?,
     isFavorite: Boolean,
     userRating: Int?,
     userDifficulty: Int,
@@ -674,13 +679,38 @@ private fun OptionsTabContent(
     val emulatorText = emulatorName ?: "Platform Default"
     val completionStatus = CompletionStatus.fromApiValue(status)
 
+    val dlState = downloadState
+
     fun entryFor(option: GameDetailOption): OptionEntry = when (option) {
-        GameDetailOption.PLAY -> OptionEntry(
-            option,
-            if (isPlayable) Icons.Filled.PlayArrow
-            else Icons.Filled.Download,
-            if (isPlayable) "Play" else "Download"
-        )
+        GameDetailOption.PLAY -> {
+            val label = when (dlState) {
+                "EXTRACTING" -> "Extracting..."
+                "DOWNLOADING" -> "Downloading ${((downloadProgress ?: 0f) * 100).toInt()}%"
+                "QUEUED" -> "Queued..."
+                "PAUSED" -> "Paused ${((downloadProgress ?: 0f) * 100).toInt()}%"
+                "WAITING_FOR_STORAGE" -> "No Space"
+                null -> if (isPlayable) "Play" else "Download"
+                else -> if (isPlayable) "Play" else "Download"
+            }
+            val icon = when (dlState) {
+                "EXTRACTING" -> Icons.Filled.FolderZip
+                "DOWNLOADING", "QUEUED", "PAUSED", "WAITING_FOR_STORAGE" -> Icons.Filled.Download
+                else -> if (isPlayable) Icons.Filled.PlayArrow else Icons.Filled.Download
+            }
+            val progressVisual: (@Composable () -> Unit)? = if (dlState == "DOWNLOADING" || dlState == "EXTRACTING") {
+                {
+                    LinearProgressIndicator(
+                        progress = { downloadProgress ?: 0f },
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    )
+                }
+            } else null
+            OptionEntry(option, icon, label, visualContent = progressVisual)
+        }
         GameDetailOption.RATING -> OptionEntry(
             option, Icons.Filled.Star, "Rating",
             visualContent = {

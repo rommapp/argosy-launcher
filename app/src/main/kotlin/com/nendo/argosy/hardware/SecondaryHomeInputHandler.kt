@@ -1,5 +1,6 @@
 package com.nendo.argosy.hardware
 
+import android.util.Log
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
@@ -665,6 +666,7 @@ class SecondaryHomeInputHandler(
                 return InputResult.HANDLED
             }
             ActiveModal.UPDATES_DLC -> {
+                Log.d("UpdatesDLC", "handleModalInput: event=$event")
                 when (event) {
                     GamepadEvent.Up -> {
                         vm.moveUpdatesFocus(-1)
@@ -682,17 +684,60 @@ class SecondaryHomeInputHandler(
                     }
                     GamepadEvent.Confirm -> {
                         val allFiles = vm.updateFiles.value + vm.dlcFiles.value
-                        val file = allFiles.getOrNull(
-                            vm.updatesPickerFocusIndex.value
-                        )
-                        if (file != null && !file.isDownloaded &&
-                            file.gameFileId != null
-                        ) {
-                            broadcasts.broadcastDirectAction(
-                                "DOWNLOAD_UPDATE_FILE",
-                                vm.uiState.value.gameId,
-                                file.gameFileId.toString()
-                            )
+                        val idx = vm.updatesPickerFocusIndex.value
+                        val file = allFiles.getOrNull(idx)
+                        Log.d("UpdatesDLC", "Confirm: idx=$idx, file=${file?.fileName}, downloaded=${file?.isDownloaded}, applied=${file?.isAppliedToEmulator}, gameFileId=${file?.gameFileId}")
+                        if (file != null) {
+                            val gameId = vm.uiState.value.gameId
+                            when {
+                                !file.isDownloaded && file.gameFileId != null -> {
+                                    Log.d("UpdatesDLC", "Confirm: broadcasting DOWNLOAD_UPDATE_FILE gameId=$gameId fileId=${file.gameFileId}")
+                                    broadcasts.broadcastDirectAction(
+                                        "DOWNLOAD_UPDATE_FILE",
+                                        gameId,
+                                        file.gameFileId.toString()
+                                    )
+                                }
+                                file.isDownloaded && !file.isAppliedToEmulator -> {
+                                    Log.d("UpdatesDLC", "Confirm: broadcasting INSTALL_UPDATE_FILE gameId=$gameId fileId=${file.gameFileId}")
+                                    broadcasts.broadcastDirectAction(
+                                        "INSTALL_UPDATE_FILE",
+                                        gameId,
+                                        file.gameFileId?.toString()
+                                    )
+                                }
+                                else -> {
+                                    Log.d("UpdatesDLC", "Confirm: no action for file state")
+                                }
+                            }
+                        }
+                    }
+                    GamepadEvent.SecondaryAction -> {
+                        val allFiles = vm.updateFiles.value + vm.dlcFiles.value
+                        val gameId = vm.uiState.value.gameId
+                        val downloadable = allFiles.filter {
+                            !it.isDownloaded && it.gameFileId != null
+                        }
+                        Log.d("UpdatesDLC", "SecondaryAction: ${downloadable.size} downloadable, ${allFiles.count { it.isDownloaded && !it.isAppliedToEmulator }} installable")
+                        if (downloadable.isNotEmpty()) {
+                            for (file in downloadable) {
+                                broadcasts.broadcastDirectAction(
+                                    "DOWNLOAD_UPDATE_FILE",
+                                    gameId,
+                                    file.gameFileId.toString()
+                                )
+                            }
+                        } else {
+                            val installable = allFiles.filter {
+                                it.isDownloaded && !it.isAppliedToEmulator
+                            }
+                            for (file in installable) {
+                                broadcasts.broadcastDirectAction(
+                                    "INSTALL_UPDATE_FILE",
+                                    gameId,
+                                    file.gameFileId?.toString()
+                                )
+                            }
                         }
                     }
                     GamepadEvent.Back -> {

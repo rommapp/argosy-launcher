@@ -87,13 +87,6 @@ fun CompanionContent(
             .background(Color.Black)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            SystemStatusBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
-                contentColor = Color.White.copy(alpha = 0.7f)
-            )
-
             CompanionTabHeader(
                 currentPanel = state.currentPanel,
                 onTabChanged = onTabChanged
@@ -163,37 +156,45 @@ private fun CompanionTabHeader(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        CompanionPanel.entries.forEach { panel ->
-            val isSelected = panel == currentPanel
-            val backgroundColor = if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
-            val contentColor = if (isSelected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(backgroundColor)
-                    .then(
-                        if (!isSelected) Modifier.touchOnly { onTabChanged(panel) }
-                        else Modifier
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CompanionPanel.entries.forEach { panel ->
+                val isSelected = panel == currentPanel
+                val backgroundColor = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
+                val contentColor = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(backgroundColor)
+                        .then(
+                            if (!isSelected) Modifier.touchOnly { onTabChanged(panel) }
+                            else Modifier
+                        )
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = panel.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = contentColor
                     )
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = panel.label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = contentColor
-                )
+                }
             }
         }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        SystemStatusBar(contentColor = Color.White.copy(alpha = 0.7f))
     }
 }
 

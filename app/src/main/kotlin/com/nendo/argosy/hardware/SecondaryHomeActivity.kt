@@ -324,6 +324,7 @@ class SecondaryHomeActivity :
             platformRepository = platformRepository, collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,
             gameFileDao = gameFileDao,
+            downloadQueueDao = database.downloadQueueDao(),
             displayAffinityHelper = affinityHelper
         )
 

@@ -337,7 +337,7 @@ private fun SavesTabContent(
                     ),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    itemsIndexed(state.saveHistory, key = { _, item -> item.cacheId }) { index, item ->
+                    itemsIndexed(state.saveHistory, key = { _, item -> "${item.cacheId}_${item.timestamp}" }) { index, item ->
                         HistoryRow(
                             item = item,
                             isSelected = index == state.selectedHistoryIndex &&

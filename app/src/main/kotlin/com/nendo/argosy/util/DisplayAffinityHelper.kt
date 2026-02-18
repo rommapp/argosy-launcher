@@ -37,6 +37,24 @@ class DisplayAffinityHelper @Inject constructor(
     private val secondaryDisplayId: Int?
         get() = displayManager.displays.getOrNull(1)?.displayId
 
+    fun registerDisplayListener(
+        listener: DisplayManager.DisplayListener,
+        handler: android.os.Handler? = null
+    ) {
+        displayManager.registerDisplayListener(listener, handler)
+    }
+
+    fun unregisterDisplayListener(listener: DisplayManager.DisplayListener) {
+        displayManager.unregisterDisplayListener(listener)
+    }
+
+    fun getCompanionLaunchOptions(): Bundle? {
+        val displayId = secondaryDisplayId ?: return null
+        return ActivityOptions.makeBasic()
+            .setLaunchDisplayId(displayId)
+            .toBundle()
+    }
+
     fun getActivityOptions(forEmulator: Boolean, rolesSwapped: Boolean = false): Bundle? {
         if (!hasSecondaryDisplay) return null
 

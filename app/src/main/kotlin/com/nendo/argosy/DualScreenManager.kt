@@ -1,5 +1,6 @@
 package com.nendo.argosy
 
+import android.hardware.display.DisplayManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -37,7 +38,9 @@ import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
+import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.util.DisplayAffinityHelper
+import com.nendo.argosy.util.SecondaryDisplayType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -106,6 +109,20 @@ class DualScreenManager(
         private set
 
     private var companionWatchdogJob: Job? = null
+    private var companionLaunchJob: Job? = null
+
+    private val displayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) {
+            ensureCompanionLaunched()
+        }
+
+        override fun onDisplayRemoved(displayId: Int) {
+            companionLaunchJob?.cancel()
+            companionLaunchJob = null
+        }
+
+        override fun onDisplayChanged(displayId: Int) {}
+    }
 
     val homeAppsList: List<String>
         get() = sessionStateStore.getHomeApps()?.toList() ?: emptyList()
@@ -1281,10 +1298,37 @@ class DualScreenManager(
         )
     }
 
+    fun ensureCompanionLaunched() {
+        if (!displayAffinityHelper.hasSecondaryDisplay) return
+        if (displayAffinityHelper.secondaryDisplayType != SecondaryDisplayType.EXTERNAL) return
+        if (_isCompanionActive.value) return
+
+        companionLaunchJob?.cancel()
+        companionLaunchJob = scope.launch {
+            delay(COMPANION_LAUNCH_WAIT_MS)
+            if (_isCompanionActive.value) return@launch
+            launchCompanionOnExternalDisplay()
+        }
+    }
+
+    private fun launchCompanionOnExternalDisplay() {
+        val options = displayAffinityHelper.getCompanionLaunchOptions() ?: return
+        val intent = Intent(context, SecondaryHomeActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+        }
+        Log.d(TAG, "Manually launching companion on external display")
+        context.startActivity(intent, options)
+    }
+
     companion object {
         const val ACTION_WIZARD_STATE = "com.nendo.argosy.WIZARD_STATE"
         const val EXTRA_WIZARD_ACTIVE = "wizard_active"
         private const val COMPANION_WATCHDOG_TIMEOUT_MS = 5000L
+        private const val COMPANION_LAUNCH_WAIT_MS = 2500L
     }
 
     fun updateHomeApps(homeApps: Set<String>) {
@@ -1341,9 +1385,13 @@ class DualScreenManager(
         ContextCompat.registerReceiver(context, dualViewModeReceiver, viewModeFilter, flag)
         val companionHomeAppsFilter = IntentFilter("com.nendo.argosy.COMPANION_HOME_APPS_CHANGED")
         ContextCompat.registerReceiver(context, companionHomeAppsReceiver, companionHomeAppsFilter, flag)
+        displayAffinityHelper.registerDisplayListener(displayListener)
     }
 
     fun unregisterReceivers() {
+        companionLaunchJob?.cancel()
+        companionLaunchJob = null
+        displayAffinityHelper.unregisterDisplayListener(displayListener)
         try {
             context.unregisterReceiver(dualGameSelectedReceiver)
             context.unregisterReceiver(overlayOpenReceiver)

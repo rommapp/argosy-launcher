@@ -216,6 +216,7 @@ class MainActivity : ComponentActivity() {
         }
 
         dualScreenManager.registerReceivers()
+        dualScreenManager.ensureCompanionLaunched()
         initCacheAndPreferences()
         collectLaunchRetryEvents()
 

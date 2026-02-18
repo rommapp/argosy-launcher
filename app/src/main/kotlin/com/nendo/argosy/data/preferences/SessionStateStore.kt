@@ -38,6 +38,9 @@ class SessionStateStore(context: Context) {
             .putLong(KEY_SESSION_START_TIME, 0)
             .putString(KEY_COMPANION_SCREEN, "HOME")
             .putLong(KEY_DETAIL_GAME_ID, -1)
+            .putString(KEY_ACTIVE_MODAL, "NONE")
+            .putLong(KEY_MODAL_GAME_ID, -1)
+            .putBoolean(KEY_SCREENSHOT_VIEWER_OPEN, false)
             .apply()
     }
 
@@ -130,6 +133,45 @@ class SessionStateStore(context: Context) {
 
     fun getDetailGameId(): Long = prefs.getLong(KEY_DETAIL_GAME_ID, -1)
 
+    fun setActiveModal(modal: String, modalGameId: Long = -1) {
+        prefs.edit()
+            .putString(KEY_ACTIVE_MODAL, modal)
+            .putLong(KEY_MODAL_GAME_ID, modalGameId)
+            .apply()
+    }
+
+    fun getActiveModal(): String =
+        prefs.getString(KEY_ACTIVE_MODAL, "NONE") ?: "NONE"
+
+    fun getModalGameId(): Long = prefs.getLong(KEY_MODAL_GAME_ID, -1)
+
+    fun clearActiveModal() {
+        prefs.edit()
+            .putString(KEY_ACTIVE_MODAL, "NONE")
+            .putLong(KEY_MODAL_GAME_ID, -1)
+            .apply()
+    }
+
+    fun setDetailTab(tab: String) {
+        prefs.edit().putString(KEY_DETAIL_TAB, tab).apply()
+    }
+
+    fun getDetailTab(): String =
+        prefs.getString(KEY_DETAIL_TAB, "") ?: ""
+
+    fun setScreenshotViewerState(isOpen: Boolean, index: Int = -1) {
+        prefs.edit()
+            .putBoolean(KEY_SCREENSHOT_VIEWER_OPEN, isOpen)
+            .putInt(KEY_SCREENSHOT_VIEWER_INDEX, index)
+            .apply()
+    }
+
+    fun isScreenshotViewerOpen(): Boolean =
+        prefs.getBoolean(KEY_SCREENSHOT_VIEWER_OPEN, false)
+
+    fun getScreenshotViewerIndex(): Int =
+        prefs.getInt(KEY_SCREENSHOT_VIEWER_INDEX, -1)
+
     fun setCarouselPosition(sectionIndex: Int, selectedIndex: Int) {
         prefs.edit()
             .putInt(KEY_CAROUSEL_SECTION_INDEX, sectionIndex)
@@ -178,5 +220,10 @@ class SessionStateStore(context: Context) {
         private const val KEY_SESSION_START_TIME = "session_start_time"
         private const val KEY_WIZARD_ACTIVE = "wizard_active"
         private const val KEY_FIRST_RUN_COMPLETE = "first_run_complete"
+        private const val KEY_ACTIVE_MODAL = "active_modal"
+        private const val KEY_MODAL_GAME_ID = "modal_game_id"
+        private const val KEY_DETAIL_TAB = "detail_tab"
+        private const val KEY_SCREENSHOT_VIEWER_OPEN = "screenshot_viewer_open"
+        private const val KEY_SCREENSHOT_VIEWER_INDEX = "screenshot_viewer_index"
     }
 }

@@ -127,6 +127,7 @@
         <activity
             android:name=".hardware.SecondaryHomeActivity"
             android:process=":companion"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:launchMode="standard"
             android:theme="@style/Theme.Argosy"
             android:taskAffinity=""

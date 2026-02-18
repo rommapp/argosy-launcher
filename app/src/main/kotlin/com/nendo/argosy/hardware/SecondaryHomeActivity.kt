@@ -1,6 +1,7 @@
 package com.nendo.argosy.hardware
 
 import android.content.Intent
+import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.view.Display
 import androidx.activity.ComponentActivity
@@ -38,6 +39,7 @@ class SecondaryHomeActivity :
         private set
     private var isScreenshotViewerOpen = false
     private var launchedExternalApp = false
+    private var preSessionDetailGameId = -1L
 
     private var isInitialized by mutableStateOf(false)
     override var isArgosyForeground by mutableStateOf(false)
@@ -81,13 +83,15 @@ class SecondaryHomeActivity :
     private lateinit var broadcasts: SecondaryHomeBroadcastHelper
     private lateinit var inputHandler: SecondaryHomeInputHandler
     private lateinit var receiverManager: SecondaryHomeBroadcastReceiverManager
+    private var displayListener: DisplayManager.DisplayListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        registerDisplayListener()
         initializeDependencies()
-        loadInitialState()
         registerReceivers()
+        loadInitialState()
 
         setContent {
             SecondaryHomeTheme(primaryColor = primaryColor) {
@@ -168,6 +172,7 @@ class SecondaryHomeActivity :
 
     override fun onResume() {
         super.onResume()
+        dualHomeViewModel.stopDrawerForwarding()
         launchedExternalApp = false
         val store = stateManager.sessionStateStore
         isGameActive = store.hasActiveSession()
@@ -183,6 +188,11 @@ class SecondaryHomeActivity :
     }
 
     override fun onDestroy() {
+        displayListener?.let {
+            getSystemService(DisplayManager::class.java)
+                .unregisterDisplayListener(it)
+        }
+        displayListener = null
         receiverManager.unregisterAll()
         companionSessionTimer?.stop(applicationContext)
         companionSessionTimer = null
@@ -241,6 +251,9 @@ class SecondaryHomeActivity :
     override fun onSessionStarted(
         gameId: Long, isHardcore: Boolean, channelName: String?
     ) {
+        preSessionDetailGameId = if (currentScreen == CompanionScreen.GAME_DETAIL) {
+            stateManager.sessionStateStore.getDetailGameId()
+        } else -1L
         isGameActive = true
         viewModel.companionFocusAppBar(homeApps.size)
         this.isHardcore = isHardcore
@@ -262,10 +275,16 @@ class SecondaryHomeActivity :
         isHardcore = false
         currentChannelName = null
         isSaveDirty = false
-        stateManager.sessionStateStore.setCompanionScreen("HOME")
         companionInGameState = CompanionInGameState()
         companionSessionTimer?.stop(applicationContext)
         companionSessionTimer = null
+        val savedGameId = preSessionDetailGameId
+        preSessionDetailGameId = -1L
+        if (savedGameId > 0 && useDualScreenMode) {
+            selectGame(savedGameId)
+        } else {
+            stateManager.sessionStateStore.setCompanionScreen("HOME")
+        }
         isInitialized = true
     }
 
@@ -485,6 +504,29 @@ class SecondaryHomeActivity :
         } catch (_: Exception) {
             launchedExternalApp = false
         }
+    }
+
+    private fun registerDisplayListener() {
+        val displayManager = getSystemService(DisplayManager::class.java)
+        displayListener = object : DisplayManager.DisplayListener {
+            override fun onDisplayAdded(displayId: Int) {}
+            override fun onDisplayChanged(displayId: Int) {}
+            override fun onDisplayRemoved(displayId: Int) {
+                val myDisplayId = try {
+                    windowManager.defaultDisplay.displayId
+                } catch (_: Exception) { -1 }
+                if (displayId == myDisplayId ||
+                    displayManager.displays.size <= 1
+                ) {
+                    android.util.Log.w(
+                        "SecondaryHome",
+                        "Display removed, finishing companion activity"
+                    )
+                    finish()
+                }
+            }
+        }
+        displayManager.registerDisplayListener(displayListener, null)
     }
 
     private fun selectGame(gameId: Long) {

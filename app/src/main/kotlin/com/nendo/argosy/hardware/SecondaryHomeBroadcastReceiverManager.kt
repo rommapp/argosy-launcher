@@ -274,17 +274,26 @@ class SecondaryHomeBroadcastReceiverManager(
             val json = intent.getStringExtra(
                 DualScreenBroadcasts.EXTRA_SAVE_DATA_JSON
             ) ?: return
-            val entries = parseSaveEntryDataList(json)
-            val activeChannel = intent.getStringExtra(
-                DualScreenBroadcasts.EXTRA_ACTIVE_CHANNEL
-            )
-            val activeTimestamp = if (intent.hasExtra(
-                    DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP
+            try {
+                val entries = parseSaveEntryDataList(json)
+                val activeChannel = intent.getStringExtra(
+                    DualScreenBroadcasts.EXTRA_ACTIVE_CHANNEL
                 )
-            ) {
-                intent.getLongExtra(DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP, 0)
-            } else null
-            vm.loadUnifiedSaves(entries, activeChannel, activeTimestamp)
+                val activeTimestamp = if (intent.hasExtra(
+                        DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP
+                    )
+                ) {
+                    intent.getLongExtra(
+                        DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP, 0
+                    )
+                } else null
+                vm.loadUnifiedSaves(entries, activeChannel, activeTimestamp)
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "BroadcastReceiverMgr",
+                    "Failed to parse save data broadcast", e
+                )
+            }
         }
     }
 

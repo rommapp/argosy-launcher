@@ -97,6 +97,16 @@ class SecondaryHomeStateManager(
         var restoredDetailViewModel: DualGameDetailViewModel? = null
         var restoredDetailGameId = -1L
 
+        val savedModal = sessionStateStore.getActiveModal()
+        if (savedModal != "NONE") {
+            sessionStateStore.clearActiveModal()
+        }
+
+        val wasScreenshotOpen = sessionStateStore.isScreenshotViewerOpen()
+        if (wasScreenshotOpen) {
+            sessionStateStore.setScreenshotViewerState(false)
+        }
+
         if (savedScreen == "GAME_DETAIL" && savedDetailGameId > 0 && !isGameActive) {
             val affinityHelper = DisplayAffinityHelper(context)
             val vm = DualGameDetailViewModel(

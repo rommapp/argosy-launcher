@@ -40,6 +40,8 @@ import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -103,6 +105,8 @@ class DualScreenManager(
     var swappedDualHomeViewModel: DualHomeViewModel? = null
         private set
 
+    private var companionWatchdogJob: Job? = null
+
     val homeAppsList: List<String>
         get() = sessionStateStore.getHomeApps()?.toList() ?: emptyList()
 
@@ -144,11 +148,26 @@ class DualScreenManager(
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 DualScreenBroadcasts.ACTION_COMPANION_RESUMED -> {
+                    companionWatchdogJob?.cancel()
                     _isCompanionActive.value = true
                     resyncCompanionState()
                 }
                 DualScreenBroadcasts.ACTION_COMPANION_PAUSED -> {
                     _isCompanionActive.value = false
+                    companionWatchdogJob?.cancel()
+                    companionWatchdogJob = scope.launch {
+                        delay(COMPANION_WATCHDOG_TIMEOUT_MS)
+                        val state = _dualGameDetailState.value
+                        if (state?.modalType != null &&
+                            state.modalType != ActiveModal.NONE
+                        ) {
+                            _dualGameDetailState.update {
+                                it?.copy(modalType = ActiveModal.NONE)
+                            }
+                            Log.w(TAG,
+                                "Companion watchdog: auto-dismissed stale modal")
+                        }
+                    }
                 }
             }
         }
@@ -1143,12 +1162,6 @@ class DualScreenManager(
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to broadcast unified saves", e)
-                context.sendBroadcast(
-                    Intent(DualScreenBroadcasts.ACTION_SAVE_DATA).apply {
-                        setPackage(context.packageName)
-                        putExtra(DualScreenBroadcasts.EXTRA_SAVE_DATA_JSON, "[]")
-                    }
-                )
             }
         }
     }
@@ -1158,6 +1171,24 @@ class DualScreenManager(
     fun resyncCompanionState() {
         broadcastForegroundState(true)
         val detailState = _dualGameDetailState.value
+        if (detailState?.modalType != null &&
+            detailState.modalType != ActiveModal.NONE
+        ) {
+            _dualGameDetailState.update {
+                it?.copy(modalType = ActiveModal.NONE)
+            }
+            context.sendBroadcast(
+                Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
+                    setPackage(context.packageName)
+                    putExtra(DualScreenBroadcasts.EXTRA_MODAL_DISMISSED, true)
+                }
+            )
+        }
+        context.sendBroadcast(
+            Intent(DualScreenBroadcasts.ACTION_CLOSE_OVERLAY).apply {
+                setPackage(context.packageName)
+            }
+        )
         if (detailState != null && detailState.gameId > 0) {
             context.sendBroadcast(
                 Intent(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED).apply {
@@ -1210,6 +1241,7 @@ class DualScreenManager(
     companion object {
         const val ACTION_WIZARD_STATE = "com.nendo.argosy.WIZARD_STATE"
         const val EXTRA_WIZARD_ACTIVE = "wizard_active"
+        private const val COMPANION_WATCHDOG_TIMEOUT_MS = 5000L
     }
 
     fun updateHomeApps(homeApps: Set<String>) {

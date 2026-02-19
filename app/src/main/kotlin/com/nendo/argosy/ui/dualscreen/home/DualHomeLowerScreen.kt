@@ -42,6 +42,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Icon
@@ -56,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Path
@@ -619,6 +622,16 @@ private fun LibraryGridCard(
                 )
             }
         }
+
+        if (game.downloadProgress == null && (game.isFavorite || game.isPlayable)) {
+            GameStatusIcons(
+                isFavorite = game.isFavorite,
+                isPlayable = game.isPlayable,
+                iconSize = 12.dp,
+                badgeSize = 18.dp,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 
@@ -800,6 +813,16 @@ private fun CarouselGameCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+
+        if (game.downloadProgress == null && (game.isFavorite || game.isPlayable)) {
+            GameStatusIcons(
+                isFavorite = game.isFavorite,
+                isPlayable = game.isPlayable,
+                iconSize = 14.dp,
+                badgeSize = 20.dp,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
@@ -1009,4 +1032,57 @@ fun broadcastGameSelection(context: Context, game: DualHomeGameUi) {
         putExtra("is_downloaded", game.isPlayable)
     }
     context.sendBroadcast(intent)
+}
+
+@Composable
+private fun GameStatusIcons(
+    isFavorite: Boolean,
+    isPlayable: Boolean,
+    iconSize: Dp,
+    badgeSize: Dp,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 3.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        if (isFavorite) {
+            Box(
+                modifier = Modifier
+                    .size(badgeSize)
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = "Favorite",
+                    tint = Color.White,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
+        } else {
+            Box(modifier = Modifier.size(badgeSize))
+        }
+
+        if (isPlayable) {
+            Box(
+                modifier = Modifier
+                    .size(badgeSize)
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Installed",
+                    tint = Color.White,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
+        } else {
+            Box(modifier = Modifier.size(badgeSize))
+        }
+    }
 }

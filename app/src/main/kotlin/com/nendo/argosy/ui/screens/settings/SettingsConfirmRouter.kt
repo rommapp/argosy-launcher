@@ -144,6 +144,7 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
         }
         val steamBaseIndex = androidBaseIndex + 1
         val launcherCount = state.steam.installedLaunchers.size
+        val notInstalledCount = state.steam.notInstalledLaunchers.size
         val refreshIndex = steamBaseIndex + launcherCount
         when {
             state.focusedIndex == 0 -> vm.startRommConfig()
@@ -167,6 +168,14 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
             state.focusedIndex == androidBaseIndex - 2 && isConnected -> vm.requestClearPathCache()
             state.focusedIndex == androidBaseIndex - 1 && isConnected -> vm.requestResetSaveCache()
             state.focusedIndex == androidBaseIndex -> vm.scanForAndroidGames()
+            launcherCount == 0 && state.focusedIndex >= steamBaseIndex &&
+                state.focusedIndex < steamBaseIndex + notInstalledCount -> {
+                val installIndex = state.focusedIndex - steamBaseIndex
+                val launcher = state.steam.notInstalledLaunchers.getOrNull(installIndex)
+                if (launcher != null && state.steam.downloadingLauncherId == null) {
+                    vm.installSteamLauncher(launcher.emulatorId)
+                }
+            }
             state.focusedIndex >= steamBaseIndex && state.focusedIndex < refreshIndex -> {
                 if (state.steam.hasStoragePermission && !state.steam.isSyncing) {
                     vm.confirmLauncherAction()
@@ -597,7 +606,9 @@ private fun computeMaxFocusIndex(
             else -> 2
         }
         val launcherCount = state.steam.installedLaunchers.size
-        if (launcherCount > 0) steamBaseIndex + launcherCount else steamBaseIndex
+        val notInstalledCount = state.steam.notInstalledLaunchers.size
+        if (launcherCount > 0) steamBaseIndex + launcherCount
+        else (steamBaseIndex + notInstalledCount - 1).coerceAtLeast(steamBaseIndex)
     }
     SettingsSection.SYNC_SETTINGS -> 3
     SettingsSection.STEAM_SETTINGS -> 1 + state.steam.installedLaunchers.size

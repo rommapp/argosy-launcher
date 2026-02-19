@@ -3,12 +3,17 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import android.content.Context
 import android.os.Build
 import android.os.Environment
+import com.nendo.argosy.data.emulator.EmulatorDownloadManager
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.launcher.SteamLaunchers
+import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
+import com.nendo.argosy.data.remote.github.FetchReleaseResult
 import com.nendo.argosy.data.repository.SteamRepository
 import com.nendo.argosy.data.repository.SteamResult
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.screens.settings.InstalledSteamLauncher
+import com.nendo.argosy.ui.screens.settings.NotInstalledSteamLauncher
 import com.nendo.argosy.ui.screens.settings.SteamSettingsState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,13 +30,20 @@ import javax.inject.Inject
 
 class SteamSettingsDelegate @Inject constructor(
     private val steamRepository: SteamRepository,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val emulatorDownloadManager: EmulatorDownloadManager,
+    private val emulatorUpdateRepository: EmulatorUpdateRepository
 ) {
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
 
     private val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
+
+    private val _openUrlEvent = MutableSharedFlow<String>()
+    val openUrlEvent: SharedFlow<String> = _openUrlEvent.asSharedFlow()
+
+    val downloadProgress = emulatorDownloadManager.downloadProgress
 
     fun updateState(newState: SteamSettingsState) {
         _state.value = newState
@@ -50,10 +62,22 @@ class SteamSettingsDelegate @Inject constructor(
                 )
             }
 
+            val installedPackages = installedLaunchers.map { it.packageName }.toSet()
+            val notInstalledLaunchers = EmulatorRegistry.getForPlatform("steam")
+                .filter { it.packageName !in installedPackages }
+                .map { def ->
+                    NotInstalledSteamLauncher(
+                        emulatorId = def.id,
+                        displayName = def.displayName,
+                        hasDirectDownload = def.githubRepo != null
+                    )
+                }
+
             _state.update {
                 it.copy(
                     hasStoragePermission = hasPermission,
                     installedLaunchers = installedLaunchers,
+                    notInstalledLaunchers = notInstalledLaunchers,
                     launcherActionIndex = 0
                 )
             }
@@ -65,6 +89,59 @@ class SteamSettingsDelegate @Inject constructor(
             Environment.isExternalStorageManager()
         } else {
             true
+        }
+    }
+
+    fun installSteamLauncher(emulatorId: String, scope: CoroutineScope) {
+        val def = EmulatorRegistry.getById(emulatorId) ?: return
+
+        if (def.githubRepo == null) {
+            scope.launch { def.downloadUrl?.let { _openUrlEvent.emit(it) } }
+            return
+        }
+
+        if (!emulatorDownloadManager.canInstallPackages()) {
+            emulatorDownloadManager.openInstallPermissionSettings()
+            return
+        }
+
+        scope.launch {
+            _state.update {
+                it.copy(downloadingLauncherId = emulatorId, downloadProgress = 0f)
+            }
+
+            when (val result = emulatorUpdateRepository.fetchLatestRelease(def)) {
+                is FetchReleaseResult.Success -> {
+                    emulatorDownloadManager.downloadAndInstall(
+                        emulatorId = emulatorId,
+                        downloadUrl = result.downloadUrl,
+                        assetName = result.assetName,
+                        variant = result.variant
+                    )
+                }
+                is FetchReleaseResult.MultipleVariants -> {
+                    val first = result.variants.firstOrNull()
+                    if (first != null) {
+                        emulatorDownloadManager.downloadAndInstall(
+                            emulatorId = emulatorId,
+                            downloadUrl = first.downloadUrl,
+                            assetName = first.assetName,
+                            variant = first.variant
+                        )
+                    } else {
+                        _state.update {
+                            it.copy(downloadingLauncherId = null, downloadProgress = null)
+                        }
+                        notificationManager.showError("No download available")
+                    }
+                }
+                is FetchReleaseResult.Error -> {
+                    _state.update {
+                        it.copy(downloadingLauncherId = null, downloadProgress = null)
+                    }
+                    notificationManager.showError("Download failed: ${result.message}")
+                }
+            }
         }
     }
 

@@ -20,7 +20,8 @@ import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.GetApp
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
@@ -41,7 +42,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
-import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
@@ -93,11 +93,13 @@ private fun GameDataContent(
         }
     }
 
+    val notInstalledCount = uiState.steam.notInstalledLaunchers.size
     val steamBaseIndex = calculateSteamBaseIndex(isConnected, saveSyncEnabled)
-    val steamItemCount = if (launcherCount > 0) launcherCount + 1 else 1
+    val steamItemCount = if (launcherCount > 0) launcherCount + 1
+        else notInstalledCount.coerceAtLeast(1)
     val hasDialogOpen = uiState.steam.showAddGameDialog
 
-    val sections = buildGameDataSections(isConnected, saveSyncEnabled, launcherCount)
+    val sections = buildGameDataSections(isConnected, saveSyncEnabled, steamItemCount)
     val focusToListIndex: (Int) -> Int = { focusIndex ->
         calculateScrollIndex(focusIndex, isConnected, saveSyncEnabled)
     }
@@ -307,12 +309,30 @@ private fun GameDataContent(
         val steamBaseIndex = calculateSteamBaseIndex(isConnected, saveSyncEnabled)
 
         if (launcherCount == 0) {
-            item {
-                InfoPreference(
-                    title = "No Steam Launchers",
-                    value = "Install from Emulators settings",
-                    isFocused = !hasDialogOpen && uiState.focusedIndex == steamBaseIndex,
-                    icon = Icons.Default.Info
+            val isDownloading = uiState.steam.downloadingLauncherId != null
+            itemsIndexed(
+                uiState.steam.notInstalledLaunchers,
+                key = { _, launcher -> "steam_install_${launcher.emulatorId}" }
+            ) { index, launcher ->
+                val itemIndex = steamBaseIndex + index
+                val isThisDownloading = uiState.steam.downloadingLauncherId == launcher.emulatorId
+                val subtitle = when {
+                    isThisDownloading && uiState.steam.downloadProgress != null -> {
+                        val pct = (uiState.steam.downloadProgress * 100).toInt()
+                        "Downloading... $pct%"
+                    }
+                    isThisDownloading -> "Waiting for install..."
+                    launcher.hasDirectDownload -> "Download APK"
+                    else -> "Open Play Store"
+                }
+                ActionPreference(
+                    icon = if (launcher.hasDirectDownload) Icons.Default.GetApp
+                        else Icons.AutoMirrored.Filled.OpenInNew,
+                    title = launcher.displayName,
+                    subtitle = subtitle,
+                    isFocused = !hasDialogOpen && uiState.focusedIndex == itemIndex,
+                    isEnabled = !isDownloading,
+                    onClick = { viewModel.installSteamLauncher(launcher.emulatorId) }
                 )
             }
         } else {
@@ -435,12 +455,11 @@ private fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsView
 private fun buildGameDataSections(
     isConnected: Boolean,
     saveSyncEnabled: Boolean,
-    launcherCount: Int
+    steamItemCount: Int
 ): List<ListSection> {
     val sections = mutableListOf<ListSection>()
     val androidBaseIndex = calculateAndroidBaseIndex(isConnected, saveSyncEnabled)
     val steamBaseIndex = calculateSteamBaseIndex(isConnected, saveSyncEnabled)
-    val steamItemCount = if (launcherCount > 0) launcherCount + 1 else 1
 
     if (!isConnected) {
         sections.add(ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 0))

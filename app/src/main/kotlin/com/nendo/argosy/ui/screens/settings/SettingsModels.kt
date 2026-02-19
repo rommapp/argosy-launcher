@@ -508,9 +508,18 @@ data class InstalledSteamLauncher(
     val scanMayIncludeUninstalled: Boolean = false
 )
 
+data class NotInstalledSteamLauncher(
+    val emulatorId: String,
+    val displayName: String,
+    val hasDirectDownload: Boolean
+)
+
 data class SteamSettingsState(
     val hasStoragePermission: Boolean = false,
     val installedLaunchers: List<InstalledSteamLauncher> = emptyList(),
+    val notInstalledLaunchers: List<NotInstalledSteamLauncher> = emptyList(),
+    val downloadingLauncherId: String? = null,
+    val downloadProgress: Float? = null,
     val isSyncing: Boolean = false,
     val syncingLauncher: String? = null,
     val showAddGameDialog: Boolean = false,

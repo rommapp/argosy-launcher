@@ -345,6 +345,7 @@ class SettingsViewModel @Inject constructor(
 
     fun scanForAndroidGames() = routeScanForAndroidGames(this)
 
+    fun installSteamLauncher(emulatorId: String) = steamDelegate.installSteamLauncher(emulatorId, viewModelScope)
     fun refreshSteamMetadata() = steamDelegate.refreshSteamMetadata(context, viewModelScope)
     fun showAddSteamGameDialog(launcherPackage: String? = null) = steamDelegate.showAddSteamGameDialog(launcherPackage)
     fun dismissAddSteamGameDialog() = steamDelegate.dismissAddSteamGameDialog()

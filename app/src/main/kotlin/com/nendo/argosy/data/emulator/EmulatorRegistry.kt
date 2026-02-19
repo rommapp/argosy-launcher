@@ -536,14 +536,16 @@ object EmulatorRegistry {
             packageName = "com.antutu.ABenchMark",
             displayName = "GameHub Lite",
             supportedPlatforms = setOf("steam"),
-            downloadUrl = "https://github.com/AntGameHub/GameHub-Lite-Support/releases"
+            downloadUrl = "https://github.com/AntGameHub/GameHub-Lite-Support/releases",
+            githubRepo = "AntGameHub/GameHub-Lite-Support"
         ),
         EmulatorDef(
             id = "gamenative",
             packageName = "app.gamenative",
             displayName = "GameNative",
             supportedPlatforms = setOf("steam"),
-            downloadUrl = "https://github.com/utkarshdalal/GameNative/releases"
+            downloadUrl = "https://github.com/utkarshdalal/GameNative/releases",
+            githubRepo = "utkarshdalal/GameNative"
         )
     )
 

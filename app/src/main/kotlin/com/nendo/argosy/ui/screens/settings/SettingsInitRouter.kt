@@ -152,6 +152,38 @@ internal fun routeObserveDelegateEvents(vm: SettingsViewModel) {
     vm.emulatorDelegate.openUrlEvent.onEach { url ->
         vm._openUrlEvent.emit(url)
     }.launchIn(vm.viewModelScope)
+
+    vm.steamDelegate.openUrlEvent.onEach { url ->
+        vm._openUrlEvent.emit(url)
+    }.launchIn(vm.viewModelScope)
+
+    vm.steamDelegate.downloadProgress.onEach { progress ->
+        val steamState = vm.steamDelegate.state.value
+        if (progress != null && steamState.downloadingLauncherId == progress.emulatorId) {
+            val dlProgress = when (val state = progress.state) {
+                is EmulatorDownloadState.Downloading -> state.progress
+                is EmulatorDownloadState.WaitingForInstall -> null
+                is EmulatorDownloadState.Installed -> null
+                is EmulatorDownloadState.Failed -> null
+                is EmulatorDownloadState.Idle -> null
+            }
+            val stillDownloading = progress.state is EmulatorDownloadState.Downloading ||
+                progress.state is EmulatorDownloadState.WaitingForInstall
+            vm.steamDelegate.updateState(
+                steamState.copy(
+                    downloadingLauncherId = if (stillDownloading) progress.emulatorId else null,
+                    downloadProgress = dlProgress
+                )
+            )
+            if (progress.state is EmulatorDownloadState.Installed) {
+                vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)
+            }
+        } else if (progress == null && steamState.downloadingLauncherId != null) {
+            vm.steamDelegate.updateState(
+                steamState.copy(downloadingLauncherId = null, downloadProgress = null)
+            )
+        }
+    }.launchIn(vm.viewModelScope)
 }
 
 internal fun routeObserveConnectionState(vm: SettingsViewModel) {

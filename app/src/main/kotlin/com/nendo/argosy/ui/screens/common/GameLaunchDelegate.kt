@@ -8,6 +8,8 @@ import android.provider.Settings
 import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.emulator.ActiveSession
+import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
@@ -113,10 +115,22 @@ class GameLaunchDelegate @Inject constructor(
         scope.launch {
             try {
                 val activeSession = playSessionTracker.activeSession.value
-                val canResume = playSessionTracker.canResumeSession(gameId)
+                val isVita3KSession = activeSession?.let { session ->
+                    val emuId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)
+                    emuId?.let { EmulatorRegistry.getById(it) }?.launchConfig is LaunchConfig.Vita3K
+                } ?: false
+
+                // Vita3K doesn't support resume - always end stale sessions
+                if (isVita3KSession && activeSession != null) {
+                    android.util.Log.d("GameLaunchDelegate", "Vita3K session active, ending before fresh launch")
+                    playSessionTracker.endSession()
+                    delay(EMULATOR_KILL_DELAY_MS)
+                }
+
+                val canResume = !isVita3KSession && playSessionTracker.canResumeSession(gameId)
 
                 // Different game is active - end that session and kill emulator first
-                if (!canResume && activeSession != null && activeSession.gameId != gameId) {
+                if (!canResume && activeSession != null && activeSession.gameId != gameId && !isVita3KSession) {
                     android.util.Log.d("GameLaunchDelegate", "Ending session for game ${activeSession.gameId}, killing ${activeSession.emulatorPackage}")
                     playSessionTracker.endSession()
                     gameLauncher.forceStopEmulator(activeSession.emulatorPackage)
@@ -349,6 +363,16 @@ class GameLaunchDelegate @Inject constructor(
         }
     }
 
+    private fun forceStopIfVita3K(session: ActiveSession) {
+        val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage) ?: return
+        val emulatorDef = EmulatorRegistry.getById(emulatorId) ?: return
+        if (emulatorDef.launchConfig is LaunchConfig.Vita3K) {
+            kotlinx.coroutines.GlobalScope.launch {
+                gameLauncher.forceStopEmulator(session.emulatorPackage)
+            }
+        }
+    }
+
     fun handleSessionEnd(
         scope: CoroutineScope,
         onSyncComplete: () -> Unit = {}
@@ -362,6 +386,19 @@ class GameLaunchDelegate @Inject constructor(
             onSyncComplete()
             return
         }
+        val isVita3K = run {
+            val emuId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)
+            emuId?.let { EmulatorRegistry.getById(it) }?.launchConfig is LaunchConfig.Vita3K
+        }
+
+        // Vita3K doesn't support resume - always end session immediately
+        if (isVita3K) {
+            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: Vita3K session, ending immediately")
+            scope.launch { playSessionTracker.endSession() }
+            onSyncComplete()
+            return
+        }
+
         val sessionDuration = playSessionTracker.getSessionDuration()
 
         if (sessionDuration != null) {
@@ -382,6 +419,7 @@ class GameLaunchDelegate @Inject constructor(
             if (seconds < 30) {
                 android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: short session (${seconds}s), cancelling without backup")
                 playSessionTracker.cancelSession()
+                forceStopIfVita3K(session)
                 onSyncComplete()
                 return
             }
@@ -397,6 +435,7 @@ class GameLaunchDelegate @Inject constructor(
         if (emulatorId == null) {
             android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: cannot resolve emulatorId, ending session without sync")
             scope.launch { playSessionTracker.endSession() }
+            forceStopIfVita3K(session)
             syncMutex.unlock()
             return
         }
@@ -471,6 +510,8 @@ class GameLaunchDelegate @Inject constructor(
                         _syncOverlayState.value = null
                     }
                 }
+
+                forceStopIfVita3K(session)
                 onSyncComplete()
             } finally {
                 syncMutex.unlock()

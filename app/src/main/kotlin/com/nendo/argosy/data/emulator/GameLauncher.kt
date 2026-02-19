@@ -511,10 +511,11 @@ class GameLauncher @Inject constructor(
 
     suspend fun forceStopEmulator(packageName: String) {
         try {
-            Runtime.getRuntime().exec(arrayOf("am", "force-stop", packageName))
-            Logger.debug(TAG, "Force stopped via am: $packageName")
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            am.killBackgroundProcesses(packageName)
+            Logger.debug(TAG, "killBackgroundProcesses: $packageName")
         } catch (e: Exception) {
-            Logger.warn(TAG, "Failed to force stop $packageName", e)
+            Logger.warn(TAG, "Failed to kill $packageName", e)
         }
     }
 
@@ -671,11 +672,11 @@ class GameLauncher @Inject constructor(
         }
     }
 
-    private fun buildVita3KIntent(
+    private suspend fun buildVita3KIntent(
         emulator: EmulatorDef,
         romFile: File,
         config: LaunchConfig.Vita3K,
-        forResume: Boolean
+        @Suppress("UNUSED_PARAMETER") forResume: Boolean
     ): Intent {
         val titleId = extractVitaTitleId(romFile)
 
@@ -689,14 +690,11 @@ class GameLauncher @Inject constructor(
                 Logger.debug(TAG, "Vita3K: no titleId in ${romFile.name}, opening emulator only")
             }
 
-            if (forResume) {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            } else {
-                addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TASK
-                )
-            }
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                Intent.FLAG_ACTIVITY_NO_HISTORY
+            )
         }
     }
 

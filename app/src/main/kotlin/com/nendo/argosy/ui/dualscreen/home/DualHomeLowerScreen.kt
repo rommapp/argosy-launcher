@@ -34,8 +34,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -101,6 +103,8 @@ data class DualHomeGameUi(
     val genre: String? = null,
     val gameModes: String? = null,
     val franchises: String? = null,
+    val addedAt: Long? = null,
+    val playCount: Int = 0,
     val downloadProgress: Float? = null
 )
 
@@ -464,26 +468,31 @@ private fun CollectionCoverMosaic(
 
 @Composable
 fun DualHomeLibraryGrid(
-    games: List<DualHomeGameUi>,
+    gridItems: List<DualLibraryGridItem>,
     focusedIndex: Int,
     columns: Int,
-    availableLetters: List<String>,
-    currentLetter: String,
+    sectionLabels: List<String>,
+    currentSectionLabel: String,
     platformLabel: String = "All",
-    showLetterOverlay: Boolean = false,
-    overlayLetter: String = "",
+    showSectionOverlay: Boolean = false,
+    overlaySectionLabel: String = "",
     onGameTapped: (Int) -> Unit,
-    onLetterClick: (String) -> Unit,
+    onSectionClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val gridState = rememberLazyGridState()
+    val gameCount = gridItems.count { it is DualLibraryGridItem.Game }
 
-    LaunchedEffect(focusedIndex) {
-        if (games.isNotEmpty() && focusedIndex in games.indices) {
+    val targetGridIndex = gridItems.indexOfFirst {
+        it is DualLibraryGridItem.Game && it.gameIndex == focusedIndex
+    }.coerceAtLeast(0)
+
+    LaunchedEffect(targetGridIndex) {
+        if (gridItems.isNotEmpty() && targetGridIndex in gridItems.indices) {
             val viewportHeight = gridState.layoutInfo.viewportSize.height
             val itemHeight = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
             val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            gridState.animateScrollToItem(focusedIndex, -centerOffset)
+            gridState.animateScrollToItem(targetGridIndex, -centerOffset)
         }
     }
 
@@ -494,7 +503,7 @@ fun DualHomeLibraryGrid(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Text(
-                text = "$platformLabel (${games.size})",
+                text = "$platformLabel ($gameCount)",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
@@ -512,20 +521,41 @@ fun DualHomeLibraryGrid(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    itemsIndexed(games, key = { _, g -> g.id }) { index, game ->
-                        LibraryGridCard(
-                            game = game,
-                            isFocused = index == focusedIndex,
-                            onClick = { onGameTapped(index) }
-                        )
+                    items(
+                        count = gridItems.size,
+                        key = { i ->
+                            when (val item = gridItems[i]) {
+                                is DualLibraryGridItem.Header -> "header-${item.label}"
+                                is DualLibraryGridItem.Game -> item.game.id
+                            }
+                        },
+                        span = { i ->
+                            when (gridItems[i]) {
+                                is DualLibraryGridItem.Header -> GridItemSpan(maxLineSpan)
+                                is DualLibraryGridItem.Game -> GridItemSpan(1)
+                            }
+                        }
+                    ) { index ->
+                        when (val item = gridItems[index]) {
+                            is DualLibraryGridItem.Header -> {
+                                DualSectionDivider(label = item.label)
+                            }
+                            is DualLibraryGridItem.Game -> {
+                                LibraryGridCard(
+                                    game = item.game,
+                                    isFocused = item.gameIndex == focusedIndex,
+                                    onClick = { onGameTapped(item.gameIndex) }
+                                )
+                            }
+                        }
                     }
                 }
 
-                if (availableLetters.size >= 9) {
+                if (sectionLabels.size >= 3) {
                     AlphabetSidebar(
-                        availableLetters = availableLetters,
-                        currentLetter = currentLetter,
-                        onLetterClick = onLetterClick,
+                        availableLetters = sectionLabels,
+                        currentLetter = currentSectionLabel,
+                        onLetterClick = onSectionClick,
                         modifier = Modifier.fillMaxHeight(),
                         topPadding = 0.dp,
                         bottomPadding = 0.dp
@@ -535,8 +565,30 @@ fun DualHomeLibraryGrid(
         }
 
         LetterJumpOverlay(
-            letter = overlayLetter,
-            visible = showLetterOverlay
+            letter = overlaySectionLabel,
+            visible = showSectionOverlay
+        )
+    }
+}
+
+@Composable
+private fun DualSectionDivider(label: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
     }
 }

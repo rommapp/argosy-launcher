@@ -14,6 +14,7 @@ import com.nendo.argosy.data.local.DatabaseFactory
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
+import com.nendo.argosy.ui.dualscreen.ShowcaseViewModel
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
@@ -69,6 +70,7 @@ class SecondaryHomeActivity :
     private val _showcaseViewMode = MutableStateFlow("CAROUSEL")
     private val _showcaseCollectionState = MutableStateFlow(DualCollectionShowcaseState())
     private val _showcaseGameDetailState = MutableStateFlow<DualGameDetailUpperState?>(null)
+    private var showcaseViewModel: ShowcaseViewModel? = null
 
     override var swapAB = false; private set
     override var swapXY = false; private set
@@ -90,8 +92,8 @@ class SecondaryHomeActivity :
 
         registerDisplayListener()
         initializeDependencies()
-        registerReceivers()
         loadInitialState()
+        registerReceivers()
 
         setContent {
             SecondaryHomeTheme(primaryColor = primaryColor) {
@@ -106,10 +108,14 @@ class SecondaryHomeActivity :
                             isArgosyForeground = isArgosyForeground,
                             isGameActive = isGameActive,
                             isWizardActive = isWizardActive,
+                            showcaseViewModel = showcaseViewModel!!,
+                            viewModel = viewModel,
+                            homeApps = homeApps,
                             showcaseState = _showcaseState,
                             showcaseViewMode = _showcaseViewMode,
                             collectionShowcaseState = _showcaseCollectionState,
-                            gameDetailState = _showcaseGameDetailState
+                            gameDetailState = _showcaseGameDetailState,
+                            onAppClick = ::launchApp
                         )
                     } else {
                         SecondaryHomeContent(
@@ -137,7 +143,7 @@ class SecondaryHomeActivity :
                             onCollectionTapped = ::handleCollectionTapped,
                             onGridGameTapped = ::handleGridGameTapped,
                             onLetterClick = {
-                                dualHomeViewModel.jumpToLetter(it)
+                                dualHomeViewModel.jumpToSection(it)
                                 broadcasts.broadcastLibraryGameSelection()
                             },
                             onFilterOptionTapped = {
@@ -214,7 +220,20 @@ class SecondaryHomeActivity :
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
-        if (isShowcaseRole) return super.onKeyDown(keyCode, event)
+        if (isShowcaseRole) {
+            if (!isArgosyForeground && event.repeatCount == 0) {
+                val gamepadEvent = mapKeycodeToGamepadEvent(
+                    keyCode, swapAB, swapXY, swapStartSelect
+                )
+                if (gamepadEvent != null) {
+                    val vm = showcaseViewModel
+                    if (vm != null && vm.isModalActive() &&
+                        vm.handleModalGamepadEvent(gamepadEvent)
+                    ) return true
+                }
+            }
+            return super.onKeyDown(keyCode, event)
+        }
         if (dualScreenInputFocus == "TOP") return super.onKeyDown(keyCode, event)
 
         if (event.repeatCount == 0) {
@@ -234,7 +253,9 @@ class SecondaryHomeActivity :
 
     override fun onForegroundChanged(isForeground: Boolean) {
         isArgosyForeground = isForeground
-        if (isForeground && isGameActive) {
+        if (isForeground && isGameActive &&
+            !stateManager.sessionStateStore.hasActiveSession()
+        ) {
             onSessionEnded()
         }
         isInitialized = true
@@ -296,11 +317,51 @@ class SecondaryHomeActivity :
         viewModel.refresh(); dualHomeViewModel.refresh()
     }
 
+    override fun onOverlayRequested(eventName: String) {
+        if (!isShowcaseRole) return
+        when (eventName) {
+            "drawer" -> viewModel.openDrawer()
+        }
+    }
+
+    override fun onRoleSwapped() {
+        val resolver = com.nendo.argosy.util.DisplayRoleResolver(
+            com.nendo.argosy.util.DisplayAffinityHelper(applicationContext),
+            stateManager.sessionStateStore
+        )
+        val wasShowcase = isShowcaseRole
+        isShowcaseRole = resolver.isSwapped
+
+        if (wasShowcase != isShowcaseRole) {
+            receiverManager.unregisterAll()
+            registerReceivers()
+        }
+    }
+
     override fun refocusSelf() = startActivity(
         Intent(this, SecondaryHomeActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
     )
+
+    override fun refocusGameDisplay() {
+        if (!android.provider.Settings.canDrawOverlays(this)) return
+        val wm = getSystemService(WINDOW_SERVICE) as android.view.WindowManager
+        val view = android.view.View(this)
+        val params = android.view.WindowManager.LayoutParams(
+            1, 1,
+            android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            0,
+            android.graphics.PixelFormat.TRANSLUCENT
+        )
+        try {
+            wm.addView(view, params)
+            view.requestFocus()
+            view.postDelayed({
+                try { wm.removeView(view) } catch (_: Exception) {}
+            }, 100)
+        } catch (_: Exception) {}
+    }
 
     override fun returnToHome() {
         isScreenshotViewerOpen = false
@@ -376,6 +437,12 @@ class SecondaryHomeActivity :
                 else startActivity(intent)
             }
         }
+
+        showcaseViewModel = ShowcaseViewModel(
+            detailState = _showcaseGameDetailState,
+            broadcasts = broadcasts,
+            isControlActive = { isArgosyForeground }
+        )
     }
 
     private fun loadInitialState() {
@@ -435,7 +502,9 @@ class SecondaryHomeActivity :
             showcaseState = _showcaseState,
             showcaseViewMode = _showcaseViewMode,
             showcaseCollectionState = _showcaseCollectionState,
-            showcaseGameDetailState = _showcaseGameDetailState
+            showcaseGameDetailState = _showcaseGameDetailState,
+            showcaseViewModel = showcaseViewModel,
+            gameDao = DatabaseFactory.getDatabase(applicationContext).gameDao()
         )
         receiverManager.registerAll()
     }

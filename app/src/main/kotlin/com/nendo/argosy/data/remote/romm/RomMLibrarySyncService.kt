@@ -413,7 +413,7 @@ class RomMLibrarySyncService @Inject constructor(
             },
             genre = rom.genres?.firstOrNull(),
             developer = rom.companies?.firstOrNull(),
-            rating = rom.metadatum?.averageRating,
+            rating = rom.metadatum?.averageRating?.takeIf { rom.igdbId != null && it < 98f },
             regions = rom.regions?.joinToString(","),
             languages = rom.languages?.joinToString(","),
             gameModes = rom.metadatum?.gameModes?.joinToString(","),

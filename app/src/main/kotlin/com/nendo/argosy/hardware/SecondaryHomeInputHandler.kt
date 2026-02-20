@@ -352,7 +352,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.previousSection()
+                dualHomeViewModel.previousSortSection()
                 onPersistCarouselPosition()
                 InputResult.HANDLED
             }
@@ -361,7 +361,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.nextSection()
+                dualHomeViewModel.nextSortSection()
                 onPersistCarouselPosition()
                 InputResult.HANDLED
             }
@@ -553,12 +553,12 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.PrevTrigger -> {
-                dualHomeViewModel.previousLetter()
+                dualHomeViewModel.previousSortSection()
                 broadcasts.broadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             GamepadEvent.NextTrigger -> {
-                dualHomeViewModel.nextLetter()
+                dualHomeViewModel.nextSortSection()
                 broadcasts.broadcastLibraryGameSelection()
                 InputResult.HANDLED
             }

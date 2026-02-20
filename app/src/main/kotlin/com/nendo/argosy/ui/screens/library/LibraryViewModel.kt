@@ -21,7 +21,11 @@ import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.data.model.ActiveSort
+import com.nendo.argosy.data.model.GameSection
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.model.SortOption
+import com.nendo.argosy.data.model.computeSections
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -69,6 +73,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class FilterCategory(val label: String) {
+    SORT("Sort"),
     SEARCH("Search"),
     SOURCE("Source"),
     GENRE("Genre"),
@@ -86,14 +91,16 @@ data class ActiveFilters(
     val searchQuery: String = "",
     val source: SourceFilter = SourceFilter.ALL,
     val genres: Set<String> = emptySet(),
-    val players: Set<String> = emptySet()
+    val players: Set<String> = emptySet(),
+    val sort: ActiveSort = ActiveSort()
 ) {
     val activeCount: Int
         get() = listOf(
             if (searchQuery.isNotEmpty()) 1 else 0,
             if (source != SourceFilter.ALL) 1 else 0,
             genres.size,
-            players.size
+            players.size,
+            if (sort.option != SortOption.TITLE) 1 else 0
         ).sum()
 
     val summary: String
@@ -102,6 +109,7 @@ data class ActiveFilters(
             activeCount == 1 -> when {
                 searchQuery.isNotEmpty() -> "\"$searchQuery\""
                 source != SourceFilter.ALL -> source.label
+                sort.option != SortOption.TITLE -> sort.option.label
                 genres.isNotEmpty() -> genres.first()
                 players.isNotEmpty() -> players.first()
                 else -> "All Games"
@@ -125,6 +133,11 @@ enum class LibraryFilter(val label: String) {
 
 enum class FocusMove {
     UP, DOWN, LEFT, RIGHT
+}
+
+sealed interface LibraryGridItem {
+    data class Header(val label: String) : LibraryGridItem
+    data class Game(val game: LibraryGameUi, val gameIndex: Int) : LibraryGridItem
 }
 
 data class LibraryGameUi(
@@ -184,14 +197,15 @@ data class LibraryUiState(
     val collections: List<CollectionItemUi> = emptyList(),
     val collectionModalFocusIndex: Int = 0,
     val showCreateCollectionDialog: Boolean = false,
-    val currentLetter: String = "",
-    val availableLetters: List<String> = emptyList(),
-    val showLetterOverlay: Boolean = false,
-    val overlayLetter: String = "",
-    val letterJumpTrigger: Int = 0
+    val gridItems: List<LibraryGridItem> = emptyList(),
+    val sectionLabels: List<String> = emptyList(),
+    val currentSectionLabel: String = "",
+    val showSectionOverlay: Boolean = false,
+    val overlaySectionLabel: String = "",
+    val sectionJumpTrigger: Int = 0
 ) {
-    val showAlphabetSidebar: Boolean
-        get() = availableLetters.size >= 9
+    val showSectionSidebar: Boolean
+        get() = sectionLabels.size >= 3
 
     val columnsCount: Int
         get() = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
@@ -210,6 +224,12 @@ data class LibraryUiState(
 
     val currentCategoryOptions: List<String>
         get() = when (currentFilterCategory) {
+            FilterCategory.SORT -> SortOption.entries.map { option ->
+                val directionIndicator = if (option == activeFilters.sort.option) {
+                    if (activeFilters.sort.descending) " v" else " ^"
+                } else ""
+                option.label + directionIndicator
+            }
             FilterCategory.SEARCH -> recentSearches
             FilterCategory.SOURCE -> SourceFilter.entries.map { it.label }
             FilterCategory.GENRE -> filterOptions.genres
@@ -217,13 +237,21 @@ data class LibraryUiState(
         }
 
     val isCurrentCategoryMultiSelect: Boolean
-        get() = currentFilterCategory !in listOf(FilterCategory.SOURCE, FilterCategory.SEARCH)
+        get() = currentFilterCategory !in listOf(FilterCategory.SORT, FilterCategory.SOURCE, FilterCategory.SEARCH)
 
     val selectedSourceIndex: Int
         get() = activeFilters.source.ordinal
 
+    val selectedSortIndex: Int
+        get() = activeFilters.sort.option.ordinal
+
     val selectedOptionsInCurrentCategory: Set<String>
         get() = when (currentFilterCategory) {
+            FilterCategory.SORT -> {
+                val option = activeFilters.sort.option
+                val indicator = if (activeFilters.sort.descending) " v" else " ^"
+                setOf(option.label + indicator)
+            }
             FilterCategory.SEARCH -> emptySet()
             FilterCategory.SOURCE -> emptySet()
             FilterCategory.GENRE -> activeFilters.genres
@@ -232,6 +260,7 @@ data class LibraryUiState(
 
     val currentCategoryActiveCount: Int
         get() = when (currentFilterCategory) {
+            FilterCategory.SORT -> if (activeFilters.sort.option != SortOption.TITLE) 1 else 0
             FilterCategory.SEARCH -> if (activeFilters.searchQuery.isNotEmpty()) 1 else 0
             FilterCategory.SOURCE -> if (activeFilters.source != SourceFilter.ALL) 1 else 0
             FilterCategory.GENRE -> activeFilters.genres.size
@@ -241,6 +270,7 @@ data class LibraryUiState(
     val availableCategories: List<FilterCategory>
         get() = FilterCategory.entries.filter { category ->
             when (category) {
+                FilterCategory.SORT -> true
                 FilterCategory.SEARCH -> true
                 FilterCategory.SOURCE -> true
                 FilterCategory.GENRE -> filterOptions.genres.isNotEmpty()
@@ -553,21 +583,35 @@ class LibraryViewModel @Inject constructor(
                         val matchesPlayers = filters.players.isEmpty() ||
                             game.gameModes?.split(",")?.map { it.trim() }?.any { it in filters.players } == true
                         matchesSearch && matchesGenre && matchesPlayers
-                    }.sortedBy { it.sortTitle }
+                    }
 
-                    val availableLetters = computeAvailableLetters(filteredGames)
+                    val sections = computeSections(filteredGames, filters.sort)
+                    val sectionLabels = sections.map { it.sidebarLabel }
 
-                    Log.d(TAG, "loadGames: ${games.size} total, ${filteredGames.size} after filters")
+                    var gameOffset = 0
+                    val gridItems = sections.flatMap { section ->
+                        val header = LibraryGridItem.Header(section.label)
+                        val gameItems = section.games.mapIndexed { i, game ->
+                            LibraryGridItem.Game(game.toUi(cachedPlatformDisplayNames), gameIndex = gameOffset + i)
+                        }
+                        gameOffset += section.games.size
+                        listOf(header) + gameItems
+                    }
+
+                    val allGamesSorted = sections.flatMap { it.games }
+                    val gamesList = allGamesSorted.map { it.toUi(cachedPlatformDisplayNames) }
+
+                    Log.d(TAG, "loadGames: ${games.size} total, ${filteredGames.size} after filters, ${sections.size} sections")
                     _uiState.update { uiState ->
                         val shouldResetFocus = uiState.games.isEmpty()
-                        val newFocusedIndex = if (shouldResetFocus) 0 else uiState.focusedIndex.coerceAtMost((filteredGames.size - 1).coerceAtLeast(0))
-                        val gamesList = filteredGames.map { it.toUi(cachedPlatformDisplayNames) }
-                        val currentLetter = computeLetterForGame(gamesList.getOrNull(newFocusedIndex))
+                        val newFocusedIndex = if (shouldResetFocus) 0 else uiState.focusedIndex.coerceAtMost((gamesList.size - 1).coerceAtLeast(0))
+                        val currentSectionLabel = computeSectionLabelForGameIndex(newFocusedIndex, sections)
                         uiState.copy(
                             games = gamesList,
                             focusedIndex = newFocusedIndex,
-                            availableLetters = availableLetters,
-                            currentLetter = currentLetter
+                            gridItems = gridItems,
+                            sectionLabels = sectionLabels,
+                            currentSectionLabel = currentSectionLabel
                         )
                     }
                     extractGradientsForVisibleGames(_uiState.value.focusedIndex)
@@ -575,87 +619,118 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    private fun computeAvailableLetters(games: List<GameListItem>): List<String> {
-        val letters = games.mapNotNull { game ->
-            val first = game.sortTitle.uppercase().firstOrNull()
-            if (first?.isLetter() == true) first.toString() else null
-        }.distinct().sorted()
-
-        return if (games.any { game ->
-            val first = game.sortTitle.firstOrNull()
-            first != null && !first.isLetter()
-        }) {
-            listOf("#") + letters
-        } else {
-            letters
+    private fun computeSectionLabelForGameIndex(gameIndex: Int, sections: List<GameSection>): String {
+        var offset = 0
+        for (section in sections) {
+            if (gameIndex < offset + section.games.size) return section.sidebarLabel
+            offset += section.games.size
         }
+        return sections.firstOrNull()?.sidebarLabel ?: ""
     }
 
-    private fun computeLetterForGame(game: LibraryGameUi?): String {
-        if (game == null) return ""
-        val first = game.sortTitle.uppercase().firstOrNull() ?: return "#"
-        return if (first.isLetter()) first.toString() else "#"
-    }
-
-    private fun updateCurrentLetterFromFocus() {
+    private fun updateCurrentSectionFromFocus() {
         val state = _uiState.value
-        val focusedGame = state.games.getOrNull(state.focusedIndex)
-        val letter = computeLetterForGame(focusedGame)
-        if (letter != state.currentLetter) {
-            _uiState.update { it.copy(currentLetter = letter) }
+        val gameIndex = state.focusedIndex
+        var offset = 0
+        for (item in state.gridItems) {
+            if (item is LibraryGridItem.Game && item.gameIndex == gameIndex) {
+                val label = findSectionLabelForGridItem(state.gridItems, offset)
+                if (label != state.currentSectionLabel) {
+                    _uiState.update { it.copy(currentSectionLabel = label) }
+                }
+                return
+            }
+            offset++
         }
     }
 
-    private var letterOverlayJob: Job? = null
+    private fun findSectionLabelForGridItem(gridItems: List<LibraryGridItem>, gridIndex: Int): String {
+        for (i in gridIndex downTo 0) {
+            val item = gridItems[i]
+            if (item is LibraryGridItem.Header) return item.label
+        }
+        return ""
+    }
 
-    private fun showLetterOverlay(letter: String) {
-        letterOverlayJob?.cancel()
-        _uiState.update { it.copy(showLetterOverlay = true, overlayLetter = letter) }
-        letterOverlayJob = viewModelScope.launch {
+    private var sectionOverlayJob: Job? = null
+
+    private fun showSectionOverlay(label: String) {
+        sectionOverlayJob?.cancel()
+        _uiState.update { it.copy(showSectionOverlay = true, overlaySectionLabel = label) }
+        sectionOverlayJob = viewModelScope.launch {
             kotlinx.coroutines.delay(600)
-            _uiState.update { it.copy(showLetterOverlay = false) }
+            _uiState.update { it.copy(showSectionOverlay = false) }
         }
     }
 
-    fun jumpToLetter(letter: String, showOverlay: Boolean = true) {
+    fun jumpToSection(sectionLabel: String, showOverlay: Boolean = true) {
         val state = _uiState.value
-        val targetIndex = state.games.indexOfFirst { game ->
-            computeLetterForGame(game) == letter
-        }
-        if (targetIndex >= 0) {
-            _uiState.update {
-                it.copy(
-                    focusedIndex = targetIndex,
-                    currentLetter = letter,
-                    isTouchMode = false,
-                    letterJumpTrigger = it.letterJumpTrigger + 1
-                )
+        val firstGameInSection = state.gridItems.firstOrNull { item ->
+            item is LibraryGridItem.Game && run {
+                val headerIdx = state.gridItems.indexOf(item) - 1
+                headerIdx >= 0 && state.gridItems[headerIdx].let { it is LibraryGridItem.Header && it.label == sectionLabel }
             }
-            extractGradientsForVisibleGames(targetIndex)
-            if (showOverlay) {
-                showLetterOverlay(letter)
+        } as? LibraryGridItem.Game
+
+        if (firstGameInSection == null) {
+            val targetGame = state.gridItems.filterIsInstance<LibraryGridItem.Game>()
+                .firstOrNull { game ->
+                    val gIdx = state.gridItems.indexOf(game)
+                    findSectionLabelForGridItem(state.gridItems, gIdx) == sectionLabel
+                }
+            if (targetGame != null) {
+                _uiState.update {
+                    it.copy(
+                        focusedIndex = targetGame.gameIndex,
+                        currentSectionLabel = sectionLabel,
+                        isTouchMode = false,
+                        sectionJumpTrigger = it.sectionJumpTrigger + 1
+                    )
+                }
+                extractGradientsForVisibleGames(targetGame.gameIndex)
+                if (showOverlay) showSectionOverlay(sectionLabel)
             }
+            return
         }
+
+        _uiState.update {
+            it.copy(
+                focusedIndex = firstGameInSection.gameIndex,
+                currentSectionLabel = sectionLabel,
+                isTouchMode = false,
+                sectionJumpTrigger = it.sectionJumpTrigger + 1
+            )
+        }
+        extractGradientsForVisibleGames(firstGameInSection.gameIndex)
+        if (showOverlay) showSectionOverlay(sectionLabel)
     }
 
-    fun jumpToNextLetter() {
+    fun jumpToNextSection() {
         val state = _uiState.value
-        val letters = state.availableLetters
-        if (letters.isEmpty()) return
+        val labels = state.sectionLabels
+        if (labels.isEmpty()) return
 
-        val currentIndex = letters.indexOf(state.currentLetter)
-        val nextIndex = if (currentIndex < 0 || currentIndex >= letters.lastIndex) 0 else currentIndex + 1
-        jumpToLetter(letters[nextIndex])
+        val currentIndex = labels.indexOf(state.currentSectionLabel)
+        val nextIndex = if (currentIndex < 0 || currentIndex >= labels.lastIndex) 0 else currentIndex + 1
+        jumpToSection(labels[nextIndex])
     }
 
-    fun jumpToPreviousLetter() {
+    fun jumpToPreviousSection() {
         val state = _uiState.value
-        val letters = state.availableLetters
-        if (letters.isEmpty()) return
+        val labels = state.sectionLabels
+        if (labels.isEmpty()) return
 
-        val currentIndex = letters.indexOf(state.currentLetter)
-        val prevIndex = if (currentIndex <= 0) letters.lastIndex else currentIndex - 1
-        jumpToLetter(letters[prevIndex])
+        val currentIndex = labels.indexOf(state.currentSectionLabel)
+        val prevIndex = if (currentIndex <= 0) labels.lastIndex else currentIndex - 1
+        jumpToSection(labels[prevIndex])
+    }
+
+    fun gameIndexToGridIndex(gameIndex: Int): Int {
+        val gridItems = _uiState.value.gridItems
+        for ((gridIdx, item) in gridItems.withIndex()) {
+            if (item is LibraryGridItem.Game && item.gameIndex == gameIndex) return gridIdx
+        }
+        return 0
     }
 
     fun nextPlatform() {
@@ -756,7 +831,7 @@ class LibraryViewModel @Inject constructor(
 
         Log.d(TAG, "moveFocus: $direction, $current -> $newIndex (cols=$cols, total=$total)")
         _uiState.update { it.copy(focusedIndex = newIndex, lastFocusMove = direction, isTouchMode = false) }
-        updateCurrentLetterFromFocus()
+        updateCurrentSectionFromFocus()
         extractGradientsForVisibleGames(newIndex)
         return true
     }
@@ -825,6 +900,16 @@ class LibraryViewModel @Inject constructor(
         val options = state.currentCategoryOptions
 
         val newFilters = when (category) {
+            FilterCategory.SORT -> {
+                val selectedOption = SortOption.entries.getOrNull(optionIndex) ?: return
+                val currentSort = state.activeFilters.sort
+                val newSort = if (selectedOption == currentSort.option) {
+                    currentSort.copy(descending = !currentSort.descending)
+                } else {
+                    ActiveSort(option = selectedOption, descending = selectedOption.defaultDescending)
+                }
+                state.activeFilters.copy(sort = newSort)
+            }
             FilterCategory.SEARCH -> {
                 val query = options.getOrNull(optionIndex) ?: return
                 state.activeFilters.copy(searchQuery = query)
@@ -856,6 +941,7 @@ class LibraryViewModel @Inject constructor(
         val category = state.currentFilterCategory
 
         val newFilters = when (category) {
+            FilterCategory.SORT -> state.activeFilters.copy(sort = ActiveSort())
             FilterCategory.SEARCH -> state.activeFilters.copy(searchQuery = "")
             FilterCategory.SOURCE -> state.activeFilters.copy(source = SourceFilter.ALL)
             FilterCategory.GENRE -> state.activeFilters.copy(genres = emptySet())
@@ -1366,8 +1452,8 @@ class LibraryViewModel @Inject constructor(
             if (state.showAddToCollectionModal || state.showFilterMenu || state.showQuickMenu) {
                 return InputResult.HANDLED
             }
-            if (state.availableLetters.isEmpty()) return InputResult.UNHANDLED
-            jumpToPreviousLetter()
+            if (state.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            jumpToPreviousSection()
             return InputResult.handled(SoundType.SECTION_CHANGE)
         }
 
@@ -1376,8 +1462,8 @@ class LibraryViewModel @Inject constructor(
             if (state.showAddToCollectionModal || state.showFilterMenu || state.showQuickMenu) {
                 return InputResult.HANDLED
             }
-            if (state.availableLetters.isEmpty()) return InputResult.UNHANDLED
-            jumpToNextLetter()
+            if (state.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            jumpToNextSection()
             return InputResult.handled(SoundType.SECTION_CHANGE)
         }
     }

@@ -128,7 +128,12 @@ data class GameListItem(
     val playTimeMinutes: Int,
     val lastPlayed: Instant?,
     val genre: String?,
-    val gameModes: String?
+    val gameModes: String?,
+    val rating: Float?,
+    val userRating: Int,
+    val userDifficulty: Int,
+    val releaseYear: Int?,
+    val addedAt: Instant
 ) {
     val isDownloaded: Boolean get() = localPath != null
 }

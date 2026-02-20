@@ -18,7 +18,12 @@ import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.data.model.ActiveSort
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.model.Section
+import com.nendo.argosy.data.model.SortOption
+import com.nendo.argosy.data.model.SortableProps
+import com.nendo.argosy.data.model.computeGenericSections
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,7 +74,7 @@ sealed class DualCollectionListItem {
 }
 
 enum class DualFilterCategory(val label: String) {
-    SEARCH("Search"), SOURCE("Source"), GENRE("Genre"), PLAYERS("Players"), FRANCHISE("Franchise")
+    SORT("Sort"), SEARCH("Search"), SOURCE("Source"), GENRE("Genre"), PLAYERS("Players"), FRANCHISE("Franchise")
 }
 
 data class DualFilterOption(
@@ -83,8 +88,14 @@ data class DualActiveFilters(
     val players: Set<String> = emptySet(),
     val franchises: Set<String> = emptySet(),
     val searchQuery: String = "",
-    val platformId: Long? = null
+    val platformId: Long? = null,
+    val sort: ActiveSort = ActiveSort()
 )
+
+sealed interface DualLibraryGridItem {
+    data class Header(val label: String) : DualLibraryGridItem
+    data class Game(val game: DualHomeGameUi, val gameIndex: Int) : DualLibraryGridItem
+}
 
 data class DualHomeUiState(
     val sections: List<DualHomeSection> = emptyList(),
@@ -102,17 +113,18 @@ data class DualHomeUiState(
     val collectionGamesFocusedIndex: Int = 0,
     val activeCollectionName: String = "",
     val libraryGames: List<DualHomeGameUi> = emptyList(),
+    val libraryGridItems: List<DualLibraryGridItem> = emptyList(),
     val libraryFocusedIndex: Int = 0,
-    val availableLetters: List<String> = emptyList(),
-    val currentLetter: String = "",
+    val sectionLabels: List<String> = emptyList(),
+    val currentSectionLabel: String = "",
     val libraryColumns: Int = LIBRARY_GRID_COLUMNS,
     val showFilterOverlay: Boolean = false,
     val filterCategory: DualFilterCategory = DualFilterCategory.SOURCE,
     val filterOptions: List<DualFilterOption> = emptyList(),
     val filterFocusedIndex: Int = 0,
     val activeFilters: DualActiveFilters = DualActiveFilters(),
-    val showLetterOverlay: Boolean = false,
-    val overlayLetter: String = "",
+    val showSectionOverlay: Boolean = false,
+    val overlaySectionLabel: String = "",
     val libraryPlatformLabel: String = "All"
 ) {
     val currentSection: DualHomeSection?
@@ -623,54 +635,67 @@ class DualHomeViewModel(
         if (state.libraryGames.isEmpty()) return
         val newIndex = (state.libraryFocusedIndex + delta)
             .coerceIn(0, state.libraryGames.size - 1)
-        val game = state.libraryGames.getOrNull(newIndex)
-        val newLetter = if (game != null) letterForGame(game) else state.currentLetter
+        val sections = computeGenericSections(state.libraryGames, state.activeFilters.sort, DualHomeGameUiProps)
+        val orderedSections = if (state.activeFilters.sort.descending) sections else sections.reversed()
+        val newLabel = sectionLabelForGameIndex(newIndex, orderedSections)
         _uiState.update { it.copy(
             libraryFocusedIndex = newIndex,
-            currentLetter = newLetter
+            currentSectionLabel = newLabel
         )}
     }
 
-    fun jumpToLetter(letter: String) {
+    fun jumpToSection(label: String) {
         val state = _uiState.value
-        val targetIndex = state.libraryGames.indexOfFirst {
-            letterForGame(it) == letter
-        }
-        if (targetIndex >= 0) {
-            _uiState.update { it.copy(
-                libraryFocusedIndex = targetIndex,
-                currentLetter = letter
-            )}
+        val sections = computeGenericSections(state.libraryGames, state.activeFilters.sort, DualHomeGameUiProps)
+        val orderedSections = if (state.activeFilters.sort.descending) sections else sections.reversed()
+        var offset = 0
+        for (section in orderedSections) {
+            if (section.sidebarLabel == label) {
+                _uiState.update { it.copy(
+                    libraryFocusedIndex = offset,
+                    currentSectionLabel = label
+                )}
+                return
+            }
+            offset += section.items.size
         }
     }
 
-    fun nextLetter() {
+    fun nextSortSection() {
         val state = _uiState.value
-        val letters = state.availableLetters
-        if (letters.isEmpty()) return
-        val currentIdx = letters.indexOf(state.currentLetter)
-        val nextIdx = (currentIdx + 1).coerceAtMost(letters.size - 1)
-        jumpToLetter(letters[nextIdx])
-        showLetterOverlay(letters[nextIdx])
+        val labels = state.sectionLabels
+        if (labels.isEmpty()) return
+        val currentIdx = labels.indexOf(state.currentSectionLabel)
+        val nextIdx = (currentIdx + 1).coerceAtMost(labels.size - 1)
+        jumpToSection(labels[nextIdx])
+        showSectionOverlay(labels[nextIdx])
     }
 
-    fun previousLetter() {
+    fun previousSortSection() {
         val state = _uiState.value
-        val letters = state.availableLetters
-        if (letters.isEmpty()) return
-        val currentIdx = letters.indexOf(state.currentLetter)
+        val labels = state.sectionLabels
+        if (labels.isEmpty()) return
+        val currentIdx = labels.indexOf(state.currentSectionLabel)
         val prevIdx = (currentIdx - 1).coerceAtLeast(0)
-        jumpToLetter(letters[prevIdx])
-        showLetterOverlay(letters[prevIdx])
+        jumpToSection(labels[prevIdx])
+        showSectionOverlay(labels[prevIdx])
     }
 
-    private fun showLetterOverlay(letter: String) {
+    private fun showSectionOverlay(label: String) {
         letterOverlayJob?.cancel()
-        _uiState.update { it.copy(showLetterOverlay = true, overlayLetter = letter) }
+        _uiState.update { it.copy(showSectionOverlay = true, overlaySectionLabel = label) }
         letterOverlayJob = viewModelScope.launch {
             kotlinx.coroutines.delay(600)
-            _uiState.update { it.copy(showLetterOverlay = false) }
+            _uiState.update { it.copy(showSectionOverlay = false) }
         }
+    }
+
+    fun gameIndexToGridIndex(gameIndex: Int): Int {
+        val gridItems = _uiState.value.libraryGridItems
+        for ((gridIdx, item) in gridItems.withIndex()) {
+            if (item is DualLibraryGridItem.Game && item.gameIndex == gameIndex) return gridIdx
+        }
+        return 0
     }
 
     // --- Filter Overlay ---
@@ -760,6 +785,16 @@ class DualHomeViewModel(
         val option = state.filterOptions.getOrNull(state.filterFocusedIndex) ?: return
         val label = option.label
         val newFilters = when (state.filterCategory) {
+            DualFilterCategory.SORT -> {
+                val selectedOption = SortOption.entries.getOrNull(state.filterFocusedIndex) ?: return
+                val currentSort = state.activeFilters.sort
+                val newSort = if (selectedOption == currentSort.option) {
+                    currentSort.copy(descending = !currentSort.descending)
+                } else {
+                    ActiveSort(option = selectedOption, descending = selectedOption.defaultDescending)
+                }
+                state.activeFilters.copy(sort = newSort)
+            }
             DualFilterCategory.SOURCE -> state.activeFilters.copy(source = label)
             DualFilterCategory.GENRE -> {
                 val updated = if (state.activeFilters.genres.contains(label))
@@ -791,6 +826,7 @@ class DualHomeViewModel(
     fun clearCategoryFilters() {
         val state = _uiState.value
         val newFilters = when (state.filterCategory) {
+            DualFilterCategory.SORT -> state.activeFilters.copy(sort = ActiveSort())
             DualFilterCategory.SOURCE -> state.activeFilters.copy(source = "ALL")
             DualFilterCategory.GENRE -> state.activeFilters.copy(genres = emptySet())
             DualFilterCategory.PLAYERS -> state.activeFilters.copy(players = emptySet())
@@ -870,20 +906,39 @@ class DualHomeViewModel(
 
     // --- Private: Library Loading ---
 
-    private fun computeLetters(games: List<DualHomeGameUi>): List<String> {
-        return games.map { game ->
-            val ch = game.sortTitle.first().uppercaseChar()
-            if (ch.isDigit()) "#" else ch.toString()
-        }.distinct().let { raw ->
-            val hasHash = raw.contains("#")
-            val alpha = raw.filter { it != "#" }.sorted()
-            if (hasHash) listOf("#") + alpha else alpha
+
+
+    private fun sectionLabelForGameIndex(gameIndex: Int, sections: List<Section<DualHomeGameUi>>): String {
+        var offset = 0
+        for (section in sections) {
+            if (gameIndex < offset + section.items.size) return section.sidebarLabel
+            offset += section.items.size
         }
+        return sections.firstOrNull()?.sidebarLabel ?: ""
     }
 
-    private fun letterForGame(game: DualHomeGameUi): String {
-        val ch = game.sortTitle.first().uppercaseChar()
-        return if (ch.isDigit()) "#" else ch.toString()
+    data class SortResult(
+        val games: List<DualHomeGameUi>,
+        val sections: List<Section<DualHomeGameUi>>,
+        val gridItems: List<DualLibraryGridItem>,
+        val labels: List<String>
+    )
+
+    private fun applySort(games: List<DualHomeGameUi>, sort: ActiveSort): SortResult {
+        val sections = computeGenericSections(games, sort, DualHomeGameUiProps)
+        val orderedSections = if (sort.descending) sections else sections.reversed()
+        val sortedGames = orderedSections.flatMap { it.items }
+        val labels = orderedSections.map { it.sidebarLabel }
+        var gameOffset = 0
+        val gridItems = orderedSections.flatMap { section ->
+            val header = DualLibraryGridItem.Header(section.label)
+            val gameItems = section.items.mapIndexed { i, game ->
+                DualLibraryGridItem.Game(game, gameIndex = gameOffset + i)
+            }
+            gameOffset += section.items.size
+            listOf(header) + gameItems
+        }
+        return SortResult(sortedGames, orderedSections, gridItems, labels)
     }
 
     private fun loadLibraryGames(onLoaded: (() -> Unit)? = null) {
@@ -891,12 +946,14 @@ class DualHomeViewModel(
             val allGames = gameDao.getAllSortedByTitle()
                 .map { it.toUi() }
             allLibraryGames = allGames
-            val filtered = applyFiltersToList(allGames, _uiState.value.activeFilters)
-            val letters = computeLetters(filtered)
+            val filters = _uiState.value.activeFilters
+            val filtered = applyFiltersToList(allGames, filters)
+            val result = applySort(filtered, filters.sort)
             _uiState.update { it.copy(
-                libraryGames = filtered,
-                availableLetters = letters,
-                currentLetter = letters.firstOrNull() ?: "",
+                libraryGames = result.games,
+                libraryGridItems = result.gridItems,
+                sectionLabels = result.labels,
+                currentSectionLabel = result.labels.firstOrNull() ?: "",
                 libraryFocusedIndex = 0
             )}
             onLoaded?.invoke()
@@ -908,12 +965,14 @@ class DualHomeViewModel(
             val platformGames = gameDao.getByPlatform(platformId)
                 .map { it.toUi() }
             allLibraryGames = platformGames
-            val filtered = applyFiltersToList(platformGames, _uiState.value.activeFilters)
-            val letters = computeLetters(filtered)
+            val filters = _uiState.value.activeFilters
+            val filtered = applyFiltersToList(platformGames, filters)
+            val result = applySort(filtered, filters.sort)
             _uiState.update { it.copy(
-                libraryGames = filtered,
-                availableLetters = letters,
-                currentLetter = letters.firstOrNull() ?: "",
+                libraryGames = result.games,
+                libraryGridItems = result.gridItems,
+                sectionLabels = result.labels,
+                currentSectionLabel = result.labels.firstOrNull() ?: "",
                 libraryFocusedIndex = 0
             )}
             onLoaded?.invoke()
@@ -922,12 +981,13 @@ class DualHomeViewModel(
 
     private fun applyFilters(filters: DualActiveFilters) {
         val filtered = applyFiltersToList(allLibraryGames, filters)
-        val letters = computeLetters(filtered)
+        val result = applySort(filtered, filters.sort)
         val options = buildFilterOptions(_uiState.value.filterCategory, filters)
         _uiState.update { it.copy(
-            libraryGames = filtered,
-            availableLetters = letters,
-            currentLetter = letters.firstOrNull() ?: "",
+            libraryGames = result.games,
+            libraryGridItems = result.gridItems,
+            sectionLabels = result.labels,
+            currentSectionLabel = result.labels.firstOrNull() ?: "",
             libraryFocusedIndex = 0,
             filterOptions = options
         )}
@@ -964,6 +1024,15 @@ class DualHomeViewModel(
         filters: DualActiveFilters
     ): List<DualFilterOption> {
         return when (category) {
+            DualFilterCategory.SORT -> SortOption.entries.map { option ->
+                val directionIndicator = if (option == filters.sort.option) {
+                    if (filters.sort.descending) " v" else " ^"
+                } else ""
+                DualFilterOption(
+                    label = option.label + directionIndicator,
+                    isSelected = option == filters.sort.option
+                )
+            }
             DualFilterCategory.SOURCE -> listOf(
                 DualFilterOption("ALL", filters.source == "ALL"),
                 DualFilterOption("PLAYABLE", filters.source == "PLAYABLE"),
@@ -1030,7 +1099,21 @@ class DualHomeViewModel(
             titleId = null,
             genre = genre,
             gameModes = gameModes,
-            franchises = franchises
+            franchises = franchises,
+            addedAt = addedAt.toEpochMilli(),
+            playCount = playCount
         )
     }
+}
+
+object DualHomeGameUiProps : SortableProps<DualHomeGameUi> {
+    override fun sortTitle(item: DualHomeGameUi) = item.sortTitle
+    override fun rating(item: DualHomeGameUi) = item.communityRating
+    override fun userRating(item: DualHomeGameUi) = item.userRating
+    override fun userDifficulty(item: DualHomeGameUi) = item.userDifficulty
+    override fun releaseYear(item: DualHomeGameUi) = item.releaseYear
+    override fun playCount(item: DualHomeGameUi) = item.playCount
+    override fun playTimeMinutes(item: DualHomeGameUi) = item.playTimeMinutes
+    override fun lastPlayedEpochMilli(item: DualHomeGameUi) = item.lastPlayedAt
+    override fun addedAtEpochMilli(item: DualHomeGameUi) = item.addedAt ?: 0L
 }

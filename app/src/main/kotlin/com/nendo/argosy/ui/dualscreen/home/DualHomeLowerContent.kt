@@ -77,13 +77,15 @@ fun DualHomeLowerContent(
             }
             DualHomeViewMode.COLLECTION_GAMES -> {
                 DualHomeLibraryGrid(
-                    games = uiState.collectionGames,
+                    gridItems = uiState.collectionGames.mapIndexed { i, game ->
+                        DualLibraryGridItem.Game(game, gameIndex = i)
+                    },
                     focusedIndex = uiState.collectionGamesFocusedIndex,
                     columns = uiState.libraryColumns,
-                    availableLetters = emptyList(),
-                    currentLetter = "",
+                    sectionLabels = emptyList(),
+                    currentSectionLabel = "",
                     onGameTapped = onGridGameTapped,
-                    onLetterClick = {}
+                    onSectionClick = {}
                 )
             }
             DualHomeViewMode.LIBRARY_GRID -> {
@@ -97,16 +99,16 @@ fun DualHomeLowerContent(
                     )
                 } else {
                     DualHomeLibraryGrid(
-                        games = uiState.libraryGames,
+                        gridItems = uiState.libraryGridItems,
                         focusedIndex = uiState.libraryFocusedIndex,
                         columns = uiState.libraryColumns,
-                        availableLetters = uiState.availableLetters,
-                        currentLetter = uiState.currentLetter,
+                        sectionLabels = uiState.sectionLabels,
+                        currentSectionLabel = uiState.currentSectionLabel,
                         platformLabel = uiState.libraryPlatformLabel,
-                        showLetterOverlay = uiState.showLetterOverlay,
-                        overlayLetter = uiState.overlayLetter,
+                        showSectionOverlay = uiState.showSectionOverlay,
+                        overlaySectionLabel = uiState.overlaySectionLabel,
                         onGameTapped = onGridGameTapped,
-                        onLetterClick = onLetterClick
+                        onSectionClick = onLetterClick
                     )
                 }
             }

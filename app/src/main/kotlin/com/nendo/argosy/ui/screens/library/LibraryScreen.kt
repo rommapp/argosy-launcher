@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -133,7 +134,8 @@ fun LibraryScreen(
     argosyViewModel: ArgosyViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = uiState.focusedIndex)
+    val initialGridIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
+    val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = initialGridIndex)
     var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialPlatformId) {
@@ -157,7 +159,7 @@ fun LibraryScreen(
 
     LaunchedEffect(uiState.games.size) {
         if (uiState.games.isNotEmpty() && uiState.focusedIndex > 0) {
-            gridState.scrollToItem(uiState.focusedIndex)
+            gridState.scrollToItem(viewModel.gameIndexToGridIndex(uiState.focusedIndex))
         }
     }
 
@@ -179,19 +181,20 @@ fun LibraryScreen(
 
         isProgrammaticScroll = true
         gridState.animateScrollToItem(
-            index = uiState.focusedIndex,
+            index = viewModel.gameIndexToGridIndex(uiState.focusedIndex),
             scrollOffset = -centeringOffset
         )
         isProgrammaticScroll = false
     }
 
-    LaunchedEffect(uiState.letterJumpTrigger) {
-        if (uiState.letterJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(uiState.sectionJumpTrigger) {
+        if (uiState.sectionJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
 
+        val gridIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
         val layoutInfo = gridState.layoutInfo
         val viewportHeight = layoutInfo.viewportSize.height
         if (viewportHeight == 0) {
-            gridState.scrollToItem(uiState.focusedIndex)
+            gridState.scrollToItem(gridIndex)
             return@LaunchedEffect
         }
 
@@ -201,7 +204,7 @@ fun LibraryScreen(
 
         isProgrammaticScroll = true
         gridState.animateScrollToItem(
-            index = uiState.focusedIndex,
+            index = gridIndex,
             scrollOffset = -centeringOffset
         )
         isProgrammaticScroll = false
@@ -348,7 +351,7 @@ fun LibraryScreen(
                             }
 
                             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                                val sidebarWidth = if (uiState.showAlphabetSidebar) 40.dp else 0.dp
+                                val sidebarWidth = if (uiState.showSectionSidebar) 40.dp else 0.dp
                                 val totalSpacing = gridSpacing * (columnsCount + 1)
                                 val columnWidth = (maxWidth - totalSpacing - sidebarWidth) / columnsCount
                                 val cardHeight = columnWidth / aspectRatio
@@ -366,31 +369,49 @@ fun LibraryScreen(
                                     verticalArrangement = Arrangement.spacedBy(gridSpacing),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    itemsIndexed(
-                                        items = uiState.games,
-                                        key = { _, game -> game.id }
-                                    ) { index, game ->
-                                        val isFocused = index == uiState.focusedIndex
-                                        LibraryGameCard(
-                                            game = game,
-                                            isFocused = isFocused,
-                                            showFocus = !uiState.isTouchMode || uiState.hasSelectedGame,
-                                            cardHeight = cardHeight,
-                                            showPlatformBadge = uiState.currentPlatformIndex < 0,
-                                            coverPathOverride = uiState.repairedCoverPaths[game.id],
-                                            onCoverLoadFailed = viewModel::repairCoverImage,
-                                            onClick = { viewModel.handleItemTap(index, onGameSelect) },
-                                            onLongClick = { viewModel.handleItemLongPress(index) },
-                                            modifier = Modifier.zIndex(if (isFocused) 1f else 0f)
-                                        )
+                                    items(
+                                        count = uiState.gridItems.size,
+                                        key = { i ->
+                                            when (val item = uiState.gridItems[i]) {
+                                                is LibraryGridItem.Header -> "header-${item.label}"
+                                                is LibraryGridItem.Game -> item.game.id
+                                            }
+                                        },
+                                        span = { i ->
+                                            when (uiState.gridItems[i]) {
+                                                is LibraryGridItem.Header -> GridItemSpan(maxLineSpan)
+                                                is LibraryGridItem.Game -> GridItemSpan(1)
+                                            }
+                                        }
+                                    ) { index ->
+                                        when (val item = uiState.gridItems[index]) {
+                                            is LibraryGridItem.Header -> {
+                                                SectionDivider(label = item.label)
+                                            }
+                                            is LibraryGridItem.Game -> {
+                                                val isFocused = item.gameIndex == uiState.focusedIndex
+                                                LibraryGameCard(
+                                                    game = item.game,
+                                                    isFocused = isFocused,
+                                                    showFocus = !uiState.isTouchMode || uiState.hasSelectedGame,
+                                                    cardHeight = cardHeight,
+                                                    showPlatformBadge = uiState.currentPlatformIndex < 0,
+                                                    coverPathOverride = uiState.repairedCoverPaths[item.game.id],
+                                                    onCoverLoadFailed = viewModel::repairCoverImage,
+                                                    onClick = { viewModel.handleItemTap(item.gameIndex, onGameSelect) },
+                                                    onLongClick = { viewModel.handleItemLongPress(item.gameIndex) },
+                                                    modifier = Modifier.zIndex(if (isFocused) 1f else 0f)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
 
-                                if (uiState.showAlphabetSidebar) {
+                                if (uiState.showSectionSidebar) {
                                     AlphabetSidebar(
-                                        availableLetters = uiState.availableLetters,
-                                        currentLetter = uiState.currentLetter,
-                                        onLetterClick = { viewModel.jumpToLetter(it) },
+                                        availableLetters = uiState.sectionLabels,
+                                        currentLetter = uiState.currentSectionLabel,
+                                        onLetterClick = { viewModel.jumpToSection(it) },
                                         modifier = Modifier
                                             .align(Alignment.CenterEnd)
                                             .fillMaxHeight()
@@ -414,7 +435,7 @@ fun LibraryScreen(
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 LibraryFooter(
                     focusedGame = uiState.focusedGame,
-                    showLetterJump = uiState.availableLetters.size > 1,
+                    showSectionJump = uiState.sectionLabels.size > 1,
                     onHintClick = { button ->
                         when (button) {
                             InputButton.A -> uiState.focusedGame?.let { onGameSelect(it.id) }
@@ -621,8 +642,8 @@ fun LibraryScreen(
         )
 
         LetterOverlay(
-            letter = uiState.overlayLetter,
-            visible = uiState.showLetterOverlay
+            letter = uiState.overlaySectionLabel,
+            visible = uiState.showSectionOverlay
         )
     }
 }
@@ -785,12 +806,12 @@ private fun LibraryGameCard(
 @Composable
 private fun LibraryFooter(
     focusedGame: LibraryGameUi?,
-    showLetterJump: Boolean = false,
+    showSectionJump: Boolean = false,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
     val hints = buildList {
-        if (showLetterJump) {
-            add(InputButton.LT_RT to "Jump Letter")
+        if (showSectionJump) {
+            add(InputButton.LT_RT to "Jump Section")
         }
         add(InputButton.A to "Details")
         add(InputButton.Y to if (focusedGame?.isFavorite == true) "Unfavorite" else "Favorite")
@@ -801,6 +822,31 @@ private fun LibraryFooter(
         hints = hints,
         onHintClick = onHintClick
     )
+}
+
+@Composable
+private fun SectionDivider(
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.spacingSm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+    }
 }
 
 @Composable
@@ -879,7 +925,7 @@ private fun FilterMenuOverlay(
     ) {
         Column(
             modifier = Modifier
-                .width(Dimens.modalWidthLg)
+                .width(Dimens.modalWidthLg + 80.dp)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
                 .clickableNoFocus(enabled = false) {}
@@ -907,6 +953,7 @@ private fun FilterMenuOverlay(
                 categories.forEach { category ->
                     val isCurrent = category == uiState.currentFilterCategory
                     val hasActiveFilters = when (category) {
+                        FilterCategory.SORT -> uiState.activeFilters.sort.option != com.nendo.argosy.data.model.SortOption.TITLE
                         FilterCategory.SEARCH -> uiState.activeFilters.searchQuery.isNotEmpty()
                         FilterCategory.SOURCE -> uiState.activeFilters.source != SourceFilter.ALL
                         FilterCategory.GENRE -> uiState.activeFilters.genres.isNotEmpty()
@@ -1037,10 +1084,10 @@ private fun FilterMenuOverlay(
                 ) {
                     itemsIndexed(options) { index, option ->
                         val isFocused = index == uiState.filterOptionIndex
-                        val isSelected = if (isMultiSelect) {
-                            option in selectedOptions
-                        } else {
-                            index == uiState.selectedSourceIndex
+                        val isSelected = when {
+                            isMultiSelect -> option in selectedOptions
+                            uiState.currentFilterCategory == FilterCategory.SORT -> index == uiState.selectedSortIndex
+                            else -> index == uiState.selectedSourceIndex
                         }
                         FilterOptionItem(
                             label = option,

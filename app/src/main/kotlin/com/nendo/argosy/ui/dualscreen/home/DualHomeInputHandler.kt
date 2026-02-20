@@ -80,12 +80,12 @@ class DualHomeInputHandler(
             }
             com.nendo.argosy.ui.input.GamepadEvent.PrevSection -> {
                 if (inAppBar) viewModel.focusCarousel()
-                viewModel.previousSection()
+                viewModel.previousSortSection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.NextSection -> {
                 if (inAppBar) viewModel.focusCarousel()
-                viewModel.nextSection()
+                viewModel.nextSortSection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Select -> {
@@ -272,12 +272,12 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.PrevTrigger -> {
-                viewModel.previousLetter()
+                viewModel.previousSortSection()
                 onBroadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.NextTrigger -> {
-                viewModel.nextLetter()
+                viewModel.nextSortSection()
                 onBroadcastLibraryGameSelection()
                 InputResult.HANDLED
             }

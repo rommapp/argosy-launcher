@@ -16,6 +16,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorResolver
@@ -35,11 +38,12 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.hardware.ScreenCaptureManager
 import com.nendo.argosy.ui.ArgosyApp
 import com.nendo.argosy.ui.audio.AmbientAudioManager
-import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.theme.ALauncherTheme
+import android.view.Display
+import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.DisplayRoleResolver
 import com.nendo.argosy.util.PermissionHelper
@@ -84,6 +88,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
     @Inject lateinit var edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager
     @Inject lateinit var notificationManager: com.nendo.argosy.ui.notification.NotificationManager
+    @Inject lateinit var emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao
+    @Inject lateinit var playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -93,13 +99,16 @@ class MainActivity : ComponentActivity() {
     private lateinit var emulatorSessionPolicy: EmulatorSessionPolicy
     private lateinit var preferencesObserver: MainActivityPreferencesObserver
 
+
     lateinit var dualScreenManager: DualScreenManager
         private set
 
     private val _pendingDeepLink = MutableStateFlow<android.net.Uri?>(null)
     val pendingDeepLink: StateFlow<android.net.Uri?> = _pendingDeepLink
 
-    var isRolesSwapped = false
+    var isRolesSwapped by mutableStateOf(false)
+        private set
+    var isDualScreenDevice by mutableStateOf(false)
         private set
     private var dualScreenInputFocus = "AUTO"
 
@@ -107,7 +116,10 @@ class MainActivity : ComponentActivity() {
 
     var isOverlayFocused: Boolean
         get() = dualScreenManager.isOverlayFocused
-        set(value) { dualScreenManager.isOverlayFocused = value }
+        set(value) {
+            dualScreenManager.isOverlayFocused = value
+            updateWindowFocusability()
+        }
 
     val dualScreenShowcase get() = dualScreenManager.dualScreenShowcase
     val dualGameDetailState get() = dualScreenManager.dualGameDetailState
@@ -118,6 +130,8 @@ class MainActivity : ComponentActivity() {
     val dualCollectionShowcase get() = dualScreenManager.dualCollectionShowcase
     val pendingOverlayEvent get() = dualScreenManager.pendingOverlayEvent
     val swappedDualHomeViewModel get() = dualScreenManager.swappedDualHomeViewModel
+    val swappedCurrentScreen get() = dualScreenManager.swappedCurrentScreen
+    val swappedGameDetailViewModel get() = dualScreenManager.swappedGameDetailViewModel
     val homeAppsList get() = dualScreenManager.homeAppsList
 
     fun clearPendingOverlay() = dualScreenManager.clearPendingOverlay()
@@ -166,11 +180,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        if (display != null && display!!.displayId != Display.DEFAULT_DISPLAY) {
+            val companionIntent = Intent(this, SecondaryHomeActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            startActivity(companionIntent)
+            finish()
+            return
+        }
+
         emulatorSessionPolicy = EmulatorSessionPolicy(
             preferencesRepository = preferencesRepository,
             permissionHelper = permissionHelper,
             sessionStateStore = sessionStateStore,
-            displayAffinityHelper = displayAffinityHelper
+            displayAffinityHelper = displayAffinityHelper,
+            playSessionTracker = playSessionTracker
         )
 
         if (emulatorSessionPolicy.shouldYieldToEmulator(this, intent)) {
@@ -184,6 +208,7 @@ class MainActivity : ComponentActivity() {
 
         val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
         isRolesSwapped = resolver.isSwapped
+        isDualScreenDevice = displayAffinityHelper.hasSecondaryDisplay
         sessionStateStore.setRolesSwapped(isRolesSwapped)
         dualScreenInputFocus = sessionStateStore.getDualScreenInputFocus()
 
@@ -208,17 +233,33 @@ class MainActivity : ComponentActivity() {
             preferencesRepository = preferencesRepository,
             edenContentManager = edenContentManager,
             notificationManager = notificationManager,
+            emulatorConfigDao = emulatorConfigDao,
             isRolesSwapped = isRolesSwapped
         )
+        DualScreenManagerHolder.instance = dualScreenManager
 
         if (isRolesSwapped) {
             dualScreenManager.initSwappedViewModel()
         }
 
+        dualScreenManager.onRoleSwapped = { swapped ->
+            isRolesSwapped = swapped
+            if (swapped && dualScreenManager.swappedDualHomeViewModel == null) {
+                dualScreenManager.initSwappedViewModel()
+            }
+            updateWindowFocusability()
+        }
+        dualScreenManager.onDisplayChanged = { hasDisplay ->
+            isDualScreenDevice = hasDisplay
+        }
+        dualScreenManager.onOverlayFocusChanged = { _ ->
+            updateWindowFocusability()
+        }
         dualScreenManager.registerReceivers()
         dualScreenManager.ensureCompanionLaunched()
         initCacheAndPreferences()
         collectLaunchRetryEvents()
+        collectSwappedGameState()
 
         com.nendo.argosy.data.sync.AchievementSubmissionWorker.schedule(this)
 
@@ -237,7 +278,7 @@ class MainActivity : ComponentActivity() {
             ALauncherTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     ArgosyApp(
-                        isDualScreenDevice = displayAffinityHelper.hasSecondaryDisplay,
+                        isDualScreenDevice = isDualScreenDevice,
                         isRolesSwapped = isRolesSwapped,
                         isCompanionActive = isCompanionActive,
                         dualScreenShowcase = dualScreenShowcase,
@@ -262,6 +303,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        Log.d(TAG, "onResume: swapped=$isRolesSwapped gameActive=${if (::dualScreenManager.isInitialized) dualScreenManager.swappedIsGameActive.value else "N/A"} hasResumedBefore=$hasResumedBefore")
 
         dualScreenManager.broadcastForegroundState(true)
 
@@ -275,18 +317,24 @@ class MainActivity : ComponentActivity() {
         }
 
         emulatorSessionPolicy.clearStaleSession(this, dualScreenManager)
+        updateWindowFocusability()
+
+        if (::dualScreenManager.isInitialized) {
+            val emulatorDisplay = dualScreenManager.emulatorDisplayId
+            if (emulatorDisplay != null && emulatorDisplay != display?.displayId) {
+                dualScreenManager.restoreEmulatorFocus()
+            }
+        }
 
         if (hasResumedBefore) {
             romMRepository.onAppResumed()
             activityScope.launch { romMRepository.initialize() }
             ambientAudioManager.fadeIn()
+            dualScreenManager.ensureCompanionLaunched()
         } else {
             if (displayAffinityHelper.hasSecondaryDisplay && !isRolesSwapped) {
                 window.decorView.postDelayed({
-                    sendBroadcast(
-                        Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
-                            .setPackage(packageName)
-                    )
+                    dualScreenManager.companionHost?.refocusSelf()
                 }, 500)
             }
         }
@@ -310,20 +358,23 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (isRolesSwapped &&
+            dualScreenManager.swappedIsGameActive.value &&
+            !isOverlayFocused
+        ) {
+            return true
+        }
         if (dualScreenManager.isCompanionActive.value &&
             !isRolesSwapped &&
             !isOverlayFocused &&
             dualScreenInputFocus == "TOP"
         ) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                sendBroadcast(
-                    Intent(DualScreenBroadcasts.ACTION_FORWARD_KEY).apply {
-                        setPackage(packageName)
-                        putExtra(DualScreenBroadcasts.EXTRA_KEY_CODE, event.keyCode)
-                        putExtra("swap_ab", sessionStateStore.getSwapAB())
-                        putExtra("swap_xy", sessionStateStore.getSwapXY())
-                        putExtra("swap_start_select", sessionStateStore.getSwapStartSelect())
-                    }
+                dualScreenManager.companionHost?.onForwardKey(
+                    event.keyCode,
+                    sessionStateStore.getSwapAB(),
+                    sessionStateStore.getSwapXY(),
+                    sessionStateStore.getSwapStartSelect()
                 )
             }
             return true
@@ -351,16 +402,19 @@ class MainActivity : ComponentActivity() {
                 !isOverlayFocused &&
                 !isRolesSwapped
             ) {
-                sendBroadcast(
-                    Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
-                        .setPackage(packageName)
-                )
+                dualScreenManager.companionHost?.refocusSelf()
             }
         }
         return super.dispatchTouchEvent(event)
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (isRolesSwapped &&
+            dualScreenManager.swappedIsGameActive.value &&
+            !isOverlayFocused
+        ) {
+            return true
+        }
         if (gamepadInputHandler.handleMotionEvent(event)) {
             return true
         }
@@ -371,6 +425,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        Log.d(TAG, "onWindowFocusChanged: hasFocus=$hasFocus swapped=$isRolesSwapped gameActive=${if (::dualScreenManager.isInitialized) dualScreenManager.swappedIsGameActive.value else "N/A"}")
+        if (hasFocus &&
+            isRolesSwapped &&
+            ::dualScreenManager.isInitialized &&
+            dualScreenManager.swappedIsGameActive.value &&
+            !isOverlayFocused
+        ) {
+            updateWindowFocusability()
+            return
+        }
         if (hasFocus) {
             val timeSinceFocusLost = System.currentTimeMillis() - focusLostTime
             if (hadFocusBefore && focusLostTime > 0 && timeSinceFocusLost < 1000) {
@@ -392,6 +456,12 @@ class MainActivity : ComponentActivity() {
             launchRetryTracker.onFocusLost()
             ambientAudioManager.fadeOut()
             ambientLedManager.setContext(AmbientLedContext.IN_GAME)
+            if (::dualScreenManager.isInitialized) {
+                val emulatorDisplay = dualScreenManager.emulatorDisplayId
+                if (emulatorDisplay != null && emulatorDisplay != display?.displayId) {
+                    dualScreenManager.restoreEmulatorFocus()
+                }
+            }
         }
     }
 
@@ -430,6 +500,26 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "Retrying launch intent after quick return")
                 startActivity(intent)
             }
+        }
+    }
+
+    private fun collectSwappedGameState() {
+        activityScope.launch {
+            dualScreenManager.swappedIsGameActive.collect {
+                updateWindowFocusability()
+            }
+        }
+    }
+
+    private fun updateWindowFocusability() {
+        val shouldBlock = isRolesSwapped &&
+            dualScreenManager.swappedIsGameActive.value &&
+            !isOverlayFocused
+        Log.d(TAG, "updateWindowFocusability: shouldBlock=$shouldBlock (swapped=$isRolesSwapped gameActive=${dualScreenManager.swappedIsGameActive.value} overlay=$isOverlayFocused)")
+        if (shouldBlock) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
         }
     }
 

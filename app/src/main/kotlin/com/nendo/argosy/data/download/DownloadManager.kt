@@ -19,6 +19,7 @@ import com.nendo.argosy.data.download.nsz.NszDecompressor
 import com.nendo.argosy.data.emulator.EdenContentManager
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.M3uManager
+import com.nendo.argosy.DualScreenManagerHolder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -206,8 +207,6 @@ class DownloadManager @Inject constructor(
 
     companion object {
         private const val TAG = "DownloadManager"
-        const val ACTION_DOWNLOAD_COMPLETED = "com.nendo.argosy.DOWNLOAD_COMPLETED"
-        const val EXTRA_GAME_ID = "game_id"
     }
 
     private suspend fun getDownloadDir(platformSlug: String): File {
@@ -335,11 +334,7 @@ class DownloadManager @Inject constructor(
     }
 
     private fun broadcastDownloadCompleted(gameId: Long) {
-        val intent = android.content.Intent(ACTION_DOWNLOAD_COMPLETED).apply {
-            setPackage(context.packageName)
-            putExtra(EXTRA_GAME_ID, gameId)
-        }
-        context.sendBroadcast(intent)
+        DualScreenManagerHolder.instance?.onDownloadCompleted(gameId)
     }
 
     suspend fun enqueueDownload(

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Toys
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.HorizontalDivider
@@ -88,7 +89,9 @@ data class QuickSettingsState(
     val systemVolume: Float = 1f,
     val secondaryVolume: Float? = null,
     val screenBrightness: Float = 0.5f,
-    val secondaryBrightness: Float? = null
+    val secondaryBrightness: Float? = null,
+    val isDualScreenActive: Boolean = false,
+    val isRolesSwapped: Boolean = false
 )
 
 @Composable
@@ -108,16 +111,19 @@ fun QuickSettingsPanel(
     onSecondaryVolumeChange: (Float) -> Unit,
     onBrightnessChange: (Float) -> Unit,
     onSecondaryBrightnessChange: (Float) -> Unit,
+    onSwapDisplays: () -> Unit = {},
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val hasVibrationSlider = state.vibrationSupported && state.hapticEnabled
     val hasSecondaryVolume = state.secondaryVolume != null
     val hasSecondaryBrightness = state.secondaryBrightness != null
+    val hasSwapDisplays = state.isDualScreenActive
     val baseItemCount = 6 +
         (if (hasVibrationSlider) 1 else 0) +
         (if (hasSecondaryVolume) 1 else 0) +
-        (if (hasSecondaryBrightness) 1 else 0)
+        (if (hasSecondaryBrightness) 1 else 0) +
+        (if (hasSwapDisplays) 1 else 0)
     val hasFanSlider = state.deviceSettingsSupported && state.fanMode == FanMode.CUSTOM && state.deviceSettingsEnabled
     val deviceItemCount = when {
         !state.deviceSettingsSupported -> 0
@@ -352,6 +358,18 @@ fun QuickSettingsPanel(
                             isFocused = focusedIndex == deviceItemCount + 5 + avOffset + vibrationSliderOffset,
                             onClick = onAmbientToggle
                         )
+                    }
+
+                    if (hasSwapDisplays) {
+                        item {
+                            QuickSettingToggle(
+                                icon = Icons.Default.SwapHoriz,
+                                label = "Swap Displays",
+                                isEnabled = state.isRolesSwapped,
+                                isFocused = focusedIndex == deviceItemCount + 6 + avOffset + vibrationSliderOffset,
+                                onClick = onSwapDisplays
+                            )
+                        }
                     }
                 }
 

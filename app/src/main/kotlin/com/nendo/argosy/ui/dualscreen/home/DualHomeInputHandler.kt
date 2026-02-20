@@ -62,7 +62,9 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Down -> {
-                if (!inAppBar && apps.isNotEmpty()) {
+                val isExternal = com.nendo.argosy.DualScreenManagerHolder.instance
+                    ?.isExternalDisplay == true
+                if (!inAppBar && apps.isNotEmpty() && !isExternal) {
                     viewModel.focusAppBar(apps.size)
                     InputResult.HANDLED
                 } else InputResult.UNHANDLED

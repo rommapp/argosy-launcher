@@ -3,7 +3,7 @@ package com.nendo.argosy.hardware
 import android.util.Log
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
-import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
+import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailTab
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel
@@ -163,6 +163,10 @@ class SecondaryHomeInputHandler(
 
     fun handleCompanionInput(event: GamepadEvent): InputResult {
         if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
+
+        val isExternal = com.nendo.argosy.DualScreenManagerHolder.instance
+            ?.isExternalDisplay == true
+        if (isExternal) return InputResult.UNHANDLED
 
         val state = viewModel.uiState.value
         val appBarIndex = state.companionAppBarIndex
@@ -329,7 +333,9 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Down -> {
-                if (!inAppBar) {
+                val isExternal = com.nendo.argosy.DualScreenManagerHolder.instance
+                    ?.isExternalDisplay == true
+                if (!inAppBar && !isExternal) {
                     dualHomeViewModel.focusAppBar(apps.size)
                     broadcasts.broadcastViewModeChange()
                     InputResult.HANDLED
@@ -1015,7 +1021,7 @@ class SecondaryHomeInputHandler(
 }
 
 private fun overlayNameFor(event: GamepadEvent): String = when (event) {
-    GamepadEvent.LeftStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_MENU
-    GamepadEvent.RightStickClick -> DualScreenBroadcasts.OVERLAY_QUICK_SETTINGS
-    else -> DualScreenBroadcasts.OVERLAY_MENU
+    GamepadEvent.LeftStickClick -> DualScreenManager.OVERLAY_QUICK_MENU
+    GamepadEvent.RightStickClick -> DualScreenManager.OVERLAY_QUICK_SETTINGS
+    else -> DualScreenManager.OVERLAY_MENU
 }

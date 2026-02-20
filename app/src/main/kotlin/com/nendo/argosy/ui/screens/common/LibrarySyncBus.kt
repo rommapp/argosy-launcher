@@ -1,8 +1,6 @@
 package com.nendo.argosy.ui.screens.common
 
-import android.content.Context
-import android.content.Intent
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.nendo.argosy.DualScreenManagerHolder
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -11,9 +9,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class LibrarySyncBus @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class LibrarySyncBus @Inject constructor() {
     private val _syncCompleted = MutableSharedFlow<Unit>(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -26,9 +22,6 @@ class LibrarySyncBus @Inject constructor(
     }
 
     private fun broadcastLibraryRefresh() {
-        val intent = Intent("com.nendo.argosy.LIBRARY_REFRESH").apply {
-            setPackage(context.packageName)
-        }
-        context.sendBroadcast(intent)
+        DualScreenManagerHolder.instance?.companionHost?.onLibraryRefresh()
     }
 }

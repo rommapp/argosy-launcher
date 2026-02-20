@@ -6,8 +6,6 @@
  */
 package com.nendo.argosy.ui.dualscreen.home
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -67,7 +65,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -137,17 +134,17 @@ fun DualHomeLowerScreen(
     onOpenDrawer: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val listState = rememberLazyListState()
 
     LaunchedEffect(selectedIndex, games) {
         if (games.isNotEmpty()) {
             if (selectedIndex in games.indices) {
+                com.nendo.argosy.DualScreenManagerHolder.instance
+                    ?.onGameSelected(games[selectedIndex].toShowcaseState())
                 listState.animateScrollToItem(
                     index = selectedIndex,
                     scrollOffset = -200
                 )
-                broadcastGameSelection(context, games[selectedIndex])
             } else if (hasMoreGames && selectedIndex == games.size) {
                 listState.animateScrollToItem(
                     index = games.size,
@@ -251,12 +248,16 @@ fun DualHomeLowerScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        CompanionAppBar(
-            apps = homeApps,
-            onAppClick = onAppClick,
-            focusedIndex = if (appBarFocused) appBarIndex else -2,
-            onOpenDrawer = onOpenDrawer
-        )
+        val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance
+            ?.isExternalDisplay != true
+        if (showAppBar) {
+            CompanionAppBar(
+                apps = homeApps,
+                onAppClick = onAppClick,
+                focusedIndex = if (appBarFocused) appBarIndex else -2,
+                onOpenDrawer = onOpenDrawer
+            )
+        }
     }
 }
 
@@ -1061,30 +1062,26 @@ private fun DownloadProgressCover(
     }
 }
 
-fun broadcastGameSelection(context: Context, game: DualHomeGameUi) {
-    val intent = Intent("com.nendo.argosy.DUAL_GAME_SELECTED").apply {
-        setPackage(context.packageName)
-        putExtra("game_id", game.id)
-        putExtra("title", game.title)
-        putExtra("cover_path", game.coverPath)
-        putExtra("background_path", game.backgroundPath)
-        putExtra("platform_name", game.platformName)
-        putExtra("platform_slug", game.platformSlug)
-        putExtra("play_time_minutes", game.playTimeMinutes)
-        putExtra("last_played_at", game.lastPlayedAt ?: 0L)
-        putExtra("status", game.status)
-        putExtra("community_rating", game.communityRating ?: 0f)
-        putExtra("user_rating", game.userRating)
-        putExtra("user_difficulty", game.userDifficulty)
-        putExtra("description", game.description)
-        putExtra("developer", game.developer)
-        putExtra("release_year", game.releaseYear ?: 0)
-        putExtra("title_id", game.titleId)
-        putExtra("is_favorite", game.isFavorite)
-        putExtra("is_downloaded", game.isPlayable)
-    }
-    context.sendBroadcast(intent)
-}
+fun DualHomeGameUi.toShowcaseState() = DualHomeShowcaseState(
+    gameId = id,
+    title = title,
+    coverPath = coverPath,
+    backgroundPath = backgroundPath,
+    platformName = platformName,
+    platformSlug = platformSlug,
+    playTimeMinutes = playTimeMinutes,
+    lastPlayedAt = lastPlayedAt ?: 0,
+    status = status,
+    communityRating = communityRating,
+    userRating = userRating,
+    userDifficulty = userDifficulty,
+    description = description,
+    developer = developer,
+    releaseYear = releaseYear,
+    titleId = titleId,
+    isFavorite = isFavorite,
+    isDownloaded = isPlayable
+)
 
 @Composable
 private fun GameStatusIcons(

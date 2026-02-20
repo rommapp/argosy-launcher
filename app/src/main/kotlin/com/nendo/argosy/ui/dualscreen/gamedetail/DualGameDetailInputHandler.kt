@@ -2,16 +2,19 @@ package com.nendo.argosy.ui.dualscreen.gamedetail
 
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 
 class DualGameDetailInputHandler(
     private val context: android.content.Context,
     private val viewModel: () -> DualGameDetailViewModel?,
     private val isScreenshotViewerOpen: () -> Boolean,
+    private val setScreenshotViewerOpen: (Boolean) -> Unit,
     private val onBroadcastScreenshotSelected: (Int) -> Unit,
     private val onBroadcastScreenshotCleared: () -> Unit,
     private val onBroadcastModalState: (DualGameDetailViewModel, ActiveModal) -> Unit,
     private val onBroadcastModalClose: () -> Unit,
+    private val onBroadcastModalConfirm: (ActiveModal, Int, String?) -> Unit,
     private val onBroadcastInlineUpdate: (String, Any) -> Unit,
     private val onBroadcastDirectAction: (String, Long, String?) -> Unit,
     private val onBroadcastEmulatorModalOpen: (List<com.nendo.argosy.data.emulator.InstalledEmulator>, String?) -> Unit,
@@ -21,7 +24,24 @@ class DualGameDetailInputHandler(
     private val onReturnToHome: () -> Unit,
     private val onRefocusSelf: () -> Unit,
     private val lifecycleLaunch: (suspend () -> Unit) -> Unit
-) {
+) : InputHandler {
+
+    override fun onUp() = dispatch(GamepadEvent.Up)
+    override fun onDown() = dispatch(GamepadEvent.Down)
+    override fun onLeft() = dispatch(GamepadEvent.Left)
+    override fun onRight() = dispatch(GamepadEvent.Right)
+    override fun onConfirm() = dispatch(GamepadEvent.Confirm)
+    override fun onBack() = dispatch(GamepadEvent.Back)
+    override fun onMenu() = dispatch(GamepadEvent.Menu)
+    override fun onSecondaryAction() = dispatch(GamepadEvent.SecondaryAction)
+    override fun onContextMenu() = dispatch(GamepadEvent.ContextMenu)
+    override fun onPrevSection() = dispatch(GamepadEvent.PrevSection)
+    override fun onNextSection() = dispatch(GamepadEvent.NextSection)
+    override fun onPrevTrigger() = dispatch(GamepadEvent.PrevTrigger)
+    override fun onNextTrigger() = dispatch(GamepadEvent.NextTrigger)
+    override fun onSelect() = dispatch(GamepadEvent.Select)
+    override fun onLeftStickClick() = dispatch(GamepadEvent.LeftStickClick)
+    override fun onRightStickClick() = dispatch(GamepadEvent.RightStickClick)
 
     fun dispatch(event: GamepadEvent): InputResult {
         val vm = viewModel() ?: return InputResult.UNHANDLED
@@ -87,7 +107,10 @@ class DualGameDetailInputHandler(
                     DualGameDetailTab.SAVES -> handleSaveConfirm(vm)
                     DualGameDetailTab.MEDIA -> {
                         val idx = vm.selectedScreenshotIndex.value
-                        if (idx >= 0) onBroadcastScreenshotSelected(idx)
+                        if (idx >= 0) {
+                            setScreenshotViewerOpen(true)
+                            onBroadcastScreenshotSelected(idx)
+                        }
                     }
                     DualGameDetailTab.OPTIONS -> handleOptionAction(vm)
                 }
@@ -95,6 +118,7 @@ class DualGameDetailInputHandler(
             }
             GamepadEvent.Back -> {
                 if (isScreenshotViewerOpen()) {
+                    setScreenshotViewerOpen(false)
                     onBroadcastScreenshotCleared()
                 } else {
                     onReturnToHome()
@@ -137,7 +161,7 @@ class DualGameDetailInputHandler(
                     GamepadEvent.Confirm -> {
                         val idx = vm.emulatorPickerFocusIndex.value
                         vm.confirmEmulatorByIndex(idx)
-                        onBroadcastModalClose()
+                        onBroadcastModalConfirm(ActiveModal.EMULATOR, idx, null)
                     }
                     GamepadEvent.Back -> {
                         vm.dismissPicker()
@@ -204,8 +228,9 @@ class DualGameDetailInputHandler(
                         )
                     }
                     GamepadEvent.Confirm -> {
+                        val value = vm.ratingPickerValue.value
                         vm.confirmPicker()
-                        onBroadcastModalClose()
+                        onBroadcastModalConfirm(modal, value, null)
                     }
                     GamepadEvent.Back -> {
                         vm.dismissPicker()
@@ -232,8 +257,9 @@ class DualGameDetailInputHandler(
                         )
                     }
                     GamepadEvent.Confirm -> {
+                        val status = vm.statusPickerValue.value
                         vm.confirmPicker()
-                        onBroadcastModalClose()
+                        onBroadcastModalConfirm(ActiveModal.STATUS, 0, status)
                     }
                     GamepadEvent.Back -> {
                         vm.dismissPicker()

@@ -105,11 +105,15 @@ fun CompanionContent(
                 }
             }
 
-            CompanionAppBar(
-                apps = homeApps,
-                onAppClick = onAppClick,
-                onOpenDrawer = onOpenDrawer
-            )
+            val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance
+                ?.isExternalDisplay != true
+            if (showAppBar) {
+                CompanionAppBar(
+                    apps = homeApps,
+                    onAppClick = onAppClick,
+                    onOpenDrawer = onOpenDrawer
+                )
+            }
         }
 
         AnimatedVisibility(

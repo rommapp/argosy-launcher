@@ -1,16 +1,14 @@
 package com.nendo.argosy
 
 import android.hardware.display.DisplayManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.util.Log
-import androidx.core.content.ContextCompat
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
@@ -19,11 +17,12 @@ import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.hardware.CompanionGuardService
+import com.nendo.argosy.util.DisplayRoleResolver
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
-import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualCollectionItem
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
@@ -38,6 +37,8 @@ import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
+import com.nendo.argosy.hardware.FocusAccessibilityService
+import com.nendo.argosy.hardware.FocusDirectorActivity
 import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.SecondaryDisplayType
@@ -56,11 +57,11 @@ private const val TAG = "DualScreenManager"
 class DualScreenManager(
     private val context: Context,
     private val scope: CoroutineScope,
-    private val gameDao: GameDao,
-    private val platformRepository: PlatformRepository,
-    private val collectionRepository: CollectionRepository,
-    private val downloadQueueDao: DownloadQueueDao,
-    private val gameFileDao: GameFileDao,
+    internal val gameDao: GameDao,
+    internal val platformRepository: PlatformRepository,
+    internal val collectionRepository: CollectionRepository,
+    internal val downloadQueueDao: DownloadQueueDao,
+    internal val gameFileDao: GameFileDao,
     private val downloadManager: DownloadManager,
     private val gameActionsDelegate: GameActionsDelegate,
     private val gameLaunchDelegate: GameLaunchDelegate,
@@ -69,13 +70,49 @@ class DualScreenManager(
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
     private val emulatorResolver: EmulatorResolver,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
-    private val displayAffinityHelper: DisplayAffinityHelper,
-    private val sessionStateStore: SessionStateStore,
+    internal val displayAffinityHelper: DisplayAffinityHelper,
+    internal val sessionStateStore: SessionStateStore,
     private val preferencesRepository: UserPreferencesRepository,
     private val edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager,
     private val notificationManager: com.nendo.argosy.ui.notification.NotificationManager,
+    internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     var isRolesSwapped: Boolean = false
 ) {
+    interface CompanionHost {
+        fun onForegroundChanged(isForeground: Boolean)
+        fun onWizardStateChanged(isActive: Boolean)
+        fun onSaveDirtyChanged(isDirty: Boolean)
+        fun onSessionStarted(gameId: Long, isHardcore: Boolean, channelName: String?)
+        fun onSessionEnded()
+        fun onHomeAppsChanged(apps: List<String>)
+        fun onLibraryRefresh()
+        fun onOverlayRequested(eventName: String)
+        fun onRoleSwapped(isSwapped: Boolean)
+        fun onOverlayClosed()
+        fun onBackgroundForward()
+        fun onForwardKey(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean)
+        fun refocusSelf()
+        fun onGameDetailOpened(gameId: Long)
+        fun onGameDetailClosed()
+        fun onScreenshotSelected(index: Int)
+        fun onScreenshotCleared()
+        fun onModalResult(dismissed: Boolean, type: String?, value: Int, statusSelected: String?, selectedIndex: Int, collectionToggleId: Long, collectionCreateName: String?)
+        fun onDirectActionResult(type: String, gameId: Long)
+        fun onSaveDataReceived(json: String, activeChannel: String?, activeTimestamp: Long?)
+        fun onDownloadCompleted(gameId: Long)
+    }
+
+    var companionHost: CompanionHost? = null
+
+    var emulatorDisplayId: Int? = null
+    private var isLaunchingGame = false
+        private set
+
+    val isExternalDisplay: Boolean
+        get() = displayAffinityHelper.secondaryDisplayType == SecondaryDisplayType.EXTERNAL
+
+    var onRoleSwapped: ((Boolean) -> Unit)? = null
+    var onDisplayChanged: ((Boolean) -> Unit)? = null
 
     private val _dualScreenShowcase = MutableStateFlow(DualHomeShowcaseState())
     val dualScreenShowcase: StateFlow<DualHomeShowcaseState> = _dualScreenShowcase
@@ -104,24 +141,86 @@ class DualScreenManager(
     private val _pendingOverlayEvent = MutableStateFlow<String?>(null)
     val pendingOverlayEvent: StateFlow<String?> = _pendingOverlayEvent
 
+    var onOverlayFocusChanged: ((Boolean) -> Unit)? = null
     var isOverlayFocused = false
+        set(value) {
+            field = value
+            onOverlayFocusChanged?.invoke(value)
+        }
     var swappedDualHomeViewModel: DualHomeViewModel? = null
+        private set
+
+    private val _swappedCurrentScreen = MutableStateFlow(
+        com.nendo.argosy.hardware.CompanionScreen.HOME
+    )
+    val swappedCurrentScreen: StateFlow<com.nendo.argosy.hardware.CompanionScreen> =
+        _swappedCurrentScreen
+
+    private var _swappedGameDetailViewModel: com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel? = null
+    val swappedGameDetailViewModel: com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel?
+        get() = _swappedGameDetailViewModel
+
+    private val _swappedIsGameActive = MutableStateFlow(false)
+    val swappedIsGameActive: StateFlow<Boolean> = _swappedIsGameActive
+
+    private val _swappedCompanionState = MutableStateFlow(
+        com.nendo.argosy.hardware.CompanionInGameState()
+    )
+    val swappedCompanionState: StateFlow<com.nendo.argosy.hardware.CompanionInGameState> =
+        _swappedCompanionState
+
+    var swappedSessionTimer: com.nendo.argosy.hardware.CompanionSessionTimer? = null
         private set
 
     private var companionWatchdogJob: Job? = null
     private var companionLaunchJob: Job? = null
+    private var companionPausedPending = false
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
+            val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
+            val newSwapped = resolver.isSwapped
+            if (newSwapped != isRolesSwapped) {
+                isRolesSwapped = newSwapped
+                sessionStateStore.setRolesSwapped(newSwapped)
+                onRoleSwapped?.invoke(newSwapped)
+                companionHost?.onRoleSwapped(newSwapped)
+            }
+            onDisplayChanged?.invoke(true)
+            CompanionGuardService.start(context)
             ensureCompanionLaunched()
         }
 
         override fun onDisplayRemoved(displayId: Int) {
             companionLaunchJob?.cancel()
             companionLaunchJob = null
+            _isCompanionActive.value = false
+            CompanionGuardService.stop(context)
+            onDisplayChanged?.invoke(false)
+            cleanupSwappedState()
         }
 
         override fun onDisplayChanged(displayId: Int) {}
+    }
+
+    private fun cleanupSwappedState() {
+        if (!isRolesSwapped) return
+
+        emulatorDisplayId = null
+        sessionStateStore.setDisplayRoleOverride("AUTO")
+        isRolesSwapped = false
+        sessionStateStore.setRolesSwapped(false)
+
+        _swappedGameDetailViewModel = null
+        _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
+        _swappedIsGameActive.value = false
+        _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
+        swappedSessionTimer?.stop(context)
+        swappedSessionTimer = null
+
+        companionHost?.onRoleSwapped(false)
+
+        Log.d(TAG, "HDMI disconnected: cleaned up swapped state")
     }
 
     val homeAppsList: List<String>
@@ -142,167 +241,52 @@ class DualScreenManager(
         )
     }
 
-    // --- Broadcast Receivers ---
+    // --- Public methods for companion -> DSM direction ---
 
-    private val overlayOpenReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                DualScreenBroadcasts.ACTION_OPEN_OVERLAY -> {
-                    isOverlayFocused = true
-                    _pendingOverlayEvent.value =
-                        intent.getStringExtra(DualScreenBroadcasts.EXTRA_EVENT_NAME)
-                            ?: DualScreenBroadcasts.OVERLAY_MENU
-                    refocusMain()
-                }
-                DualScreenBroadcasts.ACTION_REFOCUS_UPPER -> {
-                    refocusMain()
-                }
+    fun onCompanionResumed() {
+        companionPausedPending = false
+        companionWatchdogJob?.cancel()
+        _isCompanionActive.value = true
+        resyncCompanionState()
+    }
+
+    fun onCompanionPaused() {
+        _isCompanionActive.value = false
+        companionPausedPending = false
+        companionWatchdogJob?.cancel()
+        companionWatchdogJob = scope.launch {
+            delay(COMPANION_WATCHDOG_TIMEOUT_MS)
+            val state = _dualGameDetailState.value
+            if (state?.modalType != null && state.modalType != ActiveModal.NONE) {
+                _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+                Log.w(TAG, "Companion watchdog: auto-dismissed stale modal")
             }
         }
     }
 
-    private val companionLifecycleReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                DualScreenBroadcasts.ACTION_COMPANION_RESUMED -> {
-                    companionWatchdogJob?.cancel()
-                    _isCompanionActive.value = true
-                    resyncCompanionState()
-                }
-                DualScreenBroadcasts.ACTION_COMPANION_PAUSED -> {
-                    _isCompanionActive.value = false
-                    companionWatchdogJob?.cancel()
-                    companionWatchdogJob = scope.launch {
-                        delay(COMPANION_WATCHDOG_TIMEOUT_MS)
-                        val state = _dualGameDetailState.value
-                        if (state?.modalType != null &&
-                            state.modalType != ActiveModal.NONE
-                        ) {
-                            _dualGameDetailState.update {
-                                it?.copy(modalType = ActiveModal.NONE)
-                            }
-                            Log.w(TAG,
-                                "Companion watchdog: auto-dismissed stale modal")
-                        }
-                    }
-                }
+    fun onViewModeChanged(mode: String, appBarFocused: Boolean, drawerOpen: Boolean) {
+        _dualViewMode.value = mode
+        _dualAppBarFocused.value = appBarFocused
+        _dualDrawerOpen.value = drawerOpen
+    }
+
+    fun onCollectionFocused(state: DualCollectionShowcaseState) {
+        _dualCollectionShowcase.value = state
+    }
+
+    fun onGameSelected(showcase: DualHomeShowcaseState) {
+        _dualScreenShowcase.value = showcase
+        val gameId = showcase.gameId
+        if (gameId > 0) {
+            scope.launch(Dispatchers.IO) {
+                val entity = gameDao.getById(gameId) ?: return@launch
+                val rommId = entity.rommId ?: return@launch
+                fetchAchievementsUseCase(rommId, gameId)
             }
         }
     }
 
-    private val dualViewModeReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED -> {
-                    val mode = intent.getStringExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE) ?: "CAROUSEL"
-                    _dualViewMode.value = mode
-                    _dualAppBarFocused.value = intent.getBooleanExtra(
-                        DualScreenBroadcasts.EXTRA_IS_APP_BAR_FOCUSED, false
-                    )
-                    _dualDrawerOpen.value = intent.getBooleanExtra(
-                        DualScreenBroadcasts.EXTRA_IS_DRAWER_OPEN, false
-                    )
-                }
-                DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED -> {
-                    _dualCollectionShowcase.value = DualCollectionShowcaseState(
-                        name = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY) ?: "",
-                        description = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION),
-                        coverPaths = intent.getStringArrayListExtra(DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS)?.toList() ?: emptyList(),
-                        gameCount = intent.getIntExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, 0),
-                        platformSummary = intent.getStringExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY) ?: "",
-                        totalPlaytimeMinutes = intent.getIntExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, 0)
-                    )
-                }
-            }
-        }
-    }
-
-    private val dualGameSelectedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == "com.nendo.argosy.DUAL_GAME_SELECTED") {
-                _dualScreenShowcase.value = DualHomeShowcaseState(
-                    gameId = intent.getLongExtra("game_id", -1),
-                    title = intent.getStringExtra("title") ?: "",
-                    coverPath = intent.getStringExtra("cover_path"),
-                    backgroundPath = intent.getStringExtra("background_path"),
-                    platformName = intent.getStringExtra("platform_name") ?: "",
-                    platformSlug = intent.getStringExtra("platform_slug") ?: "",
-                    playTimeMinutes = intent.getIntExtra("play_time_minutes", 0),
-                    lastPlayedAt = intent.getLongExtra("last_played_at", 0),
-                    status = intent.getStringExtra("status"),
-                    communityRating = intent.getFloatExtra("community_rating", 0f).takeIf { it > 0f },
-                    userRating = intent.getIntExtra("user_rating", 0),
-                    userDifficulty = intent.getIntExtra("user_difficulty", 0),
-                    description = intent.getStringExtra("description"),
-                    developer = intent.getStringExtra("developer"),
-                    releaseYear = intent.getIntExtra("release_year", 0).takeIf { it > 0 },
-                    titleId = intent.getStringExtra("title_id"),
-                    isFavorite = intent.getBooleanExtra("is_favorite", false),
-                    isDownloaded = intent.getBooleanExtra("is_downloaded", true)
-                )
-
-                val gameId = intent.getLongExtra("game_id", -1)
-                if (gameId > 0) {
-                    scope.launch(Dispatchers.IO) {
-                        val entity = gameDao.getById(gameId) ?: return@launch
-                        val rommId = entity.rommId ?: return@launch
-                        fetchAchievementsUseCase(rommId, gameId)
-                    }
-                }
-            }
-        }
-    }
-
-    private val dualGameDetailReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED -> handleGameDetailOpened(intent)
-                DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED -> {
-                    Log.d("UpdatesDLC", "ACTION_GAME_DETAIL_CLOSED received, currentModal=${_dualGameDetailState.value?.modalType}", Exception("stacktrace"))
-                    _dualGameDetailState.value = null
-                }
-                DualScreenBroadcasts.ACTION_SCREENSHOT_SELECTED -> {
-                    val index = intent.getIntExtra(
-                        DualScreenBroadcasts.EXTRA_SCREENSHOT_INDEX, -1
-                    )
-                    _dualGameDetailState.update { state ->
-                        state?.copy(
-                            viewerScreenshotIndex = index.takeIf { it >= 0 }
-                        )
-                    }
-                }
-                DualScreenBroadcasts.ACTION_SCREENSHOT_CLEAR -> {
-                    _dualGameDetailState.update { state ->
-                        state?.copy(viewerScreenshotIndex = null)
-                    }
-                }
-                DualScreenBroadcasts.ACTION_MODAL_OPEN -> handleModalOpen(intent)
-                DualScreenBroadcasts.ACTION_MODAL_RESULT -> handleModalResult(intent)
-                DualScreenBroadcasts.ACTION_DIRECT_ACTION -> handleDirectAction(intent)
-                DualScreenBroadcasts.ACTION_INLINE_UPDATE -> handleInlineUpdate(intent)
-                "com.nendo.argosy.DOWNLOAD_COMPLETED" -> {
-                    val gameId = intent.getLongExtra("game_id", -1)
-                    if (gameId > 0 && _dualScreenShowcase.value.gameId == gameId) {
-                        _dualScreenShowcase.update { it.copy(isDownloaded = true) }
-                    }
-                }
-            }
-        }
-    }
-
-    private val companionHomeAppsReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val apps = intent?.getStringArrayListExtra("home_apps")?.toSet() ?: return
-            scope.launch {
-                preferencesRepository.setSecondaryHomeApps(apps)
-            }
-        }
-    }
-
-    // --- Receiver Handlers ---
-
-    private fun handleGameDetailOpened(intent: Intent) {
-        val gameId = intent.getLongExtra(DualScreenBroadcasts.EXTRA_GAME_ID, -1)
+    internal fun handleGameDetailOpened(gameId: Long) {
         if (gameId == -1L) return
         val current = _dualGameDetailState.value
         if (current != null && current.gameId == gameId && current.modalType != ActiveModal.NONE) {
@@ -373,258 +357,158 @@ class DualScreenManager(
         }
     }
 
-    private fun handleModalOpen(intent: Intent) {
-        val modalType = intent.getStringExtra(
-            DualScreenBroadcasts.EXTRA_MODAL_TYPE
-        ) ?: return
-        val type = ActiveModal.entries.find {
-            it.name == modalType
-        } ?: return
+    fun onGameDetailClosed() {
+        Log.d("UpdatesDLC", "onGameDetailClosed, currentModal=${_dualGameDetailState.value?.modalType}")
+        _dualGameDetailState.value = null
+    }
+
+    fun onScreenshotSelected(index: Int) {
+        _dualGameDetailState.update { state ->
+            state?.copy(viewerScreenshotIndex = index.takeIf { it >= 0 })
+        }
+    }
+
+    fun onScreenshotCleared() {
+        _dualGameDetailState.update { state ->
+            state?.copy(viewerScreenshotIndex = null)
+        }
+    }
+
+    fun openModal(type: ActiveModal, value: Int = 0, statusSelected: String? = null, statusCurrent: String? = null) {
         when (type) {
-            ActiveModal.EMULATOR -> {
-                val names = intent.getStringArrayListExtra(
-                    DualScreenBroadcasts.EXTRA_EMULATOR_NAMES
-                ) ?: arrayListOf()
-                val versions = intent.getStringArrayListExtra(
-                    DualScreenBroadcasts.EXTRA_EMULATOR_VERSIONS
-                ) ?: arrayListOf()
-                val current = intent.getStringExtra(
-                    DualScreenBroadcasts.EXTRA_EMULATOR_CURRENT
+            ActiveModal.EMULATOR, ActiveModal.COLLECTION, ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC -> return
+            else -> handleDualModalOpen(type, value, statusSelected, statusCurrent)
+        }
+        refocusMain()
+    }
+
+    fun openEmulatorModal(names: List<String>, versions: List<String>, current: String?) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.EMULATOR,
+                emulatorNames = names,
+                emulatorVersions = versions,
+                emulatorFocusIndex = 0,
+                emulatorCurrentName = current
+            )
+        }
+        refocusMain()
+    }
+
+    fun openCollectionModal(ids: List<Long>, names: List<String>, checked: List<Boolean>) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.COLLECTION,
+                collectionItems = ids.mapIndexed { i, id ->
+                    DualCollectionItem(id, names.getOrElse(i) { "" }, checked.getOrElse(i) { false })
+                },
+                collectionFocusIndex = 0
+            )
+        }
+        refocusMain()
+    }
+
+    fun openSaveNameModal(actionType: String, cacheId: Long?) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.SAVE_NAME,
+                saveNamePromptAction = actionType,
+                saveNameCacheId = cacheId,
+                saveNameText = ""
+            )
+        }
+        refocusMain()
+    }
+
+    fun openUpdatesModal(allFiles: List<UpdateFileUi>) {
+        val updateFiles = allFiles.filter { it.type == UpdateFileType.UPDATE }
+        val dlcFiles = allFiles.filter { it.type == UpdateFileType.DLC }
+        Log.d("UpdatesDLC", "openUpdatesModal: ${updateFiles.size} updates, ${dlcFiles.size} dlc")
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.UPDATES_DLC,
+                updateFiles = updateFiles,
+                dlcFiles = dlcFiles,
+                updatesPickerFocusIndex = 0,
+                isEdenGame = false
+            )
+        }
+        val currentGameId = _dualGameDetailState.value?.gameId ?: -1L
+        if (currentGameId > 0) {
+            scope.launch(Dispatchers.IO) {
+                val game = gameDao.getById(currentGameId) ?: return@launch
+                val emId = emulatorResolver.getEmulatorIdForGame(
+                    currentGameId, game.platformId, game.platformSlug
                 )
-                _dualGameDetailState.update { state ->
-                    state?.copy(
-                        modalType = ActiveModal.EMULATOR,
-                        emulatorNames = names,
-                        emulatorVersions = versions,
-                        emulatorFocusIndex = 0,
-                        emulatorCurrentName = current
-                    )
+                if (emId == "eden") {
+                    _dualGameDetailState.update { s -> s?.copy(isEdenGame = true) }
                 }
+            }
+        }
+        refocusMain()
+    }
+
+    fun onModalClose() {
+        companionHost?.onModalResult(
+            dismissed = true,
+            type = _dualGameDetailState.value?.modalType?.name,
+            value = 0, statusSelected = null, selectedIndex = -1,
+            collectionToggleId = -1, collectionCreateName = null
+        )
+        _dualGameDetailState.update { state -> state?.copy(modalType = ActiveModal.NONE) }
+    }
+
+    fun onModalConfirmResult(modal: ActiveModal, value: Int, statusValue: String?) {
+        when (modal) {
+            ActiveModal.EMULATOR -> {
+                confirmDualEmulatorSelection()
+                return
             }
             ActiveModal.COLLECTION -> {
-                val ids = intent.getLongArrayExtra(
-                    DualScreenBroadcasts.EXTRA_COLLECTION_IDS
-                )?.toList() ?: emptyList()
-                val names = intent.getStringArrayListExtra(
-                    DualScreenBroadcasts.EXTRA_COLLECTION_NAMES
-                ) ?: arrayListOf()
-                val checked = intent.getBooleanArrayExtra(
-                    DualScreenBroadcasts.EXTRA_COLLECTION_CHECKED
-                )?.toList() ?: emptyList()
-                _dualGameDetailState.update { state ->
-                    state?.copy(
-                        modalType = ActiveModal.COLLECTION,
-                        collectionItems = ids.mapIndexed { i, id ->
-                            DualCollectionItem(
-                                id,
-                                names.getOrElse(i) { "" },
-                                checked.getOrElse(i) { false }
-                            )
-                        },
-                        collectionFocusIndex = 0
-                    )
-                }
+                toggleDualCollectionAtFocus()
+                return
             }
-            ActiveModal.SAVE_NAME -> {
-                val actionType = intent.getStringExtra(
-                    DualScreenBroadcasts.EXTRA_ACTION_TYPE
-                )
-                val cacheId = intent.getLongExtra(
-                    DualScreenBroadcasts.EXTRA_SAVE_CACHE_ID, -1
-                )
-                _dualGameDetailState.update { state ->
-                    state?.copy(
-                        modalType = ActiveModal.SAVE_NAME,
-                        saveNamePromptAction = actionType,
-                        saveNameCacheId = if (cacheId > 0) cacheId else null,
-                        saveNameText = ""
-                    )
-                }
-            }
-            ActiveModal.UPDATES_DLC -> {
-                Log.d("UpdatesDLC", "handleModalOpen: UPDATES_DLC")
-                val names = intent.getStringArrayListExtra(
-                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_NAMES
-                ) ?: arrayListOf()
-                val sizes = intent.getLongArrayExtra(
-                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_SIZES
-                ) ?: longArrayOf()
-                val types = intent.getStringArrayListExtra(
-                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_TYPES
-                ) ?: arrayListOf()
-                val downloaded = intent.getBooleanArrayExtra(
-                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_DOWNLOADED
-                ) ?: booleanArrayOf()
-                val gameFileIds = intent.getLongArrayExtra(
-                    DualScreenBroadcasts.EXTRA_UPDATE_FILE_GAME_FILE_IDS
-                ) ?: longArrayOf()
-
-                val allFiles = names.mapIndexed { i, name ->
-                    UpdateFileUi(
-                        fileName = name,
-                        filePath = "",
-                        sizeBytes = sizes.getOrElse(i) { 0L },
-                        type = try {
-                            UpdateFileType.valueOf(types.getOrElse(i) { "UPDATE" })
-                        } catch (_: Exception) { UpdateFileType.UPDATE },
-                        isDownloaded = downloaded.getOrElse(i) { false },
-                        isAppliedToEmulator = false,
-                        gameFileId = gameFileIds.getOrElse(i) { -1L }
-                            .takeIf { it >= 0 }
-                    )
-                }
-
-                val updateFiles = allFiles.filter { it.type == UpdateFileType.UPDATE }
-                val dlcFiles = allFiles.filter { it.type == UpdateFileType.DLC }
-
-                Log.d("UpdatesDLC", "handleModalOpen: ${updateFiles.size} updates, ${dlcFiles.size} dlc, downloaded=${allFiles.map { "${it.fileName}:${it.isDownloaded}" }}")
-
-                _dualGameDetailState.update { state ->
-                    state?.copy(
-                        modalType = ActiveModal.UPDATES_DLC,
-                        updateFiles = updateFiles,
-                        dlcFiles = dlcFiles,
-                        updatesPickerFocusIndex = 0,
-                        isEdenGame = false
-                    )
-                }
-
-                val currentGameId = _dualGameDetailState.value?.gameId ?: -1L
-                Log.d("UpdatesDLC", "handleModalOpen: checking Eden for gameId=$currentGameId")
-                if (currentGameId > 0) {
-                    scope.launch(Dispatchers.IO) {
-                        val game = gameDao.getById(currentGameId) ?: return@launch
-                        val emId = emulatorResolver.getEmulatorIdForGame(
-                            currentGameId, game.platformId, game.platformSlug
-                        )
-                        Log.d("UpdatesDLC", "handleModalOpen: emulatorId=$emId, isEden=${emId == "eden"}")
-                        if (emId == "eden") {
-                            _dualGameDetailState.update { s ->
-                                s?.copy(isEdenGame = true)
-                            }
-                        }
-                    }
-                }
-            }
-            else -> handleDualModalOpen(
-                type = type,
-                value = intent.getIntExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_VALUE, 0
-                ),
-                statusSelected = intent.getStringExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_STATUS_SELECTED
-                ),
-                statusCurrent = intent.getStringExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_STATUS_CURRENT
-                )
-            )
+            else -> {}
         }
-        context.startActivity(
-            Intent(context, MainActivity::class.java).addFlags(
-                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-            )
+        companionHost?.onModalResult(
+            dismissed = false, type = modal.name, value = value,
+            statusSelected = statusValue, selectedIndex = -1,
+            collectionToggleId = -1, collectionCreateName = null
         )
-    }
-
-    private fun handleModalResult(intent: Intent) {
-        val typeStr = intent.getStringExtra(
-            DualScreenBroadcasts.EXTRA_MODAL_TYPE
-        )
-        val dismissed = intent.getBooleanExtra(
-            DualScreenBroadcasts.EXTRA_MODAL_DISMISSED, false
-        )
-        Log.d("UpdatesDLC", "handleModalResult: type=$typeStr, dismissed=$dismissed, currentModal=${_dualGameDetailState.value?.modalType}", Exception("stacktrace"))
-        val isCollectionAction =
-            typeStr == ActiveModal.COLLECTION.name &&
-                (intent.hasExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOGGLE_ID) ||
-                    intent.hasExtra(DualScreenBroadcasts.EXTRA_COLLECTION_CREATE_NAME))
-
-        if (dismissed) {
-            _dualGameDetailState.update { state ->
-                state?.copy(modalType = ActiveModal.NONE)
-            }
-        } else if (isCollectionAction) {
-            // State already updated by the caller
-        } else {
-            _dualGameDetailState.update { state ->
-                when (typeStr) {
-                    ActiveModal.RATING.name -> state?.copy(
-                        modalType = ActiveModal.NONE,
-                        rating = intent.getIntExtra(
-                            DualScreenBroadcasts.EXTRA_MODAL_VALUE, 0
-                        ).takeIf { it > 0 }
-                    )
-                    ActiveModal.STATUS.name -> state?.copy(
-                        modalType = ActiveModal.NONE,
-                        status = intent.getStringExtra(
-                            DualScreenBroadcasts.EXTRA_MODAL_STATUS_SELECTED
-                        )
-                    )
-                    ActiveModal.EMULATOR.name -> state?.copy(
-                        modalType = ActiveModal.NONE,
-                        emulatorCurrentName = run {
-                            val idx = intent.getIntExtra(
-                                DualScreenBroadcasts.EXTRA_SELECTED_INDEX, 0
-                            )
-                            if (idx == 0) null
-                            else state.emulatorNames.getOrNull(idx - 1)
-                        }
-                    )
-                    else -> state?.copy(modalType = ActiveModal.NONE)
-                }
+        _dualGameDetailState.update { s ->
+            when (modal) {
+                ActiveModal.RATING -> s?.copy(modalType = ActiveModal.NONE, rating = value.takeIf { it > 0 })
+                ActiveModal.STATUS -> s?.copy(modalType = ActiveModal.NONE, status = statusValue)
+                else -> s?.copy(modalType = ActiveModal.NONE)
             }
         }
-        if (!isCollectionAction && !isRolesSwapped) {
-            context.sendBroadcast(
-                Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
-                    .setPackage(context.packageName)
-            )
+        if (!isRolesSwapped) {
+            companionHost?.refocusSelf()
         }
     }
 
-    private fun handleDirectAction(intent: Intent) {
-        val type = intent.getStringExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE)
-        val gameId = intent.getLongExtra(DualScreenBroadcasts.EXTRA_GAME_ID, -1)
+    fun handleDirectAction(type: String, gameId: Long, channelName: String? = null, timestamp: Long? = null) {
         if (gameId < 0) return
         when (type) {
-            "PLAY" -> {
-                val channelName = intent.getStringExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME)
-                handleDualPlay(gameId, channelName)
-            }
+            "PLAY" -> handleDualPlay(gameId, channelName)
             "DOWNLOAD" -> handleDualDownload(gameId)
             "REFRESH_METADATA" -> handleDualRefresh(gameId)
             "DELETE" -> handleDualDelete(gameId)
             "HIDE" -> handleDualHide(gameId)
-            "SAVE_SWITCH_CHANNEL" -> {
-                val channelName = intent.getStringExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME)
-                handleSaveSwitchChannel(gameId, channelName)
-            }
-            "SAVE_SET_RESTORE_POINT" -> {
-                val channelName = intent.getStringExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME)
-                val timestamp = intent.getLongExtra(DualScreenBroadcasts.EXTRA_SAVE_TIMESTAMP, 0)
-                handleSaveSetRestorePoint(gameId, channelName, timestamp)
-            }
+            "SAVE_SWITCH_CHANNEL" -> handleSaveSwitchChannel(gameId, channelName)
+            "SAVE_SET_RESTORE_POINT" -> handleSaveSetRestorePoint(gameId, channelName, timestamp ?: 0L)
             "DOWNLOAD_UPDATE_FILE" -> {
-                val fileIdStr = intent.getStringExtra(
-                    DualScreenBroadcasts.EXTRA_CHANNEL_NAME
-                )
-                val fileId = fileIdStr?.toLongOrNull()
+                val fileId = channelName?.toLongOrNull()
                 if (fileId != null) {
                     scope.launch(Dispatchers.IO) {
                         val gameFile = gameFileDao.getById(fileId) ?: return@launch
                         val game = gameDao.getById(gameId) ?: return@launch
                         val rommFileId = gameFile.rommFileId ?: return@launch
                         downloadManager.enqueueGameFileDownload(
-                            gameId = gameId,
-                            gameFileId = fileId,
-                            rommFileId = rommFileId,
-                            fileName = gameFile.fileName,
-                            category = gameFile.category,
-                            gameTitle = game.title,
-                            platformSlug = game.platformSlug,
-                            coverPath = game.coverPath,
-                            expectedSizeBytes = gameFile.fileSize
+                            gameId = gameId, gameFileId = fileId, rommFileId = rommFileId,
+                            fileName = gameFile.fileName, category = gameFile.category,
+                            gameTitle = game.title, platformSlug = game.platformSlug,
+                            coverPath = game.coverPath, expectedSizeBytes = gameFile.fileSize
                         )
                     }
                 }
@@ -643,98 +527,117 @@ class DualScreenManager(
                     if (success) {
                         _dualGameDetailState.update { s ->
                             s?.copy(
-                                updateFiles = s.updateFiles.map {
-                                    it.copy(isAppliedToEmulator = true)
-                                },
-                                dlcFiles = s.dlcFiles.map {
-                                    it.copy(isAppliedToEmulator = true)
-                                }
+                                updateFiles = s.updateFiles.map { it.copy(isAppliedToEmulator = true) },
+                                dlcFiles = s.dlcFiles.map { it.copy(isAppliedToEmulator = true) }
                             )
                         }
-                        notificationManager.showSuccess(
-                            "Applied to Eden. Restart Eden to load changes."
-                        )
+                        notificationManager.showSuccess("Applied to Eden. Restart Eden to load changes.")
                     } else {
-                        notificationManager.showError(
-                            "Failed to register directory with Eden"
-                        )
+                        notificationManager.showError("Failed to register directory with Eden")
                     }
                 }
             }
         }
     }
 
-    private fun handleInlineUpdate(intent: Intent) {
-        val field = intent.getStringExtra(DualScreenBroadcasts.EXTRA_INLINE_FIELD) ?: return
+    fun handleInlineUpdate(field: String, intValue: Int = 0, stringValue: String? = null) {
         when (field) {
-            "rating" -> {
-                val v = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
-                _dualGameDetailState.update { s ->
-                    s?.copy(rating = v.takeIf { it > 0 })
-                }
-            }
-            "difficulty" -> {
-                val v = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
-                _dualGameDetailState.update { s ->
-                    s?.copy(userDifficulty = v)
-                }
-            }
-            "status" -> {
-                val v = intent.getStringExtra(DualScreenBroadcasts.EXTRA_INLINE_STRING_VALUE)
-                _dualGameDetailState.update { s ->
-                    s?.copy(status = v)
-                }
-            }
-            "updates_focus" -> {
-                val idx = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
-                _dualGameDetailState.update { s ->
-                    s?.copy(updatesPickerFocusIndex = idx)
-                }
-            }
-            "modal_rating" -> {
-                val v = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
-                _dualGameDetailState.update { s ->
-                    s?.copy(modalRatingValue = v)
-                }
-            }
-            "modal_status" -> {
-                val v = intent.getStringExtra(DualScreenBroadcasts.EXTRA_INLINE_STRING_VALUE)
-                _dualGameDetailState.update { s ->
-                    s?.copy(modalStatusSelected = v)
-                }
-            }
-            "emulator_focus" -> {
-                val idx = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
-                _dualGameDetailState.update { s ->
-                    s?.copy(emulatorFocusIndex = idx)
-                }
-            }
-            "collection_focus" -> {
-                val idx = intent.getIntExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0)
-                _dualGameDetailState.update { s ->
-                    s?.copy(collectionFocusIndex = idx)
-                }
-            }
-            "collection_toggle" -> {
-                val collectionId = intent.getIntExtra(
-                    DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, 0
-                ).toLong()
+            "rating" -> _dualGameDetailState.update { s -> s?.copy(rating = intValue.takeIf { it > 0 }) }
+            "difficulty" -> _dualGameDetailState.update { s -> s?.copy(userDifficulty = intValue) }
+            "status" -> _dualGameDetailState.update { s -> s?.copy(status = stringValue) }
+            "updates_focus" -> _dualGameDetailState.update { s -> s?.copy(updatesPickerFocusIndex = intValue) }
+            "modal_rating" -> _dualGameDetailState.update { s -> s?.copy(modalRatingValue = intValue) }
+            "modal_status" -> _dualGameDetailState.update { s -> s?.copy(modalStatusSelected = stringValue) }
+            "emulator_focus" -> _dualGameDetailState.update { s -> s?.copy(emulatorFocusIndex = intValue) }
+            "emulator_confirm" -> {
                 _dualGameDetailState.update { s ->
                     s?.copy(
-                        collectionItems = s.collectionItems.map {
-                            if (it.id == collectionId)
-                                it.copy(isInCollection = !it.isInCollection)
-                            else it
-                        }
+                        modalType = ActiveModal.NONE,
+                        emulatorCurrentName = if (intValue == 0) null else s.emulatorNames.getOrNull(intValue - 1)
                     )
                 }
             }
-            "collection_create" -> {
+            "collection_focus" -> _dualGameDetailState.update { s -> s?.copy(collectionFocusIndex = intValue) }
+            "collection_toggle" -> {
+                val collectionId = intValue.toLong()
                 _dualGameDetailState.update { s ->
-                    s?.copy(showCreateDialog = true)
+                    s?.copy(collectionItems = s.collectionItems.map {
+                        if (it.id == collectionId) it.copy(isInCollection = !it.isInCollection) else it
+                    })
                 }
             }
+            "collection_create" -> _dualGameDetailState.update { s -> s?.copy(showCreateDialog = true) }
         }
+    }
+
+    fun onOpenOverlayFromCompanion(eventName: String) {
+        isOverlayFocused = true
+        _pendingOverlayEvent.value = eventName ?: OVERLAY_MENU
+        refocusMain()
+    }
+
+    fun onRefocusUpper() {
+        refocusMain()
+    }
+
+    fun onCompanionHomeAppsChanged(apps: Set<String>) {
+        scope.launch {
+            preferencesRepository.setSecondaryHomeApps(apps)
+        }
+    }
+
+    fun onSessionChanged(gameId: Long, isHardcore: Boolean = false, channelName: String? = null) {
+        if (gameId > 0) {
+            _swappedIsGameActive.value = true
+            _swappedGameDetailViewModel = null
+            _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
+            swappedSessionTimer?.stop(context)
+            swappedSessionTimer = com.nendo.argosy.hardware.CompanionSessionTimer().also { it.start(context) }
+            scope.launch(Dispatchers.IO) {
+                val game = gameDao.getById(gameId) ?: return@launch
+                val platform = platformRepository.getById(game.platformId)
+                _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState(
+                    gameId = gameId,
+                    title = game.title,
+                    coverPath = game.coverPath,
+                    platformName = platform?.getDisplayName() ?: game.platformSlug,
+                    developer = game.developer,
+                    releaseYear = game.releaseYear,
+                    playTimeMinutes = game.playTimeMinutes,
+                    playCount = game.playCount,
+                    achievementCount = game.achievementCount,
+                    earnedAchievementCount = game.earnedAchievementCount,
+                    sessionStartTimeMillis = sessionStateStore.getSessionStartTimeMillis(),
+                    channelName = channelName,
+                    isHardcore = isHardcore,
+                    isLoaded = true
+                )
+            }
+            companionHost?.onSessionStarted(gameId, isHardcore, channelName)
+        } else {
+            emulatorDisplayId = null
+            _swappedIsGameActive.value = false
+            _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
+            swappedSessionTimer?.stop(context)
+            swappedSessionTimer = null
+            val savedDetailGameId = sessionStateStore.getDetailGameId()
+            if (savedDetailGameId > 0) selectGameSwapped(savedDetailGameId)
+            companionHost?.onSessionEnded()
+        }
+    }
+
+    fun onDownloadCompleted(gameId: Long) {
+        if (gameId > 0 && _dualScreenShowcase.value.gameId == gameId) {
+            _dualScreenShowcase.update { it.copy(isDownloaded = true) }
+        }
+    }
+
+    fun onRoleSwapReceived() {
+        val resolver = com.nendo.argosy.util.DisplayRoleResolver(
+            displayAffinityHelper, sessionStateStore
+        )
+        isRolesSwapped = resolver.isSwapped
+        onRoleSwapped?.invoke(isRolesSwapped)
     }
 
     // --- Modal Operations ---
@@ -810,24 +713,12 @@ class DualScreenManager(
             else -> {}
         }
 
-        val resultIntent = Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-            setPackage(context.packageName)
-            putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, type.name)
-            when (type) {
-                ActiveModal.RATING, ActiveModal.DIFFICULTY ->
-                    putExtra(
-                        DualScreenBroadcasts.EXTRA_MODAL_VALUE,
-                        state.modalRatingValue
-                    )
-                ActiveModal.STATUS ->
-                    putExtra(
-                        DualScreenBroadcasts.EXTRA_MODAL_STATUS_SELECTED,
-                        state.modalStatusSelected
-                    )
-                else -> {}
-            }
-        }
-        context.sendBroadcast(resultIntent)
+        companionHost?.onModalResult(
+            dismissed = false, type = type.name,
+            value = when (type) { ActiveModal.RATING, ActiveModal.DIFFICULTY -> state.modalRatingValue; else -> 0 },
+            statusSelected = when (type) { ActiveModal.STATUS -> state.modalStatusSelected; else -> null },
+            selectedIndex = -1, collectionToggleId = -1, collectionCreateName = null
+        )
 
         _dualGameDetailState.update { s ->
             when (type) {
@@ -846,15 +737,10 @@ class DualScreenManager(
 
     fun dismissDualModal() {
         Log.d("UpdatesDLC", "dismissDualModal called, current modal=${_dualGameDetailState.value?.modalType}", Exception("stacktrace"))
-        context.sendBroadcast(
-            Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                setPackage(context.packageName)
-                putExtra(DualScreenBroadcasts.EXTRA_MODAL_DISMISSED, true)
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
-                    _dualGameDetailState.value?.modalType?.name
-                )
-            }
+        companionHost?.onModalResult(
+            dismissed = true, type = _dualGameDetailState.value?.modalType?.name,
+            value = 0, statusSelected = null, selectedIndex = -1,
+            collectionToggleId = -1, collectionCreateName = null
         )
         _dualGameDetailState.update { state ->
             state?.copy(modalType = ActiveModal.NONE)
@@ -886,15 +772,10 @@ class DualScreenManager(
     fun confirmDualEmulatorSelection() {
         val state = _dualGameDetailState.value ?: return
         val index = state.emulatorFocusIndex
-        context.sendBroadcast(
-            Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                setPackage(context.packageName)
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
-                    ActiveModal.EMULATOR.name
-                )
-                putExtra(DualScreenBroadcasts.EXTRA_SELECTED_INDEX, index)
-            }
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.EMULATOR.name,
+            value = 0, statusSelected = null, selectedIndex = index,
+            collectionToggleId = -1, collectionCreateName = null
         )
         _dualGameDetailState.update {
             it?.copy(
@@ -924,18 +805,10 @@ class DualScreenManager(
         val item = state.collectionItems.getOrNull(
             state.collectionFocusIndex
         ) ?: return
-        context.sendBroadcast(
-            Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                setPackage(context.packageName)
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
-                    ActiveModal.COLLECTION.name
-                )
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_COLLECTION_TOGGLE_ID,
-                    item.id
-                )
-            }
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.COLLECTION.name,
+            value = 0, statusSelected = null, selectedIndex = -1,
+            collectionToggleId = item.id, collectionCreateName = null
         )
         _dualGameDetailState.update { s ->
             s?.copy(
@@ -958,18 +831,10 @@ class DualScreenManager(
 
     fun confirmDualCollectionCreate(name: String) {
         _dualGameDetailState.update { it?.copy(showCreateDialog = false) }
-        context.sendBroadcast(
-            Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                setPackage(context.packageName)
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
-                    ActiveModal.COLLECTION.name
-                )
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_COLLECTION_CREATE_NAME,
-                    name
-                )
-            }
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.COLLECTION.name,
+            value = 0, statusSelected = null, selectedIndex = -1,
+            collectionToggleId = -1, collectionCreateName = name
         )
     }
 
@@ -991,14 +856,10 @@ class DualScreenManager(
         }
 
         _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
-        context.sendBroadcast(
-            Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                setPackage(context.packageName)
-                putExtra(
-                    DualScreenBroadcasts.EXTRA_MODAL_TYPE,
-                    ActiveModal.SAVE_NAME.name
-                )
-            }
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.SAVE_NAME.name,
+            value = 0, statusSelected = null, selectedIndex = -1,
+            collectionToggleId = -1, collectionCreateName = null
         )
     }
 
@@ -1010,6 +871,10 @@ class DualScreenManager(
             gameId = gameId,
             channelName = channelName,
             onLaunch = { intent ->
+                emulatorDisplayId = displayAffinityHelper.getEmulatorDisplayId(isRolesSwapped)
+                isLaunchingGame = true
+                scope.launch { delay(3000); isLaunchingGame = false }
+                Log.d(TAG, "Game launching on display $emulatorDisplayId (swapped=$isRolesSwapped)")
                 val options = displayAffinityHelper.getActivityOptions(
                     forEmulator = true,
                     rolesSwapped = isRolesSwapped
@@ -1032,13 +897,7 @@ class DualScreenManager(
             val isAndroid = game.source == GameSource.ANDROID_APP
             if (isAndroid) gameActionsDelegate.refreshAndroidGameData(gameId)
             else gameActionsDelegate.refreshGameData(gameId)
-            context.sendBroadcast(
-                Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                    setPackage(context.packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, "REFRESH_DONE")
-                    putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-                }
-            )
+            companionHost?.onDirectActionResult("REFRESH_DONE", gameId)
             val updated = gameDao.getById(gameId) ?: return@launch
             _dualGameDetailState.update { s ->
                 s?.copy(
@@ -1063,13 +922,7 @@ class DualScreenManager(
             } else {
                 gameActionsDelegate.deleteLocalFile(gameId)
             }
-            context.sendBroadcast(
-                Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                    setPackage(context.packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, "DELETE_DONE")
-                    putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-                }
-            )
+            companionHost?.onDirectActionResult("DELETE_DONE", gameId)
         }
     }
 
@@ -1078,12 +931,7 @@ class DualScreenManager(
             gameActionsDelegate.deleteLocalFile(gameId)
             gameActionsDelegate.hideGame(gameId)
             _dualGameDetailState.value = null
-            context.sendBroadcast(
-                Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                    setPackage(context.packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, "HIDE_DONE")
-                }
-            )
+            companionHost?.onDirectActionResult("HIDE_DONE", -1)
         }
     }
 
@@ -1189,37 +1037,28 @@ class DualScreenManager(
     }
 
     private fun broadcastSaveActionResult(type: String, gameId: Long) {
-        context.sendBroadcast(
-            Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                setPackage(context.packageName)
-                putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
-                putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-            }
-        )
+        companionHost?.onDirectActionResult(type, gameId)
     }
 
     private fun broadcastUnifiedSaves(gameId: Long) {
         scope.launch(Dispatchers.IO) {
             try {
                 val entries = getUnifiedSavesUseCase(gameId)
-                val json = entries.map { it.toSaveEntryData() }.toJsonString()
+                val entryData = entries.map { it.toSaveEntryData() }
                 val game = gameDao.getById(gameId)
-                context.sendBroadcast(
-                    Intent(DualScreenBroadcasts.ACTION_SAVE_DATA).apply {
-                        setPackage(context.packageName)
-                        putExtra(DualScreenBroadcasts.EXTRA_SAVE_DATA_JSON, json)
-                        putExtra(
-                            DualScreenBroadcasts.EXTRA_ACTIVE_CHANNEL,
-                            game?.activeSaveChannel
+
+                _swappedGameDetailViewModel?.let { vm ->
+                    if (vm.uiState.value.gameId == gameId) {
+                        vm.loadUnifiedSaves(
+                            entryData,
+                            game?.activeSaveChannel,
+                            game?.activeSaveTimestamp
                         )
-                        game?.activeSaveTimestamp?.let {
-                            putExtra(
-                                DualScreenBroadcasts.EXTRA_ACTIVE_SAVE_TIMESTAMP,
-                                it
-                            )
-                        }
                     }
-                )
+                }
+
+                val json = entryData.toJsonString()
+                companionHost?.onSaveDataReceived(json, game?.activeSaveChannel, game?.activeSaveTimestamp)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to broadcast unified saves", e)
             }
@@ -1237,47 +1076,25 @@ class DualScreenManager(
             _dualGameDetailState.update {
                 it?.copy(modalType = ActiveModal.NONE)
             }
-            context.sendBroadcast(
-                Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                    setPackage(context.packageName)
-                    putExtra(DualScreenBroadcasts.EXTRA_MODAL_DISMISSED, true)
-                }
+            companionHost?.onModalResult(
+                dismissed = true, type = null, value = 0,
+                statusSelected = null, selectedIndex = -1,
+                collectionToggleId = -1, collectionCreateName = null
             )
         }
-        context.sendBroadcast(
-            Intent(DualScreenBroadcasts.ACTION_CLOSE_OVERLAY).apply {
-                setPackage(context.packageName)
-            }
-        )
+        companionHost?.onOverlayClosed()
         if (detailState != null && detailState.gameId > 0) {
-            context.sendBroadcast(
-                Intent(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED).apply {
-                    setPackage(context.packageName)
-                    putExtra(
-                        DualScreenBroadcasts.EXTRA_GAME_ID,
-                        detailState.gameId
-                    )
-                }
-            )
+            companionHost?.onGameDetailOpened(detailState.gameId)
             broadcastUnifiedSaves(detailState.gameId)
         }
     }
 
     fun broadcastForegroundState(isForeground: Boolean) {
         sessionStateStore.setArgosyForeground(isForeground)
-        val isWizard = sessionStateStore.isWizardActive()
-        val action = if (isForeground) {
-            "com.nendo.argosy.FOREGROUND"
-        } else {
-            "com.nendo.argosy.BACKGROUND"
-        }
-        context.sendBroadcast(
-            Intent(action).apply {
-                setPackage(context.packageName)
-                putExtra(EXTRA_WIZARD_ACTIVE, isWizard)
-            }
-        )
+        companionHost?.onForegroundChanged(isForeground)
         if (isForeground) {
+            val isWizard = sessionStateStore.isWizardActive()
+            if (isWizard) companionHost?.onWizardStateChanged(true)
             scope.launch {
                 val prefs = preferencesRepository.preferences.first()
                 updateHomeApps(prefs.secondaryHomeApps)
@@ -1287,31 +1104,131 @@ class DualScreenManager(
 
     fun broadcastWizardState(isActive: Boolean) {
         sessionStateStore.setWizardActive(isActive)
-        if (!isActive) {
-            sessionStateStore.setFirstRunComplete(true)
-        }
-        context.sendBroadcast(
-            Intent(ACTION_WIZARD_STATE).apply {
-                setPackage(context.packageName)
-                putExtra(EXTRA_WIZARD_ACTIVE, isActive)
+        if (!isActive) sessionStateStore.setFirstRunComplete(true)
+        companionHost?.onWizardStateChanged(isActive)
+    }
+
+    private var lastSwapTimeMs = 0L
+
+    fun swapRoles() {
+        val now = System.currentTimeMillis()
+        if (now - lastSwapTimeMs < SWAP_DEBOUNCE_MS) return
+        lastSwapTimeMs = now
+
+        if (sessionStateStore.hasActiveSession()) return
+
+        val current = sessionStateStore.getDisplayRoleOverride()
+        val newOverride = when (current) {
+            "SWAPPED" -> "STANDARD"
+            "STANDARD" -> "SWAPPED"
+            else -> {
+                if (isRolesSwapped) "STANDARD" else "SWAPPED"
             }
+        }
+        sessionStateStore.setDisplayRoleOverride(newOverride)
+        val newSwapped = newOverride == "SWAPPED" ||
+            (newOverride == "AUTO" && displayAffinityHelper.secondaryDisplayType == SecondaryDisplayType.EXTERNAL)
+        isRolesSwapped = newSwapped
+        sessionStateStore.setRolesSwapped(newSwapped)
+        companionHost?.onRoleSwapped(newSwapped)
+    }
+
+    fun selectGameSwapped(gameId: Long) {
+        val vm = com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel(
+            gameDao = gameDao,
+            platformRepository = platformRepository,
+            collectionRepository = collectionRepository,
+            emulatorConfigDao = emulatorConfigDao,
+            gameFileDao = gameFileDao,
+            downloadQueueDao = downloadQueueDao,
+            displayAffinityHelper = displayAffinityHelper,
+            context = context
         )
+        vm.loadGame(gameId)
+        _swappedGameDetailViewModel = vm
+        _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.GAME_DETAIL
+        sessionStateStore.setCompanionScreen("GAME_DETAIL", gameId)
+        companionHost?.onGameDetailOpened(gameId)
+        broadcastUnifiedSaves(gameId)
+    }
+
+    fun returnToHomeSwapped() {
+        _swappedGameDetailViewModel = null
+        _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
+        sessionStateStore.setCompanionScreen("HOME")
+        companionHost?.onGameDetailClosed()
+        swappedDualHomeViewModel?.refresh()
+    }
+
+    fun broadcastOpenOverlay(eventName: String) {
+        companionHost?.onOverlayRequested(eventName)
+    }
+
+    // WIP: Focus Recovery for External Displays
+    // -----------------------------------------
+    // FocusDirector (setLaunchDisplayId) is blocked by SafeActivityOptions.checkPermissions
+    // on external HDMI displays (Odin 3). Only SECONDARY_HOME activities get display launch
+    // permission on external screens.
+    //
+    // Current approach: FocusAccessibilityService uses dispatchGesture() with
+    // GestureDescription.Builder.setDisplayId() to inject a touch on the emulator display,
+    // which should update Android's FocusedDisplayId (tracks "most recent touch display").
+    //
+    // Status: Service is registered in manifest + config XML but UNTESTED.
+    // User must enable it in Settings > Accessibility > Argosy Launcher.
+    //
+    // Fallback: FocusDirector still works on BUILT_IN secondary displays (Thor).
+    //
+    // Triggers: MainActivity.onWindowFocusChanged(false), MainActivity.onResume
+    // Guard: isLaunchingGame flag prevents firing during game launch (3s cooldown)
+    //
+    // Next steps:
+    //   1. Test accessibility tap on Odin 3 external display
+    //   2. If dispatchGesture works, add auto-prompt for accessibility permission
+    //   3. Test on Thor to verify FocusDirector still works for built-in displays
+    //   4. Investigate game session being cleared on resume in swapped mode
+    fun restoreEmulatorFocus() {
+        val displayId = emulatorDisplayId ?: return
+        if (!sessionStateStore.hasActiveSession()) return
+        if (isLaunchingGame) return
+        scope.launch {
+            delay(200)
+            if (isLaunchingGame) return@launch
+            val a11y = FocusAccessibilityService.instance
+            if (a11y != null) {
+                Log.d(TAG, "Restoring emulator focus via accessibility tap on display $displayId")
+                a11y.tapOnDisplay(displayId)
+            } else {
+                Log.d(TAG, "Restoring emulator focus via FocusDirector on display $displayId")
+                try {
+                    FocusDirectorActivity.launchOnDisplay(context.applicationContext, displayId)
+                } catch (e: SecurityException) {
+                    Log.w(TAG, "FocusDirector blocked on display $displayId (device restriction)")
+                }
+            }
+        }
+    }
+
+    fun setEmulatorDisplay(displayId: Int?) {
+        emulatorDisplayId = displayId
     }
 
     fun ensureCompanionLaunched() {
         if (!displayAffinityHelper.hasSecondaryDisplay) return
-        if (displayAffinityHelper.secondaryDisplayType != SecondaryDisplayType.EXTERNAL) return
         if (_isCompanionActive.value) return
+        if (sessionStateStore.hasActiveSession()) return
 
+        CompanionGuardService.start(context)
         companionLaunchJob?.cancel()
         companionLaunchJob = scope.launch {
             delay(COMPANION_LAUNCH_WAIT_MS)
             if (_isCompanionActive.value) return@launch
-            launchCompanionOnExternalDisplay()
+            if (sessionStateStore.hasActiveSession()) return@launch
+            launchCompanionOnSecondaryDisplay()
         }
     }
 
-    private fun launchCompanionOnExternalDisplay() {
+    private fun launchCompanionOnSecondaryDisplay() {
         val options = displayAffinityHelper.getCompanionLaunchOptions() ?: return
         val intent = Intent(context, SecondaryHomeActivity::class.java).apply {
             addFlags(
@@ -1320,71 +1237,37 @@ class DualScreenManager(
                     Intent.FLAG_ACTIVITY_SINGLE_TOP
             )
         }
-        Log.d(TAG, "Manually launching companion on external display")
+        Log.d(TAG, "Launching companion on secondary display")
         context.startActivity(intent, options)
+        scope.launch {
+            delay(300)
+            refocusMain()
+        }
     }
 
     companion object {
         const val ACTION_WIZARD_STATE = "com.nendo.argosy.WIZARD_STATE"
         const val EXTRA_WIZARD_ACTIVE = "wizard_active"
+        const val OVERLAY_MENU = "com.nendo.argosy.OVERLAY_MENU"
+        const val OVERLAY_QUICK_MENU = "com.nendo.argosy.OVERLAY_QUICK_MENU"
+        const val OVERLAY_QUICK_SETTINGS = "com.nendo.argosy.OVERLAY_QUICK_SETTINGS"
         private const val COMPANION_WATCHDOG_TIMEOUT_MS = 5000L
-        private const val COMPANION_LAUNCH_WAIT_MS = 2500L
+        private const val COMPANION_LAUNCH_WAIT_MS = 500L
+        private const val SWAP_DEBOUNCE_MS = 500L
     }
 
     fun updateHomeApps(homeApps: Set<String>) {
         sessionStateStore.setHomeApps(homeApps)
-        context.sendBroadcast(
-            Intent("com.nendo.argosy.HOME_APPS_CHANGED").apply {
-                setPackage(context.packageName)
-                putStringArrayListExtra("home_apps", ArrayList(homeApps))
-            }
-        )
+        companionHost?.onHomeAppsChanged(homeApps.toList())
     }
 
     fun broadcastSessionCleared() {
-        context.sendBroadcast(
-            Intent("com.nendo.argosy.SESSION_CHANGED").apply {
-                setPackage(context.packageName)
-                putExtra("game_id", -1L)
-            }
-        )
+        companionHost?.onSessionEnded()
     }
 
     // --- Registration ---
 
     fun registerReceivers() {
-        val showcaseFilter = IntentFilter(DualScreenBroadcasts.ACTION_GAME_SELECTED)
-        val overlayOpenFilter = IntentFilter().apply {
-            addAction(DualScreenBroadcasts.ACTION_OPEN_OVERLAY)
-            addAction(DualScreenBroadcasts.ACTION_REFOCUS_UPPER)
-        }
-        val detailFilter = IntentFilter().apply {
-            addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_OPENED)
-            addAction(DualScreenBroadcasts.ACTION_GAME_DETAIL_CLOSED)
-            addAction(DualScreenBroadcasts.ACTION_SCREENSHOT_SELECTED)
-            addAction(DualScreenBroadcasts.ACTION_SCREENSHOT_CLEAR)
-            addAction(DualScreenBroadcasts.ACTION_MODAL_OPEN)
-            addAction(DualScreenBroadcasts.ACTION_MODAL_RESULT)
-            addAction(DualScreenBroadcasts.ACTION_DIRECT_ACTION)
-            addAction(DualScreenBroadcasts.ACTION_INLINE_UPDATE)
-            addAction("com.nendo.argosy.DOWNLOAD_COMPLETED")
-        }
-        val companionFilter = IntentFilter().apply {
-            addAction(DualScreenBroadcasts.ACTION_COMPANION_RESUMED)
-            addAction(DualScreenBroadcasts.ACTION_COMPANION_PAUSED)
-        }
-        val viewModeFilter = IntentFilter().apply {
-            addAction(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED)
-            addAction(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED)
-        }
-        val flag = ContextCompat.RECEIVER_NOT_EXPORTED
-        ContextCompat.registerReceiver(context, dualGameSelectedReceiver, showcaseFilter, flag)
-        ContextCompat.registerReceiver(context, overlayOpenReceiver, overlayOpenFilter, flag)
-        ContextCompat.registerReceiver(context, dualGameDetailReceiver, detailFilter, flag)
-        ContextCompat.registerReceiver(context, companionLifecycleReceiver, companionFilter, flag)
-        ContextCompat.registerReceiver(context, dualViewModeReceiver, viewModeFilter, flag)
-        val companionHomeAppsFilter = IntentFilter("com.nendo.argosy.COMPANION_HOME_APPS_CHANGED")
-        ContextCompat.registerReceiver(context, companionHomeAppsReceiver, companionHomeAppsFilter, flag)
         displayAffinityHelper.registerDisplayListener(displayListener)
     }
 
@@ -1392,17 +1275,12 @@ class DualScreenManager(
         companionLaunchJob?.cancel()
         companionLaunchJob = null
         displayAffinityHelper.unregisterDisplayListener(displayListener)
-        try {
-            context.unregisterReceiver(dualGameSelectedReceiver)
-            context.unregisterReceiver(overlayOpenReceiver)
-            context.unregisterReceiver(dualGameDetailReceiver)
-            context.unregisterReceiver(companionLifecycleReceiver)
-            context.unregisterReceiver(dualViewModeReceiver)
-            context.unregisterReceiver(companionHomeAppsReceiver)
-        } catch (_: Exception) {}
     }
 
     private fun refocusMain() {
+        if (emulatorDisplayId == android.view.Display.DEFAULT_DISPLAY &&
+            sessionStateStore.hasActiveSession()
+        ) return
         context.startActivity(
             Intent(context, MainActivity::class.java).apply {
                 addFlags(

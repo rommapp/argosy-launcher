@@ -64,7 +64,7 @@ import com.nendo.argosy.hardware.CompanionContent
 import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.ui.screens.secondaryhome.DrawerAppUi
-import com.nendo.argosy.ui.dualscreen.DualScreenBroadcasts
+import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailInputHandler
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperScreen
@@ -81,7 +81,7 @@ import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
-import com.nendo.argosy.ui.dualscreen.home.broadcastGameSelection
+import com.nendo.argosy.ui.dualscreen.home.toShowcaseState
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
@@ -339,8 +339,8 @@ fun ArgosyApp(
     LaunchedEffect(pendingOverlay) {
         val eventName = pendingOverlay ?: return@LaunchedEffect
         when (eventName) {
-            DualScreenBroadcasts.OVERLAY_QUICK_MENU -> openQuickMenu()
-            DualScreenBroadcasts.OVERLAY_QUICK_SETTINGS -> openQuickSettings()
+            DualScreenManager.OVERLAY_QUICK_MENU -> openQuickMenu()
+            DualScreenManager.OVERLAY_QUICK_SETTINGS -> openQuickSettings()
             else -> openDrawer()
         }
         activity?.clearPendingOverlay()
@@ -505,10 +505,7 @@ fun ArgosyApp(
         } else if (grabbedFocusForConflict && !hasConflict) {
             grabbedFocusForConflict = false
             if (showDualOverlay) {
-                activity?.sendBroadcast(
-                    Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
-                        .setPackage(activity.packageName)
-                )
+                activity?.dualScreenManager?.companionHost?.refocusSelf()
             }
         }
     }
@@ -542,14 +539,8 @@ fun ArgosyApp(
             activity?.let { a ->
                 if (a.isOverlayFocused) {
                     a.isOverlayFocused = false
-                    a.sendBroadcast(
-                        Intent(DualScreenBroadcasts.ACTION_CLOSE_OVERLAY)
-                            .setPackage(a.packageName)
-                    )
-                    a.sendBroadcast(
-                        Intent(DualScreenBroadcasts.ACTION_REFOCUS_LOWER)
-                            .setPackage(a.packageName)
-                    )
+                    a.dualScreenManager.companionHost?.onOverlayClosed()
+                    a.dualScreenManager.companionHost?.refocusSelf()
                 }
             }
         }
@@ -564,12 +555,7 @@ fun ArgosyApp(
                 if (onHome) {
                     notifyOverlayClosed()
                 } else {
-                    activity?.let { a ->
-                        a.sendBroadcast(
-                            Intent(DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD)
-                                .setPackage(a.packageName)
-                        )
-                    }
+                    activity?.dualScreenManager?.companionHost?.onBackgroundForward()
                 }
             }
             wasOpen = open
@@ -598,12 +584,7 @@ fun ArgosyApp(
                 if (onHome) {
                     notifyOverlayClosed()
                 } else {
-                    activity?.let { a ->
-                        a.sendBroadcast(
-                            Intent(DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD)
-                                .setPackage(a.packageName)
-                        )
-                    }
+                    activity?.dualScreenManager?.companionHost?.onBackgroundForward()
                 }
             }
             wasOpen = open
@@ -619,12 +600,7 @@ fun ArgosyApp(
                 if (onHome) {
                     notifyOverlayClosed()
                 } else {
-                    activity?.let { a ->
-                        a.sendBroadcast(
-                            Intent(DualScreenBroadcasts.ACTION_BACKGROUND_FORWARD)
-                                .setPackage(a.packageName)
-                        )
-                    }
+                    activity?.dualScreenManager?.companionHost?.onBackgroundForward()
                 }
             }
             wasVisible = state.isVisible
@@ -940,55 +916,39 @@ fun ArgosyApp(
                                 viewModel = swappedVm,
                                 homeApps = { activity.homeAppsList },
                                 onBroadcastViewModeChange = {
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(
-                                                DualScreenBroadcasts.EXTRA_VIEW_MODE,
-                                                swappedVm.uiState.value.viewMode.name
-                                            )
-                                        }
+                                    dualScreenManager.onViewModeChanged(
+                                        swappedVm.uiState.value.viewMode.name, false, false
                                     )
                                 },
                                 onBroadcastCollectionFocused = {
                                     val item = swappedVm.selectedCollectionItem() ?: return@DualHomeInputHandler
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY, item.name)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION, item.description)
-                                            putStringArrayListExtra(
-                                                DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS,
-                                                ArrayList(item.coverPaths)
-                                            )
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, item.gameCount)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY, item.platformSummary)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, item.totalPlaytimeMinutes)
-                                        }
+                                    dualScreenManager.onCollectionFocused(
+                                        DualCollectionShowcaseState(
+                                            name = item.name,
+                                            description = item.description,
+                                            coverPaths = item.coverPaths,
+                                            gameCount = item.gameCount,
+                                            platformSummary = item.platformSummary,
+                                            totalPlaytimeMinutes = item.totalPlaytimeMinutes
+                                        )
                                     )
                                 },
                                 onBroadcastCurrentGameSelection = {
                                     val game = swappedVm.uiState.value.selectedGame ?: return@DualHomeInputHandler
-                                    broadcastGameSelection(context, game)
+                                    dualScreenManager.onGameSelected(game.toShowcaseState())
                                 },
                                 onBroadcastLibraryGameSelection = {
                                     val state = swappedVm.uiState.value
                                     val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
                                         ?: return@DualHomeInputHandler
-                                    broadcastGameSelection(context, game)
+                                    dualScreenManager.onGameSelected(game.toShowcaseState())
                                 },
                                 onBroadcastCollectionGameSelection = {
                                     val game = swappedVm.focusedCollectionGame() ?: return@DualHomeInputHandler
-                                    broadcastGameSelection(context, game)
+                                    dualScreenManager.onGameSelected(game.toShowcaseState())
                                 },
                                 onBroadcastDirectAction = { type, gameId ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
-                                            putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-                                        }
-                                    )
+                                    dualScreenManager.handleDirectAction(type, gameId)
                                 },
                                 onSelectGame = { gameId ->
                                     dualScreenManager.selectGameSwapped(gameId)
@@ -1025,133 +985,57 @@ fun ArgosyApp(
                                 isScreenshotViewerOpen = { isScreenshotViewerOpen },
                                 setScreenshotViewerOpen = { isScreenshotViewerOpen = it },
                                 onBroadcastScreenshotSelected = { index ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_SCREENSHOT_SELECTED).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_SCREENSHOT_INDEX, index)
-                                        }
-                                    )
+                                    dualScreenManager.onScreenshotSelected(index)
                                 },
                                 onBroadcastScreenshotCleared = {
                                     isScreenshotViewerOpen = false
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_SCREENSHOT_CLEAR)
-                                            .setPackage(activity.packageName)
-                                    )
+                                    dualScreenManager.onScreenshotCleared()
                                 },
                                 onBroadcastModalState = { vm, modal ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, modal.name)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_VALUE, vm.ratingPickerValue.value)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_STATUS_SELECTED, vm.statusPickerValue.value)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_STATUS_CURRENT, vm.uiState.value.status)
-                                        }
-                                    )
+                                    when (modal) {
+                                        ActiveModal.STATUS -> dualScreenManager.openModal(
+                                            modal,
+                                            statusSelected = vm.statusPickerValue.value,
+                                            statusCurrent = vm.uiState.value.status
+                                        )
+                                        else -> dualScreenManager.openModal(modal, vm.ratingPickerValue.value)
+                                    }
                                 },
                                 onBroadcastModalClose = {
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_DISMISSED, true)
-                                        }
-                                    )
+                                    dualScreenManager.dismissDualModal()
                                 },
                                 onBroadcastModalConfirm = { modal, value, statusValue ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, modal.name)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_VALUE, value)
-                                            statusValue?.let {
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_STATUS_SELECTED, it)
-                                            }
-                                            if (modal == ActiveModal.EMULATOR) {
-                                                putExtra(DualScreenBroadcasts.EXTRA_SELECTED_INDEX, value)
-                                            }
-                                        }
-                                    )
+                                    dualScreenManager.onModalConfirmResult(modal, value, statusValue)
                                 },
                                 onBroadcastInlineUpdate = { field, value ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_INLINE_UPDATE).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_INLINE_FIELD, field)
-                                            when (value) {
-                                                is Int -> putExtra(DualScreenBroadcasts.EXTRA_INLINE_INT_VALUE, value)
-                                                is String -> putExtra(DualScreenBroadcasts.EXTRA_INLINE_STRING_VALUE, value)
-                                            }
-                                        }
-                                    )
+                                    when (value) {
+                                        is Int -> dualScreenManager.handleInlineUpdate(field, intValue = value)
+                                        is String -> dualScreenManager.handleInlineUpdate(field, stringValue = value)
+                                    }
                                 },
                                 onBroadcastDirectAction = { type, gameId, channelName ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
-                                            putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-                                            channelName?.let { putExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME, it) }
-                                        }
-                                    )
+                                    dualScreenManager.handleDirectAction(type, gameId, channelName)
                                 },
                                 onBroadcastEmulatorModalOpen = { emulators, currentName ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.EMULATOR.name)
-                                            putStringArrayListExtra(
-                                                DualScreenBroadcasts.EXTRA_EMULATOR_NAMES,
-                                                ArrayList(emulators.map { it.def.displayName })
-                                            )
-                                            putStringArrayListExtra(
-                                                DualScreenBroadcasts.EXTRA_EMULATOR_VERSIONS,
-                                                ArrayList(emulators.map { it.versionName ?: "" })
-                                            )
-                                            putExtra(DualScreenBroadcasts.EXTRA_EMULATOR_CURRENT, currentName)
-                                        }
+                                    dualScreenManager.openEmulatorModal(
+                                        emulators.map { it.def.displayName },
+                                        emulators.map { it.versionName ?: "" },
+                                        currentName
                                     )
                                 },
                                 onBroadcastCollectionModalOpen = { vm ->
                                     val items = vm.collectionItems.value
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.COLLECTION.name)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_IDS, items.map { it.id }.toLongArray())
-                                            putStringArrayListExtra(
-                                                DualScreenBroadcasts.EXTRA_COLLECTION_NAMES,
-                                                ArrayList(items.map { it.name })
-                                            )
-                                            putExtra(
-                                                DualScreenBroadcasts.EXTRA_COLLECTION_CHECKED,
-                                                items.map { it.isInCollection }.toBooleanArray()
-                                            )
-                                        }
+                                    dualScreenManager.openCollectionModal(
+                                        items.map { it.id },
+                                        items.map { it.name },
+                                        items.map { it.isInCollection }
                                     )
                                 },
                                 onBroadcastSaveNamePrompt = { actionType, cacheId ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.SAVE_NAME.name)
-                                            putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, actionType)
-                                            if (cacheId != null) {
-                                                putExtra(DualScreenBroadcasts.EXTRA_SAVE_CACHE_ID, cacheId)
-                                            }
-                                        }
-                                    )
+                                    dualScreenManager.openSaveNameModal(actionType, cacheId)
                                 },
                                 onBroadcastSaveAction = { type, gameId, channelName, timestamp ->
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
-                                            putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-                                            channelName?.let { putExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME, it) }
-                                            timestamp?.let { putExtra(DualScreenBroadcasts.EXTRA_SAVE_TIMESTAMP, it) }
-                                        }
-                                    )
+                                    dualScreenManager.handleDirectAction(type, gameId, channelName, timestamp)
                                 },
                                 onReturnToHome = { dualScreenManager.returnToHomeSwapped() },
                                 onRefocusSelf = { },
@@ -1255,60 +1139,43 @@ fun ArgosyApp(
                             },
                             onCollectionsClick = {
                                 swappedVm.enterCollections()
-                                activity.sendBroadcast(
-                                    Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
-                                        setPackage(activity.packageName)
-                                        putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, DualHomeViewMode.COLLECTIONS.name)
-                                    }
-                                )
+                                dualScreenManager.onViewModeChanged(DualHomeViewMode.COLLECTIONS.name, false, false)
                                 val item = swappedVm.selectedCollectionItem()
                                 if (item != null) {
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_COLLECTION_FOCUSED).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_NAME_DISPLAY, item.name)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_DESCRIPTION, item.description)
-                                            putStringArrayListExtra(
-                                                DualScreenBroadcasts.EXTRA_COLLECTION_COVER_PATHS,
-                                                ArrayList(item.coverPaths)
-                                            )
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_GAME_COUNT, item.gameCount)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_PLATFORM_SUMMARY, item.platformSummary)
-                                            putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_TOTAL_PLAYTIME, item.totalPlaytimeMinutes)
-                                        }
+                                    dualScreenManager.onCollectionFocused(
+                                        DualCollectionShowcaseState(
+                                            name = item.name,
+                                            description = item.description,
+                                            coverPaths = item.coverPaths,
+                                            gameCount = item.gameCount,
+                                            platformSummary = item.platformSummary,
+                                            totalPlaytimeMinutes = item.totalPlaytimeMinutes
+                                        )
                                     )
                                 }
                             },
                             onLibraryToggle = {
                                 swappedVm.toggleLibraryGrid {
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, swappedVm.uiState.value.viewMode.name)
-                                        }
+                                    dualScreenManager.onViewModeChanged(
+                                        swappedVm.uiState.value.viewMode.name, false, false
                                     )
                                     if (swappedVm.uiState.value.viewMode == DualHomeViewMode.LIBRARY_GRID) {
                                         val state = swappedVm.uiState.value
                                         val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
-                                        if (game != null) broadcastGameSelection(context, game)
+                                        if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                                     } else {
                                         val game = swappedVm.uiState.value.selectedGame
-                                        if (game != null) broadcastGameSelection(context, game)
+                                        if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                                     }
                                 }
                             },
                             onViewAllClick = {
                                 val platformId = swappedVm.uiState.value.currentPlatformId
                                 val afterSwitch = {
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, DualHomeViewMode.LIBRARY_GRID.name)
-                                        }
-                                    )
+                                    dualScreenManager.onViewModeChanged(DualHomeViewMode.LIBRARY_GRID.name, false, false)
                                     val state = swappedVm.uiState.value
                                     val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
-                                    if (game != null) broadcastGameSelection(context, game)
+                                    if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                                     Unit
                                 }
                                 if (platformId != null) {
@@ -1322,12 +1189,7 @@ fun ArgosyApp(
                                 val item = items.getOrNull(index)
                                 if (item is DualCollectionListItem.Collection) {
                                     swappedVm.enterCollectionGames(item.id) {
-                                        activity.sendBroadcast(
-                                            Intent(DualScreenBroadcasts.ACTION_VIEW_MODE_CHANGED).apply {
-                                                setPackage(activity.packageName)
-                                                putExtra(DualScreenBroadcasts.EXTRA_VIEW_MODE, DualHomeViewMode.COLLECTION_GAMES.name)
-                                            }
-                                        )
+                                        dualScreenManager.onViewModeChanged(DualHomeViewMode.COLLECTION_GAMES.name, false, false)
                                     }
                                 }
                             },
@@ -1337,12 +1199,12 @@ fun ArgosyApp(
                                     DualHomeViewMode.COLLECTION_GAMES -> {
                                         swappedVm.moveCollectionGamesFocus(index - state.collectionGamesFocusedIndex)
                                         val game = swappedVm.focusedCollectionGame()
-                                        if (game != null) broadcastGameSelection(context, game)
+                                        if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                                     }
                                     DualHomeViewMode.LIBRARY_GRID -> {
                                         swappedVm.moveLibraryFocus(index - state.libraryFocusedIndex)
                                         val game = state.libraryGames.getOrNull(index)
-                                        if (game != null) broadcastGameSelection(context, game)
+                                        if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                                     }
                                     else -> {}
                                 }
@@ -1351,7 +1213,7 @@ fun ArgosyApp(
                                 swappedVm.jumpToSection(letter)
                                 val state = swappedVm.uiState.value
                                 val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
-                                if (game != null) broadcastGameSelection(context, game)
+                                if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                             },
                             onFilterOptionTapped = { index ->
                                 swappedVm.moveFilterFocus(index - swappedVm.uiState.value.filterFocusedIndex)
@@ -1367,46 +1229,22 @@ fun ArgosyApp(
                                 when (option) {
                                     GameDetailOption.PLAY -> {
                                         val type = if (vm.uiState.value.isPlayable) "PLAY" else "DOWNLOAD"
-                                        activity.sendBroadcast(
-                                            Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                                                setPackage(activity.packageName)
-                                                putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, type)
-                                                putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-                                                vm.uiState.value.activeChannel?.let {
-                                                    putExtra(DualScreenBroadcasts.EXTRA_CHANNEL_NAME, it)
-                                                }
-                                            }
-                                        )
+                                        dualScreenManager.handleDirectAction(type, gameId, vm.uiState.value.activeChannel)
                                     }
                                     GameDetailOption.RATING -> {
                                         vm.openRatingPicker()
-                                        activity.sendBroadcast(
-                                            Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                                setPackage(activity.packageName)
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.RATING.name)
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_VALUE, vm.ratingPickerValue.value)
-                                            }
-                                        )
+                                        dualScreenManager.openModal(ActiveModal.RATING, vm.ratingPickerValue.value)
                                     }
                                     GameDetailOption.DIFFICULTY -> {
                                         vm.openDifficultyPicker()
-                                        activity.sendBroadcast(
-                                            Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                                setPackage(activity.packageName)
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.DIFFICULTY.name)
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_VALUE, vm.ratingPickerValue.value)
-                                            }
-                                        )
+                                        dualScreenManager.openModal(ActiveModal.DIFFICULTY, vm.ratingPickerValue.value)
                                     }
                                     GameDetailOption.STATUS -> {
                                         vm.openStatusPicker()
-                                        activity.sendBroadcast(
-                                            Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                                setPackage(activity.packageName)
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.STATUS.name)
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_STATUS_SELECTED, vm.statusPickerValue.value)
-                                                putExtra(DualScreenBroadcasts.EXTRA_MODAL_STATUS_CURRENT, vm.uiState.value.status)
-                                            }
+                                        dualScreenManager.openModal(
+                                            ActiveModal.STATUS,
+                                            statusSelected = vm.statusPickerValue.value,
+                                            statusCurrent = vm.uiState.value.status
                                         )
                                     }
                                     GameDetailOption.TOGGLE_FAVORITE -> vm.toggleFavorite()
@@ -1418,20 +1256,10 @@ fun ArgosyApp(
                                                 vm.uiState.value.platformSlug
                                             )
                                             vm.openEmulatorPicker(emulators)
-                                            activity.sendBroadcast(
-                                                Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                                    setPackage(activity.packageName)
-                                                    putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.EMULATOR.name)
-                                                    putStringArrayListExtra(
-                                                        DualScreenBroadcasts.EXTRA_EMULATOR_NAMES,
-                                                        ArrayList(emulators.map { it.def.displayName })
-                                                    )
-                                                    putStringArrayListExtra(
-                                                        DualScreenBroadcasts.EXTRA_EMULATOR_VERSIONS,
-                                                        ArrayList(emulators.map { it.versionName ?: "" })
-                                                    )
-                                                    putExtra(DualScreenBroadcasts.EXTRA_EMULATOR_CURRENT, vm.uiState.value.emulatorName)
-                                                }
+                                            dualScreenManager.openEmulatorModal(
+                                                emulators.map { it.def.displayName },
+                                                emulators.map { it.versionName ?: "" },
+                                                vm.uiState.value.emulatorName
                                             )
                                         }
                                     }
@@ -1440,20 +1268,10 @@ fun ArgosyApp(
                                         scope.launch {
                                             kotlinx.coroutines.delay(50)
                                             val items = vm.collectionItems.value
-                                            activity.sendBroadcast(
-                                                Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                                    setPackage(activity.packageName)
-                                                    putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.COLLECTION.name)
-                                                    putExtra(DualScreenBroadcasts.EXTRA_COLLECTION_IDS, items.map { it.id }.toLongArray())
-                                                    putStringArrayListExtra(
-                                                        DualScreenBroadcasts.EXTRA_COLLECTION_NAMES,
-                                                        ArrayList(items.map { it.name })
-                                                    )
-                                                    putExtra(
-                                                        DualScreenBroadcasts.EXTRA_COLLECTION_CHECKED,
-                                                        items.map { it.isInCollection }.toBooleanArray()
-                                                    )
-                                                }
+                                            dualScreenManager.openCollectionModal(
+                                                items.map { it.id },
+                                                items.map { it.name },
+                                                items.map { it.isInCollection }
                                             )
                                         }
                                     }
@@ -1461,61 +1279,24 @@ fun ArgosyApp(
                                         scope.launch {
                                             vm.openUpdatesModal()
                                             val allFiles = vm.updateFiles.value + vm.dlcFiles.value
-                                            activity.sendBroadcast(
-                                                Intent(DualScreenBroadcasts.ACTION_MODAL_OPEN).apply {
-                                                    setPackage(activity.packageName)
-                                                    putExtra(DualScreenBroadcasts.EXTRA_MODAL_TYPE, ActiveModal.UPDATES_DLC.name)
-                                                    putStringArrayListExtra(
-                                                        DualScreenBroadcasts.EXTRA_UPDATE_FILE_NAMES,
-                                                        ArrayList(allFiles.map { it.fileName })
-                                                    )
-                                                    putExtra(
-                                                        DualScreenBroadcasts.EXTRA_UPDATE_FILE_SIZES,
-                                                        allFiles.map { it.sizeBytes }.toLongArray()
-                                                    )
-                                                    putStringArrayListExtra(
-                                                        DualScreenBroadcasts.EXTRA_UPDATE_FILE_TYPES,
-                                                        ArrayList(allFiles.map { it.type.name })
-                                                    )
-                                                    putExtra(
-                                                        DualScreenBroadcasts.EXTRA_UPDATE_FILE_DOWNLOADED,
-                                                        allFiles.map { it.isDownloaded }.toBooleanArray()
-                                                    )
-                                                }
-                                            )
+                                            dualScreenManager.openUpdatesModal(allFiles)
                                         }
                                     }
                                     GameDetailOption.REFRESH_METADATA,
                                     GameDetailOption.DELETE,
                                     GameDetailOption.HIDE -> {
-                                        activity.sendBroadcast(
-                                            Intent(DualScreenBroadcasts.ACTION_DIRECT_ACTION).apply {
-                                                setPackage(activity.packageName)
-                                                putExtra(DualScreenBroadcasts.EXTRA_ACTION_TYPE, option.name)
-                                                putExtra(DualScreenBroadcasts.EXTRA_GAME_ID, gameId)
-                                            }
-                                        )
+                                        dualScreenManager.handleDirectAction(option.name, gameId)
                                     }
                                 }
                             },
                             onScreenshotViewed = { index ->
-                                activity.sendBroadcast(
-                                    Intent(DualScreenBroadcasts.ACTION_SCREENSHOT_SELECTED).apply {
-                                        setPackage(activity.packageName)
-                                        putExtra(DualScreenBroadcasts.EXTRA_SCREENSHOT_INDEX, index)
-                                    }
-                                )
+                                dualScreenManager.onScreenshotSelected(index)
                             },
                             onDimTapped = {
                                 val vm = dualScreenManager.swappedGameDetailViewModel
                                 if (vm != null && vm.activeModal.value != ActiveModal.NONE) {
                                     vm.dismissPicker()
-                                    activity.sendBroadcast(
-                                        Intent(DualScreenBroadcasts.ACTION_MODAL_RESULT).apply {
-                                            setPackage(activity.packageName)
-                                            putExtra(DualScreenBroadcasts.EXTRA_MODAL_DISMISSED, true)
-                                        }
-                                    )
+                                    dualScreenManager.dismissDualModal()
                                 }
                             },
                             modifier = Modifier.blur(contentBlur)

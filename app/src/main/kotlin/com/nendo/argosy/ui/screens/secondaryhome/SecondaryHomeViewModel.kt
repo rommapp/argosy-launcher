@@ -466,11 +466,7 @@ class SecondaryHomeViewModel @Inject constructor(
             } else {
                 val sessionStore = com.nendo.argosy.data.preferences.SessionStateStore(context)
                 sessionStore.setHomeApps(pinnedPackages)
-                val intent = Intent("com.nendo.argosy.COMPANION_HOME_APPS_CHANGED").apply {
-                    setPackage(context.packageName)
-                    putStringArrayListExtra("home_apps", ArrayList(pinnedPackages))
-                }
-                context.sendBroadcast(intent)
+                com.nendo.argosy.DualScreenManagerHolder.instance?.onCompanionHomeAppsChanged(pinnedPackages)
             }
             val installedApps = appsRepository.getInstalledApps(includeSystemApps = true)
             val homeApps = installedApps

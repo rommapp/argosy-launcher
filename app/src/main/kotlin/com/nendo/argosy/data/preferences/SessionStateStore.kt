@@ -102,7 +102,7 @@ class SessionStateStore(context: Context) {
     fun getSwapStartSelect(): Boolean = prefs.getBoolean(KEY_SWAP_START_SELECT, false)
 
     fun setDisplayRoleOverride(override: String) {
-        prefs.edit().putString(KEY_DISPLAY_ROLE_OVERRIDE, override).apply()
+        prefs.edit().putString(KEY_DISPLAY_ROLE_OVERRIDE, override).commit()
     }
 
     fun getDisplayRoleOverride(): String =
@@ -116,7 +116,7 @@ class SessionStateStore(context: Context) {
         prefs.getString(KEY_DUAL_SCREEN_INPUT_FOCUS, "AUTO") ?: "AUTO"
 
     fun setRolesSwapped(swapped: Boolean) {
-        prefs.edit().putBoolean(KEY_ROLES_SWAPPED, swapped).apply()
+        prefs.edit().putBoolean(KEY_ROLES_SWAPPED, swapped).commit()
     }
 
     fun isRolesSwapped(): Boolean = prefs.getBoolean(KEY_ROLES_SWAPPED, false)

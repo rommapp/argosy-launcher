@@ -5,6 +5,8 @@
  */
 package com.nendo.argosy.ui.dualscreen.home
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,16 +120,20 @@ fun DualHomeUpperScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Full-bleed background image (no blur)
-        val bgPath = state.backgroundPath ?: state.coverPath
-        if (bgPath != null) {
-            val imageModel = if (bgPath.startsWith("/")) File(bgPath) else bgPath
-            AsyncImage(
-                model = imageModel,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+        Crossfade(
+            targetState = state.backgroundPath ?: state.coverPath,
+            animationSpec = tween(300),
+            label = "hero-bg"
+        ) { bgPath ->
+            if (bgPath != null) {
+                val imageModel = if (bgPath.startsWith("/")) File(bgPath) else bgPath
+                AsyncImage(
+                    model = imageModel,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         Column(

@@ -25,6 +25,7 @@ import com.nendo.argosy.domain.usecase.state.SyncStatesOnSessionEndUseCase
 import com.nendo.argosy.ui.notification.NotificationDuration
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.ui.screens.common.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper
 import kotlinx.coroutines.CoroutineScope
@@ -92,12 +93,6 @@ class PlaySessionTracker @Inject constructor(
     companion object {
         private const val TAG = "PlaySessionTracker"
         private const val MIN_PLAY_SECONDS_FOR_COMPLETION = 20
-
-        // Broadcast actions for companion process
-        private const val ACTION_SESSION_CHANGED = "com.nendo.argosy.SESSION_CHANGED"
-        private const val EXTRA_GAME_ID = "game_id"
-        private const val EXTRA_CHANNEL_NAME = "channel_name"
-        private const val EXTRA_IS_HARDCORE = "is_hardcore"
     }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val sessionStateStore by lazy { SessionStateStore(application) }
@@ -112,17 +107,11 @@ class PlaySessionTracker @Inject constructor(
             sessionStateStore.clearSession()
         }
 
-        // Broadcast for live updates
-        val intent = Intent(ACTION_SESSION_CHANGED).apply {
-            setPackage(application.packageName)
-            putExtra(EXTRA_GAME_ID, gameId ?: -1L)
-            putExtra(EXTRA_CHANNEL_NAME, channelName)
-            putExtra(EXTRA_IS_HARDCORE, isHardcore)
-        }
-        application.sendBroadcast(intent)
+        DualScreenManagerHolder.instance?.onSessionChanged(gameId ?: -1L, isHardcore, channelName)
     }
 
     private suspend fun clearSessionAndBroadcast() {
+        DualScreenManagerHolder.instance?.setEmulatorDisplay(null)
         preferencesRepository.clearActiveSession()
         broadcastSessionChanged(null, null, false)
     }
@@ -166,6 +155,7 @@ class PlaySessionTracker @Inject constructor(
     }
 
     suspend fun checkOrphanedSession() {
+        if (sessionStateStore.isRolesSwapped()) return
         val orphaned = preferencesRepository.getPersistedSession() ?: return
         Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Detected orphaned session from ${orphaned.startTime}")
 
@@ -318,6 +308,13 @@ class PlaySessionTracker @Inject constructor(
                 isHardcore = isHardcore,
                 channelName = channelName
             )
+
+            val displayId = if (sessionStateStore.isRolesSwapped()) {
+                android.view.Display.DEFAULT_DISPLAY + 1
+            } else {
+                android.view.Display.DEFAULT_DISPLAY
+            }
+            DualScreenManagerHolder.instance?.setEmulatorDisplay(displayId)
 
             broadcastSessionChanged(gameId, channelName, isHardcore)
 
@@ -655,6 +652,10 @@ class PlaySessionTracker @Inject constructor(
         GameSessionService.stop(application)
         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cancelled (no backup)")
         scope.launch { clearSessionAndBroadcast() }
+    }
+
+    fun endSessionInBackground() {
+        scope.launch { endSession() }
     }
 
     fun forceStopService() {

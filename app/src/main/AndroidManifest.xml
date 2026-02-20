@@ -124,21 +124,26 @@
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 
+        <service
+            android:name=".hardware.CompanionGuardService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
         <activity
             android:name=".hardware.SecondaryHomeActivity"
-            android:process=":companion"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            android:launchMode="standard"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Argosy"
             android:taskAffinity=""
             android:excludeFromRecents="true"
             android:exported="true">
-            <intent-filter>
+            <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SECONDARY_HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
 
         <receiver
             android:name=".hardware.AudioTestReceiver"
@@ -161,5 +166,21 @@
             android:theme="@style/Theme.Argosy"
             android:taskAffinity=""
             android:exported="false" />
+
+        <activity android:name=".hardware.FocusDirectorActivity"
+            android:exported="false" android:excludeFromRecents="true"
+            android:taskAffinity="" android:theme="@style/Theme.Argosy.FocusDirector" />
+
+        <service
+            android:name=".hardware.FocusAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/focus_accessibility_config" />
+        </service>
     </application>
 </manifest>

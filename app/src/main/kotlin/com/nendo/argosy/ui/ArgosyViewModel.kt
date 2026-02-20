@@ -795,7 +795,8 @@ class ArgosyViewModel @Inject constructor(
     }
 
     fun createQuickSettingsInputHandler(
-        onDismiss: () -> Unit
+        onDismiss: () -> Unit,
+        onSwapDisplays: (() -> Unit)? = null
     ): InputHandler = object : InputHandler {
         private fun hasFanSlider(): Boolean {
             val device = _deviceSettings.value
@@ -812,7 +813,8 @@ class ArgosyViewModel @Inject constructor(
             val baseItems = 6 +
                 (if (hasVibrationSlider()) 1 else 0) +
                 (if (hasSecondaryVolume) 1 else 0) +
-                (if (hasSecondaryBrightness) 1 else 0)
+                (if (hasSecondaryBrightness) 1 else 0) +
+                (if (_isDualScreenMode) 1 else 0)
             val deviceItems = when {
                 !_deviceSettings.value.isSupported -> 0
                 hasFanSlider() -> 3
@@ -997,6 +999,11 @@ class ArgosyViewModel @Inject constructor(
                 offset + 5 + avOffset + vibrationOffset -> {
                     val enabled = toggleAmbientAudio()
                     return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                }
+                // Swap Displays toggle
+                offset + 6 + avOffset + vibrationOffset -> {
+                    if (_isDualScreenMode) onSwapDisplays?.invoke()
+                    return InputResult.HANDLED
                 }
             }
 

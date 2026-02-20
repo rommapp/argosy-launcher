@@ -358,7 +358,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.previousSortSection()
+                dualHomeViewModel.previousSection()
                 onPersistCarouselPosition()
                 InputResult.HANDLED
             }
@@ -367,7 +367,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.nextSortSection()
+                dualHomeViewModel.nextSection()
                 onPersistCarouselPosition()
                 InputResult.HANDLED
             }

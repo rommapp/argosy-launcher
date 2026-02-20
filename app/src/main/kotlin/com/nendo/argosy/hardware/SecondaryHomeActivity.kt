@@ -206,8 +206,13 @@ class SecondaryHomeActivity :
 
     override fun onResume() {
         super.onResume()
-        android.util.Log.d("SecondaryHome", "onResume: dsm.init=${::dsm.isInitialized} showcase=$isShowcaseRole initialized=$isInitialized")
         if (!::dsm.isInitialized) return
+        val currentDsm = DualScreenManagerHolder.instance
+        if (currentDsm != null && dsm !== currentDsm) {
+            android.util.Log.w("SecondaryHome", "DSM stale, reconnecting to new instance")
+            dsm = currentDsm
+            initializeCompanion()
+        }
         dualHomeViewModel.stopDrawerForwarding()
         launchedExternalApp = false
         val store = dsm.sessionStateStore

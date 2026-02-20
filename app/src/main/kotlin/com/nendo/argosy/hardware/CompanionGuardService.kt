@@ -101,16 +101,16 @@ class CompanionGuardService : Service() {
 
             dsm.isCompanionActive.collect { active ->
                 if (!active && dsm.displayAffinityHelper.hasSecondaryDisplay) {
-                    if (dsm.sessionStateStore.hasActiveSession()) {
-                        Log.d(TAG, "Companion inactive but game session active, skipping relaunch")
+                    if (!dsm.sessionStateStore.hasActiveSession()) {
+                        Log.d(TAG, "Companion inactive, no game session -- user may have opened another app, skipping relaunch")
                         return@collect
                     }
-                    Log.d(TAG, "Companion went inactive, scheduling relaunch")
+                    Log.d(TAG, "Companion inactive during game session, scheduling relaunch")
                     delay(RELAUNCH_DELAY_MS)
                     if (!dsm.isCompanionActive.value &&
-                        !dsm.sessionStateStore.hasActiveSession()
+                        dsm.sessionStateStore.hasActiveSession()
                     ) {
-                        Log.d(TAG, "Companion still inactive, relaunching")
+                        Log.d(TAG, "Companion still inactive during session, relaunching")
                         dsm.ensureCompanionLaunched()
                     }
                 }

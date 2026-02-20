@@ -177,6 +177,7 @@ class MainActivity : ComponentActivity() {
 
     // --- Lifecycle ---
 
+    @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -212,31 +213,38 @@ class MainActivity : ComponentActivity() {
         sessionStateStore.setRolesSwapped(isRolesSwapped)
         dualScreenInputFocus = sessionStateStore.getDualScreenInputFocus()
 
-        dualScreenManager = DualScreenManager(
-            context = this,
-            scope = activityScope,
-            gameDao = gameDao,
-            platformRepository = platformRepository,
-            collectionRepository = collectionRepository,
-            downloadQueueDao = downloadQueueDao,
-            gameFileDao = gameFileDao,
-            downloadManager = downloadManagerInstance,
-            gameActionsDelegate = gameActionsDelegate,
-            gameLaunchDelegate = gameLaunchDelegate,
-            saveCacheManager = saveCacheManager,
-            getUnifiedSavesUseCase = getUnifiedSavesUseCase,
-            restoreCachedSaveUseCase = restoreCachedSaveUseCase,
-            emulatorResolver = emulatorResolver,
-            fetchAchievementsUseCase = fetchAchievementsUseCase,
-            displayAffinityHelper = displayAffinityHelper,
-            sessionStateStore = sessionStateStore,
-            preferencesRepository = preferencesRepository,
-            edenContentManager = edenContentManager,
-            notificationManager = notificationManager,
-            emulatorConfigDao = emulatorConfigDao,
-            isRolesSwapped = isRolesSwapped
-        )
-        DualScreenManagerHolder.instance = dualScreenManager
+        val existingDsm = DualScreenManagerHolder.instance
+        if (existingDsm != null) {
+            dualScreenManager = existingDsm
+            dualScreenManager.rebind(this, activityScope)
+            dualScreenManager.isRolesSwapped = isRolesSwapped
+        } else {
+            dualScreenManager = DualScreenManager(
+                context = this,
+                scope = activityScope,
+                gameDao = gameDao,
+                platformRepository = platformRepository,
+                collectionRepository = collectionRepository,
+                downloadQueueDao = downloadQueueDao,
+                gameFileDao = gameFileDao,
+                downloadManager = downloadManagerInstance,
+                gameActionsDelegate = gameActionsDelegate,
+                gameLaunchDelegate = gameLaunchDelegate,
+                saveCacheManager = saveCacheManager,
+                getUnifiedSavesUseCase = getUnifiedSavesUseCase,
+                restoreCachedSaveUseCase = restoreCachedSaveUseCase,
+                emulatorResolver = emulatorResolver,
+                fetchAchievementsUseCase = fetchAchievementsUseCase,
+                displayAffinityHelper = displayAffinityHelper,
+                sessionStateStore = sessionStateStore,
+                preferencesRepository = preferencesRepository,
+                edenContentManager = edenContentManager,
+                notificationManager = notificationManager,
+                emulatorConfigDao = emulatorConfigDao,
+                isRolesSwapped = isRolesSwapped
+            )
+            DualScreenManagerHolder.instance = dualScreenManager
+        }
 
         if (isRolesSwapped) {
             dualScreenManager.initSwappedViewModel()
@@ -301,6 +309,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("NewApi")
     override fun onResume() {
         super.onResume()
         Log.d(TAG, "onResume: swapped=$isRolesSwapped gameActive=${if (::dualScreenManager.isInitialized) dualScreenManager.swappedIsGameActive.value else "N/A"} hasResumedBefore=$hasResumedBefore")
@@ -330,7 +339,6 @@ class MainActivity : ComponentActivity() {
             romMRepository.onAppResumed()
             activityScope.launch { romMRepository.initialize() }
             ambientAudioManager.fadeIn()
-            dualScreenManager.ensureCompanionLaunched()
         } else {
             if (displayAffinityHelper.hasSecondaryDisplay && !isRolesSwapped) {
                 window.decorView.postDelayed({
@@ -349,9 +357,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        screenCaptureManager.stopCapture()
+        if (::screenCaptureManager.isInitialized) screenCaptureManager.stopCapture()
         activityScope.cancel()
-        dualScreenManager.unregisterReceivers()
+        if (isFinishing && ::dualScreenManager.isInitialized) {
+            dualScreenManager.unregisterReceivers()
+            DualScreenManagerHolder.instance = null
+        }
     }
 
     // --- Input Dispatch ---
@@ -423,6 +434,7 @@ class MainActivity : ComponentActivity() {
 
     // --- Window Focus ---
 
+    @SuppressLint("NewApi")
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         Log.d(TAG, "onWindowFocusChanged: hasFocus=$hasFocus swapped=$isRolesSwapped gameActive=${if (::dualScreenManager.isInitialized) dualScreenManager.swappedIsGameActive.value else "N/A"}")

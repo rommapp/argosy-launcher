@@ -14,6 +14,9 @@ import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.notification.NotificationProgress
 import com.nendo.argosy.ui.notification.NotificationType
 import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
+import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -654,14 +657,11 @@ internal fun routeLogoutFromRA(vm: SettingsViewModel) {
 internal fun routeGetLauncherIndexFromFocus(state: SettingsUiState): Int {
     return when (state.currentSection) {
         SettingsSection.SERVER -> {
-            val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
-                state.server.connectionStatus == ConnectionStatus.OFFLINE
-            val steamBaseIndex = when {
-                isConnected && state.syncSettings.saveSyncEnabled -> 10
-                isConnected -> 8
-                else -> 2
-            }
-            state.focusedIndex - steamBaseIndex
+            val items = buildGameDataItemsFromState(state)
+            val item = gameDataItemAtFocusIndex(state.focusedIndex, items)
+            if (item is GameDataItem.InstalledLauncher) {
+                state.steam.installedLaunchers.indexOf(item.data)
+            } else -1
         }
         SettingsSection.STEAM_SETTINGS -> state.focusedIndex - 1
         else -> -1

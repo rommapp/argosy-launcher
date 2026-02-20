@@ -527,7 +527,9 @@ data class SteamSettingsState(
     val addGameError: String? = null,
     val isAddingGame: Boolean = false,
     val selectedLauncherPackage: String? = null,
-    val launcherActionIndex: Int = 0
+    val launcherActionIndex: Int = 0,
+    val variantPickerInfo: VariantPickerInfo? = null,
+    val variantPickerFocusIndex: Int = 0
 )
 
 data class AndroidSettingsState(

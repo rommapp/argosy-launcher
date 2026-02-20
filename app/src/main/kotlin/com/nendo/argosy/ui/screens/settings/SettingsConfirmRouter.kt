@@ -33,6 +33,12 @@ import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.permissionsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
+import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.gameDataMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.gameDataFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.focusableItems
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -127,8 +133,6 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
 }
 
 private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
-    val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
-        state.server.connectionStatus == ConnectionStatus.OFFLINE
     val isOnline = state.server.connectionStatus == ConnectionStatus.ONLINE
     if (state.server.rommConfiguring) {
         when (state.focusedIndex) {
@@ -136,55 +140,46 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
             3 -> vm.connectToRomm()
             4 -> vm.cancelRommConfig()
         }
-    } else {
-        val androidBaseIndex = when {
-            isConnected && state.syncSettings.saveSyncEnabled -> 9
-            isConnected -> 7
-            else -> 1
+        return InputResult.HANDLED
+    }
+
+    val items = buildGameDataItemsFromState(state)
+    when (val item = gameDataItemAtFocusIndex(state.focusedIndex, items)) {
+        GameDataItem.RomManager -> vm.startRommConfig()
+        GameDataItem.SyncSettings -> vm.navigateToSection(SettingsSection.SYNC_SETTINGS)
+        GameDataItem.SyncLibrary -> if (isOnline) vm.syncRomm()
+        GameDataItem.AccuratePlayTime -> {
+            val hasPermission = state.controls.hasUsageStatsPermission
+            if (!state.controls.accuratePlayTimeEnabled && !hasPermission) {
+                vm.openUsageStatsSettings()
+            } else {
+                vm.setAccuratePlayTimeEnabled(!state.controls.accuratePlayTimeEnabled)
+            }
+            return InputResult.handled(SoundType.TOGGLE)
         }
-        val steamBaseIndex = androidBaseIndex + 1
-        val launcherCount = state.steam.installedLaunchers.size
-        val notInstalledCount = state.steam.notInstalledLaunchers.size
-        val refreshIndex = steamBaseIndex + launcherCount
-        when {
-            state.focusedIndex == 0 -> vm.startRommConfig()
-            state.focusedIndex == 1 && isConnected -> vm.navigateToSection(SettingsSection.SYNC_SETTINGS)
-            state.focusedIndex == 2 && isConnected && isOnline -> vm.syncRomm()
-            state.focusedIndex == 3 && isConnected -> {
-                val hasPermission = state.controls.hasUsageStatsPermission
-                if (!state.controls.accuratePlayTimeEnabled && !hasPermission) {
-                    vm.openUsageStatsSettings()
-                } else {
-                    vm.setAccuratePlayTimeEnabled(!state.controls.accuratePlayTimeEnabled)
-                }
-                return InputResult.handled(SoundType.TOGGLE)
-            }
-            state.focusedIndex == 4 && isConnected -> {
-                vm.toggleSaveSync()
-                return InputResult.handled(SoundType.TOGGLE)
-            }
-            state.focusedIndex == 5 && isConnected && state.syncSettings.saveSyncEnabled -> vm.cycleSaveCacheLimit()
-            state.focusedIndex == 6 && isConnected && state.syncSettings.saveSyncEnabled && isOnline -> vm.requestSyncSaves()
-            state.focusedIndex == androidBaseIndex - 2 && isConnected -> vm.requestClearPathCache()
-            state.focusedIndex == androidBaseIndex - 1 && isConnected -> vm.requestResetSaveCache()
-            state.focusedIndex == androidBaseIndex -> vm.scanForAndroidGames()
-            launcherCount == 0 && state.focusedIndex >= steamBaseIndex &&
-                state.focusedIndex < steamBaseIndex + notInstalledCount -> {
-                val installIndex = state.focusedIndex - steamBaseIndex
-                val launcher = state.steam.notInstalledLaunchers.getOrNull(installIndex)
-                if (launcher != null && state.steam.downloadingLauncherId == null) {
-                    vm.installSteamLauncher(launcher.emulatorId)
-                }
-            }
-            state.focusedIndex >= steamBaseIndex && state.focusedIndex < refreshIndex -> {
-                if (state.steam.hasStoragePermission && !state.steam.isSyncing) {
-                    vm.confirmLauncherAction()
-                }
-            }
-            state.focusedIndex == refreshIndex && launcherCount > 0 && !state.steam.isSyncing -> {
-                vm.refreshSteamMetadata()
+        GameDataItem.SaveSync -> {
+            vm.toggleSaveSync()
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        GameDataItem.SaveCacheLimit -> vm.cycleSaveCacheLimit()
+        GameDataItem.SyncSaves -> if (isOnline) vm.requestSyncSaves()
+        GameDataItem.ClearPathCache -> vm.requestClearPathCache()
+        GameDataItem.ResetSaveCache -> vm.requestResetSaveCache()
+        GameDataItem.ScanAndroid -> vm.scanForAndroidGames()
+        is GameDataItem.InstalledLauncher -> {
+            if (state.steam.hasStoragePermission && !state.steam.isSyncing) {
+                vm.confirmLauncherAction()
             }
         }
+        GameDataItem.RefreshMetadata -> {
+            if (!state.steam.isSyncing) vm.refreshSteamMetadata()
+        }
+        is GameDataItem.NotInstalledLauncher -> {
+            if (state.steam.downloadingLauncherId == null) {
+                vm.installSteamLauncher(item.data.emulatorId)
+            }
+        }
+        else -> {}
     }
     return InputResult.HANDLED
 }
@@ -508,11 +503,15 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.builtinControls.showHotkeysModal -> { vm.hideHotkeysModal(); true }
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
         state.currentSection == SettingsSection.SYNC_SETTINGS -> {
-            vm._uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = 1) }; true
+            val items = buildGameDataItemsFromState(state)
+            val idx = gameDataFocusIndexOf(GameDataItem.SyncSettings, items).coerceAtLeast(0)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = idx) }; true
         }
         state.currentSection == SettingsSection.STEAM_SETTINGS -> {
-            val steamIndex = if (vm._uiState.value.syncSettings.saveSyncEnabled) 9 else 7
-            vm._uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = steamIndex) }; true
+            val items = buildGameDataItemsFromState(state)
+            val firstSteam = focusableItems(items).indexOfFirst { it.section == "steam" }
+            val idx = if (firstSteam >= 0) firstSteam else 0
+            vm._uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = idx) }; true
         }
         state.retroAchievements.showLoginForm -> { vm.hideRALoginForm(); true }
         state.currentSection == SettingsSection.RETRO_ACHIEVEMENTS -> {
@@ -600,15 +599,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.SERVER -> if (state.server.rommConfiguring) {
         4
     } else {
-        val steamBaseIndex = when {
-            isConnected && state.syncSettings.saveSyncEnabled -> 10
-            isConnected -> 8
-            else -> 2
-        }
-        val launcherCount = state.steam.installedLaunchers.size
-        val notInstalledCount = state.steam.notInstalledLaunchers.size
-        if (launcherCount > 0) steamBaseIndex + launcherCount
-        else (steamBaseIndex + notInstalledCount - 1).coerceAtLeast(steamBaseIndex)
+        gameDataMaxFocusIndex(buildGameDataItemsFromState(state))
     }
     SettingsSection.SYNC_SETTINGS -> 3
     SettingsSection.STEAM_SETTINGS -> 1 + state.steam.installedLaunchers.size

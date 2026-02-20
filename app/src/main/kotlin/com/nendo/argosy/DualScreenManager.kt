@@ -55,8 +55,8 @@ import kotlinx.coroutines.launch
 private const val TAG = "DualScreenManager"
 
 class DualScreenManager(
-    private val context: Context,
-    private val scope: CoroutineScope,
+    context: Context,
+    private var scope: CoroutineScope,
     internal val gameDao: GameDao,
     internal val platformRepository: PlatformRepository,
     internal val collectionRepository: CollectionRepository,
@@ -78,6 +78,16 @@ class DualScreenManager(
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     var isRolesSwapped: Boolean = false
 ) {
+
+    private val appContext: Context = context.applicationContext
+    private var activityContext: Context = context
+
+    fun rebind(activity: android.app.Activity, newScope: CoroutineScope) {
+        activityContext = activity
+        scope = newScope
+        companionWatchdogJob?.cancel()
+        companionLaunchJob?.cancel()
+    }
     interface CompanionHost {
         fun onForegroundChanged(isForeground: Boolean)
         fun onWizardStateChanged(isActive: Boolean)
@@ -187,7 +197,7 @@ class DualScreenManager(
                 companionHost?.onRoleSwapped(newSwapped)
             }
             onDisplayChanged?.invoke(true)
-            CompanionGuardService.start(context)
+            CompanionGuardService.start(appContext)
             ensureCompanionLaunched()
         }
 
@@ -195,7 +205,7 @@ class DualScreenManager(
             companionLaunchJob?.cancel()
             companionLaunchJob = null
             _isCompanionActive.value = false
-            CompanionGuardService.stop(context)
+            CompanionGuardService.stop(appContext)
             onDisplayChanged?.invoke(false)
             cleanupSwappedState()
         }
@@ -215,7 +225,7 @@ class DualScreenManager(
         _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
         _swappedIsGameActive.value = false
         _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
-        swappedSessionTimer?.stop(context)
+        swappedSessionTimer?.stop(appContext)
         swappedSessionTimer = null
 
         companionHost?.onRoleSwapped(false)
@@ -237,7 +247,7 @@ class DualScreenManager(
             collectionRepository = collectionRepository,
             downloadQueueDao = downloadQueueDao,
             displayAffinityHelper = displayAffinityHelper,
-            context = context
+            context = appContext
         )
     }
 
@@ -591,8 +601,8 @@ class DualScreenManager(
             _swappedIsGameActive.value = true
             _swappedGameDetailViewModel = null
             _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
-            swappedSessionTimer?.stop(context)
-            swappedSessionTimer = com.nendo.argosy.hardware.CompanionSessionTimer().also { it.start(context) }
+            swappedSessionTimer?.stop(appContext)
+            swappedSessionTimer = com.nendo.argosy.hardware.CompanionSessionTimer().also { it.start(appContext) }
             scope.launch(Dispatchers.IO) {
                 val game = gameDao.getById(gameId) ?: return@launch
                 val platform = platformRepository.getById(game.platformId)
@@ -618,7 +628,7 @@ class DualScreenManager(
             emulatorDisplayId = null
             _swappedIsGameActive.value = false
             _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
-            swappedSessionTimer?.stop(context)
+            swappedSessionTimer?.stop(appContext)
             swappedSessionTimer = null
             val savedDetailGameId = sessionStateStore.getDetailGameId()
             if (savedDetailGameId > 0) selectGameSwapped(savedDetailGameId)
@@ -879,8 +889,9 @@ class DualScreenManager(
                     forEmulator = true,
                     rolesSwapped = isRolesSwapped
                 )
-                if (options != null) context.startActivity(intent, options)
-                else context.startActivity(intent)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (options != null) activityContext.startActivity(intent, options)
+                else activityContext.startActivity(intent)
             }
         )
     }
@@ -918,7 +929,7 @@ class DualScreenManager(
                     data = Uri.parse("package:${game.packageName}")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                context.startActivity(uninstall)
+                activityContext.startActivity(uninstall)
             } else {
                 gameActionsDelegate.deleteLocalFile(gameId)
             }
@@ -1142,7 +1153,7 @@ class DualScreenManager(
             gameFileDao = gameFileDao,
             downloadQueueDao = downloadQueueDao,
             displayAffinityHelper = displayAffinityHelper,
-            context = context
+            context = appContext
         )
         vm.loadGame(gameId)
         _swappedGameDetailViewModel = vm
@@ -1201,7 +1212,7 @@ class DualScreenManager(
             } else {
                 Log.d(TAG, "Restoring emulator focus via FocusDirector on display $displayId")
                 try {
-                    FocusDirectorActivity.launchOnDisplay(context.applicationContext, displayId)
+                    FocusDirectorActivity.launchOnDisplay(appContext, displayId)
                 } catch (e: SecurityException) {
                     Log.w(TAG, "FocusDirector blocked on display $displayId (device restriction)")
                 }
@@ -1218,7 +1229,7 @@ class DualScreenManager(
         if (_isCompanionActive.value) return
         if (sessionStateStore.hasActiveSession()) return
 
-        CompanionGuardService.start(context)
+        CompanionGuardService.start(appContext)
         companionLaunchJob?.cancel()
         companionLaunchJob = scope.launch {
             delay(COMPANION_LAUNCH_WAIT_MS)
@@ -1230,7 +1241,7 @@ class DualScreenManager(
 
     private fun launchCompanionOnSecondaryDisplay() {
         val options = displayAffinityHelper.getCompanionLaunchOptions() ?: return
-        val intent = Intent(context, SecondaryHomeActivity::class.java).apply {
+        val intent = Intent(activityContext, SecondaryHomeActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
@@ -1238,7 +1249,7 @@ class DualScreenManager(
             )
         }
         Log.d(TAG, "Launching companion on secondary display")
-        context.startActivity(intent, options)
+        activityContext.startActivity(intent, options)
         scope.launch {
             delay(300)
             refocusMain()
@@ -1281,8 +1292,8 @@ class DualScreenManager(
         if (emulatorDisplayId == android.view.Display.DEFAULT_DISPLAY &&
             sessionStateStore.hasActiveSession()
         ) return
-        context.startActivity(
-            Intent(context, MainActivity::class.java).apply {
+        activityContext.startActivity(
+            Intent(activityContext, MainActivity::class.java).apply {
                 addFlags(
                     Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
                         Intent.FLAG_ACTIVITY_SINGLE_TOP or

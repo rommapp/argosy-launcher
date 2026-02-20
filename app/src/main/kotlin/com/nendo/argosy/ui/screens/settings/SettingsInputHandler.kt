@@ -16,8 +16,11 @@ import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsItem
+import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
+import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
@@ -101,6 +104,10 @@ class SettingsInputHandler(
             viewModel.moveVariantPickerFocus(-1)
             return InputResult.HANDLED
         }
+        if (state.steam.variantPickerInfo != null) {
+            viewModel.moveSteamVariantFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) {
             viewModel.moveEmulatorPickerFocus(-1)
             return InputResult.HANDLED
@@ -166,6 +173,10 @@ class SettingsInputHandler(
             viewModel.moveVariantPickerFocus(1)
             return InputResult.HANDLED
         }
+        if (state.steam.variantPickerInfo != null) {
+            viewModel.moveSteamVariantFocus(1)
+            return InputResult.HANDLED
+        }
         if (state.emulators.showEmulatorPicker) {
             viewModel.moveEmulatorPickerFocus(1)
             return InputResult.HANDLED
@@ -220,6 +231,7 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
         if (state.emulators.showVariantPicker) return InputResult.HANDLED
+        if (state.steam.variantPickerInfo != null) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
         if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             viewModel.jumpShaderPickerSection(-1)
@@ -314,15 +326,9 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             if (!state.server.rommConfiguring) {
-                val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
-                    state.server.connectionStatus == ConnectionStatus.OFFLINE
-                val steamBaseIndex = when {
-                    isConnected && state.syncSettings.saveSyncEnabled -> 10
-                    isConnected -> 8
-                    else -> 2
-                }
-                val launcherIndex = state.focusedIndex - steamBaseIndex
-                if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
+                val items = buildGameDataItemsFromState(state)
+                val item = gameDataItemAtFocusIndex(state.focusedIndex, items)
+                if (item is GameDataItem.InstalledLauncher) {
                     viewModel.moveLauncherActionFocus(-1)
                     return InputResult.HANDLED
                 }
@@ -449,6 +455,7 @@ class SettingsInputHandler(
             return InputResult.HANDLED
         }
         if (state.emulators.showVariantPicker) return InputResult.HANDLED
+        if (state.steam.variantPickerInfo != null) return InputResult.HANDLED
         if (state.emulators.showEmulatorPicker) return InputResult.HANDLED
         if (viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             viewModel.jumpShaderPickerSection(1)
@@ -543,15 +550,9 @@ class SettingsInputHandler(
                 return InputResult.HANDLED
             }
             if (!state.server.rommConfiguring) {
-                val isConnected = state.server.connectionStatus == ConnectionStatus.ONLINE ||
-                    state.server.connectionStatus == ConnectionStatus.OFFLINE
-                val steamBaseIndex = when {
-                    isConnected && state.syncSettings.saveSyncEnabled -> 10
-                    isConnected -> 8
-                    else -> 2
-                }
-                val launcherIndex = state.focusedIndex - steamBaseIndex
-                if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
+                val items = buildGameDataItemsFromState(state)
+                val item = gameDataItemAtFocusIndex(state.focusedIndex, items)
+                if (item is GameDataItem.InstalledLauncher) {
                     viewModel.moveLauncherActionFocus(1)
                     return InputResult.HANDLED
                 }
@@ -702,6 +703,10 @@ class SettingsInputHandler(
 
         if (state.emulators.showVariantPicker) {
             viewModel.selectVariant()
+            return InputResult.HANDLED
+        }
+        if (state.steam.variantPickerInfo != null) {
+            viewModel.confirmSteamVariantSelection()
             return InputResult.HANDLED
         }
         if (state.emulators.showEmulatorPicker) {
@@ -977,6 +982,10 @@ class SettingsInputHandler(
             viewModel.dismissVariantPicker()
             return InputResult.HANDLED
         }
+        if (state.steam.variantPickerInfo != null) {
+            viewModel.dismissSteamVariantPicker()
+            return InputResult.HANDLED
+        }
 
         return if (!viewModel.navigateBack()) {
             onBackNavigation()
@@ -997,6 +1006,7 @@ class SettingsInputHandler(
             state.syncSettings.showRegionPicker ||
             state.emulators.showEmulatorPicker ||
             state.emulators.showVariantPicker ||
+            state.steam.variantPickerInfo != null ||
             viewModel.shaderChainManager.shaderStack.showShaderPicker) {
             return InputResult.HANDLED
         }

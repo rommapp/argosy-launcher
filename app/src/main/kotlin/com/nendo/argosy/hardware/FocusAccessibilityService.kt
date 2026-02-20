@@ -1,5 +1,6 @@
 package com.nendo.argosy.hardware
 
+import android.annotation.SuppressLint
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
@@ -23,6 +24,7 @@ class FocusAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
+    @SuppressLint("NewApi")
     fun tapOnDisplay(displayId: Int) {
         val path = Path().apply { moveTo(1f, 1f) }
         val stroke = GestureDescription.StrokeDescription(path, 0, 1)

@@ -243,10 +243,9 @@ class ZipExtractorTest {
     @Test
     fun `getDlcFolder returns null for unsupported platform`() {
         val gameFolder = File(tempDir, "Test Game").apply { mkdirs() }
-        File(gameFolder, "dlc").apply { mkdirs() }
         val romFile = File(gameFolder, "game.iso").apply { writeText("test") }
 
-        val result = ZipExtractor.getDlcFolder(romFile.absolutePath, "psx")
+        val result = ZipExtractor.getDlcFolder(romFile.absolutePath, "snes")
 
         assertNull(result)
     }

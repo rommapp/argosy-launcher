@@ -15,6 +15,8 @@ import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.screens.settings.InstalledSteamLauncher
 import com.nendo.argosy.ui.screens.settings.NotInstalledSteamLauncher
 import com.nendo.argosy.ui.screens.settings.SteamSettingsState
+import com.nendo.argosy.ui.screens.settings.VariantOption
+import com.nendo.argosy.ui.screens.settings.VariantPickerInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -120,19 +122,24 @@ class SteamSettingsDelegate @Inject constructor(
                     )
                 }
                 is FetchReleaseResult.MultipleVariants -> {
-                    val first = result.variants.firstOrNull()
-                    if (first != null) {
-                        emulatorDownloadManager.downloadAndInstall(
-                            emulatorId = emulatorId,
-                            downloadUrl = first.downloadUrl,
-                            assetName = first.assetName,
-                            variant = first.variant
+                    _state.update {
+                        it.copy(
+                            downloadingLauncherId = null,
+                            downloadProgress = null,
+                            variantPickerInfo = VariantPickerInfo(
+                                emulatorId = emulatorId,
+                                emulatorName = def.displayName,
+                                variants = result.variants.map { v ->
+                                    VariantOption(
+                                        assetName = v.assetName,
+                                        downloadUrl = v.downloadUrl,
+                                        fileSize = v.assetSize,
+                                        variant = v.variant
+                                    )
+                                }
+                            ),
+                            variantPickerFocusIndex = 0
                         )
-                    } else {
-                        _state.update {
-                            it.copy(downloadingLauncherId = null, downloadProgress = null)
-                        }
-                        notificationManager.showError("No download available")
                     }
                 }
                 is FetchReleaseResult.Error -> {
@@ -143,6 +150,39 @@ class SteamSettingsDelegate @Inject constructor(
                 }
             }
         }
+    }
+
+    fun moveVariantPickerFocus(delta: Int) {
+        val info = _state.value.variantPickerInfo ?: return
+        val newIndex = (_state.value.variantPickerFocusIndex + delta)
+            .coerceIn(0, info.variants.size - 1)
+        _state.update { it.copy(variantPickerFocusIndex = newIndex) }
+    }
+
+    fun confirmVariantSelection() {
+        val info = _state.value.variantPickerInfo ?: return
+        val selected = info.variants.getOrNull(_state.value.variantPickerFocusIndex) ?: return
+        _state.update {
+            it.copy(
+                variantPickerInfo = null,
+                downloadingLauncherId = info.emulatorId,
+                downloadProgress = 0f
+            )
+        }
+        emulatorDownloadManager.downloadAndInstall(
+            emulatorId = info.emulatorId,
+            downloadUrl = selected.downloadUrl,
+            assetName = selected.assetName,
+            variant = selected.variant
+        )
+    }
+
+    fun dismissVariantPicker() {
+        _state.update { it.copy(variantPickerInfo = null) }
+    }
+
+    fun handleVariantPickerItemTap(index: Int) {
+        _state.update { it.copy(variantPickerFocusIndex = index) }
     }
 
     fun moveLauncherActionFocus(delta: Int, launcherIndex: Int) {

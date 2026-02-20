@@ -1,5 +1,6 @@
 package com.nendo.argosy.hardware
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Context
@@ -11,6 +12,7 @@ private const val TAG = "FocusDirector"
 
 class FocusDirectorActivity : Activity() {
 
+    @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "Launched on display ${display?.displayId}")

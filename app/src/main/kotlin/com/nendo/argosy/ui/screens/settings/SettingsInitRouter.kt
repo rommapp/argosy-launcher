@@ -402,7 +402,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             hasScreenCapturePermission = vm.displayDelegate.hasScreenCapturePermission(),
             hasSecondaryDisplay = vm.displayAffinityHelper.hasSecondaryDisplay,
             displayRoleOverride = prefs.displayRoleOverride,
-            dualScreenInputFocus = prefs.dualScreenInputFocus
+            dualScreenInputFocus = prefs.dualScreenInputFocus,
+            installedOnlyHome = prefs.installedOnlyHome
         ))
 
         val detectionResult = ControllerDetector.detectFromActiveGamepad()

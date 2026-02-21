@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.preferences.ThemeMode
+import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
 enum class FanMode(val value: Int, val label: String) {
@@ -87,12 +89,75 @@ data class QuickSettingsState(
     val deviceSettingsSupported: Boolean = false,
     val deviceSettingsEnabled: Boolean = false,
     val systemVolume: Float = 1f,
-    val secondaryVolume: Float? = null,
     val screenBrightness: Float = 0.5f,
-    val secondaryBrightness: Float? = null,
     val isDualScreenActive: Boolean = false,
     val isRolesSwapped: Boolean = false
 )
+
+sealed class QuickSettingsItem(
+    val key: String,
+    val section: String,
+    val visibleWhen: (QuickSettingsState) -> Boolean = { true }
+) {
+    val isFocusable: Boolean get() = this !is Divider
+
+    class Divider(section: String) : QuickSettingsItem("divider_$section", section)
+
+    data object Performance : QuickSettingsItem(
+        "performance", "device",
+        visibleWhen = { it.deviceSettingsSupported }
+    )
+    data object Fan : QuickSettingsItem(
+        "fan", "device",
+        visibleWhen = { it.deviceSettingsSupported }
+    )
+    data object FanSpeed : QuickSettingsItem(
+        "fanSpeed", "device",
+        visibleWhen = { it.deviceSettingsSupported && it.deviceSettingsEnabled && it.fanMode == FanMode.CUSTOM }
+    )
+
+    data object Theme : QuickSettingsItem("theme", "audioVisual")
+    data object SystemVolume : QuickSettingsItem("systemVolume", "audioVisual")
+    data object ScreenBrightness : QuickSettingsItem("screenBrightness", "audioVisual")
+    data object Haptic : QuickSettingsItem("haptic", "audioVisual")
+    data object VibrationStrength : QuickSettingsItem(
+        "vibrationStrength", "audioVisual",
+        visibleWhen = { it.vibrationSupported && it.hapticEnabled }
+    )
+    data object UISounds : QuickSettingsItem("uiSounds", "audioVisual")
+    data object BGM : QuickSettingsItem("bgm", "audioVisual")
+    data object SwapDisplays : QuickSettingsItem(
+        "swapDisplays", "audioVisual",
+        visibleWhen = { it.isDualScreenActive }
+    )
+
+    companion object {
+        private val DeviceDivider = Divider("device")
+
+        val ALL: List<QuickSettingsItem> = listOf(
+            Performance, Fan, FanSpeed,
+            DeviceDivider,
+            Theme, SystemVolume, ScreenBrightness,
+            Haptic, VibrationStrength, UISounds, BGM, SwapDisplays
+        )
+    }
+}
+
+private val quickSettingsLayout = SettingsLayout<QuickSettingsItem, QuickSettingsState>(
+    allItems = QuickSettingsItem.ALL,
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section }
+)
+
+fun quickSettingsMaxFocusIndex(state: QuickSettingsState): Int =
+    quickSettingsLayout.maxFocusIndex(state)
+
+fun quickSettingsItemAtFocusIndex(index: Int, state: QuickSettingsState): QuickSettingsItem? =
+    quickSettingsLayout.itemAtFocusIndex(index, state)
+
+fun quickSettingsSections(state: QuickSettingsState): List<ListSection> =
+    quickSettingsLayout.buildSections(state)
 
 @Composable
 fun QuickSettingsPanel(
@@ -108,28 +173,30 @@ fun QuickSettingsPanel(
     onFanSpeedChange: (Int) -> Unit,
     onPerformanceModeCycle: () -> Unit,
     onVolumeChange: (Float) -> Unit,
-    onSecondaryVolumeChange: (Float) -> Unit,
     onBrightnessChange: (Float) -> Unit,
-    onSecondaryBrightnessChange: (Float) -> Unit,
     onSwapDisplays: () -> Unit = {},
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val hasVibrationSlider = state.vibrationSupported && state.hapticEnabled
-    val hasSecondaryVolume = state.secondaryVolume != null
-    val hasSecondaryBrightness = state.secondaryBrightness != null
-    val hasSwapDisplays = state.isDualScreenActive
-    val baseItemCount = 6 +
-        (if (hasVibrationSlider) 1 else 0) +
-        (if (hasSecondaryVolume) 1 else 0) +
-        (if (hasSecondaryBrightness) 1 else 0) +
-        (if (hasSwapDisplays) 1 else 0)
-    val hasFanSlider = state.deviceSettingsSupported && state.fanMode == FanMode.CUSTOM && state.deviceSettingsEnabled
-    val deviceItemCount = when {
-        !state.deviceSettingsSupported -> 0
-        hasFanSlider -> 3
-        else -> 2
+    val permissionMissing = state.deviceSettingsSupported && !state.deviceSettingsEnabled
+    val visibleItems = remember(
+        state.deviceSettingsSupported, state.deviceSettingsEnabled,
+        state.fanMode, state.vibrationSupported, state.hapticEnabled,
+        state.isDualScreenActive
+    ) {
+        quickSettingsLayout.visibleItems(state)
     }
+    val sections = remember(
+        state.deviceSettingsSupported, state.deviceSettingsEnabled,
+        state.fanMode, state.vibrationSupported, state.hapticEnabled,
+        state.isDualScreenActive
+    ) {
+        quickSettingsLayout.buildSections(state)
+    }
+
+    fun isFocused(item: QuickSettingsItem): Boolean =
+        focusedIndex == quickSettingsLayout.focusIndexOf(item, state)
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.CenterEnd
@@ -170,45 +237,11 @@ fun QuickSettingsPanel(
                 )
 
                 val listState = rememberLazyListState()
-                val sections = if (state.deviceSettingsSupported) {
-                    val dividerListIndex = deviceItemCount
-                    listOf(
-                        ListSection(
-                            listStartIndex = 0,
-                            listEndIndex = deviceItemCount - 1,
-                            focusStartIndex = 0,
-                            focusEndIndex = deviceItemCount - 1
-                        ),
-                        ListSection(
-                            listStartIndex = dividerListIndex + 1,
-                            listEndIndex = dividerListIndex + baseItemCount,
-                            focusStartIndex = deviceItemCount,
-                            focusEndIndex = deviceItemCount + baseItemCount - 1
-                        )
-                    )
-                } else {
-                    listOf(
-                        ListSection(
-                            listStartIndex = 0,
-                            listEndIndex = baseItemCount - 1,
-                            focusStartIndex = 0,
-                            focusEndIndex = baseItemCount - 1
-                        )
-                    )
-                }
-
-                val focusToListIndex: (Int) -> Int = { focus ->
-                    if (state.deviceSettingsSupported && focus >= deviceItemCount) {
-                        focus + 1
-                    } else {
-                        focus
-                    }
-                }
 
                 SectionFocusedScroll(
                     listState = listState,
                     focusedIndex = focusedIndex,
-                    focusToListIndex = focusToListIndex,
+                    focusToListIndex = { quickSettingsLayout.focusToListIndex(it, state) },
                     sections = sections
                 )
 
@@ -216,157 +249,101 @@ fun QuickSettingsPanel(
                     state = listState,
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (state.deviceSettingsSupported) {
-                        val permissionMissing = !state.deviceSettingsEnabled
+                    items(visibleItems, key = { it.key }) { item ->
+                        when (item) {
+                            is QuickSettingsItem.Divider -> HorizontalDivider(
+                                modifier = Modifier.padding(
+                                    horizontal = Dimens.spacingLg,
+                                    vertical = Dimens.radiusLg
+                                ),
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
 
-                        item {
-                            QuickSettingItemTwoLine(
+                            QuickSettingsItem.Performance -> QuickSettingItemTwoLine(
                                 icon = Icons.Default.Speed,
                                 label = "Performance",
                                 value = state.performanceMode.label,
-                                isFocused = focusedIndex == 0,
+                                isFocused = isFocused(item),
                                 isDisabled = permissionMissing,
                                 disabledReason = "Permission required",
                                 onClick = onPerformanceModeCycle
                             )
-                        }
 
-                        item {
-                            QuickSettingItem(
+                            QuickSettingsItem.Fan -> QuickSettingItem(
                                 icon = Icons.Default.Toys,
                                 label = "Fan",
                                 value = state.fanMode.label,
-                                isFocused = focusedIndex == 1,
+                                isFocused = isFocused(item),
                                 isDisabled = permissionMissing,
                                 disabledReason = "Permission required",
                                 onClick = onFanModeCycle
                             )
-                        }
 
-                        if (hasFanSlider) {
-                            item {
-                                FanSpeedSlider(
-                                    speed = state.fanSpeed,
-                                    isFocused = focusedIndex == 2,
-                                    onSpeedChange = onFanSpeedChange
-                                )
-                            }
-                        }
-
-                        item {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.radiusLg),
-                                color = MaterialTheme.colorScheme.outlineVariant
+                            QuickSettingsItem.FanSpeed -> FanSpeedSlider(
+                                speed = state.fanSpeed,
+                                isFocused = isFocused(item),
+                                onSpeedChange = onFanSpeedChange
                             )
-                        }
-                    }
 
-                    val secondaryVolumeOffset = if (hasSecondaryVolume) 1 else 0
-                    val secondaryBrightnessOffset = if (hasSecondaryBrightness) 1 else 0
-                    val avOffset = secondaryVolumeOffset + secondaryBrightnessOffset
-                    val vibrationSliderOffset = if (hasVibrationSlider) 1 else 0
-
-                    item {
-                        QuickSettingItem(
-                            icon = when (state.themeMode) {
-                                ThemeMode.LIGHT -> Icons.Default.LightMode
-                                ThemeMode.DARK -> Icons.Default.DarkMode
-                                ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
-                            },
-                            label = "Theme",
-                            value = state.themeMode.displayName,
-                            isFocused = focusedIndex == deviceItemCount,
-                            onClick = onThemeCycle
-                        )
-                    }
-
-                    item {
-                        SystemVolumeSlider(
-                            volume = state.systemVolume,
-                            isFocused = focusedIndex == deviceItemCount + 1,
-                            onVolumeChange = onVolumeChange,
-                            label = if (hasSecondaryVolume) "Top Screen" else "Volume"
-                        )
-                    }
-
-                    if (hasSecondaryVolume) {
-                        item {
-                            SystemVolumeSlider(
-                                volume = state.secondaryVolume ?: 0.5f,
-                                isFocused = focusedIndex == deviceItemCount + 2,
-                                onVolumeChange = onSecondaryVolumeChange,
-                                label = "Bottom Screen"
+                            QuickSettingsItem.Theme -> QuickSettingItem(
+                                icon = when (state.themeMode) {
+                                    ThemeMode.LIGHT -> Icons.Default.LightMode
+                                    ThemeMode.DARK -> Icons.Default.DarkMode
+                                    ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
+                                },
+                                label = "Theme",
+                                value = state.themeMode.displayName,
+                                isFocused = isFocused(item),
+                                onClick = onThemeCycle
                             )
-                        }
-                    }
 
-                    item {
-                        ScreenBrightnessSlider(
-                            brightness = state.screenBrightness,
-                            isFocused = focusedIndex == deviceItemCount + 2 + secondaryVolumeOffset,
-                            onBrightnessChange = onBrightnessChange,
-                            label = if (hasSecondaryBrightness) "Top Screen" else "Brightness"
-                        )
-                    }
-
-                    if (hasSecondaryBrightness) {
-                        item {
-                            ScreenBrightnessSlider(
-                                brightness = state.secondaryBrightness ?: 0.5f,
-                                isFocused = focusedIndex == deviceItemCount + 3 + secondaryVolumeOffset,
-                                onBrightnessChange = onSecondaryBrightnessChange,
-                                label = "Bottom Screen"
+                            QuickSettingsItem.SystemVolume -> SystemVolumeSlider(
+                                volume = state.systemVolume,
+                                isFocused = isFocused(item),
+                                onVolumeChange = onVolumeChange
                             )
-                        }
-                    }
 
-                    item {
-                        QuickSettingToggle(
-                            icon = Icons.Default.Vibration,
-                            label = "Haptics",
-                            isEnabled = state.hapticEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 3 + avOffset,
-                            onClick = onHapticToggle
-                        )
-                    }
+                            QuickSettingsItem.ScreenBrightness -> ScreenBrightnessSlider(
+                                brightness = state.screenBrightness,
+                                isFocused = isFocused(item),
+                                onBrightnessChange = onBrightnessChange
+                            )
 
-                    if (hasVibrationSlider) {
-                        item {
-                            VibrationStrengthSlider(
+                            QuickSettingsItem.Haptic -> QuickSettingToggle(
+                                icon = Icons.Default.Vibration,
+                                label = "Haptics",
+                                isEnabled = state.hapticEnabled,
+                                isFocused = isFocused(item),
+                                onClick = onHapticToggle
+                            )
+
+                            QuickSettingsItem.VibrationStrength -> VibrationStrengthSlider(
                                 strength = state.vibrationStrength,
-                                isFocused = focusedIndex == deviceItemCount + 4 + avOffset,
+                                isFocused = isFocused(item),
                                 onStrengthChange = onVibrationStrengthChange
                             )
-                        }
-                    }
 
-                    item {
-                        QuickSettingToggle(
-                            icon = if (state.soundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
-                            label = "UI Sounds",
-                            isEnabled = state.soundEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 4 + avOffset + vibrationSliderOffset,
-                            onClick = onSoundToggle
-                        )
-                    }
+                            QuickSettingsItem.UISounds -> QuickSettingToggle(
+                                icon = if (state.soundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                label = "UI Sounds",
+                                isEnabled = state.soundEnabled,
+                                isFocused = isFocused(item),
+                                onClick = onSoundToggle
+                            )
 
-                    item {
-                        QuickSettingToggle(
-                            icon = if (state.ambientAudioEnabled) Icons.Default.MusicNote else Icons.Default.MusicOff,
-                            label = "BGM",
-                            isEnabled = state.ambientAudioEnabled,
-                            isFocused = focusedIndex == deviceItemCount + 5 + avOffset + vibrationSliderOffset,
-                            onClick = onAmbientToggle
-                        )
-                    }
+                            QuickSettingsItem.BGM -> QuickSettingToggle(
+                                icon = if (state.ambientAudioEnabled) Icons.Default.MusicNote else Icons.Default.MusicOff,
+                                label = "BGM",
+                                isEnabled = state.ambientAudioEnabled,
+                                isFocused = isFocused(item),
+                                onClick = onAmbientToggle
+                            )
 
-                    if (hasSwapDisplays) {
-                        item {
-                            QuickSettingToggle(
+                            QuickSettingsItem.SwapDisplays -> QuickSettingToggle(
                                 icon = Icons.Default.SwapHoriz,
                                 label = "Swap Displays",
                                 isEnabled = state.isRolesSwapped,
-                                isFocused = focusedIndex == deviceItemCount + 6 + avOffset + vibrationSliderOffset,
+                                isFocused = isFocused(item),
                                 onClick = onSwapDisplays
                             )
                         }

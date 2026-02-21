@@ -480,6 +480,13 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setInstalledOnlyHome(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setInstalledOnlyHome(enabled)
+            _state.update { it.copy(installedOnlyHome = enabled) }
+        }
+    }
+
     fun hasScreenCapturePermission(): Boolean = screenCaptureManager.hasPermission.value
 
     fun observeScreenCapturePermission(scope: CoroutineScope) {

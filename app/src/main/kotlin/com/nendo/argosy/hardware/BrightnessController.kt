@@ -16,45 +16,22 @@ data class DisplayBrightness(
 class BrightnessController @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val hasSecondaryDisplay: Boolean by lazy {
-        PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/max_brightness")
-            .getOrNull()?.toIntOrNull() != null
-    }
-
-    val isMultiDisplaySupported: Boolean
-        get() = hasSecondaryDisplay && PServerExecutor.isAvailable
-
     fun getBrightness(): DisplayBrightness {
-        val primary = getPrimaryBrightness()
-        val secondary = if (hasSecondaryDisplay) getSecondaryBrightness() else null
-        return DisplayBrightness(primary, secondary)
+        return DisplayBrightness(primary = getPrimaryBrightness(), secondary = null)
     }
 
     private fun getPrimaryBrightness(): Float? {
+        if (!PServerExecutor.isAvailable) return getSystemBrightnessSync()
         return try {
             val raw = PServerExecutor.execute("cat /sys/class/backlight/panel0-backlight/brightness")
-                .getOrNull()?.toIntOrNull() ?: return getSystemBrightness()
+                .getOrNull()?.toIntOrNull() ?: return getSystemBrightnessSync()
             val max = PServerExecutor.execute("cat /sys/class/backlight/panel0-backlight/max_brightness")
                 .getOrNull()?.toIntOrNull() ?: 4095
             raw.toFloat() / max.toFloat()
         } catch (e: Exception) {
-            getSystemBrightness()
+            getSystemBrightnessSync()
         }
     }
-
-    private fun getSecondaryBrightness(): Float? {
-        return try {
-            val raw = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/brightness")
-                .getOrNull()?.toIntOrNull() ?: return null
-            val max = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/max_brightness")
-                .getOrNull()?.toIntOrNull() ?: 4095
-            raw.toFloat() / max.toFloat()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun getSystemBrightness(): Float? = getSystemBrightnessSync()
 
     fun getSystemBrightnessSync(): Float? {
         return try {
@@ -71,16 +48,17 @@ class BrightnessController @Inject constructor(
     fun setPrimaryBrightness(brightness: Float): Boolean {
         val clamped = brightness.coerceIn(0f, 1f)
 
-        val sysfsResult = try {
-            val max = PServerExecutor.execute("cat /sys/class/backlight/panel0-backlight/max_brightness")
-                .getOrNull()?.toIntOrNull() ?: 4095
-            val value = (clamped * max).toInt()
-            PServerExecutor.execute("echo $value > /sys/class/backlight/panel0-backlight/brightness").isSuccess
-        } catch (e: Exception) {
-            false
+        if (PServerExecutor.isAvailable) {
+            val sysfsResult = try {
+                val max = PServerExecutor.execute("cat /sys/class/backlight/panel0-backlight/max_brightness")
+                    .getOrNull()?.toIntOrNull() ?: 4095
+                val value = (clamped * max).toInt()
+                PServerExecutor.execute("echo $value > /sys/class/backlight/panel0-backlight/brightness").isSuccess
+            } catch (e: Exception) {
+                false
+            }
+            if (sysfsResult) return true
         }
-
-        if (sysfsResult) return true
 
         return try {
             val brightnessValue = (clamped * 255).toInt()
@@ -90,20 +68,6 @@ class BrightnessController @Inject constructor(
                 brightnessValue
             )
             true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    fun setSecondaryBrightness(brightness: Float): Boolean {
-        if (!hasSecondaryDisplay) return false
-
-        val clamped = brightness.coerceIn(0f, 1f)
-        return try {
-            val max = PServerExecutor.execute("cat /sys/class/backlight/panel1-backlight/max_brightness")
-                .getOrNull()?.toIntOrNull() ?: 4095
-            val value = (clamped * max).toInt()
-            PServerExecutor.execute("echo $value > /sys/class/backlight/panel1-backlight/brightness").isSuccess
         } catch (e: Exception) {
             false
         }

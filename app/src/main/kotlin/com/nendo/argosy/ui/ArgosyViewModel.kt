@@ -29,6 +29,10 @@ import com.nendo.argosy.hardware.BrightnessController
 import com.nendo.argosy.hardware.VolumeController
 import com.nendo.argosy.ui.components.FanMode
 import com.nendo.argosy.ui.components.PerformanceMode
+import com.nendo.argosy.ui.components.QuickSettingsItem
+import com.nendo.argosy.ui.components.QuickSettingsState
+import com.nendo.argosy.ui.components.quickSettingsItemAtFocusIndex
+import com.nendo.argosy.ui.components.quickSettingsMaxFocusIndex
 import com.nendo.argosy.util.PServerExecutor
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.usecase.libretro.LibretroMigrationUseCase
@@ -88,9 +92,7 @@ data class QuickSettingsUiState(
     val deviceSettingsSupported: Boolean = false,
     val deviceSettingsEnabled: Boolean = false,
     val systemVolume: Float = 1f,
-    val secondaryVolume: Float? = null,
-    val screenBrightness: Float = 0.5f,
-    val secondaryBrightness: Float? = null
+    val screenBrightness: Float = 0.5f
 )
 
 data class ScreenDimmerPreferences(
@@ -478,46 +480,20 @@ class ArgosyViewModel @Inject constructor(
     private val _vibrationStrength = MutableStateFlow(hapticManager.getSystemVibrationStrength())
 
     private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val _systemVolume = MutableStateFlow(getInitialPrimaryVolume())
-    private val _secondaryVolume = MutableStateFlow(getInitialSecondaryVolume())
-    private val _screenBrightness = MutableStateFlow(getInitialPrimaryBrightness())
-    private val _secondaryBrightness = MutableStateFlow(getInitialSecondaryBrightness())
-
-    private fun getInitialPrimaryVolume(): Float {
-        return volumeController.getVolume().primary
-    }
-
-    private fun getInitialSecondaryVolume(): Float? {
-        if (!volumeController.isMultiDisplaySupported) return null
-        return volumeController.getVolume().secondary
-    }
-
-    private fun getInitialPrimaryBrightness(): Float {
-        return brightnessController.getBrightness().primary
+    private val _systemVolume = MutableStateFlow(volumeController.getVolume().primary)
+    private val _screenBrightness = MutableStateFlow(
+        brightnessController.getBrightness().primary
             ?: brightnessController.getSystemBrightnessSync()
             ?: 0.5f
-    }
-
-    private fun getInitialSecondaryBrightness(): Float? {
-        if (!brightnessController.isMultiDisplaySupported) return null
-        return brightnessController.getBrightness().secondary
-    }
-
-    private data class AudioVisualState(
-        val volume: Float,
-        val secondaryVolume: Float?,
-        val brightness: Float,
-        val secondaryBrightness: Float?
     )
 
     val quickSettingsState: StateFlow<QuickSettingsUiState> = combine(
         preferencesRepository.userPreferences,
         _deviceSettings,
         _vibrationStrength,
-        combine(_systemVolume, _secondaryVolume, _screenBrightness, _secondaryBrightness) { v, sv, b, sb ->
-            AudioVisualState(v, sv, b, sb)
-        }
-    ) { prefs, device, vibrationStrength, av ->
+        _systemVolume,
+        _screenBrightness
+    ) { prefs, device, vibrationStrength, volume, brightness ->
         QuickSettingsUiState(
             themeMode = prefs.themeMode,
             soundEnabled = prefs.soundEnabled,
@@ -530,10 +506,8 @@ class ArgosyViewModel @Inject constructor(
             performanceMode = device.performanceMode,
             deviceSettingsSupported = device.isSupported,
             deviceSettingsEnabled = device.hasWritePermission,
-            systemVolume = av.volume,
-            secondaryVolume = av.secondaryVolume,
-            screenBrightness = av.brightness,
-            secondaryBrightness = av.secondaryBrightness
+            systemVolume = volume,
+            screenBrightness = brightness
         )
     }.stateIn(
         scope = viewModelScope,
@@ -618,13 +592,8 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private fun refreshAudioVisualSettings() {
-        val volume = volumeController.getVolume()
-        _systemVolume.value = volume.primary
-        _secondaryVolume.value = volume.secondary
-
-        val brightness = brightnessController.getBrightness()
-        brightness.primary?.let { _screenBrightness.value = it }
-        brightness.secondary?.let { _secondaryBrightness.value = it }
+        _systemVolume.value = volumeController.getVolume().primary
+        brightnessController.getBrightness().primary?.let { _screenBrightness.value = it }
     }
 
     private fun loadDeviceSettings() {
@@ -708,24 +677,10 @@ class ArgosyViewModel @Inject constructor(
         volumeController.setPrimaryVolume(coercedVolume)
     }
 
-    fun setSecondaryVolume(volume: Float) {
-        if (!volumeController.isMultiDisplaySupported) return
-        val coercedVolume = volume.coerceIn(0f, 1f)
-        _secondaryVolume.value = coercedVolume
-        volumeController.setSecondaryVolume(coercedVolume)
-    }
-
     fun setScreenBrightness(brightness: Float) {
         val coercedBrightness = brightness.coerceIn(0f, 1f)
         _screenBrightness.value = coercedBrightness
         brightnessController.setPrimaryBrightness(coercedBrightness)
-    }
-
-    fun setSecondaryBrightness(brightness: Float) {
-        if (!brightnessController.isMultiDisplaySupported) return
-        val coercedBrightness = brightness.coerceIn(0f, 1f)
-        _secondaryBrightness.value = coercedBrightness
-        brightnessController.setSecondaryBrightness(coercedBrightness)
     }
 
     fun cycleFanMode() {
@@ -794,40 +749,31 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
+    private fun currentQuickSettingsState(): QuickSettingsState {
+        val qs = quickSettingsState.value
+        return QuickSettingsState(
+            themeMode = qs.themeMode,
+            soundEnabled = qs.soundEnabled,
+            hapticEnabled = qs.hapticEnabled,
+            vibrationStrength = qs.vibrationStrength,
+            vibrationSupported = qs.vibrationSupported,
+            ambientAudioEnabled = qs.ambientAudioEnabled,
+            fanMode = qs.fanMode,
+            fanSpeed = qs.fanSpeed,
+            performanceMode = qs.performanceMode,
+            deviceSettingsSupported = qs.deviceSettingsSupported,
+            deviceSettingsEnabled = qs.deviceSettingsEnabled,
+            systemVolume = qs.systemVolume,
+            screenBrightness = qs.screenBrightness,
+            isDualScreenActive = _isDualScreenMode,
+            isRolesSwapped = false
+        )
+    }
+
     fun createQuickSettingsInputHandler(
         onDismiss: () -> Unit,
         onSwapDisplays: (() -> Unit)? = null
     ): InputHandler = object : InputHandler {
-        private fun hasFanSlider(): Boolean {
-            val device = _deviceSettings.value
-            return device.isSupported && device.hasWritePermission && device.fanMode == FanMode.CUSTOM
-        }
-
-        private fun hasVibrationSlider(): Boolean {
-            return hapticManager.supportsSystemVibration && quickSettingsState.value.hapticEnabled
-        }
-
-        private fun getMaxIndex(): Int {
-            val hasSecondaryVolume = volumeController.isMultiDisplaySupported
-            val hasSecondaryBrightness = brightnessController.isMultiDisplaySupported
-            val baseItems = 6 +
-                (if (hasVibrationSlider()) 1 else 0) +
-                (if (hasSecondaryVolume) 1 else 0) +
-                (if (hasSecondaryBrightness) 1 else 0) +
-                (if (_isDualScreenMode) 1 else 0)
-            val deviceItems = when {
-                !_deviceSettings.value.isSupported -> 0
-                hasFanSlider() -> 3
-                else -> 2
-            }
-            return baseItems + deviceItems - 1
-        }
-
-        private fun getDeviceOffset(): Int = when {
-            !_deviceSettings.value.isSupported -> 0
-            hasFanSlider() -> 3
-            else -> 2
-        }
 
         override fun onUp(): InputResult {
             return if (_quickSettingsFocusIndex.value > 0) {
@@ -839,7 +785,8 @@ class ArgosyViewModel @Inject constructor(
         }
 
         override fun onDown(): InputResult {
-            return if (_quickSettingsFocusIndex.value < getMaxIndex()) {
+            val maxIndex = quickSettingsMaxFocusIndex(currentQuickSettingsState())
+            return if (_quickSettingsFocusIndex.value < maxIndex) {
                 _quickSettingsFocusIndex.update { it + 1 }
                 InputResult.HANDLED
             } else {
@@ -848,166 +795,82 @@ class ArgosyViewModel @Inject constructor(
         }
 
         override fun onLeft(): InputResult {
-            val offset = getDeviceOffset()
-            val secondaryVolumeOffset = if (volumeController.isMultiDisplaySupported) 1 else 0
-            val secondaryBrightnessOffset = if (brightnessController.isMultiDisplaySupported) 1 else 0
-            val avOffset = secondaryVolumeOffset + secondaryBrightnessOffset
-            val vibrationOffset = if (hasVibrationSlider()) 1 else 0
-            val index = _quickSettingsFocusIndex.value
-
-            // Fan speed slider (index 2 when fan slider visible)
-            if (hasFanSlider() && index == 2) {
-                val currentSpeed = _deviceSettings.value.fanSpeed
-                val newSpeed = (currentSpeed - 1000).coerceAtLeast(25000)
-                setFanSpeed(newSpeed)
-                return InputResult.HANDLED
+            return when (quickSettingsItemAtFocusIndex(_quickSettingsFocusIndex.value, currentQuickSettingsState())) {
+                QuickSettingsItem.FanSpeed -> {
+                    setFanSpeed((_deviceSettings.value.fanSpeed - 1000).coerceAtLeast(25000))
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.SystemVolume -> {
+                    setSystemVolume((_systemVolume.value - 0.05f).coerceAtLeast(0f))
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.ScreenBrightness -> {
+                    setScreenBrightness((_screenBrightness.value - 0.05f).coerceAtLeast(0f))
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.VibrationStrength -> {
+                    setVibrationStrength((hapticManager.getSystemVibrationStrength() - 0.1f).coerceAtLeast(0f))
+                    InputResult.HANDLED
+                }
+                else -> InputResult.UNHANDLED
             }
-
-            // Primary volume (offset + 1)
-            if (index == offset + 1) {
-                val currentVolume = _systemVolume.value
-                val newVolume = (currentVolume - 0.05f).coerceAtLeast(0f)
-                setSystemVolume(newVolume)
-                return InputResult.HANDLED
-            }
-
-            // Secondary volume (offset + 2, only if multi-display)
-            if (index == offset + 2 && volumeController.isMultiDisplaySupported) {
-                val currentVolume = _secondaryVolume.value ?: 0.5f
-                val newVolume = (currentVolume - 0.05f).coerceAtLeast(0f)
-                setSecondaryVolume(newVolume)
-                return InputResult.HANDLED
-            }
-
-            // Primary brightness (offset + 2 + secondaryVolumeOffset)
-            if (index == offset + 2 + secondaryVolumeOffset) {
-                val currentBrightness = _screenBrightness.value
-                val newBrightness = (currentBrightness - 0.05f).coerceAtLeast(0f)
-                setScreenBrightness(newBrightness)
-                return InputResult.HANDLED
-            }
-
-            // Secondary brightness (offset + 3 + secondaryVolumeOffset, only if multi-display)
-            if (index == offset + 3 + secondaryVolumeOffset && brightnessController.isMultiDisplaySupported) {
-                val currentBrightness = _secondaryBrightness.value ?: 0.5f
-                val newBrightness = (currentBrightness - 0.05f).coerceAtLeast(0f)
-                setSecondaryBrightness(newBrightness)
-                return InputResult.HANDLED
-            }
-
-            // Vibration strength (offset + 4 + avOffset, only if vibration slider visible)
-            if (hasVibrationSlider() && index == offset + 4 + avOffset) {
-                val currentStrength = hapticManager.getSystemVibrationStrength()
-                val newStrength = (currentStrength - 0.1f).coerceAtLeast(0f)
-                setVibrationStrength(newStrength)
-                return InputResult.HANDLED
-            }
-
-            return InputResult.UNHANDLED
         }
 
         override fun onRight(): InputResult {
-            val offset = getDeviceOffset()
-            val secondaryVolumeOffset = if (volumeController.isMultiDisplaySupported) 1 else 0
-            val secondaryBrightnessOffset = if (brightnessController.isMultiDisplaySupported) 1 else 0
-            val avOffset = secondaryVolumeOffset + secondaryBrightnessOffset
-            val index = _quickSettingsFocusIndex.value
-
-            // Fan speed slider (index 2 when fan slider visible)
-            if (hasFanSlider() && index == 2) {
-                val currentSpeed = _deviceSettings.value.fanSpeed
-                val newSpeed = (currentSpeed + 1000).coerceAtMost(35000)
-                setFanSpeed(newSpeed)
-                return InputResult.HANDLED
+            return when (quickSettingsItemAtFocusIndex(_quickSettingsFocusIndex.value, currentQuickSettingsState())) {
+                QuickSettingsItem.FanSpeed -> {
+                    setFanSpeed((_deviceSettings.value.fanSpeed + 1000).coerceAtMost(35000))
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.SystemVolume -> {
+                    setSystemVolume((_systemVolume.value + 0.05f).coerceAtMost(1f))
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.ScreenBrightness -> {
+                    setScreenBrightness((_screenBrightness.value + 0.05f).coerceAtMost(1f))
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.VibrationStrength -> {
+                    setVibrationStrength((hapticManager.getSystemVibrationStrength() + 0.1f).coerceAtMost(1f))
+                    InputResult.HANDLED
+                }
+                else -> InputResult.UNHANDLED
             }
-
-            // Primary volume (offset + 1)
-            if (index == offset + 1) {
-                val currentVolume = _systemVolume.value
-                val newVolume = (currentVolume + 0.05f).coerceAtMost(1f)
-                setSystemVolume(newVolume)
-                return InputResult.HANDLED
-            }
-
-            // Secondary volume (offset + 2, only if multi-display)
-            if (index == offset + 2 && volumeController.isMultiDisplaySupported) {
-                val currentVolume = _secondaryVolume.value ?: 0.5f
-                val newVolume = (currentVolume + 0.05f).coerceAtMost(1f)
-                setSecondaryVolume(newVolume)
-                return InputResult.HANDLED
-            }
-
-            // Primary brightness (offset + 2 + secondaryVolumeOffset)
-            if (index == offset + 2 + secondaryVolumeOffset) {
-                val currentBrightness = _screenBrightness.value
-                val newBrightness = (currentBrightness + 0.05f).coerceAtMost(1f)
-                setScreenBrightness(newBrightness)
-                return InputResult.HANDLED
-            }
-
-            // Secondary brightness (offset + 3 + secondaryVolumeOffset, only if multi-display)
-            if (index == offset + 3 + secondaryVolumeOffset && brightnessController.isMultiDisplaySupported) {
-                val currentBrightness = _secondaryBrightness.value ?: 0.5f
-                val newBrightness = (currentBrightness + 0.05f).coerceAtMost(1f)
-                setSecondaryBrightness(newBrightness)
-                return InputResult.HANDLED
-            }
-
-            // Vibration strength (offset + 4 + avOffset, only if vibration slider visible)
-            if (hasVibrationSlider() && index == offset + 4 + avOffset) {
-                val currentStrength = hapticManager.getSystemVibrationStrength()
-                val newStrength = (currentStrength + 0.1f).coerceAtMost(1f)
-                setVibrationStrength(newStrength)
-                return InputResult.HANDLED
-            }
-
-            return InputResult.UNHANDLED
         }
 
         override fun onConfirm(): InputResult {
-            val offset = getDeviceOffset()
-            val secondaryVolumeOffset = if (volumeController.isMultiDisplaySupported) 1 else 0
-            val secondaryBrightnessOffset = if (brightnessController.isMultiDisplaySupported) 1 else 0
-            val avOffset = secondaryVolumeOffset + secondaryBrightnessOffset
-            val vibrationOffset = if (hasVibrationSlider()) 1 else 0
-            val index = _quickSettingsFocusIndex.value
-            val device = _deviceSettings.value
-
-            // Device items (Performance, Fan, Fan Speed slider)
-            if (device.isSupported) {
-                when (index) {
-                    0 -> if (device.hasWritePermission) cyclePerformanceMode()
-                    1 -> if (device.hasWritePermission) cycleFanMode()
-                    2 -> if (hasFanSlider()) { /* slider - no action */ }
+            val state = currentQuickSettingsState()
+            return when (quickSettingsItemAtFocusIndex(_quickSettingsFocusIndex.value, state)) {
+                QuickSettingsItem.Performance -> {
+                    if (state.deviceSettingsEnabled) cyclePerformanceMode()
+                    InputResult.HANDLED
                 }
-            }
-
-            when (index) {
-                // Theme
-                offset -> cycleTheme()
-                // Haptic toggle
-                offset + 3 + avOffset -> {
+                QuickSettingsItem.Fan -> {
+                    if (state.deviceSettingsEnabled) cycleFanMode()
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.Theme -> {
+                    cycleTheme()
+                    InputResult.HANDLED
+                }
+                QuickSettingsItem.Haptic -> {
                     val enabled = toggleHaptic()
-                    return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
                 }
-                // Sound toggle
-                offset + 4 + avOffset + vibrationOffset -> {
+                QuickSettingsItem.UISounds -> {
                     val enabled = toggleSound()
-                    return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
                 }
-                // BGM toggle
-                offset + 5 + avOffset + vibrationOffset -> {
+                QuickSettingsItem.BGM -> {
                     val enabled = toggleAmbientAudio()
-                    return InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
+                    InputResult.handled(if (enabled) SoundType.TOGGLE else SoundType.SILENT)
                 }
-                // Swap Displays toggle
-                offset + 6 + avOffset + vibrationOffset -> {
-                    if (_isDualScreenMode) onSwapDisplays?.invoke()
-                    return InputResult.HANDLED
+                QuickSettingsItem.SwapDisplays -> {
+                    onSwapDisplays?.invoke()
+                    InputResult.HANDLED
                 }
+                else -> InputResult.HANDLED
             }
-
-            return InputResult.HANDLED
         }
 
         override fun onBack(): InputResult {

@@ -112,7 +112,17 @@ object MappingPlatforms {
         ) + DPAD
     )
 
-    val ALL = listOf(UNIVERSAL, NES, GB, SNES, GBA, N64, PSX, GENESIS)
+    val THREEDO = MappingPlatform(
+        id = "3do",
+        displayName = "3DO",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X,
+            RetroButton.L, RetroButton.R, RetroButton.Y,
+            RetroButton.START
+        ) + DPAD
+    )
+
+    val ALL = listOf(UNIVERSAL, NES, GB, SNES, GBA, N64, PSX, GENESIS, THREEDO)
 
     fun getByIndex(index: Int): MappingPlatform = ALL[index.coerceIn(0, ALL.lastIndex)]
 
@@ -148,7 +158,9 @@ object MappingPlatforms {
         "psx", "ps2", "psp", "vita",
         "gc", "wii", "dc", "saturn",
         "nds", "dsi", "3ds", "n3ds",
-        "3do", "jaguar", "jaguarcd" -> ALL.indexOf(PSX)
+        "jaguar", "jaguarcd" -> ALL.indexOf(PSX)
+
+        "3do" -> ALL.indexOf(THREEDO)
 
         "genesis", "scd", "32x", "pico",
         "neogeo", "neogeocd" -> ALL.indexOf(GENESIS)

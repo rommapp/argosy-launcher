@@ -57,10 +57,13 @@ internal sealed class HomeScreenItem(
 
     data object AccentFooter : HomeScreenItem("accentFooter", "footer")
 
+    data object InstalledOnly : HomeScreenItem("installedOnly", "content")
+
     companion object {
         private val BackgroundHeader = Header("backgroundHeader", "background", "Background")
         private val VideoHeader = Header("videoHeader", "video", "Video Wallpaper")
         private val FooterHeader = Header("footerHeader", "footer", "Footer")
+        private val ContentHeader = Header("contentHeader", "content", "Content")
 
         val ALL: List<HomeScreenItem> = listOf(
             BackgroundHeader,
@@ -68,7 +71,9 @@ internal sealed class HomeScreenItem(
             VideoHeader,
             VideoWallpaper, VideoDelay, VideoMuted,
             FooterHeader,
-            AccentFooter
+            AccentFooter,
+            ContentHeader,
+            InstalledOnly
         )
     }
 }
@@ -206,6 +211,14 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isEnabled = display.useAccentColorFooter,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setUseAccentColorFooter(it) }
+                )
+
+                HomeScreenItem.InstalledOnly -> SwitchPreference(
+                    title = "Installed Games Only",
+                    subtitle = "Only show downloaded games on home screen",
+                    isEnabled = display.installedOnlyHome,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setInstalledOnlyHome(it) }
                 )
             }
         }

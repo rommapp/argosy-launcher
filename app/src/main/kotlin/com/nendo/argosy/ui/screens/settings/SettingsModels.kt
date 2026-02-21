@@ -181,7 +181,8 @@ data class DisplayState(
     val hasScreenCapturePermission: Boolean = true,
     val hasSecondaryDisplay: Boolean = false,
     val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO,
-    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO
+    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
+    val installedOnlyHome: Boolean = false
 )
 
 data class ControlsState(

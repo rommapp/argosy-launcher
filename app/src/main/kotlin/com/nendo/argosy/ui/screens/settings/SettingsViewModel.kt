@@ -427,6 +427,7 @@ class SettingsViewModel @Inject constructor(
     fun setAmbientLedAudioBrightness(enabled: Boolean) = displayDelegate.setAmbientLedAudioBrightness(viewModelScope, enabled)
     fun setAmbientLedAudioColors(enabled: Boolean) = displayDelegate.setAmbientLedAudioColors(viewModelScope, enabled)
     fun cycleAmbientLedColorMode(direction: Int = 1) = displayDelegate.cycleAmbientLedColorMode(viewModelScope, direction)
+    fun setInstalledOnlyHome(enabled: Boolean) = displayDelegate.setInstalledOnlyHome(viewModelScope, enabled)
 
     fun loadPreviewGames() = routeLoadPreviewGames(this)
     fun cyclePrevPreviewGame() = routeCyclePrevPreviewGame(this)

@@ -123,7 +123,8 @@ class UserPreferencesRepository @Inject constructor(
             builtinLibretroEnabled = true,
             appAffinityEnabled = app.appAffinityEnabled,
             displayRoleOverride = display.displayRoleOverride,
-            dualScreenInputFocus = display.dualScreenInputFocus
+            dualScreenInputFocus = display.dualScreenInputFocus,
+            installedOnlyHome = display.installedOnlyHome
         )
     }
 
@@ -171,6 +172,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setScreenDimmerLevel(level: Int) = displayPrefs.setScreenDimmerLevel(level)
     suspend fun setDisplayRoleOverride(override: DisplayRoleOverride) = displayPrefs.setDisplayRoleOverride(override)
     suspend fun setDualScreenInputFocus(focus: DualScreenInputFocus) = displayPrefs.setDualScreenInputFocus(focus)
+    suspend fun setInstalledOnlyHome(enabled: Boolean) = displayPrefs.setInstalledOnlyHome(enabled)
 
     // --- Sync delegates ---
 
@@ -477,7 +479,8 @@ data class UserPreferences(
     val builtinLibretroEnabled: Boolean = true,
     val appAffinityEnabled: Boolean = false,
     val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO,
-    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO
+    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
+    val installedOnlyHome: Boolean = false
 )
 
 enum class ThemeMode(val displayName: String) {

@@ -53,7 +53,8 @@ data class DisplayPreferences(
     val screenDimmerTimeoutMinutes: Int = 2,
     val screenDimmerLevel: Int = 50,
     val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO,
-    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO
+    val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
+    val installedOnlyHome: Boolean = false
 )
 
 @Singleton
@@ -102,6 +103,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val SCREEN_DIMMER_LEVEL = intPreferencesKey("screen_dimmer_level")
         val DISPLAY_ROLE_OVERRIDE = stringPreferencesKey("display_role_override")
         val DUAL_SCREEN_INPUT_FOCUS = stringPreferencesKey("dual_screen_input_focus")
+        val INSTALLED_ONLY_HOME = booleanPreferencesKey("installed_only_home")
     }
 
     val preferences: Flow<DisplayPreferences> = dataStore.data.map { prefs ->
@@ -146,7 +148,8 @@ class DisplayPreferencesRepository @Inject constructor(
             screenDimmerTimeoutMinutes = prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] ?: 2,
             screenDimmerLevel = prefs[Keys.SCREEN_DIMMER_LEVEL] ?: 50,
             displayRoleOverride = DisplayRoleOverride.fromString(prefs[Keys.DISPLAY_ROLE_OVERRIDE]),
-            dualScreenInputFocus = DualScreenInputFocus.fromString(prefs[Keys.DUAL_SCREEN_INPUT_FOCUS])
+            dualScreenInputFocus = DualScreenInputFocus.fromString(prefs[Keys.DUAL_SCREEN_INPUT_FOCUS]),
+            installedOnlyHome = prefs[Keys.INSTALLED_ONLY_HOME] ?: false
         )
     }
 
@@ -318,5 +321,9 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setDualScreenInputFocus(focus: DualScreenInputFocus) {
         dataStore.edit { it[Keys.DUAL_SCREEN_INPUT_FOCUS] = focus.name }
+    }
+
+    suspend fun setInstalledOnlyHome(enabled: Boolean) {
+        dataStore.edit { it[Keys.INSTALLED_ONLY_HOME] = enabled }
     }
 }

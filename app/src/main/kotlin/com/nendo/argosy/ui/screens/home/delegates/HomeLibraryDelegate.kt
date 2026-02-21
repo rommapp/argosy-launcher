@@ -96,6 +96,9 @@ class HomeLibraryDelegate @Inject constructor(
     fun loadInitialData(scope: CoroutineScope, onStartRowResolved: (HomeRow) -> Unit) {
         scope.launch {
             gameRepository.awaitStorageReady()
+            val prefs = preferencesRepository.userPreferences.first()
+            val installedOnly = prefs.installedOnlyHome
+
             val allPlatforms = platformRepository.getPlatformsWithGames()
             val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
             cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
@@ -114,6 +117,10 @@ class HomeLibraryDelegate @Inject constructor(
                 recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
                 newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
                 allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
+            }
+
+            if (installedOnly) {
+                favorites = filterPlayable(favorites)
             }
 
             val playableGames = filterPlayable(allCandidates)
@@ -155,6 +162,8 @@ class HomeLibraryDelegate @Inject constructor(
             }
 
             loadRecommendations()
+
+            validateInstalledGamesInBackground(scope)
         }
     }
 
@@ -238,6 +247,10 @@ class HomeLibraryDelegate @Inject constructor(
         var games = gameRepository.getFavorites()
         if (discoverGamesIfNeeded(games)) {
             games = gameRepository.getFavorites()
+        }
+        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
+        if (installedOnly) {
+            games = filterPlayable(games)
         }
         val gameUis = games.map { it.toUi() }
         _state.update { it.copy(favoriteGames = gameUis) }
@@ -333,6 +346,10 @@ class HomeLibraryDelegate @Inject constructor(
         if (discoverGamesIfNeeded(games)) {
             games = gameRepository.getByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT)
         }
+        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
+        if (installedOnly) {
+            games = filterPlayable(games)
+        }
         val platform = _state.value.platforms.getOrNull(platformIndex)
         val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
         val items: List<HomeRowItem> = if (platform != null) {
@@ -353,6 +370,10 @@ class HomeLibraryDelegate @Inject constructor(
         if (discoverGamesIfNeeded(games)) {
             games = getGamesForPinnedCollectionUseCase(pinned).first()
         }
+        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
+        if (installedOnly) {
+            games = filterPlayable(games)
+        }
         val gameUis = games.map { it.toUi() }
         _state.update { state ->
             state.copy(
@@ -365,7 +386,11 @@ class HomeLibraryDelegate @Inject constructor(
     suspend fun refreshCurrentRow(currentRow: HomeRow, focusedGameId: Long?): RefreshResult {
         return when (currentRow) {
             HomeRow.Favorites -> {
-                val games = gameRepository.getFavorites()
+                var games = gameRepository.getFavorites()
+                val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
+                if (installedOnly) {
+                    games = filterPlayable(games)
+                }
                 val gameUis = games.map { it.toUi() }
                 _state.update { it.copy(favoriteGames = gameUis) }
                 RefreshResult(gameUis.map { it.id }, isEmpty = gameUis.isEmpty())
@@ -392,7 +417,11 @@ class HomeLibraryDelegate @Inject constructor(
             }
             is HomeRow.Platform -> {
                 val platform = _state.value.platforms.getOrNull(currentRow.index) ?: return RefreshResult(emptyList())
-                val games = gameRepository.getByPlatformSorted(platform.id, limit = PLATFORM_GAMES_LIMIT)
+                var games = gameRepository.getByPlatformSorted(platform.id, limit = PLATFORM_GAMES_LIMIT)
+                val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
+                if (installedOnly) {
+                    games = filterPlayable(games)
+                }
                 val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
                 val items: List<HomeRowItem> = gameItems + HomeRowItem.ViewAll(
                     platformId = platform.id,
@@ -490,7 +519,11 @@ class HomeLibraryDelegate @Inject constructor(
     }
 
     private suspend fun prefetchGamesForPinnedCollection(pinned: PinnedCollection) {
-        val games = getGamesForPinnedCollectionUseCase(pinned).first()
+        var games = getGamesForPinnedCollectionUseCase(pinned).first()
+        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
+        if (installedOnly) {
+            games = filterPlayable(games)
+        }
         val gameUis = games.map { it.toUi() }
         _state.update { state ->
             state.copy(
@@ -518,6 +551,22 @@ class HomeLibraryDelegate @Inject constructor(
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.SATURDAY))
                 .toString()
             preferencesRepository.setRecommendationPenalties(penalties, weekKey)
+        }
+    }
+
+    private fun validateInstalledGamesInBackground(scope: CoroutineScope) {
+        scope.launch(Dispatchers.IO) {
+            val gamesWithPaths = gameRepository.getGamesWithLocalPaths()
+            val staleGames = gamesWithPaths.filter { game ->
+                game.source != GameSource.STEAM &&
+                game.source != GameSource.ANDROID_APP &&
+                game.localPath != null &&
+                !File(game.localPath).exists()
+            }
+            if (staleGames.isEmpty()) return@launch
+            staleGames.forEach { game ->
+                gameRepository.validateAndDiscoverGame(game.id)
+            }
         }
     }
 

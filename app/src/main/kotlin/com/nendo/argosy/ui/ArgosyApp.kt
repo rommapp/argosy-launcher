@@ -1347,9 +1347,7 @@ fun ArgosyApp(
                     deviceSettingsSupported = quickSettingsUiState.deviceSettingsSupported,
                     deviceSettingsEnabled = quickSettingsUiState.deviceSettingsEnabled,
                     systemVolume = quickSettingsUiState.systemVolume,
-                    secondaryVolume = quickSettingsUiState.secondaryVolume,
                     screenBrightness = quickSettingsUiState.screenBrightness,
-                    secondaryBrightness = quickSettingsUiState.secondaryBrightness,
                     isDualScreenActive = isDualScreenDevice && companionActive,
                     isRolesSwapped = isRolesSwapped
                 ),
@@ -1363,9 +1361,7 @@ fun ArgosyApp(
                 onFanSpeedChange = { viewModel.setFanSpeed(it) },
                 onPerformanceModeCycle = { viewModel.cyclePerformanceMode() },
                 onVolumeChange = { viewModel.setSystemVolume(it) },
-                onSecondaryVolumeChange = { viewModel.setSecondaryVolume(it) },
                 onBrightnessChange = { viewModel.setScreenBrightness(it) },
-                onSecondaryBrightnessChange = { viewModel.setSecondaryBrightness(it) },
                 onSwapDisplays = {
                     (context as? com.nendo.argosy.MainActivity)
                         ?.dualScreenManager?.swapRoles()

@@ -1026,7 +1026,21 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun getCoreVariables(coreName: String?): Array<Variable> {
-        return emptyArray()
+        return when (coreName?.lowercase()) {
+            "flycast" -> arrayOf(
+                Variable("flycast_threaded_rendering", "enabled"),
+                Variable("flycast_internal_resolution", "640x480"),
+                Variable("flycast_anisotropic_filtering", "off"),
+                Variable("flycast_enable_dsp", "enabled"),
+                Variable("flycast_synchronous_rendering", "disabled")
+            )
+            "opera" -> arrayOf(
+                Variable("opera_high_resolution", "disabled"),
+                Variable("opera_hack_timing_1", "disabled"),
+                Variable("opera_hack_timing_3", "disabled")
+            )
+            else -> emptyArray()
+        }
     }
 
     private fun shouldFilterShoulderButton(keyCode: Int): Boolean {

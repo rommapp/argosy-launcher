@@ -286,6 +286,10 @@ private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.setUseAccentColorFooter(!state.display.useAccentColorFooter)
             return InputResult.handled(SoundType.TOGGLE)
         }
+        HomeScreenItem.InstalledOnly -> {
+            vm.setInstalledOnlyHome(!state.display.installedOnlyHome)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
         else -> {}
     }
     return InputResult.HANDLED

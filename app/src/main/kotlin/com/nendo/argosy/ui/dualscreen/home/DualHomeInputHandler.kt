@@ -251,25 +251,24 @@ class DualHomeInputHandler(
             return handleFilter(event)
         }
 
-        val columns = viewModel.uiState.value.libraryColumns
         return when (event) {
             com.nendo.argosy.ui.input.GamepadEvent.Left -> {
-                viewModel.moveLibraryFocus(-1)
+                viewModel.moveLibraryFocusLeft()
                 onBroadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Right -> {
-                viewModel.moveLibraryFocus(1)
+                viewModel.moveLibraryFocusRight()
                 onBroadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Up -> {
-                viewModel.moveLibraryFocus(-columns)
+                viewModel.moveLibraryFocusUp()
                 onBroadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Down -> {
-                viewModel.moveLibraryFocus(columns)
+                viewModel.moveLibraryFocusDown()
                 onBroadcastLibraryGameSelection()
                 InputResult.HANDLED
             }

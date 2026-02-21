@@ -1202,7 +1202,7 @@ fun ArgosyApp(
                                         if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                                     }
                                     DualHomeViewMode.LIBRARY_GRID -> {
-                                        swappedVm.moveLibraryFocus(index - state.libraryFocusedIndex)
+                                        swappedVm.setLibraryFocusIndex(index)
                                         val game = state.libraryGames.getOrNull(index)
                                         if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
                                     }

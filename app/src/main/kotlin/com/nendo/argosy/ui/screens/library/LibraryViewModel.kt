@@ -34,6 +34,8 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
+import com.nendo.argosy.ui.common.GridDirection
+import com.nendo.argosy.ui.common.GridFocusNavigator
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -664,6 +666,7 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun jumpToSection(sectionLabel: String, showOverlay: Boolean = true) {
+        resetStickyColumn()
         val state = _uiState.value
         val firstGameInSection = state.gridItems.firstOrNull { item ->
             item is LibraryGridItem.Game && run {
@@ -745,6 +748,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         Log.d(TAG, "nextPlatform: changing to index $nextIndex")
+        resetStickyColumn()
         _uiState.update { it.copy(currentPlatformIndex = nextIndex, focusedIndex = 0) }
         loadGames()
     }
@@ -761,6 +765,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         Log.d(TAG, "previousPlatform: changing to index $prevIndex")
+        resetStickyColumn()
         _uiState.update { it.copy(currentPlatformIndex = prevIndex, focusedIndex = 0) }
         loadGames()
     }
@@ -802,34 +807,27 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    private val gridNav = GridFocusNavigator()
+
+    fun resetStickyColumn() { gridNav.resetStickyColumn() }
+
     fun moveFocus(direction: FocusMove): Boolean {
         val state = _uiState.value
         if (state.games.isEmpty()) return false
 
-        val cols = state.columnsCount
-        val total = state.games.size
-        val current = state.focusedIndex
-
-        val newIndex = when (direction) {
-            FocusMove.UP -> {
-                val target = current - cols
-                if (target >= 0) target else null
-            }
-            FocusMove.DOWN -> {
-                val target = current + cols
-                if (target < total) target else null
-            }
-            FocusMove.LEFT -> {
-                if (current % cols > 0) current - 1 else null
-            }
-            FocusMove.RIGHT -> {
-                if (current % cols < cols - 1 && current + 1 < total) current + 1 else null
-            }
+        val gridDirection = when (direction) {
+            FocusMove.UP -> GridDirection.UP
+            FocusMove.DOWN -> GridDirection.DOWN
+            FocusMove.LEFT -> GridDirection.LEFT
+            FocusMove.RIGHT -> GridDirection.RIGHT
         }
+        val rows = GridFocusNavigator.buildGridRows(
+            state.gridItems, state.columnsCount,
+            isHeader = { it is LibraryGridItem.Header },
+            gameIndex = { (it as LibraryGridItem.Game).gameIndex }
+        )
+        val newIndex = gridNav.navigate(gridDirection, state.focusedIndex, rows) ?: return false
 
-        if (newIndex == null) return false
-
-        Log.d(TAG, "moveFocus: $direction, $current -> $newIndex (cols=$cols, total=$total)")
         _uiState.update { it.copy(focusedIndex = newIndex, lastFocusMove = direction, isTouchMode = false) }
         updateCurrentSectionFromFocus()
         extractGradientsForVisibleGames(newIndex)
@@ -1264,6 +1262,7 @@ class LibraryViewModel @Inject constructor(
         val state = _uiState.value
         if (index < 0 || index >= state.games.size) return
         if (index == state.focusedIndex && state.hasSelectedGame) return
+        resetStickyColumn()
         _uiState.update { it.copy(focusedIndex = index, hasSelectedGame = true) }
         soundManager.play(SoundType.NAVIGATE)
     }
@@ -1273,6 +1272,7 @@ class LibraryViewModel @Inject constructor(
         if (index < 0 || index >= state.games.size) return
 
         if (!state.hasSelectedGame || index != state.focusedIndex) {
+            resetStickyColumn()
             _uiState.update { it.copy(focusedIndex = index, hasSelectedGame = true, isTouchMode = true) }
             soundManager.play(SoundType.NAVIGATE)
             return
@@ -1288,6 +1288,7 @@ class LibraryViewModel @Inject constructor(
         if (index < 0 || index >= state.games.size) return
 
         if (index != state.focusedIndex) {
+            resetStickyColumn()
             _uiState.update { it.copy(focusedIndex = index, hasSelectedGame = true, isTouchMode = true) }
         }
         toggleQuickMenu()

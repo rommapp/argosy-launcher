@@ -536,25 +536,24 @@ class SecondaryHomeInputHandler(
             return handleFilterInput(event)
         }
 
-        val columns = dualHomeViewModel.uiState.value.libraryColumns
         return when (event) {
             GamepadEvent.Left -> {
-                dualHomeViewModel.moveLibraryFocus(-1)
+                dualHomeViewModel.moveLibraryFocusLeft()
                 broadcasts.broadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
-                dualHomeViewModel.moveLibraryFocus(1)
+                dualHomeViewModel.moveLibraryFocusRight()
                 broadcasts.broadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             GamepadEvent.Up -> {
-                dualHomeViewModel.moveLibraryFocus(-columns)
+                dualHomeViewModel.moveLibraryFocusUp()
                 broadcasts.broadcastLibraryGameSelection()
                 InputResult.HANDLED
             }
             GamepadEvent.Down -> {
-                dualHomeViewModel.moveLibraryFocus(columns)
+                dualHomeViewModel.moveLibraryFocusDown()
                 broadcasts.broadcastLibraryGameSelection()
                 InputResult.HANDLED
             }

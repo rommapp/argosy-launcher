@@ -25,6 +25,8 @@ import com.nendo.argosy.data.model.SortOption
 import com.nendo.argosy.data.model.SortableProps
 import com.nendo.argosy.data.model.computeGenericSections
 import com.nendo.argosy.data.platform.LocalPlatformIds
+import com.nendo.argosy.ui.common.GridDirection
+import com.nendo.argosy.ui.common.GridFocusNavigator
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -630,11 +632,27 @@ class DualHomeViewModel(
 
     // --- Library Grid Navigation ---
 
-    fun moveLibraryFocus(delta: Int) {
+    private val libraryNav = GridFocusNavigator()
+
+    fun resetStickyLibraryColumn() { libraryNav.resetStickyColumn() }
+
+    fun setLibraryFocusIndex(index: Int) {
+        libraryNav.resetStickyColumn()
+        val clamped = index.coerceIn(0, (_uiState.value.libraryGames.size - 1).coerceAtLeast(0))
+        updateLibraryFocus(clamped)
+    }
+
+    private fun libraryGridRows(): List<List<Int>> {
         val state = _uiState.value
-        if (state.libraryGames.isEmpty()) return
-        val newIndex = (state.libraryFocusedIndex + delta)
-            .coerceIn(0, state.libraryGames.size - 1)
+        return GridFocusNavigator.buildGridRows(
+            state.libraryGridItems, state.libraryColumns,
+            isHeader = { it is DualLibraryGridItem.Header },
+            gameIndex = { (it as DualLibraryGridItem.Game).gameIndex }
+        )
+    }
+
+    private fun updateLibraryFocus(newIndex: Int) {
+        val state = _uiState.value
         val sections = computeGenericSections(state.libraryGames, state.activeFilters.sort, DualHomeGameUiProps)
         val orderedSections = if (state.activeFilters.sort.descending) sections else sections.reversed()
         val newLabel = sectionLabelForGameIndex(newIndex, orderedSections)
@@ -644,7 +662,20 @@ class DualHomeViewModel(
         )}
     }
 
+    private fun moveLibrary(direction: GridDirection) {
+        val state = _uiState.value
+        if (state.libraryGames.isEmpty()) return
+        val newIndex = libraryNav.navigate(direction, state.libraryFocusedIndex, libraryGridRows()) ?: return
+        updateLibraryFocus(newIndex)
+    }
+
+    fun moveLibraryFocusUp() = moveLibrary(GridDirection.UP)
+    fun moveLibraryFocusDown() = moveLibrary(GridDirection.DOWN)
+    fun moveLibraryFocusLeft() = moveLibrary(GridDirection.LEFT)
+    fun moveLibraryFocusRight() = moveLibrary(GridDirection.RIGHT)
+
     fun jumpToSection(label: String) {
+        libraryNav.resetStickyColumn()
         val state = _uiState.value
         val sections = computeGenericSections(state.libraryGames, state.activeFilters.sort, DualHomeGameUiProps)
         val orderedSections = if (state.activeFilters.sort.descending) sections else sections.reversed()

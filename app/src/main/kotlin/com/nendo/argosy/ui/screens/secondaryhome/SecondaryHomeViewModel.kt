@@ -11,6 +11,8 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
+import com.nendo.argosy.ui.common.GridDirection
+import com.nendo.argosy.ui.common.GridFocusNavigator
 import com.nendo.argosy.ui.util.GridUtils
 import com.nendo.argosy.util.DisplayAffinityHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -292,6 +294,7 @@ class SecondaryHomeViewModel @Inject constructor(
         val state = _uiState.value
         if (state.sections.isEmpty()) return
 
+        resetStickyColumn()
         val newIndex = (state.currentSectionIndex + 1) % state.sections.size
         _uiState.update { it.copy(currentSectionIndex = newIndex, focusedGameIndex = 0) }
         loadGamesForCurrentSection()
@@ -301,6 +304,7 @@ class SecondaryHomeViewModel @Inject constructor(
         val state = _uiState.value
         if (state.sections.isEmpty()) return
 
+        resetStickyColumn()
         val newIndex = if (state.currentSectionIndex <= 0) {
             state.sections.size - 1
         } else {
@@ -368,37 +372,27 @@ class SecondaryHomeViewModel @Inject constructor(
         }
     }
 
-    fun moveFocusUp() {
+    private val gridNav = GridFocusNavigator()
+
+    fun resetStickyColumn() { gridNav.resetStickyColumn() }
+
+    private fun flatGridRows(): List<List<Int>> {
+        val state = _uiState.value
+        val cols = state.columnsCount
+        return (0 until state.games.size).chunked(cols)
+    }
+
+    private fun moveGrid(direction: GridDirection) {
         val state = _uiState.value
         if (state.games.isEmpty()) return
-        val newIndex = (state.focusedGameIndex - state.columnsCount).coerceAtLeast(0)
+        val newIndex = gridNav.navigate(direction, state.focusedGameIndex, flatGridRows()) ?: return
         _uiState.update { it.copy(focusedGameIndex = newIndex) }
     }
 
-    fun moveFocusDown() {
-        val state = _uiState.value
-        if (state.games.isEmpty()) return
-        val newIndex = (state.focusedGameIndex + state.columnsCount).coerceAtMost(state.games.size - 1)
-        _uiState.update { it.copy(focusedGameIndex = newIndex) }
-    }
-
-    fun moveFocusLeft() {
-        val state = _uiState.value
-        if (state.games.isEmpty()) return
-        val currentCol = state.focusedGameIndex % state.columnsCount
-        if (currentCol > 0) {
-            _uiState.update { it.copy(focusedGameIndex = state.focusedGameIndex - 1) }
-        }
-    }
-
-    fun moveFocusRight() {
-        val state = _uiState.value
-        if (state.games.isEmpty()) return
-        val currentCol = state.focusedGameIndex % state.columnsCount
-        if (currentCol < state.columnsCount - 1 && state.focusedGameIndex < state.games.size - 1) {
-            _uiState.update { it.copy(focusedGameIndex = state.focusedGameIndex + 1) }
-        }
-    }
+    fun moveFocusUp() = moveGrid(GridDirection.UP)
+    fun moveFocusDown() = moveGrid(GridDirection.DOWN)
+    fun moveFocusLeft() = moveGrid(GridDirection.LEFT)
+    fun moveFocusRight() = moveGrid(GridDirection.RIGHT)
 
     fun selectFocusedGame(): Pair<Intent, android.os.Bundle?>? {
         val game = _uiState.value.focusedGame ?: return null
@@ -416,6 +410,7 @@ class SecondaryHomeViewModel @Inject constructor(
     }
 
     fun setFocusedGameIndex(index: Int) {
+        resetStickyColumn()
         _uiState.update { it.copy(focusedGameIndex = index.coerceIn(0, it.games.size - 1)) }
     }
 

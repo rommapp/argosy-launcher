@@ -640,7 +640,7 @@ class SecondaryHomeActivity :
                 broadcasts.broadcastCollectionGameSelection()
             }
             DualHomeViewMode.LIBRARY_GRID -> {
-                dualHomeViewModel.moveLibraryFocus(index - s.libraryFocusedIndex)
+                dualHomeViewModel.setLibraryFocusIndex(index)
                 broadcasts.broadcastLibraryGameSelection()
             }
             else -> {}

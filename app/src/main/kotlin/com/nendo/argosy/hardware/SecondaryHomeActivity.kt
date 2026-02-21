@@ -508,7 +508,8 @@ class SecondaryHomeActivity :
             collectionRepository = collectionRepository,
             downloadQueueDao = dsm.downloadQueueDao,
             displayAffinityHelper = affinityHelper,
-            context = applicationContext
+            context = applicationContext,
+            preferencesRepository = dsm.preferencesRepository
         )
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,

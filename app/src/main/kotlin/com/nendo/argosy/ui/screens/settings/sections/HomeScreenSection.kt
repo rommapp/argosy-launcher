@@ -66,14 +66,14 @@ internal sealed class HomeScreenItem(
         private val ContentHeader = Header("contentHeader", "content", "Content")
 
         val ALL: List<HomeScreenItem> = listOf(
+            ContentHeader,
+            InstalledOnly,
             BackgroundHeader,
             GameArtwork, CustomImage, Blur, Saturation, Opacity,
             VideoHeader,
             VideoWallpaper, VideoDelay, VideoMuted,
             FooterHeader,
-            AccentFooter,
-            ContentHeader,
-            InstalledOnly
+            AccentFooter
         )
     }
 }

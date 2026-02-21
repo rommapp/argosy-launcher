@@ -72,7 +72,7 @@ class DualScreenManager(
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
     internal val displayAffinityHelper: DisplayAffinityHelper,
     internal val sessionStateStore: SessionStateStore,
-    private val preferencesRepository: UserPreferencesRepository,
+    internal val preferencesRepository: UserPreferencesRepository,
     private val edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager,
     private val notificationManager: com.nendo.argosy.ui.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
@@ -247,7 +247,8 @@ class DualScreenManager(
             collectionRepository = collectionRepository,
             downloadQueueDao = downloadQueueDao,
             displayAffinityHelper = displayAffinityHelper,
-            context = appContext
+            context = appContext,
+            preferencesRepository = preferencesRepository
         )
     }
 

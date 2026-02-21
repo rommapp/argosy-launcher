@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import kotlinx.coroutines.flow.first
 import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -157,7 +159,8 @@ class DualHomeViewModel(
     private val collectionRepository: CollectionRepository,
     private val downloadQueueDao: DownloadQueueDao,
     private val displayAffinityHelper: DisplayAffinityHelper,
-    private val context: Context
+    private val context: Context,
+    private val preferencesRepository: UserPreferencesRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -283,8 +286,24 @@ class DualHomeViewModel(
         viewModelScope.launch { loadGamesForCurrentSectionSuspend() }
     }
 
+    private fun filterPlayable(games: List<GameEntity>): List<GameEntity> {
+        return games.filter { game ->
+            when {
+                game.source == GameSource.STEAM -> true
+                game.source == GameSource.ANDROID_APP -> true
+                game.localPath != null -> File(game.localPath).exists()
+                else -> false
+            }
+        }
+    }
+
+    private suspend fun isInstalledOnlyEnabled(): Boolean {
+        return preferencesRepository?.userPreferences?.first()?.installedOnlyHome == true
+    }
+
     private suspend fun loadGamesForCurrentSectionSuspend() {
         val section = _uiState.value.currentSection ?: return
+        val installedOnly = isInstalledOnlyEnabled()
 
         var realCount = 0
         val games = when (section) {
@@ -301,30 +320,24 @@ class DualHomeViewModel(
                 val allCandidates = (recentlyPlayed + newlyAdded)
                     .distinctBy { it.id }
 
-                val playable = allCandidates.filter { game ->
-                    when {
-                        game.source == GameSource.STEAM -> true
-                        game.source == GameSource.ANDROID_APP -> true
-                        game.localPath != null ->
-                            File(game.localPath).exists()
-                        else -> false
-                    }
-                }
+                val playable = filterPlayable(allCandidates)
 
                 sortRecentGamesWithNewPriority(playable)
                     .take(RECENT_GAMES_LIMIT)
                     .map { it.toUi() }
             }
             is DualHomeSection.Favorites -> {
-                gameDao.getFavorites().map { it.toUi() }
+                var favorites = gameDao.getFavorites()
+                if (installedOnly) favorites = filterPlayable(favorites)
+                favorites.map { it.toUi() }
             }
             is DualHomeSection.Platform -> {
                 realCount = gameDao.countByPlatform(section.id)
-                gameDao.getByPlatformSorted(
+                var platformGames = gameDao.getByPlatformSorted(
                     section.id, limit = PLATFORM_GAMES_LIMIT
-                )
-                    .filter { !it.isHidden }
-                    .map { it.toUi() }
+                ).filter { !it.isHidden }
+                if (installedOnly) platformGames = filterPlayable(platformGames)
+                platformGames.map { it.toUi() }
             }
         }
 
@@ -974,8 +987,10 @@ class DualHomeViewModel(
 
     private fun loadLibraryGames(onLoaded: (() -> Unit)? = null) {
         viewModelScope.launch {
-            val allGames = gameDao.getAllSortedByTitle()
-                .map { it.toUi() }
+            val installedOnly = isInstalledOnlyEnabled()
+            var entities = gameDao.getAllSortedByTitle()
+            if (installedOnly) entities = filterPlayable(entities)
+            val allGames = entities.map { it.toUi() }
             allLibraryGames = allGames
             val filters = _uiState.value.activeFilters
             val filtered = applyFiltersToList(allGames, filters)
@@ -993,8 +1008,10 @@ class DualHomeViewModel(
 
     private fun loadLibraryGamesForPlatform(platformId: Long, onLoaded: (() -> Unit)? = null) {
         viewModelScope.launch {
-            val platformGames = gameDao.getByPlatform(platformId)
-                .map { it.toUi() }
+            val installedOnly = isInstalledOnlyEnabled()
+            var entities = gameDao.getByPlatform(platformId)
+            if (installedOnly) entities = filterPlayable(entities)
+            val platformGames = entities.map { it.toUi() }
             allLibraryGames = platformGames
             val filters = _uiState.value.activeFilters
             val filtered = applyFiltersToList(platformGames, filters)

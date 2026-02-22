@@ -592,7 +592,9 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private fun refreshAudioVisualSettings() {
-        _systemVolume.value = volumeController.getVolume().primary
+        if (System.currentTimeMillis() - volumeInputTimestamp > 250) {
+            _systemVolume.value = volumeController.getVolume().primary
+        }
         brightnessController.getBrightness().primary?.let { _screenBrightness.value = it }
     }
 
@@ -671,8 +673,11 @@ class ArgosyViewModel @Inject constructor(
         return newState
     }
 
+    private var volumeInputTimestamp = 0L
+
     fun setSystemVolume(volume: Float) {
         val coercedVolume = volume.coerceIn(0f, 1f)
+        volumeInputTimestamp = System.currentTimeMillis()
         _systemVolume.value = coercedVolume
         volumeController.setPrimaryVolume(coercedVolume)
     }

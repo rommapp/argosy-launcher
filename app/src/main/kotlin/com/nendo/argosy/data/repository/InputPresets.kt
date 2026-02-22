@@ -25,7 +25,8 @@ object RetroButton {
 data class MappingPlatform(
     val id: String,
     val displayName: String,
-    val buttons: List<Int>
+    val buttons: List<Int>,
+    val buttonLabels: Map<Int, String> = emptyMap()
 )
 
 object MappingPlatforms {
@@ -88,7 +89,16 @@ object MappingPlatforms {
             RetroButton.L, RetroButton.R, RetroButton.L2,
             RetroButton.START,
             RetroButton.X, RetroButton.Y, RetroButton.L3, RetroButton.R3
-        ) + DPAD
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.L to "L",
+            RetroButton.R to "R",
+            RetroButton.L2 to "Z",
+            RetroButton.X to "C-Left",
+            RetroButton.Y to "C-Down",
+            RetroButton.L3 to "C-Up",
+            RetroButton.R3 to "C-Right"
+        )
     )
 
     val PSX = MappingPlatform(
@@ -99,7 +109,13 @@ object MappingPlatforms {
             RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
             RetroButton.L3, RetroButton.R3,
             RetroButton.START, RetroButton.SELECT
-        ) + DPAD
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "Cross",
+            RetroButton.A to "Circle",
+            RetroButton.Y to "Square",
+            RetroButton.X to "Triangle"
+        )
     )
 
     val GENESIS = MappingPlatform(
@@ -109,17 +125,32 @@ object MappingPlatforms {
             RetroButton.A, RetroButton.B, RetroButton.Y,
             RetroButton.X, RetroButton.L, RetroButton.R,
             RetroButton.START
-        ) + DPAD
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.Y to "A",
+            RetroButton.B to "B",
+            RetroButton.A to "C",
+            RetroButton.L to "X",
+            RetroButton.X to "Y",
+            RetroButton.R to "Z"
+        )
     )
 
     val THREEDO = MappingPlatform(
         id = "3do",
         displayName = "3DO",
         buttons = listOf(
-            RetroButton.A, RetroButton.B, RetroButton.X,
-            RetroButton.L, RetroButton.R, RetroButton.Y,
-            RetroButton.START
-        ) + DPAD
+            RetroButton.A, RetroButton.B, RetroButton.Y,
+            RetroButton.L, RetroButton.R,
+            RetroButton.X, RetroButton.START
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.Y to "C",
+            RetroButton.L to "L",
+            RetroButton.R to "R",
+            RetroButton.X to "Pause",
+            RetroButton.START to "Start"
+        )
     )
 
     val ALL = listOf(UNIVERSAL, NES, GB, SNES, GBA, N64, PSX, GENESIS, THREEDO)
@@ -258,7 +289,8 @@ object InputPresets {
         return PRESETS[prevIndex]
     }
 
-    fun getRetroButtonName(retroButton: Int): String {
+    fun getRetroButtonName(retroButton: Int, platform: MappingPlatform? = null): String {
+        platform?.buttonLabels?.get(retroButton)?.let { return it }
         return when (retroButton) {
             RetroButton.A -> "A"
             RetroButton.B -> "B"

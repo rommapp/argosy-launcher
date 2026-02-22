@@ -91,6 +91,12 @@ class GLRetroView(
         }
     }
 
+    var textureCrop: RectF by Delegates.observable(RectF(0f, 0f, 0f, 0f)) { _, _, value ->
+        runOnGLThread {
+            LibretroDroid.setTextureCrop(value.left, value.top, value.right, value.bottom)
+        }
+    }
+
     var aspectRatioOverride: Float by Delegates.observable(-1f) { _, _, value ->
         runOnGLThread {
             LibretroDroid.setAspectRatioOverride(value)

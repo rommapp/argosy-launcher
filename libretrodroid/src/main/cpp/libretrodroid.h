@@ -147,6 +147,7 @@ public:
     void setShaderConfig(ShaderManager::Config shaderConfig);
     void setFilterMode(int mode);
     void setIntegerScaling(bool enabled);
+    void setTextureCrop(float left, float top, float right, float bottom);
     void setBlackFrameInsertion(bool enabled);
     void renderBlackFrame();
 

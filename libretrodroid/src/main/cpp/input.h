@@ -60,6 +60,7 @@ public:
 private:
     const int UNKNOWN_KEY = -1;
 
+    bool getButtonState(unsigned port, unsigned id) const;
     template<typename ...T>
     bool anyPressed(unsigned int port, unsigned int id, T&... args) const;
     bool anyPressed(unsigned int port, unsigned int id) const;

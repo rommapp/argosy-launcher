@@ -123,6 +123,7 @@ public class LibretroDroid {
     public static native void setBackgroundFrame(byte[] rgbaData, int width, int height);
     public static native void clearBackgroundFrame();
     public static native void setViewport(float x, float y, float width, float height);
+    public static native void setTextureCrop(float left, float top, float right, float bottom);
 
     public static native byte[] serializeState();
     public static native boolean unserializeState(byte[] state);

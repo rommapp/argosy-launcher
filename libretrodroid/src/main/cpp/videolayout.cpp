@@ -32,6 +32,7 @@ void VideoLayout::updateBuffers() {
     updateForegroundVertices();
     updateBackgroundVertices();
     updateRelativeForegroundBounds();
+    updateTextureCoordinates();
 }
 
 void VideoLayout::updateForegroundVertices() {
@@ -273,6 +274,32 @@ void VideoLayout::updateRelativeForegroundBounds() {
         relativeForegroundBounds[2],
         relativeForegroundBounds[3]
     );
+}
+
+void VideoLayout::setTextureCrop(float left, float top, float right, float bottom) {
+    LOGD("setTextureCrop: left=%.4f top=%.4f right=%.4f bottom=%.4f", left, top, right, bottom);
+    this->cropLeft = left;
+    this->cropTop = top;
+    this->cropRight = right;
+    this->cropBottom = bottom;
+    updateTextureCoordinates();
+}
+
+void VideoLayout::updateTextureCoordinates() {
+    float u0 = cropLeft;
+    float u1 = 1.0F - cropRight;
+    float v0 = cropTop;
+    float v1 = 1.0F - cropBottom;
+
+    // Triangle 1: TL, BL, TR
+    textureCoordinates[0] = u0;  textureCoordinates[1] = v0;
+    textureCoordinates[2] = u0;  textureCoordinates[3] = v1;
+    textureCoordinates[4] = u1;  textureCoordinates[5] = v0;
+
+    // Triangle 2: TR, BL, BR
+    textureCoordinates[6] = u1;  textureCoordinates[7] = v0;
+    textureCoordinates[8] = u0;  textureCoordinates[9] = v1;
+    textureCoordinates[10] = u1; textureCoordinates[11] = v1;
 }
 
 }

@@ -393,7 +393,10 @@ fun InputMappingModal(
             onDismiss = onDismiss
         )
         is InputMappingState.Recording -> RecordingOverlay(
-            targetButton = InputPresets.getRetroButtonName(currentState.targetRetroButton),
+            targetButton = InputPresets.getRetroButtonName(
+                currentState.targetRetroButton,
+                MappingPlatforms.getByIndex(currentState.platformIndex)
+            ),
             cancelProgress = cancelProgress.value,
             onDismiss = onDismiss
         )
@@ -582,7 +585,7 @@ private fun PlatformMappingContent(
                     .filter { it.value == retroButton }
                     .map { it.key }
                 ButtonMappingRow(
-                    retroButtonName = InputPresets.getRetroButtonName(retroButton),
+                    retroButtonName = InputPresets.getRetroButtonName(retroButton, platform),
                     boundSources = boundSources,
                     isFocused = index == focusedIndex,
                     onClick = { onSelectButton(retroButton) }

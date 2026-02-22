@@ -31,50 +31,16 @@ int16_t Input::getInputState(unsigned port, unsigned device, unsigned index, uns
 
     switch (device) {
         case RETRO_DEVICE_JOYPAD: {
-            switch (id) {
-                case RETRO_DEVICE_ID_JOYPAD_LEFT: {
-                    bool axis = pads[port].dpadXAxis == -1;
-                    bool buttons = anyPressed(
-                        port,
-                        RETRO_DEVICE_ID_JOYPAD_LEFT,
-                        Input::RETRO_DEVICE_ID_JOYPAD_DOWN_LEFT,
-                        Input::RETRO_DEVICE_ID_JOYPAD_UP_LEFT
-                    );
-                    return axis || buttons;
+            if (id == RETRO_DEVICE_ID_JOYPAD_MASK) {
+                int16_t result = 0;
+                for (unsigned i = 0; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++) {
+                    if (getButtonState(port, i)) {
+                        result |= (1 << i);
+                    }
                 }
-                case RETRO_DEVICE_ID_JOYPAD_RIGHT: {
-                    bool axis = pads[port].dpadXAxis == 1;
-                    bool buttons = anyPressed(
-                        port,
-                        RETRO_DEVICE_ID_JOYPAD_RIGHT,
-                        Input::RETRO_DEVICE_ID_JOYPAD_UP_RIGHT,
-                        Input::RETRO_DEVICE_ID_JOYPAD_DOWN_RIGHT
-                    );
-                    return axis || buttons;
-                }
-                case RETRO_DEVICE_ID_JOYPAD_UP: {
-                    bool axis = pads[port].dpadYAxis == -1;
-                    bool buttons = anyPressed(
-                        port,
-                        RETRO_DEVICE_ID_JOYPAD_UP,
-                        Input::RETRO_DEVICE_ID_JOYPAD_UP_LEFT,
-                        Input::RETRO_DEVICE_ID_JOYPAD_UP_RIGHT
-                    );
-                    return axis || buttons;
-                }
-                case RETRO_DEVICE_ID_JOYPAD_DOWN: {
-                    bool axis = pads[port].dpadYAxis == 1;
-                    bool buttons = anyPressed(
-                        port,
-                        RETRO_DEVICE_ID_JOYPAD_DOWN,
-                        Input::RETRO_DEVICE_ID_JOYPAD_DOWN_LEFT,
-                        Input::RETRO_DEVICE_ID_JOYPAD_DOWN_RIGHT
-                    );
-                    return axis || buttons;
-                }
-                default:
-                    return anyPressed(port, id);
+                return result;
             }
+            return getButtonState(port, id) ? 1 : 0;
         }
 
         case RETRO_DEVICE_ANALOG: {
@@ -188,6 +154,37 @@ void Input::onKeyEvent(unsigned int port, int action, int keyCode) {
         pads[port].pressedKeys.insert(retroKeyCode);
     } else if (action == AKEY_EVENT_ACTION_UP) {
         pads[port].pressedKeys.erase(retroKeyCode);
+    }
+}
+
+bool Input::getButtonState(unsigned port, unsigned id) const {
+    switch (id) {
+        case RETRO_DEVICE_ID_JOYPAD_LEFT: {
+            bool axis = pads[port].dpadXAxis == -1;
+            return axis || anyPressed(port, RETRO_DEVICE_ID_JOYPAD_LEFT,
+                Input::RETRO_DEVICE_ID_JOYPAD_DOWN_LEFT,
+                Input::RETRO_DEVICE_ID_JOYPAD_UP_LEFT);
+        }
+        case RETRO_DEVICE_ID_JOYPAD_RIGHT: {
+            bool axis = pads[port].dpadXAxis == 1;
+            return axis || anyPressed(port, RETRO_DEVICE_ID_JOYPAD_RIGHT,
+                Input::RETRO_DEVICE_ID_JOYPAD_UP_RIGHT,
+                Input::RETRO_DEVICE_ID_JOYPAD_DOWN_RIGHT);
+        }
+        case RETRO_DEVICE_ID_JOYPAD_UP: {
+            bool axis = pads[port].dpadYAxis == -1;
+            return axis || anyPressed(port, RETRO_DEVICE_ID_JOYPAD_UP,
+                Input::RETRO_DEVICE_ID_JOYPAD_UP_LEFT,
+                Input::RETRO_DEVICE_ID_JOYPAD_UP_RIGHT);
+        }
+        case RETRO_DEVICE_ID_JOYPAD_DOWN: {
+            bool axis = pads[port].dpadYAxis == 1;
+            return axis || anyPressed(port, RETRO_DEVICE_ID_JOYPAD_DOWN,
+                Input::RETRO_DEVICE_ID_JOYPAD_DOWN_LEFT,
+                Input::RETRO_DEVICE_ID_JOYPAD_DOWN_RIGHT);
+        }
+        default:
+            return anyPressed(port, id);
     }
 }
 

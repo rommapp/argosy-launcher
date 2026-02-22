@@ -40,6 +40,8 @@ public:
 
     void setIntegerScaling(bool enabled);
 
+    void setTextureCrop(float left, float top, float right, float bottom);
+
     std::array<float, 12>& getForegroundVertices() { return foregroundVertices; }
     std::array<float, 12>& getBackgroundVertices() { return backgroundVertices; }
     std::array<float, 12>& getFramebufferVertices() { return framebufferVertices; }
@@ -60,6 +62,8 @@ private:
     void updateBackgroundVertices();
 
     void updateRelativeForegroundBounds();
+
+    void updateTextureCoordinates();
 
 private:
     std::array<float, 12> foregroundVertices = {
@@ -159,6 +163,11 @@ private:
     unsigned contentWidth = 0;
     unsigned contentHeight = 0;
     bool integerScaling = false;
+
+    float cropLeft = 0.0F;
+    float cropTop = 0.0F;
+    float cropRight = 0.0F;
+    float cropBottom = 0.0F;
 };
 
 } // namespace libretrodroid

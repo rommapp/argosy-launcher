@@ -718,6 +718,17 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setViewpor
     LibretroDroid::getInstance().setViewport(Rect(x, y, width, height));
 }
 
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setTextureCrop(
+    JNIEnv* env,
+    jclass obj,
+    jfloat left,
+    jfloat top,
+    jfloat right,
+    jfloat bottom
+) {
+    LibretroDroid::getInstance().setTextureCrop(left, top, right, bottom);
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_refreshAspectRatio(
     JNIEnv* env,
     jclass obj

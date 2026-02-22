@@ -352,20 +352,23 @@ class VideoSettingsManager(
 
     fun applyOverscanCrop() {
         val retroView = getRetroView()
-        if (overscanCrop == 0) {
-            retroView.viewport = RectF(0f, 0f, 1f, 1f)
+        val platformCrop = PLATFORM_TEXTURE_CROP[platformSlug]
+
+        if (overscanCrop == 0 && platformCrop == null) {
+            retroView.textureCrop = RectF(0f, 0f, 0f, 0f)
             return
         }
 
         val cropPercentX = overscanCrop / 256f
         val cropPercentY = overscanCrop / 240f
-        val left = cropPercentX
-        val top = cropPercentY
-        val right = 1f - cropPercentX
-        val bottom = 1f - cropPercentY
 
-        Log.d(TAG, "Applying overscan crop: ${overscanCrop}px -> viewport($left, $top, $right, $bottom)")
-        retroView.viewport = RectF(left, top, right, bottom)
+        val left = cropPercentX + (platformCrop?.left ?: 0f)
+        val top = cropPercentY + (platformCrop?.top ?: 0f)
+        val right = cropPercentX + (platformCrop?.right ?: 0f)
+        val bottom = cropPercentY + (platformCrop?.bottom ?: 0f)
+
+        Log.d(TAG, "Applying overscan crop: ${overscanCrop}px + platform=$platformSlug -> textureCrop($left, $top, $right, $bottom)")
+        retroView.textureCrop = RectF(left, top, right, bottom)
     }
 
     fun applyRotation() {
@@ -452,6 +455,10 @@ class VideoSettingsManager(
 
     companion object {
         private const val TAG = "VideoSettingsManager"
+
+        private val PLATFORM_TEXTURE_CROP = mapOf(
+            "3do" to RectF(0f, 25f / 240f, 0f, 0f)
+        )
 
         fun parseRotation(value: String): Int = when (value) {
             "Auto" -> -1

@@ -510,10 +510,12 @@ void LibretroDroid::step() {
     if (video && Environment::getInstance().isGameGeometryUpdated()) {
         Environment::getInstance().clearGameGeometryUpdated();
 
-        video->updateRendererSize(
-            Environment::getInstance().getGameGeometryWidth(),
-            Environment::getInstance().getGameGeometryHeight()
-        );
+        unsigned geoW = Environment::getInstance().getGameGeometryWidth();
+        unsigned geoH = Environment::getInstance().getGameGeometryHeight();
+        float geoAR = Environment::getInstance().getGameGeometryAspectRatio();
+        LOGI("Runtime geometry update: %ux%u aspect=%.4f", geoW, geoH, geoAR);
+
+        video->updateRendererSize(geoW, geoH);
 
         dirtyVideo = true;
     }
@@ -725,6 +727,23 @@ void LibretroDroid::afterGameLoad() {
     updateAudioSampleRateMultiplier();
 
     defaultAspectRatio = findDefaultAspectRatio(system_av_info);
+
+    auto& controllers = Environment::getInstance().getControllers();
+    for (unsigned port = 0; port < controllers.size() && port < 4; port++) {
+        if (!controllers[port].empty()) {
+            unsigned deviceType = controllers[port][0].id;
+            LOGD("Setting controller port %u to device type %u (%s)",
+                 port, deviceType, controllers[port][0].description.c_str());
+            core->retro_set_controller_port_device(port, deviceType);
+        } else {
+            core->retro_set_controller_port_device(port, RETRO_DEVICE_JOYPAD);
+        }
+    }
+
+    LOGI("afterGameLoad: base=%ux%u max=%ux%u aspect=%.4f default=%.4f",
+        system_av_info.geometry.base_width, system_av_info.geometry.base_height,
+        system_av_info.geometry.max_width, system_av_info.geometry.max_height,
+        system_av_info.geometry.aspect_ratio, defaultAspectRatio);
 }
 
 float LibretroDroid::findDefaultAspectRatio(const retro_system_av_info& system_av_info) {
@@ -747,6 +766,12 @@ void LibretroDroid::setViewport(Rect viewportRect) {
 
     if (video != nullptr) {
         video->updateViewportSize(viewportRect);
+    }
+}
+
+void LibretroDroid::setTextureCrop(float left, float top, float right, float bottom) {
+    if (video != nullptr) {
+        video->setTextureCrop(left, top, right, bottom);
     }
 }
 

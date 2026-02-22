@@ -432,6 +432,10 @@ void Video::setIntegerScaling(bool enabled) {
     videoLayout.setIntegerScaling(enabled);
 }
 
+void Video::setTextureCrop(float left, float top, float right, float bottom) {
+    videoLayout.setTextureCrop(left, top, right, bottom);
+}
+
 void Video::setBlackFrameInsertion(bool enabled) {
     bfiEnabled = enabled;
     bfiFrameCounter = 0;

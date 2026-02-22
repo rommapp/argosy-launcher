@@ -417,7 +417,16 @@ class GameLauncher @Inject constructor(
             is LaunchConfig.FileUri -> buildFileUriIntent(emulator, romFile, forResume)
             is LaunchConfig.FilePathExtra -> buildFilePathIntent(emulator, romFile, config, forResume)
             is LaunchConfig.RetroArch -> buildRetroArchIntent(emulator, romFile, game, config, forResume)
-            is LaunchConfig.Custom -> buildCustomIntent(emulator, romFile, game.platformSlug, config, forResume)
+            is LaunchConfig.Custom -> {
+                val emulatorConfig = emulatorConfigDao.getByGameId(game.id)
+                    ?: emulatorConfigDao.getDefaultForPlatform(game.platformId)
+                val effectiveConfig = if (emulatorConfig?.useFileUri == true) {
+                    config.copy(useFileUri = true)
+                } else {
+                    config
+                }
+                buildCustomIntent(emulator, romFile, game.platformSlug, effectiveConfig, forResume)
+            }
             is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config, forResume)
             is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config, forResume)
             is LaunchConfig.BuiltIn -> buildBuiltInIntent(romFile, game)

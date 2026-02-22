@@ -123,7 +123,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_74_75,
                 ALauncherDatabase.MIGRATION_75_76,
                 ALauncherDatabase.MIGRATION_76_77,
-                ALauncherDatabase.MIGRATION_77_78
+                ALauncherDatabase.MIGRATION_77_78,
+                ALauncherDatabase.MIGRATION_78_79
             )
             .enableMultiInstanceInvalidation()
             .build()

@@ -109,6 +109,25 @@ class ConfigureEmulatorUseCase @Inject constructor(
         return emulatorConfigDao.getByGameId(gameId)
     }
 
+    suspend fun setUseFileUriForPlatform(platformId: Long, useFileUri: Boolean) {
+        val existing = emulatorConfigDao.getDefaultForPlatform(platformId)
+        if (existing != null) {
+            emulatorConfigDao.updateUseFileUriForPlatform(platformId, useFileUri)
+        } else {
+            emulatorConfigDao.insert(
+                EmulatorConfigEntity(
+                    platformId = platformId,
+                    gameId = null,
+                    packageName = null,
+                    displayName = null,
+                    coreName = null,
+                    useFileUri = useFileUri,
+                    isDefault = true
+                )
+            )
+        }
+    }
+
     suspend fun clearBuiltinSelections() {
         emulatorConfigDao.clearPlatformConfigsByPackage(EmulatorRegistry.BUILTIN_PACKAGE)
     }

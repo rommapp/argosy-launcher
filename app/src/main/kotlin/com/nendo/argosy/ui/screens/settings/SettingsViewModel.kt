@@ -309,6 +309,8 @@ class SettingsViewModel @Inject constructor(
         emulatorDelegate.cycleCoreForPlatform(viewModelScope, config, direction) { loadSettings() }
     fun changeExtensionForPlatform(config: PlatformEmulatorConfig, extension: String) =
         emulatorDelegate.changeExtensionForPlatform(viewModelScope, config.platform.id, extension) { loadSettings() }
+    fun toggleLegacyMode(config: PlatformEmulatorConfig) =
+        emulatorDelegate.toggleLegacyMode(viewModelScope, config) { loadSettings() }
 
     fun cycleExtensionForPlatform(config: PlatformEmulatorConfig, direction: Int) =
         routeCycleExtensionForPlatform(this, config, direction)

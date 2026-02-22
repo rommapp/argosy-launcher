@@ -344,7 +344,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 isUserSavePathOverride = isUserSavePathOverride,
                 showSavePath = showSavePath,
                 extensionOptions = extensionOptions,
-                selectedExtension = selectedExtension
+                selectedExtension = selectedExtension,
+                useFileUri = defaultConfig?.useFileUri ?: false
             )
         }
 

@@ -82,12 +82,14 @@ data class PlatformEmulatorConfig(
     val isUserSavePathOverride: Boolean = false,
     val showSavePath: Boolean = false,
     val extensionOptions: List<ExtensionOption> = emptyList(),
-    val selectedExtension: String? = null
+    val selectedExtension: String? = null,
+    val useFileUri: Boolean = false
 ) {
     val hasInstalledEmulators: Boolean get() = availableEmulators.isNotEmpty()
     val isRetroArchSelected: Boolean get() = selectedEmulatorPackage?.startsWith("com.retroarch") == true
     val showCoreSelection: Boolean get() = effectiveEmulatorIsRetroArch && availableCores.isNotEmpty()
     val showExtensionSelection: Boolean get() = extensionOptions.isNotEmpty()
+    val showLegacyModeOption: Boolean get() = effectiveEmulatorId == "drastic"
 }
 
 data class EmulatorUpdateInfo(

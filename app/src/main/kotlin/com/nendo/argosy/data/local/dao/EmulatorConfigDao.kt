@@ -52,6 +52,9 @@ interface EmulatorConfigDao {
     @Query("UPDATE emulator_configs SET preferredExtension = :extension WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")
     suspend fun updatePreferredExtension(platformId: Long, extension: String)
 
+    @Query("UPDATE emulator_configs SET useFileUri = :useFileUri WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")
+    suspend fun updateUseFileUriForPlatform(platformId: Long, useFileUri: Boolean)
+
     @Query("DELETE FROM emulator_configs WHERE packageName = :packageName AND gameId IS NULL")
     suspend fun clearPlatformConfigsByPackage(packageName: String)
 }

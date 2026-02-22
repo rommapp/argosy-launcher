@@ -248,7 +248,8 @@ fun EmulatorsSection(
                             onEmulatorClick = { viewModel.handlePlatformItemTap(item.index) },
                             onCycleCore = { direction -> viewModel.cycleCoreForPlatform(item.config, direction) },
                             onExtensionChange = { extension -> viewModel.changeExtensionForPlatform(item.config, extension) },
-                            onSavePathClick = { viewModel.showSavePathModal(item.config) }
+                            onSavePathClick = { viewModel.showSavePathModal(item.config) },
+                            onToggleLegacyMode = { viewModel.toggleLegacyMode(item.config) }
                         )
                     }
                 }
@@ -300,7 +301,8 @@ private fun PlatformEmulatorItem(
     onEmulatorClick: () -> Unit,
     onCycleCore: (Int) -> Unit,
     onExtensionChange: (String) -> Unit,
-    onSavePathClick: () -> Unit
+    onSavePathClick: () -> Unit,
+    onToggleLegacyMode: () -> Unit
 ) {
     val disabledAlpha = 0.45f
     val backgroundColor = if (isFocused) {
@@ -520,6 +522,59 @@ private fun PlatformEmulatorItem(
                     }?.label ?: "Unchanged"
                     Text(
                         text = displayLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        if (config.showLegacyModeOption) {
+            Spacer(modifier = Modifier.height(Dimens.spacingXs))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                Text(
+                    text = "Legacy Mode",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryColor
+                )
+                if (isFocused) {
+                    val options = listOf(true to "On", false to "Off")
+                    options.forEach { (value, label) ->
+                        val isSelected = config.useFileUri == value
+                        if (isSelected) {
+                            OutlinedButton(
+                                onClick = { },
+                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
+                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone),
+                                border = BorderStroke(Dimens.borderThin, MaterialTheme.colorScheme.onPrimaryContainer)
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        } else {
+                            TextButton(
+                                onClick = onToggleLegacyMode,
+                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
+                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone)
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = if (config.useFileUri) "On" else "Off",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )

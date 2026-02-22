@@ -388,6 +388,20 @@ class EmulatorSettingsDelegate @Inject constructor(
         }
     }
 
+    fun toggleLegacyMode(
+        scope: CoroutineScope,
+        config: PlatformEmulatorConfig,
+        onLoadSettings: suspend () -> Unit
+    ) {
+        scope.launch {
+            configureEmulatorUseCase.setUseFileUriForPlatform(
+                config.platform.id,
+                !config.useFileUri
+            )
+            onLoadSettings()
+        }
+    }
+
     fun changeExtensionForPlatform(
         scope: CoroutineScope,
         platformId: Long,

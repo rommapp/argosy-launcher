@@ -1,12 +1,18 @@
 package com.nendo.argosy.data.remote.romm
 
+import androidx.room.withTransaction
 import com.nendo.argosy.data.cache.ImageCacheManager
+import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.dao.CollectionDao
+import com.nendo.argosy.data.local.dao.ControllerMappingDao
+import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -40,10 +46,15 @@ class RomMLibrarySyncService @Inject constructor(
     private val apiClient: RomMApiClient,
     private val connectionManager: RomMConnectionManager,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val database: ALauncherDatabase,
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
     private val gameFileDao: GameFileDao,
     private val platformDao: PlatformDao,
+    private val emulatorConfigDao: EmulatorConfigDao,
+    private val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
+    private val firmwareDao: FirmwareDao,
+    private val controllerMappingDao: ControllerMappingDao,
     private val orphanedFileDao: OrphanedFileDao,
     private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
@@ -806,22 +817,106 @@ class RomMLibrarySyncService @Inject constructor(
 
     private suspend fun cleanupLegacyPlatforms(remotePlatforms: List<RomMPlatform>) {
         val remoteIds = remotePlatforms.map { it.id }.toSet()
-        val remoteByKey = remotePlatforms.associateBy { it.slug to it.fsSlug }
-        val remoteBySlug = remotePlatforms.groupBy { it.slug }
+        val remoteByComposite = remotePlatforms.associateBy { it.slug to it.fsSlug }
+        val remoteBySlug = remotePlatforms
+            .filter { it.slug.isNotBlank() }
+            .groupBy { it.slug }
+        val remoteByFsSlug = remotePlatforms
+            .filter { !it.fsSlug.isNullOrBlank() }
+            .groupBy { it.fsSlug!! }
         val allLocal = platformDao.getAllPlatforms()
 
         for (local in allLocal) {
             if (local.id in remoteIds) continue
 
-            val matchingRemote = remoteByKey[local.slug to local.fsSlug]
-                ?: if (local.fsSlug == null) remoteBySlug[local.slug]?.firstOrNull() else null
+            val matchingRemote = remoteByComposite[local.slug to local.fsSlug]
+                ?: if (local.slug.isNotBlank()) {
+                    val slugCandidates = remoteBySlug[local.slug] ?: emptyList()
+                    slugCandidates.singleOrNull()
+                } else null
+                ?: if (local.slug.isBlank() && !local.fsSlug.isNullOrBlank()) {
+                    val fsCandidates = remoteByFsSlug[local.fsSlug] ?: emptyList()
+                    fsCandidates.singleOrNull()
+                } else null
 
-            if (matchingRemote != null) {
-                gameDao.migratePlatform(local.id, matchingRemote.id)
-                platformDao.deleteById(local.id)
-                Logger.info(TAG, "Migrated legacy platform ${local.id} -> ${matchingRemote.id}")
+            if (matchingRemote == null) {
+                Logger.warn(TAG, "cleanupLegacyPlatforms: no confident match for " +
+                    "platform ${local.id} (slug=${local.slug}, fsSlug=${local.fsSlug}), skipping")
+                continue
+            }
+
+            migratePlatformData(local, matchingRemote)
+            Logger.info(TAG, "cleanupLegacyPlatforms: migrated platform " +
+                "${local.id} (${local.slug}) -> ${matchingRemote.id} (${matchingRemote.slug})")
+        }
+    }
+
+    private suspend fun migratePlatformData(old: PlatformEntity, remote: RomMPlatform) {
+        val label = "${old.name} (${old.id} -> ${remote.id})"
+        database.withTransaction {
+            val gameCount = gameDao.countByPlatform(old.id)
+            gameDao.migratePlatform(old.id, remote.id, remote.slug)
+            Logger.info(TAG, "migratePlatformData [$label]: moved $gameCount games")
+
+            emulatorConfigDao.migratePlatform(old.id, remote.id)
+
+            val oldHasOverrides = platformLibretroSettingsDao.hasOverrides(old.id)
+            val newHasOverrides = platformLibretroSettingsDao.hasOverrides(remote.id)
+            if (oldHasOverrides && !newHasOverrides) {
+                platformLibretroSettingsDao.migratePlatform(old.id, remote.id)
+                Logger.info(TAG, "migratePlatformData [$label]: transferred libretro overrides")
+            } else if (oldHasOverrides) {
+                Logger.info(TAG, "migratePlatformData [$label]: kept newer libretro overrides on target")
+            }
+
+            val firmwareMigrated = migrateFirmware(old.id, remote.id)
+            if (firmwareMigrated > 0) {
+                Logger.info(TAG, "migratePlatformData [$label]: migrated $firmwareMigrated firmware entries")
+            }
+
+            if (old.slug.isNotBlank() && old.slug != remote.slug) {
+                controllerMappingDao.migratePlatformSlug(old.slug, remote.slug)
+                Logger.info(TAG, "migratePlatformData [$label]: remapped controller bindings ${old.slug} -> ${remote.slug}")
+            }
+
+            val newPlatform = platformDao.getById(remote.id)
+            if (newPlatform != null) {
+                platformDao.update(newPlatform.copy(
+                    isVisible = old.isVisible,
+                    syncEnabled = old.syncEnabled,
+                    customRomPath = old.customRomPath ?: newPlatform.customRomPath,
+                    sortOrder = old.sortOrder
+                ))
+            }
+
+            platformDao.deleteById(old.id)
+        }
+    }
+
+    private suspend fun migrateFirmware(oldPlatformId: Long, newPlatformId: Long): Int {
+        val oldEntries = firmwareDao.getByPlatform(oldPlatformId)
+        if (oldEntries.isEmpty()) return 0
+
+        val newEntries = firmwareDao.getByPlatform(newPlatformId)
+        val newByFileName = newEntries.associateBy { it.fileName }
+        var migrated = 0
+
+        for (oldEntry in oldEntries) {
+            val newEntry = newByFileName[oldEntry.fileName]
+            if (newEntry != null) {
+                if (oldEntry.localPath != null && newEntry.localPath == null) {
+                    firmwareDao.updateLocalPath(newEntry.id, oldEntry.localPath, oldEntry.downloadedAt)
+                    migrated++
+                }
+            } else {
+                firmwareDao.upsert(oldEntry.copy(
+                    id = 0,
+                    platformId = newPlatformId
+                ))
+                migrated++
             }
         }
+        return migrated
     }
 
     private suspend fun deleteOrphanedGames(seenRommIds: Set<Long>): Int {

@@ -26,4 +26,7 @@ interface PlatformLibretroSettingsDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM platform_libretro_settings WHERE platformId = :platformId)")
     suspend fun hasOverrides(platformId: Long): Boolean
+
+    @Query("UPDATE platform_libretro_settings SET platformId = :newPlatformId WHERE platformId = :oldPlatformId")
+    suspend fun migratePlatform(oldPlatformId: Long, newPlatformId: Long)
 }

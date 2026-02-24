@@ -55,4 +55,7 @@ interface ControllerMappingDao {
 
     @Query("DELETE FROM controller_mappings")
     suspend fun deleteAll()
+
+    @Query("UPDATE controller_mappings SET platformId = :newPlatformSlug WHERE platformId = :oldPlatformSlug")
+    suspend fun migratePlatformSlug(oldPlatformSlug: String, newPlatformSlug: String)
 }

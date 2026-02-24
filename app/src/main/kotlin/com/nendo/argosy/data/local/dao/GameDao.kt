@@ -513,8 +513,8 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<Long>): List<GameEntity>
 
-    @Query("UPDATE games SET platformId = :newPlatformId WHERE platformId = :oldPlatformId")
-    suspend fun migratePlatform(oldPlatformId: Long, newPlatformId: Long)
+    @Query("UPDATE games SET platformId = :newPlatformId, platformSlug = :newPlatformSlug WHERE platformId = :oldPlatformId")
+    suspend fun migratePlatform(oldPlatformId: Long, newPlatformId: Long, newPlatformSlug: String)
 
     @Query("UPDATE games SET steamLauncher = :launcher, launcherSetManually = :setManually WHERE id = :gameId")
     suspend fun updateSteamLauncher(gameId: Long, launcher: String?, setManually: Boolean)

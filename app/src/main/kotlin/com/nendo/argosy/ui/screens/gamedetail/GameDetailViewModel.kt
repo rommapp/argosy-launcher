@@ -1012,7 +1012,7 @@ class GameDetailViewModel @Inject constructor(
                     status = currentStatus,
                     channelName = event.channelName,
                     activeSaveTimestamp = event.timestamp,
-                    lastSyncTime = state.saveStatusInfo?.lastSyncTime
+                    lastSyncTime = if (event.timestamp != null) null else state.saveStatusInfo?.lastSyncTime
                 )
             )
         }

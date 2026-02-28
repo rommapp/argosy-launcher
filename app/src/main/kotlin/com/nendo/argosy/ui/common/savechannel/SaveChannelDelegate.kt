@@ -491,12 +491,17 @@ class SaveChannelDelegate @Inject constructor(
                 .maxByOrNull { it.timestamp }
 
             if (entry != null) {
+                val entryTimestamp = entry.timestamp.toEpochMilli()
                 when (val result = restoreCachedSaveUseCase(
                     entry, currentGameId, emulatorId, false
                 )) {
                     is RestoreCachedSaveUseCase.Result.Restored,
                     is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
                         gameRepository.updateActiveSaveApplied(currentGameId, true)
+                        gameRepository.updateActiveSaveTimestamp(currentGameId, entryTimestamp)
+                        onSaveStatusChanged(
+                            SaveStatusEvent(channelName = channelName, timestamp = entryTimestamp)
+                        )
                         val label = channelName ?: "Auto Save"
                         notificationManager.showSuccess("Using save slot: $label")
                         _state.update { it.copy(isVisible = false) }

@@ -24,9 +24,12 @@ import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
 import com.nendo.argosy.ui.screens.launch.LaunchScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
+import com.nendo.argosy.ui.screens.doodle.DoodleScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
 import com.nendo.argosy.ui.screens.settings.ManagePinsScreen
 import com.nendo.argosy.ui.screens.settings.SettingsScreen
+import com.nendo.argosy.ui.screens.social.FeedEventDetailScreen
+import com.nendo.argosy.ui.screens.social.SocialScreen
 
 @Composable
 fun NavGraph(
@@ -272,6 +275,37 @@ fun NavGraph(
         composable(Screen.ManagePins.route) {
             ManagePinsScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Social.route) {
+            SocialScreen(
+                onBack = navigateToDefault,
+                onDrawerToggle = onDrawerToggle,
+                onOpenEventDetail = { eventId ->
+                    navController.navigate(Screen.SocialEventDetail.createRoute(eventId))
+                },
+                onCreateDoodle = {
+                    navController.navigate(Screen.Doodle.route)
+                }
+            )
+        }
+
+        composable(
+            route = Screen.SocialEventDetail.route,
+            arguments = listOf(navArgument("eventId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId") ?: return@composable
+            FeedEventDetailScreen(
+                eventId = eventId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Doodle.route) {
+            DoodleScreen(
+                onBack = { navController.popBackStack() },
+                onPosted = { navController.popBackStack() }
             )
         }
     }

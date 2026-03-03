@@ -13,6 +13,11 @@ import android.view.WindowManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.download.DownloadQueueState
+import com.nendo.argosy.data.social.Friend
+import com.nendo.argosy.data.social.PresenceStatus
+import com.nendo.argosy.data.social.SocialConnectionState
+import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.DefaultView
@@ -72,11 +77,28 @@ data class ArgosyUiState(
     val defaultView: DefaultView = DefaultView.HOME
 )
 
+enum class DrawerTab { NAVIGATION, FRIENDS }
+
+sealed class DrawerModal {
+    data object None : DrawerModal()
+    data object FriendsOptions : DrawerModal()
+    data object FriendCode : DrawerModal()
+    data object AddFriend : DrawerModal()
+}
+
 data class DrawerState(
     val rommConnected: Boolean = false,
     val rommConnecting: Boolean = false,
+    val socialConnected: Boolean = false,
     val downloadCount: Int = 0,
-    val emulatorUpdatesAvailable: Int = 0
+    val emulatorUpdatesAvailable: Int = 0,
+    val currentTab: DrawerTab = DrawerTab.NAVIGATION,
+    val navFocusIndex: Int = 0,
+    val friendsFocusIndex: Int = 0,
+    val friends: List<Friend> = emptyList(),
+    val friendCode: String? = null,
+    val friendCodeUrl: String? = null,
+    val modal: DrawerModal = DrawerModal.None
 )
 
 data class QuickSettingsUiState(
@@ -128,7 +150,8 @@ class ArgosyViewModel @Inject constructor(
     private val syncQueueManager: SyncQueueManager,
     private val brightnessController: BrightnessController,
     private val volumeController: VolumeController,
-    private val syncLibraryUseCase: com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
+    private val syncLibraryUseCase: com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase,
+    private val socialRepository: SocialRepository
 ) : ViewModel() {
 
     private val contentResolver get() = application.contentResolver
@@ -327,17 +350,56 @@ class ArgosyViewModel @Inject constructor(
         initialValue = ArgosyUiState()
     )
 
+    private val _drawerTab = MutableStateFlow(DrawerTab.NAVIGATION)
+    private val _navFocusIndex = MutableStateFlow(0)
+    private val _friendsFocusIndex = MutableStateFlow(0)
+    private val _drawerModal = MutableStateFlow<DrawerModal>(DrawerModal.None)
+
     val drawerUiState: StateFlow<DrawerState> = combine(
         romMRepository.connectionState,
         downloadManager.state,
-        emulatorUpdateManager.updateCount
-    ) { connection, downloads, emulatorUpdates ->
+        emulatorUpdateManager.updateCount,
+        _drawerTab,
+        _navFocusIndex,
+        _friendsFocusIndex,
+        socialRepository.friends,
+        socialRepository.friendCode,
+        _drawerModal,
+        socialRepository.connectionState
+    ) { values ->
+        val connection = values[0] as ConnectionState
+        val downloads = values[1] as DownloadQueueState
+        val emulatorUpdates = values[2] as Int
+        val tab = values[3] as DrawerTab
+        val navIndex = values[4] as Int
+        val friendsIndex = values[5] as Int
+        @Suppress("UNCHECKED_CAST")
+        val friends = values[6] as List<Friend>
+        val friendCodeData = values[7] as SocialRepository.FriendCode?
+        val modal = values[8] as DrawerModal
+        val socialConnection = values[9] as SocialConnectionState
+
         val downloadCount = downloads.activeDownloads.size + downloads.queue.size
+        val sortedFriends = friends
+            .filter { it.friendshipStatus.value == "accepted" }
+            .sortedWith(
+                compareByDescending<Friend> { it.presence == PresenceStatus.IN_GAME }
+                    .thenByDescending { it.presence == PresenceStatus.ONLINE }
+                    .thenBy { it.displayName.lowercase() }
+            )
         DrawerState(
             rommConnected = connection is ConnectionState.Connected,
             rommConnecting = connection is ConnectionState.Connecting,
+            socialConnected = socialConnection is SocialConnectionState.Connected,
             downloadCount = downloadCount,
-            emulatorUpdatesAvailable = emulatorUpdates
+            emulatorUpdatesAvailable = emulatorUpdates,
+            currentTab = tab,
+            navFocusIndex = navIndex,
+            friendsFocusIndex = friendsIndex,
+            friends = sortedFriends,
+            friendCode = friendCodeData?.code,
+            friendCodeUrl = friendCodeData?.url,
+            modal = modal
         )
     }.stateIn(
         scope = viewModelScope,
@@ -347,6 +409,7 @@ class ArgosyViewModel @Inject constructor(
 
     private val allDrawerItems = listOf(
         DrawerItem(Screen.Home.route, "Home"),
+        DrawerItem(Screen.Social.route, "Social"),
         DrawerItem(Screen.Collections.route, "Collections"),
         DrawerItem(Screen.Library.route, "Library"),
         DrawerItem(Screen.Downloads.route, "Downloads"),
@@ -362,18 +425,20 @@ class ArgosyViewModel @Inject constructor(
     private var _isDualScreenMode = false
 
     val drawerItems: List<DrawerItem>
-        get() = if (_isDualScreenMode) {
-            allDrawerItems.filter { it.route !in dualScreenHiddenRoutes }
-        } else {
-            allDrawerItems
+        get() {
+            var items = allDrawerItems
+            if (_isDualScreenMode) {
+                items = items.filter { it.route !in dualScreenHiddenRoutes }
+            }
+            if (socialRepository.connectionState.value !is SocialConnectionState.Connected) {
+                items = items.filter { it.route != Screen.Social.route }
+            }
+            return items
         }
 
     fun setDualScreenMode(enabled: Boolean) {
         _isDualScreenMode = enabled
     }
-
-    private val _drawerFocusIndex = MutableStateFlow(0)
-    val drawerFocusIndex: StateFlow<Int> = _drawerFocusIndex.asStateFlow()
 
     private val _isDrawerOpen = MutableStateFlow(false)
     val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen.asStateFlow()
@@ -389,6 +454,8 @@ class ArgosyViewModel @Inject constructor(
     fun resetAllModals() {
         _isDrawerOpen.value = false
         _isQuickSettingsOpen.value = false
+        _saveConflictInfo.value = null
+        _drawerModal.value = DrawerModal.None
         modalResetSignal.emit()
     }
 
@@ -397,7 +464,49 @@ class ArgosyViewModel @Inject constructor(
         if (index < 0 && parentRoute != null) {
             index = drawerItems.indexOfFirst { it.route == parentRoute }
         }
-        _drawerFocusIndex.value = if (index >= 0) index else 0
+        if (index < 0) {
+            index = drawerItems.indexOfFirst { it.route == Screen.Home.route }
+        }
+        _navFocusIndex.value = if (index >= 0) index else 0
+    }
+
+    fun switchToNavTab() {
+        _drawerTab.value = DrawerTab.NAVIGATION
+    }
+
+    fun switchToFriendsTab() {
+        _drawerTab.value = DrawerTab.FRIENDS
+        _friendsFocusIndex.value = 0
+        if (socialRepository.friendCode.value == null) {
+            socialRepository.requestFriendCode()
+        }
+    }
+
+    fun showFriendsOptionsModal() {
+        _drawerModal.value = DrawerModal.FriendsOptions
+    }
+
+    fun showFriendCodeModal() {
+        _drawerModal.value = DrawerModal.FriendCode
+        if (socialRepository.friendCode.value == null) {
+            socialRepository.requestFriendCode()
+        }
+    }
+
+    fun showAddFriendModal() {
+        _drawerModal.value = DrawerModal.AddFriend
+    }
+
+    fun dismissDrawerModal() {
+        _drawerModal.value = DrawerModal.None
+    }
+
+    fun regenerateFriendCode() {
+        socialRepository.regenerateFriendCode()
+    }
+
+    fun addFriendByCode(code: String) {
+        socialRepository.addFriendByCode(code)
     }
 
     fun createDrawerInputHandler(
@@ -411,41 +520,91 @@ class ArgosyViewModel @Inject constructor(
             get() = drawerItems.size
 
         override fun onUp(): InputResult {
-            return if (_drawerFocusIndex.value > 0) {
-                _drawerFocusIndex.update { it - 1 }
-                InputResult.HANDLED
-            } else {
-                InputResult.UNHANDLED
+            return when (_drawerTab.value) {
+                DrawerTab.NAVIGATION -> {
+                    if (_navFocusIndex.value > 0) {
+                        _navFocusIndex.update { it - 1 }
+                        InputResult.HANDLED
+                    } else InputResult.UNHANDLED
+                }
+                DrawerTab.FRIENDS -> {
+                    val friends = drawerUiState.value.friends
+                    if (friends.isNotEmpty() && _friendsFocusIndex.value > 0) {
+                        _friendsFocusIndex.update { it - 1 }
+                        InputResult.HANDLED
+                    } else InputResult.UNHANDLED
+                }
             }
         }
 
         override fun onDown(): InputResult {
-            val maxIndex = if (hasUpdateFooter) footerIndex else drawerItems.lastIndex
-            return if (_drawerFocusIndex.value < maxIndex) {
-                _drawerFocusIndex.update { it + 1 }
-                InputResult.HANDLED
-            } else {
-                InputResult.UNHANDLED
+            return when (_drawerTab.value) {
+                DrawerTab.NAVIGATION -> {
+                    val maxIndex = if (hasUpdateFooter) footerIndex else drawerItems.lastIndex
+                    if (_navFocusIndex.value < maxIndex) {
+                        _navFocusIndex.update { it + 1 }
+                        InputResult.HANDLED
+                    } else InputResult.UNHANDLED
+                }
+                DrawerTab.FRIENDS -> {
+                    val friends = drawerUiState.value.friends
+                    if (friends.isNotEmpty() && _friendsFocusIndex.value < friends.lastIndex) {
+                        _friendsFocusIndex.update { it + 1 }
+                        InputResult.HANDLED
+                    } else InputResult.UNHANDLED
+                }
             }
         }
 
-        override fun onLeft(): InputResult = InputResult.UNHANDLED
-        override fun onRight(): InputResult = InputResult.UNHANDLED
+        override fun onLeft(): InputResult {
+            if (_drawerTab.value == DrawerTab.FRIENDS) {
+                switchToNavTab()
+                return InputResult.HANDLED
+            }
+            return InputResult.UNHANDLED
+        }
+
+        override fun onRight(): InputResult {
+            if (_drawerTab.value == DrawerTab.NAVIGATION && drawerUiState.value.socialConnected) {
+                switchToFriendsTab()
+                return InputResult.HANDLED
+            }
+            return InputResult.UNHANDLED
+        }
 
         override fun onConfirm(): InputResult {
-            val currentIndex = _drawerFocusIndex.value
-            Log.d("ArgosyViewModel", "Drawer onConfirm: index=$currentIndex, footerIndex=$footerIndex, hasUpdateFooter=$hasUpdateFooter")
-            if (hasUpdateFooter && currentIndex == footerIndex) {
-                Log.d("ArgosyViewModel", "Navigating to emulators section via footer")
-                onNavigate(Screen.Settings.createRoute(section = "emulators"))
-            } else if (currentIndex < drawerItems.size) {
-                Log.d("ArgosyViewModel", "Navigating to drawer item: ${drawerItems[currentIndex].route}")
-                onNavigate(drawerItems[currentIndex].route)
+            return when (_drawerTab.value) {
+                DrawerTab.NAVIGATION -> {
+                    val currentIndex = _navFocusIndex.value
+                    Log.d("ArgosyViewModel", "Drawer onConfirm: index=$currentIndex, footerIndex=$footerIndex, hasUpdateFooter=$hasUpdateFooter")
+                    if (hasUpdateFooter && currentIndex == footerIndex) {
+                        Log.d("ArgosyViewModel", "Navigating to emulators section via footer")
+                        onNavigate(Screen.Settings.createRoute(section = "emulators"))
+                    } else if (currentIndex < drawerItems.size) {
+                        Log.d("ArgosyViewModel", "Navigating to drawer item: ${drawerItems[currentIndex].route}")
+                        onNavigate(drawerItems[currentIndex].route)
+                    }
+                    InputResult.HANDLED
+                }
+                DrawerTab.FRIENDS -> {
+                    InputResult.UNHANDLED
+                }
             }
-            return InputResult.HANDLED
+        }
+
+        override fun onSecondaryAction(): InputResult {
+            if (_drawerTab.value == DrawerTab.FRIENDS) {
+                showFriendsOptionsModal()
+                return InputResult.HANDLED
+            }
+            return InputResult.UNHANDLED
         }
 
         override fun onBack(): InputResult {
+            if (_drawerModal.value != DrawerModal.None) {
+                dismissDrawerModal()
+                return InputResult.HANDLED
+            }
             onDismiss()
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
@@ -453,6 +612,22 @@ class ArgosyViewModel @Inject constructor(
         override fun onMenu(): InputResult {
             onDismiss()
             return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+
+        override fun onPrevSection(): InputResult {
+            if (_drawerTab.value == DrawerTab.FRIENDS) {
+                switchToNavTab()
+                return InputResult.HANDLED
+            }
+            return InputResult.UNHANDLED
+        }
+
+        override fun onNextSection(): InputResult {
+            if (_drawerTab.value == DrawerTab.NAVIGATION && drawerUiState.value.socialConnected) {
+                switchToFriendsTab()
+                return InputResult.HANDLED
+            }
+            return InputResult.UNHANDLED
         }
     }
 

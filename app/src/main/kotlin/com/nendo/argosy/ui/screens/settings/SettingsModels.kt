@@ -54,6 +54,7 @@ enum class SettingsSection {
     SHADER_STACK,
     FRAME_PICKER,
     CORE_MANAGEMENT,
+    SOCIAL,
     PERMISSIONS,
     ABOUT
 }
@@ -672,6 +673,28 @@ data class BiosState(
     }
 }
 
+enum class SocialAuthStatus {
+    NOT_LINKED,
+    AWAITING_AUTH,
+    CONNECTED,
+    CONNECTING,
+    ERROR
+}
+
+data class SocialState(
+    val authStatus: SocialAuthStatus = SocialAuthStatus.NOT_LINKED,
+    val qrUrl: String? = null,
+    val loginCode: String? = null,
+    val username: String? = null,
+    val displayName: String? = null,
+    val avatarColor: String? = null,
+    val errorMessage: String? = null,
+    val onlineStatusEnabled: Boolean = true,
+    val showNowPlaying: Boolean = true,
+    val notifyFriendOnline: Boolean = true,
+    val notifyFriendPlaying: Boolean = true
+)
+
 data class SettingsUiState(
     val currentSection: SettingsSection = SettingsSection.MAIN,
     val focusedIndex: Int = 0,
@@ -693,6 +716,7 @@ data class SettingsUiState(
     val retroAchievements: RASettingsState = RASettingsState(),
     val android: AndroidSettingsState = AndroidSettingsState(),
     val bios: BiosState = BiosState(),
+    val social: SocialState = SocialState(),
     val permissions: PermissionsState = PermissionsState(),
     val launchFolderPicker: Boolean = false,
     val showMigrationDialog: Boolean = false,

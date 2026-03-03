@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
@@ -28,6 +29,7 @@ import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
 import com.nendo.argosy.ui.screens.settings.SettingsSection
+import com.nendo.argosy.ui.screens.settings.SocialAuthStatus
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
@@ -56,13 +58,14 @@ internal sealed class MainSettingsItem(
     data object Controls : MainSettingsItem("controls", Icons.Default.TouchApp, "Controls")
     data object Emulators : MainSettingsItem("emulators", Icons.Default.Gamepad, "Emulators")
     data object Bios : MainSettingsItem("bios", Icons.Default.Memory, "BIOS Files")
+    data object Social : MainSettingsItem("social", Icons.Default.Group, "Social")
     data object Permissions : MainSettingsItem("permissions", Icons.Default.Security, "Permissions")
     data object About : MainSettingsItem("about", Icons.Default.Info, "About")
 
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
             DeviceSettings, GameData, RetroAchievements, Storage, Interface, Controls,
-            Emulators, Bios, Permissions, About
+            Emulators, Bios, Social, Permissions, About
         )
     }
 }
@@ -122,6 +125,11 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         MainSettingsItem.Controls -> "Button layout, haptic feedback"
         MainSettingsItem.Emulators -> "${uiState.emulators.installedEmulators.size} installed"
         MainSettingsItem.Bios -> uiState.bios.summaryText
+        MainSettingsItem.Social -> when (uiState.social.authStatus) {
+            SocialAuthStatus.CONNECTED -> "Linked as ${uiState.social.displayName ?: uiState.social.username}"
+            SocialAuthStatus.CONNECTING -> "Connecting..."
+            else -> "Not linked"
+        }
         MainSettingsItem.Permissions -> if (uiState.permissions.allGranted) {
             "All granted"
         } else {
@@ -140,6 +148,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Controls -> viewModel.navigateToSection(SettingsSection.CONTROLS)
             MainSettingsItem.Emulators -> viewModel.navigateToSection(SettingsSection.EMULATORS)
             MainSettingsItem.Bios -> viewModel.navigateToSection(SettingsSection.BIOS)
+            MainSettingsItem.Social -> viewModel.navigateToSection(SettingsSection.SOCIAL)
             MainSettingsItem.Permissions -> viewModel.navigateToSection(SettingsSection.PERMISSIONS)
             MainSettingsItem.About -> viewModel.navigateToSection(SettingsSection.ABOUT)
         }

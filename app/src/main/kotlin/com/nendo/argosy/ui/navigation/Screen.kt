@@ -44,6 +44,11 @@ sealed class Screen(val route: String) {
     }
     data object Search : Screen("search")
     data object ManagePins : Screen("manage_pins")
+    data object Social : Screen("social")
+    data object SocialEventDetail : Screen("social/event/{eventId}") {
+        fun createRoute(eventId: String) = "social/event/$eventId"
+    }
+    data object Doodle : Screen("doodle")
 
     companion object {
         const val ROUTE_HOME = "home"
@@ -58,5 +63,8 @@ sealed class Screen(val route: String) {
         const val ROUTE_APPS = "apps"
         const val ROUTE_SEARCH = "search"
         const val ROUTE_MANAGE_PINS = "manage_pins"
+        const val ROUTE_SOCIAL = "social"
+        const val ROUTE_SOCIAL_EVENT_DETAIL = "social/event"
+        const val ROUTE_DOODLE = "doodle"
     }
 }

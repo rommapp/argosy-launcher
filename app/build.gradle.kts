@@ -163,6 +163,9 @@ dependencies {
     // Image loading
     implementation(libs.coil.compose)
 
+    // QR code generation
+    implementation("com.google.zxing:core:3.5.3")
+
     // Color extraction
     implementation(libs.androidx.palette)
 

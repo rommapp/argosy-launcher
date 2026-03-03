@@ -32,7 +32,17 @@ data class SyncPreferences(
     val saveWatcherEnabled: Boolean = false,
     val saveDebugLoggingEnabled: Boolean = false,
     val imageCachePath: String? = null,
-    val androidDataSafUri: String? = null
+    val androidDataSafUri: String? = null,
+    val socialSessionToken: String? = null,
+    val socialUserId: String? = null,
+    val socialUsername: String? = null,
+    val socialDisplayName: String? = null,
+    val socialAvatarColor: String? = null,
+    val socialOnlineStatusEnabled: Boolean = true,
+    val socialShowNowPlaying: Boolean = true,
+    val socialNotifyFriendOnline: Boolean = true,
+    val socialNotifyFriendPlaying: Boolean = true,
+    val lastPlaySessionSync: Instant? = null
 )
 
 @Singleton
@@ -66,6 +76,16 @@ class SyncPreferencesRepository @Inject constructor(
         val SAVE_DEBUG_LOGGING_ENABLED = booleanPreferencesKey("save_debug_logging_enabled")
         val IMAGE_CACHE_PATH = stringPreferencesKey("image_cache_path")
         val ANDROID_DATA_SAF_URI = stringPreferencesKey("android_data_saf_uri")
+        val SOCIAL_SESSION_TOKEN = stringPreferencesKey("social_session_token")
+        val SOCIAL_USER_ID = stringPreferencesKey("social_user_id")
+        val SOCIAL_USERNAME = stringPreferencesKey("social_username")
+        val SOCIAL_DISPLAY_NAME = stringPreferencesKey("social_display_name")
+        val SOCIAL_AVATAR_COLOR = stringPreferencesKey("social_avatar_color")
+        val SOCIAL_ONLINE_STATUS_ENABLED = booleanPreferencesKey("social_online_status_enabled")
+        val SOCIAL_SHOW_NOW_PLAYING = booleanPreferencesKey("social_show_now_playing")
+        val SOCIAL_NOTIFY_FRIEND_ONLINE = booleanPreferencesKey("social_notify_friend_online")
+        val SOCIAL_NOTIFY_FRIEND_PLAYING = booleanPreferencesKey("social_notify_friend_playing")
+        val SOCIAL_LAST_PLAY_SESSION_SYNC = stringPreferencesKey("social_last_play_session_sync")
     }
 
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->
@@ -103,7 +123,17 @@ class SyncPreferencesRepository @Inject constructor(
             saveWatcherEnabled = prefs[Keys.SAVE_WATCHER_ENABLED] ?: false,
             saveDebugLoggingEnabled = prefs[Keys.SAVE_DEBUG_LOGGING_ENABLED] ?: false,
             imageCachePath = prefs[Keys.IMAGE_CACHE_PATH],
-            androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI]
+            androidDataSafUri = prefs[Keys.ANDROID_DATA_SAF_URI],
+            socialSessionToken = prefs[Keys.SOCIAL_SESSION_TOKEN],
+            socialUserId = prefs[Keys.SOCIAL_USER_ID],
+            socialUsername = prefs[Keys.SOCIAL_USERNAME],
+            socialDisplayName = prefs[Keys.SOCIAL_DISPLAY_NAME],
+            socialAvatarColor = prefs[Keys.SOCIAL_AVATAR_COLOR],
+            socialOnlineStatusEnabled = prefs[Keys.SOCIAL_ONLINE_STATUS_ENABLED] ?: true,
+            socialShowNowPlaying = prefs[Keys.SOCIAL_SHOW_NOW_PLAYING] ?: true,
+            socialNotifyFriendOnline = prefs[Keys.SOCIAL_NOTIFY_FRIEND_ONLINE] ?: true,
+            socialNotifyFriendPlaying = prefs[Keys.SOCIAL_NOTIFY_FRIEND_PLAYING] ?: true,
+            lastPlaySessionSync = prefs[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC]?.let { Instant.parse(it) }
         )
     }
 
@@ -254,5 +284,53 @@ class SyncPreferencesRepository @Inject constructor(
             if (uri != null) prefs[Keys.ANDROID_DATA_SAF_URI] = uri
             else prefs.remove(Keys.ANDROID_DATA_SAF_URI)
         }
+    }
+
+    suspend fun setSocialCredentials(
+        sessionToken: String,
+        userId: String,
+        username: String,
+        displayName: String?,
+        avatarColor: String?
+    ) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SOCIAL_SESSION_TOKEN] = sessionToken
+            prefs[Keys.SOCIAL_USER_ID] = userId
+            prefs[Keys.SOCIAL_USERNAME] = username
+            if (displayName != null) prefs[Keys.SOCIAL_DISPLAY_NAME] = displayName
+            else prefs.remove(Keys.SOCIAL_DISPLAY_NAME)
+            if (avatarColor != null) prefs[Keys.SOCIAL_AVATAR_COLOR] = avatarColor
+            else prefs.remove(Keys.SOCIAL_AVATAR_COLOR)
+        }
+    }
+
+    suspend fun clearSocialCredentials() {
+        dataStore.edit { prefs ->
+            prefs.remove(Keys.SOCIAL_SESSION_TOKEN)
+            prefs.remove(Keys.SOCIAL_USER_ID)
+            prefs.remove(Keys.SOCIAL_USERNAME)
+            prefs.remove(Keys.SOCIAL_DISPLAY_NAME)
+            prefs.remove(Keys.SOCIAL_AVATAR_COLOR)
+        }
+    }
+
+    suspend fun setSocialOnlineStatusEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.SOCIAL_ONLINE_STATUS_ENABLED] = enabled }
+    }
+
+    suspend fun setSocialShowNowPlaying(enabled: Boolean) {
+        dataStore.edit { it[Keys.SOCIAL_SHOW_NOW_PLAYING] = enabled }
+    }
+
+    suspend fun setSocialNotifyFriendOnline(enabled: Boolean) {
+        dataStore.edit { it[Keys.SOCIAL_NOTIFY_FRIEND_ONLINE] = enabled }
+    }
+
+    suspend fun setSocialNotifyFriendPlaying(enabled: Boolean) {
+        dataStore.edit { it[Keys.SOCIAL_NOTIFY_FRIEND_PLAYING] = enabled }
+    }
+
+    suspend fun setLastPlaySessionSyncTime(time: Instant) {
+        dataStore.edit { it[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC] = time.toString() }
     }
 }

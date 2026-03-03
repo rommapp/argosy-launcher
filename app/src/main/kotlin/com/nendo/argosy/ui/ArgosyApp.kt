@@ -110,7 +110,6 @@ fun ArgosyApp(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val uiState by viewModel.uiState.collectAsState()
-    val drawerFocusIndex by viewModel.drawerFocusIndex.collectAsState()
     val drawerUiState by viewModel.drawerUiState.collectAsState()
     val isDrawerOpen by viewModel.isDrawerOpen.collectAsState()
     val isQuickSettingsOpen by viewModel.isQuickSettingsOpen.collectAsState()
@@ -753,7 +752,6 @@ fun ArgosyApp(
                     MainDrawer(
                         items = viewModel.drawerItems,
                         currentRoute = currentRoute,
-                        focusedIndex = drawerFocusIndex,
                         drawerState = drawerUiState,
                         onNavigate = { route ->
                             inputDispatcher.unsubscribeDrawer()
@@ -766,7 +764,12 @@ fun ArgosyApp(
                                     restoreState = true
                                 }
                             }
-                        }
+                        },
+                        onShowFriendCode = { viewModel.showFriendCodeModal() },
+                        onShowAddFriend = { viewModel.showAddFriendModal() },
+                        onDismissModal = { viewModel.dismissDrawerModal() },
+                        onRegenerateFriendCode = { viewModel.regenerateFriendCode() },
+                        onAddFriendByCode = { code -> viewModel.addFriendByCode(code) }
                     )
                 }
             ) {

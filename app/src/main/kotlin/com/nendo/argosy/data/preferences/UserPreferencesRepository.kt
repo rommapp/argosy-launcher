@@ -124,7 +124,17 @@ class UserPreferencesRepository @Inject constructor(
             appAffinityEnabled = app.appAffinityEnabled,
             displayRoleOverride = display.displayRoleOverride,
             dualScreenInputFocus = display.dualScreenInputFocus,
-            installedOnlyHome = display.installedOnlyHome
+            installedOnlyHome = display.installedOnlyHome,
+            socialSessionToken = sync.socialSessionToken,
+            socialUserId = sync.socialUserId,
+            socialUsername = sync.socialUsername,
+            socialDisplayName = sync.socialDisplayName,
+            socialAvatarColor = sync.socialAvatarColor,
+            socialOnlineStatusEnabled = sync.socialOnlineStatusEnabled,
+            socialShowNowPlaying = sync.socialShowNowPlaying,
+            socialNotifyFriendOnline = sync.socialNotifyFriendOnline,
+            socialNotifyFriendPlaying = sync.socialNotifyFriendPlaying,
+            lastPlaySessionSync = sync.lastPlaySessionSync
         )
     }
 
@@ -202,6 +212,22 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setAndroidDataSafUri(uri: String?) = syncPrefs.setAndroidDataSafUri(uri)
     fun saveWatcherEnabled(): Flow<Boolean> = syncPrefs.saveWatcherEnabled()
     suspend fun setSaveWatcherEnabled(enabled: Boolean) = syncPrefs.setSaveWatcherEnabled(enabled)
+
+    // --- Social delegates ---
+
+    suspend fun setSocialCredentials(
+        sessionToken: String,
+        userId: String,
+        username: String,
+        displayName: String?,
+        avatarColor: String?
+    ) = syncPrefs.setSocialCredentials(sessionToken, userId, username, displayName, avatarColor)
+    suspend fun clearSocialCredentials() = syncPrefs.clearSocialCredentials()
+    suspend fun setSocialOnlineStatusEnabled(enabled: Boolean) = syncPrefs.setSocialOnlineStatusEnabled(enabled)
+    suspend fun setSocialShowNowPlaying(enabled: Boolean) = syncPrefs.setSocialShowNowPlaying(enabled)
+    suspend fun setSocialNotifyFriendOnline(enabled: Boolean) = syncPrefs.setSocialNotifyFriendOnline(enabled)
+    suspend fun setSocialNotifyFriendPlaying(enabled: Boolean) = syncPrefs.setSocialNotifyFriendPlaying(enabled)
+    suspend fun setLastPlaySessionSyncTime(time: Instant) = syncPrefs.setLastPlaySessionSyncTime(time)
 
     // --- Controls delegates ---
 
@@ -480,8 +506,20 @@ data class UserPreferences(
     val appAffinityEnabled: Boolean = false,
     val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO,
     val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
-    val installedOnlyHome: Boolean = false
-)
+    val installedOnlyHome: Boolean = false,
+    val socialSessionToken: String? = null,
+    val socialUserId: String? = null,
+    val socialUsername: String? = null,
+    val socialDisplayName: String? = null,
+    val socialAvatarColor: String? = null,
+    val socialOnlineStatusEnabled: Boolean = true,
+    val socialShowNowPlaying: Boolean = true,
+    val socialNotifyFriendOnline: Boolean = true,
+    val socialNotifyFriendPlaying: Boolean = true,
+    val lastPlaySessionSync: Instant? = null
+) {
+    val isSocialLinked: Boolean get() = socialSessionToken != null
+}
 
 enum class ThemeMode(val displayName: String) {
     LIGHT("Light"),

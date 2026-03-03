@@ -72,6 +72,7 @@ import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
 import com.nendo.argosy.ui.screens.settings.sections.RASettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.ShaderStackSection
+import com.nendo.argosy.ui.screens.settings.sections.SocialSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
@@ -357,6 +358,7 @@ fun SettingsScreen(
                         SettingsSection.FRAME_PICKER -> "SELECT FRAME"
                         SettingsSection.PERMISSIONS -> "PERMISSIONS"
                         SettingsSection.ABOUT -> "ABOUT"
+                        SettingsSection.SOCIAL -> "SOCIAL"
                     },
                     rightContent = if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
                         uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
@@ -407,6 +409,7 @@ fun SettingsScreen(
                     SettingsSection.FRAME_PICKER -> FrameSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
+                    SettingsSection.SOCIAL -> SocialSection(uiState, viewModel)
                 }
             }
 

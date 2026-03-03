@@ -65,6 +65,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Bios -> vm.navigateToSection(SettingsSection.BIOS)
                 MainSettingsItem.Permissions -> vm.navigateToSection(SettingsSection.PERMISSIONS)
                 MainSettingsItem.About -> vm.navigateToSection(SettingsSection.ABOUT)
+                MainSettingsItem.Social -> vm.navigateToSection(SettingsSection.SOCIAL)
                 null -> {}
             }
             InputResult.HANDLED
@@ -137,6 +138,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
             vm.selectCoreForPlatform()
             InputResult.HANDLED
         }
+        SettingsSection.SOCIAL -> vm.handleSocialConfirm(state)
     }
 }
 
@@ -636,4 +638,5 @@ private fun computeMaxFocusIndex(
     SettingsSection.BIOS -> biosMaxFocusIndex(state.bios.platformGroups, state.bios.expandedPlatformIndex)
     SettingsSection.PERMISSIONS -> permissionsMaxFocusIndex(state.permissions)
     SettingsSection.ABOUT -> aboutMaxFocusIndex(state.fileLoggingPath != null)
+    SettingsSection.SOCIAL -> vm.socialMaxFocusIndex(state.social)
 }

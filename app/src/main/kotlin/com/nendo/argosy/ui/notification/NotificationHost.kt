@@ -116,7 +116,9 @@ private fun NotificationBar(
     notification: Notification,
     modifier: Modifier = Modifier
 ) {
-    val colors = notificationColors(notification.type)
+    val typeColors = notificationColors(notification.type)
+    val accent = notification.accentColor?.let { Color(it) }
+    val colors = if (accent != null) NotificationColors(icon = accent, tint = accent) else typeColors
     val baseColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f)
     val backgroundColor = colors.tint.copy(alpha = 0.15f).compositeOver(baseColor)
     val textColor = MaterialTheme.colorScheme.onSurface

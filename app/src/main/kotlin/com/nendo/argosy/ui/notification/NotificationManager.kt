@@ -36,7 +36,8 @@ class NotificationManager @Inject constructor() {
         duration: NotificationDuration = NotificationDuration.SHORT,
         action: NotificationAction? = null,
         key: String? = null,
-        immediate: Boolean = false
+        immediate: Boolean = false,
+        accentColor: Int? = null
     ): String {
         val notification = Notification(
             key = key,
@@ -46,7 +47,8 @@ class NotificationManager @Inject constructor() {
             imagePath = imagePath,
             duration = duration,
             action = action,
-            immediate = immediate
+            immediate = immediate,
+            accentColor = accentColor
         )
 
         if (key != null) {

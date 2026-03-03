@@ -38,5 +38,6 @@ data class Notification(
     val duration: NotificationDuration = NotificationDuration.SHORT,
     val action: NotificationAction? = null,
     val immediate: Boolean = false,
-    val progress: NotificationProgress? = null
+    val progress: NotificationProgress? = null,
+    val accentColor: Int? = null
 )

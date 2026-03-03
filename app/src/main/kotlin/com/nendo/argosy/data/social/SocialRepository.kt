@@ -598,6 +598,8 @@ class SocialRepository @Inject constructor(
                 newGame != null &&
                 (oldPresence != PresenceStatus.IN_GAME || oldGame?.title != newGame.title)
 
+            val avatarColorInt = parseAvatarColorInt(friend.avatarColor)
+
             when {
                 startedPlayingNewGame && prefs.socialNotifyFriendPlaying -> {
                     val coverPath = newGame?.coverThumb?.let { saveTempCover(it, friend.id) }
@@ -607,7 +609,8 @@ class SocialRepository @Inject constructor(
                         imagePath = coverPath,
                         type = NotificationType.INFO,
                         duration = NotificationDuration.SHORT,
-                        key = "presence_${friend.id}"
+                        key = "presence_${friend.id}",
+                        accentColor = avatarColorInt
                     )
                 }
                 wasOfflineOrAway && isNowOnline && !startedPlayingNewGame && prefs.socialNotifyFriendOnline -> {
@@ -616,7 +619,8 @@ class SocialRepository @Inject constructor(
                         subtitle = "Is now online",
                         type = NotificationType.INFO,
                         duration = NotificationDuration.SHORT,
-                        key = "presence_${friend.id}"
+                        key = "presence_${friend.id}",
+                        accentColor = avatarColorInt
                     )
                 }
             }
@@ -633,6 +637,14 @@ class SocialRepository @Inject constructor(
             file.absolutePath
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save temp cover", e)
+            null
+        }
+    }
+
+    private fun parseAvatarColorInt(hexColor: String): Int? {
+        return try {
+            android.graphics.Color.parseColor(hexColor)
+        } catch (_: Exception) {
             null
         }
     }

@@ -71,7 +71,6 @@ fun FriendCodeModal(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        inputDispatcher.pushModal(inputHandler)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             inputDispatcher.popModal()

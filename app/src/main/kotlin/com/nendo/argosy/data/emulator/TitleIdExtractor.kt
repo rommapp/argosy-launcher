@@ -502,21 +502,91 @@ class TitleIdExtractor @Inject constructor(
     private fun extractPS2SerialFromIso(romFile: File): String? {
         return try {
             RandomAccessFile(romFile, "r").use { raf ->
-                val neededBytes = 101 * 2048
-                if (raf.length() < neededBytes) return null
+                val sectorSize = 2048
 
-                val data = ByteArray(neededBytes)
-                raf.readFully(data)
+                // Read PVD at sector 16
+                val pvdOffset = 16L * sectorSize
+                if (raf.length() < pvdOffset + sectorSize) return null
+                raf.seek(pvdOffset)
+                val pvd = ByteArray(sectorSize)
+                raf.readFully(pvd)
 
-                val text = String(data, Charsets.ISO_8859_1)
-                val pattern = Regex("""BOOT2\s*=\s*cdrom0:\\([A-Z]{4})_(\d{3})\.(\d{2});""")
-                val match = pattern.find(text) ?: return null
+                // Verify PVD: type=1, "CD001"
+                if (pvd[0].toInt() != 1) return null
+                val magic = String(pvd, 1, 5, Charsets.US_ASCII)
+                if (magic != "CD001") return null
+
+                // Root directory record at PVD offset 156, length byte at +0, extent LBA at +2 (LE32), data length at +10 (LE32)
+                val rootExtentLba = pvd.readLE32(156 + 2)
+                val rootDataLen = pvd.readLE32(156 + 10)
+
+                // Read root directory
+                val rootOffset = rootExtentLba.toLong() * sectorSize
+                val rootLen = rootDataLen.coerceAtMost(sectorSize * 4) // cap at 4 sectors
+                if (raf.length() < rootOffset + rootLen) return null
+                raf.seek(rootOffset)
+                val rootDir = ByteArray(rootLen)
+                raf.readFully(rootDir)
+
+                // Scan directory entries for SYSTEM.CNF
+                var pos = 0
+                var systemCnfLba = -1
+                var systemCnfLen = 0
+                while (pos < rootLen) {
+                    val recordLen = rootDir[pos].toInt() and 0xFF
+                    if (recordLen == 0) {
+                        // Skip to next sector boundary
+                        pos = ((pos / sectorSize) + 1) * sectorSize
+                        continue
+                    }
+                    if (pos + recordLen > rootLen) break
+
+                    val nameLen = rootDir[pos + 32].toInt() and 0xFF
+                    if (nameLen > 0 && pos + 33 + nameLen <= rootLen) {
+                        val name = String(rootDir, pos + 33, nameLen, Charsets.US_ASCII)
+                        if (name.equals("SYSTEM.CNF;1", ignoreCase = true) ||
+                            name.equals("SYSTEM.CNF", ignoreCase = true)) {
+                            systemCnfLba = rootDir.readLE32(pos + 2)
+                            systemCnfLen = rootDir.readLE32(pos + 10)
+                            break
+                        }
+                    }
+                    pos += recordLen
+                }
+
+                if (systemCnfLba < 0) {
+                    Logger.debug(TAG, "[SaveSync] DETECT | PS2 SYSTEM.CNF not found in root dir | file=${romFile.name}")
+                    return null
+                }
+
+                // Read SYSTEM.CNF content
+                val cnfOffset = systemCnfLba.toLong() * sectorSize
+                val cnfLen = systemCnfLen.coerceAtMost(sectorSize)
+                if (raf.length() < cnfOffset + cnfLen) return null
+                raf.seek(cnfOffset)
+                val cnfData = ByteArray(cnfLen)
+                raf.readFully(cnfData)
+
+                val cnfText = String(cnfData, Charsets.ISO_8859_1)
+                val pattern = Regex("""BOOT2\s*=\s*cdrom0:\\?([A-Z]{4})[_.](\d{3})\.(\d{2});""")
+                val match = pattern.find(cnfText)
+                if (match == null) {
+                    Logger.debug(TAG, "[SaveSync] DETECT | PS2 BOOT2 regex didn't match | cnf=${cnfText.take(120).trim()}")
+                    return null
+                }
                 "${match.groupValues[1]}-${match.groupValues[2]}${match.groupValues[3]}"
             }
         } catch (e: Exception) {
             Logger.warn(TAG, "[SaveSync] DETECT | Failed to read PS2 ISO | file=${romFile.name}", e)
             null
         }
+    }
+
+    private fun ByteArray.readLE32(offset: Int): Int {
+        return (this[offset].toInt() and 0xFF) or
+                ((this[offset + 1].toInt() and 0xFF) shl 8) or
+                ((this[offset + 2].toInt() and 0xFF) shl 16) or
+                ((this[offset + 3].toInt() and 0xFF) shl 24)
     }
 
     fun extractWiiUTitleId(romFile: File): String? {

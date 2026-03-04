@@ -73,15 +73,13 @@ class PS2SaveHandler @Inject constructor(
             return null
         }
 
-        val baSerial = toFolderName(serial)
-
         val folderCards = fal.listFiles(basePath)?.filter {
             it.isDirectory && it.name.endsWith(".ps2", ignoreCase = true)
         } ?: emptyList()
 
         for (card in folderCards) {
             val match = fal.listFiles(card.path)?.firstOrNull {
-                it.isDirectory && it.name.equals(baSerial, ignoreCase = true)
+                it.isDirectory && matchesFolderName(it.name, serial)
             }
             if (match != null) {
                 Logger.debug(TAG, "Save found | card=${card.name}, path=${match.path}")
@@ -111,11 +109,18 @@ class PS2SaveHandler @Inject constructor(
     }
 
     private fun toFolderName(serial: String): String {
-        val normalized = serial.replace("-", "")
-        return if (normalized.startsWith(BA_PREFIX, ignoreCase = true)) {
-            normalized
+        val stripped = serial.replace("-", "")
+        return if (stripped.startsWith(BA_PREFIX, ignoreCase = true)) {
+            stripped
         } else {
-            "$BA_PREFIX$normalized"
+            "$BA_PREFIX$stripped"
         }
+    }
+
+    private fun matchesFolderName(folderName: String, serial: String): Boolean {
+        val stripped = serial.replace("-", "")
+        val baSerial = if (stripped.startsWith(BA_PREFIX, ignoreCase = true)) stripped else "$BA_PREFIX$stripped"
+        val folderStripped = folderName.replace("-", "")
+        return folderStripped.equals(baSerial, ignoreCase = true)
     }
 }

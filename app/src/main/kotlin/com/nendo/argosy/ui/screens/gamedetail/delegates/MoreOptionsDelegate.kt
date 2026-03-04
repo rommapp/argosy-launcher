@@ -88,7 +88,7 @@ class MoreOptionsDelegate @Inject constructor(
         val canTrackProgress = isRommGame || isAndroidApp
         val isEmulatedGame = !isSteamGame && !isAndroidApp
         val isDownloaded = downloadStatus == GameDownloadStatus.DOWNLOADED
-        val usesTitleId = platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii")
+        val usesTitleId = platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii", "ps2")
         val index = _state.value.moreOptionsFocusIndex
 
         var currentIdx = 0

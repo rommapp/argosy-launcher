@@ -480,7 +480,7 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
 
-            val needsTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp")
+            val needsTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii", "ps2")
             if (needsTitleId && game.titleId == null && game.localPath != null) {
                 viewModelScope.launch {
                     titleIdDownloadObserver.extractTitleIdForGame(gameId)

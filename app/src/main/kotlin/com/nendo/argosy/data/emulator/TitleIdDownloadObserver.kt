@@ -13,7 +13,7 @@ import javax.inject.Singleton
 private const val TAG = "TitleIdDownloadObserver"
 
 private val TITLE_ID_PLATFORMS = setOf(
-    "switch", "vita", "psvita", "psp", "3ds", "wiiu", "wii"
+    "switch", "vita", "psvita", "psp", "3ds", "wiiu", "wii", "ps2"
 )
 
 @Singleton

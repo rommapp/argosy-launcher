@@ -94,7 +94,7 @@ fun MoreOptionsModal(
                 onClick = { onAction(MoreOptionAction.ChangeCore) }
             )
         }
-        val usesTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii")
+        val usesTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii", "ps2")
         if (usesTitleId && isEmulatedGame) {
             val idx = currentIndex++
             OptionItem(

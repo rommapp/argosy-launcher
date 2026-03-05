@@ -49,6 +49,7 @@ class ArgosSocialService @Inject constructor(
     private var sessionToken: String? = null
     private var reconnectAttempts = 0
     private var shouldReconnect = false
+    private var reconnectJob: kotlinx.coroutines.Job? = null
 
     var onSessionRevoked: (() -> Unit)? = null
 
@@ -131,6 +132,9 @@ class ArgosSocialService @Inject constructor(
     private fun connectInternal() {
         val token = sessionToken ?: return
 
+        webSocket?.cancel()
+        webSocket = null
+
         _connectionState.value = if (reconnectAttempts > 0) {
             ConnectionState.Reconnecting
         } else {
@@ -162,7 +166,8 @@ class ArgosSocialService @Inject constructor(
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e(TAG, "Social WebSocket failure", t)
+                val responseInfo = response?.let { "HTTP ${it.code} ${it.message}" } ?: "no response"
+                Log.e(TAG, "Social WebSocket failure: ${t.javaClass.simpleName}: ${t.message} | $responseInfo", t)
                 _connectionState.value = ConnectionState.Failed(t.message ?: "Connection failed")
                 if (shouldReconnect) {
                     scheduleReconnect()
@@ -413,15 +418,16 @@ class ArgosSocialService @Inject constructor(
         }
     }
 
-    fun send(type: String, payload: Map<String, Any?>) {
+    fun send(type: String, payload: Map<String, Any?>): Boolean {
         val json = JSONObject().apply {
             put("type", type)
             put("payload", JSONObject(payload))
         }
         val sent = webSocket?.send(json.toString()) ?: false
         if (!sent) {
-            Log.w(TAG, "Failed to send message: $type")
+            Log.w(TAG, "Failed to send message: $type (webSocket=${webSocket != null})")
         }
+        return sent
     }
 
     private fun sendDeviceRegistration() {
@@ -433,8 +439,8 @@ class ArgosSocialService @Inject constructor(
         ))
     }
 
-    fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null) {
-        send(MessageTypes.SET_PRESENCE, mapOf(
+    fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null): Boolean {
+        return send(MessageTypes.SET_PRESENCE, mapOf(
             "status" to status.value,
             "game_igdb_id" to gameIgdbId,
             "game_title" to gameTitle,
@@ -591,7 +597,8 @@ class ArgosSocialService @Inject constructor(
     private fun scheduleReconnect() {
         if (!shouldReconnect) return
 
-        scope.launch {
+        reconnectJob?.cancel()
+        reconnectJob = scope.launch {
             val delayMs = calculateReconnectDelay()
             Log.d(TAG, "Scheduling reconnect in ${delayMs}ms (attempt ${reconnectAttempts + 1})")
             delay(delayMs)
@@ -612,6 +619,7 @@ class ArgosSocialService @Inject constructor(
         val state = _connectionState.value
         if (state == ConnectionState.Connected || state == ConnectionState.Connecting) return
         Log.d(TAG, "Proactive reconnect triggered (state=$state)")
+        reconnectJob?.cancel()
         reconnectAttempts = 0
         connectInternal()
     }

@@ -1,6 +1,7 @@
 package com.nendo.argosy.util
 
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -37,10 +38,38 @@ class PermissionHelper @Inject constructor() {
         val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val endTime = System.currentTimeMillis()
         val startTime = endTime - withinMs
-        val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_BEST, startTime, endTime)
-        val match = stats.find { it.packageName == packageName }
-        val result = match != null && match.lastTimeUsed >= startTime
-        android.util.Log.d("PermissionHelper", "isPackageInForeground($packageName): found=${match != null}, lastUsed=${match?.lastTimeUsed}, startTime=$startTime, result=$result")
+
+        val events = usageStatsManager.queryEvents(startTime, endTime)
+        val event = UsageEvents.Event()
+        var lastTransition: Int? = null
+
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.packageName == packageName) {
+                when (event.eventType) {
+                    UsageEvents.Event.MOVE_TO_FOREGROUND,
+                    UsageEvents.Event.MOVE_TO_BACKGROUND -> {
+                        lastTransition = event.eventType
+                    }
+                }
+            }
+        }
+
+        val result = when (lastTransition) {
+            UsageEvents.Event.MOVE_TO_FOREGROUND -> true
+            UsageEvents.Event.MOVE_TO_BACKGROUND -> false
+            else -> {
+                // No transition events in window -- the app may have been in
+                // foreground since before our window started (long gameplay).
+                // Fall back: assume still in foreground if we have no evidence
+                // of a background transition. The caller should use a large
+                // enough window to capture the initial launch.
+                android.util.Log.d("PermissionHelper", "isPackageInForeground($packageName): no transition events in ${withinMs}ms window, assuming foreground")
+                true
+            }
+        }
+
+        android.util.Log.d("PermissionHelper", "isPackageInForeground($packageName): lastTransition=$lastTransition, result=$result")
         return result
     }
 }

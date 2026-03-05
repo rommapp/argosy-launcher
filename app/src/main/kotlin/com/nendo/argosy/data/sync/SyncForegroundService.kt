@@ -136,7 +136,7 @@ class SyncForegroundService : Service() {
         progress: Int,
         maxProgress: Int
     ) = NotificationCompat.Builder(this, SyncNotificationChannel.CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_download)
+        .setSmallIcon(R.drawable.ic_helm)
         .setContentTitle(getString(R.string.app_name))
         .setContentText(contentText)
         .setPriority(NotificationCompat.PRIORITY_LOW)

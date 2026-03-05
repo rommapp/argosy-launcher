@@ -406,6 +406,11 @@ class GameLaunchDelegate @Inject constructor(
     ) {
         val session = playSessionTracker.activeSession.value
         if (session == null) {
+            if (isSyncing) {
+                // Sync is in progress from a prior handleSessionEnd call.
+                // The running coroutine will call onSyncComplete when done.
+                return
+            }
             playSessionTracker.forceStopService()
             onSyncComplete()
             return

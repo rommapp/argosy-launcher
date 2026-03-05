@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -96,6 +97,7 @@ class PlaySessionTracker @Inject constructor(
     }
     private val scope = SafeCoroutineScope(Dispatchers.IO, "PlaySessionTracker")
     private val sessionStateStore by lazy { SessionStateStore(application) }
+    private val endingSession = AtomicBoolean(false)
 
     private fun broadcastSessionChanged(gameId: Long?, channelName: String?, isHardcore: Boolean) {
         // Write to SharedPreferences for companion process to read on startup
@@ -280,6 +282,7 @@ class PlaySessionTracker @Inject constructor(
     }
 
     fun startSession(gameId: Long, emulatorPackage: String, coreName: String? = null, isHardcore: Boolean = false, isNewGame: Boolean = false) {
+        endingSession.set(false)
         screenOnDuration = Duration.ZERO
         lastScreenOnTime = Instant.now()
         isScreenOn = true
@@ -320,21 +323,19 @@ class PlaySessionTracker @Inject constructor(
             broadcastSessionChanged(gameId, channelName, isHardcore)
 
             val prefs = preferencesRepository.userPreferences.first()
-            if (prefs.saveSyncEnabled) {
-                if (channelName != null) {
-                    val activeSaveTimestamp = game?.activeSaveTimestamp
-                    val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, channelName)
-                    val isOnOlderSave = if (activeSaveTimestamp == null) {
-                        false
-                    } else {
-                        latestCache != null && activeSaveTimestamp < latestCache.cachedAt.toEpochMilli()
-                    }
-                    saveSyncRepository.get().setSessionOnOlderSave(gameId, isOnOlderSave)
-                    _activeSession.value = _activeSession.value?.copy(isOnOlderSave = isOnOlderSave)
-                    Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | isOnOlderSave=$isOnOlderSave | channel=$channelName | activeSaveTs=${activeSaveTimestamp} | latestCacheTs=${latestCache?.cachedAt?.toEpochMilli()} | latestCacheId=${latestCache?.id}")
+            if (prefs.saveSyncEnabled && channelName != null) {
+                val activeSaveTimestamp = game?.activeSaveTimestamp
+                val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, channelName)
+                val isOnOlderSave = if (activeSaveTimestamp == null) {
+                    false
+                } else {
+                    latestCache != null && activeSaveTimestamp < latestCache.cachedAt.toEpochMilli()
                 }
-                startGameSessionService(gameId, emulatorPackage, coreName, isHardcore, startTime.toEpochMilli())
+                saveSyncRepository.get().setSessionOnOlderSave(gameId, isOnOlderSave)
+                _activeSession.value = _activeSession.value?.copy(isOnOlderSave = isOnOlderSave)
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | isOnOlderSave=$isOnOlderSave | channel=$channelName | activeSaveTs=${activeSaveTimestamp} | latestCacheTs=${latestCache?.cachedAt?.toEpochMilli()} | latestCacheId=${latestCache?.id}")
             }
+            startGameSessionService(gameId, emulatorPackage, coreName, isHardcore, startTime.toEpochMilli())
         }
     }
 
@@ -342,7 +343,7 @@ class PlaySessionTracker @Inject constructor(
         val game = gameDao.getById(gameId) ?: return
         val emulatorId = emulatorResolver.resolveEmulatorId(emulatorPackage)
 
-        val savePath = if (emulatorId != null) {
+        val savePath = if (emulatorId != null && SavePathRegistry.getConfig(emulatorId) != null) {
             saveSyncRepository.get().discoverSavePath(
                 emulatorId = emulatorId,
                 gameTitle = game.title,
@@ -373,6 +374,7 @@ class PlaySessionTracker @Inject constructor(
             savePath = savePath,
             gameId = gameId,
             emulatorId = emulatorId,
+            emulatorPackage = emulatorPackage,
             gameTitle = game.title,
             channelName = channelName,
             isHardcore = isHardcore,
@@ -380,52 +382,61 @@ class PlaySessionTracker @Inject constructor(
         )
     }
 
-    suspend fun endSession(): SessionEndResult {
-        val session = _activeSession.value ?: run {
-            Logger.debug(TAG, "[SaveSync] SESSION | endSession called but no active session")
-            clearSessionAndBroadcast()
-            GameSessionService.stop(application)
+    suspend fun endSession(stopService: Boolean = true): SessionEndResult {
+        if (!endingSession.compareAndSet(false, true)) {
+            Logger.debug(TAG, "[SaveSync] SESSION | endSession already in progress, skipping")
             return SessionEndResult.Skipped
         }
-        _activeSession.value = null
-        GameSessionService.stop(application)
 
-        val finalScreenOnDuration = calculateFinalScreenOnDuration()
-        val sessionDuration = Duration.between(session.startTime, Instant.now())
+        try {
+            val session = _activeSession.value ?: run {
+                Logger.debug(TAG, "[SaveSync] SESSION | endSession called but no active session")
+                clearSessionAndBroadcast()
+                if (stopService) GameSessionService.stop(application)
+                return SessionEndResult.Skipped
+            }
+            _activeSession.value = null
+            if (stopService) GameSessionService.stop(application)
 
-        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulator=${session.emulatorPackage}")
+            val finalScreenOnDuration = calculateFinalScreenOnDuration()
+            val sessionDuration = Duration.between(session.startTime, Instant.now())
 
-        return try {
-            val cacheResult = coroutineScope {
-                val saveJob = async {
-                    recordPlayTime(session, finalScreenOnDuration)
-                    markGameIncompleteIfNeeded(session, sessionDuration)
-                    syncAndCacheSave(session)
+            Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulator=${session.emulatorPackage}")
+
+            return try {
+                val cacheResult = coroutineScope {
+                    val saveJob = async {
+                        recordPlayTime(session, finalScreenOnDuration)
+                        markGameIncompleteIfNeeded(session, sessionDuration)
+                        syncAndCacheSave(session)
+                    }
+
+                    val stateJob = async {
+                        syncStateData(session)
+                    }
+
+                    val result = saveJob.await()
+                    stateJob.await()
+                    result
                 }
 
-                val stateJob = async {
-                    syncStateData(session)
+                saveSyncRepository.get().clearSessionOnOlderSave(session.gameId)
+                clearSessionAndBroadcast()
+
+                when (cacheResult) {
+                    is SaveCacheManager.CacheResult.Created -> SessionEndResult.Success
+                    is SaveCacheManager.CacheResult.Duplicate -> SessionEndResult.Duplicate
+                    is SaveCacheManager.CacheResult.Failed -> SessionEndResult.Error("Failed to cache save")
+                    null -> SessionEndResult.Skipped
                 }
-
-                val result = saveJob.await()
-                stateJob.await()
-                result
+            } catch (e: Exception) {
+                Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session end failed", e)
+                saveSyncRepository.get().clearSessionOnOlderSave(session.gameId)
+                clearSessionAndBroadcast()
+                SessionEndResult.Error(e.message ?: "Unknown error")
             }
-
-            saveSyncRepository.get().clearSessionOnOlderSave(session.gameId)
-            clearSessionAndBroadcast()
-
-            when (cacheResult) {
-                is SaveCacheManager.CacheResult.Created -> SessionEndResult.Success
-                is SaveCacheManager.CacheResult.Duplicate -> SessionEndResult.Duplicate
-                is SaveCacheManager.CacheResult.Failed -> SessionEndResult.Error("Failed to cache save")
-                null -> SessionEndResult.Skipped
-            }
-        } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session end failed", e)
-            saveSyncRepository.get().clearSessionOnOlderSave(session.gameId)
-            clearSessionAndBroadcast()
-            SessionEndResult.Error(e.message ?: "Unknown error")
+        } finally {
+            endingSession.set(false)
         }
     }
 
@@ -658,6 +669,10 @@ class PlaySessionTracker @Inject constructor(
 
     fun endSessionInBackground() {
         scope.launch { endSession() }
+    }
+
+    fun endSessionKeepService() {
+        scope.launch { endSession(stopService = false) }
     }
 
     fun forceStopService() {

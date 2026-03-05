@@ -2,8 +2,10 @@ package com.nendo.argosy.data.emulator
 
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
@@ -19,6 +21,7 @@ import android.os.FileObserver
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.net.wifi.WifiManager
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.TypedValue
@@ -37,6 +40,7 @@ import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +54,8 @@ class GameSessionService : Service() {
 
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var gameDao: GameDao
+    @Inject lateinit var permissionHelper: PermissionHelper
+    @Inject lateinit var playSessionTracker: PlaySessionTracker
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.IO, "GameSessionService")
     private val handler = Handler(Looper.getMainLooper())
@@ -57,11 +63,13 @@ class GameSessionService : Service() {
     private val sessionStateStore by lazy { SessionStateStore(this) }
 
     private var wakeLock: PowerManager.WakeLock? = null
+    private var wifiLock: WifiManager.WifiLock? = null
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
 
     private var currentGameId: Long = -1
     private var currentEmulatorId: String? = null
+    private var currentEmulatorPackage: String? = null
     private var currentSavePath: String? = null
     private var currentChannelName: String? = null
     private var currentIsHardcore: Boolean = false
@@ -112,6 +120,7 @@ class GameSessionService : Service() {
                 val gameTitle = intent?.getStringExtra(EXTRA_GAME_TITLE) ?: "Game"
                 val gameId = intent?.getLongExtra(EXTRA_GAME_ID, -1) ?: -1
                 val emulatorId = intent?.getStringExtra(EXTRA_EMULATOR_ID)
+                val emulatorPackage = intent?.getStringExtra(EXTRA_EMULATOR_PACKAGE)
                 val savePath = intent?.getStringExtra(EXTRA_SAVE_PATH)
                 val channelName = intent?.getStringExtra(EXTRA_CHANNEL_NAME)
                 val isHardcore = intent?.getBooleanExtra(EXTRA_IS_HARDCORE, false) ?: false
@@ -120,12 +129,14 @@ class GameSessionService : Service() {
                 currentGameTitle = gameTitle
                 currentGameId = gameId
                 currentEmulatorId = emulatorId
+                currentEmulatorPackage = emulatorPackage
                 currentSavePath = savePath
                 currentChannelName = channelName
                 currentIsHardcore = isHardcore
                 sessionStartTime = if (startTime > 0) startTime else System.currentTimeMillis()
                 lastMidGameCacheId = -1
 
+                cleanupPresenceKeepalive()
                 startForegroundWithNotification(gameTitle, NotificationState.PLAYING)
 
                 // Reset save state to clean when starting a new session
@@ -136,6 +147,8 @@ class GameSessionService : Service() {
                     removeOverlay()
                     startWatching(watchPath)
                 }
+
+                startEmulatorMonitor()
             }
         }
         return START_REDELIVER_INTENT
@@ -145,6 +158,8 @@ class GameSessionService : Service() {
 
     override fun onDestroy() {
         Logger.debug(TAG, "Service destroyed")
+        stopEmulatorMonitor()
+        cleanupPresenceKeepalive()
         stopWatching()
         removeOverlay()
         releaseWakeLock()
@@ -160,14 +175,91 @@ class GameSessionService : Service() {
         ).apply {
             acquire(MAX_WAKELOCK_DURATION_MS)
         }
+
+        @Suppress("DEPRECATION")
+        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+        wifiLock = wifiManager.createWifiLock(
+            WifiManager.WIFI_MODE_FULL_HIGH_PERF,
+            WIFILOCK_TAG
+        ).apply {
+            acquire()
+        }
     }
 
     private fun releaseWakeLock() {
+        wifiLock?.let {
+            if (it.isHeld) it.release()
+        }
+        wifiLock = null
+
         wakeLock?.let {
             if (it.isHeld) it.release()
         }
         wakeLock = null
     }
+
+    // region Emulator foreground monitor
+
+    private val emulatorMonitorRunnable = Runnable { checkEmulatorForeground() }
+
+    private fun startEmulatorMonitor() {
+        val pkg = currentEmulatorPackage
+        if (pkg == null || !permissionHelper.hasUsageStatsPermission(this)) {
+            Logger.debug(TAG, "Emulator monitor skipped: pkg=$pkg, hasPermission=${pkg != null}")
+            return
+        }
+        Logger.debug(TAG, "Emulator monitor started for $pkg (first check in ${EMULATOR_MONITOR_INITIAL_DELAY_MS}ms)")
+        handler.postDelayed(emulatorMonitorRunnable, EMULATOR_MONITOR_INITIAL_DELAY_MS)
+    }
+
+    private fun stopEmulatorMonitor() {
+        handler.removeCallbacks(emulatorMonitorRunnable)
+    }
+
+    private fun checkEmulatorForeground() {
+        val pkg = currentEmulatorPackage ?: return
+        // Use the full session duration as the event query window so we always
+        // capture the initial MOVE_TO_FOREGROUND, capped at 4 hours.
+        val elapsed = System.currentTimeMillis() - sessionStartTime
+        val window = elapsed.coerceIn(30_000L, 4 * 60 * 60 * 1000L)
+        val inForeground = permissionHelper.isPackageInForeground(this, pkg, withinMs = window)
+        if (inForeground) {
+            handler.postDelayed(emulatorMonitorRunnable, EMULATOR_POLL_INTERVAL_MS)
+        } else {
+            Logger.info(TAG, "Emulator $pkg left foreground, ending session (keeping service for presence)")
+            stopWatching()
+            playSessionTracker.endSessionKeepService()
+            enterPresenceKeepalive()
+        }
+    }
+
+    // endregion
+
+    // region Presence keepalive (post-game, keeps WiFi lock until screen off)
+
+    private var screenOffReceiver: BroadcastReceiver? = null
+
+    private fun enterPresenceKeepalive() {
+        updateNotification(currentGameTitle, NotificationState.PLAYING)
+        screenOffReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == Intent.ACTION_SCREEN_OFF) {
+                    Logger.debug(TAG, "Screen off during presence keepalive, stopping service")
+                    stopSelf()
+                }
+            }
+        }
+        registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
+    }
+
+    private fun cleanupPresenceKeepalive() {
+        screenOffReceiver?.let {
+            try { unregisterReceiver(it) } catch (_: Exception) {}
+        }
+        screenOffReceiver = null
+    }
+
+    // endregion
 
     private fun startWatching(watchPath: String) {
         val watchDir = File(watchPath)
@@ -343,7 +435,7 @@ class GameSessionService : Service() {
 
     private fun buildNotification(gameTitle: String, state: NotificationState) = when (state) {
         NotificationState.PLAYING -> NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_controller)
+            .setSmallIcon(R.drawable.ic_helm)
             .setContentTitle("Playing")
             .setContentText(gameTitle)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -355,7 +447,7 @@ class GameSessionService : Service() {
             .build()
 
         NotificationState.SAVE_DETECTED -> NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_save)
+            .setSmallIcon(R.drawable.ic_helm)
             .setContentTitle("Save detected")
             .setContentText(gameTitle)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -608,16 +700,20 @@ class GameSessionService : Service() {
         private const val EXTRA_GAME_TITLE = "game_title"
         private const val EXTRA_GAME_ID = "game_id"
         private const val EXTRA_EMULATOR_ID = "emulator_id"
+        private const val EXTRA_EMULATOR_PACKAGE = "emulator_package"
         private const val EXTRA_SAVE_PATH = "save_path"
         private const val EXTRA_CHANNEL_NAME = "channel_name"
         private const val EXTRA_IS_HARDCORE = "is_hardcore"
         private const val EXTRA_SESSION_START_TIME = "session_start_time"
         private const val WAKELOCK_TAG = "argosy:game_session_wakelock"
+        private const val WIFILOCK_TAG = "argosy:game_session_wifilock"
         private const val MAX_WAKELOCK_DURATION_MS = 4 * 60 * 60 * 1000L // 4 hours max
         private const val RESET_DELAY_MS = 3000L
         private const val POLL_INTERVAL_MS = 2000L
         private const val STARTUP_COOLDOWN_MS = 45000L
         private const val CACHE_DEBOUNCE_MS = 250L
+        private const val EMULATOR_MONITOR_INITIAL_DELAY_MS = 5_000L
+        private const val EMULATOR_POLL_INTERVAL_MS = 5_000L
 
         private val IGNORED_DIRECTORY_PATTERNS = setOf(
             "cache",
@@ -635,6 +731,7 @@ class GameSessionService : Service() {
             savePath: String?,
             gameId: Long,
             emulatorId: String?,
+            emulatorPackage: String?,
             gameTitle: String,
             channelName: String?,
             isHardcore: Boolean,
@@ -646,6 +743,7 @@ class GameSessionService : Service() {
                 putExtra(EXTRA_SAVE_PATH, savePath)
                 putExtra(EXTRA_GAME_ID, gameId)
                 putExtra(EXTRA_EMULATOR_ID, emulatorId)
+                putExtra(EXTRA_EMULATOR_PACKAGE, emulatorPackage)
                 putExtra(EXTRA_GAME_TITLE, gameTitle)
                 putExtra(EXTRA_CHANNEL_NAME, channelName)
                 putExtra(EXTRA_IS_HARDCORE, isHardcore)

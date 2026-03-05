@@ -1087,7 +1087,7 @@ class LibretroActivity : ComponentActivity() {
         if (isFinishing && gameId != -1L) {
             com.nendo.argosy.DualScreenManagerHolder.instance
                 ?.onSessionChanged(-1L)
-            kotlinx.coroutines.GlobalScope.launch { playSessionTracker.endSession() }
+            playSessionTracker.endSessionKeepService()
         }
         super.onDestroy()
     }

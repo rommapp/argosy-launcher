@@ -357,13 +357,16 @@ class SocialRepository @Inject constructor(
         _connectionState.value = SocialConnectionState.Disconnected
     }
 
-    fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null) {
-        if (socialService.isConnected()) {
-            socialService.sendPresence(status, gameIgdbId, gameTitle, android.os.Build.MODEL)
-        }
+    fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null): Boolean {
+        if (!socialService.isConnected()) return false
+        return socialService.sendPresence(status, gameIgdbId, gameTitle, android.os.Build.MODEL)
     }
 
     fun isConnected(): Boolean = socialService.isConnected()
+
+    fun reconnectIfNeeded() {
+        socialService.reconnectIfNeeded()
+    }
 
     fun requestDiscordTokens() {
         if (socialService.isConnected()) {

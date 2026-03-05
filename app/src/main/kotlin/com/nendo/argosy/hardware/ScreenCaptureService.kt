@@ -83,7 +83,7 @@ class ScreenCaptureService : Service() {
 
     private fun startForegroundNotification() {
         val notification = NotificationCompat.Builder(this, ScreenCaptureNotificationChannel.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_download)
+            .setSmallIcon(R.drawable.ic_helm)
             .setContentTitle(getString(R.string.app_name))
             .setContentText("Sampling screen for ambient LEDs")
             .setPriority(NotificationCompat.PRIORITY_LOW)

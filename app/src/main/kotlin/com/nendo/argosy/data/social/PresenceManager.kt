@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.GameDao
@@ -33,6 +36,7 @@ class PresenceManager @Inject constructor(
 
     private var lastSentStatus: PresenceStatus? = null
     private var lastSentGameId: Int? = null
+    private var lastReconnectAttempt = 0L
 
     private val _screenOn = MutableStateFlow(true)
 
@@ -46,6 +50,7 @@ class PresenceManager @Inject constructor(
                 Intent.ACTION_SCREEN_ON -> {
                     Log.d(TAG, "Screen on")
                     _screenOn.value = true
+                    socialRepository.reconnectIfNeeded()
                 }
             }
         }
@@ -53,6 +58,7 @@ class PresenceManager @Inject constructor(
 
     init {
         registerScreenReceiver()
+        registerProcessLifecycle()
         observePresenceChanges()
     }
 
@@ -62,6 +68,15 @@ class PresenceManager @Inject constructor(
             addAction(Intent.ACTION_SCREEN_ON)
         }
         application.registerReceiver(screenReceiver, filter)
+    }
+
+    private fun registerProcessLifecycle() {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                Log.d(TAG, "App foregrounded, triggering reconnect check")
+                socialRepository.reconnectIfNeeded()
+            }
+        })
     }
 
     private fun observePresenceChanges() {
@@ -90,10 +105,19 @@ class PresenceManager @Inject constructor(
     }
 
     private suspend fun updatePresence(context: PresenceContext) {
-        if (!context.isSocialLinked || !context.isConnected) {
-            if (!context.isConnected) {
-                lastSentStatus = null
-                lastSentGameId = null
+        Log.d(TAG, "updatePresence: linked=${context.isSocialLinked} connected=${context.isConnected} screenOn=${context.isScreenOn} session=${context.playSession?.gameId} onlineEnabled=${context.onlineStatusEnabled} nowPlaying=${context.showNowPlaying}")
+        if (!context.isSocialLinked) return
+
+        if (!context.isConnected) {
+            lastSentStatus = null
+            lastSentGameId = null
+            if (context.isScreenOn && context.onlineStatusEnabled) {
+                val now = System.currentTimeMillis()
+                if (now - lastReconnectAttempt >= RECONNECT_COOLDOWN_MS) {
+                    lastReconnectAttempt = now
+                    Log.d(TAG, "Connection down but presence needed, triggering reconnect")
+                    socialRepository.reconnectIfNeeded()
+                }
             }
             return
         }
@@ -101,10 +125,18 @@ class PresenceManager @Inject constructor(
         val presenceInfo = calculatePresence(context)
 
         if (presenceInfo.status != lastSentStatus || presenceInfo.gameIgdbId != lastSentGameId) {
-            Log.d(TAG, "Sending presence: ${presenceInfo.status}, game=${presenceInfo.gameTitle}")
-            socialRepository.sendPresence(presenceInfo.status, presenceInfo.gameIgdbId, presenceInfo.gameTitle)
-            lastSentStatus = presenceInfo.status
-            lastSentGameId = presenceInfo.gameIgdbId
+            Log.d(TAG, "Sending presence: ${presenceInfo.status}, game=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}")
+            val sent = socialRepository.sendPresence(presenceInfo.status, presenceInfo.gameIgdbId, presenceInfo.gameTitle)
+            if (sent) {
+                lastSentStatus = presenceInfo.status
+                lastSentGameId = presenceInfo.gameIgdbId
+            } else {
+                Log.w(TAG, "Presence send failed, will retry on next state change")
+                lastSentStatus = null
+                lastSentGameId = null
+            }
+        } else {
+            Log.d(TAG, "Presence unchanged, skipping: ${presenceInfo.status}, game=${presenceInfo.gameTitle}")
         }
     }
 
@@ -144,5 +176,6 @@ class PresenceManager @Inject constructor(
 
     companion object {
         private const val TAG = "PresenceManager"
+        private const val RECONNECT_COOLDOWN_MS = 5_000L
     }
 }

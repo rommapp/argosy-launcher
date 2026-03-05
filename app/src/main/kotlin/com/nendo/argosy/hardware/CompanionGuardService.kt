@@ -121,7 +121,7 @@ class CompanionGuardService : Service() {
         val notification = NotificationCompat.Builder(
             this, SecondaryDisplayNotificationChannel.CHANNEL_ID
         )
-            .setSmallIcon(R.drawable.ic_download)
+            .setSmallIcon(R.drawable.ic_helm)
             .setContentTitle(getString(R.string.app_name))
             .setContentText("Dual display active")
             .setPriority(NotificationCompat.PRIORITY_LOW)

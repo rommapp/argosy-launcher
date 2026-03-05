@@ -103,14 +103,21 @@ class GameLaunchDelegate @Inject constructor(
     private val syncMutex = Mutex()
     val isSyncing: Boolean get() = _syncOverlayState.value != null
 
+    private var _onLaunchFailed: (() -> Unit)? = null
+
     fun launchGame(
         scope: CoroutineScope,
         gameId: Long,
         discId: Long? = null,
         channelName: String? = null,
-        onLaunch: (Intent) -> Unit
+        onLaunch: (Intent) -> Unit,
+        onLaunchFailed: () -> Unit = {}
     ) {
-        if (!syncMutex.tryLock()) return
+        if (!syncMutex.tryLock()) {
+            onLaunchFailed()
+            return
+        }
+        _onLaunchFailed = onLaunchFailed
 
         scope.launch {
             try {
@@ -153,34 +160,46 @@ class GameLaunchDelegate @Inject constructor(
                         }
                         is LaunchResult.NoEmulator -> {
                             notificationManager.showError("No emulator installed for this platform")
+                            onLaunchFailed()
                         }
                         is LaunchResult.NoRomFile -> {
                             notificationManager.showError("ROM file not found")
+                            onLaunchFailed()
                         }
                         is LaunchResult.NoSteamLauncher -> {
                             notificationManager.showError("Steam launcher not installed")
+                            onLaunchFailed()
                         }
                         is LaunchResult.NoCore -> {
                             notificationManager.showError("No core available for ${result.platformSlug}")
+                            onLaunchFailed()
                         }
                         is LaunchResult.MissingDiscs -> {
                             val discText = result.missingDiscNumbers.joinToString(", ")
                             notificationManager.showError("Missing discs: $discText. View game details to repair.")
+                            onLaunchFailed()
                         }
                         is LaunchResult.NoScummVMGameId -> {
                             notificationManager.showError("Missing .scummvm file for ${result.gameName}")
+                            onLaunchFailed()
                         }
                         is LaunchResult.Error -> {
                             notificationManager.showError(result.message)
+                            onLaunchFailed()
                         }
                         is LaunchResult.NoAndroidApp -> {
                             notificationManager.showError("Android app not installed: ${result.packageName}")
+                            onLaunchFailed()
                         }
                     }
                     return@launch
                 }
 
-                val game = gameRepository.getById(gameId) ?: return@launch
+                val game = gameRepository.getById(gameId)
+                if (game == null) {
+                    onLaunchFailed()
+                    return@launch
+                }
                 val gameTitle = game.title
 
                 val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
@@ -332,28 +351,36 @@ class GameLaunchDelegate @Inject constructor(
                     }
                     is LaunchResult.NoEmulator -> {
                         notificationManager.showError("No emulator installed for this platform")
+                        onLaunchFailed()
                     }
                     is LaunchResult.NoRomFile -> {
                         notificationManager.showError("ROM file not found")
+                        onLaunchFailed()
                     }
                     is LaunchResult.NoSteamLauncher -> {
                         notificationManager.showError("Steam launcher not installed")
+                        onLaunchFailed()
                     }
                     is LaunchResult.NoCore -> {
                         notificationManager.showError("No core available for ${result.platformSlug}")
+                        onLaunchFailed()
                     }
                     is LaunchResult.MissingDiscs -> {
                         val discText = result.missingDiscNumbers.joinToString(", ")
                         notificationManager.showError("Missing discs: $discText. View game details to repair.")
+                        onLaunchFailed()
                     }
                     is LaunchResult.NoScummVMGameId -> {
                         notificationManager.showError("Missing .scummvm file for ${result.gameName}")
+                        onLaunchFailed()
                     }
                     is LaunchResult.Error -> {
                         notificationManager.showError(result.message)
+                        onLaunchFailed()
                     }
                     is LaunchResult.NoAndroidApp -> {
                         notificationManager.showError("Android app not installed: ${result.packageName}")
+                        onLaunchFailed()
                     }
                 }
             } finally {
@@ -379,9 +406,6 @@ class GameLaunchDelegate @Inject constructor(
     ) {
         val session = playSessionTracker.activeSession.value
         if (session == null) {
-            if (isSyncing) {
-                return
-            }
             playSessionTracker.forceStopService()
             onSyncComplete()
             return
@@ -567,6 +591,7 @@ class GameLaunchDelegate @Inject constructor(
     fun selectDisc(scope: CoroutineScope, discPath: String) {
         val state = _discPickerState.value ?: return
         _discPickerState.value = null
+        _onLaunchFailed = null
 
         scope.launch {
             val result = launchGameUseCase(
@@ -597,5 +622,7 @@ class GameLaunchDelegate @Inject constructor(
 
     fun dismissDiscPicker() {
         _discPickerState.value = null
+        _onLaunchFailed?.invoke()
+        _onLaunchFailed = null
     }
 }

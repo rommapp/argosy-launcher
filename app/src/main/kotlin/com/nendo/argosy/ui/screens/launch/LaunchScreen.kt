@@ -68,6 +68,8 @@ fun LaunchScreen(
                 viewModel.clearLaunchIntent()
             } catch (e: Exception) {
                 android.util.Log.e("LaunchScreen", "Failed to start activity", e)
+                viewModel.clearLaunchIntent()
+                onLaunchComplete()
             }
         }
     }

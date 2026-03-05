@@ -766,51 +766,32 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SocialAuthStatus.CONNECTED -> {
-                when (state.focusedIndex) {
-                    1 -> {
+                val layoutState = com.nendo.argosy.ui.screens.settings.sections.SocialLayoutState(isConnected = true)
+                when (com.nendo.argosy.ui.screens.settings.sections.socialItemAtFocusIndex(state.focusedIndex, layoutState)) {
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.OnlineStatus -> {
                         setSocialOnlineStatus(!state.social.onlineStatusEnabled)
                         InputResult.handled(SoundType.TOGGLE)
                     }
-                    2 -> {
-                        setSocialShowNowPlaying(!state.social.showNowPlaying)
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.ShowNowPlaying -> {
+                        if (state.social.onlineStatusEnabled) setSocialShowNowPlaying(!state.social.showNowPlaying)
                         InputResult.handled(SoundType.TOGGLE)
                     }
-                    3 -> {
-                        setSocialNotifyFriendOnline(!state.social.notifyFriendOnline)
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.NotifyFriendOnline -> {
+                        if (state.social.onlineStatusEnabled) setSocialNotifyFriendOnline(!state.social.notifyFriendOnline)
                         InputResult.handled(SoundType.TOGGLE)
                     }
-                    4 -> {
-                        setSocialNotifyFriendPlaying(!state.social.notifyFriendPlaying)
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.NotifyFriendPlaying -> {
+                        if (state.social.onlineStatusEnabled) setSocialNotifyFriendPlaying(!state.social.notifyFriendPlaying)
                         InputResult.handled(SoundType.TOGGLE)
                     }
-                    5 -> {
-                        // Discord status row -- non-interactive
-                        InputResult.HANDLED
-                    }
-                    6 -> {
-                        if (state.social.discordLinked) {
-                            setDiscordRichPresence(!state.social.discordRichPresenceEnabled)
-                            InputResult.handled(SoundType.TOGGLE)
-                        } else InputResult.HANDLED
-                    }
-                    7 -> {
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.Unlink -> {
                         logoutSocial()
                         InputResult.HANDLED
                     }
-                    else -> InputResult.UNHANDLED
+                    else -> InputResult.HANDLED
                 }
             }
             else -> InputResult.UNHANDLED
-        }
-    }
-
-    internal fun socialMaxFocusIndex(social: SocialState): Int {
-        return when (social.authStatus) {
-            SocialAuthStatus.NOT_LINKED -> 0
-            SocialAuthStatus.AWAITING_AUTH -> 0
-            SocialAuthStatus.CONNECTING -> 0
-            SocialAuthStatus.CONNECTED -> 7
-            SocialAuthStatus.ERROR -> 0
         }
     }
 

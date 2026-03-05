@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,49 +43,92 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
-import com.nendo.argosy.data.social.discord.DiscordPresenceState
 import com.nendo.argosy.ui.components.ActionPreference
-import com.nendo.argosy.ui.components.InfoPreference
-import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.SocialAuthStatus
+import com.nendo.argosy.ui.screens.settings.SocialState
+import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
+
+internal data class SocialLayoutState(
+    val isConnected: Boolean
+)
+
+internal sealed class SocialItem(
+    val key: String,
+    val section: String,
+    val visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected }
+) {
+    val isFocusable: Boolean get() = when (this) {
+        is Header, is SectionSpacer -> false
+        else -> true
+    }
+
+    class Header(key: String, section: String, val title: String, visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected })
+        : SocialItem(key, section, visibleWhen)
+
+    class SectionSpacer(key: String, section: String, visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected })
+        : SocialItem(key, section, visibleWhen)
+
+    data object AccountInfo : SocialItem("accountInfo", "account")
+    data object OnlineStatus : SocialItem("onlineStatus", "privacy")
+    data object ShowNowPlaying : SocialItem("showNowPlaying", "privacy")
+    data object NotifyFriendOnline : SocialItem("notifyFriendOnline", "notifications")
+    data object NotifyFriendPlaying : SocialItem("notifyFriendPlaying", "notifications")
+    data object Unlink : SocialItem("unlink", "unlink")
+
+    companion object {
+        private val AccountHeader = Header("accountHeader", "account", "ACCOUNT")
+        private val PrivacyHeader = Header("privacyHeader", "privacy", "PRIVACY")
+        private val NotificationsHeader = Header("notificationsHeader", "notifications", "NOTIFICATIONS")
+        private val NotificationsSpacer = SectionSpacer("notificationsSpacer", "notifications")
+        private val UnlinkSpacer = SectionSpacer("unlinkSpacer", "unlink")
+
+        val ALL: List<SocialItem> = listOf(
+            AccountHeader, AccountInfo,
+            PrivacyHeader, OnlineStatus, ShowNowPlaying,
+            NotificationsSpacer, NotificationsHeader, NotifyFriendOnline, NotifyFriendPlaying,
+            UnlinkSpacer, Unlink
+        )
+    }
+}
+
+private val socialLayout = SettingsLayout<SocialItem, SocialLayoutState>(
+    allItems = SocialItem.ALL,
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section }
+)
+
+internal fun socialMaxFocusIndex(social: SocialState): Int {
+    return when (social.authStatus) {
+        SocialAuthStatus.CONNECTED -> socialLayout.maxFocusIndex(SocialLayoutState(isConnected = true))
+        else -> 0
+    }
+}
+
+internal fun socialItemAtFocusIndex(focusIndex: Int, state: SocialLayoutState): SocialItem? =
+    socialLayout.itemAtFocusIndex(focusIndex, state)
 
 @Composable
 fun SocialSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val listState = rememberLazyListState()
     val social = uiState.social
 
-    if (social.authStatus == SocialAuthStatus.CONNECTED) {
-        val sections = listOf(
-            ListSection(listStartIndex = 0, listEndIndex = 1, focusStartIndex = 0, focusEndIndex = 0),
-            ListSection(listStartIndex = 2, listEndIndex = 4, focusStartIndex = 1, focusEndIndex = 2),
-            ListSection(listStartIndex = 5, listEndIndex = 7, focusStartIndex = 3, focusEndIndex = 4),
-            ListSection(listStartIndex = 8, listEndIndex = 10, focusStartIndex = 5, focusEndIndex = 6),
-            ListSection(listStartIndex = 11, listEndIndex = 12, focusStartIndex = 7, focusEndIndex = 7)
-        )
+    val layoutState = remember(social.authStatus) {
+        SocialLayoutState(isConnected = social.authStatus == SocialAuthStatus.CONNECTED)
+    }
 
-        val focusToListIndex: (Int) -> Int = { focus ->
-            when (focus) {
-                0 -> 1      // Account info card
-                1 -> 3      // Online Status
-                2 -> 4      // Show Now Playing
-                3 -> 6      // Friend Comes Online
-                4 -> 7      // Friend Starts Playing
-                5 -> 9      // Discord status
-                6 -> 10     // Rich Presence toggle
-                7 -> 12     // Unlink Account
-                else -> focus
-            }
-        }
+    if (social.authStatus == SocialAuthStatus.CONNECTED) {
+        val sections = remember { socialLayout.buildSections(layoutState) }
 
         SectionFocusedScroll(
             listState = listState,
             focusedIndex = uiState.focusedIndex,
-            focusToListIndex = focusToListIndex,
+            focusToListIndex = { socialLayout.focusToListIndex(it, layoutState) },
             sections = sections
         )
     } else {
@@ -98,6 +142,9 @@ fun SocialSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
         }
     }
+
+    fun isFocused(item: SocialItem): Boolean =
+        uiState.focusedIndex == socialLayout.focusIndexOf(item, layoutState)
 
     LazyColumn(
         state = listState,
@@ -133,130 +180,82 @@ fun SocialSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
 
             SocialAuthStatus.CONNECTED -> {
-                item { SectionHeader("ACCOUNT") }
+                val visibleItems = socialLayout.visibleItems(layoutState)
+                items(visibleItems, key = { it.key }) { item ->
+                    when (item) {
+                        is SocialItem.Header -> SectionHeader(item.title)
 
-                item {
-                    AccountInfoCard(
-                        username = social.username ?: "",
-                        displayName = social.displayName,
-                        avatarColor = social.avatarColor,
-                        isFocused = uiState.focusedIndex == 0
-                    )
-                }
+                        is SocialItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
-                item { SectionHeader("PRIVACY") }
+                        SocialItem.AccountInfo -> AccountInfoCard(
+                            username = social.username ?: "",
+                            displayName = social.displayName,
+                            avatarColor = social.avatarColor,
+                            isFocused = isFocused(item)
+                        )
 
-                item {
-                    SwitchPreference(
-                        title = "Online Status",
-                        subtitle = if (social.onlineStatusEnabled) {
-                            "Appear online to friends"
-                        } else {
-                            "Appear offline to friends"
-                        },
-                        isEnabled = social.onlineStatusEnabled,
-                        isFocused = uiState.focusedIndex == 1,
-                        onToggle = { viewModel.setSocialOnlineStatus(it) }
-                    )
-                }
+                        SocialItem.OnlineStatus -> SwitchPreference(
+                            title = "Online Status",
+                            subtitle = if (social.onlineStatusEnabled) {
+                                "Appear online to friends"
+                            } else {
+                                "Appear offline to friends"
+                            },
+                            isEnabled = social.onlineStatusEnabled,
+                            isFocused = isFocused(item),
+                            onToggle = { viewModel.setSocialOnlineStatus(it) }
+                        )
 
-                item {
-                    SwitchPreference(
-                        title = "Show Now Playing",
-                        subtitle = if (!social.onlineStatusEnabled) {
-                            "Enable Online Status first"
-                        } else if (social.showNowPlaying) {
-                            "Share which game you're playing"
-                        } else {
-                            "Hide game activity from friends"
-                        },
-                        isEnabled = social.showNowPlaying && social.onlineStatusEnabled,
-                        isFocused = uiState.focusedIndex == 2,
-                        onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialShowNowPlaying(it) }
-                    )
-                }
+                        SocialItem.ShowNowPlaying -> SwitchPreference(
+                            title = "Show Now Playing",
+                            subtitle = if (!social.onlineStatusEnabled) {
+                                "Enable Online Status first"
+                            } else if (social.showNowPlaying) {
+                                "Share which game you're playing"
+                            } else {
+                                "Hide game activity from friends"
+                            },
+                            isEnabled = social.showNowPlaying && social.onlineStatusEnabled,
+                            isFocused = isFocused(item),
+                            onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialShowNowPlaying(it) }
+                        )
 
-                item { SectionHeader("NOTIFICATIONS") }
+                        SocialItem.NotifyFriendOnline -> SwitchPreference(
+                            title = "Friend Comes Online",
+                            subtitle = if (!social.onlineStatusEnabled) {
+                                "Enable Online Status first"
+                            } else if (social.notifyFriendOnline) {
+                                "Show notification when friends come online"
+                            } else {
+                                "Notifications disabled"
+                            },
+                            isEnabled = social.notifyFriendOnline && social.onlineStatusEnabled,
+                            isFocused = isFocused(item),
+                            onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialNotifyFriendOnline(it) }
+                        )
 
-                item {
-                    SwitchPreference(
-                        title = "Friend Comes Online",
-                        subtitle = if (!social.onlineStatusEnabled) {
-                            "Enable Online Status first"
-                        } else if (social.notifyFriendOnline) {
-                            "Show notification when friends come online"
-                        } else {
-                            "Notifications disabled"
-                        },
-                        isEnabled = social.notifyFriendOnline && social.onlineStatusEnabled,
-                        isFocused = uiState.focusedIndex == 3,
-                        onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialNotifyFriendOnline(it) }
-                    )
-                }
+                        SocialItem.NotifyFriendPlaying -> SwitchPreference(
+                            title = "Friend Starts Playing",
+                            subtitle = if (!social.onlineStatusEnabled) {
+                                "Enable Online Status first"
+                            } else if (social.notifyFriendPlaying) {
+                                "Show notification when friends start a game"
+                            } else {
+                                "Notifications disabled"
+                            },
+                            isEnabled = social.notifyFriendPlaying && social.onlineStatusEnabled,
+                            isFocused = isFocused(item),
+                            onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialNotifyFriendPlaying(it) }
+                        )
 
-                item {
-                    SwitchPreference(
-                        title = "Friend Starts Playing",
-                        subtitle = if (!social.onlineStatusEnabled) {
-                            "Enable Online Status first"
-                        } else if (social.notifyFriendPlaying) {
-                            "Show notification when friends start a game"
-                        } else {
-                            "Notifications disabled"
-                        },
-                        isEnabled = social.notifyFriendPlaying && social.onlineStatusEnabled,
-                        isFocused = uiState.focusedIndex == 4,
-                        onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialNotifyFriendPlaying(it) }
-                    )
-                }
-
-                item { SectionHeader("DISCORD") }
-
-                item {
-                    val discordStatus = when {
-                        !social.discordLinked -> "Not linked -- link at argosy.dev"
-                        social.discordUsername != null -> "Linked as @${social.discordUsername}"
-                        else -> "Linked"
+                        SocialItem.Unlink -> ActionPreference(
+                            title = "Unlink Account",
+                            subtitle = "Disconnect from social features",
+                            isFocused = isFocused(item),
+                            isDangerous = true,
+                            onClick = { viewModel.logoutSocial() }
+                        )
                     }
-                    val presenceDetail = when (social.discordPresenceState) {
-                        is DiscordPresenceState.Unavailable -> "SDK unavailable"
-                        is DiscordPresenceState.Active -> "Showing: ${social.discordPresenceState.title}"
-                        is DiscordPresenceState.Error -> social.discordPresenceState.message
-                        else -> null
-                    }
-                    InfoPreference(
-                        title = "Status",
-                        value = if (presenceDetail != null) "$discordStatus ($presenceDetail)" else discordStatus,
-                        isFocused = uiState.focusedIndex == 5
-                    )
-                }
-
-                item {
-                    SwitchPreference(
-                        title = "Rich Presence",
-                        subtitle = if (!social.discordLinked) {
-                            "Link Discord to enable"
-                        } else if (social.discordRichPresenceEnabled) {
-                            "Show game activity on Discord"
-                        } else {
-                            "Game activity hidden on Discord"
-                        },
-                        isEnabled = social.discordRichPresenceEnabled && social.discordLinked,
-                        isFocused = uiState.focusedIndex == 6,
-                        onToggle = { if (social.discordLinked) viewModel.setDiscordRichPresence(it) }
-                    )
-                }
-
-                item { Spacer(modifier = Modifier.height(Dimens.spacingLg)) }
-
-                item {
-                    ActionPreference(
-                        title = "Unlink Account",
-                        subtitle = "Disconnect from social features",
-                        isFocused = uiState.focusedIndex == 7,
-                        isDangerous = true,
-                        onClick = { viewModel.logoutSocial() }
-                    )
                 }
             }
 

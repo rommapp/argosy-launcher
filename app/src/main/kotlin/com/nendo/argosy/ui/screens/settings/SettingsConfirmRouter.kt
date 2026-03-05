@@ -638,5 +638,5 @@ private fun computeMaxFocusIndex(
     SettingsSection.BIOS -> biosMaxFocusIndex(state.bios.platformGroups, state.bios.expandedPlatformIndex)
     SettingsSection.PERMISSIONS -> permissionsMaxFocusIndex(state.permissions)
     SettingsSection.ABOUT -> aboutMaxFocusIndex(state.fileLoggingPath != null)
-    SettingsSection.SOCIAL -> vm.socialMaxFocusIndex(state.social)
+    SettingsSection.SOCIAL -> com.nendo.argosy.ui.screens.settings.sections.socialMaxFocusIndex(state.social)
 }

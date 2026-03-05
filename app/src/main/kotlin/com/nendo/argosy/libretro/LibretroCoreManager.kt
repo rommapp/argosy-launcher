@@ -113,9 +113,17 @@ class LibretroCoreManager @Inject constructor(
     private fun getCorePath(fileName: String): String? {
         val downloadedCore = File(downloadedCoresDir, fileName)
         if (downloadedCore.exists()) {
-            ensureExecutable(downloadedCore)
-            Log.d(TAG, "Using downloaded core: ${downloadedCore.absolutePath} (${downloadedCore.length()} bytes)")
-            return downloadedCore.absolutePath
+            val coreInfo = LibretroCoreRegistry.getCoreByFileName(fileName)
+            val minSize = (coreInfo?.estimatedSizeBytes ?: 0L) / 4
+            if (minSize > 0 && downloadedCore.length() < minSize) {
+                Log.w(TAG, "Corrupted core detected: $fileName is ${downloadedCore.length()} bytes, " +
+                    "expected at least $minSize. Deleting.")
+                downloadedCore.delete()
+            } else {
+                ensureExecutable(downloadedCore)
+                Log.d(TAG, "Using downloaded core: ${downloadedCore.absolutePath} (${downloadedCore.length()} bytes)")
+                return downloadedCore.absolutePath
+            }
         }
 
         val bundledCore = File(nativeLibDir, "lib$fileName")
@@ -171,6 +179,16 @@ class LibretroCoreManager @Inject constructor(
                     }
                 }
                 connection.disconnect()
+
+                val fileSize = targetFile.length()
+                val minExpectedSize = coreInfo.estimatedSizeBytes / 4
+                if (fileSize < minExpectedSize) {
+                    targetFile.delete()
+                    throw IllegalStateException(
+                        "Downloaded core is corrupted: ${coreInfo.fileName} is $fileSize bytes, " +
+                            "expected at least $minExpectedSize bytes"
+                    )
+                }
 
                 if (!targetFile.setExecutable(true)) {
                     Log.w(TAG, "Failed to set executable permission")

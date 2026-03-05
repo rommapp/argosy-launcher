@@ -112,6 +112,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
     @Inject lateinit var frameRegistry: FrameRegistry
 
+    private var coreLoadedSuccessfully = false
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
     private val inputMapper = ControllerInputMapper()
@@ -400,6 +401,7 @@ class LibretroActivity : ComponentActivity() {
             retroView.getGLRetroEvents().collect { event ->
                 when (event) {
                     is GLRetroView.GLRetroEvents.SurfaceCreated -> {
+                        coreLoadedSuccessfully = true
                         Log.i(TAG, "[Startup] GL surface created - render pipeline ready")
                         videoSettings.currentFrame?.let { frameId ->
                             val bitmap = frameRegistry.loadFrame(frameId)
@@ -1069,8 +1071,10 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
-        saveStateManager.saveSram(retroView)
-        retroView.onPause()
+        if (coreLoadedSuccessfully) {
+            saveStateManager.saveSram(retroView)
+            retroView.onPause()
+        }
         super.onPause()
     }
 
@@ -1081,7 +1085,7 @@ class LibretroActivity : ComponentActivity() {
             dsm.emulatorMotionDispatcher = null
         }
         raSession?.destroy()
-        if (videoSettings.rewindEnabled && !hardcoreMode) {
+        if (coreLoadedSuccessfully && videoSettings.rewindEnabled && !hardcoreMode) {
             retroView.destroyRewindBuffer()
         }
         if (isFinishing && gameId != -1L) {

@@ -227,6 +227,6 @@ class SocialAuthManager @Inject constructor(
 
     companion object {
         private const val TAG = "SocialAuthManager"
-        const val SERVER_URL = "https://api.argosy.dev/"
+        const val SERVER_URL = BuildConfig.SOCIAL_API_URL
     }
 }

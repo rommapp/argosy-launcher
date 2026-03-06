@@ -787,6 +787,6 @@ class ArgosSocialService @Inject constructor(
 
     companion object {
         private const val TAG = "ArgosSocialService"
-        private const val WS_URL = "https://api.argosy.dev/"
+        private const val WS_URL = BuildConfig.SOCIAL_API_URL
     }
 }

@@ -24,7 +24,7 @@ private const val TAG = "SocialViewModel"
 
 enum class SocialTab { FEED, FRIENDS, PROFILE }
 
-private const val PROFILE_TOGGLE_COUNT = 4
+private const val PROFILE_TOGGLE_COUNT = 5
 
 data class SocialUiState(
     val connectionState: SocialConnectionState = SocialConnectionState.Disconnected,
@@ -39,7 +39,8 @@ data class SocialUiState(
     val socialOnlineStatus: Boolean = true,
     val socialShowNowPlaying: Boolean = true,
     val socialNotifyFriendOnline: Boolean = true,
-    val socialNotifyFriendPlaying: Boolean = true
+    val socialNotifyFriendPlaying: Boolean = true,
+    val socialSuppressNotificationsInGame: Boolean = false
 ) {
     val isConnected: Boolean
         get() = connectionState is SocialConnectionState.Connected
@@ -100,7 +101,8 @@ class SocialViewModel @Inject constructor(
                     socialOnlineStatus = prefs.socialOnlineStatusEnabled,
                     socialShowNowPlaying = prefs.socialShowNowPlaying,
                     socialNotifyFriendOnline = prefs.socialNotifyFriendOnline,
-                    socialNotifyFriendPlaying = prefs.socialNotifyFriendPlaying
+                    socialNotifyFriendPlaying = prefs.socialNotifyFriendPlaying,
+                    socialSuppressNotificationsInGame = prefs.socialSuppressNotificationsInGame
                 )
             }
         }
@@ -185,6 +187,7 @@ class SocialViewModel @Inject constructor(
             1 -> setSocialShowNowPlaying(!state.socialShowNowPlaying)
             2 -> setSocialNotifyFriendOnline(!state.socialNotifyFriendOnline)
             3 -> setSocialNotifyFriendPlaying(!state.socialNotifyFriendPlaying)
+            4 -> setSocialSuppressNotificationsInGame(!state.socialSuppressNotificationsInGame)
         }
     }
 
@@ -209,6 +212,12 @@ class SocialViewModel @Inject constructor(
     fun setSocialNotifyFriendPlaying(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setSocialNotifyFriendPlaying(enabled)
+        }
+    }
+
+    fun setSocialSuppressNotificationsInGame(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setSocialSuppressNotificationsInGame(enabled)
         }
     }
 

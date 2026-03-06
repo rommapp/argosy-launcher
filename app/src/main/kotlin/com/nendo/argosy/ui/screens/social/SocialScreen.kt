@@ -231,10 +231,12 @@ fun SocialScreen(
                                 showNowPlaying = uiState.socialShowNowPlaying,
                                 notifyFriendOnline = uiState.socialNotifyFriendOnline,
                                 notifyFriendPlaying = uiState.socialNotifyFriendPlaying,
+                                suppressInGame = uiState.socialSuppressNotificationsInGame,
                                 onToggleOnlineStatus = { viewModel.setSocialOnlineStatus(it) },
                                 onToggleShowNowPlaying = { viewModel.setSocialShowNowPlaying(it) },
                                 onToggleNotifyFriendOnline = { viewModel.setSocialNotifyFriendOnline(it) },
-                                onToggleNotifyFriendPlaying = { viewModel.setSocialNotifyFriendPlaying(it) }
+                                onToggleNotifyFriendPlaying = { viewModel.setSocialNotifyFriendPlaying(it) },
+                                onToggleSuppressInGame = { viewModel.setSocialSuppressNotificationsInGame(it) }
                             )
                         }
                     }

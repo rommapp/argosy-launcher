@@ -35,13 +35,15 @@ private const val ITEM_NOW_PLAYING = 3
 private const val ITEM_NOTIFICATIONS_HEADER = 4
 private const val ITEM_FRIEND_ONLINE = 5
 private const val ITEM_FRIEND_PLAYING = 6
-private const val ITEM_COUNT = 7
+private const val ITEM_SUPPRESS_IN_GAME = 7
+private const val ITEM_COUNT = 8
 
 fun profileFocusToItemIndex(focusIndex: Int): Int = when (focusIndex) {
     0 -> ITEM_ONLINE_STATUS
     1 -> ITEM_NOW_PLAYING
     2 -> ITEM_FRIEND_ONLINE
     3 -> ITEM_FRIEND_PLAYING
+    4 -> ITEM_SUPPRESS_IN_GAME
     else -> ITEM_ONLINE_STATUS
 }
 
@@ -54,10 +56,12 @@ fun ProfileTabContent(
     showNowPlaying: Boolean,
     notifyFriendOnline: Boolean,
     notifyFriendPlaying: Boolean,
+    suppressInGame: Boolean,
     onToggleOnlineStatus: (Boolean) -> Unit,
     onToggleShowNowPlaying: (Boolean) -> Unit,
     onToggleNotifyFriendOnline: (Boolean) -> Unit,
-    onToggleNotifyFriendPlaying: (Boolean) -> Unit
+    onToggleNotifyFriendPlaying: (Boolean) -> Unit,
+    onToggleSuppressInGame: (Boolean) -> Unit
 ) {
     if (user == null) {
         Box(
@@ -122,6 +126,17 @@ fun ProfileTabContent(
                 isEnabled = notifyFriendPlaying,
                 isFocused = focusIndex == 3,
                 onToggle = { onToggleNotifyFriendPlaying(!notifyFriendPlaying) }
+            )
+        }
+
+        item {
+            SwitchPreference(
+                title = "Mute While Playing",
+                subtitle = if (suppressInGame) "Friend notifications hidden during gameplay"
+                    else "Friend notifications always shown",
+                isEnabled = suppressInGame,
+                isFocused = focusIndex == 4,
+                onToggle = { onToggleSuppressInGame(!suppressInGame) }
             )
         }
     }

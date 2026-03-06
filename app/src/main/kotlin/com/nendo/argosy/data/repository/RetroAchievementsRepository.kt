@@ -350,6 +350,8 @@ class RetroAchievementsRepository @Inject constructor(
     data class RAGameAchievements(
         val achievements: List<RAAchievementPatch>,
         val unlockedIds: Set<Long>,
+        val unlockedTimestamps: Map<Long, Long> = emptyMap(),
+        val hardcoreUnlockedTimestamps: Map<Long, Long> = emptyMap(),
         val totalCount: Int,
         val earnedCount: Int
     )
@@ -380,11 +382,18 @@ class RetroAchievementsRepository @Inject constructor(
                     .map { it.id }
                     .toSet()
 
-                // Convert Web API achievements to patch format for compatibility
+                val unlockedTimestamps = achievements
+                    .filter { it.dateEarned != null }
+                    .associate { it.id to parseTimestamp(it.dateEarned!!) }
+
+                val hardcoreUnlockedTimestamps = achievements
+                    .filter { it.dateEarnedHardcore != null }
+                    .associate { it.id to parseTimestamp(it.dateEarnedHardcore!!) }
+
                 val patchAchievements = achievements.map { ach ->
                     RAAchievementPatch(
                         id = ach.id,
-                        memAddr = "",  // Not needed for display
+                        memAddr = "",
                         title = ach.title,
                         description = ach.description,
                         points = ach.points,
@@ -396,6 +405,8 @@ class RetroAchievementsRepository @Inject constructor(
                 RAGameAchievements(
                     achievements = patchAchievements,
                     unlockedIds = unlockedIds,
+                    unlockedTimestamps = unlockedTimestamps,
+                    hardcoreUnlockedTimestamps = hardcoreUnlockedTimestamps,
                     totalCount = body.numAchievements ?: achievements.size,
                     earnedCount = body.numAwardedToUser ?: unlockedIds.size
                 )
@@ -425,7 +436,13 @@ class RetroAchievementsRepository @Inject constructor(
         }
 
         // Connect API for unlocks (may show emulator warning)
-        val unlocked = try {
+        data class UnlockData(
+            val ids: Set<Long>,
+            val timestamps: Map<Long, Long>,
+            val hardcoreTimestamps: Map<Long, Long>
+        )
+
+        val unlockData = try {
             val response = api.startSession(
                 username = credentials.username,
                 token = credentials.token,
@@ -436,24 +453,50 @@ class RetroAchievementsRepository @Inject constructor(
                 val ids = mutableSetOf<Long>()
                 body?.hardcoreUnlocks?.mapTo(ids) { it.id }
                 body?.unlocks?.mapTo(ids) { it.id }
-                ids
+                val timestamps = body?.unlocks
+                    ?.filter { it.`when` != null }
+                    ?.associate { it.id to parseTimestamp(it.`when`!!) }
+                    ?: emptyMap()
+                val hardcoreTimestamps = body?.hardcoreUnlocks
+                    ?.filter { it.`when` != null }
+                    ?.associate { it.id to parseTimestamp(it.`when`!!) }
+                    ?: emptyMap()
+                UnlockData(ids, timestamps, hardcoreTimestamps)
             } else {
-                emptySet()
+                UnlockData(emptySet(), emptyMap(), emptyMap())
             }
         } catch (e: Exception) {
-            emptySet()
+            UnlockData(emptySet(), emptyMap(), emptyMap())
         }
 
-        // Only count unlocks for valid (non-filtered) achievements
         val validAchievementIds = achievements.map { it.id }.toSet()
-        val validUnlocks = unlocked.filter { it in validAchievementIds }
+        val validUnlocks = unlockData.ids.filter { it in validAchievementIds }.toSet()
 
         return RAGameAchievements(
             achievements = achievements,
-            unlockedIds = validUnlocks.toSet(),
+            unlockedIds = validUnlocks,
+            unlockedTimestamps = unlockData.timestamps.filterKeys { it in validAchievementIds },
+            hardcoreUnlockedTimestamps = unlockData.hardcoreTimestamps.filterKeys { it in validAchievementIds },
             totalCount = achievements.size,
             earnedCount = validUnlocks.size
         )
+    }
+
+    private fun parseTimestamp(timestamp: String): Long {
+        return try {
+            java.time.ZonedDateTime.parse(timestamp, java.time.format.DateTimeFormatter.ISO_DATE_TIME).toInstant().toEpochMilli()
+        } catch (_: Exception) {
+            try {
+                java.time.Instant.parse(timestamp).toEpochMilli()
+            } catch (_: Exception) {
+                try {
+                    java.time.LocalDateTime.parse(timestamp, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        .atZone(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+                } catch (_: Exception) {
+                    System.currentTimeMillis()
+                }
+            }
+        }
     }
 
     private fun generateValidation(achievementId: Long, username: String, hardcore: Boolean): String {

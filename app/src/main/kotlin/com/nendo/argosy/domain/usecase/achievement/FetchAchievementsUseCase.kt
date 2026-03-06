@@ -43,7 +43,6 @@ class FetchAchievementsUseCase @Inject constructor(
         val raData = raRepository.getGameAchievementsWithProgress(raId) ?: return null
 
         val entities = raData.achievements.map { achievement ->
-            val isUnlocked = achievement.id in raData.unlockedIds
             val badgeUrl = achievement.badgeName?.let { "https://media.retroachievements.org/Badge/$it.png" }
             val badgeUrlLock = achievement.badgeName?.let { "https://media.retroachievements.org/Badge/${it}_lock.png" }
 
@@ -56,8 +55,8 @@ class FetchAchievementsUseCase @Inject constructor(
                 type = achievement.type,
                 badgeUrl = badgeUrl,
                 badgeUrlLock = badgeUrlLock,
-                unlockedAt = if (isUnlocked) System.currentTimeMillis() else null,
-                unlockedHardcoreAt = null
+                unlockedAt = raData.unlockedTimestamps[achievement.id],
+                unlockedHardcoreAt = raData.hardcoreUnlockedTimestamps[achievement.id]
             )
         }
         achievementDao.replaceForGame(gameId, entities)

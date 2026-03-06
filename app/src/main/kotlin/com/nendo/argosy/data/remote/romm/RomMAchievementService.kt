@@ -86,6 +86,12 @@ class RomMAchievementService @Inject constructor(
                 }
             } else {
                 raProgressionRefreshedThisSession = true
+                cachedRAProgression = progression
+                    .filter { it.romRaId != null }
+                    .associate { gameProgress ->
+                        gameProgress.romRaId!! to gameProgress.earnedAchievements
+                    }
+                return RomMResult.Error("Failed to refresh RA progression: HTTP ${response.code()}")
             }
 
             cachedRAProgression = progression

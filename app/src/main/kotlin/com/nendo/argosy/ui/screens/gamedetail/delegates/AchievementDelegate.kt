@@ -8,8 +8,10 @@ import com.nendo.argosy.ui.screens.gamedetail.toAchievementUi
 import com.nendo.argosy.data.remote.romm.RomMEarnedAchievement
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.repository.RA_BADGE_BASE_URL
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.util.parseTimestamp
 import com.nendo.argosy.ui.screens.gamedetail.AchievementUi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,16 +37,15 @@ class AchievementDelegate @Inject constructor(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     suspend fun loadCached(gameId: Long, hasRommId: Boolean) {
-        if (!hasRommId) {
+        val cached = achievementDao.getByGameId(gameId)
+        if (!hasRommId && cached.isEmpty()) {
             _achievements.value = emptyList()
             return
         }
-        _achievements.value = achievementDao.getByGameId(gameId).map { it.toAchievementUi() }
+        _achievements.value = cached.map { it.toAchievementUi() }
     }
 
     fun refresh(scope: CoroutineScope, gameId: Long, rommId: Long?) {
-        if (rommId == null) return
-
         scope.launch {
             _isLoading.value = true
             val fresh = fetchAndCacheAchievements(rommId, gameId)
@@ -55,78 +56,36 @@ class AchievementDelegate @Inject constructor(
         }
     }
 
-    private suspend fun fetchAndCacheAchievements(rommId: Long, gameId: Long): List<AchievementUi> {
+    private suspend fun fetchAndCacheAchievements(rommId: Long?, gameId: Long): List<AchievementUi> {
         val game = gameRepository.getById(gameId)
         val raId = game?.raId
 
-        val rommResults = fetchAchievementsFromRomM(rommId, gameId)
-        if (rommResults.isNotEmpty()) {
-            if (raId != null && raRepository.isLoggedIn()) {
-                return mergeRAProgress(raId, gameId, rommResults)
-            }
-            return rommResults
+        if (raId != null && raRepository.isLoggedIn()) {
+            val raResults = fetchAchievementsFromRA(raId, gameId)
+            if (raResults.isNotEmpty()) return raResults
         }
 
-        if (raId != null) {
-            return fetchAchievementsFromRA(raId, gameId)
+        if (rommId != null) {
+            val rommResults = fetchAchievementsFromRomM(rommId, gameId)
+            if (rommResults.isNotEmpty()) return rommResults
         }
 
         return emptyList()
     }
 
-    private suspend fun mergeRAProgress(
-        raId: Long,
-        gameId: Long,
-        rommResults: List<AchievementUi>
-    ): List<AchievementUi> {
-        val raData = raRepository.getGameAchievementsWithProgress(raId)
-            ?: return rommResults
-
-        val raUnlockedIds = raData.unlockedIds
-        if (raUnlockedIds.isEmpty()) return rommResults
-
-        val hasNewUnlocks = rommResults.any { !it.isUnlocked && it.raId in raUnlockedIds }
-        if (!hasNewUnlocks) return rommResults
-
-        val now = System.currentTimeMillis()
-        val entities = achievementDao.getByGameId(gameId)
-        val updatedEntities = entities.map { entity ->
-            if (entity.unlockedAt == null && entity.raId in raUnlockedIds) {
-                entity.copy(unlockedAt = now)
-            } else {
-                entity
-            }
-        }
-        achievementDao.replaceForGame(gameId, updatedEntities)
-
-        val earnedCount = updatedEntities.count { it.isUnlocked }
-        gameRepository.updateAchievementCount(gameId, updatedEntities.size, earnedCount)
-        achievementUpdateBus.emit(
-            AchievementUpdateBus.AchievementUpdate(gameId, updatedEntities.size, earnedCount)
-        )
-
-        return rommResults.map { ui ->
-            if (!ui.isUnlocked && ui.raId in raUnlockedIds) {
-                val entity = updatedEntities.find { it.raId == ui.raId }
-                ui.copy(
-                    isUnlocked = true,
-                    badgeUrl = entity?.badgeUrl ?: ui.badgeUrl
-                )
-            } else {
-                ui
-            }
-        }
-    }
-
     private suspend fun fetchAchievementsFromRA(raId: Long, gameId: Long): List<AchievementUi> {
         val raData = raRepository.getGameAchievementsWithProgress(raId) ?: return emptyList()
 
-        val entities = raData.achievements.map { achievement ->
-            val isUnlocked = achievement.id in raData.unlockedIds
-            val badgeUrl = achievement.badgeName?.let { "https://media.retroachievements.org/Badge/$it.png" }
-            val badgeUrlLock = achievement.badgeName?.let { "https://media.retroachievements.org/Badge/${it}_lock.png" }
+        val entities = mutableListOf<AchievementEntity>()
+        val uiModels = mutableListOf<AchievementUi>()
 
-            AchievementEntity(
+        raData.achievements.forEach { achievement ->
+            val isUnlocked = achievement.id in raData.unlockedIds
+            val isHardcore = achievement.id in raData.hardcoreUnlockedIds
+            val badgeUrl = achievement.badgeName?.let { "${RA_BADGE_BASE_URL}$it.png" }
+            val badgeUrlLock = achievement.badgeName?.let { "${RA_BADGE_BASE_URL}${it}_lock.png" }
+
+            entities += AchievementEntity(
                 gameId = gameId,
                 raId = achievement.id,
                 title = achievement.title,
@@ -135,10 +94,22 @@ class AchievementDelegate @Inject constructor(
                 type = achievement.type,
                 badgeUrl = badgeUrl,
                 badgeUrlLock = badgeUrlLock,
-                unlockedAt = if (isUnlocked) System.currentTimeMillis() else null,
-                unlockedHardcoreAt = null
+                unlockedAt = raData.unlockedTimestamps[achievement.id],
+                unlockedHardcoreAt = raData.hardcoreUnlockedTimestamps[achievement.id]
+            )
+
+            uiModels += AchievementUi(
+                raId = achievement.id,
+                title = achievement.title,
+                description = achievement.description ?: "",
+                points = achievement.points,
+                type = achievement.type,
+                badgeUrl = if (isUnlocked) badgeUrl else (badgeUrlLock ?: badgeUrl),
+                isUnlocked = isUnlocked,
+                isUnlockedHardcore = isHardcore
             )
         }
+
         achievementDao.replaceForGame(gameId, entities)
         gameRepository.updateAchievementsFetchedAt(gameId, System.currentTimeMillis())
 
@@ -154,22 +125,7 @@ class AchievementDelegate @Inject constructor(
             }
         }
 
-        return raData.achievements.map { achievement ->
-            val isUnlocked = achievement.id in raData.unlockedIds
-            val badgeUrl = achievement.badgeName?.let { "https://media.retroachievements.org/Badge/$it.png" }
-            val badgeUrlLock = achievement.badgeName?.let { "https://media.retroachievements.org/Badge/${it}_lock.png" }
-
-            AchievementUi(
-                raId = achievement.id,
-                title = achievement.title,
-                description = achievement.description ?: "",
-                points = achievement.points,
-                type = achievement.type,
-                badgeUrl = if (isUnlocked) badgeUrl else (badgeUrlLock ?: badgeUrl),
-                isUnlocked = isUnlocked,
-                isUnlockedHardcore = false
-            )
-        }
+        return uiModels
     }
 
     private suspend fun fetchAchievementsFromRomM(rommId: Long, gameId: Long): List<AchievementUi> {
@@ -179,6 +135,7 @@ class AchievementDelegate @Inject constructor(
                 val apiAchievements = rom.raMetadata?.achievements ?: emptyList()
                 if (apiAchievements.isEmpty()) return emptyList()
 
+                romMRepository.refreshRAProgressionIfNeeded()
                 val earnedAchievements = getEarnedAchievements(rom.raId)
                 val earnedByBadgeId = earnedAchievements.associateBy { it.id }
 
@@ -241,15 +198,4 @@ class AchievementDelegate @Inject constructor(
         return romMRepository.getEarnedAchievements(gameRaId)
     }
 
-    private fun parseTimestamp(timestamp: String): Long? {
-        return try {
-            java.time.ZonedDateTime.parse(timestamp, java.time.format.DateTimeFormatter.ISO_DATE_TIME).toInstant().toEpochMilli()
-        } catch (_: Exception) {
-            try {
-                java.time.Instant.parse(timestamp).toEpochMilli()
-            } catch (_: Exception) {
-                null
-            }
-        }
-    }
 }

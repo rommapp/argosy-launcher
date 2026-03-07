@@ -28,6 +28,12 @@ class RomMAchievementService @Inject constructor(
         return cachedRAProgression[raGameId] ?: emptyList()
     }
 
+    private fun updateCache(progression: List<RomMRAGameProgression>) {
+        cachedRAProgression = progression
+            .filter { it.romRaId != null }
+            .associate { it.romRaId!! to it.earnedAchievements }
+    }
+
     suspend fun refreshRAProgressionOnStartup() {
         val currentApi = api ?: return
         try {
@@ -45,16 +51,12 @@ class RomMAchievementService @Inject constructor(
                 val refreshedUserResponse = currentApi.getCurrentUser()
                 if (refreshedUserResponse.isSuccessful) {
                     progression = refreshedUserResponse.body()?.raProgression?.results ?: emptyList()
+                } else {
+                    Logger.warn(TAG, "Post-refresh user fetch failed (${refreshedUserResponse.code()}); using pre-refresh progression")
                 }
-            } else {
-                raProgressionRefreshedThisSession = true
             }
 
-            cachedRAProgression = progression
-                .filter { it.romRaId != null }
-                .associate { gameProgress ->
-                    gameProgress.romRaId!! to gameProgress.earnedAchievements
-                }
+            updateCache(progression)
         } catch (_: Exception) {
         }
     }
@@ -75,13 +77,24 @@ class RomMAchievementService @Inject constructor(
                 return RomMResult.Error("No RetroAchievements username configured")
             }
 
+            var progression = user.raProgression?.results ?: emptyList()
+
             val response = currentApi.refreshRAProgression(user.id)
             if (response.isSuccessful) {
                 raProgressionRefreshedThisSession = true
-                RomMResult.Success(Unit)
+                val refreshedUserResponse = currentApi.getCurrentUser()
+                if (refreshedUserResponse.isSuccessful) {
+                    progression = refreshedUserResponse.body()?.raProgression?.results ?: emptyList()
+                } else {
+                    Logger.warn(TAG, "Post-refresh user fetch failed (${refreshedUserResponse.code()}); using pre-refresh progression")
+                }
             } else {
-                RomMResult.Error("Failed to refresh RA progression", response.code())
+                updateCache(progression)
+                return RomMResult.Error("Failed to refresh RA progression: HTTP ${response.code()}")
             }
+
+            updateCache(progression)
+            RomMResult.Success(Unit)
         } catch (e: Exception) {
             RomMResult.Error(e.message ?: "Failed to refresh RA progression")
         }

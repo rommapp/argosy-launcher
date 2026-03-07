@@ -689,8 +689,10 @@ class HomeViewModel @Inject constructor(
         val game = _uiState.value.focusedGame ?: return
         viewModelScope.launch {
             val entity = gameRepository.getById(game.id) ?: return@launch
-            val rommId = entity.rommId ?: return@launch
-            val counts = fetchAchievementsUseCase(rommId, game.id) ?: return@launch
+            val rommId = entity.rommId
+            val raId = entity.raId
+            if (rommId == null && raId == null) return@launch
+            val counts = fetchAchievementsUseCase(game.id, rommId, raId) ?: return@launch
             libraryDelegate.updateAchievementCounts(game.id, counts.total, counts.earned)
         }
     }

@@ -472,9 +472,12 @@ class GameDetailViewModel @Inject constructor(
                 )
             }
 
+            if (game.rommId != null || game.raId != null) {
+                refreshAchievementsInBackground(game.rommId, gameId)
+            }
+
             if (game.rommId != null) {
                 refreshUserPropsInBackground(gameId)
-                refreshAchievementsInBackground(game.rommId, gameId)
                 if (!game.isMultiDisc && (game.fileSizeBytes == null || game.fileSizeBytes == 0L)) {
                     downloadDelegate.refreshDownloadSizeInBackground(viewModelScope, game.rommId, gameId)
                 }
@@ -597,7 +600,7 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    private fun refreshAchievementsInBackground(rommId: Long, gameId: Long) {
+    private fun refreshAchievementsInBackground(rommId: Long?, gameId: Long) {
         achievementDelegate.refresh(viewModelScope, gameId, rommId)
     }
 

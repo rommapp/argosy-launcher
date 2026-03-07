@@ -13,6 +13,7 @@ import com.nendo.argosy.data.remote.ra.RAApi
 import com.nendo.argosy.data.remote.ra.RACredentials
 import com.nendo.argosy.data.remote.ra.RAPatchData
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.parseTimestamp
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "RetroAchievementsRepository"
+const val RA_BADGE_BASE_URL = "https://media.retroachievements.org/Badge/"
 
 sealed class RALoginResult {
     data class Success(val username: String) : RALoginResult()
@@ -350,6 +352,9 @@ class RetroAchievementsRepository @Inject constructor(
     data class RAGameAchievements(
         val achievements: List<RAAchievementPatch>,
         val unlockedIds: Set<Long>,
+        val hardcoreUnlockedIds: Set<Long> = emptySet(),
+        val unlockedTimestamps: Map<Long, Long> = emptyMap(),
+        val hardcoreUnlockedTimestamps: Map<Long, Long> = emptyMap(),
         val totalCount: Int,
         val earnedCount: Int
     )
@@ -380,11 +385,30 @@ class RetroAchievementsRepository @Inject constructor(
                     .map { it.id }
                     .toSet()
 
-                // Convert Web API achievements to patch format for compatibility
+                val unlockedTimestamps = achievements
+                    .filter { it.dateEarned != null }
+                    .mapNotNull { ach -> parseTimestamp(ach.dateEarned!!)?.let { ts -> ach.id to ts } }
+                    .toMap()
+
+                val hardcoreUnlockedIds = achievements
+                    .filter { it.dateEarnedHardcore != null }
+                    .map { it.id }
+                    .toSet()
+
+                val hardcoreUnlockedTimestamps = achievements
+                    .filter { it.dateEarnedHardcore != null }
+                    .mapNotNull { ach -> parseTimestamp(ach.dateEarnedHardcore!!)?.let { ts -> ach.id to ts } }
+                    .toMap()
+
+                val mergedUnlockedTimestamps = unlockedTimestamps.toMutableMap()
+                hardcoreUnlockedTimestamps.forEach { (id, ts) ->
+                    if (id !in mergedUnlockedTimestamps) mergedUnlockedTimestamps[id] = ts
+                }
+
                 val patchAchievements = achievements.map { ach ->
                     RAAchievementPatch(
                         id = ach.id,
-                        memAddr = "",  // Not needed for display
+                        memAddr = "",
                         title = ach.title,
                         description = ach.description,
                         points = ach.points,
@@ -396,6 +420,9 @@ class RetroAchievementsRepository @Inject constructor(
                 RAGameAchievements(
                     achievements = patchAchievements,
                     unlockedIds = unlockedIds,
+                    hardcoreUnlockedIds = hardcoreUnlockedIds,
+                    unlockedTimestamps = mergedUnlockedTimestamps,
+                    hardcoreUnlockedTimestamps = hardcoreUnlockedTimestamps,
                     totalCount = body.numAchievements ?: achievements.size,
                     earnedCount = body.numAwardedToUser ?: unlockedIds.size
                 )
@@ -425,7 +452,14 @@ class RetroAchievementsRepository @Inject constructor(
         }
 
         // Connect API for unlocks (may show emulator warning)
-        val unlocked = try {
+        data class UnlockData(
+            val ids: Set<Long>,
+            val hardcoreIds: Set<Long>,
+            val timestamps: Map<Long, Long>,
+            val hardcoreTimestamps: Map<Long, Long>
+        )
+
+        val unlockData = try {
             val response = api.startSession(
                 username = credentials.username,
                 token = credentials.token,
@@ -436,21 +470,38 @@ class RetroAchievementsRepository @Inject constructor(
                 val ids = mutableSetOf<Long>()
                 body?.hardcoreUnlocks?.mapTo(ids) { it.id }
                 body?.unlocks?.mapTo(ids) { it.id }
-                ids
+                val hardcoreIds = body?.hardcoreUnlocks?.map { it.id }?.toSet() ?: emptySet()
+                val timestamps = body?.unlocks
+                    ?.filter { it.`when` != null }
+                    ?.mapNotNull { unlock -> parseTimestamp(unlock.`when`!!)?.let { ts -> unlock.id to ts } }
+                    ?.toMap()
+                    ?: emptyMap()
+                val hardcoreTimestamps = body?.hardcoreUnlocks
+                    ?.filter { it.`when` != null }
+                    ?.mapNotNull { unlock -> parseTimestamp(unlock.`when`!!)?.let { ts -> unlock.id to ts } }
+                    ?.toMap()
+                    ?: emptyMap()
+                val mergedTimestamps = timestamps.toMutableMap()
+                hardcoreTimestamps.forEach { (id, ts) ->
+                    if (id !in mergedTimestamps) mergedTimestamps[id] = ts
+                }
+                UnlockData(ids, hardcoreIds, mergedTimestamps, hardcoreTimestamps)
             } else {
-                emptySet()
+                UnlockData(emptySet(), emptySet(), emptyMap(), emptyMap())
             }
         } catch (e: Exception) {
-            emptySet()
+            UnlockData(emptySet(), emptySet(), emptyMap(), emptyMap())
         }
 
-        // Only count unlocks for valid (non-filtered) achievements
         val validAchievementIds = achievements.map { it.id }.toSet()
-        val validUnlocks = unlocked.filter { it in validAchievementIds }
+        val validUnlocks = unlockData.ids.filter { it in validAchievementIds }.toSet()
 
         return RAGameAchievements(
             achievements = achievements,
-            unlockedIds = validUnlocks.toSet(),
+            unlockedIds = validUnlocks,
+            hardcoreUnlockedIds = unlockData.hardcoreIds.filter { it in validAchievementIds }.toSet(),
+            unlockedTimestamps = unlockData.timestamps.filterKeys { it in validAchievementIds },
+            hardcoreUnlockedTimestamps = unlockData.hardcoreTimestamps.filterKeys { it in validAchievementIds },
             totalCount = achievements.size,
             earnedCount = validUnlocks.size
         )

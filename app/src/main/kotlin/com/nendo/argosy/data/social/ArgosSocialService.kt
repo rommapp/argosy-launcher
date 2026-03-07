@@ -51,6 +51,9 @@ class ArgosSocialService @Inject constructor(
     private var reconnectAttempts = 0
     private var shouldReconnect = false
     private var reconnectJob: kotlinx.coroutines.Job? = null
+    private var heartbeatJob: kotlinx.coroutines.Job? = null
+    private var lastPongReceivedAt: Long = 0L
+    private var missedPongs: Int = 0
 
     var onSessionRevoked: (() -> Unit)? = null
 
@@ -135,6 +138,7 @@ class ArgosSocialService @Inject constructor(
     private fun connectInternal() {
         val token = sessionToken ?: return
 
+        stopHeartbeat()
         webSocket?.cancel()
         webSocket = null
 
@@ -169,6 +173,7 @@ class ArgosSocialService @Inject constructor(
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                stopHeartbeat()
                 val responseInfo = response?.let { "HTTP ${it.code} ${it.message}" } ?: "no response"
                 Log.e(TAG, "Social WebSocket failure: ${t.javaClass.simpleName}: ${t.message} | $responseInfo", t)
                 _connectionState.value = ConnectionState.Failed(t.message ?: "Connection failed")
@@ -178,6 +183,7 @@ class ArgosSocialService @Inject constructor(
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                stopHeartbeat()
                 Log.d(TAG, "Social WebSocket closed: $code $reason")
                 _connectionState.value = ConnectionState.Disconnected
                 if (shouldReconnect && code != 1000) {
@@ -198,6 +204,7 @@ class ArgosSocialService @Inject constructor(
                     Log.d(TAG, "Auth successful")
                     reconnectAttempts = 0
                     _connectionState.value = ConnectionState.Connected
+                    startHeartbeat()
                     sendDeviceRegistration()
                     null
                 }
@@ -417,6 +424,13 @@ class ArgosSocialService @Inject constructor(
                     } else null
                 }
 
+                MessageTypes.PONG -> {
+                    lastPongReceivedAt = System.currentTimeMillis()
+                    missedPongs = 0
+                    if (BuildConfig.DEBUG) Log.v(TAG, "Pong received")
+                    null
+                }
+
                 else -> IncomingMessage.Raw(type, payload?.toString() ?: "{}")
             }
 
@@ -624,6 +638,58 @@ class ArgosSocialService @Inject constructor(
         )
     }
 
+    private fun startHeartbeat() {
+        heartbeatJob?.cancel()
+        lastPongReceivedAt = System.currentTimeMillis()
+        missedPongs = 0
+        heartbeatJob = scope.launch {
+            Log.d(TAG, "Heartbeat started (interval=${HEARTBEAT_INTERVAL_MS}ms, timeout=${PONG_TIMEOUT_MS}ms)")
+            while (true) {
+                delay(HEARTBEAT_INTERVAL_MS)
+
+                val elapsed = System.currentTimeMillis() - lastPongReceivedAt
+                if (elapsed > HEARTBEAT_INTERVAL_MS + PONG_TIMEOUT_MS) {
+                    missedPongs++
+                    Log.w(TAG, "Heartbeat: pong overdue by ${elapsed}ms (missed=$missedPongs). Forcing reconnect.")
+                    webSocket?.cancel()
+                    webSocket = null
+                    _connectionState.value = ConnectionState.Failed("Heartbeat timeout")
+                    if (shouldReconnect) {
+                        scheduleReconnect()
+                    }
+                    return@launch
+                }
+
+                val sent = sendPing()
+                Log.d(TAG, "Heartbeat: ping sent=$sent, lastPong=${elapsed}ms ago, missed=$missedPongs")
+
+                if (!sent) {
+                    Log.w(TAG, "Heartbeat: ping send failed, connection likely dead. Forcing reconnect.")
+                    webSocket?.cancel()
+                    webSocket = null
+                    _connectionState.value = ConnectionState.Failed("Heartbeat send failed")
+                    if (shouldReconnect) {
+                        scheduleReconnect()
+                    }
+                    return@launch
+                }
+            }
+        }
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+        Log.d(TAG, "Heartbeat stopped")
+    }
+
+    private fun sendPing(): Boolean {
+        val json = JSONObject().apply {
+            put("type", MessageTypes.PING)
+        }
+        return webSocket?.send(json.toString()) ?: false
+    }
+
     private fun scheduleReconnect() {
         if (!shouldReconnect) return
 
@@ -656,6 +722,7 @@ class ArgosSocialService @Inject constructor(
 
     fun disconnect() {
         shouldReconnect = false
+        stopHeartbeat()
         webSocket?.close(1000, "User disconnect")
         webSocket = null
         sessionToken = null
@@ -817,5 +884,7 @@ class ArgosSocialService @Inject constructor(
     companion object {
         private const val TAG = "ArgosSocialService"
         private const val WS_URL = BuildConfig.SOCIAL_API_URL
+        private const val HEARTBEAT_INTERVAL_MS = 30_000L
+        private const val PONG_TIMEOUT_MS = 10_000L
     }
 }

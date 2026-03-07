@@ -180,6 +180,10 @@ object MessageTypes {
     const val DISCORD_TOKENS = "discord_tokens"
     const val DISCORD_NOT_LINKED = "discord_not_linked"
 
+    // Heartbeat
+    const val PING = "ping"
+    const val PONG = "pong"
+
     // Initial state provisioning (received after auth_success)
     const val FRIENDS_DATA = "friends"
     const val SHARED_COLLECTIONS = "shared_collections"

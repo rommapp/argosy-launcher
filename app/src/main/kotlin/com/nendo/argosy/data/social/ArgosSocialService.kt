@@ -139,8 +139,9 @@ class ArgosSocialService @Inject constructor(
         val token = sessionToken ?: return
 
         stopHeartbeat()
-        webSocket?.cancel()
+        val oldSocket = webSocket
         webSocket = null
+        oldSocket?.cancel()
 
         _connectionState.value = if (reconnectAttempts > 0) {
             ConnectionState.Reconnecting
@@ -173,6 +174,7 @@ class ArgosSocialService @Inject constructor(
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                if (webSocket !== this@ArgosSocialService.webSocket) return
                 stopHeartbeat()
                 val responseInfo = response?.let { "HTTP ${it.code} ${it.message}" } ?: "no response"
                 Log.e(TAG, "Social WebSocket failure: ${t.javaClass.simpleName}: ${t.message} | $responseInfo", t)
@@ -183,6 +185,7 @@ class ArgosSocialService @Inject constructor(
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                if (webSocket !== this@ArgosSocialService.webSocket) return
                 stopHeartbeat()
                 Log.d(TAG, "Social WebSocket closed: $code $reason")
                 _connectionState.value = ConnectionState.Disconnected
@@ -713,7 +716,7 @@ class ArgosSocialService @Inject constructor(
     fun reconnectIfNeeded() {
         if (sessionToken == null) return
         val state = _connectionState.value
-        if (state == ConnectionState.Connected || state == ConnectionState.Connecting) return
+        if (state == ConnectionState.Connected || state == ConnectionState.Connecting || state == ConnectionState.Reconnecting) return
         Log.d(TAG, "Proactive reconnect triggered (state=$state)")
         reconnectJob?.cancel()
         reconnectAttempts = 0

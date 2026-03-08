@@ -46,6 +46,9 @@ class ArgosSocialService @Inject constructor(
     private val _incomingMessages = MutableSharedFlow<IncomingMessage>(replay = 1)
     val incomingMessages: SharedFlow<IncomingMessage> = _incomingMessages.asSharedFlow()
 
+    private val _syncAchievementResult = MutableStateFlow<List<Long>>(emptyList())
+    val syncAchievementResult: StateFlow<List<Long>> = _syncAchievementResult.asStateFlow()
+
     private var webSocket: WebSocket? = null
     private var sessionToken: String? = null
     private var reconnectAttempts = 0
@@ -120,6 +123,7 @@ class ArgosSocialService @Inject constructor(
             val expiresIn: Long
         ) : IncomingMessage()
         data object DiscordNotLinked : IncomingMessage()
+        data class SyncAchievementUnlocksResult(val acceptedRaIds: List<Long>) : IncomingMessage()
         data class FavoriteFriendUpdated(val friendId: String, val isFavorite: Boolean) : IncomingMessage()
     }
 
@@ -427,6 +431,18 @@ class ArgosSocialService @Inject constructor(
                     } else null
                 }
 
+                MessageTypes.SYNC_ACHIEVEMENT_UNLOCKS_RESULT -> {
+                    if (payload != null) {
+                        val idsArray = payload.optJSONArray("accepted_ra_ids")
+                        val ids = if (idsArray != null) {
+                            (0 until idsArray.length()).map { idsArray.getLong(it) }
+                        } else emptyList()
+                        Log.d(TAG, "Sync achievement unlocks result: ${ids.size} accepted")
+                        _syncAchievementResult.value = ids
+                    }
+                    null
+                }
+
                 MessageTypes.PONG -> {
                     lastPongReceivedAt = System.currentTimeMillis()
                     missedPongs = 0
@@ -480,6 +496,15 @@ class ArgosSocialService @Inject constructor(
     fun syncPlaySessions(sessions: List<PlaySessionPayload>) {
         send(MessageTypes.SYNC_PLAY_SESSIONS, mapOf(
             "sessions" to sessions.map { it.toMap() }
+        ))
+    }
+
+    fun syncAchievementUnlocks(igdbId: Long?, raGameId: Long?, gameTitle: String, unlocks: List<Map<String, Any?>>): Boolean {
+        return send(MessageTypes.SYNC_ACHIEVEMENT_UNLOCKS, mapOf(
+            "igdb_id" to igdbId,
+            "ra_game_id" to raGameId,
+            "game_title" to gameTitle,
+            "unlocks" to unlocks
         ))
     }
 

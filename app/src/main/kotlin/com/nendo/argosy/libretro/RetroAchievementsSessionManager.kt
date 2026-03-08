@@ -234,6 +234,7 @@ class RetroAchievementsSessionManager(
             if (awardConfirmed) {
                 socialRepository.emitAchievementUnlocked(
                     igdbId = gameIgdbId,
+                    raGameId = gameRaId,
                     gameTitle = gameTitle,
                     achievementRaId = achievementId,
                     achievementName = info?.title ?: "Achievement",
@@ -244,6 +245,7 @@ class RetroAchievementsSessionManager(
                     earnedCount = earnedCount,
                     totalCount = totalCount
                 )
+                achievementDao.markSocialShared(gameId, achievementId, System.currentTimeMillis())
                 if (earnedCount == totalCount && totalCount > 0) {
                     socialRepository.emitPerfectGame(
                         igdbId = gameIgdbId,

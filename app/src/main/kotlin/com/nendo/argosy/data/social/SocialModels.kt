@@ -180,6 +180,10 @@ object MessageTypes {
     const val DISCORD_TOKENS = "discord_tokens"
     const val DISCORD_NOT_LINKED = "discord_not_linked"
 
+    // Achievement sync
+    const val SYNC_ACHIEVEMENT_UNLOCKS = "sync_achievement_unlocks"
+    const val SYNC_ACHIEVEMENT_UNLOCKS_RESULT = "sync_achievement_unlocks_result"
+
     // Heartbeat
     const val PING = "ping"
     const val PONG = "pong"

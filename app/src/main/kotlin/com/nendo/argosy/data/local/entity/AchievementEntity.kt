@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("gameId")]
+    indices = [Index("gameId"), Index(value = ["gameId", "raId"], unique = true)]
 )
 data class AchievementEntity(
     @PrimaryKey(autoGenerate = true)
@@ -31,7 +31,8 @@ data class AchievementEntity(
     val cachedBadgeUrl: String? = null,
     val cachedBadgeUrlLock: String? = null,
     val unlockedAt: Long? = null,
-    val unlockedHardcoreAt: Long? = null
+    val unlockedHardcoreAt: Long? = null,
+    val socialSharedAt: Long? = null
 ) {
     val isUnlocked: Boolean
         get() = unlockedAt != null || unlockedHardcoreAt != null

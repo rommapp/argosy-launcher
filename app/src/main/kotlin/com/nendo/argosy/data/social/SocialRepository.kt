@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.Log
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -37,12 +38,14 @@ class SocialRepository @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val playSessionDao: PlaySessionDao,
     private val gameDao: GameDao,
+    private val achievementDao: AchievementDao,
     private val notificationManager: NotificationManager,
     private val discordTokenHolder: DiscordTokenHolder,
     private val playSessionTracker: PlaySessionTracker
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var hasCompletedInitialSync = false
+    private var achievementSyncSuppressed = false
 
     private val _connectionState = MutableStateFlow<SocialConnectionState>(SocialConnectionState.Disconnected)
     val connectionState: StateFlow<SocialConnectionState> = _connectionState.asStateFlow()
@@ -89,6 +92,7 @@ class SocialRepository @Inject constructor(
         observeAuthState()
         observeServiceState()
         observeIncomingMessages()
+        observeSyncAchievementResults()
         setupSessionRevokedCallback()
         attemptAutoConnect()
     }
@@ -130,6 +134,7 @@ class SocialRepository @Inject constructor(
             socialService.connectionState.collect { state ->
                 when (state) {
                     is ArgosSocialService.ConnectionState.Connected -> {
+                        achievementSyncSuppressed = false
                         val prefs = preferencesRepository.userPreferences.first()
                         if (prefs.socialUsername != null) {
                             _connectionState.value = SocialConnectionState.Connected(
@@ -141,6 +146,7 @@ class SocialRepository @Inject constructor(
                                 )
                             )
                             syncPlaySessions()
+                            syncUnsharedAchievements()
                         }
                     }
                     is ArgosSocialService.ConnectionState.Failed -> {
@@ -308,6 +314,12 @@ class SocialRepository @Inject constructor(
                         _discordLinked.value = false
                         _discordUsername.value = null
                     }
+                    is ArgosSocialService.IncomingMessage.Error -> {
+                        if (message.code == "unknown_type") {
+                            Log.w(TAG, "Server returned unknown_type -- suppressing achievement sync for this session")
+                            achievementSyncSuppressed = true
+                        }
+                    }
                     else -> {}
                 }
             }
@@ -471,6 +483,62 @@ class SocialRepository @Inject constructor(
         return SyncResult.Success(payloads.size)
     }
 
+    private fun observeSyncAchievementResults() {
+        scope.launch {
+            socialService.syncAchievementResult.collect { acceptedIds ->
+                if (acceptedIds.isNotEmpty()) {
+                    achievementDao.markSocialSharedBatch(acceptedIds, System.currentTimeMillis())
+                    Log.d(TAG, "Marked ${acceptedIds.size} achievements as socially shared")
+                }
+            }
+        }
+    }
+
+    suspend fun syncUnsharedAchievements() {
+        if (!socialService.isConnected()) return
+        if (achievementSyncSuppressed) return
+
+        val unshared = achievementDao.getUnsharedUnlocked(50)
+        if (unshared.isEmpty()) return
+
+        val cutoff = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
+        val recent = unshared.filter {
+            (it.unlockedHardcoreAt ?: it.unlockedAt ?: 0L) >= cutoff
+        }
+        val stale = unshared.filter {
+            (it.unlockedHardcoreAt ?: it.unlockedAt ?: 0L) < cutoff
+        }
+        if (stale.isNotEmpty()) {
+            achievementDao.markSocialSharedBatch(stale.map { it.raId }, System.currentTimeMillis())
+            Log.d(TAG, "Pre-marked ${stale.size} stale achievements as shared")
+        }
+
+        if (recent.isEmpty()) return
+
+        recent.groupBy { it.gameId }.forEach { (_, achievements) ->
+            val first = achievements.first()
+            socialService.syncAchievementUnlocks(
+                igdbId = first.gameIgdbId,
+                raGameId = first.gameRaId,
+                gameTitle = first.gameTitle,
+                unlocks = achievements.map { ach ->
+                    mapOf(
+                        "ra_id" to ach.raId,
+                        "name" to ach.title,
+                        "description" to ach.description,
+                        "points" to ach.points,
+                        "badge_name" to ach.badgeUrl?.substringAfterLast("/")?.removeSuffix(".png"),
+                        "is_hardcore" to (ach.unlockedHardcoreAt != null),
+                        "unlocked_at" to Instant.ofEpochMilli(
+                            ach.unlockedHardcoreAt ?: ach.unlockedAt!!
+                        ).toString()
+                    )
+                }
+            )
+        }
+        Log.d(TAG, "Sent ${recent.size} unshared achievements for sync")
+    }
+
     sealed class SyncResult {
         data object NotConnected : SyncResult()
         data class Success(val count: Int) : SyncResult()
@@ -558,6 +626,7 @@ class SocialRepository @Inject constructor(
 
     fun emitAchievementUnlocked(
         igdbId: Long?,
+        raGameId: Long?,
         gameTitle: String,
         achievementRaId: Long,
         achievementName: String,
@@ -577,6 +646,7 @@ class SocialRepository @Inject constructor(
                     "achievement_ra_id" to achievementRaId,
                     "achievement_name" to achievementName,
                     "achievement_description" to achievementDescription,
+                    "ra_game_id" to raGameId,
                     "points" to points,
                     "badge_name" to badgeName,
                     "is_hardcore" to isHardcore,

@@ -90,7 +90,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         PlaySessionEntity::class,
         SocialGameCacheEntity::class
     ],
-    version = 82,
+    version = 83,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1248,6 +1248,19 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     )
                 """)
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_social_game_cache_fetchedAt ON social_game_cache(fetchedAt)")
+            }
+        }
+
+        val MIGRATION_82_83 = object : Migration(82, 83) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE achievements ADD COLUMN socialSharedAt INTEGER")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_achievements_gameId_raId ON achievements(gameId, raId)")
+                val cutoff = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
+                db.execSQL("""
+                    UPDATE achievements SET socialSharedAt = $cutoff
+                    WHERE (unlockedAt IS NOT NULL AND unlockedAt < $cutoff)
+                       OR (unlockedHardcoreAt IS NOT NULL AND unlockedHardcoreAt < $cutoff)
+                """)
             }
         }
     }

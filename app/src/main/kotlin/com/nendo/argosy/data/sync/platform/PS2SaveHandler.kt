@@ -128,6 +128,6 @@ class PS2SaveHandler @Inject constructor(
         val stripped = serial.replace("-", "")
         val baSerial = if (stripped.startsWith(BA_PREFIX, ignoreCase = true)) stripped else "$BA_PREFIX$stripped"
         val folderStripped = folderName.replace("-", "")
-        return folderStripped.equals(baSerial, ignoreCase = true)
+        return folderStripped.startsWith(baSerial, ignoreCase = true)
     }
 }

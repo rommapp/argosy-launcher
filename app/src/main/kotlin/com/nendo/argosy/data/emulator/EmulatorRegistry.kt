@@ -369,7 +369,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
+                intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
             ),
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases",
             githubRepo = "Trixarian/NetherSX2-patch"
@@ -383,7 +383,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
+                intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
             )
         ),
         EmulatorDef(
@@ -1039,7 +1039,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
+                intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
             ),
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
         ),

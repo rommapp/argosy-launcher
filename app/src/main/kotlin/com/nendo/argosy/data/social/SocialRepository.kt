@@ -877,44 +877,41 @@ class SocialRepository @Inject constructor(
         isHardcore: Boolean,
         earnedCount: Int,
         totalCount: Int
-    ) {
-        if (socialService.isConnected()) {
-            socialService.createFeedEvent(
-                eventType = FeedEventType.PERFECT_GAME.value,
-                igdbId = igdbId,
-                gameTitle = gameTitle,
-                data = mapOf(
-                    "is_hardcore" to isHardcore,
-                    "earned_count" to earnedCount,
-                    "total_count" to totalCount
-                )
+    ): Boolean {
+        if (!socialService.isConnected()) return false
+        return socialService.createFeedEvent(
+            eventType = FeedEventType.PERFECT_GAME.value,
+            igdbId = igdbId,
+            gameTitle = gameTitle,
+            data = mapOf(
+                "is_hardcore" to isHardcore,
+                "earned_count" to earnedCount,
+                "total_count" to totalCount
             )
-        }
+        )
     }
 
-    fun emitStartedPlaying(igdbId: Long?, gameTitle: String, platformSlug: String) {
-        if (socialService.isConnected()) {
-            socialService.createFeedEvent(
-                eventType = FeedEventType.STARTED_PLAYING.value,
-                igdbId = igdbId,
-                gameTitle = gameTitle,
-                data = mapOf("platform_slug" to platformSlug)
-            )
-        }
+    fun emitStartedPlaying(igdbId: Long?, gameTitle: String, platformSlug: String): Boolean {
+        if (!socialService.isConnected()) return false
+        return socialService.createFeedEvent(
+            eventType = FeedEventType.STARTED_PLAYING.value,
+            igdbId = igdbId,
+            gameTitle = gameTitle,
+            data = mapOf("platform_slug" to platformSlug)
+        )
     }
 
-    fun emitMarathonSession(igdbId: Long?, gameTitle: String, durationMins: Int, platformSlug: String) {
-        if (socialService.isConnected()) {
-            socialService.createFeedEvent(
-                eventType = FeedEventType.MARATHON_SESSION.value,
-                igdbId = igdbId,
-                gameTitle = gameTitle,
-                data = mapOf(
-                    "duration_mins" to durationMins,
-                    "platform_slug" to platformSlug
-                )
+    fun emitMarathonSession(igdbId: Long?, gameTitle: String, durationMins: Int, platformSlug: String): Boolean {
+        if (!socialService.isConnected()) return false
+        return socialService.createFeedEvent(
+            eventType = FeedEventType.MARATHON_SESSION.value,
+            igdbId = igdbId,
+            gameTitle = gameTitle,
+            data = mapOf(
+                "duration_mins" to durationMins,
+                "platform_slug" to platformSlug
             )
-        }
+        )
     }
 
     fun createDoodle(

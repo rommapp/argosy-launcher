@@ -316,11 +316,21 @@ interface GameDao {
     @Query("SELECT COUNT(*) FROM games WHERE backgroundPath LIKE '/%' AND (rommId IS NOT NULL OR steamAppId IS NOT NULL)")
     suspend fun countGamesWithCachedBackgrounds(): Int
 
-    @Query("UPDATE games SET coverPath = :path WHERE id = :gameId")
+    @Query("UPDATE games SET coverPath = :path, gradientColors = NULL WHERE id = :gameId")
     suspend fun updateCoverPath(gameId: Long, path: String)
 
-    @Query("UPDATE games SET coverPath = NULL WHERE id = :gameId")
+    @Query("UPDATE games SET coverPath = NULL, gradientColors = NULL WHERE id = :gameId")
     suspend fun clearCoverPath(gameId: Long)
+
+    @Query("UPDATE games SET gradientColors = :json WHERE id = :gameId")
+    suspend fun updateGradientColors(gameId: Long, json: String)
+
+    @Query("""
+        SELECT id, coverPath FROM games
+        WHERE coverPath LIKE '/%' AND gradientColors IS NULL AND isHidden = 0
+        ORDER BY lastPlayed DESC
+    """)
+    suspend fun getLocalGamesNeedingGradients(): List<GradientExtractionCandidate>
 
     @Query("SELECT * FROM games WHERE coverPath LIKE 'http%' AND rommId IS NOT NULL")
     suspend fun getGamesWithUncachedCovers(): List<GameEntity>
@@ -528,7 +538,7 @@ interface GameDao {
     @Query("SELECT * FROM games")
     suspend fun getAllGames(): List<GameEntity>
 
-    @Query("UPDATE games SET coverPath = :coverPath, backgroundPath = :backgroundPath, cachedScreenshotPaths = :cachedScreenshotPaths WHERE id = :gameId")
+    @Query("UPDATE games SET coverPath = :coverPath, backgroundPath = :backgroundPath, cachedScreenshotPaths = :cachedScreenshotPaths, gradientColors = NULL WHERE id = :gameId")
     suspend fun updateImagePaths(gameId: Long, coverPath: String?, backgroundPath: String?, cachedScreenshotPaths: String?)
 
     @Query("""
@@ -626,4 +636,9 @@ data class SearchCandidate(
     val id: Long,
     val title: String,
     val rating: Float?
+)
+
+data class GradientExtractionCandidate(
+    val id: Long,
+    val coverPath: String?
 )

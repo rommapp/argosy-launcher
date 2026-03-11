@@ -93,6 +93,7 @@ class HomeViewModel @Inject constructor(
             onFavoritesRefreshed = { libraryDelegate.loadFavorites() }
         )
         observeBackgroundSettings()
+        observeGradientChanges()
         observeSyncOverlay()
         observePlatformChanges()
         observeAchievementUpdates()
@@ -101,6 +102,7 @@ class HomeViewModel @Inject constructor(
         observeFocusedGameForLed()
         observeCollectionModal()
         observeDelegateStates()
+        gradientExtractionDelegate.startBackgroundProcessing(viewModelScope)
     }
 
     private fun observeDelegateStates() {
@@ -292,6 +294,31 @@ class HomeViewModel @Inject constructor(
                 libraryDelegate.extractGradientsForVisibleGames(
                     viewModelScope, _uiState.value.currentItems, _uiState.value.focusedGameIndex
                 )
+            }
+        }
+    }
+
+    private fun observeGradientChanges() {
+        viewModelScope.launch {
+            gradientExtractionDelegate.gradients.collect { gradients ->
+                _uiState.update { state ->
+                    state.copy(
+                        recentGames = state.recentGames.applyGradients(gradients),
+                        favoriteGames = state.favoriteGames.applyGradients(gradients),
+                        recommendedGames = state.recommendedGames.applyGradients(gradients),
+                        androidGames = state.androidGames.applyGradients(gradients),
+                        steamGames = state.steamGames.applyGradients(gradients),
+                        platformItems = state.platformItems.map { item ->
+                            when (item) {
+                                is HomeRowItem.Game -> HomeRowItem.Game(item.game.applyGradient(gradients))
+                                else -> item
+                            }
+                        },
+                        pinnedGames = state.pinnedGames.mapValues { (_, games) ->
+                            games.applyGradients(gradients)
+                        }
+                    )
+                }
             }
         }
     }
@@ -698,3 +725,9 @@ class HomeViewModel @Inject constructor(
         }
     }
 }
+
+private fun HomeGameUi.applyGradient(gradients: Map<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>): HomeGameUi =
+    gradients[id]?.let { copy(gradientColors = it) } ?: this
+
+private fun List<HomeGameUi>.applyGradients(gradients: Map<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>): List<HomeGameUi> =
+    map { it.applyGradient(gradients) }

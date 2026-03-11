@@ -2,11 +2,11 @@ package com.nendo.argosy.ui.common
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.util.LruCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.data.cache.GradientPreset
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.graphics.Color as AndroidColor
@@ -23,48 +23,37 @@ data class GradientExtractionResult(
 @Singleton
 class GradientColorExtractor @Inject constructor() {
 
-    private val cache = object : LruCache<String, Pair<Color, Color>>(200) {
-        override fun sizeOf(key: String, value: Pair<Color, Color>) = 1
-    }
-
-    fun getGradientColors(
-        coverPath: String,
-        preset: GradientPreset,
-        customConfig: GradientExtractionConfig? = null
-    ): Pair<Color, Color>? {
-        val config = if (preset == GradientPreset.CUSTOM) {
-            customConfig ?: GradientPreset.VIBRANT.toConfig()
-        } else {
-            preset.toConfig()
-        }
-
-        val cacheKey = buildCacheKey(coverPath, preset, customConfig)
-        cache.get(cacheKey)?.let { return it }
-
+    fun extractAllPresets(coverPath: String): Map<GradientPreset, Pair<Color, Color>>? {
         val bitmap = BitmapFactory.decodeFile(coverPath) ?: return null
         return try {
-            val result = extractWithMetrics(bitmap, config)
-            val colors = Pair(result.primary, result.secondary)
-            cache.put(cacheKey, colors)
-            colors
+            extractAllPresetsFromBitmap(bitmap)
         } finally {
             bitmap.recycle()
         }
     }
 
-    private fun buildCacheKey(
-        coverPath: String,
-        preset: GradientPreset,
-        customConfig: GradientExtractionConfig?
-    ): String {
-        return if (preset == GradientPreset.CUSTOM && customConfig != null) {
-            "$coverPath:custom:${customConfig.hashCode()}"
-        } else {
-            "$coverPath:${preset.name}"
+    fun extractAllPresetsFromBitmap(bitmap: Bitmap): Map<GradientPreset, Pair<Color, Color>> {
+        val baseConfig = GradientExtractionConfig()
+        val samples = sampleBitmapColors(bitmap, baseConfig)
+        return STANDARD_PRESETS.associateWith { preset ->
+            val config = preset.toConfig()
+            val threshold = calculateEffectiveThreshold(samples, config)
+            val families = groupIntoFamilies(samples, threshold)
+            val primary = selectPrimaryColor(families, config)
+            val secondary = selectSecondaryColor(families, primary, config)
+            Pair(primary, secondary)
         }
     }
 
-    fun clearCache() = cache.evictAll()
+    fun extractForCustomConfig(coverPath: String, config: GradientExtractionConfig): Pair<Color, Color>? {
+        val bitmap = BitmapFactory.decodeFile(coverPath) ?: return null
+        return try {
+            val result = extractWithMetrics(bitmap, config)
+            Pair(result.primary, result.secondary)
+        } finally {
+            bitmap.recycle()
+        }
+    }
 
     fun extractGradientColors(bitmap: Bitmap): Pair<Color, Color> {
         val result = extractWithMetrics(bitmap, GradientExtractionConfig())
@@ -243,6 +232,13 @@ class GradientColorExtractor @Inject constructor() {
 
     companion object {
         private const val COLOR_FAMILIES = 36
+        private val STANDARD_PRESETS = listOf(GradientPreset.VIBRANT, GradientPreset.BALANCED, GradientPreset.SUBTLE)
+        private val PRESET_KEYS = mapOf(
+            GradientPreset.VIBRANT to "v",
+            GradientPreset.BALANCED to "b",
+            GradientPreset.SUBTLE to "s"
+        )
+        private val KEY_TO_PRESET = PRESET_KEYS.entries.associate { (k, v) -> v to k }
     }
 
     private data class SamplePoint(
@@ -278,35 +274,53 @@ class GradientColorExtractor @Inject constructor() {
         return Color(avgInt)
     }
 
-    fun serializeColors(primary: Color, secondary: Color): String {
-        val hsvPrimary = FloatArray(3)
-        val hsvSecondary = FloatArray(3)
-        AndroidColor.colorToHSV(primary.toArgb(), hsvPrimary)
-        AndroidColor.colorToHSV(secondary.toArgb(), hsvSecondary)
-        return "${hsvPrimary[0]},${hsvPrimary[1]},${hsvPrimary[2]}:" +
-                "${hsvSecondary[0]},${hsvSecondary[1]},${hsvSecondary[2]}"
+    fun serializeAllPresets(presets: Map<GradientPreset, Pair<Color, Color>>): String {
+        val json = JSONObject()
+        for ((preset, colors) in presets) {
+            val key = PRESET_KEYS[preset] ?: continue
+            json.put(key, serializeHsvPair(colors.first, colors.second))
+        }
+        return json.toString()
     }
 
-    fun deserializeColors(encoded: String): Pair<Color, Color>? {
+    fun deserializeAllPresets(json: String): Map<GradientPreset, Pair<Color, Color>>? {
         return try {
-            val parts = encoded.split(":")
-            if (parts.size != 2) return null
-
-            val primaryHsv = parts[0].split(",").map { it.toFloat() }
-            val secondaryHsv = parts[1].split(",").map { it.toFloat() }
-
-            if (primaryHsv.size != 3 || secondaryHsv.size != 3) return null
-
-            val primary = Color(
-                AndroidColor.HSVToColor(floatArrayOf(primaryHsv[0], primaryHsv[1], primaryHsv[2]))
-            )
-            val secondary = Color(
-                AndroidColor.HSVToColor(floatArrayOf(secondaryHsv[0], secondaryHsv[1], secondaryHsv[2]))
-            )
-
-            Pair(primary, secondary)
+            val obj = JSONObject(json)
+            val result = mutableMapOf<GradientPreset, Pair<Color, Color>>()
+            for ((key, preset) in KEY_TO_PRESET) {
+                val hsvStr = obj.optString(key, "")
+                if (hsvStr.isNotEmpty()) {
+                    deserializeHsvPair(hsvStr)?.let { result[preset] = it }
+                }
+            }
+            if (result.isEmpty()) null else result
         } catch (e: Exception) {
             null
         }
+    }
+
+    fun getColorsForPreset(
+        persisted: Map<GradientPreset, Pair<Color, Color>>,
+        preset: GradientPreset
+    ): Pair<Color, Color>? = persisted[preset]
+
+    private fun serializeHsvPair(primary: Color, secondary: Color): String {
+        val hsvP = FloatArray(3)
+        val hsvS = FloatArray(3)
+        AndroidColor.colorToHSV(primary.toArgb(), hsvP)
+        AndroidColor.colorToHSV(secondary.toArgb(), hsvS)
+        return "${hsvP[0]},${hsvP[1]},${hsvP[2]}:${hsvS[0]},${hsvS[1]},${hsvS[2]}"
+    }
+
+    private fun deserializeHsvPair(encoded: String): Pair<Color, Color>? {
+        val parts = encoded.split(":")
+        if (parts.size != 2) return null
+        val p = parts[0].split(",").map { it.toFloat() }
+        val s = parts[1].split(",").map { it.toFloat() }
+        if (p.size != 3 || s.size != 3) return null
+        return Pair(
+            Color(AndroidColor.HSVToColor(floatArrayOf(p[0], p[1], p[2]))),
+            Color(AndroidColor.HSVToColor(floatArrayOf(s[0], s[1], s[2])))
+        )
     }
 }

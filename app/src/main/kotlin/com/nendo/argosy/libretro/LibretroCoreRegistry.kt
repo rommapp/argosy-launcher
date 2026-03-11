@@ -445,6 +445,16 @@ object LibretroCoreRegistry {
             estimatedSizeBytes = 300_000L,
             isDefault = true
         ),
+
+        // NEC PC-9800
+        CoreInfo(
+            coreId = "np2kai",
+            fileName = "np2kai_libretro_android.so",
+            displayName = "Neko Project II Kai",
+            platforms = setOf("pc9800", "pc98", "nec-pc-9801"),
+            estimatedSizeBytes = 2_000_000L,
+            isDefault = true
+        ),
     )
 
     fun getCoreById(coreId: String): CoreInfo? = cores.find { it.coreId == coreId }

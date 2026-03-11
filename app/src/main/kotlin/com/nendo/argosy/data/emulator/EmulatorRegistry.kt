@@ -115,7 +115,7 @@ object EmulatorRegistry {
                 "msx", "msx2", "coleco",
                 "wonderswan", "wsc",
                 "arcade",
-                "c64", "vic20", "dos", "zx"
+                "c64", "vic20", "dos", "zx", "pc9800"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -135,7 +135,7 @@ object EmulatorRegistry {
                 "msx", "msx2", "coleco",
                 "wonderswan", "wsc",
                 "arcade",
-                "c64", "vic20", "dos", "zx"
+                "c64", "vic20", "dos", "zx", "pc9800"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -635,7 +635,8 @@ object EmulatorRegistry {
         "xbox360" to listOf("ax360e", "ax360e_free"),
         "steam" to listOf("gamehub", "gamehub_lite", "gamenative"),
         "c64" to listOf("retroarch", "retroarch_64"),
-        "vic20" to listOf("retroarch", "retroarch_64")
+        "vic20" to listOf("retroarch", "retroarch_64"),
+        "pc9800" to listOf("retroarch", "retroarch_64")
     )
 
     fun getPreferredCore(platformId: String): String? {
@@ -682,7 +683,8 @@ object EmulatorRegistry {
         "wonderswan" to "mednafen_wswan",
         "wonderswancolor" to "mednafen_wswan",
         "c64" to "vice_x64",
-        "vic20" to "vice_xvic"
+        "vic20" to "vice_xvic",
+        "pc9800" to "np2kai"
     )
 
     fun getRetroArchCorePatterns(): Map<String, List<String>> = mapOf(
@@ -724,7 +726,8 @@ object EmulatorRegistry {
         "wonderswan" to listOf("mednafen_wswan"),
         "wonderswancolor" to listOf("mednafen_wswan"),
         "c64" to listOf("vice_x64", "vice_x64sc"),
-        "vic20" to listOf("vice_xvic")
+        "vic20" to listOf("vice_xvic"),
+        "pc9800" to listOf("np2kai")
     )
 
     private val platformCores: Map<String, List<RetroArchCore>> = mapOf(
@@ -900,6 +903,9 @@ object EmulatorRegistry {
         "zx" to listOf(
             RetroArchCore("fuse", "Fuse"),
             RetroArchCore("81", "EightyOne")
+        ),
+        "pc9800" to listOf(
+            RetroArchCore("np2kai", "Neko Project II Kai")
         )
     )
 
@@ -1101,7 +1107,7 @@ object EmulatorRegistry {
                 "msx", "msx2", "coleco",
                 "wonderswan", "wsc",
                 "arcade",
-                "c64", "vic20", "dos", "zx"
+                "c64", "vic20", "dos", "zx", "pc9800"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),

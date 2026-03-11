@@ -6,6 +6,7 @@ import com.nendo.argosy.ui.screens.settings.sections.input.BoxArtSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.BuiltinControlsSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.BuiltinVideoSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.EmulatorsSectionInput
+import com.nendo.argosy.ui.screens.settings.sections.input.AmbientLedSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.InterfaceSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.LightSectionsInput
 import com.nendo.argosy.ui.screens.settings.sections.input.ShaderStackSectionInput
@@ -29,6 +30,7 @@ class SettingsInputHandler(
         put(SettingsSection.BUILTIN_CONTROLS, BuiltinControlsSectionInput(viewModel))
         put(SettingsSection.BOX_ART, BoxArtSectionInput(viewModel))
         put(SettingsSection.INTERFACE, InterfaceSectionInput(viewModel))
+        put(SettingsSection.AMBIENT_LED, AmbientLedSectionInput(viewModel))
         put(SettingsSection.SHADER_STACK, ShaderStackSectionInput(viewModel))
         for (s in listOf(
             SettingsSection.BIOS, SettingsSection.SERVER, SettingsSection.HOME_SCREEN,

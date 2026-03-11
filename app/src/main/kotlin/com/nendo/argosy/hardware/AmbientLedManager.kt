@@ -61,6 +61,10 @@ class AmbientLedManager @Inject constructor(
     private var audioBrightnessEnabled = true
     private var audioColorsEnabled = false
     private var colorMode = AmbientLedColorMode.DOMINANT_3
+    @Volatile var coverArtEnabled = true
+        private set
+    private var screenEnabled = false
+    private var transitionMs = 250L
 
     private var smoothedBass = 0f
     private var smoothedMid = 0f
@@ -91,6 +95,9 @@ class AmbientLedManager @Inject constructor(
                 audioBrightnessEnabled = prefs.ambientLedAudioBrightness
                 audioColorsEnabled = prefs.ambientLedAudioColors
                 colorMode = prefs.ambientLedColorMode
+                coverArtEnabled = prefs.ambientLedCoverArtEnabled
+                screenEnabled = prefs.ambientLedScreenEnabled
+                transitionMs = prefs.ambientLedTransitionMs.toLong()
 
                 if (isEnabled && !wasEnabled) {
                     start()
@@ -199,7 +206,7 @@ class AmbientLedManager @Inject constructor(
     private fun startColorTransition() {
         transitionJob = scope.launch {
             val startTime = System.currentTimeMillis()
-            val duration = 200L
+            val duration = transitionMs
 
             val startLeft = currentLeftColors ?: return@launch
             val startRight = currentRightColors ?: return@launch
@@ -208,7 +215,7 @@ class AmbientLedManager @Inject constructor(
 
             while (isActive) {
                 val elapsed = System.currentTimeMillis() - startTime
-                val progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
+                val progress = if (duration <= 0) 1f else (elapsed.toFloat() / duration).coerceIn(0f, 1f)
 
                 currentLeftColors = lerpSideColors(startLeft, endLeft, progress)
                 currentRightColors = lerpSideColors(startRight, endRight, progress)

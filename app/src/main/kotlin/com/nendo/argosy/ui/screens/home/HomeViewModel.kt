@@ -203,11 +203,14 @@ class HomeViewModel @Inject constructor(
                 if (focusedGame != null && focusedGame.id != previousGameId) {
                     previousGameId = focusedGame.id
                     ambientLedManager.setContext(AmbientLedContext.GAME_HOVER)
-                    val colors = gradientExtractionDelegate.getGradient(focusedGame.id)
-                    if (colors != null) {
-                        ambientLedManager.setHoverColors(colors.first, colors.second)
-                    } else {
-                        ambientLedManager.clearHoverColors()
+                    if (ambientLedManager.coverArtEnabled) {
+                        val colors = focusedGame.gradientColors
+                            ?: gradientExtractionDelegate.getGradient(focusedGame.id)
+                        if (colors != null) {
+                            ambientLedManager.setHoverColors(colors.first, colors.second)
+                        } else {
+                            ambientLedManager.clearHoverColors()
+                        }
                     }
                 } else if (focusedGame == null && previousGameId != null) {
                     previousGameId = null

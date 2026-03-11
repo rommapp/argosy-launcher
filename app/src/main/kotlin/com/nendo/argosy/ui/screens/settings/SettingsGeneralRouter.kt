@@ -55,6 +55,10 @@ internal fun routeNavigateToHomeScreen(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = 0) }
 }
 
+internal fun routeNavigateToAmbientLed(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(currentSection = SettingsSection.AMBIENT_LED, focusedIndex = 0) }
+}
+
 // --- Emulator methods ---
 
 internal fun routeShowEmulatorPicker(vm: SettingsViewModel, config: PlatformEmulatorConfig) {

@@ -412,6 +412,7 @@ class SettingsViewModel @Inject constructor(
 
     fun navigateToBoxArt() = routeNavigateToBoxArt(this)
     fun navigateToHomeScreen() = routeNavigateToHomeScreen(this)
+    fun navigateToAmbientLed() = routeNavigateToAmbientLed(this)
 
     fun cycleBoxArtShape(direction: Int = 1) = displayDelegate.cycleBoxArtShape(viewModelScope, direction)
     fun cycleBoxArtCornerRadius(direction: Int = 1) = displayDelegate.cycleBoxArtCornerRadius(viewModelScope, direction)
@@ -441,6 +442,13 @@ class SettingsViewModel @Inject constructor(
     fun setAmbientLedAudioBrightness(enabled: Boolean) = displayDelegate.setAmbientLedAudioBrightness(viewModelScope, enabled)
     fun setAmbientLedAudioColors(enabled: Boolean) = displayDelegate.setAmbientLedAudioColors(viewModelScope, enabled)
     fun cycleAmbientLedColorMode(direction: Int = 1) = displayDelegate.cycleAmbientLedColorMode(viewModelScope, direction)
+    fun setAmbientLedCoverArtEnabled(enabled: Boolean) = displayDelegate.setAmbientLedCoverArtEnabled(viewModelScope, enabled)
+    fun setAmbientLedCustomColor(enabled: Boolean) = displayDelegate.setAmbientLedCustomColor(viewModelScope, enabled)
+    fun setAmbientLedCustomColorHue(hue: Int) = displayDelegate.setAmbientLedCustomColorHue(viewModelScope, hue)
+    fun adjustAmbientLedCustomColorHue(delta: Int) = displayDelegate.adjustAmbientLedCustomColorHue(viewModelScope, delta)
+    fun cycleAmbientLedTransitionMs(direction: Int) = displayDelegate.cycleAmbientLedTransitionMs(viewModelScope, direction)
+    fun cycleAmbientLedTransitionMsWrap() = displayDelegate.cycleAmbientLedTransitionMsWrap(viewModelScope)
+    fun setAmbientLedScreenEnabled(enabled: Boolean) = displayDelegate.setAmbientLedScreenEnabled(viewModelScope, enabled)
     fun setInstalledOnlyHome(enabled: Boolean) = displayDelegate.setInstalledOnlyHome(viewModelScope, enabled)
 
     fun loadPreviewGames() = routeLoadPreviewGames(this)

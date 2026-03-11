@@ -57,8 +57,6 @@ internal class InterfaceSectionInput(
             InterfaceItem.UiScale -> { viewModel.adjustUiScale(direction * 5); return InputResult.HANDLED }
             InterfaceItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(direction); return InputResult.HANDLED }
             InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(direction); return InputResult.HANDLED }
-            InterfaceItem.AmbientLedBrightness -> { viewModel.adjustAmbientLedBrightness(direction * 5); return InputResult.HANDLED }
-            InterfaceItem.AmbientLedColorMode -> { viewModel.cycleAmbientLedColorMode(direction); return InputResult.HANDLED }
             InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(direction); return InputResult.HANDLED }
             InterfaceItem.BgmVolume -> if (state.ambientAudio.enabled) { viewModel.adjustAmbientAudioVolume(direction); return InputResult.HANDLED }
             InterfaceItem.UiSoundsVolume -> if (state.sounds.enabled) { viewModel.adjustSoundVolume(direction); return InputResult.HANDLED }

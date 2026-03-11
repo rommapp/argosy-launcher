@@ -480,6 +480,62 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setAmbientLedCoverArtEnabled(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setAmbientLedCoverArtEnabled(enabled)
+            _state.update { it.copy(ambientLedCoverArtEnabled = enabled) }
+        }
+    }
+
+    fun setAmbientLedCustomColor(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setAmbientLedCustomColor(enabled)
+            _state.update { it.copy(ambientLedCustomColor = enabled) }
+        }
+    }
+
+    fun setAmbientLedCustomColorHue(scope: CoroutineScope, hue: Int) {
+        scope.launch {
+            val clamped = hue.coerceIn(0, 360)
+            preferencesRepository.setAmbientLedCustomColorHue(clamped)
+            _state.update { it.copy(ambientLedCustomColorHue = clamped) }
+        }
+    }
+
+    fun adjustAmbientLedCustomColorHue(scope: CoroutineScope, delta: Int) {
+        setAmbientLedCustomColorHue(scope, _state.value.ambientLedCustomColorHue + delta)
+    }
+
+    private val transitionSteps = listOf(0, 100, 250, 500, 1000)
+
+    fun setAmbientLedTransitionMs(scope: CoroutineScope, ms: Int) {
+        scope.launch {
+            preferencesRepository.setAmbientLedTransitionMs(ms)
+            _state.update { it.copy(ambientLedTransitionMs = ms) }
+        }
+    }
+
+    fun cycleAmbientLedTransitionMs(scope: CoroutineScope, direction: Int) {
+        val current = _state.value.ambientLedTransitionMs
+        val currentIndex = transitionSteps.indexOf(current).coerceAtLeast(0)
+        val nextIndex = (currentIndex + direction).coerceIn(0, transitionSteps.lastIndex)
+        setAmbientLedTransitionMs(scope, transitionSteps[nextIndex])
+    }
+
+    fun cycleAmbientLedTransitionMsWrap(scope: CoroutineScope) {
+        val current = _state.value.ambientLedTransitionMs
+        val currentIndex = transitionSteps.indexOf(current).coerceAtLeast(0)
+        val nextIndex = (currentIndex + 1) % transitionSteps.size
+        setAmbientLedTransitionMs(scope, transitionSteps[nextIndex])
+    }
+
+    fun setAmbientLedScreenEnabled(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setAmbientLedScreenEnabled(enabled)
+            _state.update { it.copy(ambientLedScreenEnabled = enabled) }
+        }
+    }
+
     fun setInstalledOnlyHome(scope: CoroutineScope, enabled: Boolean) {
         scope.launch {
             preferencesRepository.setInstalledOnlyHome(enabled)

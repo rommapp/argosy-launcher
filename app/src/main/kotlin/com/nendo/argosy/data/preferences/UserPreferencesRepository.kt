@@ -133,6 +133,11 @@ class UserPreferencesRepository @Inject constructor(
             ambientLedAudioBrightness = display.ambientLedAudioBrightness,
             ambientLedAudioColors = display.ambientLedAudioColors,
             ambientLedColorMode = display.ambientLedColorMode,
+            ambientLedCoverArtEnabled = display.ambientLedCoverArtEnabled,
+            ambientLedCustomColor = display.ambientLedCustomColor,
+            ambientLedCustomColorHue = display.ambientLedCustomColorHue,
+            ambientLedScreenEnabled = display.ambientLedScreenEnabled,
+            ambientLedTransitionMs = display.ambientLedTransitionMs,
             androidDataSafUri = sync.androidDataSafUri,
             builtinLibretroEnabled = builtinEnabled,
             appAffinityEnabled = app.appAffinityEnabled,
@@ -194,6 +199,11 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setAmbientLedAudioBrightness(enabled: Boolean) = displayPrefs.setAmbientLedAudioBrightness(enabled)
     suspend fun setAmbientLedAudioColors(enabled: Boolean) = displayPrefs.setAmbientLedAudioColors(enabled)
     suspend fun setAmbientLedColorMode(mode: AmbientLedColorMode) = displayPrefs.setAmbientLedColorMode(mode)
+    suspend fun setAmbientLedCoverArtEnabled(enabled: Boolean) = displayPrefs.setAmbientLedCoverArtEnabled(enabled)
+    suspend fun setAmbientLedCustomColor(enabled: Boolean) = displayPrefs.setAmbientLedCustomColor(enabled)
+    suspend fun setAmbientLedCustomColorHue(hue: Int) = displayPrefs.setAmbientLedCustomColorHue(hue)
+    suspend fun setAmbientLedTransitionMs(ms: Int) = displayPrefs.setAmbientLedTransitionMs(ms)
+    suspend fun setAmbientLedScreenEnabled(enabled: Boolean) = displayPrefs.setAmbientLedScreenEnabled(enabled)
     suspend fun setScreenDimmerEnabled(enabled: Boolean) = displayPrefs.setScreenDimmerEnabled(enabled)
     suspend fun setScreenDimmerTimeoutMinutes(minutes: Int) = displayPrefs.setScreenDimmerTimeoutMinutes(minutes)
     suspend fun setScreenDimmerLevel(level: Int) = displayPrefs.setScreenDimmerLevel(level)
@@ -521,6 +531,11 @@ data class UserPreferences(
     val ambientLedAudioBrightness: Boolean = true,
     val ambientLedAudioColors: Boolean = false,
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,
+    val ambientLedCoverArtEnabled: Boolean = true,
+    val ambientLedCustomColor: Boolean = false,
+    val ambientLedCustomColorHue: Int = 200,
+    val ambientLedScreenEnabled: Boolean = false,
+    val ambientLedTransitionMs: Int = 250,
     val androidDataSafUri: String? = null,
     val builtinLibretroEnabled: Boolean = true,
     val appAffinityEnabled: Boolean = false,

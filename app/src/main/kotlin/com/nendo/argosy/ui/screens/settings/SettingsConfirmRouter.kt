@@ -7,6 +7,9 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
+import com.nendo.argosy.ui.screens.settings.sections.AmbientLedItem
+import com.nendo.argosy.ui.screens.settings.sections.ambientLedItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.ambientLedMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosMaxFocusIndex
@@ -22,6 +25,7 @@ import com.nendo.argosy.ui.screens.settings.sections.boxArtItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.controlsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.interfaceFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
@@ -125,6 +129,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.INTERFACE -> routeInterfaceConfirm(vm, state)
         SettingsSection.HOME_SCREEN -> routeHomeScreenConfirm(vm, state)
         SettingsSection.BOX_ART -> routeBoxArtConfirm(vm, state)
+        SettingsSection.AMBIENT_LED -> routeAmbientLedConfirm(vm, state)
         SettingsSection.CONTROLS -> routeControlsConfirm(vm, state)
         SettingsSection.EMULATORS -> routeEmulatorsConfirm(vm, state)
         SettingsSection.BIOS -> routeBiosConfirm(vm, state)
@@ -240,11 +245,7 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
         InterfaceItem.ScreenDimmer -> vm.toggleScreenDimmer()
         InterfaceItem.DimAfter -> vm.cycleScreenDimmerTimeout()
         InterfaceItem.DimLevel -> vm.cycleScreenDimmerLevel()
-        InterfaceItem.AmbientLed -> vm.setAmbientLedEnabled(!state.display.ambientLedEnabled)
-        InterfaceItem.AmbientLedBrightness -> vm.cycleAmbientLedBrightness()
-        InterfaceItem.AmbientLedAudioBrightness -> vm.setAmbientLedAudioBrightness(!state.display.ambientLedAudioBrightness)
-        InterfaceItem.AmbientLedAudioColors -> vm.setAmbientLedAudioColors(!state.display.ambientLedAudioColors)
-        InterfaceItem.AmbientLedColorMode -> vm.cycleAmbientLedColorMode()
+        InterfaceItem.AmbientLedSettings -> vm.navigateToAmbientLed()
         InterfaceItem.BgmToggle -> {
             val newEnabled = !state.ambientAudio.enabled
             vm.setAmbientAudioEnabled(newEnabled)
@@ -331,6 +332,26 @@ private fun routeBoxArtConfirm(vm: SettingsViewModel, state: SettingsUiState): I
         BoxArtItem.GlowColor -> vm.cycleGlowColorMode()
         BoxArtItem.InnerEffect -> vm.cycleBoxArtInnerEffect()
         BoxArtItem.InnerThickness -> vm.cycleBoxArtInnerEffectThickness()
+        else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routeAmbientLedConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    when (ambientLedItemAtFocusIndex(state.focusedIndex, state.display)) {
+        AmbientLedItem.Enable -> vm.setAmbientLedEnabled(!state.display.ambientLedEnabled)
+        AmbientLedItem.CustomColor -> vm.setAmbientLedCustomColor(!state.display.ambientLedCustomColor)
+        AmbientLedItem.CoverArtColors -> vm.setAmbientLedCoverArtEnabled(!state.display.ambientLedCoverArtEnabled)
+        AmbientLedItem.TransitionSpeed -> vm.cycleAmbientLedTransitionMsWrap()
+        AmbientLedItem.AudioBrightness -> vm.setAmbientLedAudioBrightness(!state.display.ambientLedAudioBrightness)
+        AmbientLedItem.AudioColors -> vm.setAmbientLedAudioColors(!state.display.ambientLedAudioColors)
+        AmbientLedItem.ScreenColors -> {
+            if (!state.display.ambientLedScreenEnabled && !state.display.hasScreenCapturePermission) {
+                vm.requestScreenCapturePermission()
+            }
+            vm.setAmbientLedScreenEnabled(!state.display.ambientLedScreenEnabled)
+        }
+        AmbientLedItem.ScreenColorMode -> vm.cycleAmbientLedColorMode()
         else -> {}
     }
     return InputResult.HANDLED
@@ -528,6 +549,11 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.BOX_ART -> {
             vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = 5) }; true
         }
+        state.currentSection == SettingsSection.AMBIENT_LED -> {
+            val layoutState = InterfaceLayoutState(state.display, state.ambientAudio.enabled, state.ambientAudio.isFolder, state.sounds.enabled, state.display.hasSecondaryDisplay, state.display.hasPhysicalSecondaryDisplay, state.display.dualScreenEnabled)
+            val focusIdx = interfaceFocusIndexOf(InterfaceItem.AmbientLedSettings, layoutState)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = focusIdx) }; true
+        }
         state.currentSection == SettingsSection.HOME_SCREEN -> {
             vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = 6) }; true
         }
@@ -621,6 +647,7 @@ private fun computeMaxFocusIndex(
     )
     SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
     SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)
+    SettingsSection.AMBIENT_LED -> ambientLedMaxFocusIndex(state.display)
     SettingsSection.CONTROLS -> controlsMaxFocusIndex(state.controls)
     SettingsSection.EMULATORS -> emulatorsMaxFocusIndex(
         state.emulators.canAutoAssign,

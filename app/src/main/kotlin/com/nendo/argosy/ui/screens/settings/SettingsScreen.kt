@@ -58,6 +58,7 @@ import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.delegates.BuiltinNavigationTarget
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
+import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
@@ -348,6 +349,7 @@ fun SettingsScreen(
                         SettingsSection.INTERFACE -> "INTERFACE"
                         SettingsSection.BOX_ART -> "BOX ART"
                         SettingsSection.HOME_SCREEN -> "HOME SCREEN"
+                        SettingsSection.AMBIENT_LED -> "LED CONTROL"
                         SettingsSection.CONTROLS -> "CONTROLS"
                         SettingsSection.EMULATORS -> "EMULATORS"
                         SettingsSection.BUILTIN_VIDEO -> "BUILT-IN VIDEO"
@@ -390,6 +392,7 @@ fun SettingsScreen(
                     SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
                     SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)
                     SettingsSection.HOME_SCREEN -> HomeScreenSection(uiState, viewModel)
+                    SettingsSection.AMBIENT_LED -> AmbientLedSection(uiState, viewModel)
                     SettingsSection.CONTROLS -> ControlsSection(uiState, viewModel)
                     SettingsSection.EMULATORS -> EmulatorsSection(
                         uiState = uiState,

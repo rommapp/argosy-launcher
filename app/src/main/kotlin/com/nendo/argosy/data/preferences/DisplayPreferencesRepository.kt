@@ -50,6 +50,11 @@ data class DisplayPreferences(
     val ambientLedAudioBrightness: Boolean = true,
     val ambientLedAudioColors: Boolean = false,
     val ambientLedColorMode: AmbientLedColorMode = AmbientLedColorMode.DOMINANT_3,
+    val ambientLedCoverArtEnabled: Boolean = true,
+    val ambientLedCustomColor: Boolean = false,
+    val ambientLedCustomColorHue: Int = 200,
+    val ambientLedTransitionMs: Int = 250,
+    val ambientLedScreenEnabled: Boolean = false,
     val screenDimmerEnabled: Boolean = true,
     val screenDimmerTimeoutMinutes: Int = 2,
     val screenDimmerLevel: Int = 50,
@@ -100,6 +105,11 @@ class DisplayPreferencesRepository @Inject constructor(
         val AMBIENT_LED_AUDIO_BRIGHTNESS = booleanPreferencesKey("ambient_led_audio_brightness")
         val AMBIENT_LED_AUDIO_COLORS = booleanPreferencesKey("ambient_led_audio_colors")
         val AMBIENT_LED_COLOR_MODE = stringPreferencesKey("ambient_led_color_mode")
+        val AMBIENT_LED_COVER_ART_ENABLED = booleanPreferencesKey("ambient_led_cover_art_enabled")
+        val AMBIENT_LED_CUSTOM_COLOR = booleanPreferencesKey("ambient_led_custom_color")
+        val AMBIENT_LED_CUSTOM_COLOR_HUE = intPreferencesKey("ambient_led_custom_color_hue")
+        val AMBIENT_LED_TRANSITION_MS = intPreferencesKey("ambient_led_transition_ms")
+        val AMBIENT_LED_SCREEN_ENABLED = booleanPreferencesKey("ambient_led_screen_enabled")
         val SCREEN_DIMMER_ENABLED = booleanPreferencesKey("screen_dimmer_enabled")
         val SCREEN_DIMMER_TIMEOUT_MINUTES = intPreferencesKey("screen_dimmer_timeout_minutes")
         val SCREEN_DIMMER_LEVEL = intPreferencesKey("screen_dimmer_level")
@@ -147,6 +157,11 @@ class DisplayPreferencesRepository @Inject constructor(
             ambientLedAudioBrightness = prefs[Keys.AMBIENT_LED_AUDIO_BRIGHTNESS] ?: true,
             ambientLedAudioColors = prefs[Keys.AMBIENT_LED_AUDIO_COLORS] ?: false,
             ambientLedColorMode = AmbientLedColorMode.fromString(prefs[Keys.AMBIENT_LED_COLOR_MODE]),
+            ambientLedCoverArtEnabled = prefs[Keys.AMBIENT_LED_COVER_ART_ENABLED] ?: true,
+            ambientLedCustomColor = prefs[Keys.AMBIENT_LED_CUSTOM_COLOR] ?: false,
+            ambientLedCustomColorHue = prefs[Keys.AMBIENT_LED_CUSTOM_COLOR_HUE] ?: 200,
+            ambientLedTransitionMs = prefs[Keys.AMBIENT_LED_TRANSITION_MS] ?: 250,
+            ambientLedScreenEnabled = prefs[Keys.AMBIENT_LED_SCREEN_ENABLED] ?: false,
             screenDimmerEnabled = prefs[Keys.SCREEN_DIMMER_ENABLED] ?: true,
             screenDimmerTimeoutMinutes = prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] ?: 2,
             screenDimmerLevel = prefs[Keys.SCREEN_DIMMER_LEVEL] ?: 50,
@@ -305,6 +320,26 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setAmbientLedColorMode(mode: AmbientLedColorMode) {
         dataStore.edit { it[Keys.AMBIENT_LED_COLOR_MODE] = mode.name }
+    }
+
+    suspend fun setAmbientLedCoverArtEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.AMBIENT_LED_COVER_ART_ENABLED] = enabled }
+    }
+
+    suspend fun setAmbientLedCustomColor(enabled: Boolean) {
+        dataStore.edit { it[Keys.AMBIENT_LED_CUSTOM_COLOR] = enabled }
+    }
+
+    suspend fun setAmbientLedCustomColorHue(hue: Int) {
+        dataStore.edit { it[Keys.AMBIENT_LED_CUSTOM_COLOR_HUE] = hue.coerceIn(0, 360) }
+    }
+
+    suspend fun setAmbientLedTransitionMs(ms: Int) {
+        dataStore.edit { it[Keys.AMBIENT_LED_TRANSITION_MS] = ms }
+    }
+
+    suspend fun setAmbientLedScreenEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.AMBIENT_LED_SCREEN_ENABLED] = enabled }
     }
 
     suspend fun setScreenDimmerEnabled(enabled: Boolean) {

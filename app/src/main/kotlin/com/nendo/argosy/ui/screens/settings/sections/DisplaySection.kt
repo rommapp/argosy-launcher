@@ -9,12 +9,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.WbTwilight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.nendo.argosy.data.preferences.AmbientLedColorMode
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.CyclePreference
@@ -23,7 +23,6 @@ import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
-import com.nendo.argosy.ui.components.TrackSliderPreference
 import com.nendo.argosy.ui.components.colorIntToHue
 import com.nendo.argosy.ui.components.hueToColorInt
 import com.nendo.argosy.ui.screens.settings.DisplayState
@@ -58,49 +57,21 @@ internal sealed class DisplayItem(
     data object DimAfter : DisplayItem("dimAfter", "screenSafety")
     data object DimLevel : DisplayItem("dimLevel", "screenSafety")
 
-    data object AmbientLed : DisplayItem(
-        key = "ambientLed",
+    data object AmbientLedSettings : DisplayItem(
+        key = "ambientLedSettings",
         section = "ambientLed",
         visibleWhen = { it.ambientLedAvailable }
-    )
-    data object AmbientLedBrightness : DisplayItem(
-        key = "ambientLedBrightness",
-        section = "ambientLed",
-        visibleWhen = { it.ambientLedAvailable && it.ambientLedEnabled }
-    )
-    data object AmbientLedAudioBrightness : DisplayItem(
-        key = "ambientLedAudioBrightness",
-        section = "ambientLed",
-        visibleWhen = { it.ambientLedAvailable && it.ambientLedEnabled }
-    )
-    data object AmbientLedAudioColors : DisplayItem(
-        key = "ambientLedAudioColors",
-        section = "ambientLed",
-        visibleWhen = { it.ambientLedAvailable && it.ambientLedEnabled }
-    )
-    data object AmbientLedColorMode : DisplayItem(
-        key = "ambientLedColorMode",
-        section = "ambientLed",
-        visibleWhen = { it.ambientLedAvailable && it.ambientLedEnabled }
     )
 
     companion object {
         private val AppearanceHeader = Header("appearanceHeader", "appearance", "Appearance")
         private val ScreenSafetyHeader = Header("screenSafetyHeader", "screenSafety", "Screen Safety")
-        private val AmbientLedHeader = Header(
-            key = "ambientLedHeader",
-            section = "ambientLed",
-            title = "Ambient Lighting",
-            visibleWhen = { it.ambientLedAvailable }
-        )
-
         val ALL: List<DisplayItem> = listOf(
             AppearanceHeader,
             Theme, AccentColor, SecondaryColor, GridDensity, UiScale, BoxArt, HomeScreen,
             ScreenSafetyHeader,
             ScreenDimmer, DimAfter, DimLevel,
-            AmbientLedHeader,
-            AmbientLed, AmbientLedBrightness, AmbientLedAudioBrightness, AmbientLedAudioColors, AmbientLedColorMode
+            AmbientLedSettings
         )
     }
 }
@@ -127,10 +98,10 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val currentHue = display.primaryColor?.let { colorIntToHue(it) }
     val secondaryHue = display.secondaryColor?.let { colorIntToHue(it) }
 
-    val visibleItems = remember(display.ambientLedAvailable, display.ambientLedEnabled) {
+    val visibleItems = remember(display.ambientLedAvailable) {
         displayLayout.visibleItems(display)
     }
-    val sections = remember(display.ambientLedAvailable, display.ambientLedEnabled) {
+    val sections = remember(display.ambientLedAvailable) {
         displayLayout.buildSections(display)
     }
 
@@ -259,55 +230,12 @@ fun DisplaySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onClick = { viewModel.cycleScreenDimmerLevel() }
                 )
 
-                DisplayItem.AmbientLed -> {
-                    val subtitle = if (!display.hasScreenCapturePermission && !display.ambientLedEnabled) {
-                        "Requires screen capture permission for in-game colors"
-                    } else {
-                        "Context-aware thumbstick LED colors"
-                    }
-                    SwitchPreference(
-                        title = "Ambient Lighting",
-                        subtitle = subtitle,
-                        isEnabled = display.ambientLedEnabled,
-                        isFocused = isFocused(item),
-                        onToggle = {
-                            if (!display.ambientLedEnabled && !display.hasScreenCapturePermission) {
-                                viewModel.requestScreenCapturePermission()
-                            }
-                            viewModel.setAmbientLedEnabled(!display.ambientLedEnabled)
-                        }
-                    )
-                }
-
-                DisplayItem.AmbientLedBrightness -> TrackSliderPreference(
-                    title = "Brightness",
-                    value = display.ambientLedBrightness / 100f,
-                    steps = 19,
+                DisplayItem.AmbientLedSettings -> NavigationPreference(
+                    icon = Icons.Outlined.WbTwilight,
+                    title = "LED Control",
+                    subtitle = "Thumbstick LED colors and effects",
                     isFocused = isFocused(item),
-                    onValueChange = { viewModel.setAmbientLedBrightness((it * 100).toInt()) }
-                )
-
-                DisplayItem.AmbientLedAudioBrightness -> SwitchPreference(
-                    title = "Audio Brightness",
-                    subtitle = "LEDs pulse with music",
-                    isEnabled = display.ambientLedAudioBrightness,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setAmbientLedAudioBrightness(!display.ambientLedAudioBrightness) }
-                )
-
-                DisplayItem.AmbientLedAudioColors -> SwitchPreference(
-                    title = "Audio Colors",
-                    subtitle = "Intensity shifts between color bands",
-                    isEnabled = display.ambientLedAudioColors,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setAmbientLedAudioColors(!display.ambientLedAudioColors) }
-                )
-
-                DisplayItem.AmbientLedColorMode -> CyclePreference(
-                    title = "Color Selection",
-                    value = display.ambientLedColorMode.displayName,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleAmbientLedColorMode() }
+                    onClick = { viewModel.navigateToAmbientLed() }
                 )
             }
         }

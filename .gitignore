@@ -52,10 +52,8 @@ Thumbs.db
 .refs/
 .research/
 
-# Development tools (compiled binaries, local test data)
-tools/chd_serial
-tools/*.tsv
-tools/*.json
+# Development tools
+tools/
 
 # Wiki (separate repo)
 wiki/

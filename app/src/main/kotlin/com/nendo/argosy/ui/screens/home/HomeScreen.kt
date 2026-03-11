@@ -121,6 +121,7 @@ import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
@@ -155,7 +156,7 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         snapshotFlow { Triple(uiState.focusedGameIndex, uiState.currentRow, uiState.currentItems.size) }
-            .collect { (focusedIndex, _, itemsSize) ->
+            .collectLatest { (focusedIndex, _, itemsSize) ->
                 if (itemsSize > 0) {
                     if (skipNextProgrammaticScroll) {
                         skipNextProgrammaticScroll = false

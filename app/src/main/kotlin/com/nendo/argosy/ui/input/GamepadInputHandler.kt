@@ -87,7 +87,7 @@ class GamepadInputHandler @Inject constructor(
     }
 
     private val lastInputTimes = mutableMapOf<GamepadEvent, Long>()
-    private val inputDebounceMs = 80L
+    private val inputDebounceMs = 140L
     private var inputBlockedUntil = 0L
 
     fun blockInputFor(durationMs: Long) {

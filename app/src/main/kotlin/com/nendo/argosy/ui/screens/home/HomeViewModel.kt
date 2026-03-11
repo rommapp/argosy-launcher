@@ -79,6 +79,7 @@ class HomeViewModel @Inject constructor(
 
     private var achievementPrefetchJob: Job? = null
     private val achievementPrefetchDebounceMs = 300L
+    private val achievementRefetchThresholdMs = 5 * 60 * 1000L
     private var currentBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID
 
     init {
@@ -721,6 +722,8 @@ class HomeViewModel @Inject constructor(
         val game = _uiState.value.focusedGame ?: return
         viewModelScope.launch {
             val entity = gameRepository.getById(game.id) ?: return@launch
+            val fetchedAt = entity.achievementsFetchedAt
+            if (fetchedAt != null && System.currentTimeMillis() - fetchedAt < achievementRefetchThresholdMs) return@launch
             val rommId = entity.rommId
             val raId = entity.effectiveRaId
             if (rommId == null && raId == null && !RAConsoleIds.isSupported(entity.platformSlug)) return@launch

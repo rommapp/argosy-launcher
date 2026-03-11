@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +36,7 @@ class GradientExtractionDelegate @Inject constructor(
 
     private val pendingExtractions = mutableSetOf<Long>()
     private var extractionJob: Job? = null
+    private var loadJob: Job? = null
     private var currentPreset: GradientPreset = GradientPreset.BALANCED
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -88,18 +90,25 @@ class GradientExtractionDelegate @Inject constructor(
         if (missing.isEmpty()) return
 
         scope.launch(Dispatchers.IO) {
-            val entities = gameDao.getByIds(missing)
-            val loaded = mutableMapOf<Long, Pair<Color, Color>>()
-            for (entity in entities) {
-                val json = entity.gradientColors ?: continue
-                val allPresets = gradientColorExtractor.deserializeAllPresets(json) ?: continue
-                persistedPresets[entity.id] = allPresets
-                val colors = allPresets[currentPreset] ?: continue
-                loaded[entity.id] = colors
-            }
-            if (loaded.isNotEmpty()) {
-                _gradients.value = _gradients.value + loaded
-            }
+            loadPersistedGradientsImmediate(missing)
+        }
+    }
+
+    private suspend fun loadPersistedGradientsImmediate(gameIds: List<Long>) {
+        val missing = gameIds.filter { !hasGradient(it) }
+        if (missing.isEmpty()) return
+
+        val entities = gameDao.getByIds(missing)
+        val loaded = mutableMapOf<Long, Pair<Color, Color>>()
+        for (entity in entities) {
+            val json = entity.gradientColors ?: continue
+            val allPresets = gradientColorExtractor.deserializeAllPresets(json) ?: continue
+            persistedPresets[entity.id] = allPresets
+            val colors = allPresets[currentPreset] ?: continue
+            loaded[entity.id] = colors
+        }
+        if (loaded.isNotEmpty()) {
+            _gradients.value = _gradients.value + loaded
         }
     }
 
@@ -120,10 +129,15 @@ class GradientExtractionDelegate @Inject constructor(
         if (gamesToLoad.isEmpty()) return
 
         val gameIds = gamesToLoad.map { it.gameId }
-        loadPersistedGradientsForGames(scope, gameIds)
+
+        loadJob?.cancel()
+        loadJob = scope.launch(Dispatchers.IO) {
+            loadPersistedGradientsImmediate(gameIds)
+        }
 
         extractionJob?.cancel()
         extractionJob = scope.launch(extractionDispatcher) {
+            delay(150)
             for (request in gamesToLoad) {
                 if (hasGradient(request.gameId)) continue
                 val coverPath = request.coverPath ?: continue

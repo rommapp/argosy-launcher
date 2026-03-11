@@ -76,6 +76,11 @@ internal sealed class InterfaceItem(
     data object Theme : InterfaceItem("theme", "appearance")
     data object AccentColor : InterfaceItem("accentColor", "appearance")
     data object SecondaryColor : InterfaceItem("secondaryColor", "appearance")
+    data object AmbientLedSettings : InterfaceItem(
+        key = "ambientLedSettings",
+        section = "appearance",
+        visibleWhen = { it.display.ambientLedAvailable }
+    )
     data object GridDensity : InterfaceItem("gridDensity", "appearance")
     data object UiScale : InterfaceItem("uiScale", "appearance")
     data object BoxArt : InterfaceItem("boxArt", "appearance")
@@ -90,13 +95,6 @@ internal sealed class InterfaceItem(
     data object ScreenDimmer : InterfaceItem("screenDimmer", "screenSafety")
     data object DimAfter : InterfaceItem("dimAfter", "screenSafety")
     data object DimLevel : InterfaceItem("dimLevel", "screenSafety")
-
-    // Ambient LED
-    data object AmbientLedSettings : InterfaceItem(
-        key = "ambientLedSettings",
-        section = "ambientLed",
-        visibleWhen = { it.display.ambientLedAvailable }
-    )
 
     // Background Music
     data object BgmToggle : InterfaceItem("bgmToggle", "bgm")
@@ -136,10 +134,9 @@ internal sealed class InterfaceItem(
 
         val ALL: List<InterfaceItem> = listOf(
             AppearanceHeader,
-            Theme, AccentColor, SecondaryColor, GridDensity, UiScale, BoxArt, HomeScreen, DualScreenEnabled, DisplayRoles,
+            Theme, AccentColor, SecondaryColor, AmbientLedSettings, GridDensity, UiScale, BoxArt, HomeScreen, DualScreenEnabled, DisplayRoles,
             ScreenSafetyHeader,
             ScreenDimmer, DimAfter, DimLevel,
-            AmbientLedSettings,
             BgmSpacer, BgmHeader,
             BgmToggle, BgmVolume, BgmFile, BgmShuffle,
             UiSoundsSpacer, UiSoundsHeader,

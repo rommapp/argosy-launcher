@@ -936,10 +936,12 @@ private fun HomeHeader(
             var virtualPosition by remember { mutableStateOf(virtualCenterFor(currentIdx)) }
             var lastCurrentIdx by remember { mutableStateOf(currentIdx) }
             var lastRowsSize by remember { mutableStateOf(rows.size) }
+            var snapNext by remember { mutableStateOf(true) }
 
             LaunchedEffect(rows.size) {
                 if (rows.isEmpty()) return@LaunchedEffect
                 if (rows.size != lastRowsSize) {
+                    snapNext = true
                     virtualPosition = virtualCenterFor(currentIdx)
                     lastCurrentIdx = currentIdx
                     lastRowsSize = rows.size
@@ -972,10 +974,11 @@ private fun HomeHeader(
             }
 
             LaunchedEffect(virtualPosition) {
-                if (lastRowsSize == rows.size) {
-                    breadcrumbListState.animateScrollToItem(virtualPosition, -centerOffset())
-                } else {
+                if (snapNext) {
+                    snapNext = false
                     breadcrumbListState.scrollToItem(virtualPosition, -centerOffset())
+                } else {
+                    breadcrumbListState.animateScrollToItem(virtualPosition, -centerOffset())
                 }
             }
 

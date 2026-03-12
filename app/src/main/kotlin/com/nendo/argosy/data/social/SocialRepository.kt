@@ -8,14 +8,19 @@ import android.util.Log
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
+import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
+import com.nendo.argosy.data.local.entity.SocialSyncType
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.sync.SocialSyncCoordinator
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.ui.notification.NotificationDuration
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.NotificationType
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -27,6 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,12 +44,14 @@ class SocialRepository @Inject constructor(
     private val socialService: ArgosSocialService,
     private val preferencesRepository: UserPreferencesRepository,
     private val playSessionDao: PlaySessionDao,
+    private val pendingSocialSyncDao: PendingSocialSyncDao,
     private val gameDao: GameDao,
     private val achievementDao: AchievementDao,
     private val notificationManager: NotificationManager,
     private val discordTokenHolder: DiscordTokenHolder,
     private val playSessionTracker: PlaySessionTracker,
-    private val achievementUpdateBus: AchievementUpdateBus
+    private val achievementUpdateBus: AchievementUpdateBus,
+    private val socialSyncCoordinator: Lazy<SocialSyncCoordinator>
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var hasCompletedInitialSync = false
@@ -528,10 +536,6 @@ class SocialRepository @Inject constructor(
     }
 
     suspend fun syncPlaySessions(): SyncResult {
-        if (!socialService.isConnected()) {
-            return SyncResult.NotConnected
-        }
-
         val prefs = preferencesRepository.userPreferences.first()
         val lastSync = prefs.lastPlaySessionSync
 
@@ -545,9 +549,10 @@ class SocialRepository @Inject constructor(
             return SyncResult.Success(0)
         }
 
-        val payloads = sessions.mapNotNull { session ->
-            val userId = session.userId ?: return@mapNotNull null
-            ArgosSocialService.PlaySessionPayload(
+        var queued = 0
+        for (session in sessions) {
+            val userId = session.userId ?: continue
+            val payload = ArgosSocialService.PlaySessionPayload(
                 userId = userId,
                 deviceId = session.deviceId,
                 deviceManufacturer = session.deviceManufacturer,
@@ -557,21 +562,33 @@ class SocialRepository @Inject constructor(
                 platformSlug = session.platformSlug,
                 startTime = session.startTime.toString(),
                 endTime = session.endTime.toString(),
-                continued = session.continued
+                continued = session.continued,
+                standbyMs = session.standbyMs,
+                activePlayMs = session.activePlayMs
             )
+
+            val payloadJson = JSONObject(payload.toMap().mapValues { (_, v) -> v ?: JSONObject.NULL }).toString()
+            pendingSocialSyncDao.insert(
+                PendingSocialSyncEntity(
+                    syncType = SocialSyncType.PLAY_SESSION,
+                    payloadJson = payloadJson,
+                    occurredAt = session.startTime
+                )
+            )
+            queued++
         }
 
-        if (payloads.isEmpty()) {
-            return SyncResult.Success(0)
+        if (queued > 0) {
+            val maxEndTime = sessions.maxOf { it.endTime }
+            preferencesRepository.setLastPlaySessionSyncTime(maxEndTime)
+            Log.d(TAG, "Queued $queued play sessions for sync, lastSync updated to $maxEndTime")
+
+            if (socialService.isConnected()) {
+                scope.launch { socialSyncCoordinator.get().processQueue() }
+            }
         }
 
-        socialService.syncPlaySessions(payloads)
-
-        val maxEndTime = sessions.maxOf { it.endTime }
-        preferencesRepository.setLastPlaySessionSyncTime(maxEndTime)
-
-        Log.d(TAG, "Synced ${payloads.size} play sessions, lastSync updated to $maxEndTime")
-        return SyncResult.Success(payloads.size)
+        return SyncResult.Success(queued)
     }
 
     private fun observeAchievementUpdates() {
@@ -902,9 +919,8 @@ class SocialRepository @Inject constructor(
         )
     }
 
-    fun emitStartedPlaying(igdbId: Long?, gameTitle: String, platformSlug: String): Boolean {
-        if (!socialService.isConnected()) return false
-        return socialService.createFeedEvent(
+    suspend fun emitStartedPlaying(igdbId: Long?, gameTitle: String, platformSlug: String) {
+        queueFeedEvent(
             eventType = FeedEventType.STARTED_PLAYING.value,
             igdbId = igdbId,
             gameTitle = gameTitle,
@@ -912,9 +928,8 @@ class SocialRepository @Inject constructor(
         )
     }
 
-    fun emitMarathonSession(igdbId: Long?, gameTitle: String, durationMins: Int, platformSlug: String): Boolean {
-        if (!socialService.isConnected()) return false
-        return socialService.createFeedEvent(
+    suspend fun emitMarathonSession(igdbId: Long?, gameTitle: String, durationMins: Int, platformSlug: String) {
+        queueFeedEvent(
             eventType = FeedEventType.MARATHON_SESSION.value,
             igdbId = igdbId,
             gameTitle = gameTitle,
@@ -923,6 +938,34 @@ class SocialRepository @Inject constructor(
                 "platform_slug" to platformSlug
             )
         )
+    }
+
+    private suspend fun queueFeedEvent(
+        eventType: String,
+        igdbId: Long?,
+        gameTitle: String,
+        data: Map<String, Any?>
+    ) {
+        val payloadJson = JSONObject(buildMap<String, Any?> {
+            put("event_type", eventType)
+            put("igdb_id", igdbId)
+            put("game_title", gameTitle)
+            put("data", JSONObject(data))
+        }).toString()
+
+        pendingSocialSyncDao.insert(
+            PendingSocialSyncEntity(
+                syncType = SocialSyncType.FEED_EVENT,
+                payloadJson = payloadJson,
+                occurredAt = Instant.now()
+            )
+        )
+
+        Log.d(TAG, "Queued feed event: $eventType for $gameTitle")
+
+        if (socialService.isConnected()) {
+            scope.launch { socialSyncCoordinator.get().processQueue() }
+        }
     }
 
     fun createDoodle(

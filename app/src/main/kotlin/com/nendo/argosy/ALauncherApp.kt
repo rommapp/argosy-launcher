@@ -14,6 +14,7 @@ import com.nendo.argosy.data.sync.SaveSyncDownloadObserver
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.download.DownloadServiceController
 import com.nendo.argosy.data.sync.SaveSyncWorker
+import com.nendo.argosy.data.sync.SocialSyncWorker
 import com.nendo.argosy.data.sync.SyncServiceController
 import com.nendo.argosy.data.update.UpdateCheckWorker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
@@ -70,6 +71,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         super.onCreate()
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
+        SocialSyncWorker.schedule(this)
         CoreUpdateCheckWorker.schedule(this)
         saveSyncDownloadObserver.start()
         cheatsDownloadObserver.start()

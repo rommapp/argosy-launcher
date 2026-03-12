@@ -23,6 +23,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
+import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -57,6 +58,7 @@ import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialGameCacheEntity
 import com.nendo.argosy.data.local.entity.StateCacheEntity
 
@@ -88,9 +90,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
         EmulatorUpdateEntity::class,
         PendingSyncQueueEntity::class,
         PlaySessionEntity::class,
-        SocialGameCacheEntity::class
+        SocialGameCacheEntity::class,
+        PendingSocialSyncEntity::class
     ],
-    version = 85,
+    version = 86,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -120,6 +123,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun platformLibretroSettingsDao(): PlatformLibretroSettingsDao
     abstract fun emulatorUpdateDao(): EmulatorUpdateDao
     abstract fun playSessionDao(): PlaySessionDao
+    abstract fun pendingSocialSyncDao(): PendingSocialSyncDao
     abstract fun socialGameCacheDao(): SocialGameCacheDao
 
     companion object {
@@ -1274,6 +1278,30 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_84_85 = object : Migration(84, 85) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("UPDATE games SET gradientColors = NULL")
+            }
+        }
+
+        val MIGRATION_85_86 = object : Migration(85, 86) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE play_sessions ADD COLUMN activePlayMs INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE play_sessions ADD COLUMN standbyMs INTEGER NOT NULL DEFAULT 0")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS pending_social_sync (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        syncType TEXT NOT NULL,
+                        payloadJson TEXT NOT NULL,
+                        occurredAt INTEGER NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'PENDING',
+                        retryCount INTEGER NOT NULL DEFAULT 0,
+                        maxRetries INTEGER NOT NULL DEFAULT 5,
+                        lastError TEXT,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_social_sync_status ON pending_social_sync(status)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_social_sync_syncType ON pending_social_sync(syncType)")
             }
         }
     }

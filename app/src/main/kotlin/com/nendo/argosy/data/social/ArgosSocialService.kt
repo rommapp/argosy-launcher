@@ -49,6 +49,15 @@ class ArgosSocialService @Inject constructor(
     private val _syncAchievementResult = MutableStateFlow<List<Long>>(emptyList())
     val syncAchievementResult: StateFlow<List<Long>> = _syncAchievementResult.asStateFlow()
 
+    data class SessionSyncResult(
+        val startTime: String,
+        val status: String,
+        val reason: String?
+    )
+
+    private val _playSessionSyncResult = MutableSharedFlow<List<SessionSyncResult>>(replay = 1)
+    val playSessionSyncResult: SharedFlow<List<SessionSyncResult>> = _playSessionSyncResult.asSharedFlow()
+
     private var webSocket: WebSocket? = null
     private var sessionToken: String? = null
     private var reconnectAttempts = 0
@@ -457,6 +466,25 @@ class ArgosSocialService @Inject constructor(
                     null
                 }
 
+                MessageTypes.PLAY_SESSIONS_SYNCED -> {
+                    if (payload != null) {
+                        val resultsArray = payload.optJSONArray("results")
+                        val results = if (resultsArray != null) {
+                            (0 until resultsArray.length()).map { i ->
+                                val obj = resultsArray.getJSONObject(i)
+                                SessionSyncResult(
+                                    startTime = obj.getString("start_time"),
+                                    status = obj.getString("status"),
+                                    reason = obj.optString("reason", null)
+                                )
+                            }
+                        } else emptyList()
+                        Log.d(TAG, "Play sessions synced: ${results.size} results")
+                        scope.launch { _playSessionSyncResult.emit(results) }
+                    }
+                    null
+                }
+
                 MessageTypes.UNREAD_COUNT -> {
                     val count = payload?.optInt("count", 0) ?: 0
                     Log.d(TAG, "Unread count: $count")
@@ -725,14 +753,16 @@ class ArgosSocialService @Inject constructor(
         eventType: String,
         igdbId: Long?,
         gameTitle: String,
-        data: Map<String, Any?>
+        data: Map<String, Any?>,
+        occurredAt: String? = null
     ): Boolean {
-        return send(MessageTypes.CREATE_FEED_EVENT, mapOf(
-            "event_type" to eventType,
-            "igdb_id" to igdbId,
-            "game_title" to gameTitle,
-            "data" to JSONObject(data)
-        ))
+        return send(MessageTypes.CREATE_FEED_EVENT, buildMap {
+            put("event_type", eventType)
+            put("igdb_id", igdbId)
+            put("game_title", gameTitle)
+            put("data", JSONObject(data))
+            if (occurredAt != null) put("occurred_at", occurredAt)
+        })
     }
 
     fun createDoodle(
@@ -834,7 +864,9 @@ class ArgosSocialService @Inject constructor(
         val platformSlug: String,
         val startTime: String,
         val endTime: String,
-        val continued: Boolean
+        val continued: Boolean,
+        val standbyMs: Long = 0,
+        val activePlayMs: Long = 0
     ) {
         fun toMap(): Map<String, Any?> = mapOf(
             "user_id" to userId,
@@ -846,7 +878,9 @@ class ArgosSocialService @Inject constructor(
             "platform_slug" to platformSlug,
             "start_time" to startTime,
             "end_time" to endTime,
-            "continued" to continued
+            "continued" to continued,
+            "standby_ms" to standbyMs,
+            "active_play_ms" to activePlayMs
         )
     }
 

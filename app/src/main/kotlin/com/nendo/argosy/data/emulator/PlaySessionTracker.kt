@@ -6,12 +6,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.entity.PlaySessionEntity
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.preferences.SessionStateStore
@@ -79,6 +83,7 @@ data class SaveConflictEvent(
 class PlaySessionTracker @Inject constructor(
     private val application: Application,
     private val gameDao: GameDao,
+    private val playSessionDao: PlaySessionDao,
     private val saveCacheDao: SaveCacheDao,
     private val syncSaveOnSessionEndUseCase: dagger.Lazy<SyncSaveOnSessionEndUseCase>,
     private val syncStatesOnSessionEndUseCase: dagger.Lazy<SyncStatesOnSessionEndUseCase>,
@@ -430,9 +435,39 @@ class PlaySessionTracker @Inject constructor(
             if (stopService) GameSessionService.stop(application)
 
             val finalScreenOnDuration = calculateFinalScreenOnDuration()
-            val sessionDuration = Duration.between(session.startTime, Instant.now())
+            val endTime = Instant.now()
+            val sessionDuration = Duration.between(session.startTime, endTime)
 
             Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulator=${session.emulatorPackage}")
+
+            val activePlayMs = finalScreenOnDuration.toMillis()
+            val standbyMs = (sessionDuration.toMillis() - activePlayMs).coerceAtLeast(0)
+            try {
+                val game = gameDao.getById(session.gameId)
+                val prefs = preferencesRepository.userPreferences.first()
+                val deviceId = Settings.Secure.getString(application.contentResolver, Settings.Secure.ANDROID_ID) ?: ""
+                playSessionDao.insert(
+                    PlaySessionEntity(
+                        userId = prefs.socialUserId,
+                        gameId = session.gameId,
+                        igdbId = game?.igdbId,
+                        gameTitle = game?.title ?: "Unknown",
+                        platformSlug = game?.platformSlug ?: "unknown",
+                        startTime = session.startTime,
+                        endTime = endTime,
+                        continued = session.flashReturnCount > 0,
+                        deviceId = deviceId,
+                        deviceManufacturer = Build.MANUFACTURER,
+                        deviceModel = Build.MODEL,
+                        activePlayMs = activePlayMs,
+                        standbyMs = standbyMs
+                    )
+                )
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Play session entity created | activePlayMs=$activePlayMs, standbyMs=$standbyMs")
+                socialRepository.get().syncPlaySessions()
+            } catch (e: Exception) {
+                Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Failed to create play session entity", e)
+            }
 
             if (isScreenOn) {
                 marathonSegmentDuration = marathonSegmentDuration.plus(

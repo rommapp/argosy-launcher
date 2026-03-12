@@ -147,6 +147,7 @@ class ArgosyViewModel @Inject constructor(
     private val libretroMigrationUseCase: LibretroMigrationUseCase,
     private val emulatorUpdateManager: EmulatorUpdateManager,
     private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator,
+    private val socialSyncCoordinator: com.nendo.argosy.data.sync.SocialSyncCoordinator,
     private val syncQueueManager: SyncQueueManager,
     private val brightnessController: BrightnessController,
     private val volumeController: VolumeController,
@@ -188,6 +189,7 @@ class ArgosyViewModel @Inject constructor(
         observeSaveConflicts()
         observeBackgroundSyncConflicts()
         observeConnectionForSync()
+        observeSocialConnectionForSync()
         registerSettingsObserver()
     }
 
@@ -212,6 +214,19 @@ class ArgosyViewModel @Inject constructor(
                 val isConnected = state is ConnectionState.Connected
                 if (isConnected && !wasConnected) {
                     syncCoordinator.processQueue()
+                }
+                wasConnected = isConnected
+            }
+        }
+    }
+
+    private fun observeSocialConnectionForSync() {
+        viewModelScope.launch {
+            var wasConnected = false
+            socialRepository.connectionState.collect { state ->
+                val isConnected = state is SocialConnectionState.Connected
+                if (isConnected && !wasConnected) {
+                    socialSyncCoordinator.processQueue()
                 }
                 wasConnected = isConnected
             }

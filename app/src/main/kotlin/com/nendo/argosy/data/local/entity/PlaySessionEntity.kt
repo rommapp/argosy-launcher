@@ -28,5 +28,7 @@ data class PlaySessionEntity(
     val continued: Boolean = false,
     val deviceId: String,
     val deviceManufacturer: String,
-    val deviceModel: String
+    val deviceModel: String,
+    val activePlayMs: Long = 0,
+    val standbyMs: Long = 0
 )

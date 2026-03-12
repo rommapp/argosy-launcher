@@ -20,6 +20,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
+import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.dao.PlatformDao
@@ -132,7 +133,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_81_82,
                 ALauncherDatabase.MIGRATION_82_83,
                 ALauncherDatabase.MIGRATION_83_84,
-                ALauncherDatabase.MIGRATION_84_85
+                ALauncherDatabase.MIGRATION_84_85,
+                ALauncherDatabase.MIGRATION_85_86
             )
             .enableMultiInstanceInvalidation()
             .build()
@@ -234,6 +236,10 @@ object DatabaseModule {
     @Provides
     fun providePlaySessionDao(database: ALauncherDatabase): PlaySessionDao =
         database.playSessionDao()
+
+    @Provides
+    fun providePendingSocialSyncDao(database: ALauncherDatabase): PendingSocialSyncDao =
+        database.pendingSocialSyncDao()
 
     @Provides
     fun provideSocialGameCacheDao(database: ALauncherDatabase): SocialGameCacheDao =

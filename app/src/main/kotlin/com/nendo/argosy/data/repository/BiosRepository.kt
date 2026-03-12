@@ -208,7 +208,7 @@ class BiosRepository @Inject constructor(
     suspend fun downloadAllMissing(
         onProgress: ((current: Int, total: Int, fileName: String) -> Unit)? = null
     ): Int = withContext(Dispatchers.IO) {
-        val missing = firmwareDao.getMissing()
+        val missing = firmwareDao.getSyncEnabledMissing()
         if (missing.isEmpty()) return@withContext 0
 
         Logger.info(TAG, "Downloading ${missing.size} missing firmware files")
@@ -229,7 +229,9 @@ class BiosRepository @Inject constructor(
     suspend fun redownloadAll(
         onProgress: ((current: Int, total: Int, fileName: String) -> Unit)? = null
     ): Int = withContext(Dispatchers.IO) {
-        val all = firmwareDao.getAll()
+        cleanupDisabledPlatformBios()
+
+        val all = firmwareDao.getSyncEnabledAll()
         if (all.isEmpty()) return@withContext 0
 
         Logger.info(TAG, "Redownloading all ${all.size} firmware files")
@@ -245,6 +247,63 @@ class BiosRepository @Inject constructor(
 
         Logger.info(TAG, "Redownloaded $downloaded of ${all.size} firmware files")
         downloaded
+    }
+
+    private suspend fun cleanupDisabledPlatformBios() {
+        val toClean = firmwareDao.getDownloadedForDisabledPlatforms()
+        if (toClean.isEmpty()) return
+
+        val platformSlugs = toClean.map { it.platformSlug }.distinct()
+        Logger.info(TAG, "Cleaning up BIOS for disabled platforms: $platformSlugs")
+
+        var cleaned = 0
+        for (firmware in toClean) {
+            firmware.localPath?.let { path ->
+                val file = File(path)
+                if (file.exists()) file.delete()
+            }
+            firmwareDao.updateLocalPath(firmware.id, null, null)
+            cleaned++
+        }
+
+        for (slug in platformSlugs) {
+            cleanupDistributedCopies(slug)
+            val platformDir = File(getInternalBiosDir(), slug)
+            if (platformDir.exists()) platformDir.deleteRecursively()
+        }
+
+        Logger.info(TAG, "Cleaned up $cleaned firmware files for disabled platforms")
+    }
+
+    private suspend fun cleanupDistributedCopies(platformSlug: String) {
+        val firmwareFiles = firmwareDao.getByPlatformSlug(platformSlug)
+        val emulators = BiosPathRegistry.getEmulatorsForPlatform(
+            PlatformDefinitions.getCanonicalSlug(platformSlug)
+        )
+
+        for (config in emulators) {
+            val dirs = if (config.emulatorId == EmulatorRegistry.BUILTIN_PACKAGE) {
+                listOf(getLibretroSystemDir())
+            } else {
+                config.defaultPaths.map { File(it) }
+            }
+
+            for (dir in dirs) {
+                if (!dir.exists()) continue
+                for (firmware in firmwareFiles) {
+                    try {
+                        File(dir, firmware.fileName).let { if (it.exists()) it.delete() }
+                        firmware.md5Hash?.let { md5 ->
+                            BiosPathRegistry.getRetroArchBiosName(md5)?.let { raName ->
+                                File(dir, raName).let { if (it.exists()) it.delete() }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Logger.debug(TAG, "Could not clean distributed BIOS ${firmware.fileName} from $dir: ${e.message}")
+                    }
+                }
+            }
+        }
     }
 
     suspend fun distributeBiosToEmulator(

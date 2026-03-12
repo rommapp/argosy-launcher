@@ -65,4 +65,28 @@ interface FirmwareDao {
 
     @Query("SELECT DISTINCT platformSlug FROM firmware WHERE localPath IS NOT NULL")
     suspend fun getPlatformSlugsWithDownloadedFirmware(): List<String>
+
+    @Query("""
+        SELECT f.* FROM firmware f
+        INNER JOIN platforms p ON f.platformId = p.id
+        WHERE p.syncEnabled = 1 AND f.localPath IS NULL
+        ORDER BY f.platformSlug, f.fileName
+    """)
+    suspend fun getSyncEnabledMissing(): List<FirmwareEntity>
+
+    @Query("""
+        SELECT f.* FROM firmware f
+        INNER JOIN platforms p ON f.platformId = p.id
+        WHERE p.syncEnabled = 1
+        ORDER BY f.platformSlug, f.fileName
+    """)
+    suspend fun getSyncEnabledAll(): List<FirmwareEntity>
+
+    @Query("""
+        SELECT f.* FROM firmware f
+        INNER JOIN platforms p ON f.platformId = p.id
+        WHERE p.syncEnabled = 0 AND f.localPath IS NOT NULL
+        ORDER BY f.platformSlug, f.fileName
+    """)
+    suspend fun getDownloadedForDisabledPlatforms(): List<FirmwareEntity>
 }

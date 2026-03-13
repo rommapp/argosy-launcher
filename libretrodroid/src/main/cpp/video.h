@@ -90,17 +90,23 @@ public:
 
     void renderFrame();
     void renderBlackFrame();
+    void captureAndRenderDirectFB();
 
     void onNewFrame(const void *data, unsigned width, unsigned height, size_t pitch);
 
     std::vector<uint8_t> captureRawFrame(int& outWidth, int& outHeight);
 
     uintptr_t getCurrentFramebuffer() {
+        if (directFBRendering) return 0;
         return renderer->getFramebuffer();
     };
 
     bool rendersInVideoCallback() {
-        return renderer->rendersInVideoCallback();
+        return !directFBRendering && renderer->rendersInVideoCallback();
+    }
+
+    bool usesDirectFBRendering() const {
+        return directFBRendering;
     }
 
 private:
@@ -120,6 +126,7 @@ private:
     std::optional<ShaderManager::Config> loadedShaderType = std::nullopt;
 
     bool isDirty = false;
+    bool directFBRendering = false;
     bool skipDuplicateFrames = false;
     int filterMode = -1;  // -1 = auto (shader decides), 0 = nearest, 1 = linear
     bool bfiEnabled = false;
@@ -134,6 +141,12 @@ private:
     VideoLayout videoLayout;
 
     Renderer* renderer;
+
+    GLuint scratchFBO = 0;
+    GLuint scratchTex = 0;
+    int scratchW = 0;
+    int scratchH = 0;
+    void ensureScratchFBO(int w, int h);
 };
 
 }

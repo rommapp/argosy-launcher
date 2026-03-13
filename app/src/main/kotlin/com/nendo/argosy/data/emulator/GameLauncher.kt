@@ -64,7 +64,8 @@ class GameLauncher @Inject constructor(
     private val libretroCoreMgr: LibretroCoreManager,
     private val biosRepository: BiosRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val coreOptionResolver: CoreOptionResolver
+    private val coreOptionResolver: CoreOptionResolver,
+    private val coreSystemDataManager: CoreSystemDataManager
 ) {
     suspend fun launch(
         gameId: Long,
@@ -356,6 +357,8 @@ class GameLauncher @Inject constructor(
 
         val coreName = coreFile.nameWithoutExtension
             .removeSuffix("_libretro_android")
+
+        coreSystemDataManager.ensureCoreSystemData(coreName, systemDir)
 
         val coreVariables = coreOptionResolver.resolveVariables(coreName)
 

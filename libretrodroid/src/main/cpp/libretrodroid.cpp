@@ -57,7 +57,6 @@ void LibretroDroid::callback_hw_video_refresh(
     unsigned height,
     size_t pitch
 ) {
-    LOGD("VIDEO CALLBACK: data=%p width=%u height=%u pitch=%zu", data, width, height, pitch);
     LibretroDroid::getInstance().handleVideoRefresh(data, width, height, pitch);
 }
 
@@ -492,7 +491,9 @@ void LibretroDroid::step() {
         achievements.evaluateFrame();
     }
 
-    if (video && !video->rendersInVideoCallback()) {
+    if (video && video->usesDirectFBRendering()) {
+        video->captureAndRenderDirectFB();
+    } else if (video && !video->rendersInVideoCallback()) {
         video->renderFrame();
     }
 
@@ -634,18 +635,12 @@ void LibretroDroid::handleVideoRefresh(
     unsigned int height,
     size_t pitch
 ) {
-    LOGD("handleVideoRefresh: video=%p data=%p", video.get(), data);
     if (video) {
         video->onNewFrame(data, width, height, pitch);
 
         if (video->rendersInVideoCallback()) {
-            LOGD("handleVideoRefresh: rendering in video callback");
             video->renderFrame();
-        } else {
-            LOGD("handleVideoRefresh: NOT rendering in video callback (will render in step)");
         }
-    } else {
-        LOGE("handleVideoRefresh: video is NULL!");
     }
 }
 
@@ -662,10 +657,6 @@ int16_t LibretroDroid::handleSetInputState(
     unsigned int index,
     unsigned int id
 ) {
-    static int hCallCount = 0;
-    if (++hCallCount % 3600 == 1) {
-        LOGI("handleSetInputState: hasInput=%d port=%u device=%u (call #%d)", input != nullptr, port, device, hCallCount);
-    }
     if (input) {
         return input->getInputState(port, device, index, id);
     }

@@ -372,7 +372,7 @@ class LibretroActivity : ComponentActivity() {
                 savesDirectory = savesDir.absolutePath
                 saveRAMState = existingSram
                 shader = effectiveShader
-                skipDuplicateFrames = settings.skipDuplicateFrames
+                skipDuplicateFrames = if (coreName == "dolphin") false else settings.skipDuplicateFrames
                 preferLowLatencyAudio = settings.lowLatencyAudio
                 forceSoftwareTiming = settings.forceSoftwareTiming
                 rumbleEventsEnabled = settings.rumbleEnabled

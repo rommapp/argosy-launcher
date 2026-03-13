@@ -10,7 +10,8 @@ object MednafenNgpManifest : CoreOptionManifest {
             key = "ngp_language",
             displayName = "Language (Restart)",
             values = listOf("english", "japanese"),
-            defaultValue = "english"
+            defaultValue = "english",
+            description = "Sets the system language used by compatible games"
         ),
     )
 }

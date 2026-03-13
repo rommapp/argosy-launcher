@@ -10,13 +10,15 @@ object ProsystemManifest : CoreOptionManifest {
             key = "prosystem_color_depth",
             displayName = "Color Depth (Restart)",
             values = listOf("16bit", "24bit"),
-            defaultValue = "16bit"
+            defaultValue = "16bit",
+            description = "Sets the color depth used for rendering"
         ),
         CoreOptionDef(
             key = "prosystem_low_pass_filter",
             displayName = "Audio Filter",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Applies a low-pass filter to soften audio output"
         ),
         CoreOptionDef(
             key = "prosystem_low_pass_range",
@@ -25,13 +27,15 @@ object ProsystemManifest : CoreOptionManifest {
                 "5", "10", "15", "20", "25", "30", "35", "40", "45",
                 "50", "55", "60", "65", "70", "75", "80", "85", "90", "95"
             ),
-            defaultValue = "60"
+            defaultValue = "60",
+            description = "Controls the strength of the low-pass audio filter"
         ),
         CoreOptionDef(
             key = "prosystem_gamepad_dual_stick_hack",
             displayName = "Dual Stick Controller",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Maps both analog sticks to simulate two-joystick controllers"
         ),
     )
 }

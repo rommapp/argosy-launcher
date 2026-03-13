@@ -13,7 +13,8 @@ object O2emManifest : CoreOptionManifest {
                 "o2rom.bin", "Videopac G7000 (European)",
                 "Videopac+ G7400 (European)", "Videopac+ G7400 (French)"
             ),
-            defaultValue = "o2rom.bin"
+            defaultValue = "o2rom.bin",
+            description = "Selects the console hardware variant and BIOS to emulate"
         ),
         CoreOptionDef(
             key = "o2em_region",
@@ -25,19 +26,22 @@ object O2emManifest : CoreOptionManifest {
             key = "o2em_swap_gamepads",
             displayName = "Swap Gamepads",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Swaps controller port 1 and port 2 inputs"
         ),
         CoreOptionDef(
             key = "o2em_vkb_transparency",
             displayName = "Virtual Keyboard Transparency",
             values = listOf("0%", "25%", "50%", "75%"),
-            defaultValue = "0%"
+            defaultValue = "0%",
+            description = "Sets how transparent the on-screen virtual keyboard overlay appears"
         ),
         CoreOptionDef(
             key = "o2em_crop_overscan",
             displayName = "Crop Overscan",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Removes the border area around the visible screen"
         ),
         CoreOptionDef(
             key = "o2em_mix_frames",
@@ -46,7 +50,8 @@ object O2emManifest : CoreOptionManifest {
                 "Simple", "Ghosting (65%)", "Ghosting (75%)",
                 "Ghosting (85%)", "Ghosting (95%)"
             ),
-            defaultValue = "Simple"
+            defaultValue = "Simple",
+            description = "Blends consecutive frames to simulate CRT persistence or reduce flicker"
         ),
         CoreOptionDef(
             key = "o2em_audio_volume",
@@ -66,13 +71,15 @@ object O2emManifest : CoreOptionManifest {
                 "45%", "50%", "55%", "60%", "65%", "70%", "75%", "80%", "85%",
                 "90%", "95%", "100%"
             ),
-            defaultValue = "70%"
+            defaultValue = "70%",
+            description = "Sets the volume level for The Voice speech synthesis module"
         ),
         CoreOptionDef(
             key = "o2em_low_pass_filter",
             displayName = "Audio Filter",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Applies a low-pass filter to soften harsh audio"
         ),
         CoreOptionDef(
             key = "o2em_low_pass_range",
@@ -82,7 +89,8 @@ object O2emManifest : CoreOptionManifest {
                 "45%", "50%", "55%", "60%", "65%", "70%", "75%", "80%", "85%",
                 "90%", "95%", "100%"
             ),
-            defaultValue = "60%"
+            defaultValue = "60%",
+            description = "Sets the cutoff strength of the low-pass audio filter"
         ),
     )
 }

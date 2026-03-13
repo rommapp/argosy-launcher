@@ -22,13 +22,15 @@ object Snes9xManifest : CoreOptionManifest {
             key = "snes9x_overscan",
             displayName = "Crop Overscan",
             values = listOf("enabled", "disabled", "auto"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Removes the empty border lines around the edges of the screen"
         ),
         CoreOptionDef(
             key = "snes9x_up_down_allowed",
             displayName = "Allow Opposing Directions",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Allows pressing left+right or up+down simultaneously"
         ),
         CoreOptionDef(
             key = "snes9x_overclock",
@@ -38,43 +40,50 @@ object Snes9xManifest : CoreOptionManifest {
                 "150%", "200%", "250%", "300%", "350%", "400%",
                 "450%", "500%"
             ),
-            defaultValue = "100%"
+            defaultValue = "100%",
+            description = "Adjusts the SuperFX chip clock speed for games like Star Fox"
         ),
         CoreOptionDef(
             key = "snes9x_overclock_cycles",
             displayName = "Reduce Slowdown (Hack, Unsafe)",
             values = listOf("disabled", "light", "compatible", "max"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Overclocks the CPU to reduce slowdown in demanding games"
         ),
         CoreOptionDef(
             key = "snes9x_reduce_sprite_flicker",
             displayName = "Reduce Flickering (Hack, Unsafe)",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Increases the per-scanline sprite limit to reduce flickering"
         ),
         CoreOptionDef(
             key = "snes9x_randomize_memory",
             displayName = "Randomize Memory (Unsafe)",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Fills memory with random data at startup instead of zeroes"
         ),
         CoreOptionDef(
             key = "snes9x_hires_blend",
             displayName = "Hires Blending",
             values = listOf("disabled", "merge", "blur"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Controls how hi-res mode pixels are blended for standard displays"
         ),
         CoreOptionDef(
             key = "snes9x_audio_interpolation",
             displayName = "Audio Interpolation",
             values = listOf("gaussian", "cubic", "sinc", "none", "linear"),
-            defaultValue = "gaussian"
+            defaultValue = "gaussian",
+            description = "Selects the audio sample interpolation method"
         ),
         CoreOptionDef(
             key = "snes9x_blargg",
             displayName = "Blargg NTSC Filter",
             values = listOf("disabled", "monochrome", "rf", "composite", "s-video", "rgb"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Applies an NTSC signal filter to simulate different cable types"
         ),
         CoreOptionDef(
             key = "snes9x_layer_1",
@@ -110,19 +119,22 @@ object Snes9xManifest : CoreOptionManifest {
             key = "snes9x_gfx_clip",
             displayName = "Enable Graphic Clip Windows",
             values = listOf("enabled", "disabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Enables hardware clipping windows used for special visual effects"
         ),
         CoreOptionDef(
             key = "snes9x_gfx_transp",
             displayName = "Enable Transparency Effects",
             values = listOf("enabled", "disabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Enables transparency and blending effects used by many games"
         ),
         CoreOptionDef(
             key = "snes9x_gfx_hires",
             displayName = "Enable Hires Mode",
             values = listOf("enabled", "disabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Enables the SNES 512-pixel hi-res mode used by some games"
         ),
         CoreOptionDef(
             key = "snes9x_sndchan_1",
@@ -179,7 +191,8 @@ object Snes9xManifest : CoreOptionManifest {
                 "0", "1", "2", "3", "4", "5", "6", "7", "8",
                 "9", "10", "11", "12", "13", "14", "15", "16"
             ),
-            defaultValue = "2"
+            defaultValue = "2",
+            description = "Sets the size of the Super Scope crosshair cursor"
         ),
         CoreOptionDef(
             key = "snes9x_superscope_color",
@@ -203,7 +216,8 @@ object Snes9xManifest : CoreOptionManifest {
                 "0", "1", "2", "3", "4", "5", "6", "7", "8",
                 "9", "10", "11", "12", "13", "14", "15", "16"
             ),
-            defaultValue = "4"
+            defaultValue = "4",
+            description = "Sets the size of the Justifier 1 crosshair cursor"
         ),
         CoreOptionDef(
             key = "snes9x_justifier1_color",
@@ -227,7 +241,8 @@ object Snes9xManifest : CoreOptionManifest {
                 "0", "1", "2", "3", "4", "5", "6", "7", "8",
                 "9", "10", "11", "12", "13", "14", "15", "16"
             ),
-            defaultValue = "4"
+            defaultValue = "4",
+            description = "Sets the size of the Justifier 2 crosshair cursor"
         ),
         CoreOptionDef(
             key = "snes9x_justifier2_color",
@@ -251,7 +266,8 @@ object Snes9xManifest : CoreOptionManifest {
                 "0", "1", "2", "3", "4", "5", "6", "7", "8",
                 "9", "10", "11", "12", "13", "14", "15", "16"
             ),
-            defaultValue = "2"
+            defaultValue = "2",
+            description = "Sets the size of the M.A.C.S. rifle crosshair cursor"
         ),
         CoreOptionDef(
             key = "snes9x_rifle_color",
@@ -272,13 +288,15 @@ object Snes9xManifest : CoreOptionManifest {
             key = "snes9x_block_invalid_vram_access",
             displayName = "Block Invalid VRAM Access",
             values = listOf("enabled", "disabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Prevents games from writing to VRAM during disallowed periods"
         ),
         CoreOptionDef(
             key = "snes9x_echo_buffer_hack",
             displayName = "Echo Buffer Hack (Unsafe)",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Fixes audio in certain ROMs by preventing echo buffer overwrites"
         )
     )
 }

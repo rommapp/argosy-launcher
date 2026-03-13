@@ -171,6 +171,7 @@ private suspend fun loadOptionsForCore(
         CoreOptionViewItem(
             key = def.key,
             displayName = def.displayName,
+            description = def.description,
             values = def.values,
             currentValue = overrideValue ?: def.defaultValue,
             isOverridden = overrideValue != null

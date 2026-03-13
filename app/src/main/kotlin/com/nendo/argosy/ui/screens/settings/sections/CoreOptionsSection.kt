@@ -34,6 +34,7 @@ internal sealed class CoreOptionItem(val key: String) {
     data class Option(
         val optionKey: String,
         val displayName: String,
+        val description: String?,
         val values: List<String>,
         val currentValue: String,
         val isOverridden: Boolean
@@ -55,6 +56,7 @@ internal fun buildCoreOptionItems(state: CoreOptionsState): List<CoreOptionItem>
                 CoreOptionItem.Option(
                     optionKey = option.key,
                     displayName = option.displayName,
+                    description = option.description,
                     values = option.values,
                     currentValue = option.currentValue,
                     isOverridden = option.isOverridden
@@ -170,6 +172,7 @@ fun CoreOptionsSection(
                         onClick = {
                             if (!isLocked) viewModel.cycleCoreOptionValue(item.optionKey, 1)
                         },
+                        subtitle = item.description,
                         isCustom = item.isOverridden,
                         showResetButton = item.isOverridden && isFocused,
                         onReset = { viewModel.resetCoreOption(item.optionKey) }

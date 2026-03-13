@@ -10,13 +10,15 @@ object FreeintvManifest : CoreOptionManifest {
             key = "default_p1_controller",
             displayName = "Default Player 1 Controller (Restart)",
             values = listOf("left", "right"),
-            defaultValue = "right"
+            defaultValue = "right",
+            description = "Selects which Intellivision controller port player 1 uses"
         ),
         CoreOptionDef(
             key = "freeintv_multiscreen_overlay",
             displayName = "Onscreen Interactive Keypad Overlays (Restart)",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Shows the Intellivision keypad as a touchable overlay on screen"
         ),
     )
 }

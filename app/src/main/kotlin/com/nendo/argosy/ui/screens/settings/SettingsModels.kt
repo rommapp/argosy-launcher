@@ -394,6 +394,7 @@ data class CoreOptionsCoreContext(
 data class CoreOptionViewItem(
     val key: String,
     val displayName: String,
+    val description: String?,
     val values: List<String>,
     val currentValue: String,
     val isOverridden: Boolean

@@ -10,7 +10,8 @@ object FreechafManifest : CoreOptionManifest {
             key = "freechaf_fast_scrclr",
             displayName = "Clear Screen in Single Frame",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Clears the entire screen in one frame instead of gradually"
         ),
     )
 }

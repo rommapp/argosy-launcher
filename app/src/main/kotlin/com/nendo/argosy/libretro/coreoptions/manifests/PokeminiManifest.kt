@@ -10,19 +10,22 @@ object PokeminiManifest : CoreOptionManifest {
             key = "pokemini_video_scale",
             displayName = "Video Scale",
             values = listOf("1x", "2x", "3x", "4x", "5x", "6x"),
-            defaultValue = "4x"
+            defaultValue = "4x",
+            description = "Multiplies the internal resolution for a larger display"
         ),
         CoreOptionDef(
             key = "pokemini_lcdfilter",
             displayName = "LCD Filter",
             values = listOf("dotmatrix", "scanline", "none"),
-            defaultValue = "dotmatrix"
+            defaultValue = "dotmatrix",
+            description = "Applies a visual filter to simulate the original LCD screen"
         ),
         CoreOptionDef(
             key = "pokemini_lcdmode",
             displayName = "LCD Mode",
             values = listOf("analog", "3shades", "2shades"),
-            defaultValue = "analog"
+            defaultValue = "analog",
+            description = "Sets how many shades the LCD simulation uses"
         ),
         CoreOptionDef(
             key = "pokemini_lcdcontrast",
@@ -44,31 +47,36 @@ object PokeminiManifest : CoreOptionManifest {
                 "Red", "Red Vector", "Blue LCD", "LEDBacklight", "Girl Power",
                 "Blue", "Blue Vector", "Sepia", "Monochrome Vector"
             ),
-            defaultValue = "Default"
+            defaultValue = "Default",
+            description = "Selects the color scheme used to render the display"
         ),
         CoreOptionDef(
             key = "pokemini_piezofilter",
             displayName = "Piezo Filter",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Filters the piezo speaker audio to reduce harshness"
         ),
         CoreOptionDef(
             key = "pokemini_rumblelvl",
             displayName = "Rumble Level",
             values = listOf("0", "1", "2", "3"),
-            defaultValue = "3"
+            defaultValue = "3",
+            description = "Sets the intensity of the rumble feedback"
         ),
         CoreOptionDef(
             key = "pokemini_controller_rumble",
             displayName = "Controller Rumble",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Sends rumble events to the physical controller"
         ),
         CoreOptionDef(
             key = "pokemini_screen_shake",
             displayName = "Screen Shake",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Shakes the screen to simulate the Pokemon Mini's rumble motor"
         ),
     )
 }

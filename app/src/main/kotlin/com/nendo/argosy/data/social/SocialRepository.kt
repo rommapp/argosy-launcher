@@ -112,6 +112,7 @@ class SocialRepository @Inject constructor(
     val isLoadingNotifications: StateFlow<Boolean> = _isLoadingNotifications.asStateFlow()
 
     private var _isLoadingMoreNotifications = false
+    private var _notificationsCursor: String? = null
 
     private val _communityFollows = MutableStateFlow<List<CommunityFollow>>(emptyList())
     val communityFollows: StateFlow<List<CommunityFollow>> = _communityFollows.asStateFlow()
@@ -383,17 +384,20 @@ class SocialRepository @Inject constructor(
                     is ArgosSocialService.IncomingMessage.NotificationReceived -> {
                         _usersCache.putAll(message.users)
                         val resolved = resolveNotificationActors(message.notification)
-                        _notifications.value = listOf(resolved) + _notifications.value
+                        _notifications.value = trimNotifications(listOf(resolved) + _notifications.value)
                     }
                     is ArgosSocialService.IncomingMessage.NotificationsData -> {
                         _usersCache.putAll(message.users)
                         _isLoadingNotifications.value = false
+                        if (message.notifications.isNotEmpty()) {
+                            _notificationsCursor = message.notifications.last().updatedAt
+                        }
                         val resolved = message.notifications.map { resolveNotificationActors(it) }
                         if (_isLoadingMoreNotifications) {
-                            _notifications.value = _notifications.value + resolved
+                            _notifications.value = trimNotifications(_notifications.value + resolved)
                             _isLoadingMoreNotifications = false
                         } else {
-                            _notifications.value = resolved
+                            _notifications.value = trimNotifications(resolved)
                         }
                         _notificationsHasMore.value = message.hasMore
                     }
@@ -518,6 +522,7 @@ class SocialRepository @Inject constructor(
         _unreadCount.value = 0
         _notificationsHasMore.value = false
         _isLoadingNotifications.value = false
+        _notificationsCursor = null
         _usersCache.clear()
     }
 
@@ -780,16 +785,17 @@ class SocialRepository @Inject constructor(
     fun requestNotifications(limit: Int = NOTIFICATIONS_PAGE_SIZE) {
         if (socialService.isConnected()) {
             _isLoadingNotifications.value = true
+            _notificationsCursor = null
             socialService.getNotifications(limit)
         }
     }
 
     fun loadMoreNotifications() {
-        val last = _notifications.value.lastOrNull() ?: return
+        val cursor = _notificationsCursor ?: return
         if (_notificationsHasMore.value && !_isLoadingNotifications.value) {
             _isLoadingNotifications.value = true
             _isLoadingMoreNotifications = true
-            socialService.getNotifications(NOTIFICATIONS_PAGE_SIZE, last.updatedAt)
+            socialService.getNotifications(NOTIFICATIONS_PAGE_SIZE, cursor)
         }
     }
 
@@ -824,6 +830,10 @@ class SocialRepository @Inject constructor(
     private fun resolveNotificationActors(notification: SocialNotification): SocialNotification {
         val resolved = notification.actors.mapNotNull { _usersCache[it] }
         return notification.copy(resolvedActors = resolved)
+    }
+
+    private fun trimNotifications(list: List<SocialNotification>): List<SocialNotification> {
+        return if (list.size > NOTIFICATIONS_MAX_CACHE) list.take(NOTIFICATIONS_MAX_CACHE) else list
     }
 
     fun requestEventComments(eventId: String) {
@@ -1223,5 +1233,6 @@ class SocialRepository @Inject constructor(
         private const val TAG = "SocialRepository"
         private const val FEED_PAGE_SIZE = 10
         private const val NOTIFICATIONS_PAGE_SIZE = 20
+        private const val NOTIFICATIONS_MAX_CACHE = 100
     }
 }

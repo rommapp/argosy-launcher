@@ -10,7 +10,8 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
             key = "sgx_palette",
             displayName = "Palette",
             values = listOf("RGB", "Composite"),
-            defaultValue = "RGB"
+            defaultValue = "RGB",
+            description = "Selects between clean RGB or composite video color palette"
         ),
         CoreOptionDef(
             key = "sgx_aspect_ratio",
@@ -26,7 +27,8 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
                 "320", "322", "324", "326", "328", "330", "332", "334", "336", "338",
                 "340", "342", "344", "346", "348", "350", "352"
             ),
-            defaultValue = "352"
+            defaultValue = "352",
+            description = "Sets the visible horizontal width in 352-pixel display mode"
         ),
         CoreOptionDef(
             key = "sgx_initial_scanline",
@@ -37,7 +39,8 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
                 "21", "22", "23", "24", "25", "26", "27", "28", "29", "30",
                 "31", "32", "33", "34", "35", "36", "37", "38", "39", "40"
             ),
-            defaultValue = "3"
+            defaultValue = "3",
+            description = "Sets the first visible scanline to crop the top border"
         ),
         CoreOptionDef(
             key = "sgx_last_scanline",
@@ -48,7 +51,8 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
                 "228", "229", "230", "231", "232", "233", "234", "235", "236", "237",
                 "238", "239", "240", "241", "242"
             ),
-            defaultValue = "242"
+            defaultValue = "242",
+            description = "Sets the last visible scanline to crop the bottom border"
         ),
         CoreOptionDef(
             key = "sgx_mouse_sensitivity",
@@ -64,19 +68,22 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
             key = "sgx_up_down_allowed",
             displayName = "Allow Opposing Directions",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Allows pressing left+right or up+down at the same time"
         ),
         CoreOptionDef(
             key = "sgx_disable_softreset",
             displayName = "Disable Soft Reset",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Prevents the Run+Select button combo from resetting the game"
         ),
         CoreOptionDef(
             key = "sgx_multitap",
             displayName = "Multitap",
             values = listOf("enabled", "disabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Enables the 5-player multitap adapter for multiplayer games"
         ),
         CoreOptionDef(
             key = "sgx_default_joypad_type_p1",
@@ -112,13 +119,15 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
             key = "sgx_turbo_toggle",
             displayName = "Turbo ON/OFF Toggle",
             values = listOf("disabled", "switch", "dedicated"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Sets how turbo rapid-fire buttons are activated"
         ),
         CoreOptionDef(
             key = "sgx_turbo_toggle_hotkey",
             displayName = "Alternate Turbo Hotkey",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Enables an alternate button combination to toggle turbo mode"
         ),
         CoreOptionDef(
             key = "sgx_turbo_delay",
@@ -127,31 +136,36 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
                 "3", "4", "5", "6", "7", "8", "9", "10",
                 "11", "12", "13", "14", "15", "30", "60"
             ),
-            defaultValue = "3"
+            defaultValue = "3",
+            description = "Sets how many frames between each turbo button press"
         ),
         CoreOptionDef(
             key = "sgx_cdimagecache",
             displayName = "CD Image Cache",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Loads the entire disc image into memory for faster access"
         ),
         CoreOptionDef(
             key = "sgx_cdbios",
             displayName = "CD BIOS",
             values = listOf("Games Express", "System Card 1", "System Card 2", "System Card 3"),
-            defaultValue = "System Card 3"
+            defaultValue = "System Card 3",
+            description = "Selects the System Card BIOS version used for CD-ROM games"
         ),
         CoreOptionDef(
             key = "sgx_detect_gexpress",
             displayName = "Detect Games Express CD",
             values = listOf("enabled", "disabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Automatically detects and uses the Games Express BIOS when needed"
         ),
         CoreOptionDef(
             key = "sgx_cdspeed",
             displayName = "CD Speed",
             values = listOf("1", "2", "4", "8"),
-            defaultValue = "1"
+            defaultValue = "1",
+            description = "Sets the CD-ROM read speed multiplier for faster loading"
         ),
         CoreOptionDef(
             key = "sgx_adpcmvolume",
@@ -184,13 +198,15 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
             key = "sgx_forcesgx",
             displayName = "Force SuperGrafx Emulation",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Forces SuperGrafx mode even for standard PC Engine games"
         ),
         CoreOptionDef(
             key = "sgx_nospritelimit",
             displayName = "No Sprite Limit",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Removes the per-scanline hardware sprite limit to reduce flicker"
         ),
         CoreOptionDef(
             key = "sgx_ocmultiplier",
@@ -199,7 +215,8 @@ object MednafenSupergrafxManifest : CoreOptionManifest {
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
                 "20", "30", "40", "50"
             ),
-            defaultValue = "1"
+            defaultValue = "1",
+            description = "Multiplies the emulated CPU speed to reduce slowdown in games"
         ),
     )
 }

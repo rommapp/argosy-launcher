@@ -16,19 +16,22 @@ object BsnesManifest : CoreOptionManifest {
             key = "bsnes_ppu_overscan_v",
             displayName = "Crop Vertical Overscan",
             values = listOf("0", "8", "12", "16"),
-            defaultValue = "8"
+            defaultValue = "8",
+            description = "Removes empty border lines at the top and bottom of the screen"
         ),
         CoreOptionDef(
             key = "bsnes_blur_emulation",
             displayName = "Blur Emulation",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Simulates the horizontal blur of the original SNES video output"
         ),
         CoreOptionDef(
             key = "bsnes_video_filter",
             displayName = "Video Filter",
             values = listOf("None", "NTSC (RF)", "NTSC (Composite)", "NTSC (S-Video)", "NTSC (RGB)"),
-            defaultValue = "None"
+            defaultValue = "None",
+            description = "Applies an NTSC signal filter to simulate different cable types"
         ),
         CoreOptionDef(
             key = "bsnes_video_luminance",
@@ -62,103 +65,120 @@ object BsnesManifest : CoreOptionManifest {
             key = "bsnes_ppu_fast",
             displayName = "PPU (Video) - Fast Mode",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Speeds up video rendering at the cost of minor accuracy loss"
         ),
         CoreOptionDef(
             key = "bsnes_ppu_deinterlace",
             displayName = "PPU (Video) - Deinterlace",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Renders all fields of interlaced content as full frames"
         ),
         CoreOptionDef(
             key = "bsnes_ppu_no_sprite_limit",
             displayName = "PPU (Video) - No Sprite Limit",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Removes the per-scanline sprite limit to eliminate flickering"
         ),
         CoreOptionDef(
             key = "bsnes_ppu_no_vram_blocking",
             displayName = "PPU (Video) - No VRAM Blocking",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Removes VRAM access restrictions for reduced accuracy but fewer glitches"
         ),
         CoreOptionDef(
             key = "bsnes_dsp_fast",
             displayName = "DSP (Audio) - Fast Mode",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Speeds up audio DSP emulation at the cost of minor accuracy loss"
         ),
         CoreOptionDef(
             key = "bsnes_dsp_cubic",
             displayName = "DSP (Audio) - Cubic Interpolation",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Uses cubic interpolation for audio, producing smoother sound than Gaussian"
         ),
         CoreOptionDef(
             key = "bsnes_dsp_echo_shadow",
             displayName = "DSP (Audio) - Echo Shadow RAM",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Emulates a hardware quirk where echo buffer memory overlaps with main RAM"
         ),
         CoreOptionDef(
             key = "bsnes_mode7_scale",
             displayName = "HD Mode 7 - Scale",
             values = listOf("1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x"),
-            defaultValue = "1x"
+            defaultValue = "1x",
+            description = "Increases the resolution of Mode 7 perspective effects"
         ),
         CoreOptionDef(
             key = "bsnes_mode7_perspective",
             displayName = "HD Mode 7 - Perspective Correction",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Fixes perspective distortion in Mode 7 backgrounds at higher scales"
         ),
         CoreOptionDef(
             key = "bsnes_mode7_supersample",
             displayName = "HD Mode 7 - Supersampling",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Applies supersampling anti-aliasing to HD Mode 7 rendering"
         ),
         CoreOptionDef(
             key = "bsnes_mode7_mosaic",
             displayName = "HD Mode 7 - HD->SD Mosaic",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Shows the mosaic effect at SD resolution even when using HD Mode 7"
         ),
         CoreOptionDef(
             key = "bsnes_run_ahead_frames",
             displayName = "Internal Run-Ahead",
             values = listOf("OFF", "1", "2", "3", "4"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Reduces input latency by running frames ahead and discarding them"
         ),
         CoreOptionDef(
             key = "bsnes_coprocessor_delayed_sync",
             displayName = "Coprocessors - Fast Mode",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Speeds up coprocessor emulation by reducing sync frequency"
         ),
         CoreOptionDef(
             key = "bsnes_coprocessor_prefer_hle",
             displayName = "Coprocessors - Prefer HLE",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Uses high-level emulation for coprocessors instead of low-level firmware"
         ),
         CoreOptionDef(
             key = "bsnes_hotfixes",
             displayName = "Hotfixes",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Applies game-specific patches to fix bugs in certain ROMs"
         ),
         CoreOptionDef(
             key = "bsnes_entropy",
             displayName = "Entropy (Randomization)",
             values = listOf("Low", "High", "None"),
-            defaultValue = "Low"
+            defaultValue = "Low",
+            description = "Controls how much initial memory is randomized at startup"
         ),
         CoreOptionDef(
             key = "bsnes_cpu_fastmath",
             displayName = "CPU Fast Math",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Skips CPU multiply and divide wait cycles for faster performance"
         ),
         CoreOptionDef(
             key = "bsnes_cpu_overclock",
@@ -170,7 +190,8 @@ object BsnesManifest : CoreOptionManifest {
                 "260", "270", "280", "290", "300", "310", "320", "330",
                 "340", "350", "360", "370", "380", "390", "400"
             ),
-            defaultValue = "100"
+            defaultValue = "100",
+            description = "Adjusts the CPU clock speed percentage to reduce slowdown"
         ),
         CoreOptionDef(
             key = "bsnes_cpu_sa1_overclock",
@@ -182,7 +203,8 @@ object BsnesManifest : CoreOptionManifest {
                 "260", "270", "280", "290", "300", "310", "320", "330",
                 "340", "350", "360", "370", "380", "390", "400"
             ),
-            defaultValue = "100"
+            defaultValue = "100",
+            description = "Adjusts the SA-1 coprocessor clock speed for games that use it"
         ),
         CoreOptionDef(
             key = "bsnes_cpu_sfx_overclock",
@@ -199,31 +221,36 @@ object BsnesManifest : CoreOptionManifest {
                 "660", "670", "680", "690", "700", "710", "720", "730",
                 "740", "750", "760", "770", "780", "790", "800"
             ),
-            defaultValue = "100"
+            defaultValue = "100",
+            description = "Adjusts the SuperFX coprocessor clock speed for games like Star Fox"
         ),
         CoreOptionDef(
             key = "bsnes_sgb_bios",
             displayName = "Preferred Super Game Boy BIOS",
             values = listOf("SGB1.sfc", "SGB2.sfc"),
-            defaultValue = "SGB1.sfc"
+            defaultValue = "SGB1.sfc",
+            description = "Selects which Super Game Boy BIOS version to use"
         ),
         CoreOptionDef(
             key = "bsnes_hide_sgb_border",
             displayName = "Hide SGB Border",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Hides the decorative border shown in Super Game Boy mode"
         ),
         CoreOptionDef(
             key = "bsnes_touchscreen_lightgun",
             displayName = "Touchscreen Light Gun",
             values = listOf("ON", "OFF"),
-            defaultValue = "ON"
+            defaultValue = "ON",
+            description = "Allows using the touchscreen as a light gun input device"
         ),
         CoreOptionDef(
             key = "bsnes_touchscreen_lightgun_superscope_reverse",
             displayName = "Super Scope Reverse Trigger Buttons",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Swaps the fire and cursor buttons for the Super Scope"
         )
     )
 }

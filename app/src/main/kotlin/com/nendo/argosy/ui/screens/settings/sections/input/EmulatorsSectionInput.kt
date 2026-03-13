@@ -62,6 +62,7 @@ internal class EmulatorsSectionInput(
             EmulatorsItem.BuiltinVideo -> { viewModel.navigateToBuiltinVideo(); InputResult.HANDLED }
             EmulatorsItem.BuiltinControls -> { viewModel.navigateToBuiltinControls(); InputResult.HANDLED }
             EmulatorsItem.BuiltinCores -> { viewModel.navigateToCoreManagement(); InputResult.HANDLED }
+            EmulatorsItem.BuiltinCoreOptions -> { viewModel.navigateToCoreOptions(); InputResult.HANDLED }
             EmulatorsItem.BuiltinToggle -> {
                 viewModel.setBuiltinLibretroEnabled(!state.emulators.builtinLibretroEnabled)
                 InputResult.handled(SoundType.TOGGLE)

@@ -10,49 +10,57 @@ object Np2kaiManifest : CoreOptionManifest {
             key = "np2kai_model",
             displayName = "PC Model",
             values = listOf("PC-9801VX", "PC-286", "PC-9801VM"),
-            defaultValue = "PC-9801VX"
+            defaultValue = "PC-9801VX",
+            description = "Selects which PC-98 hardware model to emulate"
         ),
         CoreOptionDef(
             key = "np2kai_clk_base",
             displayName = "CPU Base Clock",
             values = listOf("2.4576 MHz", "1.9968 MHz"),
-            defaultValue = "2.4576 MHz"
+            defaultValue = "2.4576 MHz",
+            description = "Sets the base CPU clock frequency"
         ),
         CoreOptionDef(
             key = "np2kai_clk_mult",
             displayName = "CPU Clock Multiplier",
             values = listOf("1", "2", "4", "5", "6", "8", "10", "12", "16", "20", "24", "30", "36", "40", "42"),
-            defaultValue = "4"
+            defaultValue = "4",
+            description = "Multiplies the base clock to set overall CPU speed"
         ),
         CoreOptionDef(
             key = "np2kai_ExMemory",
             displayName = "RAM Size",
             values = listOf("1", "3", "7", "11", "13", "16", "32", "64", "120", "230"),
-            defaultValue = "3"
+            defaultValue = "3",
+            description = "Sets the amount of extended memory in megabytes"
         ),
         CoreOptionDef(
             key = "np2kai_gdc",
             displayName = "GDC",
             values = listOf("uPD7220", "uPD72020"),
-            defaultValue = "uPD7220"
+            defaultValue = "uPD7220",
+            description = "Selects the graphics display controller chip to emulate"
         ),
         CoreOptionDef(
             key = "np2kai_skipline",
             displayName = "Skipline Revisions",
             values = listOf("Full 255 lines", "ON", "OFF"),
-            defaultValue = "Full 255 lines"
+            defaultValue = "Full 255 lines",
+            description = "Controls scanline rendering mode for display output"
         ),
         CoreOptionDef(
             key = "np2kai_realpal",
             displayName = "Real Palettes",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Uses more accurate palette color emulation"
         ),
         CoreOptionDef(
             key = "np2kai_lcd",
             displayName = "LCD",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Simulates an LCD display with reduced color output"
         ),
         CoreOptionDef(
             key = "np2kai_SNDboard",
@@ -65,19 +73,22 @@ object Np2kaiManifest : CoreOptionManifest {
                 "Otomi-chanx2", "Otomi-chanx2 + 86", "None",
                 "PC9801-14", "PC9801-26K"
             ),
-            defaultValue = "PC9801-86"
+            defaultValue = "PC9801-86",
+            description = "Selects the sound board hardware to emulate"
         ),
         CoreOptionDef(
             key = "np2kai_jast_snd",
             displayName = "JastSound",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Enables JastSound PCM audio expansion emulation"
         ),
         CoreOptionDef(
             key = "np2kai_usefmgen",
             displayName = "Sound Generator",
             values = listOf("fmgen", "Default"),
-            defaultValue = "fmgen"
+            defaultValue = "fmgen",
+            description = "Selects the FM synthesis engine used for sound generation"
         ),
         CoreOptionDef(
             key = "np2kai_volume_F",
@@ -119,7 +130,8 @@ object Np2kaiManifest : CoreOptionManifest {
             key = "np2kai_Seek_Snd",
             displayName = "Floppy Seek Sound",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Plays floppy disk drive sound effects during disk access"
         ),
         CoreOptionDef(
             key = "np2kai_Seek_Vol",
@@ -137,13 +149,15 @@ object Np2kaiManifest : CoreOptionManifest {
             key = "np2kai_joy2mouse",
             displayName = "Joypad to Mouse Mapping",
             values = listOf("OFF", "ON"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Maps joypad analog stick input to mouse cursor movement"
         ),
         CoreOptionDef(
             key = "np2kai_joy2key",
             displayName = "Joypad to Keyboard Mapping",
             values = listOf("OFF", "Arrows", "Keypad"),
-            defaultValue = "OFF"
+            defaultValue = "OFF",
+            description = "Maps joypad d-pad input to keyboard arrow or numpad keys"
         ),
     )
 }

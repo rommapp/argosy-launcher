@@ -10,25 +10,29 @@ object VbamManifest : CoreOptionManifest {
             key = "vbam_usebios",
             displayName = "Use BIOS File if Found",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Uses the official GBA BIOS for more accurate startup and emulation"
         ),
         CoreOptionDef(
             key = "vbam_forceRTCenable",
             displayName = "Force Enable RTC",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Forces the real-time clock on for games that need it but aren't auto-detected"
         ),
         CoreOptionDef(
             key = "vbam_gbHardware",
             displayName = "(GB) Emulated Hardware",
             values = listOf("gbc", "auto", "sgb", "gb", "gba", "sgb2"),
-            defaultValue = "gbc"
+            defaultValue = "gbc",
+            description = "Selects which Game Boy hardware variant to emulate"
         ),
         CoreOptionDef(
             key = "vbam_allowcolorizerhack",
             displayName = "(GB) Enable Colorizer Hack",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Applies color to original Game Boy games using predefined palettes"
         ),
         CoreOptionDef(
             key = "vbam_palettes",
@@ -38,49 +42,57 @@ object VbamManifest : CoreOptionManifest {
                 "hot desert", "pink dreams", "wierd colors", "original gameboy",
                 "gba sp"
             ),
-            defaultValue = "standard"
+            defaultValue = "standard",
+            description = "Selects the color palette used for original Game Boy games"
         ),
         CoreOptionDef(
             key = "vbam_showborders",
             displayName = "(GB) Show Borders",
             values = listOf("disabled", "enabled", "auto"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Displays Super Game Boy borders around the game screen"
         ),
         CoreOptionDef(
             key = "vbam_gbcoloroption",
             displayName = "(GB) Color Correction",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Adjusts colors to more closely match the original Game Boy Color screen"
         ),
         CoreOptionDef(
             key = "vbam_lcdfilter",
             displayName = "LCD Filter",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Simulates the appearance of a Game Boy LCD screen"
         ),
         CoreOptionDef(
             key = "vbam_interframeblending",
             displayName = "Interframe Blending",
             values = listOf("disabled", "smart", "motion blur"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Blends consecutive frames to simulate LCD ghosting effects"
         ),
         CoreOptionDef(
             key = "vbam_soundinterpolation",
             displayName = "Sound Interpolation",
             values = listOf("disabled", "enabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Smooths audio output to reduce aliasing artifacts"
         ),
         CoreOptionDef(
             key = "vbam_soundfiltering",
             displayName = "Sound Filtering",
             values = listOf("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"),
-            defaultValue = "5"
+            defaultValue = "5",
+            description = "Controls the amount of audio filtering applied to the sound output"
         ),
         CoreOptionDef(
             key = "vbam_turboenable",
             displayName = "Enable Turbo Buttons",
             values = listOf("disabled", "enabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Allows turbo (rapid-fire) functionality on mapped buttons"
         ),
         CoreOptionDef(
             key = "vbam_turbodelay",
@@ -89,13 +101,15 @@ object VbamManifest : CoreOptionManifest {
                 "1", "2", "3", "4", "5", "6", "7", "8",
                 "9", "10", "11", "12", "13", "14", "15"
             ),
-            defaultValue = "3"
+            defaultValue = "3",
+            description = "Sets how many frames between each turbo button press"
         ),
         CoreOptionDef(
             key = "vbam_solarsensor",
             displayName = "Solar Sensor Level",
             values = listOf("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"),
-            defaultValue = "0"
+            defaultValue = "0",
+            description = "Sets the simulated sunlight level for Boktai solar sensor games"
         ),
         CoreOptionDef(
             key = "vbam_astick_deadzone",
@@ -127,7 +141,8 @@ object VbamManifest : CoreOptionManifest {
             key = "vbam_swap_astick",
             displayName = "Swap Left/Right Analog",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Swaps the function of the left and right analog sticks"
         ),
         CoreOptionDef(
             key = "vbam_sound_1",

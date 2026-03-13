@@ -368,7 +368,8 @@ object GambatteManifest : CoreOptionManifest {
             key = "gambatte_gb_colorization",
             displayName = "GB Colorization",
             values = listOf("disabled", "auto", "GBC", "SGB", "internal", "custom"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Apply color palettes to original Game Boy games"
         ),
         CoreOptionDef(
             key = "gambatte_gb_internal_palette",
@@ -392,7 +393,8 @@ object GambatteManifest : CoreOptionManifest {
                 "TWB64 - Pack 1", "TWB64 - Pack 2", "TWB64 - Pack 3",
                 "PixelShift - Pack 1"
             ),
-            defaultValue = "GB - DMG"
+            defaultValue = "GB - DMG",
+            description = "Select the built-in palette used when colorization is set to internal"
         ),
         CoreOptionDef(
             key = "gambatte_gb_palette_twb64_1",
@@ -422,61 +424,71 @@ object GambatteManifest : CoreOptionManifest {
             key = "gambatte_gbc_color_correction",
             displayName = "Color Correction",
             values = listOf("GBC only", "always", "disabled"),
-            defaultValue = "GBC only"
+            defaultValue = "GBC only",
+            description = "Adjust output colors to match the GBC LCD display characteristics"
         ),
         CoreOptionDef(
             key = "gambatte_gbc_color_correction_mode",
             displayName = "Color Correction Mode",
             values = listOf("accurate", "fast"),
-            defaultValue = "accurate"
+            defaultValue = "accurate",
+            description = "Choose between accurate color math or a faster approximation"
         ),
         CoreOptionDef(
             key = "gambatte_gbc_frontlight_position",
             displayName = "Color Correction - Frontlight Position",
             values = listOf("central", "above screen", "below screen"),
-            defaultValue = "central"
+            defaultValue = "central",
+            description = "Simulate the frontlight angle on a GBC screen"
         ),
         CoreOptionDef(
             key = "gambatte_dark_filter_level",
             displayName = "Dark Filter Level (percent)",
             values = listOf("0", "5", "10", "15", "20", "25", "30", "35", "40", "45", "50"),
-            defaultValue = "0"
+            defaultValue = "0",
+            description = "Darken the screen to simulate viewing under low-light conditions"
         ),
         CoreOptionDef(
             key = "gambatte_mix_frames",
             displayName = "Mix Frames",
             values = listOf("disabled", "mix", "lcd_ghosting", "lcd_ghosting_fast"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Blend consecutive frames to simulate LCD ghosting or transparency effects"
         ),
         CoreOptionDef(
             key = "gambatte_audio_resampler",
             displayName = "Audio Resampler",
             values = listOf("sinc", "cc"),
-            defaultValue = "sinc"
+            defaultValue = "sinc",
+            description = "Select the algorithm used to resample audio output"
         ),
         CoreOptionDef(
             key = "gambatte_gb_hwmode",
             displayName = "Emulated Hardware",
             values = listOf("Auto", "GB", "GBC", "GBA"),
-            defaultValue = "Auto"
+            defaultValue = "Auto",
+            description = "Select which Game Boy hardware to emulate"
         ),
         CoreOptionDef(
             key = "gambatte_gb_bootloader",
             displayName = "Use Official Bootloader",
             values = listOf("enabled", "disabled"),
-            defaultValue = "enabled"
+            defaultValue = "enabled",
+            description = "Show the startup logo animation when a BIOS file is present"
         ),
         CoreOptionDef(
             key = "gambatte_up_down_allowed",
             displayName = "Allow Opposing Directions",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Allow pressing left+right or up+down at the same time"
         ),
         CoreOptionDef(
             key = "gambatte_turbo_period",
             displayName = "Turbo Button Period",
             values = (4..120).map { it.toString() },
-            defaultValue = "4"
+            defaultValue = "4",
+            description = "Set the number of frames between turbo button toggles"
         ),
         CoreOptionDef(
             key = "gambatte_rumble_level",
@@ -488,13 +500,15 @@ object GambatteManifest : CoreOptionManifest {
             key = "gambatte_show_gb_link_settings",
             displayName = "Show GameBoy Link Settings",
             values = listOf("enabled", "disabled"),
-            defaultValue = "disabled"
+            defaultValue = "disabled",
+            description = "Reveal network link cable configuration options"
         ),
         CoreOptionDef(
             key = "gambatte_gb_link_mode",
             displayName = "GameBoy Link Mode",
             values = listOf("Not Connected", "Network Server", "Network Client"),
-            defaultValue = "Not Connected"
+            defaultValue = "Not Connected",
+            description = "Select the link cable connection role for multiplayer"
         ),
         CoreOptionDef(
             key = "gambatte_gb_link_network_port",

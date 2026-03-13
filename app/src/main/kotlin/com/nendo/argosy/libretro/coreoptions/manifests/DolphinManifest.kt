@@ -224,13 +224,17 @@ object DolphinManifest : CoreOptionManifest {
             key = "dolphin_gfx_settings_shader_compilation_mode",
             displayName = "Shader Compilation Mode",
             values = listOf("0", "3", "1", "2"),
-            defaultValue = "0"
+            defaultValue = "2",
+            coreDefault = "0",
+            description = "Controls when shaders are compiled (0=sync, 1=sync on first use, 2=async, 3=async skip)"
         ),
         CoreOptionDef(
             key = "dolphin_gfx_settings_wait_for_shaders",
             displayName = "Wait for Shaders",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "enabled",
+            coreDefault = "disabled",
+            description = "Precompiles shaders before starting to prevent first-run stuttering"
         ),
         CoreOptionDef(
             key = "dolphin_gfx_settings_anti_aliasing",
@@ -248,7 +252,9 @@ object DolphinManifest : CoreOptionManifest {
             key = "dolphin_gfx_settings_gpu_texture_decoding",
             displayName = "GPU Texture Decoding",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "enabled",
+            coreDefault = "disabled",
+            description = "Offloads texture decoding to the GPU for better performance on Adreno/Mali"
         ),
         CoreOptionDef(
             key = "dolphin_gfx_settings_enable_pixel_lighting",
@@ -406,7 +412,9 @@ object DolphinManifest : CoreOptionManifest {
             key = "dolphin_gfx_hacks_efb_emulate_format_changes",
             displayName = "EFB Emulate Format Changes",
             values = listOf("disabled", "enabled"),
-            defaultValue = "disabled"
+            defaultValue = "enabled",
+            coreDefault = "disabled",
+            description = "Accurately emulates EFB format changes (fixes artifacts in some games)"
         ),
         CoreOptionDef(
             key = "dolphin_gfx_hacks_vertex_rounding",

@@ -5,5 +5,6 @@ data class CoreOptionDef(
     val displayName: String,
     val values: List<String>,
     val defaultValue: String,
-    val coreDefault: String = defaultValue
+    val coreDefault: String = defaultValue,
+    val description: String? = null
 )

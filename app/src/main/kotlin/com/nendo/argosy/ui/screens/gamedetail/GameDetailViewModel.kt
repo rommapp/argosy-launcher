@@ -96,7 +96,8 @@ class GameDetailViewModel @Inject constructor(
     private val screenshotDelegate: ScreenshotDelegate,
     private val ratingsStatus: RatingsStatusDelegate,
     private val playOptionsDelegate: PlayOptionsDelegate,
-    private val moreOptionsDelegate: MoreOptionsDelegate
+    private val moreOptionsDelegate: MoreOptionsDelegate,
+    private val socialRepository: com.nendo.argosy.data.social.SocialRepository
 ) : ViewModel() {
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
@@ -290,6 +291,21 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
         }
+
+        viewModelScope.launch {
+            socialRepository.hiddenGameIds.collect { hiddenIds ->
+                val igdbId = _uiState.value.game?.igdbId
+                _uiState.update { it.copy(isPrivate = igdbId != null && igdbId.toInt() in hiddenIds) }
+            }
+        }
+
+        viewModelScope.launch {
+            socialRepository.connectionState.collect { state ->
+                _uiState.update {
+                    it.copy(hasSocialAccount = state is com.nendo.argosy.data.social.SocialConnectionState.Connected)
+                }
+            }
+        }
     }
 
     private suspend fun handlePickerSelection(selection: PickerSelection) {
@@ -447,6 +463,11 @@ class GameDetailViewModel @Inject constructor(
             downloadDelegate.updateDownloadStatus(downloadStatus, if (downloadStatus == GameDownloadStatus.DOWNLOADED) 1f else 0f)
             downloadDelegate.updateDownloadSize(downloadSizeBytes)
 
+            val isPrivate = game.igdbId != null &&
+                game.igdbId.toInt() in socialRepository.hiddenGameIds.value
+            val hasSocial = socialRepository.connectionState.value is
+                com.nendo.argosy.data.social.SocialConnectionState.Connected
+
             _uiState.update { state ->
                 state.copy(
                     game = game.toGameDetailUi(
@@ -469,7 +490,9 @@ class GameDetailViewModel @Inject constructor(
                     dlcFiles = dlcFilesUi,
                     isEdenGame = isEdenGame,
                     siblingGameIds = siblingIds,
-                    currentGameIndex = currentIndex
+                    currentGameIndex = currentIndex,
+                    isPrivate = isPrivate,
+                    hasSocialAccount = hasSocial
                 )
             }
 
@@ -1128,6 +1151,11 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    fun togglePrivacy() {
+        val igdbId = _uiState.value.game?.igdbId?.toInt() ?: return
+        socialRepository.toggleGameVisibility(igdbId)
+    }
+
     private fun refreshAndroidOrRommData() {
         val game = _uiState.value.game ?: return
         if (game.isAndroidApp) {
@@ -1566,6 +1594,7 @@ class GameDetailViewModel @Inject constructor(
             }
             if (state.showScreenshotViewer) { setCurrentScreenshotAsBackground(); return InputResult.HANDLED }
             if (state.downloadStatus == GameDownloadStatus.DOWNLOADED && state.game?.isBuiltInEmulator == true) { showPlayOptions(); return InputResult.HANDLED }
+            if (state.hasSocialAccount && state.game?.igdbId != null) { togglePrivacy(); return InputResult.HANDLED }
             return InputResult.UNHANDLED
         }
 

@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var romMRepository: RomMRepository
     @Inject lateinit var launchRetryTracker: LaunchRetryTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
+    @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
     @Inject lateinit var ambientAudioManager: AmbientAudioManager
     @Inject lateinit var ambientLedManager: AmbientLedManager
     @Inject lateinit var screenCaptureManager: ScreenCaptureManager
@@ -246,6 +247,7 @@ class MainActivity : ComponentActivity() {
                 displayAffinityHelper = displayAffinityHelper,
                 sessionStateStore = sessionStateStore,
                 preferencesRepository = preferencesRepository,
+                syncPreferencesRepository = syncPreferencesRepository,
                 edenContentManager = edenContentManager,
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,

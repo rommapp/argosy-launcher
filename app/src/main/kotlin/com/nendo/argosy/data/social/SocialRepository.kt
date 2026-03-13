@@ -12,6 +12,7 @@ import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialSyncType
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.SocialSyncCoordinator
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
@@ -51,7 +52,8 @@ class SocialRepository @Inject constructor(
     private val discordTokenHolder: DiscordTokenHolder,
     private val playSessionTracker: PlaySessionTracker,
     private val achievementUpdateBus: AchievementUpdateBus,
-    private val socialSyncCoordinator: Lazy<SocialSyncCoordinator>
+    private val socialSyncCoordinator: Lazy<SocialSyncCoordinator>,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var hasCompletedInitialSync = false
@@ -126,6 +128,9 @@ class SocialRepository @Inject constructor(
     private val _userSettings = MutableStateFlow(UserSettings())
     val userSettings: StateFlow<UserSettings> = _userSettings.asStateFlow()
 
+    private val _hiddenGameIds = MutableStateFlow<Set<Int>>(emptySet())
+    val hiddenGameIds: StateFlow<Set<Int>> = _hiddenGameIds.asStateFlow()
+
     private val _usersCache = mutableMapOf<String, SocialUser>()
 
     val authState: StateFlow<SocialAuthManager.AuthState> = authManager.authState
@@ -138,7 +143,16 @@ class SocialRepository @Inject constructor(
         observeSyncAchievementResults()
         observeAchievementUpdates()
         setupSessionRevokedCallback()
+        seedHiddenGameIds()
         attemptAutoConnect()
+    }
+
+    private fun seedHiddenGameIds() {
+        scope.launch {
+            syncPreferencesRepository.hiddenGameIds().first().let {
+                _hiddenGameIds.value = it
+            }
+        }
     }
 
     private fun setupSessionRevokedCallback() {
@@ -191,6 +205,7 @@ class SocialRepository @Inject constructor(
                             )
                             syncPlaySessions()
                             syncUnsharedAchievements()
+                            socialService.sendGetHiddenGames()
                         }
                     }
                     is ArgosSocialService.ConnectionState.Failed -> {
@@ -408,6 +423,11 @@ class SocialRepository @Inject constructor(
                         _userSettings.value = message.settings
                         Log.d(TAG, "UserSettings: autoShare=${message.settings.communityAutoShare}")
                     }
+                    is ArgosSocialService.IncomingMessage.HiddenGames -> {
+                        _hiddenGameIds.value = message.igdbGameIds
+                        syncPreferencesRepository.setHiddenGameIds(message.igdbGameIds)
+                        Log.d(TAG, "HiddenGames: ${message.igdbGameIds.size} games")
+                    }
                     is ArgosSocialService.IncomingMessage.Error -> {
                         if (message.code == "unknown_type") {
                             Log.w(TAG, "Server returned unknown_type -- suppressing achievement sync for this session")
@@ -509,6 +529,16 @@ class SocialRepository @Inject constructor(
     fun toggleFavoriteFriend(friendId: String) {
         if (socialService.isConnected()) {
             socialService.toggleFavoriteFriend(friendId)
+        }
+    }
+
+    fun toggleGameVisibility(igdbGameId: Int) {
+        if (!socialService.isConnected()) return
+        val isHidden = igdbGameId in _hiddenGameIds.value
+        if (isHidden) {
+            socialService.sendUnhideGame(igdbGameId)
+        } else {
+            socialService.sendHideGame(igdbGameId)
         }
     }
 

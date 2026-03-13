@@ -220,6 +220,12 @@ object MessageTypes {
 
     // Event visibility
     const val UPDATE_EVENT_VISIBILITY = "update_event_visibility"
+
+    // Game privacy
+    const val HIDE_GAME = "hide_game"
+    const val UNHIDE_GAME = "unhide_game"
+    const val GET_HIDDEN_GAMES = "get_hidden_games"
+    const val HIDDEN_GAMES = "hidden_games"
 }
 
 @JsonClass(generateAdapter = true)

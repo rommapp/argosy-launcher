@@ -64,7 +64,8 @@ fun GameEntity.toGameDetailUi(
         isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
         packageName = packageName,
         isHidden = isHidden,
-        titleId = titleId
+        titleId = titleId,
+        igdbId = igdbId
     )
 }
 

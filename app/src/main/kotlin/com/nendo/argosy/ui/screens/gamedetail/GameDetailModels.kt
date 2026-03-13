@@ -107,7 +107,8 @@ data class GameDetailUi(
     val isAndroidApp: Boolean = false,
     val packageName: String? = null,
     val isHidden: Boolean = false,
-    val titleId: String? = null
+    val titleId: String? = null,
+    val igdbId: Long? = null
 )
 
 sealed class LaunchEvent {
@@ -213,7 +214,9 @@ data class GameDetailUiState(
     val showCreateCollectionDialog: Boolean = false,
     val showAchievementList: Boolean = false,
     val achievementListFocusIndex: Int = 0,
-    val isEdenGame: Boolean = false
+    val isEdenGame: Boolean = false,
+    val hasSocialAccount: Boolean = false,
+    val isPrivate: Boolean = false
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1

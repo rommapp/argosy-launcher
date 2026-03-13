@@ -523,7 +523,8 @@ class SecondaryHomeActivity :
             appsRepository = AppsRepository(applicationContext),
             preferencesRepository = null,
             displayAffinityHelper = affinityHelper,
-            downloadManager = null, context = applicationContext
+            downloadManager = null, context = applicationContext,
+            syncPreferencesRepository = dsm.syncPreferencesRepository
         )
         dualHomeViewModel = DualHomeViewModel(
             gameDao = gameDao, platformRepository = platformRepository,

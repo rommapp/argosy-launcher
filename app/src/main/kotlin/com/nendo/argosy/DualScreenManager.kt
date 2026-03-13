@@ -77,6 +77,7 @@ class DualScreenManager(
     internal val displayAffinityHelper: DisplayAffinityHelper,
     internal val sessionStateStore: SessionStateStore,
     internal val preferencesRepository: UserPreferencesRepository,
+    internal val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     private val edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager,
     private val notificationManager: com.nendo.argosy.ui.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,

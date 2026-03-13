@@ -193,7 +193,8 @@ fun GameDetailScreen(
                     focusedIndex = uiState.menuFocusIndex,
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
-                    hasAchievements = hasAchievements
+                    hasAchievements = hasAchievements,
+                    hasSocialAccount = uiState.hasSocialAccount
                 )
                 when (menuState.focusedItem) {
                     MenuItemType.SCREENSHOTS -> if (screenshotCount > 0) {
@@ -214,7 +215,8 @@ fun GameDetailScreen(
                     focusedIndex = uiState.menuFocusIndex,
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
-                    hasAchievements = hasAchievements
+                    hasAchievements = hasAchievements,
+                    hasSocialAccount = uiState.hasSocialAccount
                 )
                 when (menuState.focusedItem) {
                     MenuItemType.SCREENSHOTS -> if (screenshotCount > 0) {
@@ -237,7 +239,8 @@ fun GameDetailScreen(
                     focusedIndex = uiState.menuFocusIndex,
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
-                    hasAchievements = hasAchievements
+                    hasAchievements = hasAchievements,
+                    hasSocialAccount = uiState.hasSocialAccount
                 )
                 menuState.focusedItem == MenuItemType.SCREENSHOTS
             }
@@ -406,7 +409,9 @@ private fun GameDetailContent(
         hasScreenshots = game.screenshots.isNotEmpty(),
         hasAchievements = game.achievements.isNotEmpty(),
         saveStatus = uiState.saveStatusInfo,
-        downloadSizeBytes = uiState.downloadSizeBytes
+        downloadSizeBytes = uiState.downloadSizeBytes,
+        isPrivate = uiState.isPrivate,
+        hasSocialAccount = uiState.hasSocialAccount
     )
 
     // Scroll to section when menu focus changes
@@ -522,6 +527,7 @@ private fun GameDetailContent(
                                 when (item) {
                                     MenuItemType.PLAY -> viewModel.primaryAction()
                                     MenuItemType.FAVORITE -> viewModel.toggleFavorite()
+                                    MenuItemType.PRIVACY -> viewModel.togglePrivacy()
                                     MenuItemType.OPTIONS -> viewModel.toggleMoreOptions()
                                     MenuItemType.DETAILS -> coroutineScope.launch {
                                         scrollState.animateScrollTo(0)
@@ -650,6 +656,7 @@ private fun GameDetailContent(
                                 else -> "Play"
                             })
                             MenuItemType.FAVORITE -> add(InputButton.A to if (game.isFavorite) "Unfavorite" else "Favorite")
+                            MenuItemType.PRIVACY -> add(InputButton.A to if (uiState.isPrivate) "Make Public" else "Make Private")
                             MenuItemType.OPTIONS -> add(InputButton.A to "Options")
                             MenuItemType.SCREENSHOTS -> add(InputButton.A to "View")
                             MenuItemType.ACHIEVEMENTS -> add(InputButton.A to "View All")
@@ -658,6 +665,8 @@ private fun GameDetailContent(
                         add(InputButton.B to "Back")
                         if (canShowPlayOptions && focusedItem == MenuItemType.PLAY) {
                             add(InputButton.X to "New Game")
+                        } else if (uiState.hasSocialAccount && game.igdbId != null) {
+                            add(InputButton.X to if (uiState.isPrivate) "Make Public" else "Make Private")
                         }
                         add(InputButton.Y to if (game.isFavorite) "Unfavorite" else "Favorite")
                     },
@@ -665,7 +674,10 @@ private fun GameDetailContent(
                         when (button) {
                             InputButton.A -> viewModel.executeMenuAction()
                             InputButton.B -> onBack()
-                            InputButton.X -> if (canShowPlayOptions) viewModel.showPlayOptions()
+                            InputButton.X -> {
+                                if (canShowPlayOptions) viewModel.showPlayOptions()
+                                else if (uiState.hasSocialAccount) viewModel.togglePrivacy()
+                            }
                             InputButton.Y -> viewModel.toggleFavorite()
                             InputButton.LB -> viewModel.navigateToPreviousGame()
                             InputButton.RB -> viewModel.navigateToNextGame()

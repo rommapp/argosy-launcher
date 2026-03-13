@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -404,6 +405,27 @@ private fun GameGridItem(
                             .fillMaxSize()
                             .background(Color.White.copy(alpha = longPressState.whiteOverlay.value))
                     )
+                }
+
+                if (game.isPrivate) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(20.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.VisibilityOff,
+                            contentDescription = "Private",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
                 }
             }
 

@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +51,7 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 enum class MenuItemType {
     PLAY,
     FAVORITE,
+    PRIVACY,
     OPTIONS,
     DETAILS,
     DESCRIPTION,
@@ -67,12 +70,15 @@ data class GameDetailMenuState(
     val hasScreenshots: Boolean = true,
     val hasAchievements: Boolean = false,
     val saveStatus: SaveStatusInfo? = null,
-    val downloadSizeBytes: Long? = null
+    val downloadSizeBytes: Long? = null,
+    val isPrivate: Boolean = false,
+    val hasSocialAccount: Boolean = false
 ) {
     val menuItems: List<MenuItemType>
         get() = buildList {
             add(MenuItemType.PLAY)
             add(MenuItemType.FAVORITE)
+            if (hasSocialAccount) add(MenuItemType.PRIVACY)
             add(MenuItemType.OPTIONS)
             add(MenuItemType.DETAILS)
             if (hasDescription) add(MenuItemType.DESCRIPTION)
@@ -125,6 +131,15 @@ fun GameDetailMenu(
                 MenuItemType.FAVORITE -> {
                     FavoriteMenuItem(
                         isFavorite = state.isFavorite,
+                        isFocused = isFocused,
+                        isCompact = isCompact,
+                        onClick = { onFocusChange(index); onItemClick(item) }
+                    )
+                }
+
+                MenuItemType.PRIVACY -> {
+                    PrivacyMenuItem(
+                        isPrivate = state.isPrivate,
                         isFocused = isFocused,
                         isCompact = isCompact,
                         onClick = { onFocusChange(index); onItemClick(item) }
@@ -379,6 +394,62 @@ private fun FavoriteMenuItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                    tint = iconTint,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrivacyMenuItem(
+    isPrivate: Boolean,
+    isFocused: Boolean,
+    isCompact: Boolean,
+    onClick: () -> Unit
+) {
+    val iconTint = when {
+        isFocused -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val icon = if (isPrivate) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility
+    val label = if (isPrivate) "Private" else "Public"
+
+    val textColor = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val textStyle = if (isFocused) {
+        MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+    } else {
+        MaterialTheme.typography.bodyMedium
+    }
+
+    MenuItemWithLeftBorder(
+        isFocused = isFocused,
+        isCompact = isCompact,
+        onClick = onClick
+    ) {
+        if (isCompact) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconTint,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = label,
+                    style = textStyle,
+                    color = textColor,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
                     tint = iconTint,
                     modifier = Modifier.size(Dimens.iconSm)
                 )

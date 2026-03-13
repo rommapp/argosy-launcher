@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.GridDensity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.ui.common.GridDirection
@@ -43,7 +44,8 @@ data class SecondaryGameUi(
     val coverPath: String?,
     val platformSlug: String,
     val isPlayable: Boolean,
-    val downloadProgress: Float? = null
+    val downloadProgress: Float? = null,
+    val isPrivate: Boolean = false
 )
 
 data class SecondaryAppUi(
@@ -93,7 +95,8 @@ class SecondaryHomeViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository?,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadManager: DownloadManager?,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val syncPreferencesRepository: SyncPreferencesRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SecondaryHomeUiState())
@@ -245,6 +248,7 @@ class SecondaryHomeViewModel @Inject constructor(
     private fun loadGamesForCurrentSection() {
         viewModelScope.launch {
             val section = _uiState.value.currentSection ?: return@launch
+            val hiddenIds = syncPreferencesRepository?.hiddenGameIds()?.first() ?: emptySet()
 
             val games = when (section) {
                 is HomeSection.Recent -> {
@@ -254,15 +258,15 @@ class SecondaryHomeViewModel @Inject constructor(
                     val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
                     sortRecentGamesWithNewPriority(allCandidates)
                         .take(RECENT_GAMES_LIMIT)
-                        .map { it.toUi() }
+                        .map { it.toUi(hiddenIds) }
                 }
                 is HomeSection.Favorites -> {
-                    gameDao.getFavorites().map { it.toUi() }
+                    gameDao.getFavorites().map { it.toUi(hiddenIds) }
                 }
                 is HomeSection.Platform -> {
                     gameDao.getByPlatformSorted(section.id, limit = 200)
                         .filter { !it.isHidden }
-                        .map { it.toUi() }
+                        .map { it.toUi(hiddenIds) }
                 }
             }
 
@@ -552,11 +556,12 @@ class SecondaryHomeViewModel @Inject constructor(
         )}
     }
 
-    private fun GameEntity.toUi() = SecondaryGameUi(
+    private fun GameEntity.toUi(hiddenIds: Set<Int> = emptySet()) = SecondaryGameUi(
         id = id,
         title = title,
         coverPath = coverPath,
         platformSlug = platformSlug,
-        isPlayable = localPath != null
+        isPlayable = localPath != null,
+        isPrivate = igdbId != null && igdbId.toInt() in hiddenIds
     )
 }

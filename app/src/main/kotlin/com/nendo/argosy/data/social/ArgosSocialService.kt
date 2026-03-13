@@ -148,6 +148,7 @@ class ArgosSocialService @Inject constructor(
         data class CommunityFollowsData(val follows: List<CommunityFollow>) : IncomingMessage()
         data class CommunityFollowUpdated(val follow: CommunityFollow) : IncomingMessage()
         data class UserSettingsData(val settings: UserSettings) : IncomingMessage()
+        data class HiddenGames(val igdbGameIds: Set<Int>) : IncomingMessage()
     }
 
     fun connect(token: String) {
@@ -556,6 +557,17 @@ class ArgosSocialService @Inject constructor(
                     } else null
                 }
 
+                MessageTypes.HIDDEN_GAMES -> {
+                    val gamesArray = payload?.optJSONArray("games")
+                    val ids = if (gamesArray != null) {
+                        (0 until gamesArray.length()).map { i ->
+                            gamesArray.getJSONObject(i).getInt("igdb_game_id")
+                        }.toSet()
+                    } else emptySet()
+                    Log.d(TAG, "HIDDEN_GAMES: ${ids.size} hidden games")
+                    IncomingMessage.HiddenGames(ids)
+                }
+
                 MessageTypes.PONG -> {
                     lastPongReceivedAt = System.currentTimeMillis()
                     missedPongs = 0
@@ -626,6 +638,18 @@ class ArgosSocialService @Inject constructor(
             put("type", MessageTypes.REQUEST_DISCORD_TOKENS)
         }
         webSocket?.send(json.toString())
+    }
+
+    fun sendHideGame(igdbGameId: Int): Boolean {
+        return send(MessageTypes.HIDE_GAME, mapOf("igdb_game_id" to igdbGameId))
+    }
+
+    fun sendUnhideGame(igdbGameId: Int): Boolean {
+        return send(MessageTypes.UNHIDE_GAME, mapOf("igdb_game_id" to igdbGameId))
+    }
+
+    fun sendGetHiddenGames(): Boolean {
+        return send(MessageTypes.GET_HIDDEN_GAMES, emptyMap())
     }
 
     fun getFriendCode() {

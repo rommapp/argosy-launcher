@@ -90,6 +90,7 @@ class SyncPreferencesRepository @Inject constructor(
         val DISCORD_RICH_PRESENCE_ENABLED = booleanPreferencesKey("discord_rich_presence_enabled")
         val SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME = booleanPreferencesKey("social_suppress_notifications_in_game")
         val SOCIAL_LAST_PLAY_SESSION_SYNC = stringPreferencesKey("social_last_play_session_sync")
+        val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
     }
 
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->
@@ -346,5 +347,21 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setLastPlaySessionSyncTime(time: Instant) {
         dataStore.edit { it[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC] = time.toString() }
+    }
+
+    fun hiddenGameIds(): Flow<Set<Int>> = dataStore.data.map { prefs ->
+        prefs[Keys.SOCIAL_HIDDEN_GAME_IDS]
+            ?.split(",")
+            ?.filter { it.isNotBlank() }
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    suspend fun setHiddenGameIds(ids: Set<Int>) {
+        dataStore.edit { prefs ->
+            if (ids.isEmpty()) prefs.remove(Keys.SOCIAL_HIDDEN_GAME_IDS)
+            else prefs[Keys.SOCIAL_HIDDEN_GAME_IDS] = ids.joinToString(",")
+        }
     }
 }

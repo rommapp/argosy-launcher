@@ -49,6 +49,12 @@ class RomMRepository @Inject constructor(
     suspend fun login(username: String, password: String): RomMResult<String> =
         connectionManager.login(username, password)
 
+    suspend fun connectWithToken(url: String, token: String): RomMResult<String> =
+        connectionManager.connectWithToken(url, token)
+
+    suspend fun exchangePairingCode(url: String, code: String): RomMResult<String> =
+        connectionManager.exchangePairingCode(url, code)
+
     fun disconnect() = connectionManager.disconnect()
 
     suspend fun checkConnection(retryCount: Int = 2) = connectionManager.checkConnection(retryCount)

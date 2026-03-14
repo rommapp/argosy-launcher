@@ -75,11 +75,13 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
 fun FirstRunScreen(
@@ -176,8 +178,20 @@ fun FirstRunScreen(
                     isFocused = true,
                     onGetStarted = { viewModel.nextStep() }
                 )
-                FirstRunStep.ROMM_LOGIN -> RommLoginStep(
+                FirstRunStep.ROMM_LOGIN -> if (uiState.rommShowScanner) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        com.nendo.argosy.ui.components.QrScannerWithPermission(
+                            onResult = { result ->
+                                viewModel.handleScanResult(result.origin, result.code)
+                            },
+                            onDismiss = { viewModel.dismissScanner() }
+                        )
+                    }
+                } else RommLoginStep(
                     url = uiState.rommUrl,
+                    authMethod = uiState.rommAuthMethod,
+                    pairingCode = uiState.rommPairingCode,
+                    hasCamera = uiState.rommHasCamera,
                     username = uiState.rommUsername,
                     password = uiState.rommPassword,
                     isConnecting = uiState.isConnecting,
@@ -185,9 +199,12 @@ fun FirstRunScreen(
                     focusedIndex = uiState.focusedIndex,
                     rommFocusField = uiState.rommFocusField,
                     onUrlChange = viewModel::setRommUrl,
+                    onAuthMethodChange = viewModel::setRommAuthMethod,
+                    onPairingCodeChange = viewModel::setRommPairingCode,
                     onUsernameChange = viewModel::setRommUsername,
                     onPasswordChange = viewModel::setRommPassword,
                     onConnect = { viewModel.connectToRomm() },
+                    onScan = { viewModel.showScanner() },
                     onBack = { viewModel.previousStep() },
                     onClearFocusField = { viewModel.clearRommFocusField() }
                 )
@@ -319,6 +336,9 @@ private fun WelcomeStep(isFocused: Boolean, onGetStarted: () -> Unit) {
 @Composable
 private fun RommLoginStep(
     url: String,
+    authMethod: com.nendo.argosy.ui.screens.settings.RomMAuthMethod,
+    pairingCode: String,
+    hasCamera: Boolean,
     username: String,
     password: String,
     isConnecting: Boolean,
@@ -326,22 +346,33 @@ private fun RommLoginStep(
     focusedIndex: Int,
     rommFocusField: Int?,
     onUrlChange: (String) -> Unit,
+    onAuthMethodChange: (com.nendo.argosy.ui.screens.settings.RomMAuthMethod) -> Unit,
+    onPairingCodeChange: (String) -> Unit,
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onConnect: () -> Unit,
+    onScan: () -> Unit,
     onBack: () -> Unit,
     onClearFocusField: () -> Unit
 ) {
     val inputShape = RoundedCornerShape(Dimens.radiusMd)
+    val isPairingCode = authMethod == com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
     val urlFocusRequester = remember { FocusRequester() }
+    val pairingCodeFocusRequester = remember { FocusRequester() }
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
+
+    val hasScanButton = isPairingCode && hasCamera
+    val connectIndex = if (isPairingCode) 3 else 4
+    val scanIndex = if (hasScanButton) connectIndex + 1 else -1
+    val backIndex = if (hasScanButton) scanIndex + 1 else connectIndex + 1
 
     LaunchedEffect(rommFocusField) {
         when (rommFocusField) {
             0 -> urlFocusRequester.requestFocus()
-            1 -> usernameFocusRequester.requestFocus()
-            2 -> passwordFocusRequester.requestFocus()
+            2 -> if (isPairingCode) pairingCodeFocusRequester.requestFocus()
+                 else usernameFocusRequester.requestFocus()
+            3 -> if (!isPairingCode) passwordFocusRequester.requestFocus()
         }
         if (rommFocusField != null) {
             onClearFocusField()
@@ -375,40 +406,71 @@ private fun RommLoginStep(
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-        OutlinedTextField(
-            value = username,
-            onValueChange = onUsernameChange,
-            label = { Text("Username") },
-            singleLine = true,
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .focusRequester(usernameFocusRequester)
-                .then(
-                    if (focusedIndex == 1)
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
-                    else Modifier
-                )
+        AuthMethodToggle(
+            isPairingCode = isPairingCode,
+            isFocused = focusedIndex == 1,
+            onToggle = {
+                val next = if (isPairingCode) {
+                    com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PASSWORD
+                } else {
+                    com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
+                }
+                onAuthMethodChange(next)
+            }
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .focusRequester(passwordFocusRequester)
-                .then(
-                    if (focusedIndex == 2)
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
-                    else Modifier
-                )
-        )
+        if (isPairingCode) {
+            Text(
+                text = "Create an API token in the RomM web UI, then click Pair Device to get a code.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(0.8f)
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            com.nendo.argosy.ui.screens.settings.components.PairingCodeInput(
+                code = pairingCode,
+                onCodeChange = onPairingCodeChange,
+                isFocused = focusedIndex == 2,
+                focusRequester = pairingCodeFocusRequester
+            )
+        } else {
+            OutlinedTextField(
+                value = username,
+                onValueChange = onUsernameChange,
+                label = { Text("Username") },
+                singleLine = true,
+                shape = inputShape,
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .focusRequester(usernameFocusRequester)
+                    .then(
+                        if (focusedIndex == 2)
+                            Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
+                        else Modifier
+                    )
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = { Text("Password") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = inputShape,
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .focusRequester(passwordFocusRequester)
+                    .then(
+                        if (focusedIndex == 3)
+                            Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
+                        else Modifier
+                    )
+            )
+        }
 
         if (error != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -424,18 +486,74 @@ private fun RommLoginStep(
         Row {
             FocusableOutlinedButton(
                 text = "Back",
-                isFocused = focusedIndex == 4,
+                isFocused = focusedIndex == backIndex,
                 enabled = !isConnecting,
                 onClick = onBack
             )
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
             FocusableButton(
                 text = if (isConnecting) "Connecting..." else "Connect",
-                isFocused = focusedIndex == 3,
+                isFocused = focusedIndex == connectIndex,
                 enabled = !isConnecting && url.isNotBlank(),
                 onClick = onConnect
             )
         }
+
+        if (hasScanButton) {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            FocusableOutlinedButton(
+                text = "Scan QR Code",
+                isFocused = focusedIndex == scanIndex,
+                enabled = !isConnecting,
+                onClick = onScan
+            )
+        }
+    }
+}
+
+@Composable
+private fun AuthMethodToggle(
+    isPairingCode: Boolean,
+    isFocused: Boolean,
+    onToggle: () -> Unit
+) {
+    val shape = RoundedCornerShape(Dimens.radiusMd)
+    val focusedColor = MaterialTheme.colorScheme.primaryContainer
+    val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
+    val selectedColor = MaterialTheme.colorScheme.primary
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Row(
+        modifier = Modifier
+            .then(
+                if (isFocused) Modifier.background(focusedColor, shape)
+                else Modifier.background(surfaceColor, shape)
+            )
+            .padding(Dimens.spacingXs)
+            .clickableNoFocus(onClick = onToggle),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+    ) {
+        val pairingBg = if (isPairingCode) selectedColor else Color.Transparent
+        val pairingText = if (isPairingCode) MaterialTheme.colorScheme.onPrimary else unselectedColor
+        val passwordBg = if (!isPairingCode) selectedColor else Color.Transparent
+        val passwordText = if (!isPairingCode) MaterialTheme.colorScheme.onPrimary else unselectedColor
+
+        Text(
+            text = "Pairing Code",
+            color = pairingText,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier
+                .background(pairingBg, shape)
+                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+        )
+        Text(
+            text = "Password",
+            color = passwordText,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier
+                .background(passwordBg, shape)
+                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+        )
     }
 }
 

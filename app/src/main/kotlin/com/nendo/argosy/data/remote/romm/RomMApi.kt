@@ -33,6 +33,11 @@ interface RomMApi {
         @Field("scope") scope: String = "me.read me.write platforms.read roms.read assets.read assets.write roms.user.read roms.user.write collections.read collections.write"
     ): Response<RomMTokenResponse>
 
+    @POST("api/client-tokens/exchange")
+    suspend fun exchangePairingCode(
+        @Body body: RomMPairingExchangeRequest
+    ): Response<RomMPairingExchangeResponse>
+
     @GET("api/users/me")
     suspend fun getCurrentUser(): Response<RomMUser>
 

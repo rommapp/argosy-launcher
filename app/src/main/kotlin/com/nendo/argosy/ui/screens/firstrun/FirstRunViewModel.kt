@@ -52,6 +52,10 @@ data class FirstRunUiState(
     val currentStep: FirstRunStep = FirstRunStep.WELCOME,
     val focusedIndex: Int = 0,
     val rommUrl: String = "",
+    val rommAuthMethod: com.nendo.argosy.ui.screens.settings.RomMAuthMethod = com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE,
+    val rommPairingCode: String = "",
+    val rommShowScanner: Boolean = false,
+    val rommHasCamera: Boolean = false,
     val rommUsername: String = "",
     val rommPassword: String = "",
     val isConnecting: Boolean = false,
@@ -86,7 +90,11 @@ class FirstRunViewModel @Inject constructor(
     private val gamepadInputHandler: GamepadInputHandler
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(FirstRunUiState())
+    private val _uiState = MutableStateFlow(
+        FirstRunUiState(
+            rommHasCamera = com.nendo.argosy.ui.components.deviceHasCamera(application)
+        )
+    )
     val uiState: StateFlow<FirstRunUiState> = _uiState.asStateFlow()
 
     fun nextStep() {
@@ -290,7 +298,15 @@ class FirstRunViewModel @Inject constructor(
         val state = _uiState.value
         return when (state.currentStep) {
             FirstRunStep.WELCOME -> 0
-            FirstRunStep.ROMM_LOGIN -> 4
+            FirstRunStep.ROMM_LOGIN -> {
+                val isPairingCode = state.rommAuthMethod == com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
+                val hasScanButton = isPairingCode && state.rommHasCamera
+                when {
+                    isPairingCode && hasScanButton -> 5
+                    isPairingCode -> 4
+                    else -> 5
+                }
+            }
             FirstRunStep.ROMM_SUCCESS -> 0
             FirstRunStep.ROM_PATH -> {
                 when {
@@ -348,63 +364,99 @@ class FirstRunViewModel @Inject constructor(
         _uiState.update { it.copy(rommPassword = password, connectionError = null) }
     }
 
+    fun setRommPairingCode(code: String) {
+        _uiState.update { it.copy(rommPairingCode = code, connectionError = null) }
+    }
+
+    fun setRommAuthMethod(method: com.nendo.argosy.ui.screens.settings.RomMAuthMethod) {
+        _uiState.update { it.copy(rommAuthMethod = method, connectionError = null) }
+    }
+
+    fun showScanner() {
+        _uiState.update { it.copy(rommShowScanner = true) }
+    }
+
+    fun dismissScanner() {
+        _uiState.update { it.copy(rommShowScanner = false) }
+    }
+
+    fun handleScanResult(origin: String, code: String) {
+        _uiState.update {
+            it.copy(
+                rommShowScanner = false,
+                rommUrl = origin,
+                rommPairingCode = code,
+                rommAuthMethod = com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
+            )
+        }
+        connectToRomm()
+    }
+
     fun connectToRomm() {
         viewModelScope.launch {
             _uiState.update { it.copy(isConnecting = true, connectionError = null) }
 
-            val url = _uiState.value.rommUrl
-            val username = _uiState.value.rommUsername
-            val password = _uiState.value.rommPassword
+            val state = _uiState.value
+            val isPairingCode = state.rommAuthMethod == com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
 
-            val connectResult = romMRepository.connect(url)
-            if (connectResult is RomMResult.Error) {
+            if (isPairingCode) {
+                connectWithPairingCode(state.rommUrl, state.rommPairingCode)
+            } else {
+                connectWithPassword(state.rommUrl, state.rommUsername, state.rommPassword)
+            }
+        }
+    }
+
+    private suspend fun connectWithPairingCode(url: String, rawCode: String) {
+        val code = rawCode.replace("-", "").replace(" ", "")
+        if (code.length != 8) {
+            _uiState.update { it.copy(isConnecting = false, connectionError = "Enter the full 8-character pairing code") }
+            return
+        }
+
+        when (val result = romMRepository.exchangePairingCode(url, code)) {
+            is RomMResult.Success -> onAuthSuccess()
+            is RomMResult.Error -> {
+                _uiState.update { it.copy(isConnecting = false, connectionError = result.message) }
+            }
+        }
+    }
+
+    private suspend fun connectWithPassword(url: String, username: String, password: String) {
+        val connectResult = romMRepository.connect(url)
+        if (connectResult is RomMResult.Error) {
+            _uiState.update { it.copy(isConnecting = false, connectionError = "Could not connect to server: ${connectResult.message}") }
+            return
+        }
+
+        val workingUrl = (connectResult as RomMResult.Success).data
+        _uiState.update { it.copy(rommUrl = workingUrl.trimEnd('/')) }
+
+        when (val loginResult = romMRepository.login(username, password)) {
+            is RomMResult.Success -> onAuthSuccess()
+            is RomMResult.Error -> {
+                _uiState.update { it.copy(isConnecting = false, connectionError = "Login failed: ${loginResult.message}") }
+            }
+        }
+    }
+
+    private suspend fun onAuthSuccess() {
+        when (val summary = romMRepository.getLibrarySummary()) {
+            is RomMResult.Success -> {
+                val (platformCount, gameCount) = summary.data
+                gamepadInputHandler.blockInputFor(300)
                 _uiState.update { state ->
                     state.copy(
                         isConnecting = false,
-                        connectionError = "Could not connect to server: ${connectResult.message}"
+                        currentStep = FirstRunStep.ROMM_SUCCESS,
+                        focusedIndex = 0,
+                        rommGameCount = gameCount,
+                        rommPlatformCount = platformCount
                     )
                 }
-                return@launch
             }
-
-            val workingUrl = (connectResult as RomMResult.Success).data
-            _uiState.update { it.copy(rommUrl = workingUrl.trimEnd('/')) }
-
-            val loginResult = romMRepository.login(username, password)
-            when (loginResult) {
-                is RomMResult.Success -> {
-                    when (val summary = romMRepository.getLibrarySummary()) {
-                        is RomMResult.Success -> {
-                            val (platformCount, gameCount) = summary.data
-                            gamepadInputHandler.blockInputFor(300)
-                            _uiState.update { state ->
-                                state.copy(
-                                    isConnecting = false,
-                                    currentStep = FirstRunStep.ROMM_SUCCESS,
-                                    focusedIndex = 0,
-                                    rommGameCount = gameCount,
-                                    rommPlatformCount = platformCount
-                                )
-                            }
-                        }
-                        is RomMResult.Error -> {
-                            _uiState.update { state ->
-                                state.copy(
-                                    isConnecting = false,
-                                    connectionError = "Failed to fetch library: ${summary.message}"
-                                )
-                            }
-                        }
-                    }
-                }
-                is RomMResult.Error -> {
-                    _uiState.update { state ->
-                        state.copy(
-                            isConnecting = false,
-                            connectionError = "Login failed: ${loginResult.message}"
-                        )
-                    }
-                }
+            is RomMResult.Error -> {
+                _uiState.update { it.copy(isConnecting = false, connectionError = "Failed to fetch library: ${summary.message}") }
             }
         }
     }
@@ -525,10 +577,24 @@ class FirstRunViewModel @Inject constructor(
         when (state.currentStep) {
             FirstRunStep.WELCOME -> nextStep()
             FirstRunStep.ROMM_LOGIN -> {
+                val isPairingCode = state.rommAuthMethod == com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
+                val hasScanButton = isPairingCode && state.rommHasCamera
+                val connectIndex = if (isPairingCode) 3 else 4
+                val scanIndex = if (hasScanButton) connectIndex + 1 else -1
+                val backIndex = if (hasScanButton) scanIndex + 1 else connectIndex + 1
                 when (state.focusedIndex) {
-                    in 0..2 -> setRommFocusField(state.focusedIndex)
-                    3 -> if (!state.isConnecting && state.rommUrl.isNotBlank()) connectToRomm()
-                    4 -> previousStep()
+                    1 -> {
+                        val next = if (isPairingCode) {
+                            com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PASSWORD
+                        } else {
+                            com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
+                        }
+                        setRommAuthMethod(next)
+                    }
+                    connectIndex -> if (!state.isConnecting && state.rommUrl.isNotBlank()) connectToRomm()
+                    scanIndex -> showScanner()
+                    backIndex -> previousStep()
+                    else -> setRommFocusField(state.focusedIndex)
                 }
             }
             FirstRunStep.ROMM_SUCCESS -> nextStep()

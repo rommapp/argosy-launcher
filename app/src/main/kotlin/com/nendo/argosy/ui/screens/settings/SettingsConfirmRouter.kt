@@ -53,6 +53,32 @@ import com.nendo.argosy.ui.screens.settings.sections.syncSettingsMaxFocusIndex
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+private fun rommConfigMaxIndex(server: ServerState): Int {
+    val isPairingCode = server.rommAuthMethod == RomMAuthMethod.PAIRING_CODE
+    val hasScanButton = isPairingCode && server.rommHasCamera
+    return when {
+        isPairingCode && hasScanButton -> 5  // URL, Auth, Code, Connect, Scan, Cancel
+        isPairingCode -> 4                    // URL, Auth, Code, Connect, Cancel
+        else -> 5                             // URL, Auth, User, Pass, Connect, Cancel
+    }
+}
+
+private data class RommConfigIndices(
+    val connectIndex: Int,
+    val scanIndex: Int?,
+    val cancelIndex: Int
+)
+
+private fun rommConfigIndices(server: ServerState): RommConfigIndices {
+    val isPairingCode = server.rommAuthMethod == RomMAuthMethod.PAIRING_CODE
+    val hasScanButton = isPairingCode && server.rommHasCamera
+    return when {
+        isPairingCode && hasScanButton -> RommConfigIndices(3, 4, 5)
+        isPairingCode -> RommConfigIndices(3, null, 4)
+        else -> RommConfigIndices(4, null, 5)
+    }
+}
+
 internal fun routeConfirm(vm: SettingsViewModel): InputResult {
     val state = vm._uiState.value
     return when (state.currentSection) {
@@ -151,10 +177,16 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
 private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val isOnline = state.server.connectionStatus == ConnectionStatus.ONLINE
     if (state.server.rommConfiguring) {
+        val indices = rommConfigIndices(state.server)
         when (state.focusedIndex) {
-            0, 1, 2 -> vm._uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) }
-            3 -> vm.connectToRomm()
-            4 -> vm.cancelRommConfig()
+            1 -> {
+                val isPc = state.server.rommAuthMethod == RomMAuthMethod.PAIRING_CODE
+                vm.setRommAuthMethod(if (isPc) RomMAuthMethod.PASSWORD else RomMAuthMethod.PAIRING_CODE)
+            }
+            indices.connectIndex -> vm.connectToRomm()
+            indices.scanIndex -> vm.showRommScanner()
+            indices.cancelIndex -> vm.cancelRommConfig()
+            else -> vm._uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) }
         }
         return InputResult.HANDLED
     }
@@ -609,12 +641,17 @@ internal fun routeMoveFocus(vm: SettingsViewModel, delta: Int) {
             state.server.connectionStatus == ConnectionStatus.OFFLINE
         val maxIndex = computeMaxFocusIndex(vm, state, isConnected)
         val newIndex = if (state.currentSection == SettingsSection.SERVER && state.server.rommConfiguring) {
-            when {
-                delta > 0 && state.focusedIndex == 0 -> 1
-                delta > 0 && (state.focusedIndex == 1 || state.focusedIndex == 2) -> 3
-                delta < 0 && state.focusedIndex == 3 -> 1
-                delta < 0 && (state.focusedIndex == 1 || state.focusedIndex == 2) -> 0
-                else -> (state.focusedIndex + delta).coerceIn(0, maxIndex)
+            val isPairingCode = state.server.rommAuthMethod == RomMAuthMethod.PAIRING_CODE
+            if (isPairingCode) {
+                (state.focusedIndex + delta).coerceIn(0, maxIndex)
+            } else {
+                when {
+                    delta > 0 && state.focusedIndex == 1 -> 2
+                    delta > 0 && (state.focusedIndex == 2 || state.focusedIndex == 3) -> 4
+                    delta < 0 && state.focusedIndex == 4 -> 2
+                    delta < 0 && (state.focusedIndex == 2 || state.focusedIndex == 3) -> 1
+                    else -> (state.focusedIndex + delta).coerceIn(0, maxIndex)
+                }
             }
         } else {
             (state.focusedIndex + delta).coerceIn(0, maxIndex)
@@ -637,7 +674,7 @@ private fun computeMaxFocusIndex(
 ): Int = when (state.currentSection) {
     SettingsSection.MAIN -> mainSettingsMaxFocusIndex()
     SettingsSection.SERVER -> if (state.server.rommConfiguring) {
-        4
+        rommConfigMaxIndex(state.server)
     } else {
         gameDataMaxFocusIndex(buildGameDataItemsFromState(state))
     }

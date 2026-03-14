@@ -308,6 +308,20 @@ data class RomMAchievement(
     @Json(name = "badge_url_lock") val badgeUrlLock: String?
 )
 
+@JsonClass(generateAdapter = true)
+data class RomMPairingExchangeRequest(
+    @Json(name = "code") val code: String
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMPairingExchangeResponse(
+    @Json(name = "raw_token") val rawToken: String,
+    @Json(name = "id") val id: Long,
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "scopes") val scopes: List<String>? = null,
+    @Json(name = "user_id") val userId: Long? = null
+)
+
 sealed class RomMResult<out T> {
     data class Success<T>(val data: T) : RomMResult<T>()
     data class Error(val message: String, val code: Int? = null) : RomMResult<Nothing>()

@@ -89,11 +89,13 @@ internal class LightSectionsInput(
     private fun handleServerLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
         if (state.server.rommConfiguring) {
-            val targetIndex = if (direction < 0) 1 else 2
-            val fromIndex = if (direction < 0) 2 else 1
-            if (state.focusedIndex == fromIndex) {
-                viewModel.setRommConfigFocusIndex(targetIndex)
-                return InputResult.HANDLED
+            val isPairingCode = state.server.rommAuthMethod == com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PAIRING_CODE
+            if (!isPairingCode && (state.focusedIndex == 2 || state.focusedIndex == 3)) {
+                val targetIndex = if (direction < 0) 2 else 3
+                if (state.focusedIndex != targetIndex) {
+                    viewModel.setRommConfigFocusIndex(targetIndex)
+                    return InputResult.HANDLED
+                }
             }
             return InputResult.UNHANDLED
         }

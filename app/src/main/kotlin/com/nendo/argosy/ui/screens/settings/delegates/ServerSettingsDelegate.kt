@@ -4,6 +4,7 @@ import android.util.Log
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
+import com.nendo.argosy.ui.screens.settings.RomMAuthMethod
 import com.nendo.argosy.ui.screens.settings.ServerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,13 +50,16 @@ class ServerSettingsDelegate @Inject constructor(
         }
     }
 
-    fun startRommConfig(onFocusReset: () -> Unit) {
+    fun startRommConfig(hasCamera: Boolean, onFocusReset: () -> Unit) {
         _state.update {
             it.copy(
                 rommConfiguring = true,
+                rommAuthMethod = RomMAuthMethod.PAIRING_CODE,
                 rommConfigUrl = it.rommUrl,
                 rommConfigUsername = it.rommUsername,
                 rommConfigPassword = "",
+                rommConfigPairingCode = "",
+                rommHasCamera = hasCamera,
                 rommConfigError = null
             )
         }
@@ -69,6 +73,7 @@ class ServerSettingsDelegate @Inject constructor(
                 rommConfigUrl = "",
                 rommConfigUsername = "",
                 rommConfigPassword = "",
+                rommConfigPairingCode = "",
                 rommConfigError = null
             )
         }
@@ -87,6 +92,34 @@ class ServerSettingsDelegate @Inject constructor(
         _state.update { it.copy(rommConfigPassword = password) }
     }
 
+    fun setRommConfigPairingCode(code: String) {
+        _state.update { it.copy(rommConfigPairingCode = code) }
+    }
+
+    fun setRommAuthMethod(method: RomMAuthMethod) {
+        _state.update { it.copy(rommAuthMethod = method, rommConfigError = null) }
+    }
+
+    fun showScanner() {
+        _state.update { it.copy(rommShowScanner = true) }
+    }
+
+    fun dismissScanner() {
+        _state.update { it.copy(rommShowScanner = false) }
+    }
+
+    fun handleScanResult(origin: String, code: String, scope: CoroutineScope, onSuccess: suspend () -> Unit) {
+        _state.update {
+            it.copy(
+                rommShowScanner = false,
+                rommConfigUrl = origin,
+                rommConfigPairingCode = code,
+                rommAuthMethod = RomMAuthMethod.PAIRING_CODE
+            )
+        }
+        connectToRomm(scope, onSuccess)
+    }
+
     fun clearRommFocusField() {
         _state.update { it.copy(rommFocusField = null) }
     }
@@ -102,38 +135,76 @@ class ServerSettingsDelegate @Inject constructor(
         scope.launch {
             _state.update { it.copy(rommConnecting = true, rommConfigError = null) }
 
-            when (val result = romMRepository.connect(state.rommConfigUrl)) {
-                is RomMResult.Success -> {
-                    if (state.rommConfigUsername.isNotBlank() && state.rommConfigPassword.isNotBlank()) {
-                        when (val loginResult = romMRepository.login(state.rommConfigUsername, state.rommConfigPassword)) {
-                            is RomMResult.Success -> {
-                                _state.update {
-                                    it.copy(
-                                        rommConnecting = false,
-                                        rommConfiguring = false,
-                                        connectionStatus = ConnectionStatus.ONLINE,
-                                        rommUrl = state.rommConfigUrl,
-                                        rommUsername = state.rommConfigUsername
-                                    )
-                                }
-                                onSuccess()
-                            }
-                            is RomMResult.Error -> {
-                                _state.update {
-                                    it.copy(rommConnecting = false, rommConfigError = loginResult.message)
-                                }
-                            }
-                        }
-                    } else {
+            when (state.rommAuthMethod) {
+                RomMAuthMethod.PAIRING_CODE -> connectWithPairingCode(state, onSuccess)
+                RomMAuthMethod.PASSWORD -> connectWithPassword(state, onSuccess)
+            }
+        }
+    }
+
+    private suspend fun connectWithPairingCode(state: ServerState, onSuccess: suspend () -> Unit) {
+        val code = state.rommConfigPairingCode.replace("-", "").replace(" ", "")
+        if (code.length != 8) {
+            _state.update {
+                it.copy(rommConnecting = false, rommConfigError = "Enter the full 8-character pairing code")
+            }
+            return
+        }
+
+        when (val result = romMRepository.exchangePairingCode(state.rommConfigUrl, code)) {
+            is RomMResult.Success -> {
+                _state.update {
+                    it.copy(
+                        rommConnecting = false,
+                        rommConfiguring = false,
+                        connectionStatus = ConnectionStatus.ONLINE,
+                        rommUrl = state.rommConfigUrl,
+                        rommUsername = ""
+                    )
+                }
+                onSuccess()
+            }
+            is RomMResult.Error -> {
+                _state.update {
+                    it.copy(rommConnecting = false, rommConfigError = result.message)
+                }
+            }
+        }
+    }
+
+    private suspend fun connectWithPassword(state: ServerState, onSuccess: suspend () -> Unit) {
+        if (state.rommConfigUsername.isBlank() || state.rommConfigPassword.isBlank()) {
+            _state.update {
+                it.copy(rommConnecting = false, rommConfigError = "Username and password required")
+            }
+            return
+        }
+
+        when (val result = romMRepository.connect(state.rommConfigUrl)) {
+            is RomMResult.Success -> {
+                when (val loginResult = romMRepository.login(state.rommConfigUsername, state.rommConfigPassword)) {
+                    is RomMResult.Success -> {
                         _state.update {
-                            it.copy(rommConnecting = false, rommConfigError = "Username and password required")
+                            it.copy(
+                                rommConnecting = false,
+                                rommConfiguring = false,
+                                connectionStatus = ConnectionStatus.ONLINE,
+                                rommUrl = state.rommConfigUrl,
+                                rommUsername = state.rommConfigUsername
+                            )
+                        }
+                        onSuccess()
+                    }
+                    is RomMResult.Error -> {
+                        _state.update {
+                            it.copy(rommConnecting = false, rommConfigError = loginResult.message)
                         }
                     }
                 }
-                is RomMResult.Error -> {
-                    _state.update {
-                        it.copy(rommConnecting = false, rommConfigError = result.message)
-                    }
+            }
+            is RomMResult.Error -> {
+                _state.update {
+                    it.copy(rommConnecting = false, rommConfigError = result.message)
                 }
             }
         }

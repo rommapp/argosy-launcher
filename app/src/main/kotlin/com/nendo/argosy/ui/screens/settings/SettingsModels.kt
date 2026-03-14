@@ -69,6 +69,11 @@ enum class ConnectionStatus {
     NOT_CONFIGURED
 }
 
+enum class RomMAuthMethod {
+    PAIRING_CODE,
+    PASSWORD
+}
+
 data class PlatformEmulatorConfig(
     val platform: PlatformEntity,
     val selectedEmulator: String?,
@@ -501,9 +506,13 @@ data class ServerState(
     val rommVersion: String? = null,
     val lastRommSync: java.time.Instant? = null,
     val rommConfiguring: Boolean = false,
+    val rommAuthMethod: RomMAuthMethod = RomMAuthMethod.PAIRING_CODE,
     val rommConfigUrl: String = "",
     val rommConfigUsername: String = "",
     val rommConfigPassword: String = "",
+    val rommConfigPairingCode: String = "",
+    val rommShowScanner: Boolean = false,
+    val rommHasCamera: Boolean = false,
     val rommConnecting: Boolean = false,
     val rommConfigError: String? = null,
     val rommFocusField: Int? = null,

@@ -159,6 +159,57 @@ class RomMConnectionManager @Inject constructor(
         }
     }
 
+    suspend fun connectWithToken(url: String, token: String): RomMResult<String> {
+        val connectResult = connect(url, token)
+        if (connectResult is RomMResult.Error) return connectResult
+
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val userResponse = currentApi.getCurrentUser()
+            val username = if (userResponse.isSuccessful) {
+                userResponse.body()?.username
+            } else null
+
+            userPreferencesRepository.setRomMCredentials(baseUrl, token, username)
+
+            if (isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
+                registerDeviceIfNeeded()
+            }
+
+            RomMResult.Success(token)
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to verify token")
+        }
+    }
+
+    suspend fun exchangePairingCode(url: String, code: String): RomMResult<String> {
+        val urlsToTry = buildUrlsToTry(url)
+        var lastError: String? = null
+
+        for (candidateUrl in urlsToTry) {
+            val normalizedUrl = candidateUrl.trimEnd('/') + "/"
+            try {
+                val tempApi = createApi(normalizedUrl, null)
+                val response = tempApi.exchangePairingCode(RomMPairingExchangeRequest(code))
+                if (response.isSuccessful) {
+                    val token = response.body()?.rawToken
+                        ?: return RomMResult.Error("No token received")
+                    return connectWithToken(normalizedUrl, token)
+                } else {
+                    lastError = when (response.code()) {
+                        404 -> "Invalid or expired pairing code"
+                        429 -> "Too many attempts, try again later"
+                        else -> "Exchange failed (${response.code()})"
+                    }
+                }
+            } catch (e: Exception) {
+                lastError = e.message ?: "Connection failed"
+            }
+        }
+
+        return RomMResult.Error(lastError ?: "Pairing failed")
+    }
+
     fun disconnect() {
         api = null
         biosRepository.setApi(null)

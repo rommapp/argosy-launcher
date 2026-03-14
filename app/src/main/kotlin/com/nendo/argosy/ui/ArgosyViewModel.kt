@@ -668,6 +668,7 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
+
     // Quick Settings
     private val _isQuickSettingsOpen = MutableStateFlow(false)
     val isQuickSettingsOpen: StateFlow<Boolean> = _isQuickSettingsOpen.asStateFlow()

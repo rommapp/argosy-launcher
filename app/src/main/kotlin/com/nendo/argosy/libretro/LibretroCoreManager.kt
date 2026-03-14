@@ -2,6 +2,7 @@ package com.nendo.argosy.libretro
 
 import android.content.Context
 import android.util.Log
+import com.nendo.argosy.data.emulator.CoreSystemDataManager
 import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.entity.CoreVersionEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,7 +21,8 @@ private const val TAG = "LibretroCoreManager"
 @Singleton
 class LibretroCoreManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val coreVersionDao: CoreVersionDao
+    private val coreVersionDao: CoreVersionDao,
+    private val coreSystemDataManager: CoreSystemDataManager
 ) {
     private val downloadedCoresDir = File(context.filesDir, "libretro/cores").apply { mkdirs() }
     private val nativeLibDir = context.applicationInfo.nativeLibraryDir
@@ -206,9 +208,18 @@ class LibretroCoreManager @Inject constructor(
                 )
 
                 Log.i(TAG, "Downloaded ${coreInfo.displayName}: ${targetFile.length()} bytes, version=$version")
+
+                if (coreSystemDataManager.needsSystemData(coreInfo.coreId, systemDir)) {
+                    Log.i(TAG, "Downloading system data for ${coreInfo.coreId}")
+                    coreSystemDataManager.ensureCoreSystemData(coreInfo.coreId, systemDir)
+                }
+
                 targetFile
             }
         }
+
+    private val systemDir: File
+        get() = File(context.filesDir, "libretro/system").apply { mkdirs() }
 
     fun getDownloadedCores(): List<LibretroCoreRegistry.CoreInfo> {
         val downloadedFiles = downloadedCoresDir.listFiles()?.map { it.name }?.toSet() ?: emptySet()

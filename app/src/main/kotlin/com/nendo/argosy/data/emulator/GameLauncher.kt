@@ -358,7 +358,10 @@ class GameLauncher @Inject constructor(
         val coreName = coreFile.nameWithoutExtension
             .removeSuffix("_libretro_android")
 
-        coreSystemDataManager.ensureCoreSystemData(coreName, systemDir)
+        if (!coreSystemDataManager.ensureCoreSystemData(coreName, systemDir)) {
+            Logger.error(TAG, "Failed to download system data for $coreName")
+            return null
+        }
 
         val coreVariables = coreOptionResolver.resolveVariables(coreName)
 

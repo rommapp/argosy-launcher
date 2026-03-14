@@ -58,6 +58,7 @@ android {
         buildConfigField("String", "DISCORD_APP_ID", "\"${envString("DISCORD_APP_ID")}\"")
         buildConfigField("Boolean", "DISCORD_SDK_ENABLED", envString("DISCORD_SDK_ENABLED", "false"))
         buildConfigField("String", "SOCIAL_API_URL", "\"https://api.argosy.dev/\"")
+        buildConfigField("int", "DOLPHIN_SYS_VERSION", "2")
     }
 
     signingConfigs {

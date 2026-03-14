@@ -341,6 +341,7 @@ class VideoSettingsManager(
         retroView.integerScaling = false
         val overrideRatio = when (aspectRatioMode) {
             "4:3" -> 4f / 3f
+            "3:2" -> 3f / 2f
             "16:9" -> 16f / 9f
             "Stretch" -> screenRatio
             else -> -1f

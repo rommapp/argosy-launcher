@@ -174,7 +174,8 @@ private suspend fun loadOptionsForCore(
             description = def.description,
             values = def.values,
             currentValue = overrideValue ?: def.defaultValue,
-            isOverridden = overrideValue != null
+            isOverridden = overrideValue != null,
+            valueLabels = def.valueLabels
         )
     }
     return items to overrides

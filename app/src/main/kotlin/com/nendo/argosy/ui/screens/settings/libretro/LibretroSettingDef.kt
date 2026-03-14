@@ -30,7 +30,7 @@ sealed class LibretroSettingDef(
         key = "aspectRatio",
         section = "display",
         title = "Aspect Ratio",
-        type = SettingType.Cycle(listOf("Core Provided", "4:3", "16:9", "Integer", "Stretch"))
+        type = SettingType.Cycle(listOf("Core Provided", "4:3", "3:2", "16:9", "Integer", "Stretch"))
     )
 
     data object Rotation : LibretroSettingDef(

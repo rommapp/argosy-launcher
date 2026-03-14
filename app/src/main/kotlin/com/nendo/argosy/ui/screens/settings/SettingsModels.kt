@@ -397,8 +397,12 @@ data class CoreOptionViewItem(
     val description: String?,
     val values: List<String>,
     val currentValue: String,
-    val isOverridden: Boolean
-)
+    val isOverridden: Boolean,
+    val valueLabels: Map<String, String> = emptyMap()
+) {
+    val displayValue: String get() = valueLabels[currentValue] ?: currentValue
+    fun displayValueFor(value: String): String = valueLabels[value] ?: value
+}
 
 data class CoreOptionsState(
     val platformContextIndex: Int = 0,

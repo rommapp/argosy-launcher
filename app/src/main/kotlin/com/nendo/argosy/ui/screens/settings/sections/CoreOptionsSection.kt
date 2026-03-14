@@ -37,7 +37,8 @@ internal sealed class CoreOptionItem(val key: String) {
         val description: String?,
         val values: List<String>,
         val currentValue: String,
-        val isOverridden: Boolean
+        val isOverridden: Boolean,
+        val displayValue: String = currentValue
     ) : CoreOptionItem(optionKey)
 
     data object ResetAll : CoreOptionItem("reset_all")
@@ -59,7 +60,8 @@ internal fun buildCoreOptionItems(state: CoreOptionsState): List<CoreOptionItem>
                     description = option.description,
                     values = option.values,
                     currentValue = option.currentValue,
-                    isOverridden = option.isOverridden
+                    isOverridden = option.isOverridden,
+                    displayValue = option.displayValue
                 )
             )
         }
@@ -167,7 +169,7 @@ fun CoreOptionsSection(
                     val isLocked = !isInstalled
                     CyclePreference(
                         title = item.displayName,
-                        value = item.currentValue,
+                        value = item.displayValue,
                         isFocused = isFocused && !isLocked,
                         onClick = {
                             if (!isLocked) viewModel.cycleCoreOptionValue(item.optionKey, 1)

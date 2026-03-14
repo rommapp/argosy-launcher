@@ -12,7 +12,8 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "CPU Core",
             values = listOf("0", "1", "4", "5"),
             defaultValue = "1",
-            description = "Selects the CPU emulation method (0=Interpreter, 1=JIT, 4=JITIL, 5=CachedInterpreter)"
+            description = "Selects the CPU emulation method",
+            valueLabels = mapOf("0" to "Interpreter", "1" to "JIT", "4" to "JITIL", "5" to "Cached Interpreter")
         ),
         CoreOptionDef(
             key = "dolphin_cpu_clock_rate",
@@ -86,7 +87,12 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "System Language",
             values = listOf("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"),
             defaultValue = "1",
-            description = "Sets the system language (0=JP, 1=EN, 2=DE, 3=FR, 4=ES, 5=IT, 6=NL, 7=ZH-S, 8=ZH-T, 9=KO)"
+            description = "Sets the system language",
+            valueLabels = mapOf(
+                "0" to "Japanese", "1" to "English", "2" to "German", "3" to "French",
+                "4" to "Spanish", "5" to "Italian", "6" to "Dutch",
+                "7" to "Chinese (Simplified)", "8" to "Chinese (Traditional)", "9" to "Korean"
+            )
         ),
         CoreOptionDef(
             key = "dolphin_fast_disc_speed",
@@ -129,7 +135,8 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Log Level",
             values = listOf("1", "2", "3", "4", "5"),
             defaultValue = "4",
-            description = "Sets the verbosity of log output (1=Notice to 5=Debug)"
+            description = "Sets the verbosity of log output",
+            valueLabels = mapOf("1" to "Notice", "2" to "Error", "3" to "Warning", "4" to "Info", "5" to "Debug")
         ),
         CoreOptionDef(
             key = "dolphin_debug_mode_enabled",
@@ -158,7 +165,8 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Async Audio Callback",
             values = listOf("0", "1", "2"),
             defaultValue = "0",
-            description = "Controls the audio callback method (0=sync, 1=async, 2=force)"
+            description = "Controls the audio callback method",
+            valueLabels = mapOf("0" to "Sync", "1" to "Async", "2" to "Force")
         ),
         // GameCube System
         CoreOptionDef(
@@ -166,7 +174,10 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "SP1 Device",
             values = listOf("255", "0", "5", "10", "11", "12", "14", "13", "6"),
             defaultValue = "255",
-            description = "Selects the serial port 1 device (255=none, 5=BBA network)"
+            description = "Selects the serial port 1 device",
+            valueLabels = mapOf("255" to "None", "0" to "Dummy", "5" to "BBA (Network)",
+                "10" to "TAP (Network)", "11" to "BBA+HLE", "12" to "BBA+Builtin",
+                "14" to "Modem", "13" to "USB Gecko", "6" to "AM Baseboard")
         ),
         // Wii System
         CoreOptionDef(
@@ -195,7 +206,8 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Sensor Bar Position",
             values = listOf("0", "1"),
             defaultValue = "0",
-            description = "Sets the sensor bar position (0=bottom, 1=top)"
+            description = "Sets the sensor bar position",
+            valueLabels = mapOf("0" to "Bottom", "1" to "Top")
         ),
         CoreOptionDef(
             key = "dolphin_enable_rumble",
@@ -251,14 +263,16 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Internal Resolution",
             values = listOf("1", "2", "3", "4", "5", "6"),
             defaultValue = "1",
-            description = "Sets the internal rendering resolution multiplier"
+            description = "Sets the internal rendering resolution multiplier",
+            valueLabels = mapOf("1" to "1x (Native)", "2" to "2x", "3" to "3x", "4" to "4x", "5" to "5x", "6" to "6x")
         ),
         CoreOptionDef(
             key = "dolphin_shader_compilation_mode",
             displayName = "Shader Compilation Mode",
             values = listOf("0", "3", "1", "2"),
             defaultValue = "0",
-            description = "Controls when shaders are compiled (0=sync, 1=sync on first use, 2=async, 3=async skip)"
+            description = "Controls when shaders are compiled",
+            valueLabels = mapOf("0" to "Synchronous", "1" to "Sync (First Use)", "2" to "Async", "3" to "Async (Skip Draw)")
         ),
         CoreOptionDef(
             key = "dolphin_wait_for_shaders",
@@ -272,14 +286,16 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Anti-Aliasing",
             values = listOf("0", "1", "2", "3", "4", "5", "6"),
             defaultValue = "0",
-            description = "Sets the anti-aliasing sample count for smoother edges"
+            description = "Sets the anti-aliasing sample count for smoother edges",
+            valueLabels = mapOf("0" to "Off", "1" to "2x", "2" to "4x", "3" to "8x", "4" to "16x", "5" to "32x", "6" to "64x")
         ),
         CoreOptionDef(
             key = "dolphin_texture_cache_accuracy",
             displayName = "Texture Cache Accuracy",
             values = listOf("128", "512", "0"),
             defaultValue = "128",
-            description = "Controls how often textures are rechecked (0=safe, 128=fast, 512=fastest)"
+            description = "Controls how often textures are rechecked",
+            valueLabels = mapOf("0" to "Safe", "128" to "Fast", "512" to "Fastest")
         ),
         CoreOptionDef(
             key = "dolphin_gpu_texture_decoding",
@@ -315,14 +331,16 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Texture Filtering",
             values = listOf("0", "1", "2"),
             defaultValue = "0",
-            description = "Forces a texture filtering mode (0=default, 1=nearest, 2=linear)"
+            description = "Forces a texture filtering mode",
+            valueLabels = mapOf("0" to "Default", "1" to "Nearest", "2" to "Linear")
         ),
         CoreOptionDef(
             key = "dolphin_max_anisotropy",
             displayName = "Anisotropic Filtering",
             values = listOf("0", "1", "2", "3", "4"),
             defaultValue = "0",
-            description = "Sets the anisotropic filtering level for sharper textures at angles"
+            description = "Sets the anisotropic filtering level for sharper textures at angles",
+            valueLabels = mapOf("0" to "Off", "1" to "2x", "2" to "4x", "3" to "8x", "4" to "16x")
         ),
         CoreOptionDef(
             key = "dolphin_load_custom_textures",
@@ -343,7 +361,10 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Output Resampling",
             values = listOf("0", "1", "2", "3", "4", "5", "6"),
             defaultValue = "0",
-            description = "Selects the output downsampling filter for smoother final image"
+            description = "Selects the output downsampling filter for smoother final image",
+            valueLabels = mapOf("0" to "Default", "1" to "Bilinear", "2" to "Bicubic: B-Spline",
+                "3" to "Bicubic: Mitchell-Netravali", "4" to "Bicubic: Catmull-Rom",
+                "5" to "Sharp Bilinear", "6" to "Area Sampling")
         ),
         CoreOptionDef(
             key = "dolphin_force_true_color",
@@ -509,7 +530,8 @@ object DolphinManifest : CoreOptionManifest {
             displayName = "Wiimote IR Mode",
             values = listOf("0", "1", "2"),
             defaultValue = "1",
-            description = "Sets the IR pointer emulation mode (0=direct, 1=analog, 2=mixed)"
+            description = "Sets the IR pointer emulation mode",
+            valueLabels = mapOf("0" to "Direct", "1" to "Analog", "2" to "Mixed")
         ),
         CoreOptionDef(
             key = "dolphin_ir_offset",

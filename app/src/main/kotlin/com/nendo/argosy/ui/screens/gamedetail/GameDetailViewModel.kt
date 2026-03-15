@@ -1475,7 +1475,15 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
-            if (saveState.isVisible) return InputResult.UNHANDLED
+            if (saveState.isVisible) {
+                if (saveState.supportsStates) {
+                    val newTab = if (saveState.selectedTab == com.nendo.argosy.ui.common.savechannel.SaveTab.STATES)
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.SAVES
+                    else com.nendo.argosy.ui.common.savechannel.SaveTab.STATES
+                    switchSaveTab(newTab)
+                }
+                return InputResult.HANDLED
+            }
             if (saveState.showRestoreConfirmation || state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker || state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions || state.showMoreOptions || pickerState.hasAnyPickerOpen || state.showMissingDiscPrompt || state.showExtractionFailedPrompt) return InputResult.UNHANDLED
             onPrevGame(); return InputResult.HANDLED
         }
@@ -1484,7 +1492,17 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
-            if (saveState.isVisible) { saveManagement.saveChannelDelegate.syncServerSaves(viewModelScope); return InputResult.HANDLED }
+            if (saveState.isVisible) {
+                if (saveState.supportsStates) {
+                    val newTab = if (saveState.selectedTab == com.nendo.argosy.ui.common.savechannel.SaveTab.SAVES)
+                        com.nendo.argosy.ui.common.savechannel.SaveTab.STATES
+                    else com.nendo.argosy.ui.common.savechannel.SaveTab.SAVES
+                    switchSaveTab(newTab)
+                } else {
+                    saveManagement.saveChannelDelegate.syncServerSaves(viewModelScope)
+                }
+                return InputResult.HANDLED
+            }
             if (saveState.showRestoreConfirmation || state.showScreenshotViewer || state.showRatingPicker || state.showStatusPicker || state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions || state.showMoreOptions || pickerState.hasAnyPickerOpen || state.showMissingDiscPrompt || state.showExtractionFailedPrompt) return InputResult.UNHANDLED
             onNextGame(); return InputResult.HANDLED
         }

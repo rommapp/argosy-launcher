@@ -760,7 +760,12 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
         }
     }
 
-    hints.add(FooterHintItem(InputButton.RB, "Sync"))
+    if (state.supportsStates) {
+        val tabLabel = if (state.selectedTab == SaveTab.SAVES) "States" else "Saves"
+        hints.add(FooterHintItem(InputButton.RB, tabLabel))
+    } else {
+        hints.add(FooterHintItem(InputButton.RB, "Sync"))
+    }
 
     return hints
 }

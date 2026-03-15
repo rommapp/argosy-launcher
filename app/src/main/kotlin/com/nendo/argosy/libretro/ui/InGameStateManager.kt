@@ -21,10 +21,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -37,7 +39,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.nendo.argosy.libretro.SaveStateManager
 import com.nendo.argosy.ui.common.savechannel.formatSize
 import com.nendo.argosy.ui.common.savechannel.formatTimestamp
@@ -295,7 +300,11 @@ private fun SplitLayout(
             val screenshotFile = focusedSlot?.screenshotFile
             if (screenshotFile != null && screenshotFile.exists()) {
                 AsyncImage(
-                    model = screenshotFile,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(screenshotFile)
+                        .memoryCacheKey("${screenshotFile.absolutePath}_${focusedSlot.timestamp}")
+                        .diskCachePolicy(CachePolicy.DISABLED)
+                        .build(),
                     contentDescription = slotLabel(focusedSlot.slotNumber),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(16.dp)
@@ -341,7 +350,19 @@ private fun SplitLayout(
         }
 
         // Right panel: slot grid (60%)
+        val gridState = rememberLazyGridState()
+
+        LaunchedEffect(focusedIndex) {
+            if (slots.isNotEmpty() && focusedIndex in slots.indices) {
+                val viewportHeight = gridState.layoutInfo.viewportSize.height
+                val itemHeight = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
+                val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+                gridState.animateScrollToItem(focusedIndex, -centerOffset)
+            }
+        }
+
         LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Fixed(3),
             modifier = Modifier
                 .weight(0.6f)
@@ -516,7 +537,11 @@ private fun SlotCard(
             val screenshotFile = slot.screenshotFile
             if (screenshotFile != null && screenshotFile.exists()) {
                 AsyncImage(
-                    model = screenshotFile,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(screenshotFile)
+                        .memoryCacheKey("${screenshotFile.absolutePath}_${slot.timestamp}")
+                        .diskCachePolicy(CachePolicy.DISABLED)
+                        .build(),
                     contentDescription = slotLabel(slot.slotNumber),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()

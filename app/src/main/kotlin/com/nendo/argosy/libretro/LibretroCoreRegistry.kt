@@ -311,7 +311,7 @@ object LibretroCoreRegistry {
             fileName = "opera_libretro_android.so",
             displayName = "Opera",
             platforms = setOf("3do"),
-            estimatedSizeBytes = 2_000_000L,
+            estimatedSizeBytes = 400_000L,
             requiresBios = listOf("panafz10.bin"),
             isDefault = true
         ),

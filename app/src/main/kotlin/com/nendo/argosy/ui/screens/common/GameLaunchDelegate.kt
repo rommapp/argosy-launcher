@@ -420,9 +420,11 @@ class GameLaunchDelegate @Inject constructor(
             emuId?.let { EmulatorRegistry.getById(it) }?.launchConfig is LaunchConfig.Vita3K
         }
 
-        // Vita3K doesn't support resume - always end session immediately
-        if (isVita3K) {
-            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: Vita3K session, ending immediately")
+        val isBuiltin = session.emulatorPackage == com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE
+
+        // Builtin and Vita3K don't support resume - always end session immediately
+        if (isVita3K || isBuiltin) {
+            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: ${if (isBuiltin) "builtin" else "Vita3K"} session, ending immediately")
             scope.launch { playSessionTracker.endSession() }
             onSyncComplete()
             return

@@ -1245,6 +1245,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onPause() {
         if (coreLoadedSuccessfully) {
+            performAutoSaveState()
             saveStateManager.saveSram(retroView)
             retroView.onPause()
         }

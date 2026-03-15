@@ -41,7 +41,6 @@ sealed class InGameMenuAction {
 @Composable
 fun InGameMenu(
     gameName: String,
-    hasQuickSave: Boolean,
     cheatsAvailable: Boolean = false,
     statesSupported: Boolean = false,
     focusedIndex: Int,
@@ -49,17 +48,11 @@ fun InGameMenu(
     onAction: (InGameMenuAction) -> Unit,
     isHardcoreMode: Boolean = false
 ): InputHandler {
-    val menuItems = remember(hasQuickSave, cheatsAvailable, statesSupported, isHardcoreMode) {
+    val menuItems = remember(cheatsAvailable, statesSupported, isHardcoreMode) {
         buildList {
             add("Resume" to InGameMenuAction.Resume)
-            if (!isHardcoreMode) {
-                add("Quick Save" to InGameMenuAction.QuickSave)
-                if (hasQuickSave) {
-                    add("Quick Load" to InGameMenuAction.QuickLoad)
-                }
-                if (statesSupported) {
-                    add("Manage States" to InGameMenuAction.ManageStates)
-                }
+            if (!isHardcoreMode && statesSupported) {
+                add("Manage States" to InGameMenuAction.ManageStates)
             }
             add("Settings" to InGameMenuAction.Settings)
             if (cheatsAvailable) {

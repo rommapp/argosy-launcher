@@ -529,7 +529,6 @@ class LibretroActivity : ComponentActivity() {
                 if (menuVisible) {
                     activeMenuHandler = InGameMenu(
                         gameName = gameName,
-                        hasQuickSave = saveStateManager.hasQuickSave && !hardcoreMode,
                         cheatsAvailable = !hardcoreMode && PlatformWeightRegistry.supportsCheats(platformSlug),
                         statesSupported = statesSupported && !hardcoreMode,
                         focusedIndex = menuFocusIndex,

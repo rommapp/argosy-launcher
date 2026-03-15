@@ -67,6 +67,8 @@ class GetUnifiedStatesUseCase @Inject constructor(
                     currentCoreVersion = currentCoreVersion
                 )
             )
+        } else {
+            result.add(UnifiedStateEntry.empty(-1))
         }
 
         val slotsToShow = if (maxSlots < 0) {

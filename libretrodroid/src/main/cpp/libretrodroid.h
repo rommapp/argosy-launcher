@@ -69,6 +69,7 @@ public:
     void resetCheat();
 
     std::pair<int8_t*, size_t> serializeState();
+    size_t getSerializeSize();
     bool unserializeState(int8_t *data, size_t size);
 
     std::pair<int8_t *, size_t> serializeSRAM();

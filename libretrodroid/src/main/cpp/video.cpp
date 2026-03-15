@@ -362,6 +362,19 @@ std::vector<uint8_t> Video::captureRawFrame(int& outWidth, int& outHeight) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &fbo);
+
+    if (hwAccelerated) {
+        int rowBytes = outWidth * 4;
+        std::vector<uint8_t> tempRow(rowBytes);
+        for (int y = 0; y < outHeight / 2; y++) {
+            int topOffset = y * rowBytes;
+            int bottomOffset = (outHeight - 1 - y) * rowBytes;
+            memcpy(tempRow.data(), &pixels[topOffset], rowBytes);
+            memcpy(&pixels[topOffset], &pixels[bottomOffset], rowBytes);
+            memcpy(&pixels[bottomOffset], tempRow.data(), rowBytes);
+        }
+    }
+
     return pixels;
 }
 

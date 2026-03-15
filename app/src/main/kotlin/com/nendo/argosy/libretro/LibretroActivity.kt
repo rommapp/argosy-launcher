@@ -859,10 +859,8 @@ class LibretroActivity : ComponentActivity() {
         when (action) {
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
-                retroView.onResume()
                 val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
                 val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
-                retroView.onPause()
                 inGameMessage = if (stateData != null && saveStateManager.performQuickSave(stateData, bitmap)) {
                     "State saved"
                 } else {
@@ -880,9 +878,7 @@ class LibretroActivity : ComponentActivity() {
             }
             InGameMenuAction.ManageStates -> {
                 menuVisible = false
-                retroView.onResume()
                 pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
-                retroView.onPause()
                 stateManagerSlots = saveStateManager.getSlotInfoList()
                 stateManagerFocusIndex = 0
                 stateManagerShowDelete = false
@@ -907,10 +903,8 @@ class LibretroActivity : ComponentActivity() {
     private fun performAutoSaveState() {
         if (hardcoreMode || !coreLoadedSuccessfully || !statesSupported) return
         try {
-            retroView.onResume()
             val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
             val stateData = retroView.serializeState()
-            retroView.onPause()
             saveStateManager.performSlotSave(SaveStateManager.AUTO_SLOT, stateData, bitmap)
             bitmap?.recycle()
             Log.d(TAG, "Auto-saved state on close")
@@ -925,8 +919,7 @@ class LibretroActivity : ComponentActivity() {
             return
         }
         try {
-            val testData = retroView.serializeState()
-            statesSupported = testData.isNotEmpty()
+            statesSupported = retroView.getSerializeSize() > 0
         } catch (_: Exception) {
             statesSupported = false
         }
@@ -934,9 +927,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun handleStateManagerSave(slotNumber: Int) {
-        retroView.onResume()
         val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
-        retroView.onPause()
         if (stateData != null) {
             val saved = saveStateManager.performSlotSave(slotNumber, stateData, pendingSaveScreenshot)
             inGameMessage = if (saved) "State saved to ${if (slotNumber == SaveStateManager.AUTO_SLOT) "Auto" else "Slot $slotNumber"}" else "Failed to save state"
@@ -947,13 +938,11 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun handleStateManagerLoad(slotNumber: Int) {
-        retroView.onResume()
         val loaded = saveStateManager.performSlotLoad(retroView, slotNumber)
         if (loaded) {
             inGameMessage = "State loaded from ${if (slotNumber == SaveStateManager.AUTO_SLOT) "Auto" else "Slot $slotNumber"}"
             dismissStateManager()
         } else {
-            retroView.onPause()
             inGameMessage = "Failed to load state"
         }
     }
@@ -964,7 +953,6 @@ class LibretroActivity : ComponentActivity() {
         stateManagerDeleteTarget = -1
         pendingSaveScreenshot?.recycle()
         pendingSaveScreenshot = null
-        retroView.onResume()
     }
 
     private fun attemptAutoRestore() {
@@ -1138,14 +1126,14 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun showMenu() {
-        retroView.onPause()
+        retroView.pauseEmulation()
         menuFocusIndex = 0
         menuVisible = true
     }
 
     private fun hideMenu() {
         menuVisible = false
-        retroView.onResume()
+        retroView.resumeEmulation()
     }
 
     private fun enterImmersiveMode() {

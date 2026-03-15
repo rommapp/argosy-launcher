@@ -201,6 +201,10 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
     try {
         auto [data, size] = LibretroDroid::getInstance().serializeState();
 
+        if (data == nullptr || size == 0) {
+            return env->NewByteArray(0);
+        }
+
         jbyteArray result = env->NewByteArray(size);
         env->SetByteArrayRegion(result, 0, size, data);
 
@@ -214,6 +218,17 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
     }
 
     return nullptr;
+}
+
+JNIEXPORT jlong JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_getSerializeSize(
+    JNIEnv* env,
+    jclass obj
+) {
+    try {
+        return (jlong)LibretroDroid::getInstance().getSerializeSize();
+    } catch (std::exception &exception) {
+        return 0;
+    }
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_captureRawFrame(

@@ -127,6 +127,7 @@ public class LibretroDroid {
 
     public static native byte[] serializeState();
     public static native boolean unserializeState(byte[] state);
+    public static native long getSerializeSize();
 
     public static native byte[] captureRawFrame();
 

@@ -197,8 +197,19 @@ class GLRetroView(
         return PointF(x, y)
     }
 
+    fun pauseEmulation() {
+        isEmulationReady = false
+    }
+
+    fun resumeEmulation() {
+        isEmulationReady = true
+    }
+
     fun serializeState(): ByteArray = runOnGLThread {
         LibretroDroid.serializeState()
+    }
+    fun getSerializeSize(): Long = runOnGLThread {
+        LibretroDroid.getSerializeSize()
     }
     fun setCheat(index : Int, enable : Boolean, code : String) = runOnGLThread {
         LibretroDroid.setCheat(index, enable, code)
@@ -464,7 +475,7 @@ class GLRetroView(
                         retroGLEventsSubject.emit(GLRetroEvents.FrameRendered)
                     }
                 }
-            } else if (previewModeEnabled) {
+            } else {
                 LibretroDroid.renderFrameOnly()
             }
         }

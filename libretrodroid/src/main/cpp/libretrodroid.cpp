@@ -692,11 +692,21 @@ void LibretroDroid::reset() {
     core->retro_reset();
 }
 
+size_t LibretroDroid::getSerializeSize() {
+    return core->retro_serialize_size();
+}
+
 std::pair<int8_t*, size_t> LibretroDroid::serializeState() {
     size_t size = core->retro_serialize_size();
+    if (size == 0) {
+        return std::pair(nullptr, 0);
+    }
     auto data = new int8_t[size];
 
-    core->retro_serialize(data, size);
+    if (!core->retro_serialize(data, size)) {
+        delete[] data;
+        return std::pair(nullptr, 0);
+    }
 
     return std::pair(data, size);
 }

@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.components.GameTitle
 import androidx.compose.material3.OutlinedTextField
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
@@ -85,6 +86,8 @@ fun DualGameDetailUpperScreen(
         state.screenshots.getOrNull(idx)
     }
 
+    val stateScreenshotPath = state.statePreviewScreenshotPath
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -94,6 +97,13 @@ fun DualGameDetailUpperScreen(
             ScreenshotViewer(
                 imagePath = viewerPath,
                 modifier = Modifier.fillMaxSize()
+            )
+        } else if (stateScreenshotPath != null) {
+            StatePreviewDisplay(
+                screenshotPath = stateScreenshotPath,
+                entry = state.focusedStateEntry,
+                coverPath = state.coverPath,
+                footerHints = footerHints
             )
         } else {
             GameInfoDisplay(
@@ -847,6 +857,97 @@ private fun DualCollectionModalContent(
                 onCreate = onCreate
             )
         }
+    }
+}
+
+@Composable
+private fun StatePreviewDisplay(
+    screenshotPath: String,
+    entry: UnifiedStateEntry?,
+    coverPath: String?,
+    footerHints: @Composable () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            val file = File(screenshotPath)
+            if (file.exists()) {
+                AsyncImage(
+                    model = file,
+                    contentDescription = entry?.displayName ?: "State preview",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (coverPath != null) {
+                AsyncImage(
+                    model = File(coverPath),
+                    contentDescription = "Cover art fallback",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+
+        if (entry != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = entry.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = entry.timestampFormatted,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = entry.sizeFormatted,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    val syncLabel = when (entry.syncStatus) {
+                        UnifiedStateEntry.SyncStatus.SYNCED -> "Synced"
+                        UnifiedStateEntry.SyncStatus.PENDING_UPLOAD -> "Pending"
+                        UnifiedStateEntry.SyncStatus.SERVER_ONLY -> "Server"
+                        UnifiedStateEntry.SyncStatus.LOCAL_ONLY -> "Local"
+                    }
+                    val syncColor = when (entry.syncStatus) {
+                        UnifiedStateEntry.SyncStatus.SYNCED -> Color(0xFF4CAF50)
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    Text(
+                        text = "[$syncLabel]",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = syncColor
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
+        )
+
+        footerHints()
     }
 }
 

@@ -26,6 +26,7 @@ import com.nendo.argosy.ui.screens.gamedetail.UpdateFileType
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileVersionSort
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
@@ -84,6 +85,12 @@ class DualGameDetailViewModel(
 
     private val _selectedHistoryIndex = MutableStateFlow(0)
     val selectedHistoryIndex: StateFlow<Int> = _selectedHistoryIndex.asStateFlow()
+
+    private val _stateEntries = MutableStateFlow<List<UnifiedStateEntry>>(emptyList())
+    val stateEntries: StateFlow<List<UnifiedStateEntry>> = _stateEntries.asStateFlow()
+
+    private val _selectedStateIndex = MutableStateFlow(0)
+    val selectedStateIndex: StateFlow<Int> = _selectedStateIndex.asStateFlow()
 
     private val _activeModal =
         MutableStateFlow(ActiveModal.NONE)
@@ -551,6 +558,20 @@ class DualGameDetailViewModel(
         _selectedHistoryIndex.update { (it + delta).coerceIn(0, max) }
     }
 
+    fun loadStateEntries(entries: List<UnifiedStateEntry>) {
+        _stateEntries.value = entries
+        _selectedStateIndex.value = 0
+    }
+
+    fun moveStateSelection(delta: Int) {
+        val max = (_stateEntries.value.size - 1).coerceAtLeast(0)
+        _selectedStateIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun getFocusedStateEntry(): UnifiedStateEntry? {
+        return _stateEntries.value.getOrNull(_selectedStateIndex.value)
+    }
+
     fun setTab(tab: DualGameDetailTab) {
         _uiState.update { it.copy(currentTab = tab) }
         resetSelectionForTab(tab)
@@ -582,6 +603,7 @@ class DualGameDetailViewModel(
                     moveHistorySelection(-1)
                 }
             }
+            DualGameDetailTab.STATES -> moveStateSelection(-1)
             DualGameDetailTab.OPTIONS -> {
                 _selectedOptionIndex.update { idx ->
                     (idx - 1).coerceAtLeast(0)
@@ -606,6 +628,7 @@ class DualGameDetailViewModel(
                     moveHistorySelection(1)
                 }
             }
+            DualGameDetailTab.STATES -> moveStateSelection(1)
             DualGameDetailTab.OPTIONS -> {
                 _selectedOptionIndex.update { idx ->
                     (idx + 1).coerceAtMost(
@@ -704,6 +727,9 @@ class DualGameDetailViewModel(
                     it.copy(saveFocusColumn = SaveFocusColumn.SLOTS)
                 }
                 updateHistoryForFocusedSlot()
+            }
+            DualGameDetailTab.STATES -> {
+                _selectedStateIndex.value = 0
             }
             DualGameDetailTab.MEDIA -> {
                 _selectedScreenshotIndex.value =

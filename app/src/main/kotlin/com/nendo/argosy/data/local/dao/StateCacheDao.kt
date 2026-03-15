@@ -98,6 +98,14 @@ interface StateCacheDao {
     suspend fun deleteByChannel(gameId: Long, channelName: String?)
 
     @Query("""
+        SELECT * FROM state_cache
+        WHERE gameId = :gameId AND isLocked = 0
+        ORDER BY cachedAt ASC
+        LIMIT :count
+    """)
+    suspend fun getOldestUnlocked(gameId: Long, count: Int): List<StateCacheEntity>
+
+    @Query("""
         DELETE FROM state_cache
         WHERE id IN (
             SELECT id FROM state_cache

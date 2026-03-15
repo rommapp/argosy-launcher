@@ -71,14 +71,15 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.color
 import com.nendo.argosy.ui.common.icon
+import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
+import com.nendo.argosy.ui.common.savechannel.StateSlotRow
+import com.nendo.argosy.ui.common.savechannel.formatTimestamp
+import com.nendo.argosy.ui.common.savechannel.formatSize
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
 import com.nendo.argosy.ui.util.touchOnly
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun DualGameDetailLowerScreen(
@@ -88,6 +89,8 @@ fun DualGameDetailLowerScreen(
     saveFocusColumn: SaveFocusColumn,
     selectedSlotIndex: Int,
     selectedHistoryIndex: Int,
+    stateEntries: List<UnifiedStateEntry> = emptyList(),
+    selectedStateIndex: Int = 0,
     visibleOptions: List<GameDetailOption>,
     selectedScreenshotIndex: Int,
     selectedOptionIndex: Int,
@@ -99,6 +102,7 @@ fun DualGameDetailLowerScreen(
     onTabChanged: (DualGameDetailTab) -> Unit,
     onSlotTapped: (Int) -> Unit,
     onHistoryTapped: (Int) -> Unit,
+    onStateTapped: (Int) -> Unit = {},
     onScreenshotSelected: (Int) -> Unit,
     onScreenshotView: (Int) -> Unit,
     onOptionSelected: (GameDetailOption) -> Unit,
@@ -134,6 +138,11 @@ fun DualGameDetailLowerScreen(
                         isSyncing = savesSyncing,
                         onSlotTapped = onSlotTapped,
                         onHistoryTapped = onHistoryTapped
+                    )
+                    DualGameDetailTab.STATES -> StatesTabContent(
+                        entries = stateEntries,
+                        selectedIndex = selectedStateIndex,
+                        onStateTapped = onStateTapped
                     )
                     DualGameDetailTab.MEDIA -> MediaTabContent(
                         screenshots = state.screenshots,
@@ -591,6 +600,51 @@ private fun HistoryRow(
 }
 
 @Composable
+private fun StatesTabContent(
+    entries: List<UnifiedStateEntry>,
+    selectedIndex: Int,
+    onStateTapped: (Int) -> Unit
+) {
+    if (entries.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No state slots",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        return
+    }
+
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex >= 0) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        itemsIndexed(entries) { index, entry ->
+            StateSlotRow(
+                entry = entry,
+                isSelected = index == selectedIndex,
+                onClick = { onStateTapped(index) },
+                clickModifier = Modifier.touchOnly { onStateTapped(index) }
+            )
+        }
+    }
+}
+
+@Composable
 private fun MediaTabContent(
     screenshots: List<String>,
     selectedIndex: Int,
@@ -966,30 +1020,3 @@ private fun OptionItem(
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
-    val date = Date(timestamp)
-    val now = Date()
-    val diffMs = now.time - timestamp
-    val diffDays = diffMs / (1000 * 60 * 60 * 24)
-
-    return when {
-        diffDays == 0L -> {
-            val format = SimpleDateFormat("h:mm a", Locale.getDefault())
-            "Today ${format.format(date)}"
-        }
-        diffDays == 1L -> "Yesterday"
-        diffDays < 7 -> "$diffDays days ago"
-        else -> {
-            val format = SimpleDateFormat("MMM d", Locale.getDefault())
-            format.format(date)
-        }
-    }
-}
-
-private fun formatSize(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-        else -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
-    }
-}

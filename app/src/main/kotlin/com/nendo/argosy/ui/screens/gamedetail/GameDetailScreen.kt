@@ -890,6 +890,9 @@ private fun GameDetailModals(
         onRenameTextChange = viewModel::updateRenameText,
         onSlotClick = viewModel::setSlotIndex,
         onHistoryClick = viewModel::setHistoryIndex,
+        onTabSwitch = viewModel::switchSaveTab,
+        onStateClick = viewModel::setSaveCacheFocusIndex,
+        onDismissScreenshotPreview = viewModel::dismissScreenshotPreview,
         onDismiss = viewModel::dismissSaveCacheDialog
     )
 

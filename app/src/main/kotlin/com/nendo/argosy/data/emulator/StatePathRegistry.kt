@@ -87,6 +87,15 @@ data class StatePathConfig(
 object StatePathRegistry {
 
     private val configs = mapOf(
+        "builtin" to StatePathConfig(
+            emulatorId = "builtin",
+            defaultPaths = listOf("{appInternal}/libretro/states"),
+            slotPattern = StateSlotPattern.SuffixNumber(
+                extension = "state",
+                autoSlotSuffix = "auto"
+            ),
+            maxSlots = 10
+        ),
         "retroarch" to StatePathConfig(
             emulatorId = "retroarch",
             defaultPaths = listOf(

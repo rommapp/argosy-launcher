@@ -35,6 +35,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_OVERSCAN_CROP = intPreferencesKey("builtin_overscan_crop")
         val BUILTIN_REWIND_ENABLED = booleanPreferencesKey("builtin_rewind_enabled")
         val BUILTIN_FRAMES_ENABLED = booleanPreferencesKey("builtin_frames_enabled")
+        val BUILTIN_AUTO_RESTORE_STATE_MODE = stringPreferencesKey("builtin_auto_restore_state_mode")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
     }
 
@@ -60,7 +61,8 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             fastForwardSpeed = prefs[Keys.BUILTIN_FAST_FORWARD_SPEED] ?: 4,
             rotation = prefs[Keys.BUILTIN_ROTATION] ?: -1,
             overscanCrop = prefs[Keys.BUILTIN_OVERSCAN_CROP] ?: 0,
-            rewindEnabled = prefs[Keys.BUILTIN_REWIND_ENABLED] ?: true
+            rewindEnabled = prefs[Keys.BUILTIN_REWIND_ENABLED] ?: true,
+            autoRestoreStateMode = prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] ?: "restore"
         )
     }
 
@@ -168,6 +170,10 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinFramesEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.BUILTIN_FRAMES_ENABLED] = enabled }
+    }
+
+    suspend fun setBuiltinAutoRestoreStateMode(mode: String) {
+        dataStore.edit { it[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] = mode }
     }
 
     suspend fun setBuiltinMigrationComplete() {

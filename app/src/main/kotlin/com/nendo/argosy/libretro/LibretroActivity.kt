@@ -65,8 +65,11 @@ import com.nendo.argosy.libretro.ui.cheats.CheatDisplayItem
 import com.nendo.argosy.libretro.ui.cheats.CheatsScreen
 import com.nendo.argosy.libretro.ui.cheats.CheatsTab
 import com.nendo.argosy.libretro.ui.AchievementPopup
+import com.nendo.argosy.libretro.ui.AutoRestorePrompt
 import com.nendo.argosy.libretro.ui.InGameMenu
 import com.nendo.argosy.libretro.ui.InGameMenuAction
+import com.nendo.argosy.libretro.ui.InGameStateManager
+import com.nendo.argosy.libretro.ui.StateManagerViewMode
 import com.nendo.argosy.libretro.ui.InGameControlsAction
 import com.nendo.argosy.libretro.ui.InGameControlsState
 import com.nendo.argosy.libretro.ui.InGameModalCallbacks
@@ -134,6 +137,7 @@ class LibretroActivity : ComponentActivity() {
     private var platformId: Long = -1L
     private var platformSlug: String = ""
     private var coreName: String? = null
+    private var activeSaveChannel: String? = null
     private var menuVisible by mutableStateOf(false)
     private var cheatsMenuVisible by mutableStateOf(false)
     private var settingsVisible by mutableStateOf(false)
@@ -166,9 +170,20 @@ class LibretroActivity : ComponentActivity() {
     private var restoredSram: ByteArray? = null
     private var hardcoreMode by mutableStateOf(false)
     private var launchMode = LaunchMode.RESUME
+    private var statesSupported = true
+    private var autoRestorePromptVisible by mutableStateOf(false)
+    private var autoRestorePromptFocusIndex by mutableStateOf(0)
+
+    private var stateManagerVisible by mutableStateOf(false)
+    private var stateManagerFocusIndex by mutableStateOf(0)
+    private var stateManagerViewMode by mutableStateOf(StateManagerViewMode.SPLIT)
+    private var stateManagerShowDelete by mutableStateOf(false)
+    private var stateManagerDeleteTarget by mutableStateOf(-1)
+    private var stateManagerSlots by mutableStateOf<List<SaveStateManager.SlotInfo>>(emptyList())
+    private var pendingSaveScreenshot: Bitmap? = null
 
     private val isAnyMenuOpen: Boolean
-        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible
+        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -193,11 +208,12 @@ class LibretroActivity : ComponentActivity() {
         val savesDir = File(filesDir, "libretro/saves").apply { mkdirs() }
         val statesDir = File(filesDir, "libretro/states").apply { mkdirs() }
 
-        initializeSaveState(savesDir, statesDir)
-
         val game = kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }
         platformId = game?.platformId ?: -1L
         platformSlug = game?.platformSlug ?: ""
+        activeSaveChannel = game?.activeSaveChannel
+
+        initializeSaveState(savesDir, statesDir, activeSaveChannel)
         val globalSettings = kotlinx.coroutines.runBlocking {
             preferencesRepository.getBuiltinEmulatorSettings().first()
         }
@@ -277,14 +293,15 @@ class LibretroActivity : ComponentActivity() {
         return true
     }
 
-    private fun initializeSaveState(savesDir: File, statesDir: File) {
+    private fun initializeSaveState(savesDir: File, statesDir: File, channelName: String? = null) {
         saveStateManager = SaveStateManager(
             savesDir = savesDir,
             statesDir = statesDir,
             romPath = romPath,
             gameId = gameId,
             gameDao = gameDao,
-            saveCacheManager = saveCacheManager
+            saveCacheManager = saveCacheManager,
+            channelName = channelName
         )
         val restoreResult = kotlinx.coroutines.runBlocking {
             saveStateManager.restoreSaveForLaunchMode(launchMode)
@@ -419,6 +436,8 @@ class LibretroActivity : ComponentActivity() {
                             firstFrameRendered = true
                             Log.i(TAG, "[Startup] First frame rendered - emulation running successfully")
                             Log.d(TAG, "[Startup] gameId=$gameId, core=$coreName, hardcore=$hardcoreMode")
+                            checkStateSupport()
+                            attemptAutoRestore()
                         }
                     }
                 }
@@ -467,6 +486,7 @@ class LibretroActivity : ComponentActivity() {
                     retroView.frameSpeed = 1
                 }
             },
+            onAutoSaveState = ::performAutoSaveState,
             onQuit = ::finish
         )
     }
@@ -511,6 +531,7 @@ class LibretroActivity : ComponentActivity() {
                         gameName = gameName,
                         hasQuickSave = saveStateManager.hasQuickSave && !hardcoreMode,
                         cheatsAvailable = !hardcoreMode && PlatformWeightRegistry.supportsCheats(platformSlug),
+                        statesSupported = statesSupported && !hardcoreMode,
                         focusedIndex = menuFocusIndex,
                         onFocusChange = { menuFocusIndex = it },
                         onAction = ::handleMenuAction,
@@ -558,6 +579,49 @@ class LibretroActivity : ComponentActivity() {
                             onDismiss = ::closeInGameFrameEditor
                         )
                     }
+                }
+                if (autoRestorePromptVisible) {
+                    activeMenuHandler = AutoRestorePrompt(
+                        focusedIndex = autoRestorePromptFocusIndex,
+                        onFocusChange = { autoRestorePromptFocusIndex = it },
+                        onRestore = { handleAutoRestoreResponse(true) },
+                        onSkip = { handleAutoRestoreResponse(false) }
+                    )
+                }
+                if (stateManagerVisible) {
+                    activeMenuHandler = InGameStateManager(
+                        slots = stateManagerSlots,
+                        channelName = activeSaveChannel,
+                        focusedIndex = stateManagerFocusIndex,
+                        viewMode = stateManagerViewMode,
+                        showDeleteConfirmation = stateManagerShowDelete,
+                        onFocusChange = { stateManagerFocusIndex = it },
+                        onViewModeToggle = {
+                            stateManagerViewMode = when (stateManagerViewMode) {
+                                StateManagerViewMode.SPLIT -> StateManagerViewMode.CAROUSEL
+                                StateManagerViewMode.CAROUSEL -> StateManagerViewMode.SPLIT
+                            }
+                        },
+                        onSave = ::handleStateManagerSave,
+                        onLoad = ::handleStateManagerLoad,
+                        onDeleteRequest = { slot ->
+                            stateManagerDeleteTarget = slot
+                            stateManagerShowDelete = true
+                        },
+                        onDeleteConfirm = {
+                            if (stateManagerDeleteTarget >= SaveStateManager.AUTO_SLOT) {
+                                saveStateManager.deleteSlot(stateManagerDeleteTarget)
+                                stateManagerSlots = saveStateManager.getSlotInfoList()
+                            }
+                            stateManagerShowDelete = false
+                            stateManagerDeleteTarget = -1
+                        },
+                        onDeleteCancel = {
+                            stateManagerShowDelete = false
+                            stateManagerDeleteTarget = -1
+                        },
+                        onDismiss = ::dismissStateManager
+                    )
                 }
                 if (!isAnyMenuOpen) {
                     activeMenuHandler = null
@@ -796,7 +860,11 @@ class LibretroActivity : ComponentActivity() {
         when (action) {
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
-                inGameMessage = if (saveStateManager.performQuickSave(retroView)) {
+                retroView.onResume()
+                val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
+                val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
+                retroView.onPause()
+                inGameMessage = if (stateData != null && saveStateManager.performQuickSave(stateData, bitmap)) {
                     "State saved"
                 } else {
                     "Failed to save state"
@@ -811,6 +879,17 @@ class LibretroActivity : ComponentActivity() {
                 }
                 hideMenu()
             }
+            InGameMenuAction.ManageStates -> {
+                menuVisible = false
+                retroView.onResume()
+                pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
+                retroView.onPause()
+                stateManagerSlots = saveStateManager.getSlotInfoList()
+                stateManagerFocusIndex = 0
+                stateManagerShowDelete = false
+                stateManagerDeleteTarget = -1
+                stateManagerVisible = true
+            }
             InGameMenuAction.Settings -> {
                 menuVisible = false
                 settingsVisible = true
@@ -819,7 +898,109 @@ class LibretroActivity : ComponentActivity() {
                 menuVisible = false
                 cheatsMenuVisible = true
             }
-            InGameMenuAction.Quit -> finish()
+            InGameMenuAction.Quit -> {
+                performAutoSaveState()
+                finish()
+            }
+        }
+    }
+
+    private fun performAutoSaveState() {
+        if (hardcoreMode || !coreLoadedSuccessfully || !statesSupported) return
+        try {
+            retroView.onResume()
+            val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
+            val stateData = retroView.serializeState()
+            retroView.onPause()
+            saveStateManager.performSlotSave(SaveStateManager.AUTO_SLOT, stateData, bitmap)
+            bitmap?.recycle()
+            Log.d(TAG, "Auto-saved state on close")
+        } catch (e: Exception) {
+            Log.w(TAG, "Auto-save state failed", e)
+        }
+    }
+
+    private fun checkStateSupport() {
+        if (hardcoreMode) {
+            statesSupported = false
+            return
+        }
+        try {
+            val testData = retroView.serializeState()
+            statesSupported = testData.isNotEmpty()
+        } catch (_: Exception) {
+            statesSupported = false
+        }
+        Log.d(TAG, "State support check: statesSupported=$statesSupported")
+    }
+
+    private fun handleStateManagerSave(slotNumber: Int) {
+        retroView.onResume()
+        val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
+        retroView.onPause()
+        if (stateData != null) {
+            val saved = saveStateManager.performSlotSave(slotNumber, stateData, pendingSaveScreenshot)
+            inGameMessage = if (saved) "State saved to ${if (slotNumber == SaveStateManager.AUTO_SLOT) "Auto" else "Slot $slotNumber"}" else "Failed to save state"
+        } else {
+            inGameMessage = "Failed to serialize state"
+        }
+        stateManagerSlots = saveStateManager.getSlotInfoList()
+    }
+
+    private fun handleStateManagerLoad(slotNumber: Int) {
+        retroView.onResume()
+        val loaded = saveStateManager.performSlotLoad(retroView, slotNumber)
+        if (loaded) {
+            inGameMessage = "State loaded from ${if (slotNumber == SaveStateManager.AUTO_SLOT) "Auto" else "Slot $slotNumber"}"
+            dismissStateManager()
+        } else {
+            retroView.onPause()
+            inGameMessage = "Failed to load state"
+        }
+    }
+
+    private fun dismissStateManager() {
+        stateManagerVisible = false
+        stateManagerShowDelete = false
+        stateManagerDeleteTarget = -1
+        pendingSaveScreenshot?.recycle()
+        pendingSaveScreenshot = null
+        retroView.onResume()
+    }
+
+    private fun attemptAutoRestore() {
+        if (launchMode != LaunchMode.RESUME || hardcoreMode || !statesSupported) return
+        val autoFile = saveStateManager.getSlotFile(SaveStateManager.AUTO_SLOT)
+        if (!autoFile.exists()) return
+
+        val settings = kotlinx.coroutines.runBlocking {
+            preferencesRepository.getBuiltinEmulatorSettings().first()
+        }
+        val mode = AutoRestoreMode.fromKey(settings.autoRestoreStateMode)
+
+        when (mode) {
+            AutoRestoreMode.RESTORE -> {
+                if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
+                    inGameMessage = "State restored"
+                    Log.d(TAG, "Auto-restored state from auto slot")
+                }
+            }
+            AutoRestoreMode.PROMPT -> {
+                autoRestorePromptVisible = true
+                autoRestorePromptFocusIndex = 0
+            }
+            AutoRestoreMode.OFF -> {}
+        }
+    }
+
+    private fun handleAutoRestoreResponse(restore: Boolean) {
+        autoRestorePromptVisible = false
+        if (restore) {
+            if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
+                inGameMessage = "State restored"
+            } else {
+                inGameMessage = "Failed to restore state"
+            }
         }
     }
 

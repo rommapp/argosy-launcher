@@ -1,5 +1,6 @@
 package com.nendo.argosy.libretro
 
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +10,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.swordfish.libretrodroid.GLRetroView
 import java.io.File
+import java.io.FileOutputStream
 import java.security.MessageDigest
 
 class SaveStateManager(
@@ -17,30 +19,77 @@ class SaveStateManager(
     private val romPath: String,
     private val gameId: Long,
     private val gameDao: GameDao,
-    private val saveCacheManager: SaveCacheManager
+    private val saveCacheManager: SaveCacheManager,
+    channelName: String? = null
 ) {
     private var lastSramHash: String? = null
     var hasQuickSave by mutableStateOf(false)
         private set
+
+    private val channelDir: File = resolveChannelDir(channelName)
+    private val romBaseName: String = File(romPath).nameWithoutExtension
 
     data class RestoreResult(
         val sramData: ByteArray?,
         val switchToHardcore: Boolean = false
     )
 
+    data class SlotInfo(
+        val slotNumber: Int,
+        val file: File?,
+        val timestamp: Long?,
+        val size: Long,
+        val screenshotFile: File?
+    )
+
     fun initializeFromExistingSave(existingSram: ByteArray?) {
         lastSramHash = existingSram?.let { hashBytes(it) }
-        hasQuickSave = getQuickSaveFile().exists()
+        migrateExistingFlatFiles()
+        channelDir.mkdirs()
+        hasQuickSave = getSlotFile(AUTO_SLOT).exists()
     }
 
-    fun getQuickSaveFile(): File {
-        val romName = File(romPath).nameWithoutExtension
-        return File(statesDir, "$romName.state")
+    fun getSlotFile(slotNumber: Int): File {
+        val fileName = buildSlotFileName(slotNumber)
+        return File(channelDir, fileName)
+    }
+
+    fun getSlotScreenshotFile(slotNumber: Int): File {
+        return File(channelDir, "${buildSlotFileName(slotNumber)}.png")
     }
 
     fun getSramFile(): File {
-        val romName = File(romPath).nameWithoutExtension
-        return File(savesDir, "$romName.srm")
+        return File(savesDir, "$romBaseName.srm")
+    }
+
+    fun getSlotInfoList(): List<SlotInfo> {
+        val slots = mutableListOf<SlotInfo>()
+        for (slot in AUTO_SLOT..MAX_SLOT) {
+            val file = getSlotFile(slot)
+            val screenshotFile = getSlotScreenshotFile(slot)
+            if (file.exists()) {
+                slots.add(
+                    SlotInfo(
+                        slotNumber = slot,
+                        file = file,
+                        timestamp = file.lastModified(),
+                        size = file.length(),
+                        screenshotFile = screenshotFile.takeIf { it.exists() }
+                    )
+                )
+            } else {
+                slots.add(
+                    SlotInfo(
+                        slotNumber = slot,
+                        file = null,
+                        timestamp = null,
+                        size = 0,
+                        screenshotFile = null
+                    )
+                )
+            }
+        }
+        return slots
     }
 
     suspend fun restoreSaveForLaunchMode(launchMode: LaunchMode): RestoreResult {
@@ -71,6 +120,7 @@ class SaveStateManager(
                     sramFile.delete()
                     Log.d(TAG, "Deleted existing save file for fresh start")
                 }
+                deleteAutoState()
                 RestoreResult(null)
             }
             LaunchMode.RESUME_HARDCORE -> {
@@ -154,27 +204,136 @@ class SaveStateManager(
         }
     }
 
-    fun performQuickSave(retroView: GLRetroView): Boolean {
+    fun performQuickSave(stateData: ByteArray, screenshot: Bitmap? = null): Boolean {
+        return performSlotSave(AUTO_SLOT, stateData, screenshot)
+    }
+
+    fun performQuickLoad(retroView: GLRetroView): Boolean {
+        return performSlotLoad(retroView, AUTO_SLOT)
+    }
+
+    fun performSlotSave(slotNumber: Int, stateData: ByteArray, screenshot: Bitmap? = null): Boolean {
         return try {
-            val stateData = retroView.serializeState()
-            getQuickSaveFile().writeBytes(stateData)
-            hasQuickSave = true
+            channelDir.mkdirs()
+            val stateFile = getSlotFile(slotNumber)
+            stateFile.writeBytes(stateData)
+
+            writeScreenshot(slotNumber, screenshot)
+
+            if (slotNumber == AUTO_SLOT) {
+                hasQuickSave = true
+            }
+            Log.d(TAG, "Saved state to slot $slotNumber (${stateData.size} bytes)")
             true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save state to slot $slotNumber", e)
             false
         }
     }
 
-    fun performQuickLoad(retroView: GLRetroView): Boolean {
+    fun performSlotLoad(retroView: GLRetroView, slotNumber: Int): Boolean {
         return try {
-            val stateFile = getQuickSaveFile()
+            val stateFile = getSlotFile(slotNumber)
             if (stateFile.exists()) {
                 val stateData = stateFile.readBytes()
                 retroView.unserializeState(stateData)
+                Log.d(TAG, "Loaded state from slot $slotNumber (${stateData.size} bytes)")
                 true
-            } else false
-        } catch (_: Exception) {
+            } else {
+                Log.w(TAG, "No state file for slot $slotNumber")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load state from slot $slotNumber", e)
             false
+        }
+    }
+
+    fun deleteSlot(slotNumber: Int): Boolean {
+        return try {
+            val stateFile = getSlotFile(slotNumber)
+            val screenshotFile = getSlotScreenshotFile(slotNumber)
+            val deleted = stateFile.delete()
+            screenshotFile.delete()
+            if (slotNumber == AUTO_SLOT) {
+                hasQuickSave = false
+            }
+            Log.d(TAG, "Deleted slot $slotNumber: $deleted")
+            deleted
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete slot $slotNumber", e)
+            false
+        }
+    }
+
+    private fun writeScreenshot(slotNumber: Int, bitmap: Bitmap?) {
+        if (bitmap == null) return
+        try {
+            val screenshotFile = getSlotScreenshotFile(slotNumber)
+            val scaled = scaleScreenshot(bitmap)
+            FileOutputStream(screenshotFile).use { out ->
+                scaled.compress(Bitmap.CompressFormat.PNG, 90, out)
+            }
+            if (scaled !== bitmap) {
+                scaled.recycle()
+            }
+            Log.d(TAG, "Saved screenshot for slot $slotNumber")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to save screenshot for slot $slotNumber", e)
+        }
+    }
+
+    private fun scaleScreenshot(bitmap: Bitmap): Bitmap {
+        if (bitmap.width <= SCREENSHOT_MAX_WIDTH) return bitmap
+        val ratio = SCREENSHOT_MAX_WIDTH.toFloat() / bitmap.width
+        val newHeight = (bitmap.height * ratio).toInt()
+        return Bitmap.createScaledBitmap(bitmap, SCREENSHOT_MAX_WIDTH, newHeight, true)
+    }
+
+    private fun deleteAutoState() {
+        val autoFile = getSlotFile(AUTO_SLOT)
+        val autoScreenshot = getSlotScreenshotFile(AUTO_SLOT)
+        if (autoFile.exists()) {
+            autoFile.delete()
+            Log.d(TAG, "Deleted auto-save state for fresh start")
+        }
+        if (autoScreenshot.exists()) {
+            autoScreenshot.delete()
+            Log.d(TAG, "Deleted auto-save screenshot for fresh start")
+        }
+        hasQuickSave = false
+    }
+
+    private fun buildSlotFileName(slotNumber: Int): String {
+        return when (slotNumber) {
+            AUTO_SLOT -> "$romBaseName.state.auto"
+            0 -> "$romBaseName.state"
+            else -> "$romBaseName.state$slotNumber"
+        }
+    }
+
+    private fun resolveChannelDir(channelName: String?): File {
+        val dirName = channelName ?: "default"
+        return File(statesDir, dirName)
+    }
+
+    private fun migrateExistingFlatFiles() {
+        val flatStateFile = File(statesDir, "$romBaseName.state")
+        if (flatStateFile.exists() && flatStateFile.parentFile == statesDir) {
+            val defaultDir = File(statesDir, "default")
+            defaultDir.mkdirs()
+
+            val filesToMigrate = statesDir.listFiles { file ->
+                file.isFile && file.name.startsWith("$romBaseName.state")
+            } ?: return
+
+            for (file in filesToMigrate) {
+                val target = File(defaultDir, file.name)
+                if (!target.exists()) {
+                    file.renameTo(target)
+                    Log.d(TAG, "Migrated ${file.name} to default/")
+                }
+            }
         }
     }
 
@@ -185,5 +344,8 @@ class SaveStateManager(
 
     companion object {
         private const val TAG = "SaveStateManager"
+        const val AUTO_SLOT = -1
+        const val MAX_SLOT = 9
+        private const val SCREENSHOT_MAX_WIDTH = 480
     }
 }

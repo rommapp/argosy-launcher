@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.common.savechannel
 
+import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
@@ -90,8 +91,9 @@ class SaveChannelDelegate @Inject constructor(
 
             val saveSlots = buildSaveSlots(entries, activeChannel, isDeviceAware)
 
-            val isRetroArch = emulatorId?.startsWith("retroarch") == true
-            val states = if (isRetroArch) {
+            val stateConfigExists = emulatorId != null &&
+                StatePathRegistry.getConfig(emulatorId) != null
+            val states = if (stateConfigExists) {
                 getUnifiedStatesUseCase(
                     gameId = gameId,
                     emulatorId = emulatorId,
@@ -107,7 +109,7 @@ class SaveChannelDelegate @Inject constructor(
                 it.copy(
                     saveSlots = saveSlots,
                     statesEntries = states,
-                    supportsStates = isRetroArch,
+                    supportsStates = stateConfigExists,
                     selectedTab = SaveTab.SAVES,
                     selectedSlotIndex = 0,
                     selectedHistoryIndex = 0,
@@ -261,7 +263,7 @@ class SaveChannelDelegate @Inject constructor(
 
     fun switchTab(tab: SaveTab) {
         val state = _state.value
-        if (tab == SaveTab.STATES && !state.hasStates) return
+        if (tab == SaveTab.STATES && !state.supportsStates) return
         if (tab == state.selectedTab) return
 
         _state.update {
@@ -1040,7 +1042,12 @@ class SaveChannelDelegate @Inject constructor(
                     SaveFocusColumn.HISTORY -> {}
                 }
             }
-            SaveTab.STATES -> showStateReplaceAutoConfirmation()
+            SaveTab.STATES -> {
+                val entry = state.focusedStateEntry
+                if (entry?.screenshotPath != null) {
+                    showScreenshotPreview()
+                }
+            }
         }
     }
 
@@ -1219,6 +1226,29 @@ class SaveChannelDelegate @Inject constructor(
                 "auto state"
             } else "state slot ${entry.slotNumber}"
             notificationManager.showSuccess("Deleted $slotLabel")
+        }
+    }
+
+    fun showScreenshotPreview() {
+        val state = _state.value
+        if (state.selectedTab != SaveTab.STATES) return
+        val entry = state.focusedStateEntry ?: return
+        if (entry.screenshotPath == null) return
+
+        _state.update {
+            it.copy(
+                showScreenshotPreview = true,
+                screenshotPreviewEntry = entry
+            )
+        }
+    }
+
+    fun dismissScreenshotPreview() {
+        _state.update {
+            it.copy(
+                showScreenshotPreview = false,
+                screenshotPreviewEntry = null
+            )
         }
     }
 

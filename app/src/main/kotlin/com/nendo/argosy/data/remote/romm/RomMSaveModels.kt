@@ -19,7 +19,16 @@ data class RomMSave(
     @Json(name = "updated_at") val updatedAt: String,
     @Json(name = "created_at") val createdAt: String? = null,
     @Json(name = "slot") val slot: String? = null,
-    @Json(name = "device_syncs") val deviceSyncs: List<RomMDeviceSync>? = null
+    @Json(name = "device_syncs") val deviceSyncs: List<RomMDeviceSync>? = null,
+    @Json(name = "screenshot") val screenshot: RomMScreenshot? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMScreenshot(
+    @Json(name = "id") val id: Long? = null,
+    @Json(name = "file_name") val fileName: String? = null,
+    @Json(name = "download_path") val downloadPath: String? = null,
+    @Json(name = "file_size_bytes") val fileSizeBytes: Long = 0
 )
 
 @JsonClass(generateAdapter = true)

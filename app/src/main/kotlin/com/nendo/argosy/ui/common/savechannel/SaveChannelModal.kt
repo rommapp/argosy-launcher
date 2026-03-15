@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.components.FooterBarWithState
 import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
+import com.nendo.argosy.ui.common.StateScreenshotViewer
 @Composable
 fun SaveChannelModal(
     state: SaveChannelState,
@@ -56,6 +57,9 @@ fun SaveChannelModal(
     onRenameTextChange: (String) -> Unit,
     onSlotClick: (Int) -> Unit = {},
     onHistoryClick: (Int) -> Unit = {},
+    onTabSwitch: (SaveTab) -> Unit = {},
+    onStateClick: (Int) -> Unit = {},
+    onDismissScreenshotPreview: () -> Unit = {},
     onDismiss: () -> Unit = {}
 ) {
     if (!state.isVisible) return
@@ -111,6 +115,14 @@ fun SaveChannelModal(
                 ActiveSaveIndicator(activeChannel = state.activeChannel)
             }
 
+            if (state.supportsStates) {
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                TabRow(
+                    selectedTab = state.selectedTab,
+                    onTabSwitch = onTabSwitch
+                )
+            }
+
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             val itemHeight = Dimens.settingsItemMinHeight
@@ -130,12 +142,19 @@ fun SaveChannelModal(
                     CircularProgressIndicator()
                 }
             } else {
-                SavesTabContent(
-                    state = state,
-                    maxHeight = itemHeight * maxVisibleItems,
-                    onSlotClick = onSlotClick,
-                    onHistoryClick = onHistoryClick
-                )
+                when (state.selectedTab) {
+                    SaveTab.SAVES -> SavesTabContent(
+                        state = state,
+                        maxHeight = itemHeight * maxVisibleItems,
+                        onSlotClick = onSlotClick,
+                        onHistoryClick = onHistoryClick
+                    )
+                    SaveTab.STATES -> StatesTabContent(
+                        state = state,
+                        maxHeight = itemHeight * maxVisibleItems,
+                        onStateClick = onStateClick
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -193,6 +212,16 @@ fun SaveChannelModal(
             state.migrateChannelName != null) {
             MigrateConfirmationOverlay(
                 channelName = state.migrateChannelName
+            )
+        }
+
+        if (state.showScreenshotPreview &&
+            state.screenshotPreviewEntry != null) {
+            StateScreenshotViewer(
+                screenshotPath = state.screenshotPreviewEntry.screenshotPath ?: "",
+                slotLabel = state.screenshotPreviewEntry.displayName,
+                timestampFormatted = state.screenshotPreviewEntry.timestampFormatted,
+                onDismiss = onDismissScreenshotPreview
             )
         }
 
@@ -334,6 +363,97 @@ private fun SavesTabContent(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TabRow(
+    selectedTab: SaveTab,
+    onTabSwitch: (SaveTab) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        SaveTab.entries.forEach { tab ->
+            val isActive = tab == selectedTab
+            val label = when (tab) {
+                SaveTab.SAVES -> "Saves"
+                SaveTab.STATES -> "States"
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                color = if (isActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(
+                        if (isActive) MaterialTheme.colorScheme.primary
+                            .copy(alpha = 0.12f)
+                        else Color.Transparent
+                    )
+                    .clickableNoFocus { onTabSwitch(tab) }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatesTabContent(
+    state: SaveChannelState,
+    maxHeight: androidx.compose.ui.unit.Dp,
+    onStateClick: (Int) -> Unit
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(state.focusIndex) {
+        if (state.focusIndex >= 0 && state.statesEntries.isNotEmpty()) {
+            listState.animateScrollToItem(state.focusIndex)
+        }
+    }
+
+    if (state.statesEntries.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight)
+                .padding(Dimens.spacingLg),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No state slots available",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight),
+            contentPadding = PaddingValues(
+                horizontal = Dimens.spacingSm, vertical = 4.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            itemsIndexed(
+                state.statesEntries,
+                key = { _, entry -> "state_${entry.slotNumber}" }
+            ) { index, entry ->
+                StateSlotRow(
+                    entry = entry,
+                    isSelected = index == state.focusIndex,
+                    onClick = { onStateClick(index) },
+                    clickModifier = Modifier.clickableNoFocus {
+                        onStateClick(index)
+                    }
+                )
             }
         }
     }
@@ -602,26 +722,40 @@ private fun formatTruncatedPath(path: String, maxSegments: Int = 3): String {
 private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
     val hints = mutableListOf<FooterHintItem>()
 
-    when (state.saveFocusColumn) {
-        SaveFocusColumn.SLOTS -> {
-            val focused = state.focusedSlot
-            if (focused?.isMigrationCandidate == true) {
-                hints.add(FooterHintItem(InputButton.A, "Migrate"))
-                hints.add(FooterHintItem(InputButton.Y, "Delete"))
-            } else {
-                hints.add(FooterHintItem(InputButton.A, "Activate"))
-                if (state.canRenameSlot) {
-                    hints.add(FooterHintItem(InputButton.X, "Rename"))
+    when (state.selectedTab) {
+        SaveTab.SAVES -> {
+            when (state.saveFocusColumn) {
+                SaveFocusColumn.SLOTS -> {
+                    val focused = state.focusedSlot
+                    if (focused?.isMigrationCandidate == true) {
+                        hints.add(FooterHintItem(InputButton.A, "Migrate"))
+                        hints.add(FooterHintItem(InputButton.Y, "Delete"))
+                    } else {
+                        hints.add(FooterHintItem(InputButton.A, "Activate"))
+                        if (state.canRenameSlot) {
+                            hints.add(FooterHintItem(InputButton.X, "Rename"))
+                        }
+                        if (state.canDeleteSlot) {
+                            hints.add(FooterHintItem(InputButton.Y, "Delete"))
+                        }
+                    }
                 }
-                if (state.canDeleteSlot) {
-                    hints.add(FooterHintItem(InputButton.Y, "Delete"))
+                SaveFocusColumn.HISTORY -> {
+                    hints.add(FooterHintItem(InputButton.A, "Restore"))
+                    if (state.canLockAsSlot) {
+                        hints.add(FooterHintItem(InputButton.Y, "Lock"))
+                    }
                 }
             }
         }
-        SaveFocusColumn.HISTORY -> {
-            hints.add(FooterHintItem(InputButton.A, "Restore"))
-            if (state.canLockAsSlot) {
-                hints.add(FooterHintItem(InputButton.Y, "Lock"))
+        SaveTab.STATES -> {
+            val focused = state.focusedStateEntry
+            if (focused != null && focused.localCacheId != null) {
+                hints.add(FooterHintItem(InputButton.A, "Restore"))
+                if (focused.screenshotPath != null) {
+                    hints.add(FooterHintItem(InputButton.X, "Preview"))
+                }
+                hints.add(FooterHintItem(InputButton.Y, "Delete"))
             }
         }
     }
@@ -631,37 +765,6 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
     return hints
 }
 
-private fun formatTimestamp(timestamp: Long): String {
-    val date = java.util.Date(timestamp)
-    val now = java.util.Date()
-    val diffMs = now.time - timestamp
-    val diffDays = diffMs / (1000 * 60 * 60 * 24)
-
-    return when {
-        diffDays == 0L -> {
-            val format = java.text.SimpleDateFormat(
-                "h:mm a", java.util.Locale.getDefault()
-            )
-            "Today ${format.format(date)}"
-        }
-        diffDays == 1L -> "Yesterday"
-        diffDays < 7 -> "$diffDays days ago"
-        else -> {
-            val format = java.text.SimpleDateFormat(
-                "MMM d", java.util.Locale.getDefault()
-            )
-            format.format(date)
-        }
-    }
-}
-
-private fun formatSize(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-        else -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
-    }
-}
 
 
 @Composable

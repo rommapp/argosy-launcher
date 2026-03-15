@@ -127,7 +127,8 @@ interface RomMApi {
         @Query("slot") slot: String? = null,
         @Query("autocleanup") autocleanup: Boolean = false,
         @Query("autocleanup_limit") autocleanupLimit: Int? = null,
-        @Part saveFile: MultipartBody.Part
+        @Part saveFile: MultipartBody.Part,
+        @Part screenshotFile: MultipartBody.Part? = null
     ): Response<RomMSave>
 
     @Multipart
@@ -135,7 +136,8 @@ interface RomMApi {
     suspend fun updateSave(
         @Path("id") saveId: Long,
         @Query("slot") slot: String? = null,
-        @Part saveFile: MultipartBody.Part
+        @Part saveFile: MultipartBody.Part,
+        @Part screenshotFile: MultipartBody.Part? = null
     ): Response<RomMSave>
 
     @POST("api/saves/delete")
@@ -178,7 +180,8 @@ interface RomMApi {
         @Query("slot") slot: String? = null,
         @Query("autocleanup") autocleanup: Boolean = false,
         @Query("autocleanup_limit") autocleanupLimit: Int? = null,
-        @Part saveFile: MultipartBody.Part
+        @Part saveFile: MultipartBody.Part,
+        @Part screenshotFile: MultipartBody.Part? = null
     ): Response<RomMSave>
 
     @Multipart
@@ -187,7 +190,8 @@ interface RomMApi {
         @Path("id") saveId: Long,
         @Query("device_id") deviceId: String,
         @Query("slot") slot: String? = null,
-        @Part saveFile: MultipartBody.Part
+        @Part saveFile: MultipartBody.Part,
+        @Part screenshotFile: MultipartBody.Part? = null
     ): Response<RomMSave>
 
     @Streaming

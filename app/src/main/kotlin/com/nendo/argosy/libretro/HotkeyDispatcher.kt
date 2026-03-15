@@ -13,6 +13,7 @@ class HotkeyDispatcher(
     private val onShowMenu: () -> Unit,
     private val onFastForwardChanged: (Boolean) -> Unit,
     private val onRewindChanged: (Boolean) -> Unit,
+    private val onAutoSaveState: () -> Unit,
     private val onQuit: () -> Unit
 ) {
     fun dispatch(action: HotkeyAction): Boolean {
@@ -26,7 +27,10 @@ class HotkeyDispatcher(
                 if (isHardcoreMode()) {
                     showToast("Save states disabled in Hardcore mode")
                 } else {
-                    if (saveStateManager.performQuickSave(getRetroView())) {
+                    val rv = getRetroView()
+                    val stateData = try { rv.serializeState() } catch (_: Exception) { null }
+                    val bitmap = try { rv.captureRawFrame() } catch (_: Exception) { null }
+                    if (stateData != null && saveStateManager.performQuickSave(stateData, bitmap)) {
                         showToast("State saved")
                     } else {
                         showToast("Failed to save state")
@@ -63,6 +67,7 @@ class HotkeyDispatcher(
                 return true
             }
             HotkeyAction.QUICK_SUSPEND -> {
+                onAutoSaveState()
                 saveStateManager.saveSram(getRetroView())
                 onQuit()
                 return true

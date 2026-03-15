@@ -104,11 +104,19 @@ class StateCacheManager @Inject constructor(
         val romBaseName = romFile.nameWithoutExtension
         Log.d(TAG, "romBaseName=$romBaseName")
 
-        val statePaths = if (emulatorId.startsWith("retroarch") && emulatorPackage != null) {
-            val contentDir = romFile.parentFile?.absolutePath
-            retroArchConfigParser.resolveStatePaths(emulatorPackage, coreName, contentDir)
-        } else {
-            StatePathRegistry.resolvePath(config, platformId)
+        val statePaths = when {
+            emulatorId.startsWith("retroarch") && emulatorPackage != null -> {
+                val contentDir = romFile.parentFile?.absolutePath
+                retroArchConfigParser.resolveStatePaths(emulatorPackage, coreName, contentDir)
+            }
+            emulatorId == "builtin" -> {
+                val baseDir = File(context.filesDir, "libretro/states")
+                val channelDirs = baseDir.listFiles { f -> f.isDirectory }
+                    ?.map { it.absolutePath }
+                    ?: listOf(File(baseDir, "default").absolutePath)
+                channelDirs
+            }
+            else -> StatePathRegistry.resolvePath(config, platformId)
         }
         Log.d(TAG, "Searching ${statePaths.size} paths: $statePaths")
 
@@ -132,7 +140,7 @@ class StateCacheManager @Inject constructor(
                     )
                 )
             }
-            if (discovered.isNotEmpty()) break
+            if (discovered.isNotEmpty() && emulatorId != "builtin") break
         }
 
         Log.d(TAG, "Discovered ${discovered.size} states for game $gameId")
@@ -326,8 +334,19 @@ class StateCacheManager @Inject constructor(
         val toDeleteCount = totalCount - effectiveLimit
         if (toDeleteCount <= 0) return@withContext
 
+        val toDelete = stateCacheDao.getOldestUnlocked(gameId, toDeleteCount)
+        for (entity in toDelete) {
+            val cacheFile = File(cacheBaseDir, entity.cachePath)
+            cacheFile.delete()
+            entity.screenshotPath?.let { File(cacheBaseDir, it).delete() }
+            val parentDir = cacheFile.parentFile
+            if (parentDir?.listFiles()?.isEmpty() == true) {
+                parentDir.delete()
+            }
+        }
+
         stateCacheDao.deleteOldestUnlocked(gameId, toDeleteCount)
-        Log.d(TAG, "Pruned $toDeleteCount old state caches for game $gameId")
+        Log.d(TAG, "Pruned $toDeleteCount old state caches for game $gameId (files cleaned)")
     }
 
     suspend fun deleteAllStatesForGame(gameId: Long) = withContext(Dispatchers.IO) {
@@ -500,10 +519,20 @@ class StateCacheManager @Inject constructor(
             val requestBody = cacheFile.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
+            val screenshotPart = getScreenshotFile(state)?.let { ssFile ->
+                val ssBody = ssFile.asRequestBody("image/png".toMediaType())
+                MultipartBody.Part.createFormData("screenshotFile", ssFile.name, ssBody)
+            }
+
+            val slotLabel = when (state.slotNumber) {
+                -1 -> "state_auto"
+                else -> "state_${state.slotNumber}"
+            }
+
             val response = if (state.rommSaveId != null) {
-                api.updateSave(state.rommSaveId, saveFile = filePart)
+                api.updateSave(state.rommSaveId, slot = slotLabel, saveFile = filePart, screenshotFile = screenshotPart)
             } else {
-                api.uploadSave(rommId, state.emulatorId, saveFile = filePart)
+                api.uploadSave(rommId, state.emulatorId, slot = slotLabel, saveFile = filePart, screenshotFile = screenshotPart)
             }
 
             if (response.isSuccessful) {
@@ -543,7 +572,8 @@ class StateCacheManager @Inject constructor(
         platformSlug: String,
         emulatorId: String,
         slotNumber: Int,
-        coreId: String? = null
+        coreId: String? = null,
+        serverSave: RomMSave? = null
     ): StateCloudResult = withContext(Dispatchers.IO) {
         Log.d(TAG, "[StateSync] DOWNLOAD rommSaveId=$rommSaveId gameId=$gameId slot=$slotNumber")
 
@@ -570,6 +600,24 @@ class StateCacheManager @Inject constructor(
                 }
             }
 
+            var screenshotCachePath: String? = null
+            val screenshot = serverSave?.screenshot
+            if (screenshot?.downloadPath != null && screenshot.fileName != null) {
+                try {
+                    val ssResponse = api.downloadRaw(screenshot.downloadPath)
+                    if (ssResponse.isSuccessful) {
+                        val ssFile = File(coreDir, screenshot.fileName)
+                        ssResponse.body()?.byteStream()?.use { input ->
+                            ssFile.outputStream().use { output -> input.copyTo(output) }
+                        }
+                        screenshotCachePath = "$platformSlug/$gameId/default/${coreId ?: "unknown"}/${screenshot.fileName}"
+                        Log.d(TAG, "[StateSync] DOWNLOAD screenshot for rommSaveId=$rommSaveId")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "[StateSync] DOWNLOAD screenshot failed for rommSaveId=$rommSaveId", e)
+                }
+            }
+
             val contentHash = calculateFileHash(cachedFile)
             val cachePath = "$platformSlug/$gameId/default/${coreId ?: "unknown"}/$fileName"
             val now = Instant.now()
@@ -583,7 +631,7 @@ class StateCacheManager @Inject constructor(
                 cachedAt = now,
                 stateSize = cachedFile.length(),
                 cachePath = cachePath,
-                screenshotPath = null,
+                screenshotPath = screenshotCachePath,
                 coreId = coreId,
                 coreVersion = null,
                 isLocked = false,

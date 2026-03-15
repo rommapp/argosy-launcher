@@ -5,6 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -27,79 +29,49 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.util.clickableNoFocus
-
-sealed class InGameMenuAction {
-    data object Resume : InGameMenuAction()
-    data object QuickSave : InGameMenuAction()
-    data object QuickLoad : InGameMenuAction()
-    data object ManageStates : InGameMenuAction()
-    data object Settings : InGameMenuAction()
-    data object Cheats : InGameMenuAction()
-    data object Quit : InGameMenuAction()
-}
+import kotlinx.coroutines.delay
 
 @Composable
-fun InGameMenu(
-    gameName: String,
-    hasQuickSave: Boolean,
-    cheatsAvailable: Boolean = false,
-    statesSupported: Boolean = false,
+fun AutoRestorePrompt(
     focusedIndex: Int,
     onFocusChange: (Int) -> Unit,
-    onAction: (InGameMenuAction) -> Unit,
-    isHardcoreMode: Boolean = false
+    onRestore: () -> Unit,
+    onSkip: () -> Unit
 ): InputHandler {
-    val menuItems = remember(hasQuickSave, cheatsAvailable, statesSupported, isHardcoreMode) {
-        buildList {
-            add("Resume" to InGameMenuAction.Resume)
-            if (!isHardcoreMode) {
-                add("Quick Save" to InGameMenuAction.QuickSave)
-                if (hasQuickSave) {
-                    add("Quick Load" to InGameMenuAction.QuickLoad)
-                }
-                if (statesSupported) {
-                    add("Manage States" to InGameMenuAction.ManageStates)
-                }
+    val currentFocusedIndex = rememberUpdatedState(focusedIndex)
+    val currentOnFocusChange = rememberUpdatedState(onFocusChange)
+    val currentOnRestore = rememberUpdatedState(onRestore)
+    val currentOnSkip = rememberUpdatedState(onSkip)
+
+    LaunchedEffect(Unit) {
+        delay(5000)
+        currentOnSkip.value()
+    }
+
+    val inputHandler = remember {
+        object : InputHandler {
+            override fun onLeft(): InputResult {
+                if (currentFocusedIndex.value != 0) currentOnFocusChange.value(0)
+                return InputResult.HANDLED
             }
-            add("Settings" to InGameMenuAction.Settings)
-            if (cheatsAvailable) {
-                add("Cheats" to InGameMenuAction.Cheats)
+            override fun onRight(): InputResult {
+                if (currentFocusedIndex.value != 1) currentOnFocusChange.value(1)
+                return InputResult.HANDLED
             }
-            add("Quit Game" to InGameMenuAction.Quit)
+            override fun onConfirm(): InputResult {
+                if (currentFocusedIndex.value == 0) currentOnRestore.value()
+                else currentOnSkip.value()
+                return InputResult.HANDLED
+            }
+            override fun onBack(): InputResult {
+                currentOnSkip.value()
+                return InputResult.HANDLED
+            }
         }
     }
 
     val isDarkTheme = isSystemInDarkTheme()
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
-
-    val currentFocusedIndex = rememberUpdatedState(focusedIndex)
-    val currentOnFocusChange = rememberUpdatedState(onFocusChange)
-    val currentOnAction = rememberUpdatedState(onAction)
-
-    val inputHandler = remember(menuItems) {
-        object : InputHandler {
-            override fun onUp(): InputResult {
-                val idx = currentFocusedIndex.value
-                val newIndex = (idx - 1).coerceAtLeast(0)
-                if (newIndex != idx) currentOnFocusChange.value(newIndex)
-                return InputResult.HANDLED
-            }
-            override fun onDown(): InputResult {
-                val idx = currentFocusedIndex.value
-                val newIndex = (idx + 1).coerceAtMost(menuItems.lastIndex)
-                if (newIndex != idx) currentOnFocusChange.value(newIndex)
-                return InputResult.HANDLED
-            }
-            override fun onConfirm(): InputResult {
-                menuItems.getOrNull(currentFocusedIndex.value)?.let { currentOnAction.value(it.second) }
-                return InputResult.HANDLED
-            }
-            override fun onBack(): InputResult {
-                currentOnAction.value(InGameMenuAction.Resume)
-                return InputResult.HANDLED
-            }
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -122,40 +94,30 @@ fun InGameMenu(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (isHardcoreMode) {
-                    Text(
-                        text = "HARDCORE",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFD700),
-                        modifier = Modifier
-                            .background(
-                                Color(0xFFFFD700).copy(alpha = 0.15f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }
                 Text(
-                    text = gameName,
+                    text = "Resume from save state?",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Column(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    menuItems.forEachIndexed { index, (label, action) ->
-                        MenuButton(
-                            text = label,
-                            isFocused = index == focusedIndex,
-                            onClick = { onAction(action) }
-                        )
-                    }
+                    PromptButton(
+                        text = "Yes",
+                        isFocused = focusedIndex == 0,
+                        onClick = onRestore,
+                        modifier = Modifier.weight(1f)
+                    )
+                    PromptButton(
+                        text = "No",
+                        isFocused = focusedIndex == 1,
+                        onClick = onSkip,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -165,10 +127,11 @@ fun InGameMenu(
 }
 
 @Composable
-private fun MenuButton(
+private fun PromptButton(
     text: String,
     isFocused: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (isFocused) {
         MaterialTheme.colorScheme.primary
@@ -183,8 +146,7 @@ private fun MenuButton(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
             .clickableNoFocus(onClick = onClick)

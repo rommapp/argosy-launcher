@@ -80,6 +80,7 @@ class DualGameDetailInputHandler(
             GamepadEvent.Left -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusSlotsColumn()
+                    DualGameDetailTab.STATES -> {}
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, -1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionLeft()
@@ -93,6 +94,7 @@ class DualGameDetailInputHandler(
             GamepadEvent.Right -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusHistoryColumn()
+                    DualGameDetailTab.STATES -> {}
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, 1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionRight()
@@ -106,6 +108,12 @@ class DualGameDetailInputHandler(
             GamepadEvent.Confirm -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> handleSaveConfirm(vm)
+                    DualGameDetailTab.STATES -> {
+                        val entry = vm.getFocusedStateEntry()
+                        if (entry != null && entry.canRestore) {
+                            onBroadcastDirectAction("STATE_RESTORE", vm.uiState.value.gameId, entry.slotNumber.toString())
+                        }
+                    }
                     DualGameDetailTab.MEDIA -> {
                         val idx = vm.selectedScreenshotIndex.value
                         if (idx >= 0) {
@@ -127,12 +135,27 @@ class DualGameDetailInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
-                if (vm.uiState.value.currentTab == DualGameDetailTab.SAVES) {
-                    handleSaveLockAsSlot(vm)
+                when (vm.uiState.value.currentTab) {
+                    DualGameDetailTab.SAVES -> handleSaveLockAsSlot(vm)
+                    DualGameDetailTab.STATES -> {
+                        val entry = vm.getFocusedStateEntry()
+                        if (entry?.screenshotPath != null) {
+                            onBroadcastScreenshotSelected(vm.selectedStateIndex.value)
+                        }
+                    }
+                    else -> {}
                 }
                 InputResult.HANDLED
             }
-            GamepadEvent.SecondaryAction -> InputResult.HANDLED
+            GamepadEvent.SecondaryAction -> {
+                if (vm.uiState.value.currentTab == DualGameDetailTab.STATES) {
+                    val entry = vm.getFocusedStateEntry()
+                    if (entry != null && entry.localCacheId != null) {
+                        onBroadcastDirectAction("STATE_DELETE", vm.uiState.value.gameId, entry.slotNumber.toString())
+                    }
+                }
+                InputResult.HANDLED
+            }
             else -> InputResult.UNHANDLED
         }
     }

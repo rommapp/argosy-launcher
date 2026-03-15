@@ -326,6 +326,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setBuiltinOverscanCrop(crop: Int) = builtinPrefs.setBuiltinOverscanCrop(crop)
     suspend fun setBuiltinRewindEnabled(enabled: Boolean) = builtinPrefs.setBuiltinRewindEnabled(enabled)
     suspend fun setBuiltinFramesEnabled(enabled: Boolean) = builtinPrefs.setBuiltinFramesEnabled(enabled)
+    suspend fun setBuiltinAutoRestoreStateMode(mode: String) = builtinPrefs.setBuiltinAutoRestoreStateMode(mode)
     suspend fun setBuiltinMigrationComplete() = builtinPrefs.setBuiltinMigrationComplete()
     fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = builtinPrefs.getBuiltinEmulatorSettings()
     fun getBuiltinCoreSelections(): Flow<Map<String, String>> = builtinPrefs.getBuiltinCoreSelections()
@@ -397,7 +398,8 @@ data class BuiltinEmulatorSettings(
     val fastForwardSpeed: Int = 4,
     val rotation: Int = -1,
     val overscanCrop: Int = 0,
-    val rewindEnabled: Boolean = true
+    val rewindEnabled: Boolean = true,
+    val autoRestoreStateMode: String = "restore"
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {

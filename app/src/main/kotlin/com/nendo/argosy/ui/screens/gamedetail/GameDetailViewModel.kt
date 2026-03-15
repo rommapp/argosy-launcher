@@ -1003,6 +1003,8 @@ class GameDetailViewModel @Inject constructor(
 
     fun switchSaveTab(tab: com.nendo.argosy.ui.common.savechannel.SaveTab) = saveManagement.saveChannelDelegate.switchTab(tab)
 
+    fun dismissScreenshotPreview() = saveManagement.saveChannelDelegate.dismissScreenshotPreview()
+
     fun confirmSaveCacheSelection() {
         val game = _uiState.value.game ?: return
         saveManagement.confirmSaveCacheSelection(viewModelScope, currentGameId, game.platformId, game.platformSlug, ::handleSaveStatusChanged)
@@ -1528,6 +1530,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.showRestoreConfirmation -> dismissRestoreConfirmation()
                 saveState.showMigrateConfirmation -> dismissMigrateConfirmation()
                 saveState.showDeleteLegacyConfirmation -> dismissDeleteLegacyConfirmation()
+                saveState.showScreenshotPreview -> dismissScreenshotPreview()
                 saveState.isVisible -> dismissSaveCacheDialog()
                 state.showScreenshotViewer -> closeScreenshotViewer()
                 state.showAchievementList -> hideAchievementList()
@@ -1557,6 +1560,7 @@ class GameDetailViewModel @Inject constructor(
             if (saveState.showRenameDialog) { dismissRenameDialog(); return InputResult.UNHANDLED }
             if (saveState.showDeleteConfirmation) { dismissDeleteConfirmation(); return InputResult.UNHANDLED }
             if (saveState.showRestoreConfirmation) { dismissRestoreConfirmation(); return InputResult.UNHANDLED }
+            if (saveState.showScreenshotPreview) { dismissScreenshotPreview(); return InputResult.UNHANDLED }
             if (saveState.isVisible) { dismissSaveCacheDialog(); return InputResult.UNHANDLED }
             if (state.showRatingPicker) { dismissRatingPicker(); return InputResult.UNHANDLED }
             if (state.showStatusPicker) { dismissStatusPicker(); return InputResult.UNHANDLED }

@@ -43,10 +43,12 @@ data class SaveChannelState(
     val showMigrateConfirmation: Boolean = false,
     val migrateChannelName: String? = null,
     val showDeleteLegacyConfirmation: Boolean = false,
-    val deleteLegacyChannelName: String? = null
+    val deleteLegacyChannelName: String? = null,
+    val showScreenshotPreview: Boolean = false,
+    val screenshotPreviewEntry: UnifiedStateEntry? = null
 ) {
     val hasSaveSlots: Boolean get() = saveSlots.any { !it.isCreateAction }
-    val hasStates: Boolean get() = supportsStates && statesEntries.isNotEmpty()
+    val hasStates: Boolean get() = supportsStates
 
     val currentTabSize: Int
         get() = when (selectedTab) {

@@ -4,6 +4,7 @@
 package com.nendo.argosy.ui.dualscreen.gamedetail
 
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
+import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
@@ -13,6 +14,7 @@ import org.json.JSONObject
 
 enum class DualGameDetailTab {
     SAVES,
+    STATES,
     MEDIA,
     OPTIONS
 }
@@ -136,7 +138,9 @@ data class DualGameDetailUpperState(
     val updateFiles: List<UpdateFileUi> = emptyList(),
     val dlcFiles: List<UpdateFileUi> = emptyList(),
     val updatesPickerFocusIndex: Int = 0,
-    val isEdenGame: Boolean = false
+    val isEdenGame: Boolean = false,
+    val focusedStateEntry: UnifiedStateEntry? = null,
+    val statePreviewScreenshotPath: String? = null
 )
 
 data class SaveEntryData(

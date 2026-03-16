@@ -462,59 +462,17 @@ class RetroAchievementsRepository @Inject constructor(
             Logger.debug(TAG, "Filtered out ${rawAchievements.size - achievements.size} warning pseudo-achievements")
         }
 
-        // Connect API for unlocks (may show emulator warning)
-        data class UnlockData(
-            val ids: Set<Long>,
-            val hardcoreIds: Set<Long>,
-            val timestamps: Map<Long, Long>,
-            val hardcoreTimestamps: Map<Long, Long>
-        )
-
-        val unlockData = try {
-            val response = api.startSession(
-                username = credentials.username,
-                token = credentials.token,
-                gameId = gameRaId
-            )
-            if (response.isSuccessful) {
-                val body = response.body()
-                val ids = mutableSetOf<Long>()
-                body?.hardcoreUnlocks?.mapTo(ids) { it.id }
-                body?.unlocks?.mapTo(ids) { it.id }
-                val hardcoreIds = body?.hardcoreUnlocks?.map { it.id }?.toSet() ?: emptySet()
-                val timestamps = body?.unlocks
-                    ?.filter { it.`when` != null }
-                    ?.mapNotNull { unlock -> parseTimestamp(unlock.`when`!!)?.let { ts -> unlock.id to ts } }
-                    ?.toMap()
-                    ?: emptyMap()
-                val hardcoreTimestamps = body?.hardcoreUnlocks
-                    ?.filter { it.`when` != null }
-                    ?.mapNotNull { unlock -> parseTimestamp(unlock.`when`!!)?.let { ts -> unlock.id to ts } }
-                    ?.toMap()
-                    ?: emptyMap()
-                val mergedTimestamps = timestamps.toMutableMap()
-                hardcoreTimestamps.forEach { (id, ts) ->
-                    if (id !in mergedTimestamps) mergedTimestamps[id] = ts
-                }
-                UnlockData(ids, hardcoreIds, mergedTimestamps, hardcoreTimestamps)
-            } else {
-                UnlockData(emptySet(), emptySet(), emptyMap(), emptyMap())
-            }
-        } catch (e: Exception) {
-            UnlockData(emptySet(), emptySet(), emptyMap(), emptyMap())
-        }
-
-        val validAchievementIds = achievements.map { it.id }.toSet()
-        val validUnlocks = unlockData.ids.filter { it in validAchievementIds }.toSet()
-
+        // Return achievements without unlock progress -- the Connect API only
+        // provides unlocks via startSession which registers a play session with
+        // RA. Unlock progress will be populated when the game is actually launched.
         return RAGameAchievements(
             achievements = achievements,
-            unlockedIds = validUnlocks,
-            hardcoreUnlockedIds = unlockData.hardcoreIds.filter { it in validAchievementIds }.toSet(),
-            unlockedTimestamps = unlockData.timestamps.filterKeys { it in validAchievementIds },
-            hardcoreUnlockedTimestamps = unlockData.hardcoreTimestamps.filterKeys { it in validAchievementIds },
+            unlockedIds = emptySet(),
+            hardcoreUnlockedIds = emptySet(),
+            unlockedTimestamps = emptyMap(),
+            hardcoreUnlockedTimestamps = emptyMap(),
             totalCount = achievements.size,
-            earnedCount = validUnlocks.size
+            earnedCount = 0
         )
     }
 

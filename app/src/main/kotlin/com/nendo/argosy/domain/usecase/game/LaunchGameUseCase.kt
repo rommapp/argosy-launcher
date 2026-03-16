@@ -29,7 +29,9 @@ class LaunchGameUseCase @Inject constructor(
                 coreName = coreName,
                 isNewGame = !forResume
             )
-            launchRetryTracker.onLaunchStarted(result.intent)
+            if (!forResume) {
+                launchRetryTracker.onLaunchStarted(result.intent)
+            }
         }
         return result
     }

@@ -110,7 +110,7 @@ class CompanionGuardService : Service() {
                         dsm.sessionStateStore.hasActiveSession()
                     ) {
                         Log.d(TAG, "Companion still inactive during session, relaunching")
-                        dsm.ensureCompanionLaunched()
+                        dsm.ensureCompanionLaunched(allowDuringSession = true)
                     }
                 }
             }

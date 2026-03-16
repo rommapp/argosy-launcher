@@ -78,7 +78,7 @@ class GameSessionService : Service() {
     private var isOverlayVisible = false
     private var isWaitingForDirectory = false
     private var lastMidGameCacheId: Long = -1
-    private var consecutiveBackgroundChecks = 0
+    private var wasEmulatorInForeground = true
 
     private var helmIcon: ImageView? = null
     private var checkIcon: ImageView? = null
@@ -136,7 +136,7 @@ class GameSessionService : Service() {
                 currentIsHardcore = isHardcore
                 sessionStartTime = if (startTime > 0) startTime else System.currentTimeMillis()
                 lastMidGameCacheId = -1
-                consecutiveBackgroundChecks = 0
+                wasEmulatorInForeground = true
 
                 cleanupPresenceKeepalive()
                 startForegroundWithNotification(gameTitle, NotificationState.PLAYING)
@@ -225,25 +225,17 @@ class GameSessionService : Service() {
         val elapsed = System.currentTimeMillis() - sessionStartTime
         val window = elapsed.coerceIn(30_000L, 4 * 60 * 60 * 1000L)
         val inForeground = permissionHelper.isPackageInForeground(this, pkg, withinMs = window)
-        if (inForeground) {
-            if (consecutiveBackgroundChecks > 0) {
-                Logger.debug(TAG, "Emulator $pkg returned to foreground after $consecutiveBackgroundChecks background checks")
-            }
-            consecutiveBackgroundChecks = 0
-            handler.postDelayed(emulatorMonitorRunnable, EMULATOR_POLL_INTERVAL_MS)
-        } else {
-            consecutiveBackgroundChecks++
-            if (consecutiveBackgroundChecks >= BACKGROUND_CHECK_THRESHOLD) {
-                Logger.info(TAG, "Emulator $pkg confirmed left foreground after ${consecutiveBackgroundChecks * EMULATOR_POLL_INTERVAL_MS / 1000}s, ending session")
-                consecutiveBackgroundChecks = 0
-                stopWatching()
-                playSessionTracker.endSessionKeepService()
-                enterPresenceKeepalive()
-            } else {
-                Logger.debug(TAG, "Emulator $pkg not in foreground (check $consecutiveBackgroundChecks/$BACKGROUND_CHECK_THRESHOLD)")
-                handler.postDelayed(emulatorMonitorRunnable, EMULATOR_POLL_INTERVAL_MS)
-            }
+
+        if (inForeground && !wasEmulatorInForeground) {
+            Logger.debug(TAG, "Emulator $pkg returned to foreground")
+            playSessionTracker.onEmulatorForegrounded()
+        } else if (!inForeground && wasEmulatorInForeground) {
+            Logger.debug(TAG, "Emulator $pkg left foreground")
+            playSessionTracker.onEmulatorBackgrounded()
         }
+        wasEmulatorInForeground = inForeground
+
+        handler.postDelayed(emulatorMonitorRunnable, EMULATOR_POLL_INTERVAL_MS)
     }
 
     // endregion
@@ -251,19 +243,6 @@ class GameSessionService : Service() {
     // region Presence keepalive (post-game, keeps WiFi lock until screen off)
 
     private var screenOffReceiver: BroadcastReceiver? = null
-
-    private fun enterPresenceKeepalive() {
-        updateNotification(currentGameTitle, NotificationState.PLAYING)
-        screenOffReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action == Intent.ACTION_SCREEN_OFF) {
-                    Logger.debug(TAG, "Screen off during presence keepalive, stopping service")
-                    stopSelf()
-                }
-            }
-        }
-        registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
-    }
 
     private fun cleanupPresenceKeepalive() {
         screenOffReceiver?.let {
@@ -727,8 +706,6 @@ class GameSessionService : Service() {
         private const val CACHE_DEBOUNCE_MS = 250L
         private const val EMULATOR_MONITOR_INITIAL_DELAY_MS = 5_000L
         private const val EMULATOR_POLL_INTERVAL_MS = 5_000L
-        private const val BACKGROUND_CHECK_THRESHOLD = 12  // 60s grace period at 5s intervals
-
         private val IGNORED_DIRECTORY_PATTERNS = setOf(
             "cache",
             "shader",

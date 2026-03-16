@@ -133,6 +133,15 @@ class DualScreenManager(
     var emulatorDisplayId: Int? = null
     var isLaunchingGame = false
         private set
+    private var launchGuardJob: Job? = null
+
+    fun onFocusLostToEmulator() {
+        if (isLaunchingGame) {
+            isLaunchingGame = false
+            launchGuardJob?.cancel()
+            launchGuardJob = null
+        }
+    }
 
     val isExternalDisplay: Boolean
         get() = displayAffinityHelper.secondaryDisplayType == SecondaryDisplayType.EXTERNAL
@@ -233,6 +242,9 @@ class DualScreenManager(
     private fun cleanupSwappedState() {
         if (!isRolesSwapped) return
 
+        val hadEmulatorOnSecondary = emulatorDisplayId != null &&
+            emulatorDisplayId != android.view.Display.DEFAULT_DISPLAY
+
         emulatorDisplayId = null
         sessionStateStore.setDisplayRoleOverride("AUTO")
         isRolesSwapped = false
@@ -246,6 +258,12 @@ class DualScreenManager(
         swappedSessionTimer = null
 
         companionHost?.onRoleSwapped(false)
+
+        if (hadEmulatorOnSecondary && sessionStateStore.hasActiveSession()) {
+            Log.d(TAG, "HDMI disconnected with active session on secondary display - ending session")
+            playSessionTracker.endSessionInBackground()
+            broadcastSessionCleared()
+        }
 
         Log.d(TAG, "HDMI disconnected: cleaned up swapped state")
     }
@@ -998,7 +1016,8 @@ class DualScreenManager(
                 onLaunch = { intent ->
                     emulatorDisplayId = displayAffinityHelper.getEmulatorDisplayId(effectiveSwapped)
                     isLaunchingGame = true
-                    scope.launch { delay(3000); isLaunchingGame = false }
+                    launchGuardJob?.cancel()
+                    launchGuardJob = scope.launch { delay(10_000); isLaunchingGame = false }
                     Log.d(TAG, "Game launching on display $emulatorDisplayId (swapped=$effectiveSwapped)")
                     val options = displayAffinityHelper.getActivityOptions(
                         forEmulator = true,
@@ -1365,7 +1384,7 @@ class DualScreenManager(
     // Fallback: FocusDirector still works on BUILT_IN secondary displays (Thor).
     //
     // Triggers: MainActivity.onWindowFocusChanged(false), MainActivity.onResume
-    // Guard: isLaunchingGame flag prevents firing during game launch (3s cooldown)
+    // Guard: isLaunchingGame flag prevents firing during game launch (cleared on focus loss, 10s ceiling)
     //
     // Next steps:
     //   1. Test accessibility tap on Odin 3 external display
@@ -1398,17 +1417,17 @@ class DualScreenManager(
         emulatorDisplayId = displayId
     }
 
-    fun ensureCompanionLaunched() {
+    fun ensureCompanionLaunched(allowDuringSession: Boolean = false) {
         if (!displayAffinityHelper.hasSecondaryDisplay) return
         if (_isCompanionActive.value) return
-        if (sessionStateStore.hasActiveSession()) return
+        if (!allowDuringSession && sessionStateStore.hasActiveSession()) return
 
         CompanionGuardService.start(appContext)
         companionLaunchJob?.cancel()
         companionLaunchJob = scope.launch {
             delay(COMPANION_LAUNCH_WAIT_MS)
             if (_isCompanionActive.value) return@launch
-            if (sessionStateStore.hasActiveSession()) return@launch
+            if (!allowDuringSession && sessionStateStore.hasActiveSession()) return@launch
             launchCompanionOnSecondaryDisplay()
         }
     }

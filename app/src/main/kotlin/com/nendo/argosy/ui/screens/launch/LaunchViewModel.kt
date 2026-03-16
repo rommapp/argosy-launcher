@@ -2,8 +2,10 @@ package com.nendo.argosy.ui.screens.launch
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.model.SyncProgress
@@ -22,8 +24,10 @@ import javax.inject.Inject
 @HiltViewModel
 class LaunchViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+    private val savedStateHandle: SavedStateHandle,
     private val gameRepository: GameRepository,
     private val gameLaunchDelegate: GameLaunchDelegate,
+    private val playSessionTracker: PlaySessionTracker,
     private val preferencesRepository: UserPreferencesRepository,
     private val displayAffinityHelper: DisplayAffinityHelper
 ) : ViewModel() {
@@ -39,13 +43,21 @@ class LaunchViewModel @Inject constructor(
     private val _launchIntent = MutableStateFlow<Intent?>(null)
     val launchIntent: StateFlow<Intent?> = _launchIntent.asStateFlow()
 
-    private var hasLaunchedEmulator = false
+    private var hasLaunchedEmulator: Boolean
+        get() = savedStateHandle["hasLaunchedEmulator"] ?: false
+        set(value) { savedStateHandle["hasLaunchedEmulator"] = value }
+
+    private var emulatorLaunchTime: Long
+        get() = savedStateHandle["emulatorLaunchTime"] ?: 0L
+        set(value) { savedStateHandle["emulatorLaunchTime"] = value }
 
     private val _launchOptions = MutableStateFlow<Bundle?>(null)
     val launchOptions: StateFlow<Bundle?> = _launchOptions.asStateFlow()
 
     private val _isSessionEnded = MutableStateFlow(false)
     val isSessionEnded: StateFlow<Boolean> = _isSessionEnded.asStateFlow()
+
+    val hasActiveSession: StateFlow<Boolean> = playSessionTracker.hasActiveSession
 
     fun startLaunchFlow(gameId: Long, channelName: String?, discId: Long?) {
         viewModelScope.launch {
@@ -67,6 +79,7 @@ class LaunchViewModel @Inject constructor(
                 channelName = channelName,
                 onLaunch = { intent ->
                     hasLaunchedEmulator = true
+                    emulatorLaunchTime = System.currentTimeMillis()
                     _launchOptions.value = options
                     _launchIntent.value = intent
                 },
@@ -79,6 +92,8 @@ class LaunchViewModel @Inject constructor(
 
     fun handleSessionEnd(onComplete: () -> Unit) {
         if (!hasLaunchedEmulator) return
+        val timeSinceLaunch = System.currentTimeMillis() - emulatorLaunchTime
+        if (timeSinceLaunch < 3_000L) return
         gameLaunchDelegate.handleSessionEnd(
             scope = viewModelScope,
             onSyncComplete = {
@@ -99,5 +114,9 @@ class LaunchViewModel @Inject constructor(
     fun clearLaunchIntent() {
         _launchIntent.value = null
         _launchOptions.value = null
+    }
+
+    fun onScreenDisposed() {
+        gameLaunchDelegate.clearRetryTracker()
     }
 }

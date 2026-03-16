@@ -332,7 +332,7 @@ class MainActivity : ComponentActivity() {
         dualScreenManager.broadcastForegroundState(true)
 
         if (emulatorSessionPolicy.shouldYieldOnResume(
-                hasResumedBefore, focusLostTime, packageName
+                this, hasResumedBefore, focusLostTime, packageName
             )
         ) {
             Log.d(TAG, "Persisted session found on resume - yielding to emulator")
@@ -512,6 +512,9 @@ class MainActivity : ComponentActivity() {
         } else {
             focusLostTime = System.currentTimeMillis()
             launchRetryTracker.onFocusLost()
+            if (::dualScreenManager.isInitialized) {
+                dualScreenManager.onFocusLostToEmulator()
+            }
             ambientAudioManager.fadeOut()
             ambientLedManager.setContext(AmbientLedContext.IN_GAME)
             if (::dualScreenManager.isInitialized) {

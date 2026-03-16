@@ -35,8 +35,10 @@ import com.nendo.argosy.ui.screens.common.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -44,6 +46,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
@@ -59,7 +63,6 @@ data class ActiveSession(
     val isHardcore: Boolean = false,
     val isNewGame: Boolean = false,
     val channelName: String? = null,
-    val flashReturnCount: Int = 0,
     val isOnOlderSave: Boolean = false
 )
 
@@ -105,6 +108,7 @@ class PlaySessionTracker @Inject constructor(
     private val scope = SafeCoroutineScope(Dispatchers.IO, "PlaySessionTracker")
     private val sessionStateStore by lazy { SessionStateStore(application) }
     private val endingSession = AtomicBoolean(false)
+    private var backgroundTimeoutJob: Job? = null
 
     private fun broadcastSessionChanged(gameId: Long?, channelName: String?, isHardcore: Boolean) {
         // Write to SharedPreferences for companion process to read on startup
@@ -128,6 +132,9 @@ class PlaySessionTracker @Inject constructor(
 
     private val _activeSession = MutableStateFlow<ActiveSession?>(null)
     val activeSession: StateFlow<ActiveSession?> = _activeSession.asStateFlow()
+    val hasActiveSession: StateFlow<Boolean> = _activeSession
+        .map { it != null }
+        .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
 
     private val _conflictEvents = MutableSharedFlow<SaveConflictEvent>()
     val conflictEvents: SharedFlow<SaveConflictEvent> = _conflictEvents.asSharedFlow()
@@ -141,6 +148,10 @@ class PlaySessionTracker @Inject constructor(
     private var lastScreenOffTime: Instant? = null
     private var marathonSegmentDuration: Duration = Duration.ZERO
     private var longestMarathonSegment: Duration = Duration.ZERO
+
+    private var emulatorFocusDuration: Duration = Duration.ZERO
+    private var lastEmulatorFocusTime: Instant? = null
+    private var isEmulatorInFocus = true
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -163,12 +174,24 @@ class PlaySessionTracker @Inject constructor(
             override fun onStop(owner: LifecycleOwner) {
                 val session = _activeSession.value ?: return
                 Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | App going to background with active session")
+                backgroundTimeoutJob?.cancel()
+                backgroundTimeoutJob = scope.launch {
+                    delay(30 * 60 * 1000L)
+                    if (_activeSession.value?.gameId == session.gameId) {
+                        Logger.warn(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Emergency end after 30-minute background timeout")
+                        endSession()
+                    }
+                }
+            }
+
+            override fun onStart(owner: LifecycleOwner) {
+                backgroundTimeoutJob?.cancel()
+                backgroundTimeoutJob = null
             }
         })
     }
 
     suspend fun checkOrphanedSession() {
-        if (sessionStateStore.isRolesSwapped()) return
         val orphaned = preferencesRepository.getPersistedSession() ?: return
         Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Detected orphaned session from ${orphaned.startTime}")
 
@@ -306,12 +329,35 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
+    fun onEmulatorForegrounded() {
+        if (_activeSession.value == null) return
+        if (!isEmulatorInFocus) {
+            isEmulatorInFocus = true
+            lastEmulatorFocusTime = Instant.now()
+            Logger.debug(TAG, "Emulator FOREGROUNDED - resuming focus tracking")
+        }
+    }
+
+    fun onEmulatorBackgrounded() {
+        if (_activeSession.value == null) return
+        if (isEmulatorInFocus && lastEmulatorFocusTime != null) {
+            isEmulatorInFocus = false
+            val elapsed = Duration.between(lastEmulatorFocusTime, Instant.now())
+            emulatorFocusDuration = emulatorFocusDuration.plus(elapsed)
+            lastEmulatorFocusTime = null
+            Logger.debug(TAG, "Emulator BACKGROUNDED - paused after ${elapsed.toMinutes()} minutes focused")
+        }
+    }
+
     fun startSession(gameId: Long, emulatorPackage: String, coreName: String? = null, isHardcore: Boolean = false, isNewGame: Boolean = false) {
         endingSession.set(false)
         screenOnDuration = Duration.ZERO
         lastScreenOnTime = Instant.now()
         isScreenOn = true
         lastScreenOffTime = null
+        emulatorFocusDuration = Duration.ZERO
+        lastEmulatorFocusTime = Instant.now()
+        isEmulatorInFocus = true
         marathonSegmentDuration = Duration.ZERO
         longestMarathonSegment = Duration.ZERO
 
@@ -435,12 +481,14 @@ class PlaySessionTracker @Inject constructor(
             if (stopService) GameSessionService.stop(application)
 
             val finalScreenOnDuration = calculateFinalScreenOnDuration()
+            val finalEmulatorFocusDuration = calculateFinalEmulatorFocusDuration()
             val endTime = Instant.now()
             val sessionDuration = Duration.between(session.startTime, endTime)
 
-            Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulator=${session.emulatorPackage}")
+            val activeDuration = minOf(finalScreenOnDuration, finalEmulatorFocusDuration)
+            Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, screenOnTime=${finalScreenOnDuration.seconds}s, emulatorFocusTime=${finalEmulatorFocusDuration.seconds}s, activePlayTime=${activeDuration.seconds}s, emulator=${session.emulatorPackage}")
 
-            val activePlayMs = finalScreenOnDuration.toMillis()
+            val activePlayMs = activeDuration.toMillis()
             val standbyMs = (sessionDuration.toMillis() - activePlayMs).coerceAtLeast(0)
             try {
                 val game = gameDao.getById(session.gameId)
@@ -455,7 +503,7 @@ class PlaySessionTracker @Inject constructor(
                         platformSlug = game?.platformSlug ?: "unknown",
                         startTime = session.startTime,
                         endTime = endTime,
-                        continued = session.flashReturnCount > 0,
+                        continued = false,
                         deviceId = deviceId,
                         deviceManufacturer = Build.MANUFACTURER,
                         deviceModel = Build.MODEL,
@@ -539,6 +587,16 @@ class PlaySessionTracker @Inject constructor(
         }
         screenOnDuration = screenOnDuration.plus(elapsedSinceScreenOn)
         return screenOnDuration
+    }
+
+    private fun calculateFinalEmulatorFocusDuration(): Duration {
+        val elapsedSinceFocus = if (isEmulatorInFocus && lastEmulatorFocusTime != null) {
+            Duration.between(lastEmulatorFocusTime, Instant.now())
+        } else {
+            Duration.ZERO
+        }
+        emulatorFocusDuration = emulatorFocusDuration.plus(elapsedSinceFocus)
+        return emulatorFocusDuration
     }
 
     private suspend fun recordPlayTime(session: ActiveSession, screenOnDuration: Duration) {
@@ -725,13 +783,6 @@ class PlaySessionTracker @Inject constructor(
 
             override fun onActivityStopped(activity: Activity) {
                 wasInBackground = true
-
-                val pauseTime = lastPauseTime ?: return
-                val elapsed = Duration.between(pauseTime, Instant.now())
-
-                if (elapsed.toMinutes() > 30 && _activeSession.value != null) {
-                    scope.launch { endSession() }
-                }
             }
 
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
@@ -744,13 +795,11 @@ class PlaySessionTracker @Inject constructor(
         return Duration.between(session.startTime, Instant.now())
     }
 
-    fun markFlashReturn() {
-        val session = _activeSession.value ?: return
-        _activeSession.value = session.copy(flashReturnCount = session.flashReturnCount + 1)
-        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Flash return marked (count=${session.flashReturnCount + 1})")
-    }
-
     fun cancelSession() {
+        if (endingSession.get()) {
+            Logger.debug(TAG, "[SaveSync] SESSION | cancelSession skipped: endSession already in progress")
+            return
+        }
         val session = _activeSession.value ?: return
         _activeSession.value = null
         GameSessionService.stop(application)
@@ -760,10 +809,6 @@ class PlaySessionTracker @Inject constructor(
 
     fun endSessionInBackground() {
         scope.launch { endSession() }
-    }
-
-    fun endSessionKeepService() {
-        scope.launch { endSession(stopService = false) }
     }
 
     fun forceStopService() {

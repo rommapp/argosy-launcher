@@ -12,6 +12,7 @@ import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.LaunchResult
+import com.nendo.argosy.data.emulator.LaunchRetryTracker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SessionEndResult
@@ -38,7 +39,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 
 enum class HardcoreConflictChoice { KEEP_HARDCORE, DOWNGRADE_TO_CASUAL, KEEP_LOCAL }
@@ -82,10 +82,15 @@ class GameLaunchDelegate @Inject constructor(
     private val notificationManager: NotificationManager,
     private val titleIdDetector: TitleIdDetector,
     private val saveSyncRepository: SaveSyncRepository,
-    private val saveCacheManager: SaveCacheManager
+    private val saveCacheManager: SaveCacheManager,
+    private val launchRetryTracker: LaunchRetryTracker
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
+    }
+
+    fun clearRetryTracker() {
+        launchRetryTracker.clear()
     }
 
     private suspend fun isActiveSaveHardcore(gameId: Long): Boolean {
@@ -100,7 +105,6 @@ class GameLaunchDelegate @Inject constructor(
     private val _discPickerState = MutableStateFlow<DiscPickerState?>(null)
     val discPickerState: StateFlow<DiscPickerState?> = _discPickerState.asStateFlow()
 
-    private val syncMutex = Mutex()
     val isSyncing: Boolean get() = _syncOverlayState.value != null
 
     private var _onLaunchFailed: (() -> Unit)? = null
@@ -113,7 +117,7 @@ class GameLaunchDelegate @Inject constructor(
         onLaunch: (Intent) -> Unit,
         onLaunchFailed: () -> Unit = {}
     ) {
-        if (!syncMutex.tryLock()) {
+        if (isSyncing) {
             onLaunchFailed()
             return
         }
@@ -128,7 +132,7 @@ class GameLaunchDelegate @Inject constructor(
                 } ?: false
 
                 // Vita3K doesn't support resume - always end stale sessions
-                if (isVita3KSession && activeSession != null) {
+                if (isVita3KSession) {
                     android.util.Log.d("GameLaunchDelegate", "Vita3K session active, ending before fresh launch")
                     playSessionTracker.endSession()
                     delay(EMULATOR_KILL_DELAY_MS)
@@ -136,9 +140,9 @@ class GameLaunchDelegate @Inject constructor(
 
                 val canResume = !isVita3KSession && playSessionTracker.canResumeSession(gameId)
 
-                // Different game is active - end that session and kill emulator first
-                if (!canResume && activeSession != null && activeSession.gameId != gameId && !isVita3KSession) {
-                    android.util.Log.d("GameLaunchDelegate", "Ending session for game ${activeSession.gameId}, killing ${activeSession.emulatorPackage}")
+                // Stale session active - end it and kill emulator before fresh launch
+                if (!canResume && activeSession != null && !isVita3KSession) {
+                    android.util.Log.d("GameLaunchDelegate", "Evicting stale session for game ${activeSession.gameId}, killing ${activeSession.emulatorPackage}")
                     playSessionTracker.endSession()
                     gameLauncher.forceStopEmulator(activeSession.emulatorPackage)
                     delay(EMULATOR_KILL_DELAY_MS)
@@ -385,16 +389,15 @@ class GameLaunchDelegate @Inject constructor(
                 }
             } finally {
                 _syncOverlayState.value = null
-                syncMutex.unlock()
             }
         }
     }
 
-    private fun forceStopIfVita3K(session: ActiveSession) {
+    private fun forceStopIfVita3K(scope: CoroutineScope, session: ActiveSession) {
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage) ?: return
         val emulatorDef = EmulatorRegistry.getById(emulatorId) ?: return
         if (emulatorDef.launchConfig is LaunchConfig.Vita3K) {
-            kotlinx.coroutines.GlobalScope.launch {
+            scope.launch {
                 gameLauncher.forceStopEmulator(session.emulatorPackage)
             }
         }
@@ -404,71 +407,34 @@ class GameLaunchDelegate @Inject constructor(
         scope: CoroutineScope,
         onSyncComplete: () -> Unit = {}
     ) {
+        launchRetryTracker.clear()
         val session = playSessionTracker.activeSession.value
         if (session == null) {
             if (isSyncing) {
-                // Sync is in progress from a prior handleSessionEnd call.
-                // The running coroutine will call onSyncComplete when done.
-                return
+                // Prior sync coroutine may have been cancelled (e.g. config change).
+                // Clear stale overlay to avoid permanent stuck state.
+                _syncOverlayState.value = null
             }
             playSessionTracker.forceStopService()
             onSyncComplete()
             return
         }
-        val isVita3K = run {
-            val emuId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)
-            emuId?.let { EmulatorRegistry.getById(it) }?.launchConfig is LaunchConfig.Vita3K
-        }
-
-        val isBuiltin = session.emulatorPackage == com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE
-
-        // Builtin and Vita3K don't support resume - always end session immediately
-        if (isVita3K || isBuiltin) {
-            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: ${if (isBuiltin) "builtin" else "Vita3K"} session, ending immediately")
-            scope.launch { playSessionTracker.endSession() }
-            onSyncComplete()
-            return
-        }
-
         val sessionDuration = playSessionTracker.getSessionDuration()
 
-        if (sessionDuration != null) {
-            val seconds = sessionDuration.seconds
-
-            if (seconds < 10) {
-                if (session.flashReturnCount > 0) {
-                    android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: double flash return (${seconds}s), cancelling session")
-                    playSessionTracker.cancelSession()
-                    onSyncComplete()
-                    return
-                }
-                android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: flash return (${seconds}s), keeping session alive")
-                playSessionTracker.markFlashReturn()
-                onSyncComplete()
-                return
-            }
-
-            if (seconds < 30) {
-                android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: short session (${seconds}s), cancelling without backup")
-                playSessionTracker.cancelSession()
-                forceStopIfVita3K(session)
-                onSyncComplete()
-                return
-            }
+        if (sessionDuration != null && sessionDuration.seconds < 30) {
+            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: short session (${sessionDuration.seconds}s), cancelling without backup")
+            playSessionTracker.cancelSession()
+            onSyncComplete()
+            return
         }
 
         android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: proceeding with session end for gameId=${session.gameId}")
-        if (!syncMutex.tryLock()) {
-            onSyncComplete()
-            return
-        }
 
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)
         if (emulatorId == null) {
             android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: cannot resolve emulatorId, ending session without sync")
             scope.launch { playSessionTracker.endSession() }
-            forceStopIfVita3K(session)
-            syncMutex.unlock()
+            forceStopIfVita3K(scope, session)
             onSyncComplete()
             return
         }
@@ -545,10 +511,13 @@ class GameLaunchDelegate @Inject constructor(
                     }
                 }
 
-                forceStopIfVita3K(session)
+                forceStopIfVita3K(scope, session)
                 onSyncComplete()
-            } finally {
-                syncMutex.unlock()
+            } catch (e: Exception) {
+                android.util.Log.e("GameLaunchDelegate", "handleSessionEnd failed", e)
+                _syncOverlayState.value = null
+                playSessionTracker.endSessionInBackground()
+                onSyncComplete()
             }
         }
     }
@@ -564,25 +533,29 @@ class GameLaunchDelegate @Inject constructor(
             syncProgress = progress,
             onGrantPermission = {
                 openAllFilesAccessSettings()
-                dismissBlockedOverlay(onSyncComplete)
+                dismissBlockedOverlay(scope, onSyncComplete)
             },
             onDisableSync = {
                 scope.launch {
                     preferencesRepository.setSaveSyncEnabled(false)
                 }
-                dismissBlockedOverlay(onSyncComplete)
+                dismissBlockedOverlay(scope, onSyncComplete)
             },
             onSkip = {
-                dismissBlockedOverlay(onSyncComplete)
+                dismissBlockedOverlay(scope, onSyncComplete)
             }
         )
     }
 
-    private fun dismissBlockedOverlay(onSyncComplete: () -> Unit) {
-        kotlinx.coroutines.GlobalScope.launch { playSessionTracker.endSession() }
+    private fun dismissBlockedOverlay(scope: CoroutineScope, onSyncComplete: () -> Unit) {
         _syncOverlayState.value = null
-        syncMutex.unlock()
-        onSyncComplete()
+        scope.launch {
+            try {
+                playSessionTracker.endSession()
+            } finally {
+                onSyncComplete()
+            }
+        }
     }
 
     private fun openAllFilesAccessSettings() {

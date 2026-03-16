@@ -51,6 +51,7 @@ class EmulatorSessionPolicy(
     }
 
     fun shouldYieldOnResume(
+        context: Context,
         hasResumedBefore: Boolean,
         focusLostTime: Long,
         appPackage: String
@@ -63,7 +64,10 @@ class EmulatorSessionPolicy(
         if (session.emulatorPackage == appPackage) return false
         val timeSinceFocusLost =
             System.currentTimeMillis() - focusLostTime
-        return focusLostTime > 0 && timeSinceFocusLost < 2000
+        if (focusLostTime <= 0 || timeSinceFocusLost >= 2000) return false
+        return permissionHelper.isPackageInForeground(
+            context, session.emulatorPackage, withinMs = 5_000
+        )
     }
 
     fun clearStaleSession(

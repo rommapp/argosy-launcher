@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -93,6 +94,32 @@ fun LaunchScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.onScreenDisposed()
+        }
+    }
+
+    // Watchdog: if this screen is visible for too long without an overlay, launched
+    // intent, or active emulator session, something went wrong. Force-end the session
+    // and bail to prevent the grey screen lockup.
+    val hasActiveSession by viewModel.hasActiveSession.collectAsState()
+    var watchdogDeadline by remember { mutableLongStateOf(System.currentTimeMillis() + 8_000L) }
+
+    LaunchedEffect(syncOverlayState, discPickerState, launchIntent) {
+        if (syncOverlayState != null || discPickerState != null || launchIntent != null) {
+            watchdogDeadline = System.currentTimeMillis() + 8_000L
+        }
+    }
+
+    LaunchedEffect(watchdogDeadline) {
+        val remaining = watchdogDeadline - System.currentTimeMillis()
+        if (remaining > 0) {
+            kotlinx.coroutines.delay(remaining)
+        }
+        // Don't fire if the emulator was launched and is running (session active)
+        if (hasActiveSession) return@LaunchedEffect
+        if (syncOverlayState == null && discPickerState == null && launchIntent == null && !isSessionEnded) {
+            android.util.Log.w("LaunchScreen", "Watchdog fired -- forcing session end after timeout")
+            viewModel.handleSessionEnd {}
         }
     }
 

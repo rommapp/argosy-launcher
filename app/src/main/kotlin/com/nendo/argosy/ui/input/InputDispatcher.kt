@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.input
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.nendo.argosy.data.preferences.MenuWrapMode
 
 @Stable
 class InputDispatcher(
@@ -18,6 +19,18 @@ class InputDispatcher(
     companion object {
         var currentIsRepeat: Boolean = false
             internal set
+
+        fun computeWrappedIndex(
+            current: Int, delta: Int, maxIndex: Int, wrapMode: MenuWrapMode
+        ): Int {
+            val raw = current + delta
+            return when {
+                raw in 0..maxIndex -> raw
+                wrapMode == MenuWrapMode.OFF -> raw.coerceIn(0, maxIndex)
+                wrapMode == MenuWrapMode.HARD_STOP && currentIsRepeat -> raw.coerceIn(0, maxIndex)
+                else -> if (raw < 0) maxIndex else 0
+            }
+        }
     }
     private var pendingViewSubscription: Pair<InputHandler, String>? = null
 
@@ -112,8 +125,11 @@ class InputDispatcher(
 
         pendingInput = null
         Companion.currentIsRepeat = input.isRepeat
-        val result = dispatchToHandler(input.event, handler)
-        Companion.currentIsRepeat = false
+        val result = try {
+            dispatchToHandler(input.event, handler)
+        } finally {
+            Companion.currentIsRepeat = false
+        }
         playFeedback(input.event, result)
         return result
     }

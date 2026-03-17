@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
+import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
@@ -664,22 +665,6 @@ internal fun routeMoveFocus(vm: SettingsViewModel, delta: Int) {
     if (vm._uiState.value.currentSection == SettingsSection.BIOS) {
         vm.biosDelegate.resetPlatformSubFocus()
         vm.biosDelegate.resetBiosPathActionFocus()
-    }
-}
-
-private fun computeWrappedIndex(
-    current: Int,
-    delta: Int,
-    maxIndex: Int,
-    wrapMode: com.nendo.argosy.data.preferences.MenuWrapMode
-): Int {
-    val raw = current + delta
-    return when {
-        raw in 0..maxIndex -> raw
-        wrapMode == com.nendo.argosy.data.preferences.MenuWrapMode.OFF -> raw.coerceIn(0, maxIndex)
-        wrapMode == com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP &&
-            com.nendo.argosy.ui.input.InputDispatcher.currentIsRepeat -> raw.coerceIn(0, maxIndex)
-        else -> if (raw < 0) maxIndex else 0
     }
 }
 

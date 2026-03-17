@@ -21,6 +21,7 @@ import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.DefaultView
+import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.data.sync.ConflictResolution
@@ -43,6 +44,7 @@ import com.nendo.argosy.util.PServerExecutor
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.usecase.libretro.LibretroMigrationUseCase
 import com.nendo.argosy.ui.input.ControllerDetector
+import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.input.DetectedLayout
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.HapticFeedbackManager
@@ -75,7 +77,8 @@ data class ArgosyUiState(
     val abIconsSwapped: Boolean = false,
     val xyIconsSwapped: Boolean = false,
     val swapStartSelect: Boolean = false,
-    val defaultView: DefaultView = DefaultView.HOME
+    val defaultView: DefaultView = DefaultView.HOME,
+    val menuWrapMode: MenuWrapMode = MenuWrapMode.HARD_STOP
 )
 
 enum class DrawerTab { NAVIGATION, FRIENDS }
@@ -358,7 +361,8 @@ class ArgosyViewModel @Inject constructor(
             abIconsSwapped = isNintendoLayout xor prefs.swapAB,
             xyIconsSwapped = isNintendoLayout xor prefs.swapXY,
             swapStartSelect = prefs.swapStartSelect,
-            defaultView = prefs.defaultView
+            defaultView = prefs.defaultView,
+            menuWrapMode = prefs.menuWrapMode
         )
     }.stateIn(
         scope = viewModelScope,
@@ -537,38 +541,35 @@ class ArgosyViewModel @Inject constructor(
             get() = drawerItems.size
 
         override fun onUp(): InputResult {
+            val wrapMode = uiState.value.menuWrapMode
             return when (_drawerTab.value) {
                 DrawerTab.NAVIGATION -> {
-                    if (_navFocusIndex.value > 0) {
-                        _navFocusIndex.update { it - 1 }
-                        InputResult.HANDLED
-                    } else InputResult.UNHANDLED
+                    val maxIndex = if (hasUpdateFooter) footerIndex else drawerItems.lastIndex
+                    _navFocusIndex.update { computeWrappedIndex(it, -1, maxIndex, wrapMode) }
+                    InputResult.HANDLED
                 }
                 DrawerTab.FRIENDS -> {
                     val friends = drawerUiState.value.friends
-                    if (friends.isNotEmpty() && _friendsFocusIndex.value > 0) {
-                        _friendsFocusIndex.update { it - 1 }
-                        InputResult.HANDLED
-                    } else InputResult.UNHANDLED
+                    if (friends.isEmpty()) return InputResult.UNHANDLED
+                    _friendsFocusIndex.update { computeWrappedIndex(it, -1, friends.lastIndex, wrapMode) }
+                    InputResult.HANDLED
                 }
             }
         }
 
         override fun onDown(): InputResult {
+            val wrapMode = uiState.value.menuWrapMode
             return when (_drawerTab.value) {
                 DrawerTab.NAVIGATION -> {
                     val maxIndex = if (hasUpdateFooter) footerIndex else drawerItems.lastIndex
-                    if (_navFocusIndex.value < maxIndex) {
-                        _navFocusIndex.update { it + 1 }
-                        InputResult.HANDLED
-                    } else InputResult.UNHANDLED
+                    _navFocusIndex.update { computeWrappedIndex(it, 1, maxIndex, wrapMode) }
+                    InputResult.HANDLED
                 }
                 DrawerTab.FRIENDS -> {
                     val friends = drawerUiState.value.friends
-                    if (friends.isNotEmpty() && _friendsFocusIndex.value < friends.lastIndex) {
-                        _friendsFocusIndex.update { it + 1 }
-                        InputResult.HANDLED
-                    } else InputResult.UNHANDLED
+                    if (friends.isEmpty()) return InputResult.UNHANDLED
+                    _friendsFocusIndex.update { computeWrappedIndex(it, 1, friends.lastIndex, wrapMode) }
+                    InputResult.HANDLED
                 }
             }
         }
@@ -1003,22 +1004,15 @@ class ArgosyViewModel @Inject constructor(
     ): InputHandler = object : InputHandler {
 
         override fun onUp(): InputResult {
-            return if (_quickSettingsFocusIndex.value > 0) {
-                _quickSettingsFocusIndex.update { it - 1 }
-                InputResult.HANDLED
-            } else {
-                InputResult.UNHANDLED
-            }
+            val maxIndex = quickSettingsMaxFocusIndex(currentQuickSettingsState())
+            _quickSettingsFocusIndex.update { computeWrappedIndex(it, -1, maxIndex, uiState.value.menuWrapMode) }
+            return InputResult.HANDLED
         }
 
         override fun onDown(): InputResult {
             val maxIndex = quickSettingsMaxFocusIndex(currentQuickSettingsState())
-            return if (_quickSettingsFocusIndex.value < maxIndex) {
-                _quickSettingsFocusIndex.update { it + 1 }
-                InputResult.HANDLED
-            } else {
-                InputResult.UNHANDLED
-            }
+            _quickSettingsFocusIndex.update { computeWrappedIndex(it, 1, maxIndex, uiState.value.menuWrapMode) }
+            return InputResult.HANDLED
         }
 
         override fun onLeft(): InputResult {

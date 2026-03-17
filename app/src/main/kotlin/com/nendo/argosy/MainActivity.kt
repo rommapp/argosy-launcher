@@ -280,6 +280,13 @@ class MainActivity : ComponentActivity() {
         }
         dualScreenManager.registerReceivers()
         dualScreenManager.ensureCompanionLaunched()
+        activityScope.launch {
+            dualScreenManager.isCompanionActive.collect { active ->
+                if (active && !isDualScreenDevice) {
+                    isDualScreenDevice = true
+                }
+            }
+        }
         initCacheAndPreferences()
         collectLaunchRetryEvents()
         collectSwappedGameState()

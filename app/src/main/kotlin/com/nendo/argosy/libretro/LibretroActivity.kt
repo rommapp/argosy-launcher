@@ -3,6 +3,9 @@ package com.nendo.argosy.libretro
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -159,6 +162,7 @@ class LibretroActivity : ComponentActivity() {
     private val frameIntervalMs = 16L
     private val rewindSpeed = 2
     private var firstFrameRendered = false
+    private var audioFocusRequest: AudioFocusRequest? = null
     private var swapAB by mutableStateOf(false)
     private var swapXY by mutableStateOf(false)
     private var swapStartSelect by mutableStateOf(false)
@@ -229,6 +233,7 @@ class LibretroActivity : ComponentActivity() {
         createRetroView(corePath, systemDir, savesDir, settings, restoredSram)
         setupRetroViewListeners()
         configureRetroView(settings)
+        requestAudioFocus()
         inputConfig = InputConfigCoordinator(
             inputConfigRepository = inputConfigRepository,
             portResolver = portResolver,
@@ -443,6 +448,28 @@ class LibretroActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun requestAudioFocus() {
+        val am = getSystemService(AudioManager::class.java) ?: return
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            .setOnAudioFocusChangeListener { }
+            .build()
+        audioFocusRequest = request
+        am.requestAudioFocus(request)
+    }
+
+    private fun abandonAudioFocus() {
+        val request = audioFocusRequest ?: return
+        val am = getSystemService(AudioManager::class.java) ?: return
+        am.abandonAudioFocusRequest(request)
+        audioFocusRequest = null
     }
 
     private fun configureRetroView(settings: com.nendo.argosy.data.preferences.BuiltinEmulatorSettings) {
@@ -1254,6 +1281,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
+        abandonAudioFocus()
         com.nendo.argosy.DualScreenManagerHolder.instance?.let { dsm ->
             dsm.emulatorKeyDispatcher = null
             dsm.emulatorMotionDispatcher = null

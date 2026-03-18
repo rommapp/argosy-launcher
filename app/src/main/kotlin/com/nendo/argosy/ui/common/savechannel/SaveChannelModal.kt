@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBarWithState
 import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
@@ -247,18 +247,12 @@ private fun SavesTabContent(
     val slotListState = rememberLazyListState()
     val historyListState = rememberLazyListState()
 
-    LaunchedEffect(state.selectedSlotIndex) {
-        if (state.saveFocusColumn == SaveFocusColumn.SLOTS &&
-            state.selectedSlotIndex >= 0) {
-            slotListState.animateScrollToItem(state.selectedSlotIndex)
-        }
+    if (state.saveFocusColumn == SaveFocusColumn.SLOTS) {
+        FocusedScroll(listState = slotListState, focusedIndex = state.selectedSlotIndex)
     }
 
-    LaunchedEffect(state.selectedHistoryIndex) {
-        if (state.saveFocusColumn == SaveFocusColumn.HISTORY &&
-            state.selectedHistoryIndex >= 0) {
-            historyListState.animateScrollToItem(state.selectedHistoryIndex)
-        }
+    if (state.saveFocusColumn == SaveFocusColumn.HISTORY) {
+        FocusedScroll(listState = historyListState, focusedIndex = state.selectedHistoryIndex)
     }
 
     Row(
@@ -411,11 +405,7 @@ private fun StatesTabContent(
 ) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(state.focusIndex) {
-        if (state.focusIndex >= 0 && state.statesEntries.isNotEmpty()) {
-            listState.animateScrollToItem(state.focusIndex)
-        }
-    }
+    FocusedScroll(listState = listState, focusedIndex = state.focusIndex)
 
     if (state.statesEntries.isEmpty()) {
         Box(

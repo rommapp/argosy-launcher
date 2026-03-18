@@ -2,6 +2,9 @@ package com.nendo.argosy.ui.screens.gamedetail.modals
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
@@ -17,12 +20,26 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.MoreOptionAction
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
+
+private sealed interface MoreMenuEntry {
+    data class Option(
+        val icon: ImageVector? = null,
+        val label: String,
+        val value: String? = null,
+        val isDangerous: Boolean = false,
+        val action: MoreOptionAction
+    ) : MoreMenuEntry
+
+    data object Divider : MoreMenuEntry
+}
 
 @Composable
 fun MoreOptionsModal(
@@ -36,7 +53,69 @@ fun MoreOptionsModal(
     val canTrackProgress = game.isRommGame || game.isAndroidApp
     val isEmulatedGame = !game.isSteamGame && !game.isAndroidApp
     val hasUpdates = updateCount > 0
-    var currentIndex = 0
+    val usesTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii", "ps2")
+
+    val entries = buildList<MoreMenuEntry> {
+        if (game.canManageSaves) {
+            add(MoreMenuEntry.Option(Icons.Default.Save, "Manage Cached Saves", action = MoreOptionAction.ManageSaves))
+        }
+        if (canTrackProgress) {
+            add(MoreMenuEntry.Option(Icons.Default.Star, "Ratings & Status", action = MoreOptionAction.RatingsStatus))
+        }
+        if (game.isSteamGame) {
+            add(MoreMenuEntry.Option(label = "Change Launcher", value = game.steamLauncherName ?: "Auto", action = MoreOptionAction.ChangeSteamLauncher))
+        } else if (isEmulatedGame) {
+            add(MoreMenuEntry.Option(label = "Change Emulator", value = game.emulatorName ?: "Default", action = MoreOptionAction.ChangeEmulator))
+        }
+        if (game.hasMultipleCores && isEmulatedGame) {
+            add(MoreMenuEntry.Option(label = "Change Core", value = game.selectedCoreName ?: "Default", action = MoreOptionAction.ChangeCore))
+        }
+        if (usesTitleId && isEmulatedGame) {
+            add(MoreMenuEntry.Option(Icons.Default.Tag, "Title ID", value = game.titleId ?: "Not detected", action = MoreOptionAction.RefreshTitleId))
+        }
+        if (game.isMultiDisc) {
+            add(MoreMenuEntry.Option(Icons.Default.Album, "Select Disc", action = MoreOptionAction.SelectDisc))
+        }
+        if (hasUpdates) {
+            add(MoreMenuEntry.Option(Icons.Default.SystemUpdate, "Updates/DLC", value = "$updateCount", action = MoreOptionAction.UpdatesDlc))
+        }
+        if (canTrackProgress) {
+            add(MoreMenuEntry.Option(Icons.Default.Refresh, "Refresh Game Data", action = MoreOptionAction.RefreshData))
+        }
+        add(MoreMenuEntry.Option(Icons.Default.FolderSpecial, "Add to Collection", action = MoreOptionAction.AddToCollection))
+
+        add(MoreMenuEntry.Divider)
+
+        if (isDownloaded || game.isAndroidApp) {
+            add(MoreMenuEntry.Option(
+                icon = Icons.Default.DeleteOutline,
+                label = if (game.isAndroidApp) "Uninstall" else "Delete Download",
+                isDangerous = true,
+                action = MoreOptionAction.Delete
+            ))
+        }
+        add(MoreMenuEntry.Option(
+            icon = if (game.isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+            label = if (game.isHidden) "Show" else "Hide",
+            isDangerous = !game.isHidden,
+            action = MoreOptionAction.ToggleHide
+        ))
+    }
+
+    val listState = rememberLazyListState()
+
+    val listIndex = run {
+        var focus = 0
+        entries.indexOfFirst { entry ->
+            if (entry is MoreMenuEntry.Option) {
+                if (focus == focusIndex) return@indexOfFirst true
+                focus++
+            }
+            false
+        }.coerceAtLeast(0)
+    }
+
+    FocusedScroll(listState = listState, focusedIndex = listIndex)
 
     Modal(
         title = game.title,
@@ -50,122 +129,40 @@ fun MoreOptionsModal(
         },
         onDismiss = onDismiss
     ) {
-        if (game.canManageSaves) {
-            val idx = currentIndex++
-            OptionItem(
-                icon = Icons.Default.Save,
-                label = "Manage Cached Saves",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.ManageSaves) }
-            )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            itemsIndexed(entries) { _, entry ->
+                when (entry) {
+                    is MoreMenuEntry.Divider -> {
+                        HorizontalDivider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = Dimens.spacingSm),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                    is MoreMenuEntry.Option -> {
+                        val optionFocusIndex = run {
+                            var count = 0
+                            for (e in entries) {
+                                if (e === entry) break
+                                if (e is MoreMenuEntry.Option) count++
+                            }
+                            count
+                        }
+                        OptionItem(
+                            icon = entry.icon,
+                            label = entry.label,
+                            value = entry.value,
+                            isFocused = focusIndex == optionFocusIndex,
+                            isDangerous = entry.isDangerous,
+                            onClick = { onAction(entry.action) }
+                        )
+                    }
+                }
+            }
         }
-        if (canTrackProgress) {
-            val ratingsIdx = currentIndex++
-            OptionItem(
-                icon = Icons.Default.Star,
-                label = "Ratings & Status",
-                isFocused = focusIndex == ratingsIdx,
-                onClick = { onAction(MoreOptionAction.RatingsStatus) }
-            )
-        }
-        if (game.isSteamGame) {
-            val idx = currentIndex++
-            OptionItem(
-                label = "Change Launcher",
-                value = game.steamLauncherName ?: "Auto",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.ChangeSteamLauncher) }
-            )
-        } else if (isEmulatedGame) {
-            val idx = currentIndex++
-            OptionItem(
-                label = "Change Emulator",
-                value = game.emulatorName ?: "Default",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.ChangeEmulator) }
-            )
-        }
-        if (game.hasMultipleCores && isEmulatedGame) {
-            val idx = currentIndex++
-            OptionItem(
-                label = "Change Core",
-                value = game.selectedCoreName ?: "Default",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.ChangeCore) }
-            )
-        }
-        val usesTitleId = game.platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii", "ps2")
-        if (usesTitleId && isEmulatedGame) {
-            val idx = currentIndex++
-            OptionItem(
-                icon = Icons.Default.Tag,
-                label = "Title ID",
-                value = game.titleId ?: "Not detected",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.RefreshTitleId) }
-            )
-        }
-        if (game.isMultiDisc) {
-            val idx = currentIndex++
-            OptionItem(
-                icon = Icons.Default.Album,
-                label = "Select Disc",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.SelectDisc) }
-            )
-        }
-        if (hasUpdates) {
-            val idx = currentIndex++
-            OptionItem(
-                icon = Icons.Default.SystemUpdate,
-                label = "Updates/DLC",
-                value = "$updateCount",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.UpdatesDlc) }
-            )
-        }
-        if (canTrackProgress) {
-            val idx = currentIndex++
-            OptionItem(
-                icon = Icons.Default.Refresh,
-                label = "Refresh Game Data",
-                isFocused = focusIndex == idx,
-                onClick = { onAction(MoreOptionAction.RefreshData) }
-            )
-        }
-
-        val addToCollectionIdx = currentIndex++
-        OptionItem(
-            icon = Icons.Default.FolderSpecial,
-            label = "Add to Collection",
-            isFocused = focusIndex == addToCollectionIdx,
-            onClick = { onAction(MoreOptionAction.AddToCollection) }
-        )
-
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = Dimens.spacingSm),
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
-
-        if (isDownloaded || game.isAndroidApp) {
-            val idx = currentIndex++
-            OptionItem(
-                icon = Icons.Default.DeleteOutline,
-                label = if (game.isAndroidApp) "Uninstall" else "Delete Download",
-                isFocused = focusIndex == idx,
-                isDangerous = true,
-                onClick = { onAction(MoreOptionAction.Delete) }
-            )
-        }
-        val hideIdx = currentIndex
-        OptionItem(
-            icon = if (game.isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-            label = if (game.isHidden) "Show" else "Hide",
-            isFocused = focusIndex == hideIdx,
-            isDangerous = !game.isHidden,
-            onClick = { onAction(MoreOptionAction.ToggleHide) }
-        )
     }
 }

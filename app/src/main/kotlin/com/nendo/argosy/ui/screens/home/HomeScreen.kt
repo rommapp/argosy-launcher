@@ -24,6 +24,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -38,9 +39,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -102,6 +105,7 @@ import coil.size.Size
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.domain.model.RequiredAction
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.ChangelogModal
 import com.nendo.argosy.ui.components.CollectionItem
@@ -1484,19 +1488,6 @@ private fun GameSelectOverlay(
     onRemoveFromHome: () -> Unit,
     onHide: () -> Unit
 ) {
-    var currentIndex = 0
-    val playIdx = currentIndex++
-    val favoriteIdx = currentIndex++
-    val detailsIdx = currentIndex++
-    val addToCollectionIdx = currentIndex++
-    val refreshIdx = if (game.isRommGame || game.isAndroidApp) currentIndex++ else -1
-    val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
-    val removeFromHomeIdx = if (game.isAndroidApp) currentIndex++ else -1
-    val hideIdx = currentIndex
-
-    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
-    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
-
     val primaryIcon = when {
         game.needsInstall -> Icons.Default.InstallMobile
         game.isDownloaded -> Icons.Default.PlayArrow
@@ -1508,7 +1499,39 @@ private fun GameSelectOverlay(
         else -> "Download"
     }
 
-    Box(
+    data class MenuEntry(
+        val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+        val label: String,
+        val isDangerous: Boolean = false,
+        val onClick: () -> Unit
+    )
+
+    val options = buildList {
+        add(MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction))
+        add(MenuEntry(if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, if (game.isFavorite) "Unfavorite" else "Favorite", onClick = onFavorite))
+        add(MenuEntry(Icons.Default.Info, "Details", onClick = onDetails))
+        add(MenuEntry(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to Collection", onClick = onAddToCollection))
+        if (game.isRommGame || game.isAndroidApp) {
+            add(MenuEntry(Icons.Default.Refresh, "Refresh Data", onClick = onRefresh))
+        }
+    }
+    val dangerousOptions = buildList {
+        if (game.isDownloaded || game.needsInstall) {
+            add(MenuEntry(Icons.Default.DeleteOutline, "Delete Download", isDangerous = true, onClick = onDelete))
+        }
+        if (game.isAndroidApp) {
+            add(MenuEntry(Icons.Default.Home, "Remove from Home", isDangerous = true, onClick = onRemoveFromHome))
+        }
+        add(MenuEntry(label = "Hide", isDangerous = true, onClick = onHide))
+    }
+
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+    val listState = rememberLazyListState()
+    val listIndex = if (focusIndex < options.size) focusIndex else focusIndex + 1
+    FocusedScroll(listState = listState, focusedIndex = listIndex)
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor),
@@ -1519,6 +1542,7 @@ private fun GameSelectOverlay(
                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(Dimens.radiusLg))
                 .padding(Dimens.spacingLg)
                 .width(Dimens.modalWidth)
+                .heightIn(max = maxHeight * 0.85f)
         ) {
             Text(
                 text = "QUICK ACTIONS",
@@ -1527,68 +1551,34 @@ private fun GameSelectOverlay(
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            MenuOption(
-                icon = primaryIcon,
-                label = primaryLabel,
-                isFocused = focusIndex == playIdx,
-                onClick = onPrimaryAction
-            )
-            MenuOption(
-                icon = if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                label = if (game.isFavorite) "Unfavorite" else "Favorite",
-                isFocused = focusIndex == favoriteIdx,
-                onClick = onFavorite
-            )
-            MenuOption(
-                icon = Icons.Default.Info,
-                label = "Details",
-                isFocused = focusIndex == detailsIdx,
-                onClick = onDetails
-            )
-            MenuOption(
-                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                label = "Add to Collection",
-                isFocused = focusIndex == addToCollectionIdx,
-                onClick = onAddToCollection
-            )
-            if (game.isRommGame || game.isAndroidApp) {
-                MenuOption(
-                    icon = Icons.Default.Refresh,
-                    label = "Refresh Data",
-                    isFocused = focusIndex == refreshIdx,
-                    onClick = onRefresh
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
+                itemsIndexed(options) { index, entry ->
+                    MenuOption(
+                        icon = entry.icon,
+                        label = entry.label,
+                        isFocused = focusIndex == index,
+                        onClick = entry.onClick
+                    )
+                }
+                item {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+                itemsIndexed(dangerousOptions) { index, entry ->
+                    MenuOption(
+                        icon = entry.icon,
+                        label = entry.label,
+                        isFocused = focusIndex == options.size + index,
+                        isDangerous = entry.isDangerous,
+                        onClick = entry.onClick
+                    )
+                }
             }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-
-            if (game.isDownloaded || game.needsInstall) {
-                MenuOption(
-                    icon = Icons.Default.DeleteOutline,
-                    label = "Delete Download",
-                    isFocused = focusIndex == deleteIdx,
-                    isDangerous = true,
-                    onClick = onDelete
-                )
-            }
-            if (game.isAndroidApp) {
-                MenuOption(
-                    icon = Icons.Default.Home,
-                    label = "Remove from Home",
-                    isFocused = focusIndex == removeFromHomeIdx,
-                    isDangerous = true,
-                    onClick = onRemoveFromHome
-                )
-            }
-            MenuOption(
-                label = "Hide",
-                isFocused = focusIndex == hideIdx,
-                isDangerous = true,
-                onClick = onHide
-            )
         }
     }
 }

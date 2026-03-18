@@ -1,7 +1,12 @@
 package com.nendo.argosy.ui.screens.gamedetail.modals
 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.emulator.RetroArchCore
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 
@@ -18,21 +23,30 @@ fun CorePickerModal(
         subtitle = "Cores must be installed in RetroArch first",
         onDismiss = onDismiss
     ) {
-        OptionItem(
-            label = "Use Platform Default",
-            isFocused = focusIndex == 0,
-            isSelected = selectedCoreId == null,
-            onClick = { onSelectCore(null) }
-        )
+        val listState = rememberLazyListState()
+        FocusedScroll(listState = listState, focusedIndex = focusIndex)
 
-        availableCores.forEachIndexed { index, core ->
-            OptionItem(
-                label = core.displayName,
-                value = core.id,
-                isFocused = focusIndex == index + 1,
-                isSelected = core.id == selectedCoreId,
-                onClick = { onSelectCore(core.id) }
-            )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            item {
+                OptionItem(
+                    label = "Use Platform Default",
+                    isFocused = focusIndex == 0,
+                    isSelected = selectedCoreId == null,
+                    onClick = { onSelectCore(null) }
+                )
+            }
+            itemsIndexed(availableCores) { index, core ->
+                OptionItem(
+                    label = core.displayName,
+                    value = core.id,
+                    isFocused = focusIndex == index + 1,
+                    isSelected = core.id == selectedCoreId,
+                    onClick = { onSelectCore(core.id) }
+                )
+            }
         }
     }
 }

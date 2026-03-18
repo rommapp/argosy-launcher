@@ -46,6 +46,7 @@ import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.libretro.HotkeyManager
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.theme.Dimens
@@ -196,11 +197,7 @@ private fun ActionListContent(
 ) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(focusedIndex) {
-        if (focusedIndex >= 0 && focusedIndex < HOTKEY_ACTIONS.size) {
-            listState.animateScrollToItem(focusedIndex)
-        }
-    }
+    FocusedScroll(listState = listState, focusedIndex = focusedIndex)
 
     Modal(
         title = "Hotkeys",

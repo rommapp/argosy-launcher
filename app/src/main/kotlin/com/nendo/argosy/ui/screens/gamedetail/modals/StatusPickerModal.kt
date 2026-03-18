@@ -1,16 +1,15 @@
 package com.nendo.argosy.ui.screens.gamedetail.modals
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.color
 import com.nendo.argosy.ui.common.icon
-import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.components.CenteredModal
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 
@@ -22,6 +21,9 @@ fun StatusPickerModal(
     onDismiss: () -> Unit
 ) {
     val effectiveSelection = selectedValue ?: CompletionStatus.entries.first().apiValue
+    val focusedIndex = CompletionStatus.entries.indexOfFirst {
+        it.apiValue == effectiveSelection
+    }.coerceAtLeast(0)
 
     CenteredModal(
         title = "SET STATUS",
@@ -33,11 +35,15 @@ fun StatusPickerModal(
             InputButton.B to "Cancel"
         )
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
-            modifier = Modifier.fillMaxWidth()
+        val listState = rememberLazyListState()
+        FocusedScroll(listState = listState, focusedIndex = focusedIndex)
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f, fill = false)
         ) {
-            for (status in CompletionStatus.entries) {
+            items(CompletionStatus.entries.size) { index ->
+                val status = CompletionStatus.entries[index]
                 val isSelected = status.apiValue == effectiveSelection
                 val isCurrent = status.apiValue == currentValue
 

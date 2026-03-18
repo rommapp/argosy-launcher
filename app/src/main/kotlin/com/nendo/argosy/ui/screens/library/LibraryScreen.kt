@@ -75,6 +75,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.GridDensity
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.CollectionItem
@@ -1172,20 +1173,6 @@ private fun QuickMenuOverlay(
     onDelete: () -> Unit,
     onHide: () -> Unit
 ) {
-    val canRefresh = game.isRommGame || game.isAndroidApp
-    var currentIndex = 0
-    val playIdx = currentIndex++
-    val favoriteIdx = currentIndex++
-    val detailsIdx = currentIndex++
-    val addToCollectionIdx = currentIndex++
-    val refreshIdx = if (canRefresh) currentIndex++ else -1
-    val resyncPlatformIdx = currentIndex++
-    val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIndex++ else -1
-    val hideIdx = currentIndex
-
-    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
-    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
-
     val primaryIcon = when {
         game.needsInstall -> Icons.Default.InstallMobile
         game.isDownloaded -> Icons.Default.PlayArrow
@@ -1197,7 +1184,37 @@ private fun QuickMenuOverlay(
         else -> "Download"
     }
 
-    Box(
+    data class MenuEntry(
+        val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+        val label: String,
+        val isDangerous: Boolean = false,
+        val onClick: () -> Unit
+    )
+
+    val options = buildList {
+        add(MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction))
+        add(MenuEntry(if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, if (game.isFavorite) "Unfavorite" else "Favorite", onClick = onFavorite))
+        add(MenuEntry(Icons.Default.Info, "Details", onClick = onDetails))
+        add(MenuEntry(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to Collection", onClick = onAddToCollection))
+        if (game.isRommGame || game.isAndroidApp) {
+            add(MenuEntry(Icons.Default.Refresh, "Refresh Data", onClick = onRefresh))
+        }
+        add(MenuEntry(Icons.Default.Refresh, "Resync Platform", onClick = onResyncPlatform))
+    }
+    val dangerousOptions = buildList {
+        if (game.isDownloaded || game.needsInstall) {
+            add(MenuEntry(Icons.Default.DeleteOutline, if (game.isAndroidApp && game.isDownloaded) "Uninstall" else "Delete Download", isDangerous = true, onClick = onDelete))
+        }
+        add(MenuEntry(label = if (game.isHidden) "Show" else "Hide", isDangerous = !game.isHidden, onClick = onHide))
+    }
+
+    val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+    val listState = rememberLazyListState()
+    val listIndex = if (focusIndex < options.size) focusIndex else focusIndex + 1
+    FocusedScroll(listState = listState, focusedIndex = listIndex)
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
@@ -1213,6 +1230,7 @@ private fun QuickMenuOverlay(
                 .clickableNoFocus(enabled = false) {}
                 .padding(Dimens.spacingLg)
                 .width(Dimens.modalWidth)
+                .heightIn(max = maxHeight * 0.85f)
         ) {
             Text(
                 text = "QUICK ACTIONS",
@@ -1221,65 +1239,34 @@ private fun QuickMenuOverlay(
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            QuickMenuItem(
-                icon = primaryIcon,
-                label = primaryLabel,
-                isFocused = focusIndex == playIdx,
-                onClick = onPrimaryAction
-            )
-            QuickMenuItem(
-                icon = if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                label = if (game.isFavorite) "Unfavorite" else "Favorite",
-                isFocused = focusIndex == favoriteIdx,
-                onClick = onFavorite
-            )
-            QuickMenuItem(
-                icon = Icons.Default.Info,
-                label = "Details",
-                isFocused = focusIndex == detailsIdx,
-                onClick = onDetails
-            )
-            QuickMenuItem(
-                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                label = "Add to Collection",
-                isFocused = focusIndex == addToCollectionIdx,
-                onClick = onAddToCollection
-            )
-            if (canRefresh) {
-                QuickMenuItem(
-                    icon = Icons.Default.Refresh,
-                    label = "Refresh Data",
-                    isFocused = focusIndex == refreshIdx,
-                    onClick = onRefresh
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
+                itemsIndexed(options) { index, entry ->
+                    QuickMenuItem(
+                        icon = entry.icon,
+                        label = entry.label,
+                        isFocused = focusIndex == index,
+                        onClick = entry.onClick
+                    )
+                }
+                item {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = Dimens.spacingSm),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+                itemsIndexed(dangerousOptions) { index, entry ->
+                    QuickMenuItem(
+                        icon = entry.icon,
+                        label = entry.label,
+                        isFocused = focusIndex == options.size + index,
+                        isDangerous = entry.isDangerous,
+                        onClick = entry.onClick
+                    )
+                }
             }
-            QuickMenuItem(
-                icon = Icons.Default.Refresh,
-                label = "Resync Platform",
-                isFocused = focusIndex == resyncPlatformIdx,
-                onClick = onResyncPlatform
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = Dimens.spacingSm),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-
-            if (game.isDownloaded || game.needsInstall) {
-                QuickMenuItem(
-                    icon = Icons.Default.DeleteOutline,
-                    label = if (game.isAndroidApp && game.isDownloaded) "Uninstall" else "Delete Download",
-                    isFocused = focusIndex == deleteIdx,
-                    isDangerous = true,
-                    onClick = onDelete
-                )
-            }
-            QuickMenuItem(
-                label = if (game.isHidden) "Show" else "Hide",
-                isFocused = focusIndex == hideIdx,
-                isDangerous = !game.isHidden,
-                onClick = onHide
-            )
         }
     }
 }

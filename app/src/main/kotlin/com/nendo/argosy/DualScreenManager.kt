@@ -35,6 +35,7 @@ import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
+import com.nendo.argosy.ui.dualscreen.home.toShowcaseState
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
@@ -1361,6 +1362,8 @@ class DualScreenManager(
         _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
         sessionStateStore.setCompanionScreen("HOME")
         onGameDetailClosed()
+        val game = swappedDualHomeViewModel?.uiState?.value?.selectedGame
+        if (game != null) onGameSelected(game.toShowcaseState())
         swappedDualHomeViewModel?.refresh()
     }
 

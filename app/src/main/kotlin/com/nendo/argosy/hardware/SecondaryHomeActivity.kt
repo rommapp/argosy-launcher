@@ -498,6 +498,7 @@ class SecondaryHomeActivity :
         dualGameDetailViewModel = null
         dsm.sessionStateStore.setCompanionScreen("HOME")
         broadcasts.broadcastGameDetailClosed()
+        broadcasts.broadcastCurrentGameSelection()
         dualHomeViewModel.refresh()
     }
 

@@ -53,12 +53,18 @@ class DualHomeInputHandler(
             }
             com.nendo.argosy.ui.input.GamepadEvent.Left -> {
                 if (inAppBar) viewModel.selectPreviousApp()
-                else viewModel.selectPrevious()
+                else {
+                    viewModel.selectPrevious()
+                    onBroadcastCurrentGameSelection()
+                }
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Right -> {
                 if (inAppBar) viewModel.selectNextApp(apps.size)
-                else viewModel.selectNext()
+                else {
+                    viewModel.selectNext()
+                    onBroadcastCurrentGameSelection()
+                }
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Down -> {
@@ -83,11 +89,13 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.PrevSection -> {
                 if (inAppBar) viewModel.focusCarousel()
                 viewModel.previousSection()
+                onBroadcastCurrentGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.NextSection -> {
                 if (inAppBar) viewModel.focusCarousel()
                 viewModel.nextSection()
+                onBroadcastCurrentGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Select -> {

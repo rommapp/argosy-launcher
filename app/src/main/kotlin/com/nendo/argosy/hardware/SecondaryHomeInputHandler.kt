@@ -361,6 +361,7 @@ class SecondaryHomeInputHandler(
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
                 else {
                     dualHomeViewModel.selectPrevious()
+                    broadcasts.broadcastCurrentGameSelection()
                     onPersistCarouselPosition()
                 }
                 InputResult.HANDLED
@@ -369,6 +370,7 @@ class SecondaryHomeInputHandler(
                 if (inAppBar) dualHomeViewModel.selectNextApp(apps.size)
                 else {
                     dualHomeViewModel.selectNext()
+                    broadcasts.broadcastCurrentGameSelection()
                     onPersistCarouselPosition()
                 }
                 InputResult.HANDLED
@@ -400,6 +402,7 @@ class SecondaryHomeInputHandler(
                     broadcasts.broadcastViewModeChange()
                 }
                 dualHomeViewModel.previousSection()
+                broadcasts.broadcastCurrentGameSelection()
                 onPersistCarouselPosition()
                 InputResult.HANDLED
             }
@@ -409,6 +412,7 @@ class SecondaryHomeInputHandler(
                     broadcasts.broadcastViewModeChange()
                 }
                 dualHomeViewModel.nextSection()
+                broadcasts.broadcastCurrentGameSelection()
                 onPersistCarouselPosition()
                 InputResult.HANDLED
             }

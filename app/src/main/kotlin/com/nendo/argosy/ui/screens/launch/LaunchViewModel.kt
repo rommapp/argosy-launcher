@@ -115,8 +115,4 @@ class LaunchViewModel @Inject constructor(
         _launchIntent.value = null
         _launchOptions.value = null
     }
-
-    fun onScreenDisposed() {
-        gameLaunchDelegate.clearRetryTracker()
-    }
 }

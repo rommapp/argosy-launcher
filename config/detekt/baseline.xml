@@ -427,7 +427,6 @@
     <ID>UnnecessaryParentheses:GameDetailViewModel.kt$GameDetailViewModel$(achievement.badgeUrlLock ?: achievement.badgeUrl)</ID>
     <ID>UnnecessaryParentheses:HomeScreen.kt$(slideInVertically { -it / 2 } + fadeIn(tween(200)))</ID>
     <ID>UnnecessaryParentheses:HomeScreen.kt$(slideOutVertically { it / 2 } + fadeOut(tween(150)))</ID>
-    <ID>UnnecessaryParentheses:LaunchRetryTracker.kt$LaunchRetryTracker$(focusLostTimeMs &gt; 0 &amp;&amp; timeSinceFocusLost &lt; QUICK_RETURN_THRESHOLD_MS)</ID>
     <ID>UnnecessaryParentheses:PreferenceItem.kt$(step * 360f / hueSteps)</ID>
     <ID>UnnecessaryParentheses:RomMRepository.kt$RomMRepository$(discsToInsert.size + existingDiscs.size + 1)</ID>
     <ID>UnnecessaryParentheses:SettingsScreen.kt$(if (supportsScanning) actionIndex == 1 else true)</ID>
@@ -503,7 +502,6 @@
     <ID>UnusedPrivateProperty:RomScanner.kt$RomScanner$val nameLower = candidate.name.lowercase()</ID>
     <ID>UseIfInsteadOfWhen:AppsScreen.kt$when { uiState.isReorderMode -&gt; listOf( InputButton.DPAD to "Move", InputButton.SOUTH to "Save", InputButton.EAST to "Cancel" ) else -&gt; listOf( InputButton.SOUTH to "Open", InputButton.EAST to "Back", InputButton.NORTH to "Reorder", InputButton.SELECT to "Options", InputButton.WEST to if (uiState.showHiddenApps) "Show Apps" else "Show Hidden" ) }</ID>
     <ID>UseIfInsteadOfWhen:FooterHint.kt$when (button) { InputButton.LB_RB -&gt; { Row(verticalAlignment = Alignment.CenterVertically) { Icon( painter = InputIcons.BumperLeft, contentDescription = "LB", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp) ) Text( text = "/", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 2.dp) ) Icon( painter = InputIcons.BumperRight, contentDescription = "RB", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp) ) } } else -&gt; {} }</ID>
-    <ID>UseIfInsteadOfWhen:LaunchGameUseCase.kt$LaunchGameUseCase$when (val result = gameLauncher.launch(gameId, discId)) { is LaunchResult.Success -&gt; { playSessionTracker.startSession( gameId = gameId, emulatorPackage = result.intent.component?.packageName ?: result.intent.`package` ?: "" ) launchRetryTracker.onLaunchStarted(result.intent) result } else -&gt; result }</ID>
     <ID>UseIfInsteadOfWhen:LibraryViewModel.kt$LibraryViewModel$when { platformIndex &gt;= 0 -&gt; { val platformId = state.platforms[platformIndex].id gameDao.observeByPlatform(platformId) } else -&gt; when (filters.source) { SourceFilter.ALL -&gt; gameDao.observeAll() SourceFilter.PLAYABLE -&gt; gameDao.observePlayable() } }</ID>
     <ID>UseIfInsteadOfWhen:PreferenceItem.kt$when { !isEnabled -&gt; MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha) else -&gt; preferenceContentColor(isFocused) }</ID>
     <ID>UseIfInsteadOfWhen:PreferenceItem.kt$when { !isEnabled -&gt; MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha) else -&gt; preferenceSecondaryColor(isFocused) }</ID>
@@ -527,7 +525,6 @@
     <ID>VariableNaming:HomeViewModel.kt$HomeViewModel$private val _uiState = MutableStateFlow(restoreInitialState())</ID>
     <ID>VariableNaming:ImageCacheManager.kt$ImageCacheManager$private val _progress = kotlinx.coroutines.flow.MutableStateFlow(ImageCacheProgress())</ID>
     <ID>VariableNaming:ImageCacheManager.kt$ImageCacheManager$private val _screenshotProgress = kotlinx.coroutines.flow.MutableStateFlow(ImageCacheProgress())</ID>
-    <ID>VariableNaming:LaunchRetryTracker.kt$LaunchRetryTracker$private val _retryEvents = MutableSharedFlow&lt;Intent&gt;(extraBufferCapacity = 1)</ID>
     <ID>VariableNaming:LibraryViewModel.kt$LibraryViewModel$private val _events = MutableSharedFlow&lt;LibraryEvent&gt;()</ID>
     <ID>VariableNaming:LibraryViewModel.kt$LibraryViewModel$private val _uiState = MutableStateFlow(LibraryUiState())</ID>
     <ID>VariableNaming:NotificationManager.kt$NotificationManager$private val _notifications = MutableStateFlow&lt;List&lt;Notification&gt;&gt;(emptyList())</ID>

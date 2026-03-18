@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorResolver
-import com.nendo.argosy.data.emulator.LaunchRetryTracker
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.CollectionRepository
@@ -70,7 +69,6 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
     @Inject lateinit var imageCacheManager: ImageCacheManager
     @Inject lateinit var romMRepository: RomMRepository
-    @Inject lateinit var launchRetryTracker: LaunchRetryTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
     @Inject lateinit var ambientAudioManager: AmbientAudioManager
@@ -288,7 +286,6 @@ class MainActivity : ComponentActivity() {
             }
         }
         initCacheAndPreferences()
-        collectLaunchRetryEvents()
         collectSwappedGameState()
 
         com.nendo.argosy.data.sync.AchievementSubmissionWorker.schedule(this)
@@ -509,7 +506,6 @@ class MainActivity : ComponentActivity() {
             focusLostTime = 0L
             hideSystemUI()
             window.decorView.requestFocus()
-            launchRetryTracker.onFocusGained()
             ambientAudioManager.fadeIn()
             ambientLedManager.setContext(AmbientLedContext.ARGOSY_UI)
             ambientLedManager.clearInGameColors()
@@ -518,7 +514,6 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             focusLostTime = System.currentTimeMillis()
-            launchRetryTracker.onFocusLost()
             if (::dualScreenManager.isInitialized) {
                 dualScreenManager.onFocusLostToEmulator()
             }
@@ -566,14 +561,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun collectLaunchRetryEvents() {
-        activityScope.launch {
-            launchRetryTracker.retryEvents.collect { intent ->
-                Log.d(TAG, "Retrying launch intent after quick return")
-                startActivity(intent)
-            }
-        }
-    }
 
     private fun collectSwappedGameState() {
         activityScope.launch {

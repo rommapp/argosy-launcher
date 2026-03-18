@@ -94,7 +94,6 @@ fun LaunchScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.onScreenDisposed()
         }
     }
 

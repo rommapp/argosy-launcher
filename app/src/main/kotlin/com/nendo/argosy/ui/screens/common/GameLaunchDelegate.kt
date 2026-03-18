@@ -12,7 +12,6 @@ import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.LaunchResult
-import com.nendo.argosy.data.emulator.LaunchRetryTracker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SessionEndResult
@@ -82,15 +81,10 @@ class GameLaunchDelegate @Inject constructor(
     private val notificationManager: NotificationManager,
     private val titleIdDetector: TitleIdDetector,
     private val saveSyncRepository: SaveSyncRepository,
-    private val saveCacheManager: SaveCacheManager,
-    private val launchRetryTracker: LaunchRetryTracker
+    private val saveCacheManager: SaveCacheManager
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
-    }
-
-    fun clearRetryTracker() {
-        launchRetryTracker.clear()
     }
 
     private suspend fun isActiveSaveHardcore(gameId: Long): Boolean {
@@ -407,7 +401,6 @@ class GameLaunchDelegate @Inject constructor(
         scope: CoroutineScope,
         onSyncComplete: () -> Unit = {}
     ) {
-        launchRetryTracker.clear()
         val session = playSessionTracker.activeSession.value
         if (session == null) {
             if (isSyncing) {

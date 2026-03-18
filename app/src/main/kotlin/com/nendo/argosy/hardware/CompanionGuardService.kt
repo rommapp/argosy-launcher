@@ -106,11 +106,11 @@ class CompanionGuardService : Service() {
                     }
                     val emulatorOnSecondary = dsm.emulatorDisplayId != null &&
                         dsm.emulatorDisplayId != Display.DEFAULT_DISPLAY
-                    if (!emulatorOnSecondary) {
-                        Log.d(TAG, "Companion inactive during session but emulator is on primary display -- allowing user multitask on secondary")
+                    if (emulatorOnSecondary) {
+                        Log.d(TAG, "Companion inactive during session but emulator is on secondary display (swapped) -- expected, skipping relaunch")
                         return@collect
                     }
-                    Log.d(TAG, "Companion inactive during game session (emulator on secondary), scheduling relaunch")
+                    Log.d(TAG, "Companion inactive during game session (emulator on primary), scheduling relaunch")
                     delay(RELAUNCH_DELAY_MS)
                     if (!dsm.isCompanionActive.value &&
                         dsm.sessionStateStore.hasActiveSession()

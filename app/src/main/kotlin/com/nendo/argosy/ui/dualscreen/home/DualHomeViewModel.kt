@@ -186,6 +186,7 @@ class DualHomeViewModel(
     init {
         loadData()
         observeDownloads()
+        observePlatformChanges()
     }
 
     private fun loadData() {
@@ -198,6 +199,47 @@ class DualHomeViewModel(
                 )
             }
             loadGamesForCurrentSection()
+        }
+    }
+
+    private fun observePlatformChanges() {
+        viewModelScope.launch {
+            platformRepository.observePlatformsWithGames().collect { platforms ->
+                val filtered = platforms
+                    .filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
+                val newPlatformSections = filtered.map { platform ->
+                    DualHomeSection.Platform(
+                        id = platform.id,
+                        slug = platform.slug,
+                        name = platform.name,
+                        displayName = platform.getDisplayName(),
+                        logoPath = platform.logoPath
+                    )
+                }
+
+                val state = _uiState.value
+                val nonPlatformSections = state.sections.filterNot { it is DualHomeSection.Platform }
+                val updatedSections = nonPlatformSections + newPlatformSections
+
+                val currentSection = state.currentSection
+                val newIndex = if (currentSection != null) {
+                    updatedSections.indexOfFirst { section ->
+                        when {
+                            currentSection is DualHomeSection.Platform && section is DualHomeSection.Platform ->
+                                currentSection.id == section.id
+                            currentSection::class == section::class -> true
+                            else -> false
+                        }
+                    }.takeIf { it >= 0 } ?: 0
+                } else 0
+
+                _uiState.update {
+                    it.copy(
+                        sections = updatedSections,
+                        currentSectionIndex = newIndex
+                    )
+                }
+            }
         }
     }
 

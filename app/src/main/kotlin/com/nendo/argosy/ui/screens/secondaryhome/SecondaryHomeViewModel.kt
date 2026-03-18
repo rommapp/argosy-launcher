@@ -113,6 +113,7 @@ class SecondaryHomeViewModel @Inject constructor(
             observeSecondaryHomeApps()
             observeGridDensity()
         }
+        observePlatformChanges()
     }
 
     private fun observeGridDensity() {
@@ -188,6 +189,39 @@ class SecondaryHomeViewModel @Inject constructor(
             }
 
             loadGamesForCurrentSection()
+        }
+    }
+
+    private fun observePlatformChanges() {
+        viewModelScope.launch {
+            platformRepository.observePlatformsWithGames().collect { platforms ->
+                val newPlatformSections = platforms.map { platform ->
+                    HomeSection.Platform(platform.name, platform.id, platform.slug)
+                }
+
+                val state = _uiState.value
+                val nonPlatformSections = state.sections.filterNot { it is HomeSection.Platform }
+                val updatedSections = nonPlatformSections + newPlatformSections
+
+                val currentSection = state.currentSection
+                val newIndex = if (currentSection != null) {
+                    updatedSections.indexOfFirst { section ->
+                        when {
+                            currentSection is HomeSection.Platform && section is HomeSection.Platform ->
+                                currentSection.id == section.id
+                            currentSection::class == section::class -> true
+                            else -> false
+                        }
+                    }.takeIf { it >= 0 } ?: 0
+                } else 0
+
+                _uiState.update {
+                    it.copy(
+                        sections = updatedSections,
+                        currentSectionIndex = newIndex
+                    )
+                }
+            }
         }
     }
 

@@ -185,13 +185,44 @@ class DualScreenManager(
         val maxIndex = when (state.syncProgress) {
             is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict -> 2
             is com.nendo.argosy.domain.model.SyncProgress.LocalModified -> 1
+            is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict -> 1
             else -> return
         }
         _dualSyncConflictFocusIndex.value = (_dualSyncConflictFocusIndex.value + direction).coerceIn(0, maxIndex)
     }
 
+    fun handleConflictInput(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean): Boolean {
+        if (_dualSyncConflict.value == null && _dualSaveConflict.value == null) return false
+        val event = com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+            ?: return true
+        if (_dualSyncConflict.value != null) {
+            when (event) {
+                com.nendo.argosy.ui.input.GamepadEvent.Up -> moveSyncConflictFocus(-1)
+                com.nendo.argosy.ui.input.GamepadEvent.Down -> moveSyncConflictFocus(1)
+                com.nendo.argosy.ui.input.GamepadEvent.Confirm -> confirmSyncConflict()
+                com.nendo.argosy.ui.input.GamepadEvent.Back -> dismissSyncConflict()
+                else -> {}
+            }
+            return true
+        }
+        if (_dualSaveConflict.value != null) {
+            when (event) {
+                com.nendo.argosy.ui.input.GamepadEvent.Left,
+                com.nendo.argosy.ui.input.GamepadEvent.Up -> moveSaveConflictFocus(-1)
+                com.nendo.argosy.ui.input.GamepadEvent.Right,
+                com.nendo.argosy.ui.input.GamepadEvent.Down -> moveSaveConflictFocus(1)
+                com.nendo.argosy.ui.input.GamepadEvent.Confirm -> confirmSaveConflict()
+                com.nendo.argosy.ui.input.GamepadEvent.Back -> dismissSaveConflict()
+                else -> {}
+            }
+            return true
+        }
+        return false
+    }
+
     fun confirmSyncConflict() {
         val state = _dualSyncConflict.value ?: return
+        val wasPostSession = state.syncProgress is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict
         val index = _dualSyncConflictFocusIndex.value
         when (state.syncProgress) {
             is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict -> when (index) {
@@ -202,6 +233,10 @@ class DualScreenManager(
             is com.nendo.argosy.domain.model.SyncProgress.LocalModified -> when (index) {
                 0 -> state.onKeepLocalModified?.invoke()
                 1 -> state.onRestoreSelected?.invoke()
+            }
+            is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict -> when (index) {
+                0 -> state.syncProgress.onSkipSync?.invoke()
+                1 -> state.syncProgress.onOverwrite?.invoke()
             }
             else -> {}
         }
@@ -214,10 +249,55 @@ class DualScreenManager(
         when (state.syncProgress) {
             is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict -> state.onKeepLocal?.invoke()
             is com.nendo.argosy.domain.model.SyncProgress.LocalModified -> state.onKeepLocalModified?.invoke()
+            is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict -> state.syncProgress.onSkipSync?.invoke()
             else -> {}
         }
         _dualSyncConflict.value = null
         _dualSyncConflictFocusIndex.value = 0
+    }
+
+    fun setDualSyncConflictFromSaveConflict(state: com.nendo.argosy.ui.screens.common.SyncOverlayState) {
+        _dualSyncConflictFocusIndex.value = 0
+        _dualSyncConflict.value = state
+    }
+
+    fun clearDualSyncConflictIfPostSession() {
+        if (_dualSyncConflict.value?.syncProgress is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict) {
+            _dualSyncConflict.value = null
+            _dualSyncConflictFocusIndex.value = 0
+        }
+    }
+
+    private val _dualSaveConflict = MutableStateFlow<com.nendo.argosy.ui.components.SaveConflictInfo?>(null)
+    val dualSaveConflict: StateFlow<com.nendo.argosy.ui.components.SaveConflictInfo?> = _dualSaveConflict
+
+    private val _dualSaveConflictFocusIndex = MutableStateFlow(0)
+    val dualSaveConflictFocusIndex: StateFlow<Int> = _dualSaveConflictFocusIndex
+
+    var onSaveConflictDismiss: (() -> Unit)? = null
+    var onSaveConflictOverwrite: (() -> Unit)? = null
+
+    fun setSaveConflict(info: com.nendo.argosy.ui.components.SaveConflictInfo?) {
+        _dualSaveConflict.value = info
+        _dualSaveConflictFocusIndex.value = 0
+    }
+
+    fun moveSaveConflictFocus(direction: Int) {
+        _dualSaveConflictFocusIndex.value = (_dualSaveConflictFocusIndex.value + direction).coerceIn(0, 1)
+    }
+
+    fun confirmSaveConflict() {
+        _dualSaveConflict.value ?: return
+        val idx = _dualSaveConflictFocusIndex.value
+        if (idx == 0) onSaveConflictDismiss?.invoke() else onSaveConflictOverwrite?.invoke()
+        _dualSaveConflict.value = null
+        _dualSaveConflictFocusIndex.value = 0
+    }
+
+    fun dismissSaveConflict() {
+        onSaveConflictDismiss?.invoke()
+        _dualSaveConflict.value = null
+        _dualSaveConflictFocusIndex.value = 0
     }
 
     private val _pendingOverlayEvent = MutableStateFlow<String?>(null)

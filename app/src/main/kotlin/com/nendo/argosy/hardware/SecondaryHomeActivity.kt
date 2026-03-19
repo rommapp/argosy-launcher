@@ -271,6 +271,15 @@ class SecondaryHomeActivity :
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (event.repeatCount == 0) {
+            val conflictEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+            if (conflictEvent != null) {
+                val conflictResult = inputHandler.handleSyncConflictInput(conflictEvent)
+                if (conflictResult.handled) return true
+                val saveResult = inputHandler.handleSaveConflictInput(conflictEvent)
+                if (saveResult.handled) return true
+            }
+        }
         if (isShowcaseRole) {
             if (!isArgosyForeground && event.repeatCount == 0) {
                 val gamepadEvent = mapKeycodeToGamepadEvent(

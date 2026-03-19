@@ -392,6 +392,13 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             Log.d(TAG, "dispatchKeyEvent: key=${event.keyCode} isHome=$isOnHomeScreen swapped=$isRolesSwapped gameOnSecondary=${dualScreenManager.swappedIsGameActive.value} companion=${dualScreenManager.isCompanionActive.value} overlay=$isOverlayFocused")
+            if (dualScreenManager.handleConflictInput(
+                    event.keyCode,
+                    sessionStateStore.getSwapAB(),
+                    sessionStateStore.getSwapXY(),
+                    sessionStateStore.getSwapStartSelect()
+                )
+            ) return true
         }
 
         if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused) {

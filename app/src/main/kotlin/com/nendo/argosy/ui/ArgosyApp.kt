@@ -169,6 +169,33 @@ fun ArgosyApp(
 
     // Handle deep links from secondary home
     val activity = context as? com.nendo.argosy.MainActivity
+
+    LaunchedEffect(activity) {
+        val dsm = activity?.dualScreenManager ?: return@LaunchedEffect
+        dsm.onSaveConflictDismiss = { viewModel.dismissSaveConflict() }
+        dsm.onSaveConflictOverwrite = { viewModel.forceUploadConflictSave() }
+        viewModel.saveConflictInfo.collect { info ->
+            dsm.setSaveConflict(info)
+            if (info != null) {
+                dsm.setDualSyncConflictFromSaveConflict(
+                    com.nendo.argosy.ui.screens.common.SyncOverlayState(
+                        gameTitle = info.gameName,
+                        syncProgress = com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict(
+                            gameTitle = info.gameName,
+                            channelName = info.channelName,
+                            localTimestamp = info.localTimestamp,
+                            serverTimestamp = info.serverTimestamp,
+                            serverDeviceName = info.serverDeviceName,
+                            onSkipSync = { viewModel.dismissSaveConflict() },
+                            onOverwrite = { viewModel.forceUploadConflictSave() }
+                        )
+                    )
+                )
+            } else if (info == null) {
+                dsm.clearDualSyncConflictIfPostSession()
+            }
+        }
+    }
     val pendingDeepLink by activity?.pendingDeepLink?.collectAsState() ?: remember { mutableStateOf(null) }
     LaunchedEffect(pendingDeepLink) {
         pendingDeepLink?.let { uri ->
@@ -360,6 +387,14 @@ fun ArgosyApp(
                 viewModel.moveSaveConflictFocus(1)
                 return InputResult.HANDLED
             }
+            override fun onUp(): InputResult {
+                viewModel.moveSaveConflictFocus(-1)
+                return InputResult.HANDLED
+            }
+            override fun onDown(): InputResult {
+                viewModel.moveSaveConflictFocus(1)
+                return InputResult.HANDLED
+            }
             override fun onConfirm(): InputResult {
                 val buttonIndex = viewModel.saveConflictButtonIndex.value
                 if (buttonIndex == 0) {
@@ -373,6 +408,16 @@ fun ArgosyApp(
                 viewModel.dismissSaveConflict()
                 return InputResult.handled(SoundType.CLOSE_MODAL)
             }
+            override fun onMenu() = InputResult.HANDLED
+            override fun onSelect() = InputResult.HANDLED
+            override fun onPrevSection() = InputResult.HANDLED
+            override fun onNextSection() = InputResult.HANDLED
+            override fun onPrevTrigger() = InputResult.HANDLED
+            override fun onNextTrigger() = InputResult.HANDLED
+            override fun onSecondaryAction() = InputResult.HANDLED
+            override fun onContextMenu() = InputResult.HANDLED
+            override fun onLeftStickClick() = InputResult.HANDLED
+            override fun onRightStickClick() = InputResult.HANDLED
         }
     }
 
@@ -489,33 +534,16 @@ fun ArgosyApp(
         android.util.Log.d("UpdatesDLC", "ArgosyApp: modalType changed to ${gameDetailUpperState?.modalType}")
     }
 
-    LaunchedEffect(saveConflictInfo, backgroundConflictInfo, dualModalActive, resumeCount) {
+    val isDualConflictMode = showDualOverlay || showSwappedInteractive
+    LaunchedEffect(saveConflictInfo, backgroundConflictInfo, dualModalActive, isDualConflictMode, resumeCount) {
         when {
             dualModalActive -> inputDispatcher.subscribeDrawer(dualModalInputHandler)
-            saveConflictInfo != null -> inputDispatcher.subscribeDrawer(saveConflictInputHandler)
+            saveConflictInfo != null && !isDualConflictMode -> inputDispatcher.subscribeDrawer(saveConflictInputHandler)
             backgroundConflictInfo != null -> inputDispatcher.subscribeDrawer(backgroundConflictInputHandler)
             else -> inputDispatcher.unsubscribeDrawer()
         }
     }
 
-    var grabbedFocusForConflict by remember { mutableStateOf(false) }
-    LaunchedEffect(saveConflictInfo, backgroundConflictInfo, showDualOverlay) {
-        val hasConflict = saveConflictInfo != null || backgroundConflictInfo != null
-        if (showDualOverlay && hasConflict && !grabbedFocusForConflict) {
-            grabbedFocusForConflict = true
-            activity?.startActivity(
-                Intent(activity, activity::class.java).addFlags(
-                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                )
-            )
-        } else if (grabbedFocusForConflict && !hasConflict) {
-            grabbedFocusForConflict = false
-            if (showDualOverlay) {
-                activity?.dualScreenManager?.companionHost?.refocusSelf()
-            }
-        }
-    }
 
     // Block input during route transitions and sync route to dispatcher
     LaunchedEffect(currentRoute) {
@@ -1418,14 +1446,16 @@ fun ArgosyApp(
                 footerHints = quickSettingsFooterHints
             )
 
-            // Save Conflict Modal
-            saveConflictInfo?.let { info ->
-                SaveConflictModal(
-                    info = info,
-                    focusedButton = saveConflictButtonIndex,
-                    onKeepLocal = { viewModel.dismissSaveConflict() },
-                    onOverwrite = { viewModel.forceUploadConflictSave() }
-                )
+            // Save Conflict Modal (single-screen only; dual-screen renders on companion)
+            if (!showDualOverlay && !showSwappedInteractive) {
+                saveConflictInfo?.let { info ->
+                    SaveConflictModal(
+                        info = info,
+                        focusedButton = saveConflictButtonIndex,
+                        onKeepLocal = { viewModel.dismissSaveConflict() },
+                        onOverwrite = { viewModel.forceUploadConflictSave() }
+                    )
+                }
             }
 
             // Background Sync Conflict Dialog

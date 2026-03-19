@@ -461,7 +461,8 @@ class SaveSyncApiClient @Inject constructor(
                 if (sessionOnOlderSave[gameId] == true) {
                     Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Session started on older save -- conflict for channel=$channelName")
                     val serverTime = latestServerSave?.let { parseTimestamp(it.updatedAt) } ?: Instant.now()
-                    return@withContext SaveSyncResult.Conflict(gameId, localModified, serverTime, extractUploaderDeviceName(latestServerSave))
+                    val preSyncTime = syncEntity?.lastSyncedAt ?: localModified
+                    return@withContext SaveSyncResult.Conflict(gameId, preSyncTime, serverTime, extractUploaderDeviceName(latestServerSave))
                 }
             }
 
@@ -520,8 +521,9 @@ class SaveSyncApiClient @Inject constructor(
 
             if (response.code() == 409) {
                 val serverTime = latestServerSave?.let { parseTimestamp(it.updatedAt) } ?: Instant.now()
+                val conflictLocalTime = syncEntity?.lastSyncedAt ?: localModified
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Decision=CONFLICT | Server returned 409 (device out of sync)")
-                return@withContext SaveSyncResult.Conflict(gameId, localModified, serverTime, extractUploaderDeviceName(latestServerSave))
+                return@withContext SaveSyncResult.Conflict(gameId, conflictLocalTime, serverTime, extractUploaderDeviceName(latestServerSave))
             }
 
             if (response.isSuccessful) {
@@ -619,9 +621,10 @@ class SaveSyncApiClient @Inject constructor(
                     .filter { it.slot != null && equalsNormalized(it.slot, channelName) }
                     .maxByOrNull { parseTimestamp(it.updatedAt) }
                 val serverTime = latestForSlot?.let { parseTimestamp(it.updatedAt) } ?: Instant.now()
-                val localTime = Instant.ofEpochMilli(cacheFile.lastModified())
-                Logger.warn(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Session started on older save -- conflict for channel=$channelName | local=$localTime, server=$serverTime")
-                return@withContext SaveSyncResult.Conflict(gameId, localTime, serverTime, extractUploaderDeviceName(latestForSlot))
+                val preSyncTime = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)?.lastSyncedAt
+                    ?: Instant.ofEpochMilli(cacheFile.lastModified())
+                Logger.warn(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Session started on older save -- conflict for channel=$channelName | preSyncTime=$preSyncTime, server=$serverTime")
+                return@withContext SaveSyncResult.Conflict(gameId, preSyncTime, serverTime, extractUploaderDeviceName(latestForSlot))
             }
         }
 
@@ -660,9 +663,10 @@ class SaveSyncApiClient @Inject constructor(
                     .filter { it.slot != null && equalsNormalized(it.slot, channelName) }
                     .maxByOrNull { parseTimestamp(it.updatedAt) }
                 val serverTime = conflictSlotSave?.let { parseTimestamp(it.updatedAt) } ?: Instant.now()
-                val localTime = Instant.ofEpochMilli(cacheFile.lastModified())
-                Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Server returned 409 (device out of sync for slot=$channelName) | local=$localTime, server=$serverTime")
-                return@withContext SaveSyncResult.Conflict(gameId, localTime, serverTime, extractUploaderDeviceName(conflictSlotSave))
+                val conflictLocalTime = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)?.lastSyncedAt
+                    ?: Instant.ofEpochMilli(cacheFile.lastModified())
+                Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Server returned 409 (device out of sync for slot=$channelName) | preSyncTime=$conflictLocalTime, server=$serverTime")
+                return@withContext SaveSyncResult.Conflict(gameId, conflictLocalTime, serverTime, extractUploaderDeviceName(conflictSlotSave))
             }
 
             if (response.isSuccessful) {

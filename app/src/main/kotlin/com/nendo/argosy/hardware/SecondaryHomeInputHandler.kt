@@ -42,8 +42,11 @@ class SecondaryHomeInputHandler(
         isGameActive: Boolean,
         currentScreen: CompanionScreen
     ): InputResult {
-        val conflictResult = handleSyncConflictInput(event)
-        if (conflictResult.handled) return conflictResult
+        val syncConflictResult = handleSyncConflictInput(event)
+        if (syncConflictResult.handled) return syncConflictResult
+
+        val saveConflictResult = handleSaveConflictInput(event)
+        if (saveConflictResult.handled) return saveConflictResult
 
         return if (useDualScreenMode && isArgosyForeground && !isGameActive) {
             when (currentScreen) {
@@ -57,7 +60,7 @@ class SecondaryHomeInputHandler(
         }
     }
 
-    private fun handleSyncConflictInput(event: GamepadEvent): InputResult {
+    fun handleSyncConflictInput(event: GamepadEvent): InputResult {
         val dsm = com.nendo.argosy.DualScreenManagerHolder.instance ?: return InputResult.UNHANDLED
         dsm.dualSyncConflict.value ?: return InputResult.UNHANDLED
 
@@ -70,6 +73,21 @@ class SecondaryHomeInputHandler(
         }
         return InputResult.HANDLED
     }
+
+    fun handleSaveConflictInput(event: GamepadEvent): InputResult {
+        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance ?: return InputResult.UNHANDLED
+        dsm.dualSaveConflict.value ?: return InputResult.UNHANDLED
+
+        when (event) {
+            GamepadEvent.Left, GamepadEvent.Up -> dsm.moveSaveConflictFocus(-1)
+            GamepadEvent.Right, GamepadEvent.Down -> dsm.moveSaveConflictFocus(1)
+            GamepadEvent.Confirm -> dsm.confirmSaveConflict()
+            GamepadEvent.Back -> dsm.dismissSaveConflict()
+            else -> {} // consume all other input while modal is active
+        }
+        return InputResult.HANDLED
+    }
+
 
     fun handleDualHomeInput(event: GamepadEvent): InputResult {
         if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)

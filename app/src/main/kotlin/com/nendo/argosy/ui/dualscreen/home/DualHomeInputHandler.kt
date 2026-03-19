@@ -38,6 +38,18 @@ class DualHomeInputHandler(
             }
             return InputResult.HANDLED
         }
+        if (dsm?.dualSaveConflict?.value != null) {
+            when (event) {
+                com.nendo.argosy.ui.input.GamepadEvent.Left,
+                com.nendo.argosy.ui.input.GamepadEvent.Up -> dsm.moveSaveConflictFocus(-1)
+                com.nendo.argosy.ui.input.GamepadEvent.Right,
+                com.nendo.argosy.ui.input.GamepadEvent.Down -> dsm.moveSaveConflictFocus(1)
+                com.nendo.argosy.ui.input.GamepadEvent.Confirm -> dsm.confirmSaveConflict()
+                com.nendo.argosy.ui.input.GamepadEvent.Back -> dsm.dismissSaveConflict()
+                else -> {}
+            }
+            return InputResult.HANDLED
+        }
         if (viewModel.forwardingMode.value != ForwardingMode.NONE) {
             return InputResult.HANDLED
         }

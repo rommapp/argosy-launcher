@@ -32,9 +32,12 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -86,7 +89,8 @@ fun SyncOverlay(
     val isBlocked = syncProgress is SyncProgress.BlockedReason
     val isHardcoreConflict = syncProgress is SyncProgress.HardcoreConflict
     val isLocalModified = syncProgress is SyncProgress.LocalModified
-    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error && !isBlocked && !isHardcoreConflict && !isLocalModified
+    val isPostSessionConflict = syncProgress is SyncProgress.PostSessionConflict
+    val isActiveSync = syncProgress != null && syncProgress !is SyncProgress.Error && !isBlocked && !isHardcoreConflict && !isLocalModified && !isPostSessionConflict
 
     val infiniteTransition = rememberInfiniteTransition(label = "sync_rotation")
     val rotation by infiniteTransition.animateFloat(
@@ -122,11 +126,14 @@ fun SyncOverlay(
         visible = isVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300)),
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .focusProperties { canFocus = false }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .focusProperties { canFocus = false }
                 .background(overlayColor),
             contentAlignment = Alignment.Center
         ) {
@@ -146,6 +153,18 @@ fun SyncOverlay(
                         focusIndex = localModifiedFocusIndex,
                         onKeepLocal = onKeepLocalModified,
                         onRestoreSelected = onRestoreSelected
+                    )
+                }
+                isPostSessionConflict && syncProgress is SyncProgress.PostSessionConflict -> {
+                    PostSessionConflictContent(
+                        gameTitle = syncProgress.gameTitle,
+                        channelName = syncProgress.channelName,
+                        localTimestamp = syncProgress.localTimestamp,
+                        serverTimestamp = syncProgress.serverTimestamp,
+                        serverDeviceName = syncProgress.serverDeviceName,
+                        focusIndex = localModifiedFocusIndex,
+                        onSkipSync = syncProgress.onSkipSync,
+                        onOverwrite = syncProgress.onOverwrite
                     )
                 }
                 isBlocked -> {
@@ -489,6 +508,134 @@ private fun LocalModifiedContent(
 }
 
 @Composable
+private fun PostSessionConflictContent(
+    gameTitle: String,
+    channelName: String?,
+    localTimestamp: java.time.Instant,
+    serverTimestamp: java.time.Instant,
+    serverDeviceName: String?,
+    focusIndex: Int,
+    onSkipSync: (() -> Unit)?,
+    onOverwrite: (() -> Unit)?
+) {
+    val warningColor = Color(0xFFFF9800)
+    val localIsNewer = localTimestamp.isAfter(serverTimestamp)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(horizontal = Dimens.spacingXl)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Warning,
+            contentDescription = null,
+            tint = warningColor,
+            modifier = Modifier.size(Dimens.iconXl + Dimens.spacingSm)
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Text(
+            text = "Save Conflict",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Text(
+            text = "\"$gameTitle\" -- ${channelName ?: "Default Save"}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Text(
+            text = "The server has a newer save. Overwriting will replace it with your local save.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        val localLabel = formatTimestamp(localTimestamp)
+        val serverLabel = formatTimestamp(serverTimestamp)
+        val deviceSuffix = if (serverDeviceName != null) " ($serverDeviceName)" else ""
+
+        Row(
+            modifier = Modifier.fillMaxWidth(0.85f),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            TimestampLabel(
+                icon = Icons.Default.PhoneAndroid,
+                label = "Local",
+                timestamp = localLabel,
+                isNewer = localIsNewer
+            )
+            TimestampLabel(
+                icon = Icons.Default.Cloud,
+                label = "Server$deviceSuffix",
+                timestamp = serverLabel,
+                isNewer = !localIsNewer
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Column(modifier = Modifier.fillMaxWidth(0.85f)) {
+            if (onSkipSync != null) {
+                ConflictOption(
+                    label = "Skip Sync",
+                    subtitle = "Keep your local save, do not upload",
+                    isFocused = focusIndex == 0,
+                    onClick = onSkipSync
+                )
+            }
+            if (onOverwrite != null) {
+                ConflictOption(
+                    label = "Overwrite Server",
+                    subtitle = "Replace the server save with your local version",
+                    isFocused = focusIndex == 1,
+                    onClick = onOverwrite
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimestampLabel(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    timestamp: String,
+    isNewer: Boolean
+) {
+    val tint = if (isNewer) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(Dimens.iconMd))
+        Text(label, style = MaterialTheme.typography.labelMedium, color = tint)
+        Text(timestamp, style = MaterialTheme.typography.bodySmall, color = tint)
+    }
+}
+
+private fun formatTimestamp(instant: java.time.Instant): String {
+    val now = java.time.Instant.now()
+    val duration = java.time.Duration.between(instant, now)
+    return when {
+        duration.isNegative -> "in the future"
+        duration.toMinutes() < 1 -> "just now"
+        duration.toHours() < 1 -> "${duration.toMinutes()}m ago"
+        duration.toDays() < 1 -> "${duration.toHours()}h ago"
+        duration.toDays() < 30 -> "${duration.toDays()}d ago"
+        else -> "${duration.toDays() / 30}mo ago"
+    }
+}
+
+@Composable
 private fun ConflictOption(
     label: String,
     subtitle: String,
@@ -571,11 +718,14 @@ fun SyncOverlay(
         visible = isVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300)),
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .focusProperties { canFocus = false }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .focusProperties { canFocus = false }
                 .background(overlayColor),
             contentAlignment = Alignment.Center
         ) {

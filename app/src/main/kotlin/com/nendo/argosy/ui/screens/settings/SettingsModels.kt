@@ -57,6 +57,7 @@ enum class SettingsSection {
     FRAME_PICKER,
     CORE_MANAGEMENT,
     CORE_OPTIONS,
+    PLATFORM_DETAIL,
     SOCIAL,
     PERMISSIONS,
     ABOUT
@@ -284,6 +285,27 @@ data class PlatformContext(
     val platformName: String,
     val platformSlug: String
 )
+
+data class PlatformDetailState(
+    val platformIndex: Int = 0,
+    val totalGames: Int = 0,
+    val downloadedGames: Int = 0,
+    val favorites: Int = 0,
+    val totalPlayTimeMs: Long = 0,
+    val packagePathAccessible: Boolean? = null,
+    val biosTotal: Int = 0,
+    val biosDownloaded: Int = 0,
+    val hasBiosRequirements: Boolean = false
+) {
+    val platformConfig: PlatformEmulatorConfig? get() = null // resolved externally
+    val playTimeFormatted: String get() {
+        if (totalPlayTimeMs <= 0) return "--"
+        val totalMinutes = totalPlayTimeMs / 60_000
+        val hours = totalMinutes / 60
+        val minutes = totalMinutes % 60
+        return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+    }
+}
 
 data class BuiltinVideoState(
     val shader: String = "None",
@@ -768,6 +790,7 @@ data class SettingsUiState(
     val sounds: SoundState = SoundState(),
     val ambientAudio: AmbientAudioState = AmbientAudioState(),
     val emulators: EmulatorState = EmulatorState(),
+    val platformDetail: PlatformDetailState = PlatformDetailState(),
     val builtinVideo: BuiltinVideoState = BuiltinVideoState(),
     val builtinControls: BuiltinControlsState = BuiltinControlsState(),
     val coreManagement: CoreManagementState = CoreManagementState(),

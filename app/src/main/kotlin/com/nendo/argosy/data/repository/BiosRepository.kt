@@ -94,6 +94,24 @@ class BiosRepository @Inject constructor(
         return dir
     }
 
+    suspend fun copyBiosForPlatformTo(platformSlug: String, targetPath: String): Int = withContext(Dispatchers.IO) {
+        val sourceDir = getInternalBiosPlatformDir(platformSlug)
+        val targetDir = File(targetPath)
+        if (!targetDir.exists()) targetDir.mkdirs()
+        val sourceFiles = sourceDir.listFiles()?.filter { it.isFile } ?: return@withContext 0
+        var copied = 0
+        for (file in sourceFiles) {
+            try {
+                file.copyTo(File(targetDir, file.name), overwrite = true)
+                copied++
+            } catch (e: Exception) {
+                Logger.error(TAG, "Failed to copy BIOS file ${file.name} to $targetPath", e)
+            }
+        }
+        Logger.info(TAG, "Copied $copied BIOS files for $platformSlug to $targetPath")
+        copied
+    }
+
     fun getLibretroSystemDir(): File {
         val dir = File(context.filesDir, "libretro/system")
         if (!dir.exists()) dir.mkdirs()

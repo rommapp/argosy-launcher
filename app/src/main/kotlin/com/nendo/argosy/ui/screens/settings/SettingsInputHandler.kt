@@ -6,6 +6,7 @@ import com.nendo.argosy.ui.screens.settings.sections.input.BoxArtSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.BuiltinControlsSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.BuiltinVideoSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.EmulatorsSectionInput
+import com.nendo.argosy.ui.screens.settings.sections.input.PlatformDetailSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.AmbientLedSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.CoreOptionsSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.InterfaceSectionInput
@@ -42,6 +43,7 @@ class SettingsInputHandler(
     private val handlers: Map<SettingsSection, InputHandler> = buildMap {
         put(SettingsSection.BUILTIN_VIDEO, BuiltinVideoSectionInput(viewModel))
         put(SettingsSection.EMULATORS, EmulatorsSectionInput(viewModel))
+        put(SettingsSection.PLATFORM_DETAIL, PlatformDetailSectionInput(viewModel))
         put(SettingsSection.BUILTIN_CONTROLS, BuiltinControlsSectionInput(viewModel))
         put(SettingsSection.BOX_ART, BoxArtSectionInput(viewModel))
         put(SettingsSection.INTERFACE, InterfaceSectionInput(viewModel))

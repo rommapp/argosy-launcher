@@ -62,6 +62,9 @@ import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
+import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailSection
+import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
+import com.nendo.argosy.ui.screens.settings.sections.buildPlatformDetailFocusItems
 import com.nendo.argosy.ui.screens.settings.sections.FrameSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinVideoSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsSection
@@ -176,7 +179,11 @@ fun SettingsScreen(
 
     LaunchedEffect(uiState.launchFolderPicker) {
         if (uiState.launchFolderPicker) {
-            fileBrowserCallback = { path -> viewModel.setStoragePath(path) }
+            fileBrowserCallback = if (viewModel.hasPendingBiosCopy) {
+                { path -> viewModel.onBiosCopyFolderSelected(path) }
+            } else {
+                { path -> viewModel.setStoragePath(path) }
+            }
             showFileBrowser = true
             viewModel.clearFolderPickerFlag()
         }
@@ -359,6 +366,10 @@ fun SettingsScreen(
                         SettingsSection.AMBIENT_LED -> "LED CONTROL"
                         SettingsSection.CONTROLS -> "CONTROLS"
                         SettingsSection.EMULATORS -> "EMULATORS"
+                        SettingsSection.PLATFORM_DETAIL -> {
+                            val config = uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
+                            config?.platform?.name?.uppercase() ?: "PLATFORM"
+                        }
                         SettingsSection.BUILTIN_VIDEO -> "BUILT-IN VIDEO"
                         SettingsSection.BUILTIN_CONTROLS -> "BUILT-IN CONTROLS"
                         SettingsSection.CORE_MANAGEMENT -> "MANAGE CORES"
@@ -413,6 +424,16 @@ fun SettingsScreen(
                     SettingsSection.AMBIENT_LED -> AmbientLedSection(uiState, viewModel)
                     SettingsSection.CONTROLS -> ControlsSection(uiState, viewModel)
                     SettingsSection.EMULATORS -> EmulatorsSection(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        onLaunchSavePathPicker = {
+                            uiState.emulators.savePathModalInfo?.emulatorId?.let { emulatorId ->
+                                fileBrowserCallback = { path -> viewModel.setEmulatorSavePath(emulatorId, path) }
+                                showFileBrowser = true
+                            }
+                        }
+                    )
+                    SettingsSection.PLATFORM_DETAIL -> PlatformDetailSection(
                         uiState = uiState,
                         viewModel = viewModel,
                         onLaunchSavePathPicker = {
@@ -927,6 +948,23 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
         }
         if (uiState.currentSection != SettingsSection.SHADER_STACK) {
             add(InputButton.A to "Select")
+        }
+        if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {
+            if (uiState.emulators.platforms.size > 1) {
+                add(InputButton.LB_RB to "Platform")
+            }
+            val focusItems = buildPlatformDetailFocusItems(
+                uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
+                    ?: uiState.emulators.platforms.firstOrNull()
+                    ?: return@buildList,
+                uiState.platformDetail
+            )
+            val focusedItem = focusItems.getOrNull(uiState.focusedIndex)
+            if (focusedItem == PlatformDetailItem.CORE ||
+                focusedItem == PlatformDetailItem.EXTENSION ||
+                focusedItem == PlatformDetailItem.DISPLAY_TARGET) {
+                add(InputButton.DPAD_HORIZONTAL to "Adjust")
+            }
         }
         if (uiState.currentSection == SettingsSection.EMULATORS) {
             val emuLayoutInfo = com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo(

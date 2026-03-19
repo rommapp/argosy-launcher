@@ -105,7 +105,11 @@ class SettingsViewModel @Inject constructor(
     internal val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
     internal val socialRepository: SocialRepository,
     internal val discordPresenceManager: DiscordPresenceManager,
-    internal val coreOptionOverrideDao: CoreOptionOverrideDao
+    internal val coreOptionOverrideDao: CoreOptionOverrideDao,
+    private val gameDao: com.nendo.argosy.data.local.dao.GameDao,
+    private val playSessionDao: com.nendo.argosy.data.local.dao.PlaySessionDao,
+    private val biosRepository: com.nendo.argosy.data.repository.BiosRepository,
+    private val titleIdDetector: com.nendo.argosy.data.emulator.TitleIdDetector
 ) : ViewModel() {
 
     internal val _uiState = MutableStateFlow(SettingsUiState())
@@ -196,6 +200,58 @@ class SettingsViewModel @Inject constructor(
     fun navigateToBuiltinControls() = emulatorDelegate.navigateToBuiltinControls(viewModelScope)
     fun navigateToCoreManagement() = emulatorDelegate.navigateToCoreManagement(viewModelScope)
     fun navigateToCoreOptions() = emulatorDelegate.navigateToCoreOptions(viewModelScope)
+    fun navigateToPlatformDetail(platformIndex: Int) {
+        _uiState.update { it.copy(
+            currentSection = SettingsSection.PLATFORM_DETAIL,
+            focusedIndex = 0,
+            parentFocusIndex = it.focusedIndex,
+            platformDetail = it.platformDetail.copy(platformIndex = platformIndex)
+        ) }
+        loadPlatformDetailStats(platformIndex)
+    }
+
+    fun cyclePlatformDetail(direction: Int) {
+        val platforms = _uiState.value.emulators.platforms
+        if (platforms.isEmpty()) return
+        val currentIndex = _uiState.value.platformDetail.platformIndex
+        val newIndex = (currentIndex + direction).coerceIn(0, platforms.size - 1)
+        if (newIndex == currentIndex) return
+        _uiState.update { it.copy(
+            focusedIndex = 0,
+            platformDetail = it.platformDetail.copy(platformIndex = newIndex)
+        ) }
+        loadPlatformDetailStats(newIndex)
+    }
+
+    private fun loadPlatformDetailStats(platformIndex: Int) {
+        val config = _uiState.value.emulators.platforms.getOrNull(platformIndex) ?: return
+        viewModelScope.launch {
+            val platformId = config.platform.id
+            val platformSlug = config.platform.slug
+            val downloaded = gameDao.countDownloadedByPlatform(platformId)
+            val favorites = gameDao.countFavoritesByPlatform(platformId)
+            val totalPlayTimeMs = playSessionDao.getTotalActivePlayMsByPlatform(platformSlug)
+            val allBiosStatus = biosRepository.getStatusByPlatform()
+            val biosStatus = allBiosStatus.find { it.platformSlug == platformSlug }
+            val packagePathAccessible = config.effectiveEmulatorPackage?.let { pkg ->
+                val emulatorId = config.effectiveEmulatorId ?: return@let null
+                titleIdDetector.validateSavePathAccess(emulatorId, pkg) is com.nendo.argosy.data.emulator.TitleIdDetector.ValidationResult.Valid
+            }
+
+            _uiState.update { it.copy(
+                platformDetail = it.platformDetail.copy(
+                    totalGames = config.platform.gameCount,
+                    downloadedGames = downloaded,
+                    favorites = favorites,
+                    totalPlayTimeMs = totalPlayTimeMs,
+                    packagePathAccessible = packagePathAccessible,
+                    biosTotal = biosStatus?.totalFiles ?: 0,
+                    biosDownloaded = biosStatus?.downloadedFiles ?: 0,
+                    hasBiosRequirements = (biosStatus?.totalFiles ?: 0) > 0
+                )
+            ) }
+        }
+    }
 
     fun getInstalledCoreIds(): Set<String> =
         coreManager.getInstalledCores().map { it.coreId }.toSet()
@@ -704,6 +760,30 @@ class SettingsViewModel @Inject constructor(
     fun downloadBiosForPlatform(platformSlug: String) = biosDelegate.downloadBiosForPlatform(platformSlug, viewModelScope)
     fun downloadSingleBios(rommId: Long) = biosDelegate.downloadSingleBios(rommId, viewModelScope)
     fun onBiosFolderSelected(path: String) = biosDelegate.onBiosFolderSelected(path, viewModelScope)
+
+    private var pendingBiosCopyPlatformSlug: String? = null
+    val hasPendingBiosCopy: Boolean get() = pendingBiosCopyPlatformSlug != null
+
+    fun launchBiosCopyPicker(platformSlug: String) {
+        pendingBiosCopyPlatformSlug = platformSlug
+        _uiState.update { it.copy(launchFolderPicker = true) }
+    }
+
+    fun onBiosCopyFolderSelected(path: String) {
+        val slug = pendingBiosCopyPlatformSlug ?: return
+        pendingBiosCopyPlatformSlug = null
+        viewModelScope.launch {
+            val copied = biosRepository.copyBiosForPlatformTo(slug, path)
+            if (copied > 0) {
+                notificationManager.show(
+                    title = "BIOS Copied",
+                    subtitle = "$copied file${if (copied > 1) "s" else ""} copied",
+                    type = com.nendo.argosy.ui.notification.NotificationType.SUCCESS,
+                    duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM
+                )
+            }
+        }
+    }
 
     fun resetBiosToDefault() = biosDelegate.resetBiosToDefault(viewModelScope)
     fun moveBiosActionFocus(delta: Int) = biosDelegate.moveActionFocus(delta)

@@ -1,48 +1,26 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material3.Icon
-import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SwitchPreference
-import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
 import com.nendo.argosy.ui.screens.settings.components.SavePathModal
+import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.components.VariantPickerModal
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
@@ -95,9 +73,9 @@ internal fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<
 )
 
 internal fun emulatorsMaxFocusIndex(canAutoAssign: Boolean, platformCount: Int, builtinEnabled: Boolean = true): Int {
-    val toggleCount = 1  // Toggle is always visible
-    val builtinCount = if (builtinEnabled) 3 else 0  // Video, Controls, Cores (only when enabled)
-    val checkUpdatesCount = 1  // Check for updates is always visible
+    val toggleCount = 1
+    val builtinCount = if (builtinEnabled) 3 else 0
+    val checkUpdatesCount = 1
     val autoAssignCount = if (canAutoAssign) 1 else 0
     return (toggleCount + builtinCount + checkUpdatesCount + autoAssignCount + platformCount - 1).coerceAtLeast(0)
 }
@@ -248,19 +226,18 @@ fun EmulatorsSection(
                     )
 
                     is EmulatorsItem.PlatformItem -> {
-                        val itemFocused = isFocused(item)
-                        val updateCount = emulators.platformUpdatesAvailable[item.config.platform.slug] ?: 0
-                        PlatformEmulatorItem(
-                            config = item.config,
-                            isFocused = itemFocused,
-                            subFocusIndex = if (itemFocused) emulators.platformSubFocusIndex else 0,
-                            updateCount = updateCount,
-                            onEmulatorClick = { viewModel.handlePlatformItemTap(item.index) },
-                            onCycleCore = { direction -> viewModel.cycleCoreForPlatform(item.config, direction) },
-                            onExtensionChange = { extension -> viewModel.changeExtensionForPlatform(item.config, extension) },
-                            onSavePathClick = { viewModel.showSavePathModal(item.config) },
-                            onToggleLegacyMode = { viewModel.toggleLegacyMode(item.config) },
-                            onCycleDisplayTarget = { direction -> viewModel.cycleDisplayTarget(item.config, direction) }
+                        val config = item.config
+                        val gameCount = config.platform.gameCount
+                        val emulatorName = config.effectiveEmulatorName ?: "Not configured"
+                        val subtitle = if (gameCount > 0) "$gameCount games" else "No games"
+                        val updateCount = emulators.platformUpdatesAvailable[config.platform.slug] ?: 0
+                        ActionPreference(
+                            title = config.platform.name,
+                            subtitle = subtitle,
+                            isFocused = isFocused(item),
+                            trailingText = emulatorName,
+                            badge = if (updateCount > 0) "$updateCount" else null,
+                            onClick = { viewModel.navigateToPlatformDetail(item.index) }
                         )
                     }
                 }
@@ -298,417 +275,6 @@ fun EmulatorsSection(
                 onConfirm = { viewModel.confirmVariantSelection() },
                 onDismiss = { viewModel.dismissVariantPicker() }
             )
-        }
-    }
-}
-
-@Composable
-private fun PlatformEmulatorItem(
-    config: PlatformEmulatorConfig,
-    isFocused: Boolean,
-    subFocusIndex: Int,
-    updateCount: Int = 0,
-    onEmulatorClick: () -> Unit,
-    onCycleCore: (Int) -> Unit,
-    onExtensionChange: (String) -> Unit,
-    onSavePathClick: () -> Unit,
-    onToggleLegacyMode: () -> Unit,
-    onCycleDisplayTarget: (Int) -> Unit = {}
-) {
-    val disabledAlpha = 0.45f
-    val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    val contentColor = when {
-        !config.hasInstalledEmulators -> MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha)
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val secondaryColor = when {
-        !config.hasInstalledEmulators -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha)
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.55f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    val emulatorSubFocused = isFocused && subFocusIndex == 0
-    val savesSubFocused = isFocused && subFocusIndex == 1
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Dimens.radiusLg))
-            .background(backgroundColor, RoundedCornerShape(Dimens.radiusLg))
-            .clickableNoFocus(onClick = onEmulatorClick)
-            .padding(Dimens.spacingMd)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-                ) {
-                    Text(
-                        text = config.platform.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = contentColor
-                    )
-                    if (updateCount > 0) {
-                        Icon(
-                            imageVector = Icons.Default.SystemUpdate,
-                            contentDescription = "$updateCount update${if (updateCount > 1) "s" else ""} available",
-                            tint = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
-                                   else MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(Dimens.iconSm)
-                        )
-                    }
-                }
-                Text(
-                    text = if (config.hasInstalledEmulators) "${config.availableEmulators.size} emulators available" else "No emulators installed",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryColor
-                )
-            }
-            val emulatorDisplay = when {
-                !config.hasInstalledEmulators -> "Download"
-                config.selectedEmulator != null -> config.selectedEmulator
-                config.effectiveEmulatorName != null -> config.effectiveEmulatorName
-                else -> "Auto"
-            }
-            if (config.hasInstalledEmulators) {
-                when {
-                    emulatorSubFocused -> {
-                        Button(
-                            onClick = onEmulatorClick,
-                            modifier = Modifier.height(Dimens.iconLg),
-                            contentPadding = PaddingValues(horizontal = Dimens.spacingMd, vertical = Dimens.elevationNone),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                contentColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        ) {
-                            Text(text = emulatorDisplay, style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-                    isFocused -> {
-                        Button(
-                            onClick = onEmulatorClick,
-                            modifier = Modifier.height(Dimens.iconLg),
-                            contentPadding = PaddingValues(horizontal = Dimens.spacingMd, vertical = Dimens.elevationNone),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        ) {
-                            Text(text = emulatorDisplay, style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-                    else -> {
-                        Text(
-                            text = emulatorDisplay,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            } else {
-                Text(
-                    text = emulatorDisplay,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                )
-            }
-        }
-
-        if (config.showCoreSelection) {
-            val selectedCoreId = config.selectedCore ?: config.availableCores.firstOrNull()?.id
-            val selectedCoreName = config.availableCores.find { it.id == selectedCoreId }?.displayName
-                ?: config.availableCores.firstOrNull()?.displayName ?: "Default"
-
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                Text(
-                    text = "Core",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryColor
-                )
-                if (isFocused) {
-                    config.availableCores.forEach { core ->
-                        val isSelected = core.id == selectedCoreId
-                        if (isSelected) {
-                            OutlinedButton(
-                                onClick = { },
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone),
-                                border = BorderStroke(Dimens.borderThin, MaterialTheme.colorScheme.onPrimaryContainer)
-                            ) {
-                                Text(
-                                    text = core.displayName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        } else {
-                            TextButton(
-                                onClick = {
-                                    val currentIdx = config.availableCores.indexOfFirst { it.id == selectedCoreId }
-                                    val targetIdx = config.availableCores.indexOf(core)
-                                    onCycleCore(targetIdx - currentIdx)
-                                },
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone)
-                            ) {
-                                Text(
-                                    text = core.displayName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    Text(
-                        text = selectedCoreName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-
-        if (config.showExtensionSelection) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                Text(
-                    text = "File Extension",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryColor
-                )
-                if (isFocused) {
-                    config.extensionOptions.forEach { option ->
-                        val isSelected = option.extension == config.selectedExtension.orEmpty()
-                        if (isSelected) {
-                            OutlinedButton(
-                                onClick = { },
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone),
-                                border = BorderStroke(Dimens.borderThin, MaterialTheme.colorScheme.onPrimaryContainer)
-                            ) {
-                                Text(
-                                    text = option.label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        } else {
-                            TextButton(
-                                onClick = { onExtensionChange(option.extension) },
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone)
-                            ) {
-                                Text(
-                                    text = option.label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    val displayLabel = config.extensionOptions.find {
-                        it.extension == config.selectedExtension.orEmpty()
-                    }?.label ?: "Unchanged"
-                    Text(
-                        text = displayLabel,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-
-        if (config.showLegacyModeOption) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                Text(
-                    text = "Legacy Mode",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryColor
-                )
-                if (isFocused) {
-                    val options = listOf(true to "On", false to "Off")
-                    options.forEach { (value, label) ->
-                        val isSelected = config.useFileUri == value
-                        if (isSelected) {
-                            OutlinedButton(
-                                onClick = { },
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone),
-                                border = BorderStroke(Dimens.borderThin, MaterialTheme.colorScheme.onPrimaryContainer)
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        } else {
-                            TextButton(
-                                onClick = onToggleLegacyMode,
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone)
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    Text(
-                        text = if (config.useFileUri) "On" else "Off",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-
-        if (config.showDisplayTargetOption) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                Text(
-                    text = "Display",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryColor
-                )
-                if (isFocused) {
-                    EmulatorDisplayTarget.entries.forEach { target ->
-                        val isSelected = config.displayTarget == target
-                        if (isSelected) {
-                            OutlinedButton(
-                                onClick = { },
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone),
-                                border = BorderStroke(Dimens.borderThin, MaterialTheme.colorScheme.onPrimaryContainer)
-                            ) {
-                                Text(
-                                    text = target.displayName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        } else {
-                            TextButton(
-                                onClick = {
-                                    val currentIndex = EmulatorDisplayTarget.entries.indexOf(config.displayTarget)
-                                    val targetIndex = EmulatorDisplayTarget.entries.indexOf(target)
-                                    onCycleDisplayTarget(targetIndex - currentIndex)
-                                },
-                                modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                                contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = Dimens.elevationNone)
-                            ) {
-                                Text(
-                                    text = target.displayName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    Text(
-                        text = config.displayTarget.displayName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-
-        if (config.showSavePath && config.hasInstalledEmulators) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(Dimens.radiusSm))
-                    .clickableNoFocus(onClick = onSavePathClick),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
-                    ) {
-                        Text(
-                            text = "Saves",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = secondaryColor
-                        )
-                        if (config.isUserSavePathOverride) {
-                            Text(
-                                text = "(custom)",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    Text(
-                        text = config.effectiveSavePath?.let { formatStoragePath(it) } ?: "Not configured",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = when {
-                            config.effectiveSavePath == null -> secondaryColor.copy(alpha = 0.6f)
-                            isFocused -> secondaryColor
-                            else -> MaterialTheme.colorScheme.primary
-                        }
-                    )
-                }
-                if (isFocused) {
-                    Button(
-                        onClick = onSavePathClick,
-                        modifier = Modifier.height(Dimens.iconLg - Dimens.spacingXs),
-                        contentPadding = PaddingValues(horizontal = Dimens.spacingMd, vertical = Dimens.elevationNone),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (savesSubFocused) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)
-                            },
-                            contentColor = if (savesSubFocused) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            }
-                        )
-                    ) {
-                        Text(text = "Change", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-            }
         }
     }
 }

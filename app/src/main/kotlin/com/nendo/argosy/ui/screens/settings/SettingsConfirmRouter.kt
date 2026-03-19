@@ -12,6 +12,9 @@ import com.nendo.argosy.ui.screens.settings.sections.AmbientLedItem
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
+import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
+import com.nendo.argosy.ui.screens.settings.sections.buildPlatformDetailFocusItems
+import com.nendo.argosy.ui.screens.settings.sections.platformDetailMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtItem
@@ -158,6 +161,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.AMBIENT_LED -> routeAmbientLedConfirm(vm, state)
         SettingsSection.CONTROLS -> routeControlsConfirm(vm, state)
         SettingsSection.EMULATORS -> routeEmulatorsConfirm(vm, state)
+        SettingsSection.PLATFORM_DETAIL -> routePlatformDetailConfirm(vm, state)
         SettingsSection.BIOS -> routeBiosConfirm(vm, state)
         SettingsSection.PERMISSIONS -> routePermissionsConfirm(vm, state)
         SettingsSection.ABOUT -> routeAboutConfirm(vm, state)
@@ -423,9 +427,8 @@ private fun routeEmulatorsConfirm(vm: SettingsViewModel, state: SettingsUiState)
         state.focusedIndex == autoAssignIndex -> vm.autoAssignAllEmulators()
         state.focusedIndex >= platformStartIndex -> {
             val platformIndex = state.focusedIndex - platformStartIndex
-            val config = state.emulators.platforms.getOrNull(platformIndex)
-            if (config != null) {
-                vm.showEmulatorPicker(config)
+            if (platformIndex < state.emulators.platforms.size) {
+                vm.navigateToPlatformDetail(platformIndex)
             }
         }
     }
@@ -611,6 +614,15 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.CORE_OPTIONS -> {
             vm._uiState.update { it.copy(currentSection = SettingsSection.EMULATORS, focusedIndex = 3) }; true
         }
+        state.currentSection == SettingsSection.PLATFORM_DETAIL -> {
+            val platformFocusIndex = state.platformDetail.platformIndex
+            val builtinOffset = if (state.emulators.builtinLibretroEnabled) 5 else 1
+            val actionsOffset = if (state.emulators.canAutoAssign) 2 else 1
+            vm._uiState.update { it.copy(
+                currentSection = SettingsSection.EMULATORS,
+                focusedIndex = builtinOffset + actionsOffset + platformFocusIndex
+            ) }; true
+        }
         state.currentSection != SettingsSection.MAIN -> {
             vm._uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex) }; true
         }
@@ -695,6 +707,7 @@ private fun computeMaxFocusIndex(
         state.emulators.platforms.size,
         state.emulators.builtinLibretroEnabled
     )
+    SettingsSection.PLATFORM_DETAIL -> platformDetailMaxFocusIndex(state)
     SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
     SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(state.builtinControls)
     SettingsSection.CORE_MANAGEMENT -> coreManagementMaxFocusIndex(state.coreManagement.platforms)
@@ -705,4 +718,21 @@ private fun computeMaxFocusIndex(
     SettingsSection.PERMISSIONS -> permissionsMaxFocusIndex(state.permissions)
     SettingsSection.ABOUT -> aboutMaxFocusIndex(state.fileLoggingPath != null)
     SettingsSection.SOCIAL -> com.nendo.argosy.ui.screens.settings.sections.socialMaxFocusIndex(state.social)
+}
+
+private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return InputResult.HANDLED
+    val focusItems = buildPlatformDetailFocusItems(config, state.platformDetail)
+    val item = focusItems.getOrNull(state.focusedIndex) ?: return InputResult.HANDLED
+    when (item) {
+        PlatformDetailItem.EMULATOR -> vm.showEmulatorPicker(config)
+        PlatformDetailItem.CORE -> vm.cycleCoreForPlatform(config, 1)
+        PlatformDetailItem.EXTENSION -> vm.cycleExtensionForPlatform(config, 1)
+        PlatformDetailItem.DISPLAY_TARGET -> vm.cycleDisplayTarget(config, 1)
+        PlatformDetailItem.LEGACY_MODE -> vm.toggleLegacyMode(config)
+        PlatformDetailItem.SAVE_PATH -> vm.showSavePathModal(config)
+        PlatformDetailItem.BIOS_DOWNLOAD -> vm.downloadBiosForPlatform(config.platform.slug)
+        PlatformDetailItem.BIOS_COPY -> vm.launchBiosCopyPicker(config.platform.slug)
+    }
+    return InputResult.HANDLED
 }

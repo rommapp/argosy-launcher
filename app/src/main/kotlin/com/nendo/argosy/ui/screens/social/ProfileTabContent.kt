@@ -60,7 +60,6 @@ fun ProfileTabContent(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
     ) {
         item {
@@ -69,11 +68,17 @@ fun ProfileTabContent(
 
         if (userProfile != null) {
             item {
-                ProfileStatsGrid(profile = userProfile)
+                ProfileStatsGrid(
+                    profile = userProfile,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
 
             item {
-                PlaytimeLineChart(dailyPlaytime = userProfile.dailyPlaytime)
+                PlaytimeLineChart(
+                    dailyPlaytime = userProfile.dailyPlaytime,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
 
             if (mostPlayed.isNotEmpty()) {
@@ -81,13 +86,16 @@ fun ProfileTabContent(
                     SectionHeader("MOST PLAYED")
                 }
 
-                item {
-                    MostPlayedCard(
-                        games = mostPlayed,
-                        focusedIndex = mostPlayedFocusIndex,
-                        highlightFocused = highlightMostPlayed,
-                        onGameClick = { }
-                    )
+                mostPlayed.forEachIndexed { index, game ->
+                    item(key = "most_played_${game.igdbId}") {
+                        MostPlayedGameItem(
+                            game = game,
+                            isFocused = highlightMostPlayed && index == mostPlayedFocusIndex,
+                            isFirst = index == 0,
+                            isLast = index == mostPlayed.size - 1,
+                            onGameClick = { }
+                        )
+                    }
                 }
             }
         }

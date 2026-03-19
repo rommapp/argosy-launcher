@@ -258,7 +258,7 @@ private fun RelationshipIcons(profile: UserProfileData) {
 }
 
 @Composable
-fun ProfileStatsGrid(profile: UserProfileData) {
+fun ProfileStatsGrid(profile: UserProfileData, modifier: Modifier = Modifier) {
     val isWide = LocalUiScale.current.aspectRatioClass.let {
         it == AspectRatioClass.WIDE || it == AspectRatioClass.ULTRA_WIDE
     }
@@ -274,7 +274,7 @@ fun ProfileStatsGrid(profile: UserProfileData) {
     )
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -327,7 +327,7 @@ private fun StatCell(value: String, label: String, modifier: Modifier = Modifier
 }
 
 @Composable
-fun PlaytimeLineChart(dailyPlaytime: List<DailyPlaytime>) {
+fun PlaytimeLineChart(dailyPlaytime: List<DailyPlaytime>, modifier: Modifier = Modifier) {
     val hasData = dailyPlaytime.any { it.hours > 0 }
     if (!hasData) return
 
@@ -341,7 +341,7 @@ fun PlaytimeLineChart(dailyPlaytime: List<DailyPlaytime>) {
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -432,41 +432,41 @@ fun PlaytimeLineChart(dailyPlaytime: List<DailyPlaytime>) {
 }
 
 @Composable
-fun MostPlayedCard(
-    games: List<MostPlayedGame>,
-    focusedIndex: Int,
-    highlightFocused: Boolean,
+fun MostPlayedGameItem(
+    game: MostPlayedGame,
+    isFocused: Boolean,
+    isFirst: Boolean,
+    isLast: Boolean,
     onGameClick: (Int) -> Unit
 ) {
-    if (games.isEmpty()) return
-
     val isWide = LocalUiScale.current.aspectRatioClass.let {
         it == AspectRatioClass.WIDE || it == AspectRatioClass.ULTRA_WIDE
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    val shape = when {
+        isFirst && isLast -> RoundedCornerShape(12.dp)
+        isFirst -> RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+        isLast -> RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
+        else -> RoundedCornerShape(0.dp)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column {
-            games.forEachIndexed { index, game ->
-                val isFocused = highlightFocused && index == focusedIndex
-                MostPlayedGameRow(
-                    game = game,
-                    isFocused = isFocused,
-                    isWide = isWide,
-                    onClick = { onGameClick(game.igdbId) }
-                )
-                if (index < games.size - 1) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                }
-            }
+        MostPlayedGameRow(
+            game = game,
+            isFocused = isFocused,
+            isWide = isWide,
+            onClick = { onGameClick(game.igdbId) }
+        )
+        if (!isLast) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
         }
     }
 }

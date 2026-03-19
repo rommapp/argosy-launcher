@@ -240,7 +240,6 @@ fun UserProfileScreen(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                 ) {
                     item {
@@ -248,11 +247,17 @@ fun UserProfileScreen(
                     }
 
                     item {
-                        ProfileStatsGrid(profile = profile)
+                        ProfileStatsGrid(
+                            profile = profile,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     }
 
                     item {
-                        PlaytimeLineChart(dailyPlaytime = profile.dailyPlaytime)
+                        PlaytimeLineChart(
+                            dailyPlaytime = profile.dailyPlaytime,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     }
 
                     if (mostPlayed.isNotEmpty()) {
@@ -266,22 +271,25 @@ fun UserProfileScreen(
                             )
                         }
 
-                        item {
-                            MostPlayedCard(
-                                games = mostPlayed,
-                                focusedIndex = mostPlayedFocusIndex,
-                                highlightFocused = highlightMostPlayed,
-                                onGameClick = { igdbId ->
-                                    viewModel.viewModelScope.launch {
-                                        val localId = viewModel.getLocalGameId(igdbId)
-                                        if (localId != null) {
-                                            onNavigateToGameDetail(localId.toInt())
-                                        } else {
-                                            viewModel.notificationManager.show(title = "Game not in library")
+                        mostPlayed.forEachIndexed { index, game ->
+                            item(key = "most_played_${game.igdbId}") {
+                                MostPlayedGameItem(
+                                    game = game,
+                                    isFocused = highlightMostPlayed && index == mostPlayedFocusIndex,
+                                    isFirst = index == 0,
+                                    isLast = index == mostPlayed.size - 1,
+                                    onGameClick = { igdbId ->
+                                        viewModel.viewModelScope.launch {
+                                            val localId = viewModel.getLocalGameId(igdbId)
+                                            if (localId != null) {
+                                                onNavigateToGameDetail(localId.toInt())
+                                            } else {
+                                                viewModel.notificationManager.show(title = "Game not in library")
+                                            }
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }

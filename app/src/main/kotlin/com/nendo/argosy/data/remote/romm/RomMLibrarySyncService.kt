@@ -60,7 +60,8 @@ class RomMLibrarySyncService @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val biosRepository: BiosRepository,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
-    private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>
+    private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>,
+    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer
 ) {
     private val api: RomMApi? get() = connectionManager.getApi()
     private val syncMutex = Mutex()
@@ -342,7 +343,7 @@ class RomMLibrarySyncService @Inject constructor(
 
         val validatedExisting = existing?.let { game ->
             val path = game.localPath
-            if (path != null && !File(path).exists()) {
+            if (path != null && !fileAccessLayer.exists(path)) {
                 Logger.warn(TAG, "syncRom: existing localPath no longer exists: $path, clearing for ${rom.name}")
                 game.copy(localPath = null)
             } else {
@@ -351,7 +352,7 @@ class RomMLibrarySyncService @Inject constructor(
         }
 
         val localDataSource = validatedExisting ?: GameMigrationHelper.aggregateMultiDiscData(migrationSources) { path ->
-            val exists = File(path).exists()
+            val exists = fileAccessLayer.exists(path)
             if (!exists) {
                 Logger.warn(TAG, "syncRom: migrated localPath no longer exists: $path")
             }

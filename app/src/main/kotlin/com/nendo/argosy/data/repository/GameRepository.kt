@@ -47,7 +47,8 @@ class GameRepository @Inject constructor(
     private val gameFileDao: GameFileDao,
     private val platformDao: PlatformDao,
     private val romMRepository: RomMRepository,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer
 ) {
     private val defaultDownloadDir: File by lazy {
         File(context.getExternalFilesDir(null), "downloads")
@@ -131,6 +132,41 @@ class GameRepository @Inject constructor(
         return rootFiles
             .filter { it.extension.lowercase() in validExtensions }
             .maxByOrNull { it.length() }
+    }
+
+    private suspend fun resolveFileFallback(originalPath: String, platformSlug: String): String? {
+        val fileName = File(originalPath).name
+        val candidateDirs = buildList {
+            // Per-platform custom path
+            val platform = platformDao.getBySlug(platformSlug)
+            if (platform?.customRomPath != null) {
+                add(File(platform.customRomPath))
+            }
+            // Global custom path
+            val prefs = preferencesRepository.userPreferences.first()
+            if (prefs.romStoragePath != null) {
+                add(File(prefs.romStoragePath, platformSlug))
+            }
+            // Default path
+            add(File(defaultDownloadDir, platformSlug))
+        }
+
+        for (dir in candidateDirs) {
+            if (!dir.exists()) continue
+            // Direct file match
+            val candidate = File(dir, fileName)
+            if (candidate.exists()) return candidate.absolutePath
+            // Folder match (multi-disc games)
+            val folderName = File(originalPath).parentFile?.name
+            if (folderName != null) {
+                val folderCandidate = File(dir, folderName)
+                if (folderCandidate.isDirectory) {
+                    val fileInFolder = File(folderCandidate, fileName)
+                    if (fileInFolder.exists()) return fileInFolder.absolutePath
+                }
+            }
+        }
+        return null
     }
 
     private suspend fun isGamePathValid(path: String, platformSlug: String): Boolean {
@@ -454,9 +490,15 @@ class GameRepository @Inject constructor(
         for (game in games) {
             val path = game.localPath ?: continue
             if (!isGamePathValid(path, game.platformSlug)) {
-                gameDao.clearLocalPath(game.id)
-                invalidated++
-                Log.d(TAG, "Invalidated (platform): ${game.title}")
+                val resolved = resolveFileFallback(path, game.platformSlug)
+                if (resolved != null) {
+                    gameDao.updateLocalPath(game.id, resolved, game.source)
+                    Log.d(TAG, "Resolved (fallback): ${game.title} -> $resolved")
+                } else {
+                    gameDao.clearLocalPath(game.id)
+                    invalidated++
+                    Log.d(TAG, "Invalidated (platform): ${game.title}")
+                }
             }
         }
         invalidated

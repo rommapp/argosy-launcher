@@ -62,6 +62,7 @@ internal sealed class PlatformDetailItem(
     data object LegacyMode : PlatformDetailItem("legacy_mode", "emulator", { it.showLegacyMode })
     data object BuiltinVideo : PlatformDetailItem("builtin_video", "emulator", { it.isBuiltin })
     data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin })
+    data object BuiltinCoreOptions : PlatformDetailItem("builtin_core_options", "emulator", { it.isBuiltin })
 
     data object ScanFiles : PlatformDetailItem("scan_files", "platform")
 
@@ -81,7 +82,7 @@ internal sealed class PlatformDetailItem(
     companion object {
         val ALL: List<PlatformDetailItem> = listOf(
             Header("header_emulator", "emulator", "Emulator"),
-            Emulator, Core, Extension, DisplayTarget, LegacyMode, BuiltinVideo, BuiltinControls,
+            Emulator, Core, Extension, DisplayTarget, LegacyMode, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
             Header("header_platform", "platform", "Platform"),
             InfoItem("info_platform_stats", "platform"),
             ScanFiles,
@@ -262,6 +263,13 @@ fun PlatformDetailSection(
                     subtitle = "Rumble, stick mapping overrides",
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToBuiltinControlsForPlatform(detail.platformIndex) }
+                )
+                PlatformDetailItem.BuiltinCoreOptions -> NavigationPreference(
+                    icon = Icons.Default.Gamepad,
+                    title = "Core Options",
+                    subtitle = "Per-core settings for this platform",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.navigateToCoreOptionsForPlatform() }
                 )
 
                 // -- PLATFORM section (info items + scan) --

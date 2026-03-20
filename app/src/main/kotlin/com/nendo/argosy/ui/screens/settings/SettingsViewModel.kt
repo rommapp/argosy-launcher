@@ -200,6 +200,10 @@ class SettingsViewModel @Inject constructor(
     fun navigateToBuiltinControls() = emulatorDelegate.navigateToBuiltinControls(viewModelScope)
     fun navigateToCoreManagement() = emulatorDelegate.navigateToCoreManagement(viewModelScope)
     fun navigateToCoreOptions() = emulatorDelegate.navigateToCoreOptions(viewModelScope)
+    fun navigateToCoreOptionsForPlatform() {
+        _uiState.update { it.copy(platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true)) }
+        emulatorDelegate.navigateToCoreOptions(viewModelScope)
+    }
     fun navigateToPlatformDetail(platformIndex: Int) {
         _uiState.update { it.copy(
             currentSection = SettingsSection.PLATFORM_DETAIL,

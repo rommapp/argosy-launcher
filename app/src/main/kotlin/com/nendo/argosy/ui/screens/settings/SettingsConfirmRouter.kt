@@ -622,7 +622,15 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 3) }; true
         }
         state.currentSection == SettingsSection.CORE_OPTIONS -> {
-            vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 4) }; true
+            if (state.platformDetail.builtinEnteredFromPlatform) {
+                vm._uiState.update { it.copy(
+                    currentSection = SettingsSection.PLATFORM_DETAIL,
+                    focusedIndex = 0,
+                    platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = false)
+                ) }
+            } else {
+                vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 4) }
+            }; true
         }
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
             vm._uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = false)) }; true
@@ -742,6 +750,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.LegacyMode -> vm.toggleLegacyMode(config)
         PlatformDetailItem.BuiltinVideo -> vm.navigateToBuiltinVideoForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinControls -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
+        PlatformDetailItem.BuiltinCoreOptions -> vm.navigateToCoreOptionsForPlatform()
         PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)
         PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)
         PlatformDetailItem.SavePath -> vm.showSavePathModal(config)

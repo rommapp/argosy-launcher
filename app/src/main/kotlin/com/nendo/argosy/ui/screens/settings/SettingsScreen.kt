@@ -970,7 +970,7 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
             // A button -- context-specific label
             val aLabel = when (focusedItem) {
                 is PlatformDetailItem.SyncToggle, is PlatformDetailItem.LegacyMode -> "Toggle"
-                is PlatformDetailItem.BuiltinVideo, is PlatformDetailItem.BuiltinControls -> "Open"
+                is PlatformDetailItem.BuiltinVideo, is PlatformDetailItem.BuiltinControls, is PlatformDetailItem.BuiltinCoreOptions -> "Open"
                 else -> "Select"
             }
             add(InputButton.A to aLabel)

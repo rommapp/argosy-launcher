@@ -363,7 +363,7 @@ fun PlatformDetailSection(
                     subtitle = "${detail.downloadedGames} downloaded files",
                     isFocused = isFocused(item),
                     isDangerous = true,
-                    onClick = { viewModel.removeLocalFilesForPlatform(config.platform.id) }
+                    onClick = { viewModel.requestRemoveLocalFiles() }
                 )
 
                 // -- BIOS section --
@@ -379,7 +379,7 @@ fun PlatformDetailSection(
                     title = "Install to Emulator",
                     subtitle = "Copy BIOS to ${config.effectiveEmulatorName ?: "emulator"}",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.distributeAllBios() }
+                    onClick = { viewModel.distributeBiosForPlatformWithNotification(config.platform.slug) }
                 )
                 PlatformDetailItem.BiosCopy -> ActionPreference(
                     title = "Copy to...",
@@ -388,6 +388,32 @@ fun PlatformDetailSection(
                     icon = Icons.Default.ContentCopy,
                     onClick = { viewModel.launchBiosCopyPicker(config.platform.slug) }
                 )
+            }
+        }
+
+        // Remove files confirmation
+        if (detail.showRemoveConfirm) {
+            com.nendo.argosy.ui.components.CenteredModal(
+                title = "Remove Local Files",
+                onDismiss = { viewModel.dismissRemoveConfirm() }
+            ) {
+                Text(
+                    text = "Delete ${detail.downloadedGames} ROM file${if (detail.downloadedGames > 1) "s" else ""} for ${config.platform.name}? Games will remain in your library but must be re-downloaded to play.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { viewModel.dismissRemoveConfirm() }
+                    ) { Text("Cancel") }
+                    androidx.compose.material3.Button(
+                        onClick = { viewModel.confirmRemoveLocalFiles(config.platform.id) },
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) { Text("Delete") }
+                }
             }
         }
 

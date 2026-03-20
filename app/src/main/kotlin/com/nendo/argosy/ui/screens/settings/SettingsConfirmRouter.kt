@@ -624,6 +624,9 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.CORE_OPTIONS -> {
             vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 4) }; true
         }
+        state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
+            vm._uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = false)) }; true
+        }
         state.currentSection == SettingsSection.PLATFORM_DETAIL -> {
             val platformFocusIndex = state.platformDetail.platformIndex
             val actionsOffset = if (state.emulators.canAutoAssign) 2 else 1
@@ -744,9 +747,9 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.SavePath -> vm.showSavePathModal(config)
         PlatformDetailItem.StatePath -> vm.launchStatePathPicker(config.platform.id)
         PlatformDetailItem.SyncToggle -> vm.togglePlatformSync(config.platform.id, !state.platformDetail.syncEnabled)
-        PlatformDetailItem.RemoveFiles -> vm.removeLocalFilesForPlatform(config.platform.id)
+        PlatformDetailItem.RemoveFiles -> vm.requestRemoveLocalFiles()
         PlatformDetailItem.BiosDownload -> vm.downloadBiosForPlatform(config.platform.slug)
-        PlatformDetailItem.BiosInstall -> vm.distributeAllBios()
+        PlatformDetailItem.BiosInstall -> vm.distributeBiosForPlatformWithNotification(config.platform.slug)
         PlatformDetailItem.BiosCopy -> vm.launchBiosCopyPicker(config.platform.slug)
         else -> {}
     }

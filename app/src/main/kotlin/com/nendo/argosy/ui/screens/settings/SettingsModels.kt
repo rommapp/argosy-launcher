@@ -290,6 +290,7 @@ data class PlatformContext(
 data class PlatformDetailState(
     val platformIndex: Int = 0,
     val builtinEnteredFromPlatform: Boolean = false,
+    val showRemoveConfirm: Boolean = false,
     val totalGames: Int = 0,
     val downloadedGames: Int = 0,
     val favorites: Int = 0,

@@ -13,7 +13,7 @@ import com.nendo.argosy.ui.screens.settings.sections.ambientLedItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
-import com.nendo.argosy.ui.screens.settings.sections.buildPlatformDetailFocusItems
+import com.nendo.argosy.ui.screens.settings.sections.platformDetailItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosMaxFocusIndex
@@ -413,16 +413,12 @@ private fun routeControlsConfirm(vm: SettingsViewModel, state: SettingsUiState):
 }
 
 private fun routeEmulatorsConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
-    val builtinEnabled = state.emulators.builtinLibretroEnabled
-    val builtinItemCount = if (builtinEnabled) 4 else 1
-    val autoAssignIndex = if (state.emulators.canAutoAssign) builtinItemCount else -1
-    val platformStartIndex = builtinItemCount + (if (state.emulators.canAutoAssign) 1 else 0)
+    val autoAssignOffset = if (state.emulators.canAutoAssign) 1 else 0
+    val platformStartIndex = 1 + autoAssignOffset // CheckForUpdates + optional AutoAssign
 
     when {
-        builtinEnabled && state.focusedIndex == 0 -> vm.navigateToBuiltinVideo()
-        builtinEnabled && state.focusedIndex == 1 -> vm.navigateToBuiltinControls()
-        builtinEnabled && state.focusedIndex == 2 -> vm.navigateToCoreManagement()
-        state.focusedIndex == autoAssignIndex -> vm.autoAssignAllEmulators()
+        state.focusedIndex == 0 -> vm.forceCheckEmulatorUpdates()
+        state.emulators.canAutoAssign && state.focusedIndex == 1 -> vm.autoAssignAllEmulators()
         state.focusedIndex >= platformStartIndex -> {
             val platformIndex = state.focusedIndex - platformStartIndex
             if (platformIndex < state.emulators.platforms.size) {
@@ -700,8 +696,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.CONTROLS -> controlsMaxFocusIndex(state.controls)
     SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(
         state.emulators.canAutoAssign,
-        state.emulators.platforms.size,
-        state.emulators.builtinLibretroEnabled
+        state.emulators.platforms.size
     )
     SettingsSection.BUILTIN_EMULATOR -> if (state.emulators.builtinLibretroEnabled) 4 else 0
     SettingsSection.PLATFORM_DETAIL -> platformDetailMaxFocusIndex(state)
@@ -719,24 +714,24 @@ private fun computeMaxFocusIndex(
 
 private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return InputResult.HANDLED
-    val focusItems = buildPlatformDetailFocusItems(config, state.platformDetail)
-    val item = focusItems.getOrNull(state.focusedIndex) ?: return InputResult.HANDLED
+    val item = platformDetailItemAtFocusIndex(state.focusedIndex, config, state.platformDetail) ?: return InputResult.HANDLED
     when (item) {
-        PlatformDetailItem.EMULATOR -> vm.showEmulatorPicker(config)
-        PlatformDetailItem.CORE -> vm.cycleCoreForPlatform(config, 1)
-        PlatformDetailItem.EXTENSION -> vm.cycleExtensionForPlatform(config, 1)
-        PlatformDetailItem.DISPLAY_TARGET -> vm.cycleDisplayTarget(config, 1)
-        PlatformDetailItem.LEGACY_MODE -> vm.toggleLegacyMode(config)
-        PlatformDetailItem.BUILTIN_VIDEO -> vm.navigateToBuiltinVideoForPlatform(state.platformDetail.platformIndex)
-        PlatformDetailItem.BUILTIN_CONTROLS -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
-        PlatformDetailItem.SCAN_FILES -> vm.scanFilesForPlatform(config.platform.id)
-        PlatformDetailItem.ROM_PATH -> vm.openPlatformFolderPicker(config.platform.id)
-        PlatformDetailItem.SAVE_PATH -> vm.showSavePathModal(config)
-        PlatformDetailItem.STATE_PATH -> vm.launchStatePathPicker(config.platform.id)
-        PlatformDetailItem.SYNC_TOGGLE -> vm.togglePlatformSync(config.platform.id, !state.platformDetail.syncEnabled)
-        PlatformDetailItem.REMOVE_FILES -> vm.removeLocalFilesForPlatform(config.platform.id)
-        PlatformDetailItem.BIOS_DOWNLOAD -> vm.downloadBiosForPlatform(config.platform.slug)
-        PlatformDetailItem.BIOS_COPY -> vm.launchBiosCopyPicker(config.platform.slug)
+        PlatformDetailItem.Emulator -> vm.showEmulatorPicker(config)
+        PlatformDetailItem.Core -> vm.cycleCoreForPlatform(config, 1)
+        PlatformDetailItem.Extension -> vm.cycleExtensionForPlatform(config, 1)
+        PlatformDetailItem.DisplayTarget -> vm.cycleDisplayTarget(config, 1)
+        PlatformDetailItem.LegacyMode -> vm.toggleLegacyMode(config)
+        PlatformDetailItem.BuiltinVideo -> vm.navigateToBuiltinVideoForPlatform(state.platformDetail.platformIndex)
+        PlatformDetailItem.BuiltinControls -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
+        PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)
+        PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)
+        PlatformDetailItem.SavePath -> vm.showSavePathModal(config)
+        PlatformDetailItem.StatePath -> vm.launchStatePathPicker(config.platform.id)
+        PlatformDetailItem.SyncToggle -> vm.togglePlatformSync(config.platform.id, !state.platformDetail.syncEnabled)
+        PlatformDetailItem.RemoveFiles -> vm.removeLocalFilesForPlatform(config.platform.id)
+        PlatformDetailItem.BiosDownload -> vm.downloadBiosForPlatform(config.platform.slug)
+        PlatformDetailItem.BiosCopy -> vm.launchBiosCopyPicker(config.platform.slug)
+        else -> {}
     }
     return InputResult.HANDLED
 }

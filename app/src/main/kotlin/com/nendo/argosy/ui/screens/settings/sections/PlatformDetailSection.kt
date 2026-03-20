@@ -1,32 +1,169 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
-import com.nendo.argosy.ui.components.CyclePreference
-import com.nendo.argosy.ui.components.FocusedScroll
-import com.nendo.argosy.ui.components.InfoPreference
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.ActionPreference
+import com.nendo.argosy.ui.components.CyclePreference
+import com.nendo.argosy.ui.components.InfoPreference
+import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
+import com.nendo.argosy.ui.screens.settings.PlatformDetailState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
 import com.nendo.argosy.ui.screens.settings.components.SavePathModal
-import com.nendo.argosy.ui.screens.settings.components.SectionHeader
+import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.components.VariantPickerModal
+import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.ContentCopy
+import com.nendo.argosy.ui.theme.Motion
+
+// -- Item definitions --
+
+internal sealed class PlatformDetailItem(
+    val key: String,
+    val section: String,
+    val visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }
+) {
+    val isFocusable: Boolean get() = this !is Header && this !is InfoItem
+
+    class Header(key: String, section: String, val title: String) : PlatformDetailItem(key, section)
+    class InfoItem(key: String, section: String) : PlatformDetailItem(key, section)
+
+    data object Emulator : PlatformDetailItem("emulator", "emulator")
+    data object Core : PlatformDetailItem("core", "emulator", { it.showCore })
+    data object Extension : PlatformDetailItem("extension", "emulator", { it.showExtension })
+    data object DisplayTarget : PlatformDetailItem("display_target", "emulator", { it.showDisplayTarget })
+    data object LegacyMode : PlatformDetailItem("legacy_mode", "emulator", { it.showLegacyMode })
+    data object BuiltinVideo : PlatformDetailItem("builtin_video", "emulator", { it.isBuiltin })
+    data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin })
+
+    data object ScanFiles : PlatformDetailItem("scan_files", "platform")
+
+    data object RomPath : PlatformDetailItem("rom_path", "paths")
+    data object SavePath : PlatformDetailItem("save_path", "paths", { it.showSavePath })
+    data object StatePath : PlatformDetailItem("state_path", "paths", { it.showStatePath })
+
+    data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
+    data object PackagePath : PlatformDetailItem("package_path", "sync", { it.showSavePath })
+    data object RemoveFiles : PlatformDetailItem("remove_files", "sync", { it.hasDownloads })
+
+    data object BiosStatus : PlatformDetailItem("bios_status", "bios", { it.hasBios })
+    data object BiosDownload : PlatformDetailItem("bios_download", "bios", { it.hasBios && it.biosMissing })
+    data object BiosCopy : PlatformDetailItem("bios_copy", "bios", { it.hasBios && it.biosDownloaded })
+
+    companion object {
+        val ALL: List<PlatformDetailItem> = listOf(
+            Header("header_emulator", "emulator", "Emulator"),
+            Emulator, Core, Extension, DisplayTarget, LegacyMode, BuiltinVideo, BuiltinControls,
+            Header("header_platform", "platform", "Platform"),
+            InfoItem("info_platform_stats", "platform"),
+            ScanFiles,
+            Header("header_paths", "paths", "Paths"),
+            RomPath, SavePath, StatePath,
+            Header("header_sync", "sync", "Sync"),
+            SyncToggle, InfoItem("info_package_path", "sync"), RemoveFiles,
+            Header("header_bios", "bios", "BIOS"),
+            InfoItem("info_bios_status", "bios"), BiosDownload, BiosCopy
+        )
+    }
+}
+
+internal data class PlatformDetailVisibility(
+    val showCore: Boolean = false,
+    val showExtension: Boolean = false,
+    val showDisplayTarget: Boolean = false,
+    val showLegacyMode: Boolean = false,
+    val isBuiltin: Boolean = false,
+    val showSavePath: Boolean = false,
+    val showStatePath: Boolean = false,
+    val hasDownloads: Boolean = false,
+    val hasBios: Boolean = false,
+    val biosMissing: Boolean = false,
+    val biosDownloaded: Boolean = false
+) {
+    companion object {
+        fun from(config: PlatformEmulatorConfig, detail: PlatformDetailState) = PlatformDetailVisibility(
+            showCore = config.showCoreSelection,
+            showExtension = config.showExtensionSelection,
+            showDisplayTarget = config.showDisplayTargetOption,
+            showLegacyMode = config.showLegacyModeOption,
+            isBuiltin = config.effectiveEmulatorIsRetroArch || config.effectiveEmulatorId == "builtin",
+            showSavePath = config.showSavePath,
+            showStatePath = detail.supportsStatePath,
+            hasDownloads = detail.downloadedGames > 0,
+            hasBios = detail.hasBiosRequirements,
+            biosMissing = detail.biosDownloaded < detail.biosTotal,
+            biosDownloaded = detail.biosDownloaded > 0
+        )
+    }
+}
+
+private fun createPlatformDetailLayout() = SettingsLayout<PlatformDetailItem, PlatformDetailVisibility>(
+    allItems = PlatformDetailItem.ALL,
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section },
+    sectionTitle = {
+        when (it) {
+            "emulator" -> "Emulator"
+            "platform" -> "Platform"
+            "paths" -> "Paths"
+            "sync" -> "Sync"
+            "bios" -> "BIOS"
+            else -> null
+        }
+    }
+)
+
+internal fun platformDetailMaxFocusIndex(state: SettingsUiState): Int {
+    val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return 0
+    val visibility = PlatformDetailVisibility.from(config, state.platformDetail)
+    val layout = createPlatformDetailLayout()
+    return layout.maxFocusIndex(visibility)
+}
+
+internal fun platformDetailItemAtFocusIndex(
+    focusIndex: Int,
+    config: PlatformEmulatorConfig,
+    detail: PlatformDetailState
+): PlatformDetailItem? {
+    val visibility = PlatformDetailVisibility.from(config, detail)
+    val layout = createPlatformDetailLayout()
+    return layout.itemAtFocusIndex(focusIndex, visibility)
+}
+
+internal fun platformDetailSections(
+    config: PlatformEmulatorConfig,
+    detail: PlatformDetailState
+) = createPlatformDetailLayout().buildSections(PlatformDetailVisibility.from(config, detail))
+
+// -- Composable --
 
 @Composable
 fun PlatformDetailSection(
@@ -36,55 +173,59 @@ fun PlatformDetailSection(
 ) {
     val detail = uiState.platformDetail
     val config = uiState.emulators.platforms.getOrNull(detail.platformIndex)
+    val emulators = uiState.emulators
 
     if (config == null) {
         Text("No platform selected", color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
 
-    val listState = rememberLazyListState()
-    val focusItems = buildPlatformDetailFocusItems(config, detail)
+    val visibility = remember(config, detail) { PlatformDetailVisibility.from(config, detail) }
+    val layout = remember { createPlatformDetailLayout() }
+    val visibleItems = remember(visibility) { layout.visibleItems(visibility) }
+    val sections = remember(visibility) { layout.buildSections(visibility) }
 
-    val emulators = uiState.emulators
+    fun isFocused(item: PlatformDetailItem): Boolean =
+        uiState.focusedIndex == layout.focusIndexOf(item, visibility)
 
-    FocusedScroll(listState = listState, focusedIndex = uiState.focusedIndex)
+    val modalBlur by animateDpAsState(
+        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker) Motion.blurRadiusModal else 0.dp,
+        animationSpec = Motion.focusSpringDp,
+        label = "platformDetailBlur"
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd)
-    ) {
-        // -- EMULATOR section --
-        item(key = "header_emulator") {
-            SectionHeader(title = "Emulator")
-        }
-        item(key = "emulator_select") {
-            val idx = focusItems.indexOf(PlatformDetailItem.EMULATOR)
-            CyclePreference(
-                title = "Emulator",
-                value = config.effectiveEmulatorName ?: "Not installed",
-                isFocused = uiState.focusedIndex == idx,
-                onClick = { viewModel.showEmulatorPicker(config) }
-            )
-        }
-        if (config.showCoreSelection) {
-            item(key = "core_select") {
-                val idx = focusItems.indexOf(PlatformDetailItem.CORE)
-                CyclePreference(
+        SectionPaneLayout(
+            items = visibleItems,
+            sections = sections,
+            focusedIndex = uiState.focusedIndex,
+            focusToListIndex = { layout.focusToListIndex(it, visibility) },
+            itemKey = { it.key },
+            isNavItem = { false },
+            onSectionTap = { viewModel.setFocusIndex(it.focusStartIndex) },
+            modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd).blur(modalBlur),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) { item ->
+            when (item) {
+                is PlatformDetailItem.Header -> com.nendo.argosy.ui.screens.settings.components.SectionHeader(item.title)
+
+                // -- EMULATOR section --
+                PlatformDetailItem.Emulator -> CyclePreference(
+                    title = "Emulator",
+                    value = config.effectiveEmulatorName ?: "Not installed",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.showEmulatorPicker(config) }
+                )
+                PlatformDetailItem.Core -> CyclePreference(
                     title = "Core",
                     value = config.selectedCore ?: "Default",
-                    isFocused = uiState.focusedIndex == idx,
+                    isFocused = isFocused(item),
                     onClick = { viewModel.cycleCoreForPlatform(config, 1) }
                 )
-            }
-        }
-        if (config.showExtensionSelection) {
-            item(key = "extension_select") {
-                val idx = focusItems.indexOf(PlatformDetailItem.EXTENSION)
-                CyclePreference(
+                PlatformDetailItem.Extension -> CyclePreference(
                     title = "File Extension",
                     value = config.selectedExtension ?: "Default",
-                    isFocused = uiState.focusedIndex == idx,
+                    isFocused = isFocused(item),
                     onClick = {
                         val options = config.extensionOptions
                         val currentIdx = options.indexOfFirst { it.extension == config.selectedExtension }
@@ -92,269 +233,203 @@ fun PlatformDetailSection(
                         viewModel.changeExtensionForPlatform(config, options[nextIdx].extension)
                     }
                 )
-            }
-        }
-        if (config.showDisplayTargetOption) {
-            item(key = "display_target") {
-                val idx = focusItems.indexOf(PlatformDetailItem.DISPLAY_TARGET)
-                CyclePreference(
+                PlatformDetailItem.DisplayTarget -> CyclePreference(
                     title = "Display Target",
                     value = config.displayTarget.name,
-                    isFocused = uiState.focusedIndex == idx,
+                    isFocused = isFocused(item),
                     onClick = { viewModel.cycleDisplayTarget(config, 1) }
                 )
-            }
-        }
-
-        // -- Built-in settings links (conditional) --
-        val isBuiltin = config.effectiveEmulatorIsRetroArch || config.effectiveEmulatorId == "builtin"
-        if (isBuiltin) {
-            item(key = "builtin_video_link") {
-                val idx = focusItems.indexOf(PlatformDetailItem.BUILTIN_VIDEO)
-                ActionPreference(
+                PlatformDetailItem.LegacyMode -> SwitchPreference(
+                    title = "Legacy Mode",
+                    subtitle = "Use file:// URI for Drastic",
+                    isEnabled = config.useFileUri,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.toggleLegacyMode(config) }
+                )
+                PlatformDetailItem.BuiltinVideo -> NavigationPreference(
+                    icon = Icons.Default.Gamepad,
                     title = "Built-in Video",
                     subtitle = "Shader, filter, aspect ratio overrides",
-                    isFocused = uiState.focusedIndex == idx,
+                    isFocused = isFocused(item),
                     onClick = { viewModel.navigateToBuiltinVideoForPlatform(detail.platformIndex) }
                 )
-            }
-            item(key = "builtin_controls_link") {
-                val idx = focusItems.indexOf(PlatformDetailItem.BUILTIN_CONTROLS)
-                ActionPreference(
+                PlatformDetailItem.BuiltinControls -> NavigationPreference(
+                    icon = Icons.Default.Gamepad,
                     title = "Built-in Controls",
                     subtitle = "Rumble, stick mapping overrides",
-                    isFocused = uiState.focusedIndex == idx,
+                    isFocused = isFocused(item),
                     onClick = { viewModel.navigateToBuiltinControlsForPlatform(detail.platformIndex) }
                 )
-            }
-        }
 
-        // -- PLATFORM section --
-        item(key = "header_platform") {
-            Spacer(modifier = Modifier.height(Dimens.spacingLg))
-            SectionHeader(title = "Platform")
-        }
-        item(key = "stat_games") {
-            InfoPreference(
-                title = "Games in Library",
-                value = "${detail.totalGames}",
-                isFocused = false
-            )
-        }
-        item(key = "stat_downloaded") {
-            InfoPreference(
-                title = "Downloaded",
-                value = "${detail.downloadedGames}",
-                isFocused = false
-            )
-        }
-        item(key = "stat_playtime") {
-            InfoPreference(
-                title = "Total Play Time",
-                value = detail.playTimeFormatted,
-                isFocused = false
-            )
-        }
-        item(key = "stat_favorites") {
-            InfoPreference(
-                title = "Favorites",
-                value = "${detail.favorites}",
-                isFocused = false
-            )
-        }
-        item(key = "sync_status") {
-            val syncProgress = viewModel.librarySyncProgress.collectAsState().value
-            val isSyncingThisPlatform = syncProgress.isSyncing &&
-                syncProgress.currentPlatform == config.platform.name
-            val syncText = when {
-                isSyncingThisPlatform && syncProgress.gamesTotal > 0 ->
-                    "Syncing... ${syncProgress.gamesDone} of ${syncProgress.gamesTotal} games"
-                isSyncingThisPlatform -> "Syncing..."
-                syncProgress.isSyncing -> "Syncing ${syncProgress.currentPlatform}..."
-                else -> "Idle"
-            }
-            InfoPreference(
-                title = "Sync Status",
-                value = syncText,
-                isFocused = false
-            )
-        }
-        item(key = "scan_files") {
-            val idx = focusItems.indexOf(PlatformDetailItem.SCAN_FILES)
-            ActionPreference(
-                title = if (detail.isScanning) "Scanning..." else "Scan for Files",
-                subtitle = "Check for new or missing ROM files",
-                isFocused = uiState.focusedIndex == idx,
-                isEnabled = !detail.isScanning,
-                onClick = { viewModel.scanFilesForPlatform(config.platform.id) }
-            )
-        }
+                // -- PLATFORM section (info items + scan) --
+                is PlatformDetailItem.InfoItem -> {
+                    when (item.key) {
+                        "info_platform_stats" -> {
+                            val syncProgress = viewModel.librarySyncProgress.collectAsState().value
+                            val isSyncingThis = syncProgress.isSyncing && syncProgress.currentPlatform == config.platform.name
+                            val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            val valueColor = MaterialTheme.colorScheme.onSurface
+                            val style = MaterialTheme.typography.bodySmall
 
-        // -- PATHS section --
-        item(key = "header_paths") {
-            Spacer(modifier = Modifier.height(Dimens.spacingLg))
-            SectionHeader(title = "Paths")
-        }
-        item(key = "rom_path") {
-            val idx = focusItems.indexOf(PlatformDetailItem.ROM_PATH)
-            val pathDisplay = formatPath(detail.effectiveRomPath)
-            CyclePreference(
-                title = "ROM Path",
-                value = pathDisplay,
-                subtitle = if (detail.customRomPath != null) "(custom)" else null,
-                isFocused = uiState.focusedIndex == idx,
-                onClick = { viewModel.openPlatformFolderPicker(config.platform.id) }
-            )
-        }
-        if (config.showSavePath) {
-            item(key = "save_path_in_paths") {
-                val idx = focusItems.indexOf(PlatformDetailItem.SAVE_PATH)
-                val pathDisplay = formatPath(detail.effectiveSavePath)
-                CyclePreference(
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs),
+                                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                            ) {
+                                StatRow("Games in Library", "${detail.totalGames}", textColor, valueColor, style)
+                                StatRow("Downloaded", "${detail.downloadedGames}", textColor, valueColor, style)
+                                if (detail.favorites > 0) {
+                                    StatRow("Favorites", "${detail.favorites}", textColor, valueColor, style)
+                                }
+                                StatRow("Play Time", detail.playTimeFormatted, textColor, valueColor, style)
+                                if (isSyncingThis) {
+                                    val syncText = if (syncProgress.gamesTotal > 0) {
+                                        "Syncing ${syncProgress.gamesDone}/${syncProgress.gamesTotal}"
+                                    } else "Syncing..."
+                                    StatRow("Sync", syncText, textColor, MaterialTheme.colorScheme.primary, style)
+                                }
+                            }
+                        }
+                        "info_package_path" -> {
+                            val status = when (detail.packagePathAccessible) {
+                                true -> "Accessible"
+                                false -> "Blocked"
+                                null -> "Checking..."
+                            }
+                            InfoPreference(title = "Package Path", value = status, isFocused = false)
+                        }
+                        "info_bios_status" -> {
+                            val status = when {
+                                detail.biosDownloaded >= detail.biosTotal -> "All installed"
+                                detail.biosDownloaded > 0 -> "${detail.biosDownloaded} of ${detail.biosTotal} downloaded"
+                                else -> "Not downloaded"
+                            }
+                            InfoPreference(title = "Status", value = status, isFocused = false)
+                        }
+                    }
+                }
+                PlatformDetailItem.ScanFiles -> ActionPreference(
+                    title = if (detail.isScanning) "Scanning..." else "Scan for Files",
+                    subtitle = "Check for new or missing ROM files",
+                    isFocused = isFocused(item),
+                    icon = Icons.Default.Search,
+                    isEnabled = !detail.isScanning,
+                    onClick = { viewModel.scanFilesForPlatform(config.platform.id) }
+                )
+
+
+                // -- PATHS section --
+                PlatformDetailItem.RomPath -> CyclePreference(
+                    title = "ROM Path",
+                    value = formatPath(detail.effectiveRomPath),
+                    subtitle = if (detail.customRomPath != null) "(custom)" else null,
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.openPlatformFolderPicker(config.platform.id) }
+                )
+                PlatformDetailItem.SavePath -> CyclePreference(
                     title = "Save Path",
-                    value = pathDisplay,
-                    subtitle = if (detail.isUserSavePathOverride) "(custom)" else null,
-                    isFocused = uiState.focusedIndex == idx,
+                    value = formatPath(detail.effectiveSavePath),
+                    subtitle = when {
+                        detail.packagePathAccessible == false && !detail.isUserSavePathOverride -> "Access blocked -- set a custom save path"
+                        detail.isUserSavePathOverride -> "(custom)"
+                        else -> null
+                    },
+                    isFocused = isFocused(item),
                     onClick = { viewModel.showSavePathModal(config) }
                 )
-            }
-        }
-        if (detail.supportsStatePath) {
-            item(key = "state_path") {
-                val idx = focusItems.indexOf(PlatformDetailItem.STATE_PATH)
-                val pathDisplay = formatPath(detail.effectiveStatePath)
-                CyclePreference(
+                PlatformDetailItem.StatePath -> CyclePreference(
                     title = "State Path",
-                    value = pathDisplay,
+                    value = formatPath(detail.effectiveStatePath),
                     subtitle = if (detail.isUserStatePathOverride) "(custom)" else null,
-                    isFocused = uiState.focusedIndex == idx,
+                    isFocused = isFocused(item),
                     onClick = { viewModel.launchStatePathPicker(config.platform.id) }
                 )
-            }
-        }
 
-        // -- SYNC section --
-        item(key = "header_sync") {
-            Spacer(modifier = Modifier.height(Dimens.spacingLg))
-            SectionHeader(title = "Sync")
-        }
-        item(key = "sync_toggle") {
-            val idx = focusItems.indexOf(PlatformDetailItem.SYNC_TOGGLE)
-            SwitchPreference(
-                title = "Sync Enabled",
-                subtitle = "Include this platform in library sync",
-                isEnabled = detail.syncEnabled,
-                isFocused = uiState.focusedIndex == idx,
-                onToggle = { viewModel.togglePlatformSync(config.platform.id, it) }
-            )
-        }
-
-        if (config.showSavePath) {
-            item(key = "package_path") {
-                val status = when (detail.packagePathAccessible) {
-                    true -> "Accessible"
-                    false -> "Blocked"
-                    null -> "Checking..."
-                }
-                InfoPreference(
-                    title = "Package Path",
-                    value = status,
-                    isFocused = false
+                // -- SYNC section --
+                PlatformDetailItem.SyncToggle -> SwitchPreference(
+                    title = "Sync Enabled",
+                    subtitle = "Include this platform in library sync",
+                    isEnabled = detail.syncEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.togglePlatformSync(config.platform.id, it) }
                 )
-            }
-        }
-        if (detail.downloadedGames > 0) {
-            item(key = "remove_files") {
-                val idx = focusItems.indexOf(PlatformDetailItem.REMOVE_FILES)
-                ActionPreference(
+                PlatformDetailItem.PackagePath -> {} // rendered as InfoItem
+                PlatformDetailItem.RemoveFiles -> ActionPreference(
                     title = "Remove Local Files",
                     subtitle = "${detail.downloadedGames} downloaded files",
-                    isFocused = uiState.focusedIndex == idx,
+                    isFocused = isFocused(item),
                     isDangerous = true,
                     onClick = { viewModel.removeLocalFilesForPlatform(config.platform.id) }
                 )
-            }
-        }
 
-        // -- BIOS section --
-        if (detail.hasBiosRequirements) {
-            item(key = "header_bios") {
-                Spacer(modifier = Modifier.height(Dimens.spacingLg))
-                SectionHeader(title = "BIOS")
-            }
-            item(key = "bios_status") {
-                val status = when {
-                    detail.biosDownloaded >= detail.biosTotal -> "All installed"
-                    detail.biosDownloaded > 0 -> "${detail.biosDownloaded} of ${detail.biosTotal} downloaded"
-                    else -> "Not downloaded"
-                }
-                InfoPreference(
-                    title = "Status",
-                    value = status,
-                    isFocused = false
+                // -- BIOS section --
+                PlatformDetailItem.BiosStatus -> {} // rendered as InfoItem
+                PlatformDetailItem.BiosDownload -> ActionPreference(
+                    title = "Download All",
+                    subtitle = "${detail.biosTotal - detail.biosDownloaded} files",
+                    isFocused = isFocused(item),
+                    icon = Icons.Default.Download,
+                    onClick = { viewModel.downloadBiosForPlatform(config.platform.slug) }
+                )
+                PlatformDetailItem.BiosCopy -> ActionPreference(
+                    title = "Copy to...",
+                    subtitle = "Copy BIOS files to another folder",
+                    isFocused = isFocused(item),
+                    icon = Icons.Default.ContentCopy,
+                    onClick = { viewModel.launchBiosCopyPicker(config.platform.slug) }
                 )
             }
-            if (detail.biosDownloaded < detail.biosTotal) {
-                item(key = "bios_download") {
-                    val idx = focusItems.indexOf(PlatformDetailItem.BIOS_DOWNLOAD)
-                    ActionPreference(
-                        title = "Download All",
-                        subtitle = "${detail.biosTotal - detail.biosDownloaded} files",
-                        isFocused = uiState.focusedIndex == idx,
-                        icon = Icons.Default.Download,
-                        onClick = { viewModel.downloadBiosForPlatform(config.platform.slug) }
-                    )
-                }
-            }
-            if (detail.biosDownloaded > 0) {
-                item(key = "bios_copy") {
-                    val idx = focusItems.indexOf(PlatformDetailItem.BIOS_COPY)
-                    ActionPreference(
-                        title = "Copy to...",
-                        subtitle = "Copy BIOS files to another folder",
-                        isFocused = uiState.focusedIndex == idx,
-                        icon = Icons.Default.ContentCopy,
-                        onClick = { viewModel.launchBiosCopyPicker(config.platform.slug) }
-                    )
-                }
-            }
+        }
+
+        // Modals
+        if (emulators.showEmulatorPicker && emulators.emulatorPickerInfo != null) {
+            EmulatorPickerPopup(
+                info = emulators.emulatorPickerInfo,
+                focusIndex = emulators.emulatorPickerFocusIndex,
+                selectedIndex = emulators.emulatorPickerSelectedIndex,
+                onItemTap = { index -> viewModel.handleEmulatorPickerItemTap(index) },
+                onConfirm = { viewModel.confirmEmulatorPickerSelection() },
+                onDismiss = { viewModel.dismissEmulatorPicker() }
+            )
+        }
+        if (emulators.showSavePathModal && emulators.savePathModalInfo != null) {
+            SavePathModal(
+                info = emulators.savePathModalInfo,
+                focusIndex = emulators.savePathModalFocusIndex,
+                buttonFocusIndex = emulators.savePathModalButtonIndex,
+                onDismiss = { viewModel.dismissSavePathModal() },
+                onChangeSavePath = onLaunchSavePathPicker,
+                onResetSavePath = { viewModel.resetEmulatorSavePath(emulators.savePathModalInfo.emulatorId) }
+            )
+        }
+        if (emulators.showVariantPicker && emulators.variantPickerInfo != null) {
+            VariantPickerModal(
+                info = emulators.variantPickerInfo,
+                focusIndex = emulators.variantPickerFocusIndex,
+                onItemTap = { index -> viewModel.handleVariantPickerItemTap(index) },
+                onConfirm = { viewModel.confirmVariantSelection() },
+                onDismiss = { viewModel.dismissVariantPicker() }
+            )
         }
     }
+}
 
-    if (emulators.showEmulatorPicker && emulators.emulatorPickerInfo != null) {
-        EmulatorPickerPopup(
-            info = emulators.emulatorPickerInfo,
-            focusIndex = emulators.emulatorPickerFocusIndex,
-            selectedIndex = emulators.emulatorPickerSelectedIndex,
-            onItemTap = { index -> viewModel.handleEmulatorPickerItemTap(index) },
-            onConfirm = { viewModel.confirmEmulatorPickerSelection() },
-            onDismiss = { viewModel.dismissEmulatorPicker() }
-        )
+@Composable
+private fun StatRow(
+    label: String,
+    value: String,
+    labelColor: Color,
+    valueColor: Color,
+    style: TextStyle
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, style = style, color = labelColor)
+        Text(text = value, style = style, color = valueColor)
     }
-
-    if (emulators.showSavePathModal && emulators.savePathModalInfo != null) {
-        SavePathModal(
-            info = emulators.savePathModalInfo,
-            focusIndex = emulators.savePathModalFocusIndex,
-            buttonFocusIndex = emulators.savePathModalButtonIndex,
-            onDismiss = { viewModel.dismissSavePathModal() },
-            onChangeSavePath = onLaunchSavePathPicker,
-            onResetSavePath = {
-                viewModel.resetEmulatorSavePath(emulators.savePathModalInfo.emulatorId)
-            }
-        )
-    }
-
-    if (emulators.showVariantPicker && emulators.variantPickerInfo != null) {
-        VariantPickerModal(
-            info = emulators.variantPickerInfo,
-            focusIndex = emulators.variantPickerFocusIndex,
-            onItemTap = { index -> viewModel.handleVariantPickerItemTap(index) },
-            onConfirm = { viewModel.confirmVariantSelection() },
-            onDismiss = { viewModel.dismissVariantPicker() }
-        )
-    }
-    } // Box
 }
 
 private fun formatPath(path: String?): String {
@@ -363,40 +438,12 @@ private fun formatPath(path: String?): String {
     return if (path.length > maxLen) "...${path.takeLast(maxLen)}" else path
 }
 
-internal enum class PlatformDetailItem {
-    EMULATOR, CORE, EXTENSION, DISPLAY_TARGET, LEGACY_MODE,
-    BUILTIN_VIDEO, BUILTIN_CONTROLS,
-    SCAN_FILES,
-    ROM_PATH, SAVE_PATH, STATE_PATH,
-    SYNC_TOGGLE, REMOVE_FILES,
-    BIOS_DOWNLOAD, BIOS_COPY
-}
-
+// Keep old function name for confirm router compatibility
 internal fun buildPlatformDetailFocusItems(
-    config: com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig,
-    detail: com.nendo.argosy.ui.screens.settings.PlatformDetailState
-): List<PlatformDetailItem> = buildList {
-    add(PlatformDetailItem.EMULATOR)
-    if (config.showCoreSelection) add(PlatformDetailItem.CORE)
-    if (config.showExtensionSelection) add(PlatformDetailItem.EXTENSION)
-    if (config.showDisplayTargetOption) add(PlatformDetailItem.DISPLAY_TARGET)
-    if (config.showLegacyModeOption) add(PlatformDetailItem.LEGACY_MODE)
-    val isBuiltin = config.effectiveEmulatorIsRetroArch || config.effectiveEmulatorId == "builtin"
-    if (isBuiltin) {
-        add(PlatformDetailItem.BUILTIN_VIDEO)
-        add(PlatformDetailItem.BUILTIN_CONTROLS)
-    }
-    add(PlatformDetailItem.SCAN_FILES)
-    add(PlatformDetailItem.ROM_PATH)
-    if (config.showSavePath) add(PlatformDetailItem.SAVE_PATH)
-    if (detail.supportsStatePath) add(PlatformDetailItem.STATE_PATH)
-    add(PlatformDetailItem.SYNC_TOGGLE)
-    if (detail.downloadedGames > 0) add(PlatformDetailItem.REMOVE_FILES)
-    if (detail.hasBiosRequirements && detail.biosDownloaded < detail.biosTotal) add(PlatformDetailItem.BIOS_DOWNLOAD)
-    if (detail.hasBiosRequirements && detail.biosDownloaded > 0) add(PlatformDetailItem.BIOS_COPY)
-}
-
-internal fun platformDetailMaxFocusIndex(state: SettingsUiState): Int {
-    val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return 0
-    return (buildPlatformDetailFocusItems(config, state.platformDetail).size - 1).coerceAtLeast(0)
+    config: PlatformEmulatorConfig,
+    detail: PlatformDetailState
+): List<PlatformDetailItem> {
+    val visibility = PlatformDetailVisibility.from(config, detail)
+    val layout = createPlatformDetailLayout()
+    return layout.focusableItems(visibility)
 }

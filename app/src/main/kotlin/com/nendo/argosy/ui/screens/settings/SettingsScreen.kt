@@ -65,7 +65,7 @@ import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorSection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailSection
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
-import com.nendo.argosy.ui.screens.settings.sections.buildPlatformDetailFocusItems
+import com.nendo.argosy.ui.screens.settings.sections.platformDetailItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.FrameSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinVideoSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinControlsSection
@@ -949,25 +949,33 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
                 add(InputButton.Y to "Reset to Default")
             }
         }
-        if (uiState.currentSection != SettingsSection.SHADER_STACK) {
-            add(InputButton.A to "Select")
-        }
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {
-            if (uiState.emulators.platforms.size > 1) {
-                add(InputButton.LB_RB to "Platform")
+            val config = uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
+            val focusedItem = config?.let {
+                platformDetailItemAtFocusIndex(uiState.focusedIndex, it, uiState.platformDetail)
             }
-            val focusItems = buildPlatformDetailFocusItems(
-                uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
-                    ?: uiState.emulators.platforms.firstOrNull()
-                    ?: return@buildList,
-                uiState.platformDetail
-            )
-            val focusedItem = focusItems.getOrNull(uiState.focusedIndex)
-            if (focusedItem == PlatformDetailItem.CORE ||
-                focusedItem == PlatformDetailItem.EXTENSION ||
-                focusedItem == PlatformDetailItem.DISPLAY_TARGET) {
+            // L1/R1: section jump
+            add(InputButton.LB_RB to "Section")
+            // L2/R2: platform cycle
+            if (uiState.emulators.platforms.size > 1) {
+                add(InputButton.LT_RT to "Platform")
+            }
+            // D-pad horizontal for cycle items
+            if (focusedItem is PlatformDetailItem.Core ||
+                focusedItem is PlatformDetailItem.Extension ||
+                focusedItem is PlatformDetailItem.DisplayTarget ||
+                focusedItem is PlatformDetailItem.Emulator) {
                 add(InputButton.DPAD_HORIZONTAL to "Adjust")
             }
+            // A button -- context-specific label
+            val aLabel = when (focusedItem) {
+                is PlatformDetailItem.SyncToggle, is PlatformDetailItem.LegacyMode -> "Toggle"
+                is PlatformDetailItem.BuiltinVideo, is PlatformDetailItem.BuiltinControls -> "Open"
+                else -> "Select"
+            }
+            add(InputButton.A to aLabel)
+        } else if (uiState.currentSection != SettingsSection.SHADER_STACK) {
+            add(InputButton.A to "Select")
         }
         if (uiState.currentSection == SettingsSection.PLATFORMS) {
             val emuLayoutInfo = com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo(

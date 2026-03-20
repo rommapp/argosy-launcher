@@ -288,6 +288,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setMaxConcurrentDownloads(count: Int) = storagePrefs.setMaxConcurrentDownloads(count)
     suspend fun setInstantDownloadThresholdMb(value: Int) = storagePrefs.setInstantDownloadThresholdMb(value)
     suspend fun setCustomBiosPath(path: String?) = storagePrefs.setCustomBiosPath(path)
+    suspend fun setWeeklyIntegrityCheckEnabled(enabled: Boolean) = storagePrefs.setWeeklyIntegrityCheckEnabled(enabled)
 
     // --- App delegates ---
 

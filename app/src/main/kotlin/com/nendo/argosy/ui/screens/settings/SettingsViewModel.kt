@@ -698,6 +698,13 @@ class SettingsViewModel @Inject constructor(
     fun validateImageCache() = routeValidateImageCache(this)
     fun validateDownloads() = routeValidateDownloads(this)
 
+    fun toggleWeeklyIntegrityCheck(enabled: Boolean) {
+        _uiState.update { it.copy(storage = it.storage.copy(weeklyIntegrityCheckEnabled = enabled)) }
+        viewModelScope.launch {
+            preferencesRepository.setWeeklyIntegrityCheckEnabled(enabled)
+        }
+    }
+
     fun cycleMaxConcurrentDownloads() = storageDelegate.cycleMaxConcurrentDownloads(viewModelScope)
 
     fun adjustMaxConcurrentDownloads(delta: Int) = routeAdjustMaxConcurrentDownloads(this, delta)

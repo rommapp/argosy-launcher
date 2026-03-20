@@ -239,18 +239,14 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
 }
 
 private fun routeStorageConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
-    val info = createStorageLayoutInfo(
-        state.storage.platformConfigs, state.storage.platformsExpanded
-    )
+    val info = createStorageLayoutInfo()
     when (val item = storageItemAtFocusIndex(state.focusedIndex, info)) {
         StorageItem.MaxDownloads -> vm.cycleMaxConcurrentDownloads()
         StorageItem.Threshold -> vm.cycleInstantDownloadThreshold()
         StorageItem.GlobalRomPath -> vm.openFolderPicker()
         StorageItem.ImageCache -> vm.openImageCachePicker()
         StorageItem.ValidateCache -> vm.validateImageCache()
-        StorageItem.ValidateDownloads -> vm.validateDownloads()
-        StorageItem.PlatformsExpand -> vm.togglePlatformsExpanded()
-        is StorageItem.PlatformItem -> vm.openPlatformSettingsModal(item.config.platformId)
+        StorageItem.WeeklyIntegrityCheck -> vm.toggleWeeklyIntegrityCheck(!state.storage.weeklyIntegrityCheckEnabled)
         StorageItem.PurgeAll -> vm.requestPurgeAll()
         else -> {}
     }
@@ -696,7 +692,6 @@ private fun computeMaxFocusIndex(
     SettingsSection.STEAM_SETTINGS -> 1 + state.steam.installedLaunchers.size
     SettingsSection.RETRO_ACHIEVEMENTS -> if (state.retroAchievements.showLoginForm) 3 else 0
     SettingsSection.STORAGE -> createStorageLayoutInfo(
-        state.storage.platformConfigs, state.storage.platformsExpanded
     ).let { it.layout.maxFocusIndex(it.state) }
     SettingsSection.INTERFACE -> interfaceMaxFocusIndex(InterfaceLayoutState.from(state))
     SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)

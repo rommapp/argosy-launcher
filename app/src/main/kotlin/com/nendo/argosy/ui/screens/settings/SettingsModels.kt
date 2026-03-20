@@ -516,10 +516,9 @@ data class StorageState(
     val isValidatingCache: Boolean = false,
     val isValidatingDownloads: Boolean = false,
     val showPurgeAllConfirm: Boolean = false,
-    val isPurgingAll: Boolean = false
-) {
-    val customPlatformCount: Int get() = platformConfigs.count { it.customRomPath != null }
-}
+    val isPurgingAll: Boolean = false,
+    val weeklyIntegrityCheckEnabled: Boolean = true
+)
 
 data class PlatformMigrationInfo(
     val platformId: Long,

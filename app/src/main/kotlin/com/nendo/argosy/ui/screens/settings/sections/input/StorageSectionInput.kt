@@ -15,7 +15,7 @@ internal class StorageSectionInput(
 
     private fun layoutInfo(): StorageLayoutInfo {
         val state = viewModel.uiState.value
-        return createStorageLayoutInfo(state.storage.platformConfigs, state.storage.platformsExpanded)
+        return createStorageLayoutInfo()
     }
 
     override fun onUp(): InputResult {

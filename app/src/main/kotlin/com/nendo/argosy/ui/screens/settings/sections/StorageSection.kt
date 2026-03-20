@@ -15,18 +15,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
-import com.nendo.argosy.ui.components.ExpandablePreference
-import com.nendo.argosy.ui.components.ExpandedChildItem
 import com.nendo.argosy.ui.components.InfoDisplay
 import com.nendo.argosy.ui.components.SliderPreference
-import com.nendo.argosy.ui.screens.settings.PlatformStorageConfig
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
-internal data class StorageLayoutState(val platformsExpanded: Boolean)
+internal data class StorageLayoutState(val unit: Unit = Unit)
 
 internal sealed class StorageItem(
     val key: String,
@@ -48,14 +45,7 @@ internal sealed class StorageItem(
     data object GlobalRomPath : StorageItem("globalRomPath", "locations")
     data object ImageCache : StorageItem("imageCache", "locations")
     data object ValidateCache : StorageItem("validateCache", "locations")
-    data object ValidateDownloads : StorageItem("validateDownloads", "locations")
-
-    data object PlatformsExpand : StorageItem("platformsExpand", "platforms")
-    class PlatformItem(val config: PlatformStorageConfig) : StorageItem(
-        key = "platform_${config.platformId}",
-        section = "platforms",
-        visibleWhen = { it.platformsExpanded }
-    )
+    data object WeeklyIntegrityCheck : StorageItem("weeklyIntegrityCheck", "locations")
 
     data object PurgeAll : StorageItem("purgeAll", "danger")
 
@@ -63,16 +53,12 @@ internal sealed class StorageItem(
         private val DownloadsHeader = Header("downloadsHeader", "downloads", "DOWNLOADS")
         private val LocationsSpacer = SectionSpacer("locationsSpacer", "locations")
         private val LocationsHeader = Header("locationsHeader", "locations", "FILE LOCATIONS")
-        private val PlatformsSpacer = SectionSpacer("platformsSpacer", "platforms")
-        private val PlatformsHeader = Header("platformsHeader", "platforms", "PLATFORM STORAGE")
         private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
         private val DangerHeader = Header("dangerHeader", "danger", "DANGER ZONE")
 
-        fun buildItems(platformConfigs: List<PlatformStorageConfig>): List<StorageItem> = listOf(
+        fun buildItems(): List<StorageItem> = listOf(
             DownloadsHeader, MaxDownloads, Threshold, DownloadedInfo,
-            LocationsSpacer, LocationsHeader, GlobalRomPath, ImageCache, ValidateCache, ValidateDownloads,
-            PlatformsSpacer, PlatformsHeader, PlatformsExpand
-        ) + platformConfigs.map { PlatformItem(it) } + listOf(
+            LocationsSpacer, LocationsHeader, GlobalRomPath, ImageCache, ValidateCache, WeeklyIntegrityCheck,
             DangerSpacer, DangerHeader, PurgeAll
         )
     }
@@ -81,37 +67,29 @@ internal sealed class StorageItem(
 private fun createStorageLayout(items: List<StorageItem>) = SettingsLayout<StorageItem, StorageLayoutState>(
     allItems = items,
     isFocusable = { it.isFocusable },
-    visibleWhen = { item, state -> item.visibleWhen(state) },
+    visibleWhen = { _, _ -> true },
     sectionOf = { it.section },
     sectionTitle = {
         when (it) {
             "downloads" -> "DOWNLOADS"
             "locations" -> "FILE LOCATIONS"
-            "platforms" -> "PLATFORM STORAGE"
             "danger" -> "DANGER ZONE"
             else -> null
         }
     }
 )
 
-internal fun storageMaxFocusIndex(platformsExpanded: Boolean, platformCount: Int): Int {
-    val fixedFocusableCount = 8
-    val expandedItems = if (platformsExpanded) platformCount else 0
-    return (fixedFocusableCount + expandedItems - 1).coerceAtLeast(0)
-}
+internal fun storageMaxFocusIndex(): Int = 6 // MaxDownloads, Threshold, GlobalRomPath, ImageCache, ValidateCache, WeeklyIntegrity, PurgeAll = 7 items - 1
 
 internal data class StorageLayoutInfo(
     val layout: SettingsLayout<StorageItem, StorageLayoutState>,
     val state: StorageLayoutState
 )
 
-internal fun createStorageLayoutInfo(
-    platformConfigs: List<PlatformStorageConfig>,
-    platformsExpanded: Boolean
-): StorageLayoutInfo {
-    val items = StorageItem.buildItems(platformConfigs)
+internal fun createStorageLayoutInfo(): StorageLayoutInfo {
+    val items = StorageItem.buildItems()
     val layout = createStorageLayout(items)
-    val state = StorageLayoutState(platformsExpanded)
+    val state = StorageLayoutState()
     return StorageLayoutInfo(layout, state)
 }
 
@@ -126,13 +104,9 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val storage = uiState.storage
     val syncSettings = uiState.syncSettings
 
-    val layoutState = remember(storage.platformsExpanded) {
-        StorageLayoutState(storage.platformsExpanded)
-    }
+    val layoutState = remember { StorageLayoutState() }
 
-    val allItems = remember(storage.platformConfigs) {
-        StorageItem.buildItems(storage.platformConfigs)
-    }
+    val allItems = remember { StorageItem.buildItems() }
 
     val layout = remember(allItems) { createStorageLayout(allItems) }
     val visibleItems = remember(layoutState, allItems) { layout.visibleItems(layoutState) }
@@ -227,37 +201,12 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                StorageItem.ValidateDownloads -> {
-                    val validating = storage.isValidatingDownloads
-                    ActionPreference(
-                        title = "Validate Downloads",
-                        subtitle = if (validating) "Validating..." else "Verify downloaded ROM files exist",
-                        isFocused = isFocused(item),
-                        isEnabled = !validating,
-                        onClick = { viewModel.validateDownloads() }
-                    )
-                }
-
-                StorageItem.PlatformsExpand -> {
-                    val customCount = storage.customPlatformCount
-                    val subtitle = if (customCount > 0) {
-                        "$customCount customized"
-                    } else {
-                        "All using global path"
-                    }
-                    ExpandablePreference(
-                        title = "Platform Overrides",
-                        subtitle = subtitle,
-                        isExpanded = storage.platformsExpanded,
-                        isFocused = isFocused(item),
-                        onToggle = { viewModel.togglePlatformsExpanded() }
-                    )
-                }
-
-                is StorageItem.PlatformItem -> PlatformStorageItem(
-                    config = item.config,
+                StorageItem.WeeklyIntegrityCheck -> com.nendo.argosy.ui.components.SwitchPreference(
+                    title = "Weekly ROM Integrity Check",
+                    subtitle = "Scan for missing or new files on startup",
+                    isEnabled = storage.weeklyIntegrityCheckEnabled,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.openPlatformSettingsModal(item.config.platformId) }
+                    onToggle = { viewModel.toggleWeeklyIntegrityCheck(it) }
                 )
 
                 StorageItem.PurgeAll -> {
@@ -275,31 +224,6 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 }
 
-
-@Composable
-private fun PlatformStorageItem(
-    config: PlatformStorageConfig,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val pathDisplay = if (config.customRomPath != null) {
-        formatStoragePath(config.customRomPath)
-    } else {
-        "(auto)"
-    }
-    val valueText = if (config.downloadedCount > 0) {
-        "${config.downloadedCount}/${config.gameCount}  •  $pathDisplay"
-    } else {
-        "${config.gameCount} games  •  $pathDisplay"
-    }
-
-    ExpandedChildItem(
-        title = config.platformName,
-        value = valueText,
-        isFocused = isFocused,
-        onClick = onClick
-    )
-}
 
 internal fun formatFileSize(bytes: Long): String {
     val units = listOf("B", "KB", "MB", "GB", "TB")

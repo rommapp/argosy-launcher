@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
@@ -158,6 +159,23 @@ fun PlatformDetailSection(
             InfoPreference(
                 title = "Favorites",
                 value = "${detail.favorites}",
+                isFocused = false
+            )
+        }
+        item(key = "sync_status") {
+            val syncProgress = viewModel.librarySyncProgress.collectAsState().value
+            val isSyncingThisPlatform = syncProgress.isSyncing &&
+                syncProgress.currentPlatform == config.platform.name
+            val syncText = when {
+                isSyncingThisPlatform && syncProgress.gamesTotal > 0 ->
+                    "Syncing... ${syncProgress.gamesDone} of ${syncProgress.gamesTotal} games"
+                isSyncingThisPlatform -> "Syncing..."
+                syncProgress.isSyncing -> "Syncing ${syncProgress.currentPlatform}..."
+                else -> "Idle"
+            }
+            InfoPreference(
+                title = "Sync Status",
+                value = syncText,
                 isFocused = false
             )
         }

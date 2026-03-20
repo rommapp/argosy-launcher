@@ -8,7 +8,10 @@ import com.nendo.argosy.ui.screens.common.LibrarySyncBus
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.ui.notification.NotificationProgress
 import com.nendo.argosy.ui.notification.NotificationType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -60,15 +63,23 @@ class SyncLibraryUseCase @Inject constructor(
                 try {
                     withContext(NonCancellable) {
                         Logger.info(TAG, "invoke: calling syncLibrary")
+                        val progressJob = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            romMRepository.syncProgress.collect { sp ->
+                                if (sp.isSyncing && sp.currentPlatform.isNotEmpty()) {
+                                    val gameInfo = if (sp.gamesTotal > 0) " (${sp.gamesDone}/${sp.gamesTotal} games)" else ""
+                                    notificationManager.updatePersistent(
+                                        key = NOTIFICATION_KEY,
+                                        subtitle = "${sp.currentPlatform}$gameInfo",
+                                        progress = NotificationProgress(sp.platformsDone + 1, sp.platformsTotal)
+                                    )
+                                }
+                            }
+                        }
                         val result = romMRepository.syncLibrary { current, total, platform ->
                             Logger.info(TAG, "invoke: progress $current/$total - $platform")
-                            notificationManager.updatePersistent(
-                                key = NOTIFICATION_KEY,
-                                subtitle = platform,
-                                progress = NotificationProgress(current, total)
-                            )
                             onProgress?.invoke(current, total, platform)
                         }
+                        progressJob.cancel()
 
                         Logger.info(TAG, "invoke: syncLibrary returned - added=${result.gamesAdded}, updated=${result.gamesUpdated}, deleted=${result.gamesDeleted}, errors=${result.errors}")
 

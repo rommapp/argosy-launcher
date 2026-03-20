@@ -265,6 +265,8 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    val librarySyncProgress get() = romMRepository.syncProgress
+
     fun scanFilesForPlatform(platformId: Long) {
         val platformIndex = _uiState.value.platformDetail.platformIndex
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = true)) }

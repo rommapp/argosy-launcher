@@ -157,7 +157,7 @@ fun CoreOptionsSection(
                 is CoreOptionItem.NotInstalledNotice -> {
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                     Text(
-                        text = "Core not downloaded -- options are read-only",
+                        text = "Download the core to enable changing settings",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = Dimens.spacingSm)

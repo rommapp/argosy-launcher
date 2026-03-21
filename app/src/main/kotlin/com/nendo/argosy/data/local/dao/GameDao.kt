@@ -226,6 +226,12 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE steamAppId = :steamAppId")
     suspend fun getBySteamAppId(steamAppId: Long): GameEntity?
 
+    @Query("UPDATE games SET igdbId = :igdbId WHERE id = :gameId")
+    suspend fun updateIgdbId(gameId: Long, igdbId: Long)
+
+    @Query("SELECT * FROM games WHERE source = 'STEAM' AND igdbId IS NULL AND steamAppId IS NOT NULL")
+    suspend fun getUnresolvedSteamGames(): List<GameEntity>
+
     @Query("SELECT * FROM games WHERE localPath = :path")
     suspend fun getByPath(path: String): GameEntity?
 

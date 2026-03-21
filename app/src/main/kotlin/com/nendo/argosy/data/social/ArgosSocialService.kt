@@ -151,6 +151,11 @@ class ArgosSocialService @Inject constructor(
         data class UserSettingsData(val settings: UserSettings) : IncomingMessage()
         data class HiddenGames(val igdbGameIds: Set<Int>) : IncomingMessage()
         data class UserProfileReceived(val profile: UserProfileData) : IncomingMessage()
+        data class SteamGameResolved(
+            val steamAppId: Long,
+            val igdbId: Long,
+            val coverImageId: String?
+        ) : IncomingMessage()
     }
 
     fun connect(token: String) {
@@ -637,6 +642,16 @@ class ArgosSocialService @Inject constructor(
                     } else null
                 }
 
+                MessageTypes.STEAM_GAME_RESOLVED -> {
+                    if (payload != null) {
+                        val steamAppId = payload.getLong("steam_app_id")
+                        val igdbId = payload.getLong("igdb_id")
+                        val coverImageId = payload.optString("cover_image_id", null)
+                        Log.d(TAG, "Steam game resolved: steamAppId=$steamAppId -> igdbId=$igdbId")
+                        IncomingMessage.SteamGameResolved(steamAppId, igdbId, coverImageId)
+                    } else null
+                }
+
                 MessageTypes.PONG -> {
                     lastPongReceivedAt = System.currentTimeMillis()
                     missedPongs = 0
@@ -707,6 +722,12 @@ class ArgosSocialService @Inject constructor(
             put("type", MessageTypes.REQUEST_DISCORD_TOKENS)
         }
         webSocket?.send(json.toString())
+    }
+
+    fun sendResolveSteamGame(steamAppId: Long): Boolean {
+        return send(MessageTypes.RESOLVE_STEAM_GAME, mapOf(
+            "steam_app_id" to steamAppId
+        ))
     }
 
     fun sendHideGame(igdbGameId: Int?, steamAppId: Int? = null): Boolean {

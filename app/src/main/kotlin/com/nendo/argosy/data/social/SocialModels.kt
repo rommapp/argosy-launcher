@@ -230,6 +230,10 @@ object MessageTypes {
     // User profile
     const val GET_USER_PROFILE = "get_user_profile"
     const val USER_PROFILE = "user_profile"
+
+    // Steam IGDB resolution
+    const val RESOLVE_STEAM_GAME = "resolve_steam_game"
+    const val STEAM_GAME_RESOLVED = "steam_game_resolved"
 }
 
 @JsonClass(generateAdapter = true)

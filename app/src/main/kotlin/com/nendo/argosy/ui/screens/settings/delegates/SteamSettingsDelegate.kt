@@ -8,6 +8,7 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
 import com.nendo.argosy.data.remote.github.FetchReleaseResult
+import com.nendo.argosy.data.repository.SteamIgdbResolver
 import com.nendo.argosy.data.repository.SteamRepository
 import com.nendo.argosy.data.repository.SteamResult
 import com.nendo.argosy.ui.notification.NotificationManager
@@ -34,7 +35,8 @@ class SteamSettingsDelegate @Inject constructor(
     private val steamRepository: SteamRepository,
     private val notificationManager: NotificationManager,
     private val emulatorDownloadManager: EmulatorDownloadManager,
-    private val emulatorUpdateRepository: EmulatorUpdateRepository
+    private val emulatorUpdateRepository: EmulatorUpdateRepository,
+    private val steamIgdbResolver: SteamIgdbResolver
 ) {
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
@@ -246,6 +248,8 @@ class SteamSettingsDelegate @Inject constructor(
                 }
             }
 
+            steamIgdbResolver.requestResolutionForUnresolved()
+
             _state.update {
                 it.copy(isSyncing = false, syncingLauncher = null)
             }
@@ -268,6 +272,7 @@ class SteamSettingsDelegate @Inject constructor(
 
             when (val result = steamRepository.refreshAllMetadata()) {
                 is SteamResult.Success -> {
+                    steamIgdbResolver.requestResolutionForUnresolved()
                     notificationManager.show("Refreshed metadata for ${result.data} games")
                 }
                 is SteamResult.Error -> {
@@ -340,6 +345,7 @@ class SteamSettingsDelegate @Inject constructor(
 
             when (val result = steamRepository.addGame(appId, launcherPackage)) {
                 is SteamResult.Success -> {
+                    result.data.steamAppId?.let { steamIgdbResolver.requestResolution(it) }
                     notificationManager.show("Added: ${result.data.title}")
                     dismissAddSteamGameDialog()
                     loadSteamSettings(context, scope)

@@ -455,6 +455,9 @@ class SocialRepository @Inject constructor(
                         _isLoadingProfile.value = false
                         Log.d(TAG, "UserProfile: ${message.profile.user.username}, hours=${message.profile.totalPlayHours}")
                     }
+                    is ArgosSocialService.IncomingMessage.SteamGameResolved -> {
+                        handleSteamGameResolved(message)
+                    }
                     is ArgosSocialService.IncomingMessage.Error -> {
                         if (message.code == "unknown_type") {
                             Log.w(TAG, "Server returned unknown_type -- suppressing achievement sync for this session")
@@ -476,6 +479,40 @@ class SocialRepository @Inject constructor(
         _discordUsername.value = null
         _connectionState.value = SocialConnectionState.Disconnected
         clearSocialData()
+    }
+
+    private suspend fun handleSteamGameResolved(message: ArgosSocialService.IncomingMessage.SteamGameResolved) {
+        val game = gameDao.getBySteamAppId(message.steamAppId) ?: return
+        if (game.igdbId != null) return
+
+        gameDao.updateIgdbId(game.id, message.igdbId)
+
+        if (message.coverImageId != null) {
+            val coverPath = downloadIgdbCover(message.coverImageId, message.steamAppId)
+            if (coverPath != null) {
+                gameDao.updateCoverPath(game.id, coverPath)
+            }
+        }
+
+        Log.d(TAG, "Resolved Steam game ${message.steamAppId} -> IGDB ${message.igdbId}")
+    }
+
+    private fun downloadIgdbCover(coverImageId: String, steamAppId: Long): String? {
+        return try {
+            val url = "https://images.igdb.com/igdb/image/upload/t_cover_big/$coverImageId.jpg"
+            val cacheDir = File(context.cacheDir, "steam")
+            if (!cacheDir.exists()) cacheDir.mkdirs()
+            val file = File(cacheDir, "cover_$steamAppId.jpg")
+            java.net.URL(url).openStream().use { input ->
+                file.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            file.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download IGDB cover for Steam app $steamAppId", e)
+            null
+        }
     }
 
     private fun attemptAutoConnect() {

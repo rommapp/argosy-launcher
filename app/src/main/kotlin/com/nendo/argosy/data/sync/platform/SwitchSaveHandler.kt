@@ -172,7 +172,8 @@ class SwitchSaveHandler @Inject constructor(
     fun resolveSaveTargetPath(
         zipFile: File,
         config: SavePathConfig,
-        emulatorPackage: String?
+        emulatorPackage: String?,
+        basePathOverride: String? = null
     ): String? {
         val titleId = saveArchiver.peekRootFolderName(zipFile)
             ?.takeIf { isValidHexId(it) }
@@ -183,10 +184,13 @@ class SwitchSaveHandler @Inject constructor(
             return null
         }
 
-        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
-        val basePath = resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
-            ?: resolvedPaths.firstOrNull()
-            ?: return null
+        val basePath = if (basePathOverride != null) {
+            resolveOverrideSaveBase(basePathOverride)
+        } else {
+            val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+            resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
+                ?: resolvedPaths.firstOrNull()
+        } ?: return null
 
         val normalizedTitleId = titleId.uppercase()
         val isDeviceSave = normalizedTitleId in DEVICE_SAVE_TITLE_IDS

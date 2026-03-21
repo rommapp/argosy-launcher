@@ -647,11 +647,15 @@ class SavePathResolver @Inject constructor(
         }
     }
 
-    fun resolveSwitchSaveTargetPath(
+    suspend fun resolveSwitchSaveTargetPath(
         zipFile: File,
         config: SavePathConfig,
         emulatorPackage: String?
-    ): String? = switchSaveHandler.resolveSaveTargetPath(zipFile, config, emulatorPackage)
+    ): String? {
+        val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
+        val basePathOverride = userConfig?.takeIf { it.isUserOverride }?.savePathPattern
+        return switchSaveHandler.resolveSaveTargetPath(zipFile, config, emulatorPackage, basePathOverride)
+    }
 
     private fun resolveSavePaths(config: SavePathConfig, platformSlug: String): List<String> {
         val filesDir = if (config.usesInternalStorage) context.filesDir.absolutePath else null

@@ -326,6 +326,7 @@ class SettingsViewModel @Inject constructor(
         coreManager.getInstalledCores().map { it.coreId }.toSet()
 
     fun downloadCore(coreId: String) = routeDownloadCore(this, coreId)
+    fun downloadCoreWithNotification(coreId: String) = routeDownloadCoreWithNotification(this, coreId)
     fun deleteCore(coreId: String) = routeDeleteCore(this, coreId)
 
     fun setBuiltinShader(value: String) = routeSetBuiltinShader(this, value)

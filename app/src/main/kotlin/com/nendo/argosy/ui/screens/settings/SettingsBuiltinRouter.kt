@@ -533,7 +533,7 @@ internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
     }
 }
 
-private fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: String) {
+internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: String) {
     vm.viewModelScope.launch {
         val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return@launch
         vm._uiState.update {

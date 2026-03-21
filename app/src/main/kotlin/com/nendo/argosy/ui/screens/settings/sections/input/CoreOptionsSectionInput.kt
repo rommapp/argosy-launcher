@@ -25,9 +25,9 @@ internal class CoreOptionsSectionInput(
                 viewModel.cycleCoreOptionValue(item.optionKey, 1)
                 InputResult.HANDLED
             }
-            is CoreOptionItem.NotInstalledNotice -> {
+            is CoreOptionItem.DownloadCore -> {
                 val core = state.coreOptions.selectedCore
-                if (core != null) viewModel.downloadCore(core.coreId)
+                if (core != null) viewModel.downloadCoreWithNotification(core.coreId)
                 InputResult.HANDLED
             }
             is CoreOptionItem.ResetAll -> {

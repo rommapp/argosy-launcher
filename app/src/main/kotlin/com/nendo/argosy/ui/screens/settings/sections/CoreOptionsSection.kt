@@ -30,7 +30,7 @@ internal sealed class CoreOptionItem(val key: String) {
 
     data object CoreSelector : CoreOptionItem("core_selector")
 
-    data object NotInstalledNotice : CoreOptionItem("not_installed")
+    data object DownloadCore : CoreOptionItem("download_core")
 
     data class Option(
         val optionKey: String,
@@ -48,9 +48,7 @@ internal sealed class CoreOptionItem(val key: String) {
 internal fun buildCoreOptionItems(state: CoreOptionsState): List<CoreOptionItem> = buildList {
     add(CoreOptionItem.CoreSelector)
     val core = state.selectedCore ?: return@buildList
-    if (!core.isInstalled) {
-        add(CoreOptionItem.NotInstalledNotice)
-    }
+    add(CoreOptionItem.DownloadCore)
     val hasManifest = CoreOptionManifestRegistry.hasManifest(core.coreId)
     if (hasManifest) {
         for (option in state.options) {
@@ -155,13 +153,16 @@ fun CoreOptionsSection(
                     )
                 }
 
-                is CoreOptionItem.NotInstalledNotice -> {
+                is CoreOptionItem.DownloadCore -> {
+                    val title = if (isInstalled) "Redownload Core" else "Download Core"
+                    val subtitle = if (isInstalled) "Reinstall if core is corrupt or outdated"
+                                   else "Download the core to enable changing settings"
                     ActionPreference(
-                        title = "Download Core",
-                        subtitle = "Download the core to enable changing settings",
+                        title = title,
+                        subtitle = subtitle,
                         isFocused = isFocused,
                         onClick = {
-                            selectedCore?.let { viewModel.downloadCore(it.coreId) }
+                            selectedCore?.let { viewModel.downloadCoreWithNotification(it.coreId) }
                         }
                     )
                 }

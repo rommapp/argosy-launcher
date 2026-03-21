@@ -53,6 +53,7 @@ class HotkeyManager(
             return null
         }
 
+        val alreadyPressed = pressedKeys.toSet()
         pressedKeys.add(keyCode)
         triggeredAction = null
 
@@ -60,6 +61,7 @@ class HotkeyManager(
             if (!hotkey.isEnabled) continue
             if (hotkey.controllerId != null && hotkey.controllerId != controllerId) continue
             if (hotkey.keyCodes.isNotEmpty() && pressedKeys.containsAll(hotkey.keyCodes)) {
+                if (alreadyPressed.containsAll(hotkey.keyCodes)) continue
                 if (hotkey.keyCodes.size == 1 && hotkey.keyCodes.first() in platformMappedButtons) {
                     continue
                 }

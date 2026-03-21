@@ -69,7 +69,7 @@ size_t LibretroDroid::callback_set_audio_sample_batch(const int16_t *data, size_
 }
 
 void LibretroDroid::callback_retro_set_input_poll() {
-    // Do nothing in here...
+    // Pending release flush happens after retro_run() in step(), not here.
 }
 
 int16_t LibretroDroid::callback_set_input_state(
@@ -534,6 +534,10 @@ void LibretroDroid::step() {
 
         for (size_t i = 0; i < frames; i++) {
             core->retro_run();
+
+            if (input) {
+                input->flushPendingReleases();
+            }
 
             if (rewindEnabled && rewindBuffer) {
                 size_t sz = core->retro_serialize_size();

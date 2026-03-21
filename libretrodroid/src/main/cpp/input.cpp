@@ -155,8 +155,25 @@ void Input::onKeyEvent(unsigned int port, int action, int keyCode) {
     std::lock_guard<std::mutex> lock(inputMutex);
     if (action == AKEY_EVENT_ACTION_DOWN) {
         pads[port].pressedKeys.insert(retroKeyCode);
+        pads[port].pendingReleases.erase(retroKeyCode);
     } else if (action == AKEY_EVENT_ACTION_UP) {
-        pads[port].pressedKeys.erase(retroKeyCode);
+        pads[port].pendingReleases.insert(retroKeyCode);
+    }
+}
+
+void Input::flushPendingReleases() {
+    std::lock_guard<std::mutex> lock(inputMutex);
+    for (unsigned p = 0; p < 4; p++) {
+        for (int key : pads[p].pendingReleases) {
+            pads[p].pressedKeys.erase(key);
+        }
+        pads[p].pendingReleases.clear();
+
+        if (pads[p].dpadReleasePending) {
+            pads[p].dpadXAxis = pads[p].pendingDpadX;
+            pads[p].dpadYAxis = pads[p].pendingDpadY;
+            pads[p].dpadReleasePending = false;
+        }
     }
 }
 
@@ -194,10 +211,20 @@ bool Input::getButtonState(unsigned port, unsigned id) const {
 void Input::onMotionEvent(int port, int motionSource, float xAxis, float yAxis) {
     std::lock_guard<std::mutex> lock(inputMutex);
     switch (motionSource) {
-        case Input::MOTION_SOURCE_DPAD:
-            pads[port].dpadXAxis = (int) round(xAxis);
-            pads[port].dpadYAxis = (int) round(yAxis);
+        case Input::MOTION_SOURCE_DPAD: {
+            int newX = (int) round(xAxis);
+            int newY = (int) round(yAxis);
+            if (newX == 0 && newY == 0 && (pads[port].dpadXAxis != 0 || pads[port].dpadYAxis != 0)) {
+                pads[port].dpadReleasePending = true;
+                pads[port].pendingDpadX = 0;
+                pads[port].pendingDpadY = 0;
+            } else {
+                pads[port].dpadXAxis = newX;
+                pads[port].dpadYAxis = newY;
+                pads[port].dpadReleasePending = false;
+            }
             break;
+        }
 
         case Input::MOTION_SOURCE_ANALOG_LEFT:
             pads[port].joypadLeftXAxis = xAxis;

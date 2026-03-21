@@ -31,9 +31,13 @@ private:
     mutable std::mutex inputMutex;
     struct GamePadState {
         std::unordered_set<int> pressedKeys;
+        std::unordered_set<int> pendingReleases;
 
         int dpadXAxis = 0;
         int dpadYAxis = 0;
+        bool dpadReleasePending = false;
+        int pendingDpadX = 0;
+        int pendingDpadY = 0;
         float joypadLeftXAxis = 0;
         float joypadLeftYAxis = 0;
         float joypadRightXAxis = 0;
@@ -55,6 +59,7 @@ public:
     static constexpr int RETRO_DEVICE_ID_JOYPAD_DOWN_RIGHT = 53;
 
     int16_t getInputState(unsigned port, unsigned device, unsigned index, unsigned id);
+    void flushPendingReleases();
 
     void onKeyEvent(unsigned int port, int action, int keyCode);
     void onMotionEvent(int port, int motionSource, float xAxis, float yAxis);

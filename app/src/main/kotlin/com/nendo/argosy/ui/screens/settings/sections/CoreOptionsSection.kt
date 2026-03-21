@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifestRegistry
+import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
@@ -25,7 +26,7 @@ import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
 internal sealed class CoreOptionItem(val key: String) {
-    val isFocusable: Boolean get() = this !is NotInstalledNotice
+    val isFocusable: Boolean get() = true
 
     data object CoreSelector : CoreOptionItem("core_selector")
 
@@ -155,14 +156,14 @@ fun CoreOptionsSection(
                 }
 
                 is CoreOptionItem.NotInstalledNotice -> {
-                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
-                    Text(
-                        text = "Download the core to enable changing settings",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = Dimens.spacingSm)
+                    ActionPreference(
+                        title = "Download Core",
+                        subtitle = "Download the core to enable changing settings",
+                        isFocused = isFocused,
+                        onClick = {
+                            selectedCore?.let { viewModel.downloadCore(it.coreId) }
+                        }
                     )
-                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 }
 
                 is CoreOptionItem.Option -> {

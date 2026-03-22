@@ -75,18 +75,22 @@ class DownloadGameUseCase @Inject constructor(
         return when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
                 val rom = result.data
-                val mainFile = rom.files
-                    ?.filter { it.category == null && !it.fileName.startsWith(".") }
-                    ?.maxByOrNull { it.fileSizeBytes }
-                var fileName = mainFile?.fileName
-                    ?: rom.fileName
-                    ?: "${game.title}.rom"
+                var fileName: String
+                val expectedSize: Long
 
-                if (rom.multi) {
-                    val hasExtension = fileName.contains('.')
-                    if (!hasExtension) {
-                        fileName = "$fileName.zip"
-                    }
+                if (rom.isFolderRom) {
+                    val folderName = rom.fileName ?: game.title
+                    fileName = if (folderName.contains('.')) folderName
+                        else "$folderName.zip"
+                    expectedSize = rom.fileSize
+                } else {
+                    val mainFile = rom.files
+                        ?.filter { it.category == null && !it.fileName.startsWith(".") }
+                        ?.maxByOrNull { it.fileSizeBytes }
+                    fileName = mainFile?.fileName
+                        ?: rom.fileName
+                        ?: "${game.title}.rom"
+                    expectedSize = mainFile?.fileSizeBytes ?: rom.fileSize
                 }
 
                 val ext = fileName.substringAfterLast('.', "").lowercase()
@@ -103,8 +107,8 @@ class DownloadGameUseCase @Inject constructor(
                     gameTitle = game.title,
                     platformSlug = game.platformSlug,
                     coverPath = game.coverPath,
-                    expectedSizeBytes = mainFile?.fileSizeBytes ?: rom.fileSize,
-                    isMultiFileRom = rom.hasMultipleFiles
+                    expectedSizeBytes = expectedSize,
+                    isMultiFileRom = rom.isFolderRom
                 )
                 DownloadResult.Queued
             }

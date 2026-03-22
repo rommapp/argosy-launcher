@@ -92,6 +92,9 @@ data class RomMRom(
     val isDiscVariant: Boolean
         get() = discNumber != null
 
+    val isFolderRom: Boolean
+        get() = multi || hasMultipleFiles || hasNestedSingleFile
+
     val isFolderMultiDisc: Boolean
         get() = hasMultipleFiles && files?.any { it.isDiscVariant } == true
 

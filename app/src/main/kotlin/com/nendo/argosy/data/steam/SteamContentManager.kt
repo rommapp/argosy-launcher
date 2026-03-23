@@ -640,8 +640,13 @@ class SteamContentManager @Inject constructor(
                 Log.e(TAG, "Download failed: ${e.message}", e)
                 _downloadState.value = SteamDownloadState.Failed(appId, gameName, e.message ?: "Unknown error")
             } finally {
-                _activeDownload.value = null
-                processNextInQueue()
+                val finalState = _downloadState.value
+                if (finalState !is SteamDownloadState.Paused) {
+                    _activeDownload.value = null
+                }
+                if (finalState !is SteamDownloadState.Paused) {
+                    processNextInQueue()
+                }
             }
         }
     }

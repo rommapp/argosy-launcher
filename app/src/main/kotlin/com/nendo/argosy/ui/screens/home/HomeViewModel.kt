@@ -555,7 +555,8 @@ class HomeViewModel @Inject constructor(
         val currentState = steamContentManager.downloadState.value
         if (currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Idle &&
             currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Completed &&
-            currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Failed) {
+            currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Failed &&
+            currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Paused) {
             return
         }
 

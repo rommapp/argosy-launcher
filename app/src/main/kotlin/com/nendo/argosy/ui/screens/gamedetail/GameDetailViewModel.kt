@@ -717,7 +717,8 @@ class GameDetailViewModel @Inject constructor(
         val currentState = steamContentManager.downloadState.value
         if (currentState !is SteamDownloadState.Idle &&
             currentState !is SteamDownloadState.Completed &&
-            currentState !is SteamDownloadState.Failed) {
+            currentState !is SteamDownloadState.Failed &&
+            currentState !is SteamDownloadState.Paused) {
             return
         }
 

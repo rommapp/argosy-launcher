@@ -308,7 +308,8 @@ class LibraryViewModel @Inject constructor(
     private val repairImageCacheUseCase: RepairImageCacheUseCase,
     private val modalResetSignal: ModalResetSignal,
     private val gradientExtractionDelegate: GradientExtractionDelegate,
-    private val emulatorDetector: EmulatorDetector
+    private val emulatorDetector: EmulatorDetector,
+    private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -1142,6 +1143,20 @@ class LibraryViewModel @Inject constructor(
                 is DownloadResult.ExtractionFailed -> {
                     notificationManager.showError("Extraction failed. Open game details to retry.")
                 }
+            }
+        }
+    }
+
+    fun downloadSteamGame(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameRepository.getById(gameId) ?: return@launch
+            val steamAppId = game.steamAppId ?: return@launch
+            try {
+                notificationManager.show("Preparing Steam download: ${game.title}")
+                val appInfo = steamContentManager.fetchAppInfo(steamAppId.toInt())
+                steamContentManager.queueDownload(steamAppId, game.title, appInfo, game.coverPath)
+            } catch (e: Exception) {
+                notificationManager.showError("Steam download failed: ${e.message}")
             }
         }
     }

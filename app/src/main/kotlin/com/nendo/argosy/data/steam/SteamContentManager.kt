@@ -824,7 +824,7 @@ class SteamContentManager @Inject constructor(
 
         for (root in volumes) {
             val path = "$root/Android/data/$GN_PACKAGE/files/Steam/steamapps"
-            if (androidDataAccessor.exists(path) || File(path).exists()) {
+            if (androidDataAccessor.exists(path)) {
                 return "$root/Android/data/$GN_PACKAGE/files"
             }
         }

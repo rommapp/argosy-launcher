@@ -149,12 +149,6 @@ internal class LightSectionsInput(
     }
 
     private fun handleSteamLeftRight(direction: Int): InputResult {
-        val state = viewModel.uiState.value
-        val launcherIndex = state.focusedIndex - 1
-        if (launcherIndex >= 0 && launcherIndex < state.steam.installedLaunchers.size) {
-            viewModel.moveLauncherActionFocus(direction)
-            return InputResult.HANDLED
-        }
         return InputResult.UNHANDLED
     }
 

@@ -1,348 +1,653 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
-import android.provider.Settings
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import com.nendo.argosy.ui.util.clickableNoFocus
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.repeatOnLifecycle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
+import com.nendo.argosy.data.steam.LibrarySyncState
+import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.ui.components.ActionPreference
-import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
+import com.nendo.argosy.ui.screens.settings.SteamSettingsState
+import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
+import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
+import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.theme.Dimens
+
+internal data class SteamLayoutState(
+    val isLoggedIn: Boolean,
+    val gnInstalled: Boolean,
+    val gnConfigured: Boolean,
+    val isSyncing: Boolean
+)
+
+internal sealed class SteamItem(
+    val key: String,
+    val section: String,
+    val visibleWhen: (SteamLayoutState) -> Boolean = { true }
+) {
+    val isFocusable: Boolean get() = when (this) {
+        is Header, is SectionSpacer -> false
+        else -> true
+    }
+
+    class Header(key: String, section: String, val title: String, visibleWhen: (SteamLayoutState) -> Boolean = { true })
+        : SteamItem(key, section, visibleWhen)
+
+    class SectionSpacer(key: String, section: String, visibleWhen: (SteamLayoutState) -> Boolean = { true })
+        : SteamItem(key, section, visibleWhen)
+
+    data object GnStatus : SteamItem("gnStatus", "setup")
+    data object GnInstall : SteamItem("gnInstall", "setup", visibleWhen = { !it.gnInstalled })
+    data object GnStorageWarning : SteamItem("gnStorageWarning", "setup",
+        visibleWhen = { it.gnInstalled && !it.gnConfigured })
+    data object AccountInfo : SteamItem("accountInfo", "account")
+    data object SyncLibrary : SteamItem("syncLibrary", "library")
+    data object AddManual : SteamItem("addManual", "library")
+    data object Disconnect : SteamItem("disconnect", "danger")
+    data object ResetLibrary : SteamItem("resetLibrary", "danger")
+
+    companion object {
+        private val SetupHeader = Header("setupHeader", "setup", "GAMENATIVE")
+        private val AccountHeader = Header("accountHeader", "account", "ACCOUNT")
+        private val LibraryHeader = Header("libraryHeader", "library", "LIBRARY")
+        private val LibrarySpacer = SectionSpacer("librarySpacer", "library")
+        private val DangerHeader = Header("dangerHeader", "danger", "DANGER ZONE")
+        private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
+
+        val ALL: List<SteamItem> = listOf(
+            SetupHeader, GnStatus, GnInstall, GnStorageWarning,
+            LibrarySpacer, AccountHeader, AccountInfo,
+            LibrarySpacer, LibraryHeader, SyncLibrary, AddManual,
+            DangerSpacer, DangerHeader, Disconnect, ResetLibrary
+        )
+    }
+}
+
+private val steamLayout = SettingsLayout<SteamItem, SteamLayoutState>(
+    allItems = SteamItem.ALL,
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section },
+    sectionTitle = {
+        when (it) {
+            "setup" -> "GAMENATIVE"
+            "account" -> "ACCOUNT"
+            "library" -> "LIBRARY"
+            "danger" -> "DANGER ZONE"
+            else -> null
+        }
+    }
+)
+
+internal fun steamMaxFocusIndex(steam: SteamSettingsState): Int {
+    val state = steamLayoutState(steam)
+    return if (isLoggedIn(steam)) steamLayout.maxFocusIndex(state) else 0
+}
+
+internal fun steamItemAtFocusIndex(focusIndex: Int, steam: SteamSettingsState): SteamItem? {
+    return steamLayout.itemAtFocusIndex(focusIndex, steamLayoutState(steam))
+}
+
+internal fun isLoggedIn(steam: SteamSettingsState): Boolean =
+    steam.connectionState == SteamConnectionState.LOGGED_IN
+
+private fun steamLayoutState(steam: SteamSettingsState) = SteamLayoutState(
+    isLoggedIn = isLoggedIn(steam),
+    gnInstalled = steam.gnInstalled,
+    gnConfigured = steam.gnStoragePath != null,
+    isSyncing = steam.syncState !is LibrarySyncState.Idle &&
+        steam.syncState !is LibrarySyncState.Complete &&
+        steam.syncState !is LibrarySyncState.Error
+)
 
 @Composable
 fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val context = LocalContext.current
-    val listState = rememberLazyListState()
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val steam = uiState.steam
 
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            viewModel.refreshSteamSettings()
-        }
+    LaunchedEffect(Unit) {
+        viewModel.refreshSteamSettings()
     }
 
-    val hasDialogOpen = uiState.steam.showAddGameDialog
+    val layoutState = remember(steam.connectionState, steam.gnInstalled, steam.gnStoragePath, steam.syncState) {
+        steamLayoutState(steam)
+    }
 
-    FocusedScroll(
-        listState = listState,
-        focusedIndex = uiState.focusedIndex
-    )
+    if (isLoggedIn(steam)) {
+        val visibleItems = remember(layoutState) { steamLayout.visibleItems(layoutState) }
+        val sections = remember(layoutState) { steamLayout.buildSections(layoutState) }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize().padding(Dimens.spacingMd),
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        item {
-            val (icon, subtitle, statusColor) = if (uiState.steam.hasStoragePermission) {
-                Triple(
-                    Icons.Default.CheckCircle,
-                    "Storage access granted",
-                    MaterialTheme.colorScheme.primary
-                )
-            } else {
-                Triple(
-                    Icons.Default.Warning,
-                    "Grant storage access",
-                    MaterialTheme.colorScheme.error
-                )
-            }
+        fun isFocused(item: SteamItem): Boolean =
+            uiState.focusedIndex == steamLayout.focusIndexOf(item, layoutState)
 
-            ActionPreference(
-                icon = icon,
-                title = "Storage Permission",
-                subtitle = subtitle,
-                isFocused = !hasDialogOpen && uiState.focusedIndex == 0,
-                onClick = {
-                    if (!uiState.steam.hasStoragePermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                            data = Uri.parse("package:${context.packageName}")
-                        }
+        SectionPaneLayout(
+            items = visibleItems,
+            sections = sections,
+            focusedIndex = uiState.focusedIndex,
+            focusToListIndex = { steamLayout.focusToListIndex(it, layoutState) },
+            itemKey = { it.key },
+            isNavItem = { it is SteamItem.SectionSpacer },
+            onSectionTap = { viewModel.setFocusIndex(it.focusStartIndex) },
+            modifier = Modifier.fillMaxSize().padding(horizontal = Dimens.spacingMd),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) { item ->
+            when (item) {
+                is SteamItem.Header -> SectionHeader(item.title)
+                is SteamItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+                SteamItem.GnStatus -> {
+                    val (icon, subtitle, color) = if (steam.gnStoragePath != null) {
+                        Triple(Icons.Default.CheckCircle, "External storage configured", MaterialTheme.colorScheme.primary)
+                    } else if (steam.gnInstalled) {
+                        Triple(Icons.Default.Warning, "Enable external storage in GameNative", MaterialTheme.colorScheme.error)
+                    } else {
+                        Triple(Icons.Default.Warning, "Not installed", MaterialTheme.colorScheme.error)
+                    }
+                    InfoPreference(
+                        title = "GameNative",
+                        value = subtitle,
+                        icon = icon,
+                        isFocused = isFocused(item)
+                    )
+                }
+
+                SteamItem.GnInstall -> ActionPreference(
+                    icon = Icons.Default.Download,
+                    title = "Install GameNative",
+                    subtitle = "Required to launch Steam games",
+                    isFocused = isFocused(item),
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/utkarshdalal/GameNative/releases"))
                         context.startActivity(intent)
                     }
-                },
-                iconTint = statusColor
-            )
-        }
+                )
 
-        if (uiState.steam.installedLaunchers.isEmpty()) {
-            item {
-                InfoPreference(
-                    title = "No Steam Launchers",
-                    value = "Install GameHub Lite or GameNative",
-                    isFocused = !hasDialogOpen && uiState.focusedIndex == 1,
-                    icon = Icons.Default.Info
+                SteamItem.GnStorageWarning -> InfoPreference(
+                    title = "External Storage",
+                    value = "Open GameNative and enable 'Write to external storage' in Settings",
+                    icon = Icons.Default.Warning,
+                    isFocused = isFocused(item)
+                )
+
+                SteamItem.AccountInfo -> InfoPreference(
+                    title = "Steam Account",
+                    value = steam.username ?: "Connected",
+                    icon = Icons.Default.Cloud,
+                    isFocused = isFocused(item)
+                )
+
+                SteamItem.SyncLibrary -> {
+                    val syncText = when (val s = steam.syncState) {
+                        is LibrarySyncState.Idle -> "Sync owned games from Steam"
+                        is LibrarySyncState.SyncingLicenses -> "Syncing licenses..."
+                        is LibrarySyncState.FetchingPackages -> "Fetching packages (${s.current}/${s.total})..."
+                        is LibrarySyncState.FetchingApps -> "Fetching games (${s.current}/${s.total})..."
+                        is LibrarySyncState.FetchingProtonDbRatings -> "Fetching ratings..."
+                        is LibrarySyncState.Complete -> "Added ${s.gamesAdded}, updated ${s.gamesUpdated}"
+                        is LibrarySyncState.Error -> "Error: ${s.message}"
+                    }
+                    ActionPreference(
+                        icon = Icons.Default.Sync,
+                        title = "Sync Library",
+                        subtitle = syncText,
+                        isFocused = isFocused(item),
+                        isEnabled = steam.syncState is LibrarySyncState.Idle ||
+                            steam.syncState is LibrarySyncState.Complete ||
+                            steam.syncState is LibrarySyncState.Error,
+                        onClick = { viewModel.syncSteamLibrary() }
+                    )
+                }
+
+                SteamItem.AddManual -> ActionPreference(
+                    icon = Icons.Default.Cloud,
+                    title = "Add by App ID",
+                    subtitle = "Manually add a Steam game",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.showAddSteamGameDialog() }
+                )
+
+                SteamItem.Disconnect -> ActionPreference(
+                    icon = Icons.Default.LinkOff,
+                    title = "Disconnect",
+                    subtitle = "Log out of Steam",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.disconnectSteam() },
+                    iconTint = MaterialTheme.colorScheme.error
+                )
+
+                SteamItem.ResetLibrary -> ActionPreference(
+                    icon = Icons.Default.Delete,
+                    title = "Reset Steam Library",
+                    subtitle = "Remove all synced Steam games",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.resetSteamLibrary() },
+                    iconTint = MaterialTheme.colorScheme.error
                 )
             }
-        } else {
-            itemsIndexed(uiState.steam.installedLaunchers) { index, launcher ->
-                val isSyncingThis = uiState.steam.isSyncing && uiState.steam.syncingLauncher == launcher.packageName
-                val isFocused = !hasDialogOpen && uiState.focusedIndex == index + 1
-                val isEnabled = uiState.steam.hasStoragePermission && !uiState.steam.isSyncing
+        }
+    } else {
+        val listState = rememberLazyListState()
 
-                SteamLauncherPreference(
-                    displayName = launcher.displayName,
-                    subtitle = if (launcher.scanMayIncludeUninstalled) "Scan may include titles no longer installed" else null,
-                    supportsScanning = launcher.supportsScanning,
-                    isSyncing = isSyncingThis,
-                    isFocused = isFocused,
-                    isEnabled = isEnabled,
-                    actionIndex = uiState.steam.launcherActionIndex,
-                    onScan = { viewModel.scanSteamLauncher(launcher.packageName) },
-                    onAdd = { viewModel.showAddSteamGameDialog(launcher.packageName) }
-                )
+        LaunchedEffect(uiState.focusedIndex) {
+            if (uiState.focusedIndex == 0) {
+                val layoutInfo = listState.layoutInfo
+                val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
+                val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 60
+                val centerOffset = (viewportHeight - itemHeight) / 2
+                listState.animateScrollToItem(0, -centerOffset)
             }
         }
 
-        item {
-            val isRefreshing = uiState.steam.isSyncing && uiState.steam.syncingLauncher == "refresh"
-            val refreshIndex = 1 + uiState.steam.installedLaunchers.size
-            ActionPreference(
-                icon = Icons.Default.Sync,
-                title = "Refresh Metadata",
-                subtitle = if (isRefreshing) "Refreshing..." else "Update screenshots and backgrounds",
-                isFocused = !hasDialogOpen && uiState.focusedIndex == refreshIndex,
-                isEnabled = !uiState.steam.isSyncing,
-                onClick = { viewModel.refreshSteamMetadata() }
-            )
-        }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize().padding(horizontal = Dimens.spacingMd),
+            contentPadding = PaddingValues(top = Dimens.spacingMd, bottom = Dimens.spacingXxl),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            when {
+                !steam.gnInstalled -> item {
+                    GnNotInstalledContent(
+                        isFocused = uiState.focusedIndex == 0,
+                        onInstall = {
+                            val intent = Intent(Intent.ACTION_VIEW,
+                                Uri.parse("https://github.com/utkarshdalal/GameNative/releases"))
+                            context.startActivity(intent)
+                        }
+                    )
+                }
 
-        item {
-            Spacer(modifier = Modifier.height(Dimens.spacingMd))
-            Text(
-                text = "Steam integration requires GameHub Lite or GameNative to be installed. " +
-                    "Select a launcher to scan for games or add manually.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.padding(horizontal = Dimens.spacingSm)
-            )
+                steam.connectionState == SteamConnectionState.DISCONNECTED &&
+                    steam.error == null && !steam.authPolling -> item {
+                    NotConnectedContent(
+                        isFocused = uiState.focusedIndex == 0,
+                        onConnect = {
+                            viewModel.connectToSteam()
+                            viewModel.startSteamQrAuth()
+                        }
+                    )
+                }
+
+                steam.connectionState == SteamConnectionState.CONNECTING ||
+                    (steam.authPolling && steam.qrUrl == null) -> item {
+                    ConnectingContent()
+                }
+
+                steam.qrUrl != null -> item {
+                    QrAuthContent(
+                        qrUrl = steam.qrUrl,
+                        isFocused = uiState.focusedIndex == 0,
+                        onCancel = { viewModel.cancelSteamQrAuth() }
+                    )
+                }
+
+                steam.connectionState == SteamConnectionState.CONNECTED ||
+                    steam.connectionState == SteamConnectionState.LOGGING_IN -> item {
+                    ConnectingContent(message = "Logging in...")
+                }
+
+                steam.error != null -> item {
+                    ErrorContent(
+                        message = steam.error,
+                        isFocused = uiState.focusedIndex == 0,
+                        onRetry = {
+                            viewModel.connectToSteam()
+                            viewModel.startSteamQrAuth()
+                        }
+                    )
+                }
+
+                else -> item {
+                    NotConnectedContent(
+                        isFocused = uiState.focusedIndex == 0,
+                        onConnect = {
+                            viewModel.connectToSteam()
+                            viewModel.startSteamQrAuth()
+                        }
+                    )
+                }
+            }
         }
     }
+}
 
-    if (uiState.steam.showAddGameDialog) {
-        val selectedLauncherName = uiState.steam.selectedLauncherPackage?.let { pkg ->
-            uiState.steam.installedLaunchers.find { it.packageName == pkg }?.displayName
-        }
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissAddSteamGameDialog() },
-            title = { Text("Add Steam Game") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
-                    val description = if (selectedLauncherName != null) {
-                        "Enter the Steam App ID to add a game for $selectedLauncherName. You can find this in the game's Steam store URL."
-                    } else {
-                        "Enter the Steam App ID to add a game. You can find this in the game's Steam store URL."
-                    }
-                    Text(description, style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(
-                        value = uiState.steam.addGameAppId,
-                        onValueChange = { viewModel.setAddGameAppId(it) },
-                        label = { Text("Steam App ID") },
-                        placeholder = { Text("e.g. 730") },
-                        singleLine = true,
-                        enabled = !uiState.steam.isAddingGame,
-                        isError = uiState.steam.addGameError != null,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    if (uiState.steam.addGameError != null) {
-                        Text(
-                            text = uiState.steam.addGameError,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.confirmAddSteamGame() },
-                    enabled = !uiState.steam.isAddingGame && uiState.steam.addGameAppId.isNotBlank()
-                ) {
-                    if (uiState.steam.isAddingGame) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(Dimens.spacingMd),
-                            strokeWidth = Dimens.borderMedium
-                        )
-                    } else {
-                        Text("Add")
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { viewModel.dismissAddSteamGameDialog() },
-                    enabled = !uiState.steam.isAddingGame
-                ) {
-                    Text("Cancel")
-                }
-            }
+@Composable
+private fun GnNotInstalledContent(
+    isFocused: Boolean,
+    onInstall: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(Dimens.spacingLg),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "GameNative Required",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        Text(
+            text = "Steam games are downloaded by Argosy and launched through GameNative. " +
+                "Install GameNative and enable external storage in its settings before continuing.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        FocusableButton(
+            text = "Install GameNative",
+            isFocused = isFocused,
+            onClick = onInstall
         )
     }
 }
 
 @Composable
-private fun SteamLauncherPreference(
-    displayName: String,
-    subtitle: String?,
-    supportsScanning: Boolean,
-    isSyncing: Boolean,
+private fun NotConnectedContent(
     isFocused: Boolean,
-    isEnabled: Boolean,
-    actionIndex: Int,
-    onScan: () -> Unit,
-    onAdd: () -> Unit
+    onConnect: () -> Unit
 ) {
-    val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    val contentColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-    val secondaryColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.55f)
-    } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
-    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(Dimens.spacingLg),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Log in to Steam",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
 
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        Text(
+            text = "Connect your Steam account to sync your library and download games.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        FocusableButton(
+            text = "Connect",
+            isFocused = isFocused,
+            onClick = onConnect
+        )
+    }
+}
+
+@Composable
+private fun ConnectingContent(message: String = "Connecting...") {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(Dimens.spacingXl),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(48.dp),
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun QrAuthContent(
+    qrUrl: String,
+    isFocused: Boolean,
+    onCancel: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = Dimens.settingsItemMinHeight)
-            .clip(RoundedCornerShape(Dimens.radiusLg))
-            .background(backgroundColor, RoundedCornerShape(Dimens.radiusLg))
-            .padding(Dimens.spacingMd),
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(Dimens.spacingLg),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = if (isSyncing) Icons.Default.Sync else Icons.Default.Cloud,
-            contentDescription = null,
-            tint = if (isEnabled) contentColor else contentColor.copy(alpha = 0.5f),
-            modifier = Modifier.size(Dimens.iconMd)
-        )
-        Spacer(modifier = Modifier.width(Dimens.spacingMd))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = displayName,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (isEnabled) contentColor else contentColor.copy(alpha = 0.5f)
+        Box(
+            modifier = Modifier.weight(0.3f),
+            contentAlignment = Alignment.Center
+        ) {
+            QrCodeImage(
+                url = qrUrl,
+                modifier = Modifier.size(160.dp)
             )
-            val subtitleText = when {
-                isSyncing -> "Scanning..."
-                subtitle != null -> subtitle
-                else -> null
-            }
-            if (subtitleText != null) {
-                Text(
-                    text = subtitleText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryColor
-                )
-            }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.weight(0.7f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
-            if (supportsScanning) {
-                val scanSelected = isFocused && actionIndex == 0
-                val scanBgColor = when {
-                    scanSelected -> MaterialTheme.colorScheme.primary
-                    isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                }
-                val scanTextColor = when {
-                    scanSelected -> MaterialTheme.colorScheme.onPrimary
-                    !isEnabled -> contentColor.copy(alpha = 0.5f)
-                    else -> contentColor
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(Dimens.radiusSm))
-                        .background(scanBgColor)
-                        .clickableNoFocus(enabled = isEnabled) { onScan() }
-                        .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
-                ) {
-                    Text(
-                        text = "Scan",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = scanTextColor
-                    )
-                }
-            }
+            Text(
+                text = "Scan with the Steam mobile app",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
 
-            val addSelected = isFocused && if (supportsScanning) actionIndex == 1 else true
-            val addBgColor = when {
-                addSelected -> MaterialTheme.colorScheme.primary
-                isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
-            val addTextColor = when {
-                addSelected -> MaterialTheme.colorScheme.onPrimary
-                !isEnabled -> contentColor.copy(alpha = 0.5f)
-                else -> contentColor
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(Dimens.radiusSm))
-                    .background(addBgColor)
-                    .clickableNoFocus(enabled = isEnabled) { onAdd() }
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
-            ) {
-                Text(
-                    text = "Add",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = addTextColor
-                )
-            }
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            Text(
+                text = "Open Steam on your phone, tap the guard icon, then 'Confirm sign-in'.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            FocusableButton(
+                text = "Cancel",
+                isFocused = isFocused,
+                onClick = onCancel
+            )
         }
     }
+}
+
+@Composable
+private fun ErrorContent(
+    message: String,
+    isFocused: Boolean,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
+            .padding(Dimens.spacingLg),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Connection Error",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.error
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        FocusableButton(
+            text = "Try Again",
+            isFocused = isFocused,
+            onClick = onRetry
+        )
+    }
+}
+
+@Composable
+private fun FocusableButton(
+    text: String,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = if (isFocused) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val textColor = if (isFocused) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(backgroundColor)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = textColor
+        )
+    }
+}
+
+@Composable
+private fun QrCodeImage(
+    url: String,
+    modifier: Modifier = Modifier
+) {
+    val qrBitmap = remember(url) { generateQrCode(url, 512) }
+
+    if (qrBitmap != null) {
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.White)
+                .border(2.dp, Color.White, RoundedCornerShape(8.dp))
+                .padding(8.dp)
+        ) {
+            Image(
+                bitmap = qrBitmap.asImageBitmap(),
+                contentDescription = "QR Code",
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+private fun generateQrCode(content: String, size: Int): Bitmap? {
+    return try {
+        val hints = mapOf(
+            EncodeHintType.MARGIN to 1,
+            EncodeHintType.CHARACTER_SET to "UTF-8"
+        )
+        val writer = QRCodeWriter()
+        val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size, hints)
+        val width = bitMatrix.width
+        val height = bitMatrix.height
+        val pixels = IntArray(width * height)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                pixels[y * width + x] = if (bitMatrix[x, y]) {
+                    android.graphics.Color.BLACK
+                } else {
+                    android.graphics.Color.WHITE
+                }
+            }
+        }
+        Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+            setPixels(pixels, 0, width, 0, 0, width, height)
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        modifier = Modifier.padding(start = Dimens.spacingSm, top = Dimens.spacingSm)
+    )
 }

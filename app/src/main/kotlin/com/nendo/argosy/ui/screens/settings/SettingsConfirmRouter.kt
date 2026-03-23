@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
+import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
@@ -33,6 +34,10 @@ import com.nendo.argosy.ui.screens.settings.sections.interfaceFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.SteamItem
+import com.nendo.argosy.ui.screens.settings.sections.isLoggedIn
+import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.steamMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoMaxFocusIndex
@@ -108,16 +113,27 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
             routeServerConfirm(vm, state)
         }
         SettingsSection.STEAM_SETTINGS -> {
-            val refreshIndex = 1 + state.steam.installedLaunchers.size
-            when {
-                state.focusedIndex == 0 && !state.steam.hasStoragePermission -> {
-                    vm.viewModelScope.launch { vm._requestStoragePermissionEvent.emit(Unit) }
-                }
-                state.focusedIndex == refreshIndex && !state.steam.isSyncing -> {
-                    vm.refreshSteamMetadata()
-                }
-                state.focusedIndex > 0 && state.focusedIndex < refreshIndex && state.steam.hasStoragePermission && !state.steam.isSyncing -> {
-                    vm.confirmLauncherAction()
+            val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)
+            when (item) {
+                SteamItem.GnInstall -> {} // handled by click
+                SteamItem.SyncLibrary -> vm.syncSteamLibrary()
+                SteamItem.AddManual -> vm.showAddSteamGameDialog()
+                SteamItem.Disconnect -> vm.disconnectSteam()
+                SteamItem.ResetLibrary -> vm.resetSteamLibrary()
+                else -> {}
+            }
+            // Pre-login states: focus index 0 is the action button
+            if (!isLoggedIn(state.steam) && state.focusedIndex == 0) {
+                if (!state.steam.gnInstalled) {
+                    // GN install -- handled by click
+                } else if (state.steam.connectionState == SteamConnectionState.DISCONNECTED && !state.steam.authPolling) {
+                    vm.connectToSteam()
+                    vm.startSteamQrAuth()
+                } else if (state.steam.qrUrl != null) {
+                    vm.cancelSteamQrAuth()
+                } else if (state.steam.error != null) {
+                    vm.connectToSteam()
+                    vm.startSteamQrAuth()
                 }
             }
             InputResult.HANDLED
@@ -707,7 +723,7 @@ private fun computeMaxFocusIndex(
         gameDataMaxFocusIndex(buildGameDataItemsFromState(state))
     }
     SettingsSection.SYNC_SETTINGS -> syncSettingsMaxFocusIndex()
-    SettingsSection.STEAM_SETTINGS -> 1 + state.steam.installedLaunchers.size
+    SettingsSection.STEAM_SETTINGS -> steamMaxFocusIndex(state.steam)
     SettingsSection.RETRO_ACHIEVEMENTS -> if (state.retroAchievements.showLoginForm) 3 else 0
     SettingsSection.STORAGE -> createStorageLayoutInfo(
     ).let { it.layout.maxFocusIndex(it.state) }

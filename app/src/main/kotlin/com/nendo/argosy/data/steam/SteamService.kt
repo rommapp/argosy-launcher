@@ -183,6 +183,7 @@ class SteamService : Service() {
                     error = null
                 )
                 steamAuthManager.onLoggedOn(callback)
+                steamContentManager.notifyConnected()
             } else {
                 Log.e(TAG, "Login failed: ${callback.result}")
                 _state.value = _state.value.copy(

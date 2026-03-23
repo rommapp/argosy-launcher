@@ -97,6 +97,7 @@ class SteamContentManager @Inject constructor(
     private val androidDataAccessor: com.nendo.argosy.data.storage.AndroidDataAccessor
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val connectionWaiters = mutableListOf<kotlinx.coroutines.CompletableDeferred<Boolean>>()
 
     private var steamClient: SteamClient? = null
     private var steamApps: SteamApps? = null
@@ -319,7 +320,40 @@ class SteamContentManager @Inject constructor(
         }
     }
 
+    suspend fun ensureConnected(): Boolean {
+        if (steamClient != null && steamApps != null) return true
+
+        Log.d(TAG, "Steam not connected, starting service and waiting...")
+        val intent = android.content.Intent(context, SteamService::class.java).apply {
+            putExtra(SteamService.EXTRA_AUTO_CONNECT, true)
+        }
+        context.startService(intent)
+
+        val waiter = kotlinx.coroutines.CompletableDeferred<Boolean>()
+        synchronized(connectionWaiters) { connectionWaiters.add(waiter) }
+
+        return try {
+            withTimeoutOrNull(30_000L) { waiter.await() } ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Connection wait failed", e)
+            false
+        }
+    }
+
+    fun notifyConnected() {
+        synchronized(connectionWaiters) {
+            connectionWaiters.forEach { it.complete(true) }
+            connectionWaiters.clear()
+        }
+    }
+
     suspend fun fetchAppInfo(appId: Int): KeyValue = withTimeout(30_000L) {
+        if (steamApps == null || callbackManager == null) {
+            if (!ensureConnected()) {
+                throw IllegalStateException("Steam not connected")
+            }
+        }
+
         suspendCancellableCoroutine { continuation ->
             val apps = steamApps
             val cm = callbackManager

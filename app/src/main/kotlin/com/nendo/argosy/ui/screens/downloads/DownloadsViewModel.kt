@@ -144,14 +144,43 @@ class DownloadsViewModel @Inject constructor(
         }
 
         // Convert Steam downloads to DownloadProgress entries
+        // Observe both activeDownload (for progress) and downloadState (for paused persistence)
         viewModelScope.launch {
-            steamContentManager.activeDownload.collect { steamDl ->
-                if (steamDl == null) {
-                    _steamDownloads.value = emptyList()
-                    return@collect
+            kotlinx.coroutines.flow.combine(
+                steamContentManager.activeDownload,
+                steamContentManager.downloadState
+            ) { activeDl, dlState -> activeDl to dlState }.collect { (activeDl, steamState) ->
+                val appId: Long
+                val gameName: String
+                val coverPath: String?
+                val totalBytes: Long
+                val bytesDownloaded: Long
+                val progress: Float
+
+                when {
+                    activeDl != null -> {
+                        appId = activeDl.appId
+                        gameName = activeDl.gameName
+                        coverPath = activeDl.coverPath
+                        totalBytes = activeDl.totalBytes
+                        bytesDownloaded = activeDl.bytesDownloaded
+                        progress = activeDl.progress
+                    }
+                    steamState is SteamDownloadState.Paused -> {
+                        appId = steamState.appId
+                        gameName = steamState.gameName
+                        coverPath = null
+                        totalBytes = 0L
+                        bytesDownloaded = 0L
+                        progress = steamState.progress
+                    }
+                    else -> {
+                        _steamDownloads.value = emptyList()
+                        return@collect
+                    }
                 }
-                val game = gameDao.getBySteamAppId(steamDl.appId)
-                val dlState = when (steamDl.state) {
+
+                val mappedState = when (steamState) {
                     is SteamDownloadState.Downloading -> DownloadState.DOWNLOADING
                     is SteamDownloadState.Preparing -> DownloadState.QUEUED
                     is SteamDownloadState.Moving -> DownloadState.EXTRACTING
@@ -163,18 +192,20 @@ class DownloadsViewModel @Inject constructor(
                         return@collect
                     }
                 }
+
+                val game = gameDao.getBySteamAppId(appId)
                 _steamDownloads.value = listOf(
                     DownloadProgress(
-                        id = -steamDl.appId,
+                        id = -appId,
                         gameId = game?.id ?: 0L,
                         rommId = 0L,
                         platformSlug = "steam",
-                        gameTitle = steamDl.gameName,
+                        gameTitle = gameName,
                         fileName = "",
-                        totalBytes = steamDl.totalBytes,
-                        bytesDownloaded = steamDl.bytesDownloaded,
-                        state = dlState,
-                        coverPath = steamDl.coverPath
+                        totalBytes = totalBytes,
+                        bytesDownloaded = bytesDownloaded,
+                        state = mappedState,
+                        coverPath = coverPath
                     )
                 )
             }

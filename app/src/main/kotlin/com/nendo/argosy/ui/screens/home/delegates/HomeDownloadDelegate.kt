@@ -76,16 +76,30 @@ class HomeDownloadDelegate @Inject constructor(
             }
         }
 
-        // Steam downloads
+        // Steam downloads -- observe downloadState for pause persistence
         scope.launch {
-            steamContentManager.activeDownload.collect { steamDownload ->
-                if (steamDownload == null) return@collect
-                val game = gameDao.getBySteamAppId(steamDownload.appId) ?: return@collect
-                val indicator = when (steamDownload.state) {
+            steamContentManager.downloadState.collect { steamState ->
+                val appId = when (steamState) {
+                    is SteamDownloadState.Preparing -> steamState.appId
+                    is SteamDownloadState.Downloading -> steamState.appId
+                    is SteamDownloadState.Moving -> steamState.appId
+                    is SteamDownloadState.Paused -> steamState.appId
+                    is SteamDownloadState.Completed -> steamState.appId
+                    is SteamDownloadState.Failed -> steamState.appId
+                    is SteamDownloadState.Idle -> null
+                }
+                if (appId == null) return@collect
+                val game = gameDao.getBySteamAppId(appId) ?: return@collect
+                val activeDl = steamContentManager.activeDownload.value
+                val progress = activeDl?.progress ?: when (steamState) {
+                    is SteamDownloadState.Paused -> steamState.progress
+                    else -> 0f
+                }
+                val indicator = when (steamState) {
                     is SteamDownloadState.Preparing -> GameDownloadIndicator(isQueued = true)
                     is SteamDownloadState.Downloading -> GameDownloadIndicator(
                         isDownloading = true,
-                        progress = steamDownload.progress
+                        progress = progress
                     )
                     is SteamDownloadState.Moving -> GameDownloadIndicator(
                         isExtracting = true,
@@ -93,7 +107,7 @@ class HomeDownloadDelegate @Inject constructor(
                     )
                     is SteamDownloadState.Paused -> GameDownloadIndicator(
                         isPaused = true,
-                        progress = steamDownload.progress
+                        progress = progress
                     )
                     is SteamDownloadState.Completed -> {
                         onNewlyCompleted()

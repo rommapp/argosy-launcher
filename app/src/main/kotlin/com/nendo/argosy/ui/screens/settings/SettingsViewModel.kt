@@ -520,10 +520,8 @@ class SettingsViewModel @Inject constructor(
     fun confirmAddSteamGame() = steamDelegate.confirmAddSteamGame(context, viewModelScope)
 
     // Legacy Steam methods (used by GameDataSection/routers)
-    @Suppress("UNUSED_PARAMETER")
-    fun scanSteamLauncher(packageName: String) {}
-    @Suppress("UNUSED_PARAMETER")
-    fun installSteamLauncher(emulatorId: String) {}
+    fun scanSteamLauncher(packageName: String) = steamDelegate.scanSteamLauncher(context, viewModelScope, packageName)
+    fun installSteamLauncher(emulatorId: String) = steamDelegate.installSteamLauncher(emulatorId, viewModelScope)
     fun refreshSteamMetadata() {}
     fun moveSteamVariantFocus(delta: Int) {}
     fun confirmSteamVariantSelection() {}

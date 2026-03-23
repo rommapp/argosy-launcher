@@ -6,6 +6,14 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.Build
+import android.os.Environment
+import com.nendo.argosy.data.emulator.EmulatorDownloadManager
+import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.launcher.SteamLaunchers
+import com.nendo.argosy.data.repository.SteamIgdbResolver
+import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
+import com.nendo.argosy.data.remote.github.FetchReleaseResult
 import com.nendo.argosy.data.repository.SteamRepository
 import com.nendo.argosy.data.repository.SteamResult
 import com.nendo.argosy.data.steam.LibrarySyncState
@@ -15,6 +23,8 @@ import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.data.steam.SteamLibraryManager
 import com.nendo.argosy.data.steam.SteamService
 import com.nendo.argosy.data.storage.AndroidDataAccessor
+import com.nendo.argosy.ui.screens.settings.InstalledSteamLauncher
+import com.nendo.argosy.ui.screens.settings.NotInstalledSteamLauncher
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.showError
 import com.nendo.argosy.ui.screens.settings.SteamSettingsState
@@ -41,7 +51,10 @@ class SteamSettingsDelegate @Inject constructor(
     private val steamAuthManager: SteamAuthManager,
     private val steamLibraryManager: SteamLibraryManager,
     private val androidDataAccessor: AndroidDataAccessor,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val emulatorDownloadManager: EmulatorDownloadManager,
+    private val emulatorUpdateRepository: EmulatorUpdateRepository,
+    private val steamIgdbResolver: SteamIgdbResolver
 ) {
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
@@ -89,24 +102,150 @@ class SteamSettingsDelegate @Inject constructor(
         scope.launch {
             val gnInstalled = isGnInstalled(context)
             val gnStoragePath = withContext(Dispatchers.IO) { findGnStoragePath() }
+            val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else true
+
+            val installedLaunchers = SteamLaunchers.getInstalled(context).map { launcher ->
+                InstalledSteamLauncher(
+                    packageName = launcher.packageName,
+                    displayName = launcher.displayName,
+                    gameCount = 0,
+                    supportsScanning = launcher.supportsScanning,
+                    scanMayIncludeUninstalled = launcher.scanMayIncludeUninstalled
+                )
+            }
+            val installedPackages = installedLaunchers.map { it.packageName }.toSet()
+            val notInstalledLaunchers = EmulatorRegistry.getForPlatform("steam")
+                .filter { it.packageName !in installedPackages }
+                .map { def ->
+                    NotInstalledSteamLauncher(
+                        emulatorId = def.id,
+                        displayName = def.displayName,
+                        hasDirectDownload = def.releaseSource != null
+                    )
+                }
 
             _state.update {
                 it.copy(
                     gnInstalled = gnInstalled,
-                    gnStoragePath = gnStoragePath
+                    gnStoragePath = gnStoragePath,
+                    hasStoragePermission = hasPermission,
+                    installedLaunchers = installedLaunchers,
+                    notInstalledLaunchers = notInstalledLaunchers
                 )
             }
 
-            // Auto-bind if service is already running (e.g. auto-connect from saved account)
+            // Auto-bind if service is already running
             if (!bound) {
                 tryBindService(context)
             }
         }
     }
 
+    fun installSteamLauncher(emulatorId: String, scope: CoroutineScope) {
+        val def = EmulatorRegistry.getById(emulatorId) ?: return
+
+        if (def.releaseSource == null) {
+            scope.launch { def.downloadUrl?.let { _openUrlEvent.emit(it) } }
+            return
+        }
+
+        if (!emulatorDownloadManager.canInstallPackages()) {
+            emulatorDownloadManager.openInstallPermissionSettings()
+            return
+        }
+
+        scope.launch {
+            _state.update { it.copy(downloadingLauncherId = emulatorId, downloadProgress = 0f) }
+
+            when (val result = emulatorUpdateRepository.fetchLatestRelease(def)) {
+                is FetchReleaseResult.Success -> {
+                    emulatorDownloadManager.downloadAndInstall(
+                        emulatorId = emulatorId,
+                        downloadUrl = result.downloadUrl,
+                        assetName = result.assetName,
+                        variant = result.variant
+                    )
+                }
+                is FetchReleaseResult.MultipleVariants -> {
+                    _state.update {
+                        it.copy(
+                            downloadingLauncherId = null,
+                            downloadProgress = null,
+                            variantPickerInfo = com.nendo.argosy.ui.screens.settings.VariantPickerInfo(
+                                emulatorId = emulatorId,
+                                emulatorName = def.displayName,
+                                variants = result.variants.map { v ->
+                                    com.nendo.argosy.ui.screens.settings.VariantOption(
+                                        assetName = v.assetName,
+                                        downloadUrl = v.downloadUrl,
+                                        fileSize = v.assetSize,
+                                        variant = v.variant
+                                    )
+                                }
+                            ),
+                            variantPickerFocusIndex = 0
+                        )
+                    }
+                }
+                is FetchReleaseResult.Error -> {
+                    _state.update { it.copy(downloadingLauncherId = null, downloadProgress = null) }
+                    notificationManager.showError("Download failed: ${result.message}")
+                }
+            }
+        }
+    }
+
+    fun scanSteamLauncher(context: Context, scope: CoroutineScope, packageName: String) {
+        val launcher = _state.value.installedLaunchers.find { it.packageName == packageName } ?: return
+        val steamLauncher = SteamLaunchers.getByPackage(packageName)
+
+        scope.launch {
+            _state.update { it.copy(isSyncing = true, syncingLauncher = packageName) }
+            notificationManager.show("Scanning ${launcher.displayName}...")
+
+            val scannedGames = if (steamLauncher?.supportsScanning == true) {
+                withContext(Dispatchers.IO) { steamLauncher.scan(context) }
+            } else {
+                emptyList()
+            }
+
+            if (scannedGames.isEmpty()) {
+                _state.update { it.copy(isSyncing = false, syncingLauncher = null) }
+                notificationManager.show("No games found")
+                return@launch
+            }
+
+            var addedCount = 0
+            var skippedCount = 0
+            for (game in scannedGames) {
+                when (steamRepository.addGame(game.appId, packageName)) {
+                    is SteamResult.Success -> addedCount++
+                    is SteamResult.Error -> skippedCount++
+                }
+            }
+
+            steamIgdbResolver.requestResolutionForUnresolved()
+
+            _state.update { it.copy(isSyncing = false, syncingLauncher = null) }
+
+            val message = when {
+                addedCount > 0 && skippedCount > 0 -> "Added $addedCount games, $skippedCount already existed"
+                addedCount > 0 -> "Added $addedCount games"
+                else -> "All ${scannedGames.size} games already in library"
+            }
+            notificationManager.show(message)
+            loadSteamSettings(context, scope)
+        }
+    }
+
+    private var pendingQrAuth = false
+
     fun connectToSteam(context: Context) {
+        pendingQrAuth = true
         val intent = Intent(context, SteamService::class.java).apply {
-            putExtra(SteamService.EXTRA_AUTO_CONNECT, true)
+            putExtra(SteamService.EXTRA_CONNECT_FOR_AUTH, true)
         }
         context.startService(intent)
         tryBindService(context)
@@ -220,6 +359,11 @@ class SteamSettingsDelegate @Inject constructor(
                         username = serviceState.username ?: it.username,
                         error = serviceState.error
                     )
+                }
+
+                if (serviceState.connectionState == SteamConnectionState.CONNECTED && pendingQrAuth) {
+                    pendingQrAuth = false
+                    steamAuthManager.startQrAuth()
                 }
             }
         }

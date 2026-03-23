@@ -90,7 +90,12 @@ class SteamService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "SteamService started")
 
-        if (intent?.getBooleanExtra(EXTRA_AUTO_CONNECT, false) == true) {
+        if (intent?.getBooleanExtra(EXTRA_CONNECT_FOR_AUTH, false) == true) {
+            scope.launch {
+                Log.d(TAG, "Connecting for QR auth")
+                connect()
+            }
+        } else if (intent?.getBooleanExtra(EXTRA_AUTO_CONNECT, false) == true) {
             scope.launch {
                 val account = steamAuthManager.getActiveAccount()
                 if (account != null) {
@@ -107,6 +112,7 @@ class SteamService : Service() {
 
     companion object {
         const val EXTRA_AUTO_CONNECT = "auto_connect"
+        const val EXTRA_CONNECT_FOR_AUTH = "connect_for_auth"
     }
 
     override fun onDestroy() {

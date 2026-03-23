@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
@@ -56,6 +57,7 @@ internal sealed class MainSettingsItem(
     data object Platforms : MainSettingsItem("platforms", Icons.Default.Gamepad, "Platforms")
     data object BuiltinEmulator : MainSettingsItem("builtin_emulator", Icons.Default.Build, "Built-in Emulator")
     data object Bios : MainSettingsItem("bios", Icons.Default.Memory, "BIOS Files")
+    data object Steam : MainSettingsItem("steam", Icons.Default.CloudQueue, "Steam")
     data object Social : MainSettingsItem("social", Icons.Default.Group, "Social")
     data object Permissions : MainSettingsItem("permissions", Icons.Default.Security, "Permissions")
     data object About : MainSettingsItem("about", Icons.Default.Info, "About")
@@ -63,7 +65,7 @@ internal sealed class MainSettingsItem(
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
             DeviceSettings, Platforms, BuiltinEmulator, Storage, Interface, Controls,
-            GameData, Bios, RetroAchievements, Social, Permissions, About
+            GameData, Bios, RetroAchievements, Steam, Social, Permissions, About
         )
     }
 }
@@ -120,6 +122,14 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         MainSettingsItem.Platforms -> "${uiState.emulators.platforms.size} platforms"
         MainSettingsItem.BuiltinEmulator -> if (uiState.emulators.builtinLibretroEnabled) "Enabled" else "Disabled"
         MainSettingsItem.Bios -> uiState.bios.summaryText
+        MainSettingsItem.Steam -> when (uiState.steam.connectionState) {
+            com.nendo.argosy.data.steam.SteamConnectionState.LOGGED_IN ->
+                "Connected as ${uiState.steam.username ?: "Steam"}"
+            com.nendo.argosy.data.steam.SteamConnectionState.CONNECTING,
+            com.nendo.argosy.data.steam.SteamConnectionState.CONNECTED,
+            com.nendo.argosy.data.steam.SteamConnectionState.LOGGING_IN -> "Connecting..."
+            else -> "Not connected"
+        }
         MainSettingsItem.Social -> when (uiState.social.authStatus) {
             SocialAuthStatus.CONNECTED -> "Linked as ${uiState.social.displayName ?: uiState.social.username}"
             SocialAuthStatus.CONNECTING -> "Connecting..."
@@ -144,6 +154,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Platforms -> viewModel.navigateToSection(SettingsSection.PLATFORMS)
             MainSettingsItem.BuiltinEmulator -> viewModel.navigateToSection(SettingsSection.BUILTIN_EMULATOR)
             MainSettingsItem.Bios -> viewModel.navigateToSection(SettingsSection.BIOS)
+            MainSettingsItem.Steam -> viewModel.navigateToSection(SettingsSection.STEAM_SETTINGS)
             MainSettingsItem.Social -> viewModel.navigateToSection(SettingsSection.SOCIAL)
             MainSettingsItem.Permissions -> viewModel.navigateToSection(SettingsSection.PERMISSIONS)
             MainSettingsItem.About -> viewModel.navigateToSection(SettingsSection.ABOUT)

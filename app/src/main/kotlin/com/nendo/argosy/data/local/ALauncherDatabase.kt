@@ -1363,6 +1363,8 @@ abstract class ALauncherDatabase : RoomDatabase() {
 
         val MIGRATION_91_92 = object : Migration(91, 92) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS steam_accounts")
+                db.execSQL("DROP TABLE IF EXISTS steam_licenses")
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS steam_accounts (
                         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -1371,10 +1373,10 @@ abstract class ALauncherDatabase : RoomDatabase() {
                         avatarHash TEXT DEFAULT NULL,
                         refreshToken TEXT NOT NULL,
                         accessToken TEXT DEFAULT NULL,
-                        accessTokenExpiry TEXT DEFAULT NULL,
-                        isActive INTEGER NOT NULL DEFAULT 1,
-                        lastLoginAt TEXT NOT NULL,
-                        createdAt TEXT NOT NULL
+                        accessTokenExpiry INTEGER DEFAULT NULL,
+                        isActive INTEGER NOT NULL DEFAULT 0,
+                        lastLoginAt INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL
                     )
                 """)
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_steam_accounts_steamId ON steam_accounts(steamId)")
@@ -1386,7 +1388,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
                         packageId INTEGER NOT NULL,
                         appIds TEXT NOT NULL,
                         licenseType INTEGER NOT NULL,
-                        createdAt TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
                         FOREIGN KEY(accountId) REFERENCES steam_accounts(id) ON DELETE CASCADE
                     )
                 """)

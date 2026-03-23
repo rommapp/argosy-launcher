@@ -427,10 +427,14 @@ class GameDetailViewModel @Inject constructor(
                 else -> fileExists && emulatorDetector.hasAnyEmulator(game.platformSlug)
             }
 
+            val activeSteamDl = if (isSteamGame) steamContentManager.activeDownload.value else null
+            val isSteamDownloading = activeSteamDl != null && activeSteamDl.appId == game.steamAppId
+
             val downloadStatus = when {
                 game.source == GameSource.ANDROID_APP -> GameDownloadStatus.DOWNLOADED
                 isAndroidApp && fileExists && game.packageName == null -> GameDownloadStatus.NEEDS_INSTALL
                 isSteamGame && game.localPath != null && fileExists -> GameDownloadStatus.DOWNLOADED
+                isSteamDownloading -> GameDownloadStatus.DOWNLOADING
                 fileExists -> GameDownloadStatus.DOWNLOADED
                 game.isMultiDisc -> {
                     val downloadedCount = gameDiscDao.getDownloadedDiscCount(gameId)

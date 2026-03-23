@@ -131,6 +131,77 @@ class SteamContentManager @Inject constructor(
         Log.d(TAG, "SteamContentManager initialized with ContentDownloader")
     }
 
+    init {
+        scope.launch {
+            restorePausedDownloads()
+        }
+    }
+
+    private suspend fun restorePausedDownloads() = withContext(Dispatchers.IO) {
+        // Scan GN path and fallback path for .download_in_progress markers
+        val candidates = mutableListOf<File>()
+
+        // Check GN path on all volumes
+        val volumes = mutableListOf(android.os.Environment.getExternalStorageDirectory().absolutePath)
+        try {
+            File("/storage").listFiles()?.forEach { vol ->
+                if (vol.isDirectory && vol.name != "emulated" && vol.name != "self") {
+                    volumes.add(vol.absolutePath)
+                }
+            }
+        } catch (_: Exception) {}
+
+        for (root in volumes) {
+            val commonDir = File("$root/Android/data/$GN_PACKAGE/files/Steam/steamapps/common")
+            if (commonDir.exists()) {
+                commonDir.listFiles()?.forEach { gameDir ->
+                    if (File(gameDir, ".download_in_progress").exists()) {
+                        candidates.add(gameDir)
+                    }
+                }
+            }
+        }
+
+        // Check fallback storage path
+        val prefs = preferencesRepository.userPreferences.first()
+        val basePath = prefs.romStoragePath
+        if (basePath != null) {
+            val steamDir = File(basePath, "steam")
+            if (steamDir.exists()) {
+                steamDir.listFiles()?.forEach { appDir ->
+                    if (File(appDir, ".download_in_progress").exists()) {
+                        candidates.add(appDir)
+                    }
+                }
+            }
+        }
+
+        for (dir in candidates) {
+            val size = getDirectorySize(dir)
+            val game = gameDao.getBySource(GameSource.STEAM).find {
+                it.localPath == dir.absolutePath || sanitizeGameName(it.title) == dir.name
+            }
+            val gameName = game?.title ?: dir.name
+            val appId = game?.steamAppId ?: continue
+
+            Log.d(TAG, "Restored paused download: $gameName (${size / 1024 / 1024}MB)")
+
+            val pausedState = SteamDownloadState.Paused(appId, gameName, 0f, needsVerification = true)
+            _downloadState.value = pausedState
+            _activeDownload.value = SteamDownloadProgress(
+                appId = appId,
+                gameName = gameName,
+                coverPath = game.coverPath,
+                progress = 0f,
+                totalBytes = 0L,
+                bytesDownloaded = size,
+                state = pausedState
+            )
+            // Only restore the first one (single active download)
+            break
+        }
+    }
+
     fun isConnected(): Boolean {
         val hasApps = steamApps != null
         val hasCm = callbackManager != null

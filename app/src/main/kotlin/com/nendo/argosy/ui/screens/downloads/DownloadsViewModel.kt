@@ -115,10 +115,10 @@ class DownloadsViewModel @Inject constructor(
             }.collect { (downloadState, maxActive, steamItems) ->
                 val merged = downloadState.copy(
                     activeDownloads = downloadState.activeDownloads + steamItems.filter {
-                        it.state == DownloadState.DOWNLOADING
+                        it.state == DownloadState.DOWNLOADING || it.state == DownloadState.EXTRACTING
                     },
                     queue = downloadState.queue + steamItems.filter {
-                        it.state == DownloadState.QUEUED
+                        it.state == DownloadState.QUEUED || it.state == DownloadState.PAUSED
                     }
                 )
 
@@ -150,6 +150,7 @@ class DownloadsViewModel @Inject constructor(
                 steamContentManager.activeDownload,
                 steamContentManager.downloadState
             ) { activeDl, dlState -> activeDl to dlState }.collect { (activeDl, steamState) ->
+                android.util.Log.d("DownloadsVM", "Steam combine: activeDl=${activeDl?.state?.javaClass?.simpleName}, dlState=${steamState.javaClass.simpleName}")
                 val appId: Long
                 val gameName: String
                 val coverPath: String?

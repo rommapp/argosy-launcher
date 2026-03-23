@@ -196,8 +196,18 @@ class DownloadsViewModel @Inject constructor(
         return false
     }
 
+    private fun isSteamItem(item: DownloadProgress) = item.id < 0
+
     fun toggleFocusedItem() {
         val item = _uiState.value.focusedItem ?: return
+        if (isSteamItem(item)) {
+            when (item.state) {
+                DownloadState.DOWNLOADING -> steamContentManager.pauseDownload()
+                DownloadState.PAUSED -> {} // Resume handled by re-triggering download from game detail
+                else -> {}
+            }
+            return
+        }
         when (item.state) {
             DownloadState.DOWNLOADING -> downloadManager.pauseDownload(item.rommId)
             DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE, DownloadState.FAILED ->
@@ -209,6 +219,10 @@ class DownloadsViewModel @Inject constructor(
 
     fun cancelFocusedItem() {
         val item = _uiState.value.focusedItem ?: return
+        if (isSteamItem(item)) {
+            steamContentManager.cancelDownload()
+            return
+        }
         downloadManager.cancelDownload(item.rommId)
     }
 

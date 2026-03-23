@@ -11,6 +11,7 @@ import androidx.core.content.FileProvider
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.storage.StoragePathUtils
+import com.nendo.argosy.data.launcher.GameNativeLauncher
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.repository.BiosRepository
@@ -299,15 +300,12 @@ class GameLauncher @Inject constructor(
                 Logger.warn(TAG, "launchSteamGame() failed: missing steamAppId")
             }
 
-        val launcherPackage = game.steamLauncher
-            ?: return LaunchResult.Error("Steam game missing launcher").also {
-                Logger.warn(TAG, "launchSteamGame() failed: missing launcher package")
-            }
+        val launcherPackage = game.steamLauncher ?: "native"
 
-        val launcher = SteamLaunchers.getByPackage(launcherPackage)
-            ?: return LaunchResult.NoSteamLauncher(launcherPackage).also {
-                Logger.warn(TAG, "launchSteamGame() failed: unknown launcher $launcherPackage")
-            }
+        val launcher = when (launcherPackage) {
+            "native" -> GameNativeLauncher
+            else -> SteamLaunchers.getByPackage(launcherPackage) ?: GameNativeLauncher
+        }
 
         if (!launcher.isInstalled(context)) {
             return LaunchResult.NoSteamLauncher(launcherPackage).also {

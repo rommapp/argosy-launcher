@@ -11,6 +11,7 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
@@ -206,6 +208,7 @@ class DownloadManager @Inject constructor(
 
     companion object {
         private const val TAG = "DownloadManager"
+        private const val CONNECTION_WAIT_TIMEOUT_MS = 30_000L
     }
 
     private suspend fun getDownloadDir(platformSlug: String): File {
@@ -545,6 +548,18 @@ class DownloadManager @Inject constructor(
     }
 
     private suspend fun processQueue() {
+        if (!romMRepository.isConnected()) {
+            Log.d(TAG, "processQueue: waiting for RomM connection")
+            val connected = withTimeoutOrNull(CONNECTION_WAIT_TIMEOUT_MS) {
+                romMRepository.connectionState.first { it is ConnectionState.Connected }
+            }
+            if (connected == null) {
+                Log.d(TAG, "processQueue: RomM connection timeout, deferring")
+                return
+            }
+            Log.d(TAG, "processQueue: RomM connected, proceeding")
+        }
+
         val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
         val currentActive = _state.value.activeDownloads.size
 

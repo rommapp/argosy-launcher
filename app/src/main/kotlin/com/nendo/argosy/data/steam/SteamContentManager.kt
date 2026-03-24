@@ -97,7 +97,6 @@ class SteamContentManager @Inject constructor(
     private val androidDataAccessor: com.nendo.argosy.data.storage.AndroidDataAccessor
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val connectionWaiters = mutableListOf<kotlinx.coroutines.CompletableDeferred<Boolean>>()
 
     private var steamClient: SteamClient? = null
     private var steamApps: SteamApps? = null
@@ -396,7 +395,7 @@ class SteamContentManager @Inject constructor(
     }
 
     suspend fun ensureConnected(): Boolean {
-        if (steamClient != null && steamApps != null) return true
+        if (steamClient != null && steamApps != null && steamAuthManager.isLoggedIn.value) return true
 
         Log.d(TAG, "Steam not connected, starting service and waiting...")
         val intent = android.content.Intent(context, SteamService::class.java).apply {
@@ -404,22 +403,21 @@ class SteamContentManager @Inject constructor(
         }
         context.startService(intent)
 
-        val waiter = kotlinx.coroutines.CompletableDeferred<Boolean>()
-        synchronized(connectionWaiters) { connectionWaiters.add(waiter) }
-
-        return try {
-            withTimeoutOrNull(30_000L) { waiter.await() } ?: false
-        } catch (e: Exception) {
-            Log.e(TAG, "Connection wait failed", e)
-            false
+        // Poll for connection with timeout
+        val deadline = System.currentTimeMillis() + 30_000L
+        while (System.currentTimeMillis() < deadline) {
+            if (steamClient != null && steamApps != null && steamAuthManager.isLoggedIn.value) {
+                Log.d(TAG, "Steam connected after waiting")
+                return true
+            }
+            kotlinx.coroutines.delay(500)
         }
+        Log.e(TAG, "Steam connection timeout (client=${steamClient != null}, apps=${steamApps != null}, loggedIn=${steamAuthManager.isLoggedIn.value})")
+        return false
     }
 
     fun notifyConnected() {
-        synchronized(connectionWaiters) {
-            connectionWaiters.forEach { it.complete(true) }
-            connectionWaiters.clear()
-        }
+        Log.d(TAG, "notifyConnected called")
     }
 
     suspend fun fetchAppInfo(appId: Int): KeyValue = withTimeout(30_000L) {

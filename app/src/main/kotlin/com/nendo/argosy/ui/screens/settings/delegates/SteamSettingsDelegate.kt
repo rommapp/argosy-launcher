@@ -402,10 +402,8 @@ class SteamSettingsDelegate @Inject constructor(
             steamLibraryManager.syncState.collect { syncState ->
                 _state.update { it.copy(syncState = syncState) }
 
-                if (syncState is LibrarySyncState.Complete) {
-                    notificationManager.show(
-                        "Added ${syncState.gamesAdded}, updated ${syncState.gamesUpdated} games"
-                    )
+                if (syncState is LibrarySyncState.Complete && syncState.gamesAdded > 0) {
+                    notificationManager.show("Added ${syncState.gamesAdded} Steam games")
                 } else if (syncState is LibrarySyncState.Error) {
                     notificationManager.showError(syncState.message)
                 }

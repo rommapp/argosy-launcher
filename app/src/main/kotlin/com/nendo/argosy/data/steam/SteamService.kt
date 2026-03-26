@@ -2,9 +2,17 @@ package com.nendo.argosy.data.steam
 
 import android.app.Service
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Binder
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import com.nendo.argosy.R
+import com.nendo.argosy.data.download.DownloadNotificationChannel
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.steamclient.SteamClient
@@ -16,6 +24,8 @@ import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -72,6 +82,11 @@ class SteamService : Service() {
 
     private val subscriptions = mutableListOf<Closeable>()
     private var isRunning = false
+    private var reconnectAttempt = 0
+    private var networkPaused = false
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var isForeground = false
+    private var steamWakeLock: PowerManager.WakeLock? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): SteamService = this@SteamService
@@ -85,6 +100,7 @@ class SteamService : Service() {
         super.onCreate()
         Log.d(TAG, "SteamService created")
         initializeSteamClient()
+        observeDownloadStateForForeground()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -92,17 +108,27 @@ class SteamService : Service() {
 
         if (intent?.getBooleanExtra(EXTRA_CONNECT_FOR_AUTH, false) == true) {
             scope.launch {
-                Log.d(TAG, "Connecting for QR auth")
-                connect()
+                Log.d(TAG, "Connecting for QR auth, stopping reconnect loop")
+                isRunning = false
+                reconnectAttempt = 0
+                kotlinx.coroutines.delay(500)
+                connectForAuth()
             }
         } else if (intent?.getBooleanExtra(EXTRA_AUTO_CONNECT, false) == true) {
             scope.launch {
+                kotlinx.coroutines.delay(100)
                 val account = steamAuthManager.getActiveAccount()
-                if (account != null) {
-                    Log.d(TAG, "Auto-connecting for saved account: ${account.username}")
+                if (account == null) {
+                    Log.d(TAG, "No saved account, skipping connect")
+                    return@launch
+                }
+                // Only auto-connect if there are paused downloads waiting
+                val hasPausedDownloads = steamContentManager.downloadState.value is SteamDownloadState.Paused
+                if (hasPausedDownloads) {
+                    Log.d(TAG, "Paused downloads found, auto-connecting for ${account.username}")
                     connect()
                 } else {
-                    Log.d(TAG, "No saved account, skipping auto-connect")
+                    Log.d(TAG, "No pending work, deferring Steam connection")
                 }
             }
         }
@@ -113,11 +139,15 @@ class SteamService : Service() {
     companion object {
         const val EXTRA_AUTO_CONNECT = "auto_connect"
         const val EXTRA_CONNECT_FOR_AUTH = "connect_for_auth"
+        private const val MAX_RECONNECT_ATTEMPTS = 5
+        private const val STEAM_SERVICE_NOTIFICATION_ID = 0x2001
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "SteamService destroyed")
+        if (isForeground) demoteFromForeground()
+        unregisterNetworkCallback()
         steamLibraryManager.cleanup()
         steamContentManager.cleanup()
         disconnect()
@@ -125,8 +155,17 @@ class SteamService : Service() {
     }
 
     private fun initializeSteamClient() {
+        val httpClient = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .pingInterval(15, TimeUnit.SECONDS)
+            .build()
+
         val configuration = SteamConfiguration.create { builder ->
             builder
+                .withConnectionTimeout(60_000L)
+                .withHttpClient(httpClient)
         }
 
         val client = SteamClient(configuration)
@@ -156,6 +195,10 @@ class SteamService : Service() {
 
         subscriptions += cm.subscribe(DisconnectedCallback::class.java) { callback ->
             Log.d(TAG, "Disconnected from Steam, userInitiated=${callback.isUserInitiated}")
+            if (suppressDisconnectError) {
+                Log.d(TAG, "Disconnect suppressed (reconnecting for auth)")
+                return@subscribe
+            }
             _state.value = _state.value.copy(
                 connectionState = SteamConnectionState.DISCONNECTED,
                 error = if (!callback.isUserInitiated) "Connection lost" else null
@@ -165,14 +208,36 @@ class SteamService : Service() {
 
             if (!callback.isUserInitiated && isRunning) {
                 scope.launch {
-                    kotlinx.coroutines.delay(5000)
+                    if (!isRunning) {
+                        Log.d(TAG, "Not running, stopping reconnect")
+                        return@launch
+                    }
+                    if (steamAuthManager.sessionDead) {
+                        Log.d(TAG, "Session dead, stopping reconnect")
+                        isRunning = false
+                        return@launch
+                    }
+                    kotlinx.coroutines.delay(500)
                     val hasAccount = steamAuthManager.getActiveAccount() != null
-                    if (isRunning && hasAccount) {
-                        Log.d(TAG, "Attempting reconnect...")
-                        connect()
-                    } else {
+                    if (!hasAccount) {
                         Log.d(TAG, "No active account, stopping reconnect")
                         isRunning = false
+                        return@launch
+                    }
+                    if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+                        Log.e(TAG, "Max reconnect attempts ($MAX_RECONNECT_ATTEMPTS) reached, giving up")
+                        isRunning = false
+                        _state.value = _state.value.copy(error = "Reconnect failed after $MAX_RECONNECT_ATTEMPTS attempts")
+                        return@launch
+                    }
+
+                    val delaySec = minOf(1L shl reconnectAttempt, 60L)
+                    reconnectAttempt++
+                    Log.d(TAG, "Reconnect attempt $reconnectAttempt in ${delaySec}s")
+                    kotlinx.coroutines.delay(delaySec * 1000)
+
+                    if (isRunning) {
+                        connect()
                     }
                 }
             }
@@ -181,12 +246,14 @@ class SteamService : Service() {
         subscriptions += cm.subscribe(LoggedOnCallback::class.java) { callback ->
             if (callback.result == EResult.OK) {
                 Log.d(TAG, "Logged on as ${callback.clientSteamID}")
+                reconnectAttempt = 0
                 _state.value = _state.value.copy(
                     connectionState = SteamConnectionState.LOGGED_IN,
                     steamId = callback.clientSteamID?.convertToUInt64(),
                     error = null
                 )
                 steamAuthManager.onLoggedOn(callback)
+                steamContentManager.initialize(steamClient!!, steamApps!!, cm)
                 steamContentManager.notifyConnected()
                 scope.launch {
                     steamContentManager.discoverLocalSteamGames()
@@ -209,16 +276,61 @@ class SteamService : Service() {
                 username = null,
                 steamId = null
             )
+            // Session replaced (e.g. user logged in on PC) -- preserve tokens, just reconnect
+            if (callback.result == `in`.dragonbra.javasteam.enums.EResult.LogonSessionReplaced ||
+                callback.result == `in`.dragonbra.javasteam.enums.EResult.LoggedInElsewhere) {
+                Log.d(TAG, "Session replaced externally, tokens preserved for reconnect")
+            }
+        }
+    }
+
+    private var connectStartedAt = 0L
+
+    private var suppressDisconnectError = false
+
+    private fun connectForAuth() {
+        suppressDisconnectError = true
+        _state.value = _state.value.copy(connectionState = SteamConnectionState.CONNECTING, error = null)
+        try { steamClient?.disconnect() } catch (_: Throwable) {}
+        callbackJob?.cancel()
+        initializeSteamClient()
+        isRunning = true
+        suppressDisconnectError = false
+
+        scope.launch {
+            try {
+                Log.d(TAG, "Connecting fresh client for QR auth...")
+                steamClient?.connect()
+                startCallbackLoop()
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to connect for auth", e)
+                _state.value = _state.value.copy(
+                    connectionState = SteamConnectionState.DISCONNECTED,
+                    error = e.message
+                )
+            }
         }
     }
 
     fun connect() {
-        if (_state.value.connectionState == SteamConnectionState.CONNECTING) {
-            Log.d(TAG, "Already connecting...")
-            return
+        val currentState = _state.value.connectionState
+        if (currentState == SteamConnectionState.CONNECTING) {
+            val elapsed = System.currentTimeMillis() - connectStartedAt
+            if (elapsed < 30_000L) {
+                Log.d(TAG, "Already connecting (${elapsed / 1000}s)...")
+                return
+            }
+            Log.w(TAG, "Connection stuck at CONNECTING for ${elapsed / 1000}s, reinitializing")
+            suppressDisconnectError = true
+            try { steamClient?.disconnect() } catch (_: Exception) {}
+            callbackJob?.cancel()
+            initializeSteamClient()
+            suppressDisconnectError = false
+            _state.value = _state.value.copy(connectionState = SteamConnectionState.DISCONNECTED)
         }
 
         isRunning = true
+        connectStartedAt = System.currentTimeMillis()
         _state.value = _state.value.copy(connectionState = SteamConnectionState.CONNECTING)
 
         scope.launch {
@@ -226,12 +338,21 @@ class SteamService : Service() {
                 Log.d(TAG, "Connecting to Steam...")
                 steamClient?.connect()
                 startCallbackLoop()
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to connect", e)
-                _state.value = _state.value.copy(
-                    connectionState = SteamConnectionState.DISCONNECTED,
-                    error = e.message
-                )
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to connect: ${e::class.simpleName}, reinitializing client")
+                try { steamClient?.disconnect() } catch (_: Throwable) {}
+                callbackJob?.cancel()
+                initializeSteamClient()
+                try {
+                    steamClient?.connect()
+                    startCallbackLoop()
+                } catch (e2: Throwable) {
+                    Log.e(TAG, "Retry connect also failed", e2)
+                    _state.value = _state.value.copy(
+                        connectionState = SteamConnectionState.DISCONNECTED,
+                        error = e2.message
+                    )
+                }
             }
         }
     }
@@ -264,6 +385,101 @@ class SteamService : Service() {
             }
             Log.d(TAG, "Callback loop ended")
         }
+    }
+
+    private fun registerNetworkCallback() {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            private var lostTime = 0L
+
+            override fun onLost(network: Network) {
+                lostTime = System.currentTimeMillis()
+                Log.d(TAG, "Network lost event")
+                // Debounce: only pause after sustained loss (checked in onAvailable timeout)
+                scope.launch {
+                    kotlinx.coroutines.delay(5000)
+                    // If still no network after 5s and download is active, pause
+                    val dlState = steamContentManager.downloadState.value
+                    if (!networkPaused && lostTime > 0 &&
+                        (dlState is SteamDownloadState.Downloading || dlState is SteamDownloadState.Preparing)) {
+                        Log.d(TAG, "Network lost for 5s, pausing active download")
+                        networkPaused = true
+                        steamContentManager.pauseDownload()
+                    }
+                }
+            }
+
+            override fun onAvailable(network: Network) {
+                lostTime = 0 // Cancel pending pause
+                if (!networkPaused) return
+                Log.d(TAG, "Network restored, resuming download")
+                networkPaused = false
+                val dlState = steamContentManager.downloadState.value
+                if (dlState is SteamDownloadState.Paused) {
+                    scope.launch {
+                        val game = steamContentManager.activeDownload.value ?: return@launch
+                        steamContentManager.queueDownloadOptimistic(game.appId, game.gameName, game.coverPath)
+                    }
+                }
+            }
+        }
+
+        networkCallback = callback
+        cm.registerNetworkCallback(request, callback)
+    }
+
+    private fun unregisterNetworkCallback() {
+        networkCallback?.let { cb ->
+            try {
+                getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(cb)
+            } catch (_: Exception) {}
+        }
+        networkCallback = null
+    }
+
+    private fun observeDownloadStateForForeground() {
+        scope.launch {
+            steamContentManager.downloadState.collect { state ->
+                val busy = state !is SteamDownloadState.Idle &&
+                    state !is SteamDownloadState.Completed &&
+                    state !is SteamDownloadState.Failed
+                if (busy && !isForeground) {
+                    promoteToForeground()
+                } else if (!busy && isForeground) {
+                    demoteFromForeground()
+                }
+            }
+        }
+    }
+
+    private fun promoteToForeground() {
+        DownloadNotificationChannel.create(this)
+        val notification = NotificationCompat.Builder(this, DownloadNotificationChannel.CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_helm)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText("Steam connection active")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setSilent(true)
+            .build()
+        startForeground(STEAM_SERVICE_NOTIFICATION_ID, notification)
+        steamWakeLock = getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "argosy:steam_service")
+            .apply { acquire(60 * 60 * 1000L) }
+        isForeground = true
+        Log.d(TAG, "Promoted to foreground")
+    }
+
+    private fun demoteFromForeground() {
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        steamWakeLock?.let { if (it.isHeld) it.release() }
+        steamWakeLock = null
+        isForeground = false
+        Log.d(TAG, "Demoted from foreground")
     }
 
     fun getSteamClient(): SteamClient? = steamClient

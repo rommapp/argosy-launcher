@@ -633,9 +633,13 @@ class HomeLibraryDelegate @Inject constructor(
             releaseYear = releaseYear,
             genre = genre,
             isFavorite = isFavorite,
-            isDownloaded = localPath != null || source == GameSource.ANDROID_APP,
+            isDownloaded = when {
+                source == GameSource.ANDROID_APP -> true
+                steamAppId != null && localPath != null -> java.io.File(localPath, ".download_complete").exists()
+                else -> localPath != null
+            },
             isRommGame = rommId != null || source == GameSource.STEAM,
-            isSteamGame = source == GameSource.STEAM,
+            isSteamGame = source == GameSource.STEAM || steamAppId != null,
             rating = rating,
             userRating = userRating,
             userDifficulty = userDifficulty,

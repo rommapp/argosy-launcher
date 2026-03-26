@@ -404,7 +404,7 @@ class GameDetailViewModel @Inject constructor(
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null
 
-            val isSteamGame = game.source == GameSource.STEAM
+            val isSteamGame = game.source == GameSource.STEAM || game.steamAppId != null
             val isAndroidApp = game.source == GameSource.ANDROID_APP || game.platformSlug == "android"
             val steamLauncherName = if (isSteamGame) {
                 game.steamLauncher?.let { SteamLaunchers.getByPackage(it)?.displayName } ?: "Auto"
@@ -714,26 +714,10 @@ class GameDetailViewModel @Inject constructor(
     fun downloadGame() = downloadDelegate.downloadGame(viewModelScope, currentGameId, pageLoadTime, pageLoadDebounceMs)
 
     fun downloadSteamGame() {
-        val currentState = steamContentManager.downloadState.value
-        if (currentState !is SteamDownloadState.Idle &&
-            currentState !is SteamDownloadState.Completed &&
-            currentState !is SteamDownloadState.Failed &&
-            currentState !is SteamDownloadState.Paused) {
-            return
-        }
-
-        _uiState.update { it.copy(downloadStatus = GameDownloadStatus.QUEUED, downloadProgress = 0f) }
-
         viewModelScope.launch {
             val game = gameRepository.getById(currentGameId) ?: return@launch
             val steamAppId = game.steamAppId ?: return@launch
-            try {
-                val appInfo = steamContentManager.fetchAppInfo(steamAppId.toInt())
-                steamContentManager.queueDownload(steamAppId, game.title, appInfo, game.coverPath)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(downloadStatus = GameDownloadStatus.NOT_DOWNLOADED) }
-                notificationManager.showError("Failed to start Steam download: ${e.message}")
-            }
+            steamContentManager.queueDownloadOptimistic(steamAppId, game.title, game.coverPath)
         }
     }
 

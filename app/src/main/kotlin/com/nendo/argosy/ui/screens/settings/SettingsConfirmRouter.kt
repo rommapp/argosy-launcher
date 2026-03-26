@@ -583,10 +583,8 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             vm._uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = idx) }; true
         }
         state.currentSection == SettingsSection.STEAM_SETTINGS -> {
-            val items = buildGameDataItemsFromState(state)
-            val firstSteam = focusableItems(items).indexOfFirst { it.section == "steam" }
-            val idx = if (firstSteam >= 0) firstSteam else 0
-            vm._uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = idx) }; true
+            vm.cancelSteamQrAuth()
+            vm._uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = 0) }; true
         }
         state.retroAchievements.showLoginForm -> { vm.hideRALoginForm(); true }
         state.currentSection == SettingsSection.RETRO_ACHIEVEMENTS -> {

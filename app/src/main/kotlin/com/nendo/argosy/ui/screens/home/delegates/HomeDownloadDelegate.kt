@@ -82,6 +82,10 @@ class HomeDownloadDelegate @Inject constructor(
             steamContentManager.downloadState.collect { steamState ->
                 val appId = when (steamState) {
                     is SteamDownloadState.Preparing -> steamState.appId
+                    is SteamDownloadState.Cleaning -> steamState.appId
+                    is SteamDownloadState.Connecting -> steamState.appId
+                    is SteamDownloadState.FetchingManifest -> steamState.appId
+                    is SteamDownloadState.Validating -> steamState.appId
                     is SteamDownloadState.Downloading -> steamState.appId
                     is SteamDownloadState.Moving -> steamState.appId
                     is SteamDownloadState.Paused -> steamState.appId
@@ -102,7 +106,13 @@ class HomeDownloadDelegate @Inject constructor(
                     else -> 0f
                 }
                 val indicator = when (steamState) {
-                    is SteamDownloadState.Preparing -> GameDownloadIndicator(isQueued = true)
+                    is SteamDownloadState.Preparing,
+                    is SteamDownloadState.Connecting,
+                    is SteamDownloadState.FetchingManifest -> GameDownloadIndicator(isQueued = true)
+                    is SteamDownloadState.Validating -> GameDownloadIndicator(
+                        isExtracting = true,
+                        progress = progress
+                    )
                     is SteamDownloadState.Downloading -> GameDownloadIndicator(
                         isDownloading = true,
                         progress = progress
@@ -110,6 +120,10 @@ class HomeDownloadDelegate @Inject constructor(
                     is SteamDownloadState.Moving -> GameDownloadIndicator(
                         isExtracting = true,
                         progress = 1f
+                    )
+                    is SteamDownloadState.Cleaning -> GameDownloadIndicator(
+                        isExtracting = true,
+                        progress = 0f
                     )
                     is SteamDownloadState.Paused -> GameDownloadIndicator(
                         isPaused = true,

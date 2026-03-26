@@ -354,10 +354,13 @@ class SteamSettingsDelegate @Inject constructor(
         scope.launch {
             serviceRef?.state?.collect { serviceState ->
                 _state.update {
+                    // Only show errors during active user-initiated auth flows
+                    val showError = serviceState.error != null &&
+                        (it.authPolling || it.qrUrl != null)
                     it.copy(
                         connectionState = serviceState.connectionState,
                         username = serviceState.username ?: it.username,
-                        error = serviceState.error
+                        error = if (showError) serviceState.error else null
                     )
                 }
 
@@ -374,11 +377,12 @@ class SteamSettingsDelegate @Inject constructor(
             steamAuthManager.qrAuthState.collect { authState ->
                 _state.update {
                     when (authState) {
-                        is QrAuthState.Idle -> it.copy(qrUrl = null, authPolling = false)
-                        is QrAuthState.Starting -> it.copy(qrUrl = null, authPolling = true)
+                        is QrAuthState.Idle -> it.copy(qrUrl = null, authPolling = false, error = null)
+                        is QrAuthState.Starting -> it.copy(qrUrl = null, authPolling = true, error = null)
                         is QrAuthState.WaitingForScan -> it.copy(
                             qrUrl = authState.challengeUrl,
-                            authPolling = true
+                            authPolling = true,
+                            error = null
                         )
                         is QrAuthState.Polling -> it.copy(authPolling = true)
                         is QrAuthState.Success -> it.copy(

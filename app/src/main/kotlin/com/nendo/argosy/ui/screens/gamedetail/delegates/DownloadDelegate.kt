@@ -146,9 +146,13 @@ class DownloadDelegate @Inject constructor(
                 if (steamDownload.appId != steamAppId) return@collect
 
                 val result: Pair<GameDownloadStatus, Float> = when (steamDownload.state) {
-                    is SteamDownloadState.Preparing -> GameDownloadStatus.QUEUED to 0f
+                    is SteamDownloadState.Preparing,
+                    is SteamDownloadState.Connecting,
+                    is SteamDownloadState.FetchingManifest -> GameDownloadStatus.QUEUED to 0f
+                    is SteamDownloadState.Validating -> GameDownloadStatus.EXTRACTING to steamDownload.progress
                     is SteamDownloadState.Downloading -> GameDownloadStatus.DOWNLOADING to steamDownload.progress
                     is SteamDownloadState.Moving -> GameDownloadStatus.EXTRACTING to 1f
+                    is SteamDownloadState.Cleaning -> GameDownloadStatus.EXTRACTING to 0f
                     is SteamDownloadState.Paused -> GameDownloadStatus.PAUSED to steamDownload.progress
                     is SteamDownloadState.Completed -> {
                         onCompleted(gameId)

@@ -69,7 +69,8 @@ data class DownloadProgress(
     val extractionBytesWritten: Long = 0,
     val extractionTotalBytes: Long = 0,
     val isMultiFileRom: Boolean = false,
-    val bytesPerSecond: Long = 0
+    val bytesPerSecond: Long = 0,
+    val statusMessage: String? = null
 ) {
     val progressPercent: Float
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f

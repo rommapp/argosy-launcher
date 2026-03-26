@@ -6,13 +6,16 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.SteamRepository
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SteamAccountDao
+import com.nendo.argosy.data.local.dao.CachedLicenseDao
 import com.nendo.argosy.data.local.dao.SteamLicenseDao
+import com.nendo.argosy.data.local.entity.CachedLicenseEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.SteamLicenseEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest
+import `in`.dragonbra.javasteam.steam.handlers.steamapps.License
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.LicenseListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSProductInfoCallback
@@ -57,6 +60,7 @@ class SteamLibraryManager @Inject constructor(
     private val platformDao: PlatformDao,
     private val steamAccountDao: SteamAccountDao,
     private val steamLicenseDao: SteamLicenseDao,
+    private val cachedLicenseDao: CachedLicenseDao,
     private val imageCacheManager: ImageCacheManager,
     private val drmHazardManager: DrmHazardManager,
     private val steamRepository: dagger.Lazy<SteamRepository>
@@ -78,6 +82,8 @@ class SteamLibraryManager @Inject constructor(
     private var gamesAdded = 0
     private var gamesUpdated = 0
     private var currentAccountId: Long? = null
+    @Volatile
+    private var cachedLicenses: List<License> = emptyList()
 
     fun initialize(apps: SteamApps, cm: CallbackManager) {
         steamApps = apps
@@ -117,6 +123,9 @@ class SteamLibraryManager @Inject constructor(
             currentAccountId = account.id
 
             val licenses = callback.licenseList
+            cachedLicenses = licenses.toList()
+            persistLicensesToDb(licenses)
+
             val packageIds = licenses.map { it.packageID }.filter { it != 0 }
 
             Log.d(TAG, "Processing ${packageIds.size} packages (excluding package 0)")
@@ -419,6 +428,32 @@ class SteamLibraryManager @Inject constructor(
                     gameCount = 0
                 )
             )
+        }
+    }
+
+    suspend fun getLicenses(): List<License> {
+        if (cachedLicenses.isNotEmpty()) return cachedLicenses
+        val fromDb = cachedLicenseDao.getAll().mapNotNull {
+            LicenseSerializer.deserialize(it.licenseJson)
+        }
+        if (fromDb.isNotEmpty()) {
+            cachedLicenses = fromDb
+            Log.d(TAG, "Loaded ${fromDb.size} licenses from DB cache")
+        }
+        return cachedLicenses
+    }
+
+    private suspend fun persistLicensesToDb(licenses: List<License>) {
+        try {
+            cachedLicenseDao.deleteAll()
+            val entities = licenses.mapNotNull { license ->
+                val json = LicenseSerializer.serialize(license)
+                if (json.isNotEmpty()) CachedLicenseEntity(licenseJson = json) else null
+            }
+            cachedLicenseDao.insertAll(entities)
+            Log.d(TAG, "Persisted ${entities.size} licenses to DB cache")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to persist licenses: ${e.message}")
         }
     }
 

@@ -34,6 +34,7 @@ import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.SocialGameCacheDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
+import com.nendo.argosy.data.local.dao.CachedLicenseDao
 import com.nendo.argosy.data.local.dao.SteamAccountDao
 import com.nendo.argosy.data.local.dao.SteamLicenseDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
@@ -41,6 +42,7 @@ import com.nendo.argosy.data.local.entity.AppCategoryEntity
 import com.nendo.argosy.data.local.entity.CheatEntity
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
+import com.nendo.argosy.data.local.entity.CachedLicenseEntity
 import com.nendo.argosy.data.local.entity.CoreOptionOverrideEntity
 import com.nendo.argosy.data.local.entity.ControllerMappingEntity
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
@@ -100,9 +102,10 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         PendingSocialSyncEntity::class,
         CoreOptionOverrideEntity::class,
         SteamAccountEntity::class,
-        SteamLicenseEntity::class
+        SteamLicenseEntity::class,
+        CachedLicenseEntity::class
     ],
-    version = 92,
+    version = 94,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -137,6 +140,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun coreOptionOverrideDao(): CoreOptionOverrideDao
     abstract fun steamAccountDao(): SteamAccountDao
     abstract fun steamLicenseDao(): SteamLicenseDao
+    abstract fun cachedLicenseDao(): CachedLicenseDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -1358,6 +1362,23 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_90_91 = object : Migration(90, 91) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN fastForwardEnabled INTEGER DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_93_94 = object : Migration(93, 94) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE steam_accounts ADD COLUMN clientId INTEGER DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_92_93 = object : Migration(92, 93) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS cached_licenses (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        license_json TEXT NOT NULL
+                    )
+                """)
             }
         }
 

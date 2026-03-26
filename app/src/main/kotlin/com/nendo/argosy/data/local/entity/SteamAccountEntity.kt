@@ -22,6 +22,7 @@ data class SteamAccountEntity(
     val refreshToken: String,
     val accessToken: String? = null,
     val accessTokenExpiry: Instant? = null,
+    val clientId: Long? = null,
 
     val isActive: Boolean = true,
     val lastLoginAt: Instant = Instant.now(),

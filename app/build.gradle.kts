@@ -205,7 +205,7 @@ dependencies {
     // Archive extraction (7z, tar, zstd, etc.)
     implementation(libs.commons.compress)
     implementation(libs.xz)
-    implementation(libs.zstd.jni)
+    implementation(libs.zstd.jni) { artifact { type = "aar" } }
 
     // Steam (JavaSteam)
     implementation(libs.bundles.steam)

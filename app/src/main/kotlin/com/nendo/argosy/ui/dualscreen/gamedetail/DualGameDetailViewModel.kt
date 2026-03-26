@@ -329,7 +329,7 @@ class DualGameDetailViewModel(
                 achievementCount = game.achievementCount,
                 earnedAchievementCount = game.earnedAchievementCount,
                 isRommGame = game.rommId != null,
-                isSteamGame = game.source == GameSource.STEAM,
+                isSteamGame = game.source == GameSource.STEAM || game.steamAppId != null,
                 isAndroidApp = game.source == GameSource.ANDROID_APP,
                 isDownloaded = game.localPath != null,
                 platformSlug = game.platformSlug,

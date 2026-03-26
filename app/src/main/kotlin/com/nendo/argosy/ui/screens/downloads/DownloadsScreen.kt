@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
@@ -278,16 +279,30 @@ private fun DownloadItem(
     val isExtracting = download.state == DownloadState.EXTRACTING
 
     val (statusIcon, statusText, statusColor) = when {
+        download.statusMessage != null && download.state == DownloadState.QUEUED -> Triple(
+            Icons.Default.Schedule,
+            download.statusMessage,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        download.statusMessage != null && download.state == DownloadState.EXTRACTING -> Triple(
+            Icons.Filled.FolderZip,
+            download.statusMessage,
+            MaterialTheme.colorScheme.tertiary
+        )
         isExtracting -> Triple(
-            Icons.Default.Download,
+            Icons.Filled.FolderZip,
             "Extracting...",
             MaterialTheme.colorScheme.tertiary
         )
-        isActiveDownload -> Triple(
-            Icons.Default.Download,
-            "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}",
-            MaterialTheme.colorScheme.primary
-        )
+        isActiveDownload -> {
+            val byteText = "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}"
+            val text = if (download.statusMessage != null) "$byteText ${download.statusMessage}" else byteText
+            Triple(
+                Icons.Default.Download,
+                text,
+                MaterialTheme.colorScheme.primary
+            )
+        }
         download.state == DownloadState.PAUSED -> Triple(
             Icons.Default.Pause,
             "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}",
@@ -391,6 +406,7 @@ private fun DownloadItem(
                 }
             }
 
+            Spacer(modifier = Modifier.width(Dimens.spacingMd))
             Icon(
                 imageVector = statusIcon,
                 contentDescription = null,

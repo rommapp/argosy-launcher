@@ -1,7 +1,7 @@
 [versions]
 agp = "8.7.3"
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.28"
+kotlin = "2.1.21"
+ksp = "2.1.21-2.0.2"
 detekt = "1.23.7"
 coreKtx = "1.15.0"
 lifecycleRuntimeKtx = "2.8.7"
@@ -9,7 +9,7 @@ activityCompose = "1.9.3"
 composeBom = "2024.12.01"
 hilt = "2.54"
 hiltNavigation = "1.2.0"
-room = "2.6.1"
+room = "2.7.1"
 datastore = "1.1.1"
 navigation = "2.8.5"
 coil = "2.7.0"
@@ -26,7 +26,7 @@ camerax = "1.4.1"
 commonsCompress = "1.27.1"
 xz = "1.10"
 zstdJni = "1.5.6-8"
-javasteam = "1.6.0"
+javasteam = "1.8.0.1-14-SNAPSHOT"
 spongycastle = "1.58.0.0"
 protobuf = "4.30.2"
 
@@ -93,8 +93,9 @@ commons-compress = { group = "org.apache.commons", name = "commons-compress", ve
 xz = { group = "org.tukaani", name = "xz", version.ref = "xz" }
 zstd-jni = { group = "com.github.luben", name = "zstd-jni", version.ref = "zstdJni" }
 
-# Steam (JavaSteam)
-javasteam = { group = "in.dragonbra", name = "javasteam", version.ref = "javasteam" }
+# Steam (JavaSteam fork with DepotDownloader)
+javasteam = { group = "io.github.joshuatam", name = "javasteam", version.ref = "javasteam" }
+javasteam-depotdownloader = { group = "io.github.joshuatam", name = "javasteam-depotdownloader", version.ref = "javasteam" }
 spongycastle = { group = "com.madgag.spongycastle", name = "prov", version.ref = "spongycastle" }
 protobuf-java = { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
 
@@ -140,4 +141,4 @@ lifecycle = [
 room = ["room-runtime", "room-ktx"]
 network = ["retrofit", "retrofit-moshi", "okhttp", "okhttp-logging", "moshi"]
 camerax = ["camerax-core", "camerax-camera2", "camerax-lifecycle", "camerax-view"]
-steam = ["javasteam", "zstd-jni", "spongycastle", "protobuf-java"]
+steam = ["javasteam", "javasteam-depotdownloader", "spongycastle", "protobuf-java"]

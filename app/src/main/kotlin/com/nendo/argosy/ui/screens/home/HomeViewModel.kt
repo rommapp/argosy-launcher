@@ -552,24 +552,10 @@ class HomeViewModel @Inject constructor(
     }
 
     override fun queueSteamDownload(gameId: Long) {
-        val currentState = steamContentManager.downloadState.value
-        if (currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Idle &&
-            currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Completed &&
-            currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Failed &&
-            currentState !is com.nendo.argosy.data.steam.SteamDownloadState.Paused) {
-            return
-        }
-
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
             val steamAppId = game.steamAppId ?: return@launch
-            try {
-                notificationManager.show("Preparing Steam download: ${game.title}")
-                val appInfo = steamContentManager.fetchAppInfo(steamAppId.toInt())
-                steamContentManager.queueDownload(steamAppId, game.title, appInfo, game.coverPath)
-            } catch (e: Exception) {
-                notificationManager.showError("Steam download failed: ${e.message}")
-            }
+            steamContentManager.queueDownloadOptimistic(steamAppId, game.title, game.coverPath)
         }
     }
 

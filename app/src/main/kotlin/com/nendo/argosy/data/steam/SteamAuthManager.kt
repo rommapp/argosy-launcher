@@ -2,6 +2,8 @@ package com.nendo.argosy.data.steam
 
 import android.util.Log
 import com.nendo.argosy.data.local.dao.SteamAccountDao
+import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.ui.notification.NotificationType
 import com.nendo.argosy.data.local.entity.SteamAccountEntity
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.authentication.AuthPollResult
@@ -49,7 +51,8 @@ sealed class SteamAuthEvent {
 
 @Singleton
 class SteamAuthManager @Inject constructor(
-    private val steamAccountDao: SteamAccountDao
+    private val steamAccountDao: SteamAccountDao,
+    private val notificationManager: NotificationManager
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -57,6 +60,10 @@ class SteamAuthManager @Inject constructor(
     private var steamUser: SteamUser? = null
     private var qrAuthSession: QrAuthSession? = null
     private var authPollJob: Job? = null
+    private var qrCancelled = false
+    private var lastClientId: Long? = null
+    @Volatile var sessionDead = false
+        private set
 
     private val _qrAuthState = MutableStateFlow<QrAuthState>(QrAuthState.Idle)
     val qrAuthState: StateFlow<QrAuthState> = _qrAuthState.asStateFlow()
@@ -74,11 +81,30 @@ class SteamAuthManager @Inject constructor(
         steamUser = user
         Log.d(TAG, "Steam client connected, ready for auth")
 
+        val qrActive = _qrAuthState.value is QrAuthState.WaitingForScan ||
+            _qrAuthState.value is QrAuthState.Polling ||
+            _qrAuthState.value is QrAuthState.Starting
+        if (qrActive) {
+            Log.d(TAG, "QR auth in progress, skipping auto-login")
+            return
+        }
+
         scope.launch {
             val savedAccount = steamAccountDao.getActiveAccount()
             if (savedAccount != null) {
-                Log.d(TAG, "Found saved account, attempting auto-login")
-                loginWithRefreshToken(savedAccount)
+                Log.d(TAG, "Found saved account: ${savedAccount.username}, attempting auto-login")
+                var attempts = 0
+                while (attempts < 5 && !client.isConnected) {
+                    delay(500)
+                    attempts++
+                }
+                if (client.isConnected) {
+                    loginWithRefreshToken(savedAccount)
+                } else {
+                    Log.e(TAG, "Client not connected after ${attempts * 500}ms, cannot auto-login")
+                }
+            } else {
+                Log.d(TAG, "No saved account found")
             }
         }
     }
@@ -90,14 +116,16 @@ class SteamAuthManager @Inject constructor(
 
     fun onLoggedOn(callback: LoggedOnCallback) {
         val steamId = callback.clientSteamID ?: return
-        val result = pendingAuthResult
+        val result = if (qrCancelled) null else pendingAuthResult
         pendingAuthResult = null
+        sessionDead = false
+        qrCancelled = false
 
         _isLoggedIn.value = true
         Log.d(TAG, "Set isLoggedIn = true")
 
-        if (result != null) {
-            scope.launch {
+        scope.launch {
+            if (result != null) {
                 saveAccount(steamId, result)
                 _authEvents.emit(
                     SteamAuthEvent.LoggedIn(
@@ -105,6 +133,13 @@ class SteamAuthManager @Inject constructor(
                         result.accountName
                     )
                 )
+            } else {
+                // Auto-login succeeded -- update lastLoginAt to track token health
+                val account = steamAccountDao.getBySteamId(steamId.convertToUInt64())
+                if (account != null) {
+                    steamAccountDao.update(account.copy(lastLoginAt = Instant.now()))
+                    Log.d(TAG, "Refreshed lastLoginAt for ${account.username}")
+                }
             }
         }
 
@@ -114,19 +149,44 @@ class SteamAuthManager @Inject constructor(
         )
     }
 
+    private val AUTH_FATAL_RESULTS = setOf(
+        EResult.InvalidPassword, EResult.Expired,
+        EResult.InvalidLoginAuthCode, EResult.AccountLogonDenied,
+        EResult.AccountLogonDeniedNoMail, EResult.AccountLoginDeniedNeedTwoFactor,
+        EResult.ExpiredLoginAuthCode, EResult.ParentalControlRestricted
+    )
+
     fun onLoginFailed(result: EResult) {
+        if (qrCancelled) {
+            qrCancelled = false
+            Log.d(TAG, "Ignoring login failure after QR cancel: $result")
+            return
+        }
         scope.launch {
             _authEvents.emit(SteamAuthEvent.LoginFailed(result.name))
-            if (result == EResult.AccessDenied || result == EResult.Expired ||
-                result == EResult.InvalidLoginAuthCode || result == EResult.AccountLogonDenied) {
-                Log.w(TAG, "Token rejected ($result), clearing saved account")
+            if (result in AUTH_FATAL_RESULTS) {
+                Log.w(TAG, "Auth permanently failed ($result), clearing saved account")
+                sessionDead = true
                 steamAccountDao.deactivateAll()
+                notificationManager.show(
+                    title = "Steam session expired",
+                    subtitle = "Sign in again from Settings > Steam",
+                    type = NotificationType.WARNING,
+                    key = "steam_auth_expired"
+                )
+            } else {
+                Log.w(TAG, "Login failed ($result), keeping account for retry")
             }
         }
-        _qrAuthState.value = QrAuthState.Error("Login failed: ${result.name}")
+        // Only show error in UI for fatal auth failures, not transient reconnect issues
+        if (result in AUTH_FATAL_RESULTS) {
+            _qrAuthState.value = QrAuthState.Error("Login failed: ${result.name}")
+        }
     }
 
     fun startQrAuth() {
+        sessionDead = false
+        qrCancelled = false
         val client = steamClient ?: run {
             _qrAuthState.value = QrAuthState.Error("Not connected to Steam")
             return
@@ -143,6 +203,7 @@ class SteamAuthManager @Inject constructor(
 
                 val session = client.authentication.beginAuthSessionViaQR(authDetails).await()
                 qrAuthSession = session
+                lastClientId = session.clientID
 
                 _qrAuthState.value = QrAuthState.WaitingForScan(session.challengeUrl)
                 Log.d(TAG, "QR challenge URL: ${session.challengeUrl}")
@@ -164,7 +225,6 @@ class SteamAuthManager @Inject constructor(
                     val result = session.pollAuthSessionStatus().await()
                     if (result != null) {
                         Log.d(TAG, "Auth poll success: ${result.accountName}")
-                        _qrAuthState.value = QrAuthState.Polling
                         pendingAuthResult = result
                         loginWithAuthResult(result)
                         break
@@ -189,31 +249,26 @@ class SteamAuthManager @Inject constructor(
     }
 
     private fun loginWithAuthResult(result: AuthPollResult) {
-        val user = steamUser ?: run {
-            _qrAuthState.value = QrAuthState.Error("Steam user handler not available")
+        val user = steamUser
+        val client = steamClient
+        if (user == null || client == null) {
+            _qrAuthState.value = QrAuthState.Error("Steam not connected")
             return
         }
 
-        Log.d(TAG, "Logging in with auth result for ${result.accountName}")
+        Log.d(TAG, "Logging in with auth result for ${result.accountName} (client connected: ${client.isConnected})")
         val logonDetails = LogOnDetails()
         logonDetails.username = result.accountName
         logonDetails.accessToken = result.refreshToken
+        logonDetails.shouldRememberPassword = true
 
         user.logOn(logonDetails)
     }
 
     private fun loginWithRefreshToken(account: SteamAccountEntity) {
-        val user = steamUser ?: run {
+        val user = steamUser
+        if (user == null) {
             Log.e(TAG, "Steam user handler not available for auto-login")
-            return
-        }
-        val client = steamClient ?: run {
-            Log.e(TAG, "Steam client not available for auto-login")
-            return
-        }
-
-        if (!client.isConnected) {
-            Log.w(TAG, "Steam client not fully connected yet, deferring auto-login")
             return
         }
 
@@ -221,6 +276,7 @@ class SteamAuthManager @Inject constructor(
         val logonDetails = LogOnDetails()
         logonDetails.username = account.username
         logonDetails.accessToken = account.refreshToken
+        logonDetails.shouldRememberPassword = true
 
         user.logOn(logonDetails)
     }
@@ -228,12 +284,15 @@ class SteamAuthManager @Inject constructor(
     private suspend fun saveAccount(steamId: SteamID, result: AuthPollResult) {
         steamAccountDao.deactivateAll()
 
+        val clientId = lastClientId
         val existing = steamAccountDao.getBySteamId(steamId.convertToUInt64())
         if (existing != null) {
             steamAccountDao.update(
                 existing.copy(
                     username = result.accountName,
                     refreshToken = result.refreshToken,
+                    accessToken = result.accessToken,
+                    clientId = clientId,
                     isActive = true,
                     lastLoginAt = Instant.now()
                 )
@@ -245,6 +304,8 @@ class SteamAuthManager @Inject constructor(
                     steamId = steamId.convertToUInt64(),
                     username = result.accountName,
                     refreshToken = result.refreshToken,
+                    accessToken = result.accessToken,
+                    clientId = clientId,
                     isActive = true,
                     lastLoginAt = Instant.now()
                 )
@@ -254,9 +315,11 @@ class SteamAuthManager @Inject constructor(
     }
 
     fun cancelQrAuth() {
+        qrCancelled = true
         authPollJob?.cancel()
         authPollJob = null
         qrAuthSession = null
+        pendingAuthResult = null
         _qrAuthState.value = QrAuthState.Idle
     }
 

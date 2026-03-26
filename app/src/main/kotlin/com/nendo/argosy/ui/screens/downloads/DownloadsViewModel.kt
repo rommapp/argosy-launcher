@@ -119,6 +119,9 @@ class DownloadsViewModel @Inject constructor(
                     },
                     queue = downloadState.queue + steamItems.filter {
                         it.state == DownloadState.QUEUED || it.state == DownloadState.PAUSED
+                    },
+                    completed = downloadState.completed + steamItems.filter {
+                        it.state == DownloadState.COMPLETED
                     }
                 )
 
@@ -158,14 +161,21 @@ class DownloadsViewModel @Inject constructor(
                 when {
                     activeDl != null -> {
                         activeAppId = activeDl.appId
-                        val mappedState = when (steamState) {
-                            is SteamDownloadState.Downloading -> DownloadState.DOWNLOADING
-                            is SteamDownloadState.Preparing -> DownloadState.QUEUED
-                            is SteamDownloadState.Moving -> DownloadState.EXTRACTING
-                            is SteamDownloadState.Paused -> DownloadState.PAUSED
-                            is SteamDownloadState.Completed -> DownloadState.COMPLETED
-                            is SteamDownloadState.Failed -> DownloadState.FAILED
-                            is SteamDownloadState.Idle -> DownloadState.QUEUED
+                        val (mappedState, statusMsg) = when (steamState) {
+                            is SteamDownloadState.Downloading -> {
+                                val depotInfo = if (steamState.totalDepots > 1) " (${steamState.currentDepot}/${steamState.totalDepots} depots)" else ""
+                                DownloadState.DOWNLOADING to depotInfo.ifEmpty { null }
+                            }
+                            is SteamDownloadState.Preparing -> DownloadState.QUEUED to "Preparing..."
+                            is SteamDownloadState.Connecting -> DownloadState.QUEUED to "Connecting to Steam..."
+                            is SteamDownloadState.FetchingManifest -> DownloadState.QUEUED to "Fetching depot manifest..."
+                            is SteamDownloadState.Validating -> DownloadState.EXTRACTING to (steamState.statusDetail.ifEmpty { "Validating..." })
+                            is SteamDownloadState.Moving -> DownloadState.EXTRACTING to "Moving files..."
+                            is SteamDownloadState.Cleaning -> DownloadState.QUEUED to "Cleaning up..."
+                            is SteamDownloadState.Paused -> DownloadState.PAUSED to null
+                            is SteamDownloadState.Completed -> DownloadState.COMPLETED to null
+                            is SteamDownloadState.Failed -> DownloadState.FAILED to steamState.error
+                            is SteamDownloadState.Idle -> DownloadState.QUEUED to null
                         }
                         val game = gameDao.getBySteamAppId(activeDl.appId)
                         items.add(DownloadProgress(
@@ -178,7 +188,9 @@ class DownloadsViewModel @Inject constructor(
                             totalBytes = activeDl.totalBytes,
                             bytesDownloaded = activeDl.bytesDownloaded,
                             state = mappedState,
-                            coverPath = activeDl.coverPath
+                            coverPath = activeDl.coverPath,
+                            bytesPerSecond = if (mappedState == DownloadState.EXTRACTING) 0L else activeDl.bytesPerSecond,
+                            statusMessage = statusMsg
                         ))
                     }
                     steamState is SteamDownloadState.Paused -> {
@@ -200,7 +212,7 @@ class DownloadsViewModel @Inject constructor(
                     else -> activeAppId = null
                 }
 
-                // Queued paused downloads (restored items waiting for resume)
+                // Queued downloads: show as QUEUED (waiting to start)
                 for (queued in queue) {
                     if (queued.appId == activeAppId) continue
                     val game = gameDao.getBySteamAppId(queued.appId)
@@ -213,7 +225,7 @@ class DownloadsViewModel @Inject constructor(
                         fileName = "",
                         totalBytes = 0L,
                         bytesDownloaded = 0L,
-                        state = DownloadState.PAUSED,
+                        state = DownloadState.QUEUED,
                         coverPath = queued.coverPath
                     ))
                 }
@@ -261,19 +273,13 @@ class DownloadsViewModel @Inject constructor(
     }
 
     private fun resumeSteamDownload(item: DownloadProgress) {
-        val steamAppId = -item.id // Steam items use negative appId as id
+        val steamAppId = -item.id
         android.util.Log.d("DownloadsVM", "resumeSteamDownload: steamAppId=$steamAppId")
         viewModelScope.launch {
             val game = gameDao.getBySteamAppId(steamAppId)
-            android.util.Log.d("DownloadsVM", "resumeSteamDownload: game=${game?.title}, connected=${steamContentManager.isConnected()}")
+            android.util.Log.d("DownloadsVM", "resumeSteamDownload: game=${game?.title}")
             if (game == null) return@launch
-            try {
-                val appInfo = steamContentManager.fetchAppInfo(steamAppId.toInt())
-                android.util.Log.d("DownloadsVM", "resumeSteamDownload: got appInfo, queueing")
-                steamContentManager.queueDownload(steamAppId, game.title, appInfo, game.coverPath)
-            } catch (e: Exception) {
-                android.util.Log.e("DownloadsVM", "Failed to resume Steam download: ${e.message}", e)
-            }
+            steamContentManager.queueDownloadOptimistic(steamAppId, game.title, game.coverPath)
         }
     }
 

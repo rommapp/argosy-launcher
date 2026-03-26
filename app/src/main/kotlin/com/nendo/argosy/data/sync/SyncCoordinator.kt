@@ -60,7 +60,7 @@ class SyncCoordinator @Inject constructor(
             // Process queued items by priority (lower priority value = higher importance)
             for (priority in listOf(SyncPriority.SAVE_FILE, SyncPriority.SAVE_STATE, SyncPriority.PROPERTY)) {
                 val items = pendingSyncQueueDao.getPendingByPriorityTier(priority)
-                Logger.debug(TAG, "processQueue: Processing ${items.size} items at priority $priority")
+                if (items.isNotEmpty()) Logger.debug(TAG, "processQueue: Processing ${items.size} items at priority $priority")
 
                 for (item in items) {
                     if (romM.connectionState.value !is ConnectionState.Connected) {

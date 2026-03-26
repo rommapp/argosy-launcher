@@ -36,6 +36,7 @@ import com.nendo.argosy.data.local.dao.SocialGameCacheDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.dao.CachedLicenseDao
 import com.nendo.argosy.data.local.dao.SteamAccountDao
+import com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
 import com.nendo.argosy.data.local.dao.SteamLicenseDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.AppCategoryEntity
@@ -68,6 +69,7 @@ import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialGameCacheEntity
 import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.local.entity.SteamAccountEntity
+import com.nendo.argosy.data.local.entity.SteamDownloadQueueEntity
 import com.nendo.argosy.data.local.entity.SteamLicenseEntity
 
 @Database(
@@ -103,9 +105,10 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         CoreOptionOverrideEntity::class,
         SteamAccountEntity::class,
         SteamLicenseEntity::class,
+        SteamDownloadQueueEntity::class,
         CachedLicenseEntity::class
     ],
-    version = 94,
+    version = 95,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -141,6 +144,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun steamAccountDao(): SteamAccountDao
     abstract fun steamLicenseDao(): SteamLicenseDao
     abstract fun cachedLicenseDao(): CachedLicenseDao
+    abstract fun steamDownloadQueueDao(): SteamDownloadQueueDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -1368,6 +1372,28 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_93_94 = object : Migration(93, 94) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE steam_accounts ADD COLUMN clientId INTEGER DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_94_95 = object : Migration(94, 95) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS steam_download_queue (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        appId INTEGER NOT NULL,
+                        gameName TEXT NOT NULL,
+                        coverPath TEXT,
+                        installDir TEXT,
+                        installPath TEXT,
+                        totalBytes INTEGER NOT NULL,
+                        bytesDownloaded INTEGER NOT NULL,
+                        state TEXT NOT NULL,
+                        errorReason TEXT,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_steam_download_queue_appId ON steam_download_queue(appId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_steam_download_queue_state ON steam_download_queue(state)")
             }
         }
 

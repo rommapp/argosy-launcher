@@ -297,8 +297,11 @@ class ImageCacheManager @Inject constructor(
             } finally {
                 tempFile.delete()
             }
+        } catch (e: java.io.FileNotFoundException) {
+            Log.w(TAG, "Image not found: $url")
+            null
         } catch (e: Throwable) {
-            Log.e(TAG, "Failed to download image from $url: ${e.javaClass.simpleName}: ${e.message}", e)
+            Log.e(TAG, "Failed to download image from $url: ${e.javaClass.simpleName}: ${e.message}")
             null
         }
     }

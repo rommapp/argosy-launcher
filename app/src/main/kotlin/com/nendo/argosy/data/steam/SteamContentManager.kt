@@ -4,6 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.nendo.argosy.data.download.DownloadForegroundService
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
+import com.nendo.argosy.data.local.entity.SteamDownloadDbState
+import com.nendo.argosy.data.local.entity.SteamDownloadQueueEntity
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.notification.NotificationType
 import com.nendo.argosy.data.model.GameSource
@@ -40,6 +43,8 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -117,7 +122,8 @@ class SteamContentManager @Inject constructor(
     private val steamAuthManager: SteamAuthManager,
     private val steamLibraryManager: SteamLibraryManager,
     private val androidDataAccessor: com.nendo.argosy.data.storage.AndroidDataAccessor,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val steamDownloadQueueDao: SteamDownloadQueueDao
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val heartbeatDispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
@@ -145,8 +151,11 @@ class SteamContentManager @Inject constructor(
 
     private var currentDownloadJob: kotlinx.coroutines.Job? = null
     private var isCancelled = false
-    private var hasRestoredPaused = false
     private val appInfoCache = ConcurrentHashMap<Int, KeyValue>()
+    private var lastDbProgressUpdate = 0L
+    private companion object {
+        const val DB_PROGRESS_INTERVAL_MS = 30_000L
+    }
 
     private data class SpeedSample(val timeMs: Long, val totalBytes: Long)
     private val speedSamples = CopyOnWriteArrayList<SpeedSample>()
@@ -155,16 +164,82 @@ class SteamContentManager @Inject constructor(
 
     init {
         scope.launch {
-            restorePausedFromDb()
+            restoreSteamQueueFromDatabase()
         }
     }
 
-    private suspend fun restorePausedFromDb() = withContext(Dispatchers.IO) {
+    private suspend fun restoreSteamQueueFromDatabase() = withContext(Dispatchers.IO) {
+        steamDownloadQueueDao.clearFinished()
+
+        val pending = steamDownloadQueueDao.getPendingDownloads()
+        if (pending.isEmpty()) {
+            backfillFromFilesystem()
+            return@withContext
+        }
+
+        for (entity in pending) {
+            if (entity.state in listOf(SteamDownloadDbState.DOWNLOADING.name, SteamDownloadDbState.PREPARING.name)) {
+                steamDownloadQueueDao.updateState(entity.appId, SteamDownloadDbState.PAUSED.name)
+            }
+        }
+
+        val paused = pending.filter {
+            it.state in listOf(SteamDownloadDbState.PAUSED.name, SteamDownloadDbState.DOWNLOADING.name, SteamDownloadDbState.PREPARING.name)
+        }
+        val queued = pending.filter { it.state == SteamDownloadDbState.QUEUED.name }
+
+        if (paused.isNotEmpty()) {
+            val primary = paused.first()
+            val bytesDownloaded = primary.installPath?.let { loadPersistedBytes(it) } ?: primary.bytesDownloaded
+            val pausedState = SteamDownloadState.Paused(primary.appId, primary.gameName, 0f, needsVerification = true)
+            _downloadState.value = pausedState
+            _activeDownload.value = SteamDownloadProgress(
+                appId = primary.appId,
+                gameName = primary.gameName,
+                coverPath = primary.coverPath,
+                progress = 0f,
+                totalBytes = primary.totalBytes,
+                bytesDownloaded = bytesDownloaded,
+                state = pausedState
+            )
+            Log.d(TAG, "Restored active from DB: ${primary.gameName}")
+
+            val restPaused = paused.drop(1)
+            _downloadQueue.value = (restPaused + queued).map { entity ->
+                QueuedSteamDownload(entity.appId, entity.gameName, entity.coverPath, null)
+            }
+        } else if (queued.isNotEmpty()) {
+            _downloadQueue.value = queued.map { entity ->
+                QueuedSteamDownload(entity.appId, entity.gameName, entity.coverPath, null)
+            }
+        }
+
+        Log.d(TAG, "Restored ${paused.size} paused + ${queued.size} queued from DB")
+    }
+
+    private suspend fun backfillFromFilesystem() {
         val games = gameDao.getAllWithSteamAppId().filter { game ->
             val path = game.localPath ?: return@filter false
             File(path, ".download_in_progress").exists()
         }
-        if (games.isEmpty()) return@withContext
+        if (games.isEmpty()) return
+
+        for (game in games) {
+            val appId = game.steamAppId ?: continue
+            val path = game.localPath ?: continue
+            steamDownloadQueueDao.insert(SteamDownloadQueueEntity(
+                appId = appId,
+                gameName = game.title,
+                coverPath = game.coverPath,
+                installDir = null,
+                installPath = path,
+                totalBytes = 0L,
+                bytesDownloaded = loadPersistedBytes(path),
+                state = SteamDownloadDbState.PAUSED.name,
+                errorReason = null
+            ))
+        }
+        Log.d(TAG, "Backfilled ${games.size} downloads from filesystem to DB")
 
         val primary = games.first()
         val pausedState = SteamDownloadState.Paused(primary.steamAppId!!, primary.title, 0f, needsVerification = true)
@@ -178,7 +253,6 @@ class SteamContentManager @Inject constructor(
             bytesDownloaded = loadPersistedBytes(primary.localPath!!),
             state = pausedState
         )
-        Log.d(TAG, "Restored paused from DB: ${primary.title}")
 
         val rest = games.drop(1)
         if (rest.isNotEmpty()) {
@@ -196,104 +270,13 @@ class SteamContentManager @Inject constructor(
         Log.d(TAG, "SteamContentManager initialized")
     }
 
-    suspend fun restorePausedDownloads() = withContext(Dispatchers.IO) {
-        if (hasRestoredPaused) return@withContext
-        hasRestoredPaused = true
+    suspend fun restorePausedDownloads() {
+        val active = _activeDownload.value ?: return
+        if (active.state !is SteamDownloadState.Paused) return
+        if (!isConnected() || currentDownloadJob?.isActive == true) return
 
-        val candidates = mutableListOf<File>()
-
-        val volumes = mutableListOf(android.os.Environment.getExternalStorageDirectory().absolutePath)
-        try {
-            File("/storage").listFiles()?.forEach { vol ->
-                if (vol.isDirectory && vol.name != "emulated" && vol.name != "self") {
-                    volumes.add(vol.absolutePath)
-                }
-            }
-        } catch (_: Exception) {}
-
-        for (root in volumes) {
-            val gnCommonPath = "$root/Android/data/$GN_PACKAGE/files/Steam/steamapps/common"
-            // Try raw path first (SD card), then alt-access (internal)
-            val commonDir = File(gnCommonPath).takeIf { it.exists() }
-                ?: androidDataAccessor.getFile(gnCommonPath).takeIf { it.exists() }
-            commonDir?.listFiles()?.forEach { gameDir ->
-                if (File(gameDir, ".download_in_progress").exists()) {
-                    candidates.add(gameDir)
-                }
-            }
-        }
-
-        val prefs = preferencesRepository.userPreferences.first()
-        val fallbackPaths = listOfNotNull(
-            prefs.romStoragePath,
-            context.getExternalFilesDir(null)?.absolutePath,
-            context.filesDir.absolutePath
-        )
-        for (base in fallbackPaths) {
-            val steamDir = File(base, "steam")
-            if (steamDir.exists()) {
-                steamDir.listFiles()?.forEach { appDir ->
-                    if (File(appDir, ".download_in_progress").exists()) {
-                        candidates.add(appDir)
-                    }
-                }
-            }
-        }
-
-        // Also check games with localPath set in DB (covers installdir-named paths)
-        gameDao.getAllWithSteamAppId().forEach { game ->
-            val path = game.localPath ?: return@forEach
-            val dir = File(path)
-            if (File(dir, ".download_in_progress").exists() && !candidates.any { it.absolutePath == dir.absolutePath }) {
-                candidates.add(dir)
-            }
-        }
-
-        val restoredDownloads = mutableListOf<SteamDownloadProgress>()
-
-        for (dir in candidates) {
-            val size = loadPersistedBytes(dir.absolutePath)
-            val dirAppId = dir.name.toLongOrNull()
-            val game = gameDao.getAllWithSteamAppId().find {
-                it.localPath == dir.absolutePath ||
-                    sanitizeGameName(it.title) == dir.name ||
-                    (dirAppId != null && it.steamAppId == dirAppId)
-            }
-            val gameName = game?.title ?: dir.name
-            val appId = game?.steamAppId ?: dirAppId ?: continue
-
-            Log.d(TAG, "Restored paused download: $gameName (${size / 1024 / 1024}MB)")
-
-            val pausedState = SteamDownloadState.Paused(appId, gameName, 0f, needsVerification = true)
-            restoredDownloads.add(SteamDownloadProgress(
-                appId = appId,
-                gameName = gameName,
-                coverPath = game?.coverPath,
-                progress = 0f,
-                totalBytes = 0L,
-                bytesDownloaded = size,
-                state = pausedState
-            ))
-        }
-
-        if (restoredDownloads.isNotEmpty()) {
-            val primary = restoredDownloads.maxBy { it.bytesDownloaded }
-            _downloadState.value = primary.state
-            _activeDownload.value = primary
-
-            val rest = restoredDownloads.filter { it.appId != primary.appId }
-            if (rest.isNotEmpty()) {
-                _downloadQueue.value = _downloadQueue.value + rest.map { dl ->
-                    QueuedSteamDownload(dl.appId, dl.gameName, dl.coverPath, null)
-                }
-                Log.d(TAG, "Queued ${rest.size} additional paused downloads")
-            }
-
-            if (isConnected() && currentDownloadJob?.isActive != true) {
-                Log.d(TAG, "Auto-resuming ${primary.gameName} (Steam connected)")
-                queueDownloadOptimistic(primary.appId, primary.gameName, primary.coverPath)
-            }
-        }
+        Log.d(TAG, "Auto-resuming ${active.gameName} (Steam connected)")
+        queueDownloadOptimistic(active.appId, active.gameName, active.coverPath)
     }
 
     fun isConnected(): Boolean {
@@ -310,6 +293,12 @@ class SteamContentManager @Inject constructor(
         if (state !is SteamDownloadState.Idle && state !is SteamDownloadState.Paused &&
             state !is SteamDownloadState.Completed && state !is SteamDownloadState.Failed) {
             pauseDownload()
+        }
+        scope.launch(Dispatchers.IO) {
+            val pending = steamDownloadQueueDao.getPendingDownloads()
+            pending.filter { it.state in listOf(SteamDownloadDbState.DOWNLOADING.name, SteamDownloadDbState.PREPARING.name) }.forEach {
+                steamDownloadQueueDao.updateState(it.appId, SteamDownloadDbState.PAUSED.name)
+            }
         }
         steamClient = null
         steamApps = null
@@ -411,33 +400,36 @@ class SteamContentManager @Inject constructor(
         val apps = steamApps ?: return@withContext DepotSizeResult(0L, emptyList())
         val cm = callbackManager ?: return@withContext DepotSizeResult(0L, emptyList())
 
-        Log.d(TAG, "Fetching depot sizes in parallel for ${depots.size} depots")
+        Log.d(TAG, "Fetching depot sizes for ${depots.size} depots (max 4 concurrent)")
 
         val servers = content.getServersForSteamPipe(null, null, scope).await()
         if (servers.isEmpty()) return@withContext DepotSizeResult(0L, emptyList())
 
         val cdnClient = CDNClient(client)
+        val semaphore = Semaphore(4)
         val results = depots.filter { it.manifestId != 0L }.map { depot ->
             scope.async {
-                try {
-                    val depotKey = getDepotKey(apps, cm, depot.depotId, appId) ?: return@async null
-                    val requestCode = content.getManifestRequestCode(
-                        depot.depotId, appId, depot.manifestId, "public", null, scope
-                    ).await()
-                    if (requestCode.toLong() == 0L) return@async null
+                semaphore.withPermit {
+                    try {
+                        val depotKey = getDepotKey(apps, cm, depot.depotId, appId) ?: return@withPermit null
+                        val requestCode = content.getManifestRequestCode(
+                            depot.depotId, appId, depot.manifestId, "public", null, scope
+                        ).await()
+                        if (requestCode.toLong() == 0L) return@withPermit null
 
-                    val server = servers.random()
-                    val authToken = content.getCDNAuthToken(appId, depot.depotId, server.host ?: "", scope).await()
-                    val manifest = cdnClient.downloadManifestFuture(
-                        depot.depotId, depot.manifestId, requestCode.toLong(), server, depotKey, null, authToken.token
-                    ).get()
+                        val server = servers.random()
+                        val authToken = content.getCDNAuthToken(appId, depot.depotId, server.host ?: "", scope).await()
+                        val manifest = cdnClient.downloadManifestFuture(
+                            depot.depotId, depot.manifestId, requestCode.toLong(), server, depotKey, null, authToken.token
+                        ).await()
 
-                    val size = manifest.totalUncompressedSize
-                    Log.d(TAG, "Depot ${depot.depotId}: ${size / 1024 / 1024}MB")
-                    depot.depotId to size
-                } catch (e: Exception) {
-                    Log.w(TAG, "Depot ${depot.depotId} size fetch failed: ${e.message}")
-                    null
+                        val size = manifest.totalUncompressedSize
+                        Log.d(TAG, "Depot ${depot.depotId}: ${size / 1024 / 1024}MB")
+                        depot.depotId to size
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Depot ${depot.depotId} size fetch failed: ${e.message}")
+                        null
+                    }
                 }
             }
         }
@@ -600,6 +592,7 @@ class SteamContentManager @Inject constructor(
         if (currentDownloadJob?.isActive == true && active?.appId != appId) {
             // Something else is downloading -- add to queue with optimistic UI
             _downloadQueue.value = _downloadQueue.value + QueuedSteamDownload(appId, gameName, coverPath, appInfo = null)
+            persistQueueEntry(appId, gameName, coverPath)
             Log.d(TAG, "Optimistically queued: $gameName (queue size: ${_downloadQueue.value.size})")
             return
         }
@@ -624,10 +617,32 @@ class SteamContentManager @Inject constructor(
         }
 
         _downloadQueue.value = _downloadQueue.value + QueuedSteamDownload(appId, gameName, coverPath, appInfo = null)
+        persistQueueEntry(appId, gameName, coverPath)
         Log.d(TAG, "Optimistically activated: $gameName")
 
         if (currentDownloadJob?.isActive != true) {
             processNextInQueue()
+        }
+    }
+
+    private fun persistQueueEntry(appId: Long, gameName: String, coverPath: String?) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                steamDownloadQueueDao.insert(SteamDownloadQueueEntity(
+                    appId = appId,
+                    gameName = gameName,
+                    coverPath = coverPath,
+                    installDir = null,
+                    installPath = null,
+                    totalBytes = 0L,
+                    bytesDownloaded = 0L,
+                    state = SteamDownloadDbState.QUEUED.name,
+                    errorReason = null
+                ))
+                Log.d(TAG, "Persisted queue entry: $gameName")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to persist queue entry for $gameName", e)
+            }
         }
     }
 
@@ -643,6 +658,25 @@ class SteamContentManager @Inject constructor(
             _downloadState.value = preparingState
             _activeDownload.value = active.copy(state = preparingState)
             Log.d(TAG, "Retrying $appId: ${active.state::class.simpleName} -> Preparing")
+        }
+
+        val installDirName = appInfo["config"]?.get("installdir")?.asString()
+        scope.launch(Dispatchers.IO) {
+            try {
+                steamDownloadQueueDao.insert(SteamDownloadQueueEntity(
+                    appId = appId,
+                    gameName = gameName,
+                    coverPath = coverPath,
+                    installDir = installDirName,
+                    installPath = null,
+                    totalBytes = 0L,
+                    bytesDownloaded = 0L,
+                    state = SteamDownloadDbState.QUEUED.name,
+                    errorReason = null
+                ))
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to persist queue entry for $gameName", e)
+            }
         }
 
         val queued = QueuedSteamDownload(appId, gameName, coverPath, appInfo)
@@ -694,6 +728,7 @@ class SteamContentManager @Inject constructor(
                     _downloadState.value = pausedState
                     _activeDownload.value = active.copy(state = pausedState)
                 }
+                steamDownloadQueueDao.updateState(next.appId, SteamDownloadDbState.PAUSED.name)
                 return@launch
             }
             startDownload(next.appId, next.gameName, appInfo, next.coverPath)
@@ -720,6 +755,9 @@ class SteamContentManager @Inject constructor(
             val failedState = SteamDownloadState.Failed(appId, gameName, "Steam not connected")
             _downloadState.value = failedState
             _activeDownload.value = _activeDownload.value?.copy(state = failedState)
+            scope.launch(Dispatchers.IO) {
+                steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.FAILED.name, "Steam not connected")
+            }
             return
         }
 
@@ -731,34 +769,41 @@ class SteamContentManager @Inject constructor(
             try {
                 _downloadState.value = SteamDownloadState.Preparing(appId, gameName)
 
+                // Resolve final destination (GN SD card path or fallback)
                 val steamInstallDir = appInfo["config"]?.get("installdir")?.asString()
-                val installDir = if (steamInstallDir != null) {
+                val finalDir = if (steamInstallDir != null) {
                     getInstallDirByName(steamInstallDir)
                 } else {
                     getInstallDir(appId)
                 }
-                Log.d(TAG, "Download path for $appId: ${installDir.absolutePath}")
 
-                installDir.mkdirs()
+                // Download to internal app storage (fast I/O), move to destination after
+                val stagingDir = File(context.filesDir, "steam_staging/$appId")
+                stagingDir.mkdirs()
+                Log.d(TAG, "Staging path for $appId: ${stagingDir.absolutePath}")
+                Log.d(TAG, "Final path for $appId: ${finalDir.absolutePath}")
 
                 // Preserve .DepotDownloader if resuming (has in-progress marker)
                 // Clean it only for fresh downloads (no marker = cancelled or new)
-                val isResume = File(installDir, ".download_in_progress").exists()
-                val depotDir = File(installDir, ".DepotDownloader")
+                val isResume = File(stagingDir, ".download_in_progress").exists()
+                val depotDir = File(stagingDir, ".DepotDownloader")
                 if (depotDir.exists() && !isResume) {
                     depotDir.deleteRecursively()
                     Log.d(TAG, "Cleaned stale .DepotDownloader state (fresh download)")
                 }
 
-                File(installDir, ".download_complete").delete()
-                File(installDir, ".download_in_progress").createNewFile()
+                File(stagingDir, ".download_complete").delete()
+                File(stagingDir, ".download_in_progress").createNewFile()
 
-                // Store install path early so restore/cleanup can find it
+                // Store staging path so restore/cleanup can find it
                 gameDao.getBySteamAppId(appId)?.let { game ->
-                    if (game.localPath != installDir.absolutePath) {
-                        gameDao.update(game.copy(localPath = installDir.absolutePath))
+                    if (game.localPath != stagingDir.absolutePath) {
+                        gameDao.update(game.copy(localPath = stagingDir.absolutePath))
                     }
                 }
+
+                steamDownloadQueueDao.updateInstallPath(appId, stagingDir.absolutePath)
+                steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.PREPARING.name)
 
                 _activeDownload.value = SteamDownloadProgress(
                     appId = appId,
@@ -787,7 +832,7 @@ class SteamContentManager @Inject constructor(
                 }
                 Log.d(TAG, "Total: ${totalSize / 1024 / 1024}MB for $gameName (${depots.size}/${allDepots.size} depots)")
 
-                val baselineBytes = loadPersistedBytes(installDir.absolutePath)
+                val baselineBytes = loadPersistedBytes(stagingDir.absolutePath)
                 val bytesDownloaded = java.util.concurrent.atomic.AtomicLong(baselineBytes)
                 val completedDepots = java.util.concurrent.atomic.AtomicInteger(0)
 
@@ -888,6 +933,7 @@ class SteamContentManager @Inject constructor(
                         val progress = if (totalSize > 0) (currentBytes.toFloat() / totalSize).coerceIn(0f, 1f) else 0f
                         val speed = computeSpeed(now)
 
+                        val prevState = _downloadState.value
                         val state = SteamDownloadState.Downloading(
                             appId, gameName, progress, completedDepots.get(), depots.size
                         )
@@ -895,13 +941,28 @@ class SteamContentManager @Inject constructor(
                         _activeDownload.value = SteamDownloadProgress(
                             appId, gameName, coverPath, progress, totalSize, currentBytes, state, speed
                         )
+
+                        if (prevState !is SteamDownloadState.Downloading) {
+                            scope.launch(Dispatchers.IO) {
+                                steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.DOWNLOADING.name)
+                            }
+                        }
+                        if (now - lastDbProgressUpdate > DB_PROGRESS_INTERVAL_MS) {
+                            lastDbProgressUpdate = now
+                            scope.launch(Dispatchers.IO) {
+                                steamDownloadQueueDao.updateProgress(appId, currentBytes, totalSize)
+                            }
+                        }
                     }
 
                     override fun onDepotCompleted(depotId: Int, compressedBytes: Long, uncompressedBytes: Long) {
                         Log.i(TAG, "Depot $depotId completed: ${uncompressedBytes / 1024 / 1024}MB, bytesDownloaded=${bytesDownloaded.get() / 1024 / 1024}MB / ${totalSize / 1024 / 1024}MB")
 
                         val count = completedDepots.incrementAndGet()
-                        persistBytes(installDir.absolutePath, bytesDownloaded.get())
+                        persistBytes(stagingDir.absolutePath, bytesDownloaded.get())
+                        scope.launch(Dispatchers.IO) {
+                            steamDownloadQueueDao.updateProgress(appId, bytesDownloaded.get(), totalSize)
+                        }
 
                         val totalDownloaded = bytesDownloaded.get()
                         val progress = if (totalSize > 0) (totalDownloaded.toFloat() / totalSize).coerceIn(0f, 1f) else 0f
@@ -922,14 +983,14 @@ class SteamContentManager @Inject constructor(
 
                 val appItem = AppItem(
                     appId.toInt(),
-                    installDirectory = installDir.absolutePath,
+                    installDirectory = stagingDir.absolutePath,
                     depot = depotIds
                 )
                 depotDownloader.add(appItem)
                 depotDownloader.finishAdding()
                 depotDownloader.startDownloading()
 
-                Log.i(TAG, "DepotDownloader running for $gameName -> ${installDir.absolutePath}")
+                Log.i(TAG, "DepotDownloader running for $gameName -> staging: ${stagingDir.absolutePath}, final: ${finalDir.absolutePath}")
 
                 heartbeatJob = scope.launch(heartbeatDispatcher) {
                     while (true) {
@@ -953,28 +1014,46 @@ class SteamContentManager @Inject constructor(
                     val currentBytes = bytesDownloaded.get()
                     val progress = if (totalSize > 0) (currentBytes.toFloat() / totalSize).coerceIn(0f, 1f) else 0f
                     _downloadState.value = SteamDownloadState.Paused(appId, gameName, progress)
-                    persistBytes(installDir.absolutePath, currentBytes)
+                    persistBytes(stagingDir.absolutePath, currentBytes)
                     return@launch
                 }
 
-                Log.d(TAG, "Download complete at: ${installDir.absolutePath}")
+                Log.d(TAG, "Download complete in staging: ${stagingDir.absolutePath}")
 
-                File(installDir, ".download_in_progress").delete()
-                File(installDir, ".download_complete").createNewFile()
-                File(installDir, ".DepotDownloader").let { if (it.exists()) it.deleteRecursively() }
-                File(installDir, DOWNLOAD_INFO_DIR).mkdirs()
-                clearPersistedBytes(installDir.absolutePath)
-                Log.d(TAG, "Created GN markers at ${installDir.absolutePath}")
+                // Clean up DepotDownloader state before moving
+                File(stagingDir, ".download_in_progress").delete()
+                File(stagingDir, ".DepotDownloader").let { if (it.exists()) it.deleteRecursively() }
+                clearPersistedBytes(stagingDir.absolutePath)
+
+                // Move from staging (internal fast storage) to final destination (GN/SD card)
+                _downloadState.value = SteamDownloadState.Moving(appId, gameName)
+                _activeDownload.value = _activeDownload.value?.copy(
+                    state = SteamDownloadState.Moving(appId, gameName),
+                    bytesPerSecond = 0L
+                )
+                Log.d(TAG, "Moving from staging to final: ${finalDir.absolutePath}")
+
+                finalDir.mkdirs()
+                val moved = moveDirectory(stagingDir, finalDir)
+                if (!moved) {
+                    throw IllegalStateException("Failed to move download from staging to ${finalDir.absolutePath}")
+                }
+
+                File(finalDir, ".download_complete").createNewFile()
+                File(finalDir, DOWNLOAD_INFO_DIR).mkdirs()
+                Log.d(TAG, "Created GN markers at ${finalDir.absolutePath}")
 
                 gameDao.getBySteamAppId(appId)?.let { game ->
                     gameDao.update(game.copy(
-                        localPath = installDir.absolutePath,
+                        localPath = finalDir.absolutePath,
                         source = GameSource.STEAM,
                         addedAt = java.time.Instant.now()
                     ))
                 }
 
-                val completedState = SteamDownloadState.Completed(appId, gameName, installDir.absolutePath)
+                steamDownloadQueueDao.updateInstallPath(appId, finalDir.absolutePath)
+
+                val completedState = SteamDownloadState.Completed(appId, gameName, finalDir.absolutePath)
                 _downloadState.value = completedState
 
                 val finalSize = bytesDownloaded.get().coerceAtLeast(totalSize)
@@ -983,7 +1062,8 @@ class SteamContentManager @Inject constructor(
                 )
                 _completedDownloads.value = _completedDownloads.value + completedProgress
 
-                Log.d(TAG, "Download complete: $gameName -> ${installDir.absolutePath}")
+                steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.COMPLETED.name)
+                Log.d(TAG, "Download complete: $gameName -> ${finalDir.absolutePath}")
 
                 processNextInQueue()
 
@@ -1005,6 +1085,9 @@ class SteamContentManager @Inject constructor(
                 val failedState = SteamDownloadState.Failed(appId, gameName, e.message ?: "Unknown error")
                 _downloadState.value = failedState
                 _activeDownload.value = _activeDownload.value?.copy(state = failedState)
+                scope.launch(Dispatchers.IO) {
+                    steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.FAILED.name, e.message)
+                }
             }
         }
     }
@@ -1050,11 +1133,8 @@ class SteamContentManager @Inject constructor(
         return File(basePath, "$STEAM_PLATFORM_DIR/$appId")
     }
 
-    private fun findGnInstallPath(appId: Long): File? {
-        val gameName = kotlinx.coroutines.runBlocking {
-            gameDao.getBySteamAppId(appId)?.title
-        } ?: return null
-
+    private suspend fun findGnInstallPath(appId: Long): File? {
+        val gameName = gameDao.getBySteamAppId(appId)?.title ?: return null
         val gnBasePath = findGnStoragePath() ?: return null
         val sanitized = sanitizeGameName(gameName)
         return File("$gnBasePath/Steam/steamapps/common/$sanitized")
@@ -1092,14 +1172,14 @@ class SteamContentManager @Inject constructor(
     }
 
 
-    fun isGameInstalled(appId: Long): Boolean {
-        val game = kotlinx.coroutines.runBlocking { gameDao.getBySteamAppId(appId) }
+    suspend fun isGameInstalled(appId: Long): Boolean {
+        val game = gameDao.getBySteamAppId(appId)
         val path = game?.localPath ?: return false
         return File(path, ".download_complete").exists() || androidDataAccessor.exists("$path/.download_complete")
     }
 
-    fun isGameDownloading(appId: Long): Boolean {
-        val game = kotlinx.coroutines.runBlocking { gameDao.getBySteamAppId(appId) }
+    suspend fun isGameDownloading(appId: Long): Boolean {
+        val game = gameDao.getBySteamAppId(appId)
         val path = game?.localPath ?: return false
         return File(path, ".download_in_progress").exists() || androidDataAccessor.exists("$path/.download_in_progress")
     }
@@ -1199,6 +1279,14 @@ class SteamContentManager @Inject constructor(
 
                 kotlinx.coroutines.delay(3000)
 
+                // Clean staging directory (internal storage)
+                val stagingDir = File(context.filesDir, "steam_staging/$activeAppId")
+                if (stagingDir.exists()) {
+                    val deleted = stagingDir.deleteRecursively()
+                    Log.d(TAG, "Deleted staging dir: $deleted")
+                }
+
+                // Clean final install path if anything was partially moved
                 if (installPath != null) {
                     val installDir = File(installPath)
                     if (installDir.exists()) {
@@ -1212,6 +1300,7 @@ class SteamContentManager @Inject constructor(
                 }
 
                 cleanupIncompleteDownload(activeAppId)
+                steamDownloadQueueDao.deleteByAppId(activeAppId)
 
                 _downloadState.value = SteamDownloadState.Idle
                 _activeDownload.value = null
@@ -1224,6 +1313,9 @@ class SteamContentManager @Inject constructor(
 
     fun cancelQueuedDownload(appId: Long) {
         _downloadQueue.value = _downloadQueue.value.filter { it.appId != appId }
+        scope.launch(Dispatchers.IO) {
+            steamDownloadQueueDao.deleteByAppId(appId)
+        }
         Log.d(TAG, "Removed $appId from queue (new queue size: ${_downloadQueue.value.size})")
     }
 
@@ -1239,9 +1331,11 @@ class SteamContentManager @Inject constructor(
         _activeDownload.value = active.copy(state = pausedState)
 
         isCancelled = true
-        scope.launch {
-            val installDir = getInstallDir(active.appId)
-            persistBytes(installDir.absolutePath, active.bytesDownloaded)
+        scope.launch(Dispatchers.IO) {
+            val stagingDir = File(context.filesDir, "steam_staging/${active.appId}")
+            persistBytes(stagingDir.absolutePath, active.bytesDownloaded)
+            steamDownloadQueueDao.updateState(active.appId, SteamDownloadDbState.PAUSED.name)
+            steamDownloadQueueDao.updateProgress(active.appId, active.bytesDownloaded, active.totalBytes)
         }
         activeDepotDownloader?.close()
         activeDepotDownloader = null

@@ -69,6 +69,7 @@ class SteamAuthManager @Inject constructor(
     private var lastClientId: Long? = null
     @Volatile var sessionDead = false
         private set
+    @Volatile private var rateLimited = false
 
     private val _qrAuthState = MutableStateFlow<QrAuthState>(QrAuthState.Idle)
     val qrAuthState: StateFlow<QrAuthState> = _qrAuthState.asStateFlow()
@@ -96,6 +97,10 @@ class SteamAuthManager @Inject constructor(
         }
 
         scope.launch {
+            if (rateLimited) {
+                Log.d(TAG, "Rate limited, skipping auto-login")
+                return@launch
+            }
             val savedAccount = steamAccountDao.getAnyAccount()
             if (savedAccount != null) {
                 Log.d(TAG, "Found saved account: ${savedAccount.username}, attempting auto-login")
@@ -124,6 +129,7 @@ class SteamAuthManager @Inject constructor(
         val result = pendingAuthResult
         pendingAuthResult = null
         sessionDead = false
+        rateLimited = false
         connectingForAuth = false
 
         _isLoggedIn.value = true
@@ -176,9 +182,10 @@ class SteamAuthManager @Inject constructor(
                     // just cooling down.
                     Log.w(TAG, "QR auth login rejected ($result) during cooldown, keeping account")
                     pendingAuthResult = null
+                    rateLimited = true
                     notificationManager.show(
                         title = "Steam temporarily unavailable",
-                        subtitle = "Too many login attempts. Wait about an hour and try again",
+                        subtitle = "Login rate limited. Try again in an hour",
                         type = NotificationType.INFO,
                         key = "steam_rate_limited"
                     )
@@ -199,9 +206,10 @@ class SteamAuthManager @Inject constructor(
                 }
                 result in RATE_LIMIT_RESULTS -> {
                     Log.w(TAG, "Steam rate limiting ($result), keeping account")
+                    rateLimited = true
                     notificationManager.show(
                         title = "Steam temporarily unavailable",
-                        subtitle = "Too many login attempts. Wait about an hour and try again",
+                        subtitle = "Login rate limited. Try again in an hour",
                         type = NotificationType.INFO,
                         key = "steam_rate_limited"
                     )
@@ -215,6 +223,7 @@ class SteamAuthManager @Inject constructor(
 
     fun startQrAuth() {
         sessionDead = false
+        rateLimited = false
         connectingForAuth = false
         val client = steamClient ?: run {
             _qrAuthState.value = QrAuthState.Error("Not connected to Steam")
@@ -267,7 +276,7 @@ class SteamAuthManager @Inject constructor(
                         _qrAuthState.value = QrAuthState.WaitingForScan(session.challengeUrl)
                     }
 
-                    delay(session.pollingInterval.toLong() * 1000)
+                    delay(maxOf(session.pollingInterval.toLong(), 5) * 1000)
                 } catch (e: Exception) {
                     Log.e(TAG, "Auth poll error", e)
                     _qrAuthState.value = QrAuthState.Error(e.message ?: "Polling failed")

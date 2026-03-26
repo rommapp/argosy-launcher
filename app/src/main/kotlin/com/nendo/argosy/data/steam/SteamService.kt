@@ -8,11 +8,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Binder
 import android.os.IBinder
-import android.os.PowerManager
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import com.nendo.argosy.R
-import com.nendo.argosy.data.download.DownloadNotificationChannel
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.steamclient.SteamClient
@@ -85,8 +81,6 @@ class SteamService : Service() {
     private var reconnectAttempt = 0
     private var networkPaused = false
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
-    private var isForeground = false
-    private var steamWakeLock: PowerManager.WakeLock? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): SteamService = this@SteamService
@@ -100,7 +94,6 @@ class SteamService : Service() {
         super.onCreate()
         Log.d(TAG, "SteamService created")
         initializeSteamClient()
-        observeDownloadStateForForeground()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -127,9 +120,9 @@ class SteamService : Service() {
                     Log.d(TAG, "No saved account, skipping connect")
                     return@launch
                 }
-                val hasPausedDownloads = steamContentManager.downloadState.value is SteamDownloadState.Paused
-                if (hasPausedDownloads) {
-                    Log.d(TAG, "Paused downloads found, auto-connecting for ${account.username}")
+                val hasPendingWork = steamContentManager.hasPendingDownloads()
+                if (hasPendingWork) {
+                    Log.d(TAG, "Pending downloads found in DB, auto-connecting for ${account.username}")
                     connect()
                 } else {
                     Log.d(TAG, "No pending work, deferring Steam connection")
@@ -145,13 +138,11 @@ class SteamService : Service() {
         const val EXTRA_FORCE_CONNECT = "force_connect"
         const val EXTRA_CONNECT_FOR_AUTH = "connect_for_auth"
         private const val MAX_RECONNECT_ATTEMPTS = 5
-        private const val STEAM_SERVICE_NOTIFICATION_ID = 0x2001
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "SteamService destroyed")
-        if (isForeground) demoteFromForeground()
         unregisterNetworkCallback()
         steamLibraryManager.cleanup()
         steamContentManager.cleanup()
@@ -439,46 +430,6 @@ class SteamService : Service() {
         networkCallback = null
     }
 
-    private fun observeDownloadStateForForeground() {
-        scope.launch {
-            steamContentManager.downloadState.collect { state ->
-                val busy = state !is SteamDownloadState.Idle &&
-                    state !is SteamDownloadState.Completed &&
-                    state !is SteamDownloadState.Failed
-                if (busy && !isForeground) {
-                    promoteToForeground()
-                } else if (!busy && isForeground) {
-                    demoteFromForeground()
-                }
-            }
-        }
-    }
-
-    private fun promoteToForeground() {
-        DownloadNotificationChannel.create(this)
-        val notification = NotificationCompat.Builder(this, DownloadNotificationChannel.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_helm)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText("Steam connection active")
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .setSilent(true)
-            .build()
-        startForeground(STEAM_SERVICE_NOTIFICATION_ID, notification)
-        steamWakeLock = getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "argosy:steam_service")
-            .apply { acquire(60 * 60 * 1000L) }
-        isForeground = true
-        Log.d(TAG, "Promoted to foreground")
-    }
-
-    private fun demoteFromForeground() {
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        steamWakeLock?.let { if (it.isHeld) it.release() }
-        steamWakeLock = null
-        isForeground = false
-        Log.d(TAG, "Demoted from foreground")
-    }
 
     fun getSteamClient(): SteamClient? = steamClient
     fun getSteamUser(): SteamUser? = steamUser

@@ -1264,7 +1264,11 @@ class SocialRepository @Inject constructor(
             }
 
             if (title != null && !isAppInForeground()) {
-                SocialOverlayService.show(context, title, subtitle)
+                try {
+                    SocialOverlayService.show(context, title, subtitle)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to show overlay from background", e)
+                }
             }
         }
     }

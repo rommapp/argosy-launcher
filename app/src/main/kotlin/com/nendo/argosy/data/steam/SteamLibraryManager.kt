@@ -261,7 +261,8 @@ class SteamLibraryManager @Inject constructor(
     private suspend fun storeLicenses() {
         val accountId = currentAccountId ?: return
 
-        for ((packageId, appIds) in packageToAppIds) {
+        val snapshot = packageToAppIds.toMap()
+        for ((packageId, appIds) in snapshot) {
             try {
                 steamLicenseDao.insertOrUpdate(
                     SteamLicenseEntity(
@@ -277,7 +278,7 @@ class SteamLibraryManager @Inject constructor(
             }
         }
 
-        Log.d(TAG, "Stored ${packageToAppIds.size} licenses with ${pendingAppIds.size} unique app IDs")
+        Log.d(TAG, "Stored ${snapshot.size} licenses with ${pendingAppIds.size} unique app IDs")
     }
 
     private suspend fun requestAppInfo(appIds: List<Int>) {

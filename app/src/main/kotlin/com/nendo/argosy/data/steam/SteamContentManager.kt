@@ -270,6 +270,10 @@ class SteamContentManager @Inject constructor(
         Log.d(TAG, "SteamContentManager initialized")
     }
 
+    suspend fun hasPendingDownloads(): Boolean {
+        return steamDownloadQueueDao.getPendingDownloads().isNotEmpty()
+    }
+
     suspend fun restorePausedDownloads() {
         val active = _activeDownload.value ?: return
         if (active.state !is SteamDownloadState.Paused) return
@@ -516,7 +520,7 @@ class SteamContentManager @Inject constructor(
         }
 
         return withTimeout(30_000L) {
-            if (steamApps == null || callbackManager == null) {
+            if (!isConnected()) {
                 if (!ensureConnected()) {
                     throw IllegalStateException("Steam not connected")
                 }

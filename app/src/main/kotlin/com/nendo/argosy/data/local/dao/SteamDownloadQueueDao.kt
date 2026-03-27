@@ -27,6 +27,9 @@ interface SteamDownloadQueueDao {
     @Query("UPDATE steam_download_queue SET installPath = :installPath WHERE appId = :appId")
     suspend fun updateInstallPath(appId: Long, installPath: String)
 
+    @Query("UPDATE steam_download_queue SET installDir = :installDir WHERE appId = :appId")
+    suspend fun updateInstallDir(appId: Long, installDir: String)
+
     @Query("DELETE FROM steam_download_queue WHERE appId = :appId")
     suspend fun deleteByAppId(appId: Long)
 

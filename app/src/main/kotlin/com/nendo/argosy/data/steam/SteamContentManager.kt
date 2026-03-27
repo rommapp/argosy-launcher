@@ -984,13 +984,18 @@ class SteamContentManager @Inject constructor(
 
                 // Storage checks before downloading
                 val stagingFreeBytes = android.os.StatFs(stagingDir.absolutePath).availableBytes
-                val requiredStagingBytes = totalSize * 2
-                Log.d(TAG, "Storage check: staging free=${stagingFreeBytes / 1024 / 1024}MB, required=${requiredStagingBytes / 1024 / 1024}MB (2x)")
+                val requiredStagingBytes = (totalSize * 1.5).toLong()
+                Log.d(TAG, "Storage check: staging free=${stagingFreeBytes / 1024 / 1024}MB, required=${requiredStagingBytes / 1024 / 1024}MB (1.5x)")
                 if (stagingFreeBytes < requiredStagingBytes) {
-                    throw IllegalStateException(
-                        "Insufficient internal storage: ${stagingFreeBytes / 1024 / 1024}MB free, " +
-                        "need ${requiredStagingBytes / 1024 / 1024}MB (2x ${totalSize / 1024 / 1024}MB game size)"
-                    )
+                    val msg = "Not enough internal storage (${stagingFreeBytes / 1024 / 1024}MB free, need ${requiredStagingBytes / 1024 / 1024}MB)"
+                    Log.w(TAG, msg)
+                    notificationManager.show(title = "Cannot download $gameName", subtitle = msg, type = NotificationType.WARNING, key = "steam_storage_$appId")
+                    val pausedState = SteamDownloadState.Paused(appId, gameName, 0f)
+                    _downloadState.value = pausedState
+                    _activeDownload.value = _activeDownload.value?.copy(state = pausedState)
+                    steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.PAUSED.name, msg)
+                    processNextInQueue()
+                    return@launch
                 }
 
                 val requiredDestBytes = (totalSize * 1.5).toLong()
@@ -998,10 +1003,15 @@ class SteamContentManager @Inject constructor(
                 if (destFreeBytes != null) {
                     Log.d(TAG, "Storage check: destination free=${destFreeBytes / 1024 / 1024}MB, required=${requiredDestBytes / 1024 / 1024}MB (1.5x)")
                     if (destFreeBytes < requiredDestBytes) {
-                        throw IllegalStateException(
-                            "Insufficient destination storage: ${destFreeBytes / 1024 / 1024}MB free, " +
-                            "need ${requiredDestBytes / 1024 / 1024}MB (1.5x ${totalSize / 1024 / 1024}MB game size)"
-                        )
+                        val msg = "Not enough destination storage (${destFreeBytes / 1024 / 1024}MB free, need ${requiredDestBytes / 1024 / 1024}MB)"
+                        Log.w(TAG, msg)
+                        notificationManager.show(title = "Cannot download $gameName", subtitle = msg, type = NotificationType.WARNING, key = "steam_storage_$appId")
+                        val pausedState = SteamDownloadState.Paused(appId, gameName, 0f)
+                        _downloadState.value = pausedState
+                        _activeDownload.value = _activeDownload.value?.copy(state = pausedState)
+                        steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.PAUSED.name, msg)
+                        processNextInQueue()
+                        return@launch
                     }
                 } else {
                     Log.w(TAG, "Cannot check destination storage (path not stattable), proceeding")

@@ -39,7 +39,8 @@ class SteamRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
-    private val imageCacheManager: ImageCacheManager
+    private val imageCacheManager: ImageCacheManager,
+    private val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
 ) {
     private val api: SteamStoreApi by lazy { createApi() }
 
@@ -192,7 +193,25 @@ class SteamRepository @Inject constructor(
         try {
             val game = gameDao.getBySteamAppId(steamAppId)
             if (game != null) {
+                // Delete installed files
+                val localPath = game.localPath
+                if (localPath != null) {
+                    val dir = File(localPath)
+                    if (dir.exists()) {
+                        val deleted = dir.deleteRecursively()
+                        Log.d(TAG, "Deleted game files at $localPath: $deleted")
+                    }
+                }
+
+                // Delete staging dir if it exists
+                val stagingDir = File(context.filesDir, "steam_staging/$steamAppId")
+                if (stagingDir.exists()) {
+                    stagingDir.deleteRecursively()
+                    Log.d(TAG, "Deleted staging dir for $steamAppId")
+                }
+
                 gameDao.delete(game.id)
+                steamDownloadQueueDao.deleteByAppId(steamAppId)
                 deleteCachedImage(steamAppId)
                 updatePlatformGameCount()
             }

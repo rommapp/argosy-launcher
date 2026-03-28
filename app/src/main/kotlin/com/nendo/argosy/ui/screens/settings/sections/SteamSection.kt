@@ -100,14 +100,15 @@ internal sealed class SteamItem(
         private val SetupHeader = Header("setupHeader", "setup", "GAMENATIVE")
         private val AccountHeader = Header("accountHeader", "account", "ACCOUNT")
         private val LibraryHeader = Header("libraryHeader", "library", "LIBRARY")
+        private val AccountSpacer = SectionSpacer("accountSpacer", "account")
         private val LibrarySpacer = SectionSpacer("librarySpacer", "library")
         private val DangerHeader = Header("dangerHeader", "danger", "DANGER ZONE")
         private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
 
         val ALL: List<SteamItem> = listOf(
             SetupHeader, GnStatus, GnInstall, GnStorageWarning, InstallPath,
-            LibrarySpacer, AccountHeader, AccountInfo,
-            LibrarySpacer, LibraryHeader, SyncLibrary,
+            AccountSpacer, AccountHeader, AccountInfo,
+            LibrarySpacer, LibraryHeader, SyncLibrary, AddManual,
             DangerSpacer, DangerHeader, Disconnect, ResetLibrary
         )
     }
@@ -189,7 +190,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     val (icon, subtitle, color) = if (steam.gnStoragePath != null) {
                         Triple(Icons.Default.CheckCircle, "External storage configured", MaterialTheme.colorScheme.primary)
                     } else if (steam.gnInstalled) {
-                        Triple(Icons.Default.Warning, "Enable external storage in GameNative", MaterialTheme.colorScheme.error)
+                        Triple(Icons.Default.Warning, "External storage not configured", MaterialTheme.colorScheme.error)
                     } else {
                         Triple(Icons.Default.Warning, "Not installed", MaterialTheme.colorScheme.error)
                     }
@@ -270,7 +271,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 SteamItem.AddManual -> ActionPreference(
                     icon = Icons.Default.Cloud,
                     title = "Add by App ID",
-                    subtitle = "Manually add a Steam game",
+                    subtitle = "Add a Steam game by its App ID",
                     isFocused = isFocused(item),
                     onClick = { viewModel.showAddSteamGameDialog() }
                 )

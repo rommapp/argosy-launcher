@@ -128,7 +128,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             com.nendo.argosy.data.steam.SteamConnectionState.CONNECTING,
             com.nendo.argosy.data.steam.SteamConnectionState.CONNECTED,
             com.nendo.argosy.data.steam.SteamConnectionState.LOGGING_IN -> "Connecting..."
-            else -> "Not connected"
+            else -> if (uiState.steam.username != null) "Signed in as ${uiState.steam.username}" else "Not connected"
         }
         MainSettingsItem.Social -> when (uiState.social.authStatus) {
             SocialAuthStatus.CONNECTED -> "Linked as ${uiState.social.displayName ?: uiState.social.username}"

@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.entity.SyncStatus as DbSyncStatus
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
@@ -17,9 +18,11 @@ import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.util.Logger
 import dagger.Lazy
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +36,8 @@ class SyncCoordinator @Inject constructor(
     private val saveSyncRepository: Lazy<SaveSyncRepository>,
     private val saveCacheManager: Lazy<SaveCacheManager>,
     private val stateCacheManager: Lazy<StateCacheManager>,
-    private val syncQueueManager: SyncQueueManager
+    private val syncQueueManager: SyncQueueManager,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     companion object {
         private const val TAG = "SyncCoordinator"
@@ -83,6 +87,10 @@ class SyncCoordinator @Inject constructor(
             val dirtySaves = processDirtySaveCaches()
             processed += dirtySaves
 
+            // Validate save states (weekly)
+            val validated = validateSaveStates()
+            processed += validated
+
             Logger.info(TAG, "processQueue: Completed | processed=$processed, failed=$failed")
             ProcessResult.Completed(processed, failed)
         }
@@ -122,10 +130,32 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun processSaveState(item: PendingSyncQueueEntity): Boolean {
-        // State upload requires more context - for now, skip and let StateCacheManager handle it
-        // This can be expanded when state sync is integrated
-        Logger.debug(TAG, "processSaveState: State sync via queue not yet implemented")
-        return true
+        val payload = SaveStatePayload.fromJson(item.payloadJson) ?: return false
+        val state = stateCacheManager.get().getStateById(payload.stateCacheId) ?: return false
+        val api = saveSyncRepository.get().getApi() ?: return false
+        val game = gameDao.getById(item.gameId)
+        val romBaseName = game?.localPath?.let { java.io.File(it).nameWithoutExtension } ?: state.platformSlug
+
+        val result = stateCacheManager.get().uploadStateToRomM(state, item.rommId, romBaseName, api)
+        return result is StateCacheManager.StateCloudResult.Success ||
+            result is StateCacheManager.StateCloudResult.AlreadySynced
+    }
+
+    private suspend fun validateSaveStates(): Int {
+        val prefs = syncPreferencesRepository.preferences.first()
+        if (!prefs.saveSyncEnabled) return 0
+
+        val lastValidation = prefs.lastStateValidation
+        if (lastValidation != null && Duration.between(lastValidation, Instant.now()).toDays() < 7) {
+            return 0
+        }
+
+        val api = saveSyncRepository.get().getApi() ?: return 0
+        Logger.info(TAG, "validateSaveStates: Validating save states")
+        val migrated = stateCacheManager.get().validateAllSaveStates(api)
+        syncPreferencesRepository.setLastStateValidationTime(Instant.now())
+        Logger.info(TAG, "validateSaveStates: Complete | migrated=$migrated")
+        return migrated
     }
 
     private suspend fun processProperty(item: PendingSyncQueueEntity): Boolean {

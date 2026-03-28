@@ -102,6 +102,9 @@ interface SaveCacheDao {
     @Query("DELETE FROM save_cache")
     suspend fun deleteAll()
 
+    @Query("DELETE FROM save_cache WHERE channelName LIKE '%state%' OR channelName LIKE 'state_%'")
+    suspend fun deleteStaleStateEntries(): Int
+
     @Query("SELECT COUNT(*) FROM save_cache")
     suspend fun count(): Int
 

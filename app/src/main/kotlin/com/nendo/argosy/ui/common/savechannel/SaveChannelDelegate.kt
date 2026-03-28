@@ -765,6 +765,12 @@ class SaveChannelDelegate @Inject constructor(
             }
 
             if (success) {
+                stateCacheManager.duplicateStatesForChannel(
+                    gameId = currentGameId,
+                    sourceChannel = entry.channelName,
+                    targetChannel = newName
+                )
+
                 refreshEntries()
                 _state.update {
                     it.copy(

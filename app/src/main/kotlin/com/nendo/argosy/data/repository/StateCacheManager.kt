@@ -7,7 +7,10 @@ import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.StatePathConfig
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.VersionValidationResult
+import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.StateCacheEntity
@@ -16,7 +19,9 @@ import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.sync.SaveStatePayload
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApi
+import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
+import com.nendo.argosy.data.remote.romm.RomMState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -42,7 +47,10 @@ data class DiscoveredState(
 @Singleton
 class StateCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val gameDao: GameDao,
     private val stateCacheDao: StateCacheDao,
+    private val saveCacheDao: SaveCacheDao,
+    private val saveSyncDao: SaveSyncDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val coreVersionExtractor: CoreVersionExtractor,
@@ -52,8 +60,8 @@ class StateCacheManager @Inject constructor(
     companion object {
         private const val TAG = "StateCacheManager"
         private const val MIN_UNLOCKED_SLOTS = 3
-        private val STATE_EXTENSIONS = setOf("state", "state0", "state1", "state2", "state3", "state4", "state5", "state6", "state7", "state8", "state9", "auto")
         private const val BUFFER_SIZE = 8192
+        private val UPLOAD_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
         private val SLOT_REGEX = Regex("""\.state(\d+)?$""")
         private val UNDERSCORE_SLOT_REGEX = Regex("""_(\d+)\.[^.]+$""")
     }
@@ -299,6 +307,68 @@ class StateCacheManager @Inject constructor(
     suspend fun getStatesForGameOnce(gameId: Long): List<StateCacheEntity> =
         stateCacheDao.getByGame(gameId)
 
+    suspend fun duplicateStatesForChannel(
+        gameId: Long,
+        sourceChannel: String?,
+        targetChannel: String
+    ): Int = withContext(Dispatchers.IO) {
+        val sourceStates = if (sourceChannel != null) {
+            stateCacheDao.getByChannel(gameId, sourceChannel)
+        } else {
+            stateCacheDao.getDefaultChannel(gameId)
+        }
+
+        if (sourceStates.isEmpty()) return@withContext 0
+
+        var copied = 0
+        for (source in sourceStates) {
+            val sourceFile = File(cacheBaseDir, source.cachePath)
+            if (!sourceFile.exists()) continue
+
+            val targetDirName = targetChannel
+            val coreDirName = source.coreId ?: "unknown"
+            val targetDir = File(cacheBaseDir, "${source.platformSlug}/$gameId/$targetDirName/$coreDirName")
+            targetDir.mkdirs()
+
+            val targetFile = File(targetDir, sourceFile.name)
+            sourceFile.copyTo(targetFile, overwrite = true)
+
+            val targetCachePath = "${source.platformSlug}/$gameId/$targetDirName/$coreDirName/${sourceFile.name}"
+
+            var targetScreenshotPath: String? = null
+            source.screenshotPath?.let { ssPath ->
+                val ssFile = File(cacheBaseDir, ssPath)
+                if (ssFile.exists()) {
+                    val targetSsFile = File(targetDir, ssFile.name)
+                    ssFile.copyTo(targetSsFile, overwrite = true)
+                    targetScreenshotPath = "${source.platformSlug}/$gameId/$targetDirName/$coreDirName/${ssFile.name}"
+                }
+            }
+
+            val entity = StateCacheEntity(
+                gameId = gameId,
+                platformSlug = source.platformSlug,
+                emulatorId = source.emulatorId,
+                slotNumber = source.slotNumber,
+                channelName = targetChannel,
+                cachedAt = source.cachedAt,
+                stateSize = targetFile.length(),
+                cachePath = targetCachePath,
+                screenshotPath = targetScreenshotPath,
+                coreId = source.coreId,
+                coreVersion = source.coreVersion,
+                isLocked = true,
+                note = null,
+                syncStatus = StateCacheEntity.STATUS_PENDING_UPLOAD
+            )
+            stateCacheDao.upsert(entity)
+            copied++
+        }
+
+        Log.d(TAG, "Duplicated $copied states from channel ${sourceChannel ?: "default"} to $targetChannel for game $gameId")
+        copied
+    }
+
     suspend fun getStatesForChannel(gameId: Long, channelName: String): List<StateCacheEntity> =
         stateCacheDao.getByChannel(gameId, channelName)
 
@@ -498,6 +568,7 @@ class StateCacheManager @Inject constructor(
     suspend fun uploadStateToRomM(
         state: StateCacheEntity,
         rommId: Long,
+        romBaseName: String,
         api: RomMApi
     ): StateCloudResult = withContext(Dispatchers.IO) {
         Log.d(TAG, "[StateSync] UPLOAD stateId=${state.id} gameId=${state.gameId} slot=${state.slotNumber}")
@@ -515,43 +586,38 @@ class StateCacheManager @Inject constructor(
                 return@withContext StateCloudResult.AlreadySynced
             }
 
-            val uploadFileName = File(state.cachePath).name
+            val uploadFileName = buildUploadFileName(state, romBaseName)
             val requestBody = cacheFile.asRequestBody("application/octet-stream".toMediaType())
-            val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
+            val filePart = MultipartBody.Part.createFormData("stateFile", uploadFileName, requestBody)
 
             val screenshotPart = getScreenshotFile(state)?.let { ssFile ->
                 val ssBody = ssFile.asRequestBody("image/png".toMediaType())
                 MultipartBody.Part.createFormData("screenshotFile", ssFile.name, ssBody)
             }
 
-            val slotLabel = when (state.slotNumber) {
-                -1 -> "state_auto"
-                else -> "state_${state.slotNumber}"
-            }
-
             val response = if (state.rommSaveId != null) {
-                api.updateSave(state.rommSaveId, slot = slotLabel, saveFile = filePart, screenshotFile = screenshotPart)
+                api.updateState(state.rommSaveId, stateFile = filePart, screenshotFile = screenshotPart)
             } else {
-                api.uploadSave(rommId, state.emulatorId, slot = slotLabel, saveFile = filePart, screenshotFile = screenshotPart)
+                api.uploadState(rommId, state.emulatorId, stateFile = filePart, screenshotFile = screenshotPart)
             }
 
             if (response.isSuccessful) {
-                val serverSave = response.body()
-                if (serverSave == null) {
+                val serverState = response.body()
+                if (serverState == null) {
                     Log.e(TAG, "[StateSync] UPLOAD stateId=${state.id} | Empty response")
                     return@withContext StateCloudResult.Error("Empty response from server")
                 }
 
-                val serverTimestamp = parseTimestamp(serverSave.updatedAt)
+                val serverTimestamp = parseTimestamp(serverState.updatedAt)
                 stateCacheDao.updateSyncState(
                     id = state.id,
-                    rommSaveId = serverSave.id,
+                    rommSaveId = serverState.id,
                     syncStatus = StateCacheEntity.STATUS_SYNCED,
                     serverUpdatedAt = serverTimestamp?.toEpochMilli(),
                     lastUploadedHash = contentHash
                 )
 
-                Log.i(TAG, "[StateSync] UPLOAD stateId=${state.id} | Complete | serverSaveId=${serverSave.id}")
+                Log.i(TAG, "[StateSync] UPLOAD stateId=${state.id} | Complete | serverStateId=${serverState.id}")
                 StateCloudResult.Success
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -565,32 +631,41 @@ class StateCacheManager @Inject constructor(
     }
 
     suspend fun downloadStateFromRomM(
-        rommSaveId: Long,
+        rommStateId: Long,
         fileName: String,
         api: RomMApi,
         gameId: Long,
         platformSlug: String,
         emulatorId: String,
-        slotNumber: Int,
         coreId: String? = null,
-        serverSave: RomMSave? = null
+        serverState: RomMState
     ): StateCloudResult = withContext(Dispatchers.IO) {
-        Log.d(TAG, "[StateSync] DOWNLOAD rommSaveId=$rommSaveId gameId=$gameId slot=$slotNumber")
+        Log.d(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId gameId=$gameId")
 
         try {
-            val response = api.downloadSaveContent(rommSaveId, fileName)
+            val downloadPath = serverState.downloadPath
+            if (downloadPath == null) {
+                Log.e(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId | No download path")
+                return@withContext StateCloudResult.Error("No download path for state")
+            }
+            val response = api.downloadRaw(downloadPath)
             if (!response.isSuccessful) {
-                Log.e(TAG, "[StateSync] DOWNLOAD rommSaveId=$rommSaveId | HTTP failed | status=${response.code()}")
+                Log.e(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId | HTTP failed | status=${response.code()}")
                 return@withContext StateCloudResult.Error("Download failed: ${response.code()}")
             }
 
             val body = response.body()
             if (body == null) {
-                Log.e(TAG, "[StateSync] DOWNLOAD rommSaveId=$rommSaveId | Empty response body")
+                Log.e(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId | Empty response body")
                 return@withContext StateCloudResult.Error("Empty response body")
             }
 
-            val coreDir = getCoreDir(gameId, platformSlug, null, coreId)
+            val parsed = parseStateFileName(fileName)
+            val channelName = parsed.channelName
+            val parsedSlot = parsed.slotNumber
+            val channelDirName = channelName ?: "default"
+
+            val coreDir = getCoreDir(gameId, platformSlug, channelName, coreId)
             coreDir.mkdirs()
 
             val cachedFile = File(coreDir, fileName)
@@ -601,7 +676,7 @@ class StateCacheManager @Inject constructor(
             }
 
             var screenshotCachePath: String? = null
-            val screenshot = serverSave?.screenshot
+            val screenshot = serverState?.screenshot
             if (screenshot?.downloadPath != null && screenshot.fileName != null) {
                 try {
                     val ssResponse = api.downloadRaw(screenshot.downloadPath)
@@ -610,24 +685,24 @@ class StateCacheManager @Inject constructor(
                         ssResponse.body()?.byteStream()?.use { input ->
                             ssFile.outputStream().use { output -> input.copyTo(output) }
                         }
-                        screenshotCachePath = "$platformSlug/$gameId/default/${coreId ?: "unknown"}/${screenshot.fileName}"
-                        Log.d(TAG, "[StateSync] DOWNLOAD screenshot for rommSaveId=$rommSaveId")
+                        screenshotCachePath = "$platformSlug/$gameId/$channelDirName/${coreId ?: "unknown"}/${screenshot.fileName}"
+                        Log.d(TAG, "[StateSync] DOWNLOAD screenshot for rommStateId=$rommStateId")
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "[StateSync] DOWNLOAD screenshot failed for rommSaveId=$rommSaveId", e)
+                    Log.w(TAG, "[StateSync] DOWNLOAD screenshot failed for rommStateId=$rommStateId", e)
                 }
             }
 
             val contentHash = calculateFileHash(cachedFile)
-            val cachePath = "$platformSlug/$gameId/default/${coreId ?: "unknown"}/$fileName"
+            val cachePath = "$platformSlug/$gameId/$channelDirName/${coreId ?: "unknown"}/$fileName"
             val now = Instant.now()
 
             val entity = StateCacheEntity(
                 gameId = gameId,
                 platformSlug = platformSlug,
                 emulatorId = emulatorId,
-                slotNumber = slotNumber,
-                channelName = null,
+                slotNumber = parsedSlot,
+                channelName = channelName,
                 cachedAt = now,
                 stateSize = cachedFile.length(),
                 cachePath = cachePath,
@@ -636,41 +711,196 @@ class StateCacheManager @Inject constructor(
                 coreVersion = null,
                 isLocked = false,
                 note = null,
-                rommSaveId = rommSaveId,
+                rommSaveId = rommStateId,
                 syncStatus = StateCacheEntity.STATUS_SYNCED,
                 serverUpdatedAt = now,
                 lastUploadedHash = contentHash
             )
 
             stateCacheDao.upsert(entity)
-            Log.i(TAG, "[StateSync] DOWNLOAD rommSaveId=$rommSaveId | Complete | cached at $cachePath")
+            Log.i(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId | Complete | cached at $cachePath")
             StateCloudResult.Success
         } catch (e: Exception) {
-            Log.e(TAG, "[StateSync] DOWNLOAD rommSaveId=$rommSaveId | Exception", e)
+            Log.e(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId | Exception", e)
             StateCloudResult.Error(e.message ?: "Download failed")
         }
     }
 
-    suspend fun checkServerStates(rommId: Long, api: RomMApi): List<RomMSave> = withContext(Dispatchers.IO) {
+    suspend fun checkServerStates(rommId: Long, api: RomMApi): List<RomMState> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getSavesByRom(rommId)
+            val response = api.getStatesByRom(rommId)
             if (!response.isSuccessful) {
                 Log.w(TAG, "[StateSync] checkServerStates rommId=$rommId | HTTP failed | status=${response.code()}")
                 return@withContext emptyList()
             }
 
-            val allSaves = response.body() ?: emptyList()
-            val states = allSaves.filter { save ->
-                val ext = save.fileExtension?.lowercase() ?: File(save.fileName).extension.lowercase()
-                isStateExtension(ext)
-            }
-
-            Log.d(TAG, "[StateSync] checkServerStates rommId=$rommId | Found ${states.size} states out of ${allSaves.size} saves")
+            val states = response.body() ?: emptyList()
+            Log.d(TAG, "[StateSync] checkServerStates rommId=$rommId | Found ${states.size} states")
             states
         } catch (e: Exception) {
             Log.e(TAG, "[StateSync] checkServerStates rommId=$rommId | Exception", e)
             emptyList()
         }
+    }
+
+    suspend fun validateAllSaveStates(api: RomMApi): Int = withContext(Dispatchers.IO) {
+        Log.i(TAG, "[StateMigrate] Validating save states across all ROMs")
+
+        val response = try {
+            api.getAllSaves()
+        } catch (e: Exception) {
+            Log.w(TAG, "[StateMigrate] Failed to fetch all saves", e)
+            return@withContext 0
+        }
+
+        if (!response.isSuccessful) {
+            Log.w(TAG, "[StateMigrate] Failed to fetch all saves: ${response.code()}")
+            return@withContext 0
+        }
+
+        val allSaves = response.body() ?: return@withContext 0
+        val stateSlotPattern = Regex("""^state_(\w+)$""")
+        val misplaced = allSaves.filter { it.slot != null && stateSlotPattern.matches(it.slot) }
+
+        if (misplaced.isEmpty()) {
+            Log.i(TAG, "[StateMigrate] No misplaced states found")
+            return@withContext 0
+        }
+
+        Log.i(TAG, "[StateMigrate] Found ${misplaced.size} misplaced states across ${misplaced.map { it.romId }.distinct().size} ROMs")
+
+        val byRom = misplaced.groupBy { it.romId }
+        var totalMigrated = 0
+
+        for ((romId, saves) in byRom) {
+            val migrated = migrateStatesFromSaves(romId, api, saves)
+            totalMigrated += migrated
+        }
+
+        // Clean up stale local entries with bad channel names
+        // from before the fix (old slot names or filenames leaked into channelName)
+        val staleChannelPattern = Regex("""^state_|\.state""")
+        var cleaned = 0
+
+        val allStateCaches = stateCacheDao.getAll()
+        for (cache in allStateCaches) {
+            val ch = cache.channelName ?: continue
+            if (staleChannelPattern.containsMatchIn(ch)) {
+                stateCacheDao.deleteById(cache.id)
+                cleaned++
+                Log.d(TAG, "[StateMigrate] Cleaned stale state_cache id=${cache.id} channelName=$ch")
+            }
+        }
+
+        val cleanedSaveCaches = saveCacheDao.deleteStaleStateEntries()
+        cleaned += cleanedSaveCaches
+        if (cleanedSaveCaches > 0) {
+            Log.d(TAG, "[StateMigrate] Cleaned $cleanedSaveCaches stale save_cache entries")
+        }
+
+        val cleanedSaveSyncs = saveSyncDao.deleteStaleStateEntries()
+        cleaned += cleanedSaveSyncs
+        if (cleanedSaveSyncs > 0) {
+            Log.d(TAG, "[StateMigrate] Cleaned $cleanedSaveSyncs stale save_sync entries")
+        }
+
+        if (cleaned > 0) {
+            Log.i(TAG, "[StateMigrate] Cleaned $cleaned total stale entries")
+        }
+
+        Log.i(TAG, "[StateMigrate] Validation complete: migrated $totalMigrated, cleaned $cleaned")
+        totalMigrated + cleaned
+    }
+
+    suspend fun migrateStatesFromSaves(rommId: Long, api: RomMApi): Int =
+        migrateStatesFromSaves(rommId, api, saves = null)
+
+    suspend fun migrateStatesFromSaves(rommId: Long, api: RomMApi, saves: List<RomMSave>?): Int = withContext(Dispatchers.IO) {
+        val stateSlotPattern = Regex("""^state_(\w+)$""")
+
+        val allSaves = if (saves != null) {
+            saves
+        } else {
+            val savesResponse = api.getSavesByRom(rommId)
+            if (!savesResponse.isSuccessful) {
+                Log.w(TAG, "[StateMigrate] Failed to fetch saves for rommId=$rommId")
+                return@withContext 0
+            }
+            savesResponse.body() ?: emptyList()
+        }
+
+        val misplaced = allSaves.filter { it.slot != null && stateSlotPattern.matches(it.slot) }
+        if (misplaced.isEmpty()) return@withContext 0
+
+        Log.i(TAG, "[StateMigrate] Found ${misplaced.size} states in saves for rommId=$rommId")
+        var migratedCount = 0
+
+        for (save in misplaced) {
+            try {
+                val newFileName = buildMigratedFileName(save)
+                if (newFileName == null) {
+                    Log.d(TAG, "[StateMigrate] Skipping non-state file ${save.id} (${save.fileName})")
+                    continue
+                }
+
+                val downloadPath = save.downloadPath
+                if (downloadPath == null) {
+                    Log.w(TAG, "[StateMigrate] No download path for save ${save.id}")
+                    continue
+                }
+
+                val downloadResponse = api.downloadRaw(downloadPath)
+                if (!downloadResponse.isSuccessful) {
+                    Log.w(TAG, "[StateMigrate] Failed to download save ${save.id}: ${downloadResponse.code()}")
+                    continue
+                }
+
+                val body = downloadResponse.body() ?: continue
+                val tempFile = File.createTempFile("state_migrate_", ".tmp", cacheBaseDir)
+                try {
+                    body.byteStream().use { input ->
+                        tempFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+
+                    val requestBody = tempFile.asRequestBody("application/octet-stream".toMediaType())
+                    val filePart = MultipartBody.Part.createFormData("stateFile", newFileName, requestBody)
+
+                    val uploadResponse = api.uploadState(
+                        rommId, save.emulator, stateFile = filePart
+                    )
+
+                    if (uploadResponse.isSuccessful) {
+                        val serverState = uploadResponse.body()
+                        api.deleteSaves(RomMDeleteSavesRequest(saves = listOf(save.id)))
+
+                        // Update local cache: remove old rommSaveId reference, set new state ID
+                        val oldCache = save.id.let { stateCacheDao.getByRommSaveId(it) }
+                        if (oldCache != null && serverState != null) {
+                            val serverTimestamp = parseTimestamp(serverState.updatedAt)
+                            stateCacheDao.updateSyncState(
+                                id = oldCache.id,
+                                rommSaveId = serverState.id,
+                                syncStatus = StateCacheEntity.STATUS_SYNCED,
+                                serverUpdatedAt = serverTimestamp?.toEpochMilli(),
+                                lastUploadedHash = oldCache.lastUploadedHash
+                            )
+                        }
+
+                        migratedCount++
+                        Log.i(TAG, "[StateMigrate] Migrated save ${save.id} (${save.fileName}) -> $newFileName | newStateId=${serverState?.id}")
+                    } else {
+                        Log.w(TAG, "[StateMigrate] Upload failed for save ${save.id}: ${uploadResponse.code()}")
+                    }
+                } finally {
+                    tempFile.delete()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "[StateMigrate] Error migrating save ${save.id}", e)
+            }
+        }
+
+        Log.i(TAG, "[StateMigrate] Migrated $migratedCount/${misplaced.size} states for rommId=$rommId")
+        migratedCount
     }
 
     suspend fun getPendingUploads(): List<StateCacheEntity> =
@@ -688,15 +918,6 @@ class StateCacheManager @Inject constructor(
 
     suspend fun getByGameAndEmulator(gameId: Long, emulatorId: String): List<StateCacheEntity> =
         stateCacheDao.getByGameAndEmulator(gameId, emulatorId)
-
-    private fun isStateExtension(ext: String): Boolean {
-        val lower = ext.lowercase()
-        return lower in STATE_EXTENSIONS ||
-            lower.startsWith("state") ||
-            lower == "ppst" ||
-            lower == "dss" ||
-            lower == "mln"
-    }
 
     private fun calculateFileHash(file: File): String {
         val md = MessageDigest.getInstance("MD5")
@@ -721,6 +942,81 @@ class StateCacheManager @Inject constructor(
                 null
             }
         }
+    }
+
+    fun buildUploadFileName(state: StateCacheEntity, romBaseName: String): String {
+        val stateExt = when (state.slotNumber) {
+            -1 -> "state.auto"
+            else -> "state${state.slotNumber}"
+        }
+        val timestamp = UPLOAD_TIMESTAMP_FORMAT.format(
+            ZonedDateTime.ofInstant(state.cachedAt, java.time.ZoneOffset.UTC)
+        )
+        val channel = state.channelName
+        return if (channel != null) {
+            "$romBaseName [$timestamp].$channel.$stateExt"
+        } else {
+            "$romBaseName [$timestamp].$stateExt"
+        }
+    }
+
+    fun buildMigratedFileName(save: RomMSave): String? {
+        val slot = save.slot ?: return null
+        val stateSlotMatch = Regex("""^state_(\w+)$""").find(slot) ?: return null
+        val ext = save.fileExtension?.lowercase() ?: File(save.fileName).extension.lowercase()
+        // Skip SRAM save snapshots that were uploaded alongside states
+        if (ext == "srm" || ext == "zip") return null
+        val slotValue = stateSlotMatch.groupValues[1]
+        val stateExt = when (slotValue) {
+            "auto" -> "state.auto"
+            else -> "state$slotValue"
+        }
+        // Strip existing state/auto extensions from the original filename
+        // Handles: .state, .state1, .auto, and .state before a timestamp like .state [ts].auto
+        val baseName = save.fileName
+            .replace(Regex("""\.(state\d*|auto)$"""), "")
+            .replace(Regex("""\.state(?= \[)"""), "")
+            .replace(Regex("""\.state$"""), "")
+        return "$baseName.$stateExt"
+    }
+
+    data class ParsedStateFileName(
+        val romBaseName: String?,
+        val channelName: String?,
+        val slotNumber: Int
+    )
+
+    fun parseStateFileName(fileName: String): ParsedStateFileName {
+        val ts = """ \[\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}]"""
+
+        // {game} [{ts}].{channel}.state.auto
+        val channelAutoMatch = Regex("""^(.+)$ts\.(.+?)\.state\.auto$""").find(fileName)
+        if (channelAutoMatch != null) {
+            return ParsedStateFileName(channelAutoMatch.groupValues[1], channelAutoMatch.groupValues[2], -1)
+        }
+        // {game} [{ts}].state.auto  or  {game}.state.auto  or  {game}.state [{ts}].auto (legacy)
+        val autoMatch = Regex("""^(.+?)(?:\.state)?(?:$ts)?\.state\.auto$|^(.+?)\.state$ts\.auto$""").find(fileName)
+        if (autoMatch != null) {
+            val rom = autoMatch.groupValues[1].ifEmpty { autoMatch.groupValues[2] }
+            return ParsedStateFileName(rom, null, -1)
+        }
+        // {game} [{ts}].{channel}.state{N}
+        val channelNumberedMatch = Regex("""^(.+)$ts\.(.+?)\.state(\d+)$""").find(fileName)
+        if (channelNumberedMatch != null) {
+            return ParsedStateFileName(channelNumberedMatch.groupValues[1], channelNumberedMatch.groupValues[2], channelNumberedMatch.groupValues[3].toIntOrNull() ?: 0)
+        }
+        // {game} [{ts}].state{N}  or  {game}.state{N}
+        val numberedMatch = Regex("""^(.+?)(?:$ts)?\.state(\d+)$""").find(fileName)
+        if (numberedMatch != null) {
+            return ParsedStateFileName(numberedMatch.groupValues[1], null, numberedMatch.groupValues[2].toIntOrNull() ?: 0)
+        }
+        // Legacy: {game} [{ts}].state (no slot number, treat as slot 0)
+        val legacyMatch = Regex("""^(.+?)(?:$ts)?\.state$""").find(fileName)
+        if (legacyMatch != null) {
+            return ParsedStateFileName(legacyMatch.groupValues[1], null, 0)
+        }
+        // Fallback
+        return ParsedStateFileName(null, null, parseSlotFromFileName(fileName))
     }
 
     fun parseSlotFromFileName(fileName: String): Int {
@@ -788,7 +1084,9 @@ class StateCacheManager @Inject constructor(
                 continue
             }
 
-            val result = uploadStateToRomM(state, item.rommId, api)
+            val game = gameDao.getById(item.gameId)
+            val romBaseName = game?.localPath?.let { File(it).nameWithoutExtension } ?: state.platformSlug
+            val result = uploadStateToRomM(state, item.rommId, romBaseName, api)
             when (result) {
                 is StateCloudResult.Success -> {
                     pendingSyncQueueDao.deleteById(item.id)

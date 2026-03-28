@@ -161,7 +161,8 @@ class UserPreferencesRepository @Inject constructor(
             socialNotifyFriendPlaying = sync.socialNotifyFriendPlaying,
             socialSuppressNotificationsInGame = sync.socialSuppressNotificationsInGame,
             discordRichPresenceEnabled = sync.discordRichPresenceEnabled,
-            lastPlaySessionSync = sync.lastPlaySessionSync
+            lastPlaySessionSync = sync.lastPlaySessionSync,
+            lastStateValidation = sync.lastStateValidation
         )
     }
 
@@ -582,6 +583,7 @@ data class UserPreferences(
     val socialSuppressNotificationsInGame: Boolean = false,
     val discordRichPresenceEnabled: Boolean = true,
     val lastPlaySessionSync: Instant? = null,
+    val lastStateValidation: Instant? = null,
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val lastIntegrityCheckTime: Long? = null
 ) {

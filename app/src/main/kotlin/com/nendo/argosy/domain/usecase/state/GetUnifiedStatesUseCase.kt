@@ -6,12 +6,14 @@ import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.VersionValidationResult
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.StateCacheEntity
+import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 import javax.inject.Inject
 
 class GetUnifiedStatesUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager,
+    private val saveSyncRepository: SaveSyncRepository,
     private val gameDao: GameDao,
     private val coreVersionExtractor: CoreVersionExtractor,
     private val emulatorResolver: EmulatorResolver
@@ -24,10 +26,16 @@ class GetUnifiedStatesUseCase @Inject constructor(
         currentCoreVersion: String? = null
     ): List<UnifiedStateEntry> {
         val game = gameDao.getById(gameId) ?: return emptyList()
+        val rommId = game.rommId
 
         val effectiveEmulatorId = emulatorId
             ?: emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, game.platformSlug)
         if (effectiveEmulatorId == null) return emptyList()
+
+        // Fetch server states and sync to local cache
+        if (rommId != null) {
+            syncServerStates(rommId, gameId, game.platformSlug, effectiveEmulatorId, channelName, currentCoreId)
+        }
 
         val localStates = if (channelName != null) {
             stateCacheManager.getStatesForChannel(gameId, channelName)
@@ -45,6 +53,43 @@ class GetUnifiedStatesUseCase @Inject constructor(
             currentCoreId = currentCoreId,
             currentCoreVersion = currentCoreVersion
         )
+    }
+
+    private suspend fun syncServerStates(
+        rommId: Long,
+        gameId: Long,
+        platformSlug: String,
+        emulatorId: String,
+        channelName: String?,
+        coreId: String?
+    ) {
+        val api = saveSyncRepository.getApi() ?: return
+
+        // Migrate any states stuck in saves first
+        saveSyncRepository.checkSavesForGame(gameId, rommId)
+
+        // Fetch and cache server states
+        val serverStates = stateCacheManager.checkServerStates(rommId, api)
+        val localStates = stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
+        val localByRommId = localStates.filter { it.rommSaveId != null }.associateBy { it.rommSaveId }
+
+        for (serverState in serverStates) {
+            if (localByRommId[serverState.id] != null) continue
+
+            val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
+            if (channelName != null && parsed.channelName != channelName) continue
+
+            stateCacheManager.downloadStateFromRomM(
+                rommStateId = serverState.id,
+                fileName = serverState.fileName,
+                api = api,
+                gameId = gameId,
+                platformSlug = platformSlug,
+                emulatorId = emulatorId,
+                coreId = coreId,
+                serverState = serverState
+            )
+        }
     }
 
     private fun buildSlotList(

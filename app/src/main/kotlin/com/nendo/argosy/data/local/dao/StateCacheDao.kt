@@ -172,6 +172,9 @@ interface StateCacheDao {
     @Query("DELETE FROM state_cache")
     suspend fun deleteAll()
 
+    @Query("SELECT * FROM state_cache")
+    suspend fun getAll(): List<StateCacheEntity>
+
     @Query("SELECT COUNT(*) FROM state_cache")
     suspend fun count(): Int
 }

@@ -59,6 +59,9 @@ interface SaveSyncDao {
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
 
+    @Query("DELETE FROM save_sync WHERE channelName LIKE '%state%' OR channelName LIKE 'state_%'")
+    suspend fun deleteStaleStateEntries(): Int
+
     @Query("UPDATE save_sync SET localSavePath = NULL")
     suspend fun clearAllPaths()
 

@@ -105,6 +105,9 @@ interface RomMApi {
     ): Response<Unit>
 
     @GET("api/saves")
+    suspend fun getAllSaves(): Response<List<RomMSave>>
+
+    @GET("api/saves")
     suspend fun getSavesByRom(
         @Query("rom_id") romId: Long
     ): Response<List<RomMSave>>
@@ -143,6 +146,40 @@ interface RomMApi {
     @POST("api/saves/delete")
     suspend fun deleteSaves(
         @Body body: RomMDeleteSavesRequest
+    ): Response<List<Long>>
+
+    // State endpoints
+
+    @GET("api/states")
+    suspend fun getStatesByRom(
+        @Query("rom_id") romId: Long
+    ): Response<List<RomMState>>
+
+    @GET("api/states/{id}")
+    suspend fun getState(
+        @Path("id") stateId: Long
+    ): Response<RomMState>
+
+    @Multipart
+    @POST("api/states")
+    suspend fun uploadState(
+        @Query("rom_id") romId: Long,
+        @Query("emulator") emulator: String?,
+        @Part stateFile: MultipartBody.Part,
+        @Part screenshotFile: MultipartBody.Part? = null
+    ): Response<RomMState>
+
+    @Multipart
+    @PUT("api/states/{id}")
+    suspend fun updateState(
+        @Path("id") stateId: Long,
+        @Part stateFile: MultipartBody.Part,
+        @Part screenshotFile: MultipartBody.Part? = null
+    ): Response<RomMState>
+
+    @POST("api/states/delete")
+    suspend fun deleteStates(
+        @Body body: RomMDeleteStatesRequest
     ): Response<List<Long>>
 
     @Streaming

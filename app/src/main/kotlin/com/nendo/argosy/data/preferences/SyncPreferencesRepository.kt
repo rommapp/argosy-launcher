@@ -44,7 +44,8 @@ data class SyncPreferences(
     val socialNotifyFriendPlaying: Boolean = true,
     val discordRichPresenceEnabled: Boolean = true,
     val socialSuppressNotificationsInGame: Boolean = false,
-    val lastPlaySessionSync: Instant? = null
+    val lastPlaySessionSync: Instant? = null,
+    val lastStateValidation: Instant? = null
 )
 
 @Singleton
@@ -89,6 +90,7 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_NOTIFY_FRIEND_PLAYING = booleanPreferencesKey("social_notify_friend_playing")
         val DISCORD_RICH_PRESENCE_ENABLED = booleanPreferencesKey("discord_rich_presence_enabled")
         val SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME = booleanPreferencesKey("social_suppress_notifications_in_game")
+        val LAST_STATE_VALIDATION = stringPreferencesKey("last_state_validation")
         val SOCIAL_LAST_PLAY_SESSION_SYNC = stringPreferencesKey("social_last_play_session_sync")
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
     }
@@ -140,7 +142,8 @@ class SyncPreferencesRepository @Inject constructor(
             socialNotifyFriendPlaying = prefs[Keys.SOCIAL_NOTIFY_FRIEND_PLAYING] ?: true,
             discordRichPresenceEnabled = prefs[Keys.DISCORD_RICH_PRESENCE_ENABLED] ?: true,
             socialSuppressNotificationsInGame = prefs[Keys.SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME] ?: false,
-            lastPlaySessionSync = prefs[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC]?.let { Instant.parse(it) }
+            lastPlaySessionSync = prefs[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC]?.let { Instant.parse(it) },
+            lastStateValidation = prefs[Keys.LAST_STATE_VALIDATION]?.let { Instant.parse(it) }
         )
     }
 
@@ -208,6 +211,10 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setLastRommSyncTime(time: Instant) {
         dataStore.edit { it[Keys.LAST_ROMM_SYNC] = time.toString() }
+    }
+
+    suspend fun setLastStateValidationTime(time: Instant) {
+        dataStore.edit { it[Keys.LAST_STATE_VALIDATION] = time.toString() }
     }
 
     suspend fun setLastFavoritesSyncTime(time: Instant) {

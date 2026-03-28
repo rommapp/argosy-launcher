@@ -89,7 +89,8 @@ class PreLaunchStateSyncUseCase @Inject constructor(
 
         for (serverState in serverStates) {
             val localState = localByRommId[serverState.id]
-            val slotNumber = stateCacheManager.parseSlotFromFileName(serverState.fileName)
+            val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
+            val slotNumber = parsed.slotNumber
 
             val shouldDownload = when {
                 localState == null -> {
@@ -107,14 +108,14 @@ class PreLaunchStateSyncUseCase @Inject constructor(
 
             if (shouldDownload) {
                 val result = stateCacheManager.downloadStateFromRomM(
-                    rommSaveId = serverState.id,
+                    rommStateId = serverState.id,
                     fileName = serverState.fileName,
                     api = api,
                     gameId = gameId,
                     platformSlug = game.platformSlug,
                     emulatorId = emulatorId,
-                    slotNumber = slotNumber,
-                    coreId = coreId
+                    coreId = coreId,
+                    serverState = serverState
                 )
 
                 when (result) {

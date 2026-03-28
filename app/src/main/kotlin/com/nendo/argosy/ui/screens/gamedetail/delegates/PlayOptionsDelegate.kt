@@ -137,6 +137,7 @@ class PlayOptionsDelegate @Inject constructor(
                     playOptionsFocusIndex = 0,
                     hasCasualSaves = false,
                     hasHardcoreSave = false,
+                    hasRASupport = true,
                     isRALoggedIn = true,
                     isOnline = isOnline
                 )

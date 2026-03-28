@@ -120,7 +120,7 @@ class SaveStateManager(
                     sramFile.delete()
                     Log.d(TAG, "Deleted existing save file for fresh start")
                 }
-                deleteAutoState()
+                deleteAllStates()
                 RestoreResult(null)
             }
             LaunchMode.RESUME_HARDCORE -> {
@@ -290,16 +290,18 @@ class SaveStateManager(
         return Bitmap.createScaledBitmap(bitmap, SCREENSHOT_MAX_WIDTH, newHeight, true)
     }
 
-    private fun deleteAutoState() {
-        val autoFile = getSlotFile(AUTO_SLOT)
-        val autoScreenshot = getSlotScreenshotFile(AUTO_SLOT)
-        if (autoFile.exists()) {
-            autoFile.delete()
-            Log.d(TAG, "Deleted auto-save state for fresh start")
-        }
-        if (autoScreenshot.exists()) {
-            autoScreenshot.delete()
-            Log.d(TAG, "Deleted auto-save screenshot for fresh start")
+    private fun deleteAllStates() {
+        for (slot in AUTO_SLOT..MAX_SLOT) {
+            val stateFile = getSlotFile(slot)
+            val screenshotFile = getSlotScreenshotFile(slot)
+            if (stateFile.exists()) {
+                stateFile.delete()
+                Log.d(TAG, "Deleted state slot $slot for fresh start")
+            }
+            if (screenshotFile.exists()) {
+                screenshotFile.delete()
+                Log.d(TAG, "Deleted screenshot for slot $slot")
+            }
         }
         hasQuickSave = false
     }

@@ -373,6 +373,7 @@ class GameDetailViewModel @Inject constructor(
     fun loadGame(gameId: Long) {
         currentGameId = gameId
         pageLoadTime = System.currentTimeMillis()
+        downloadDelegate.reset()
         imageCacheManager.pauseBackgroundCaching()
         viewModelScope.launch {
             if (emulatorDetector.installedEmulators.value.isEmpty()) {
@@ -778,7 +779,7 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val currentGame = _uiState.value.game ?: return@launch
 
-            if (currentGame.isBuiltInEmulator && currentGame.achievements.isNotEmpty()) {
+            if (currentGame.isBuiltInEmulator) {
                 if (playOptionsDelegate.shouldShowModeSelection(currentGameId, true, true)) {
                     playOptionsDelegate.showFreshGameModeSelection(viewModelScope, currentGameId)
                     return@launch
@@ -790,8 +791,9 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun showPlayOptions() {
-        val hasAchievements = _uiState.value.game?.achievements?.isNotEmpty() == true
-        playOptionsDelegate.showPlayOptions(viewModelScope, currentGameId, hasAchievements)
+        val game = _uiState.value.game
+        val hasRASupport = game?.isBuiltInEmulator == true
+        playOptionsDelegate.showPlayOptions(viewModelScope, currentGameId, hasRASupport)
     }
 
     fun dismissPlayOptions() = playOptionsDelegate.dismissPlayOptions()

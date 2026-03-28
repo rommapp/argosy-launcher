@@ -140,11 +140,14 @@ class DownloadDelegate @Inject constructor(
         scope.launch {
             steamContentManager.activeDownload.collect { steamDownload ->
                 val gameId = gameIdProvider()
-                if (gameId == 0L || steamDownload == null) return@collect
+                if (gameId == 0L) return@collect
 
                 val game = gameDao.getById(gameId) ?: return@collect
-                val steamAppId = game.steamAppId ?: return@collect
-                if (steamDownload.appId != steamAppId) return@collect
+                val steamAppId = game.steamAppId
+
+                if (steamDownload == null || steamAppId == null || steamDownload.appId != steamAppId) {
+                    return@collect
+                }
 
                 val result = steamDownload.state.toDownloadStatus(steamDownload.progress)
                     ?: return@collect

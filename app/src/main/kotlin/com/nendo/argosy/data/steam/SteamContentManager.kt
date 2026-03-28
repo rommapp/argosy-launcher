@@ -901,7 +901,13 @@ class SteamContentManager @Inject constructor(
                     override fun onFileCompleted(depotId: Int, fileName: String, pct: Float) {
                         Log.d(TAG, "DepotDownloader file completed: depot=$depotId, file=$fileName, pct=$pct")
                         val manifestId = depots.firstOrNull { it.depotId == depotId }?.manifestId ?: 0L
-                        downloadTracker.onFileCompleted(appId, depotId, manifestId, fileName)
+                        val installPrefix = installDir.absolutePath + "/"
+                        val relativeName = if (fileName.startsWith(installPrefix)) {
+                            fileName.removePrefix(installPrefix)
+                        } else {
+                            fileName
+                        }
+                        downloadTracker.onFileCompleted(appId, depotId, manifestId, relativeName)
                     }
 
                     override fun onChunkCompleted(

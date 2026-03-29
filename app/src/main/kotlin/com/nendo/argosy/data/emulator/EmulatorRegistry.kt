@@ -351,6 +351,17 @@ object EmulatorRegistry {
             supportedPlatforms = setOf("gb", "gbc"),
             downloadUrl = "https://play.google.com/store/apps/details?id=it.dbtecno.pizzaboy"
         ),
+        EmulatorDef(
+            id = "linkboy",
+            packageName = "com.pixelrespawn.linkboy",
+            displayName = "LinkBoy",
+            supportedPlatforms = setOf("gb", "gbc", "gba"),
+            launchConfig = LaunchConfig.CustomScheme(
+                scheme = "linkboy",
+                authority = "emulator"
+            ),
+            downloadUrl = "https://play.google.com/store/apps/details?id=com.pixelrespawn.linkboy"
+        ),
 
         // NOTE: Lemuroid does NOT support intent launching from external apps
         // https://github.com/Swordfish90/Lemuroid/issues/803
@@ -612,9 +623,9 @@ object EmulatorRegistry {
         "wii" to listOf("dolphin", "dolphin_handheld"),
         "wiiu" to listOf("cemu", "cemu_dualscreen"),
         "switch" to listOf("eden", "citron", "sudachi", "ryujinx", "yuzu", "strato", "skyline"),
-        "gba" to listOf("builtin", "pizza_boy_gba", "retroarch", "retroarch_64"),
-        "gb" to listOf("builtin", "pizza_boy_gb", "retroarch", "retroarch_64"),
-        "gbc" to listOf("builtin", "pizza_boy_gb", "retroarch", "retroarch_64"),
+        "gba" to listOf("builtin", "pizza_boy_gba", "linkboy", "retroarch", "retroarch_64"),
+        "gb" to listOf("builtin", "pizza_boy_gb", "linkboy", "retroarch", "retroarch_64"),
+        "gbc" to listOf("builtin", "pizza_boy_gb", "linkboy", "retroarch", "retroarch_64"),
         "nes" to listOf("builtin", "retroarch", "retroarch_64"),
         "snes" to listOf("builtin", "retroarch", "retroarch_64"),
         "genesis" to listOf("builtin", "md_emu", "retroarch", "retroarch_64"),

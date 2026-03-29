@@ -76,12 +76,12 @@ class SteamDepotManager @Inject constructor() {
             val osarch = config["osarch"]?.asString()
 
             if (oslist != null && !oslist.contains(WINDOWS_OS)) {
-                Log.d(TAG, "Skipping depot $depotId: OS=$oslist (not Windows)")
+                Log.v(TAG, "Skipping depot $depotId: OS=$oslist (not Windows)")
                 continue
             }
 
             if (osarch != null && osarch != ARCH_64 && osarch != "32") {
-                Log.d(TAG, "Skipping depot $depotId: arch=$osarch")
+                Log.v(TAG, "Skipping depot $depotId: arch=$osarch")
                 continue
             }
 
@@ -97,14 +97,14 @@ class SteamDepotManager @Inject constructor() {
             }
 
             if (manifestId == 0L) {
-                Log.d(TAG, "Depot $depotId manifests children: ${manifests.children.map { "${it.name}=${it.value}" }}")
+                Log.v(TAG, "Depot $depotId manifests children: ${manifests.children.map { "${it.name}=${it.value}" }}")
                 if (publicManifest != null) {
-                    Log.d(TAG, "Depot $depotId public manifest: value=${publicManifest.value}, children=${publicManifest.children.map { "${it.name}=${it.value}" }}")
+                    Log.v(TAG, "Depot $depotId public manifest: value=${publicManifest.value}, children=${publicManifest.children.map { "${it.name}=${it.value}" }}")
                 }
             }
 
             if (manifestId == 0L) {
-                Log.d(TAG, "Skipping depot $depotId: no manifest")
+                Log.v(TAG, "Skipping depot $depotId: no manifest")
                 continue
             }
 
@@ -122,7 +122,7 @@ class SteamDepotManager @Inject constructor() {
                 )
             )
 
-            Log.d(TAG, "Found depot $depotId: $name (os=$oslist, arch=$osarch, manifest=$manifestId, size=${maxSize / 1024 / 1024}MB)")
+            Log.v(TAG, "Found depot $depotId: $name (os=$oslist, arch=$osarch, manifest=$manifestId, size=${maxSize / 1024 / 1024}MB)")
         }
 
         Log.d(TAG, "Found ${depots.size} Windows depots total")

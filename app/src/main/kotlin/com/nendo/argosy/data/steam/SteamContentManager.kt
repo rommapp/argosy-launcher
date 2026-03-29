@@ -382,7 +382,7 @@ class SteamContentManager @Inject constructor(
     fun isConnected(): Boolean {
         val hasHandlers = depotManager.isConnected()
         val loggedIn = steamAuthManager.isLoggedIn.value
-        Log.d(TAG, "isConnected check: hasHandlers=$hasHandlers, loggedIn=$loggedIn")
+        Log.v(TAG, "isConnected check: hasHandlers=$hasHandlers, loggedIn=$loggedIn")
         return hasHandlers && loggedIn
     }
 
@@ -445,7 +445,7 @@ class SteamContentManager @Inject constructor(
     }
 
     fun notifyConnected() {
-        Log.d(TAG, "notifyConnected called")
+        Log.v(TAG, "notifyConnected called")
     }
 
     suspend fun fetchAppInfo(appId: Int): KeyValue {
@@ -754,11 +754,11 @@ class SteamContentManager @Inject constructor(
                 if (allDepots.isEmpty()) {
                     throw IllegalStateException("No Windows depots found for this game")
                 }
-                Log.d(TAG, "All depots discovered: ${allDepots.map { "${it.depotId}(manifest=${it.manifestId})" }}")
+                Log.v(TAG, "All depots discovered: ${allDepots.map { "${it.depotId}(manifest=${it.manifestId})" }}")
 
                 val sizeResult = depotManager.fetchDepotSizes(appId.toInt(), allDepots)
                 val totalSize = sizeResult.totalSize
-                Log.d(TAG, "Size result: accessible=${sizeResult.accessibleDepotIds}, sizes=${sizeResult.depotSizes.map { "${it.key}=${it.value / 1024 / 1024}MB" }}")
+                Log.v(TAG, "Size result: accessible=${sizeResult.accessibleDepotIds}, sizes=${sizeResult.depotSizes.map { "${it.key}=${it.value / 1024 / 1024}MB" }}")
 
                 val depots = if (sizeResult.accessibleDepotIds.isNotEmpty()) {
                     allDepots.filter { it.depotId in sizeResult.accessibleDepotIds }
@@ -801,7 +801,7 @@ class SteamContentManager @Inject constructor(
                 val completedDepots = java.util.concurrent.atomic.AtomicInteger(0)
 
                 Log.d(TAG, "Starting: $gameName (${depots.size} depots, ${totalSize / 1024 / 1024}MB, baseline=${baselineBytes / 1024 / 1024}MB)")
-                Log.d(TAG, "depotSizes map: ${depotSizes.entries.joinToString { "${it.key}=${it.value / 1024 / 1024}MB" }}")
+                Log.v(TAG, "depotSizes map: ${depotSizes.entries.joinToString { "${it.key}=${it.value / 1024 / 1024}MB" }}")
 
                 val initialProgress = if (totalSize > 0) (baselineBytes.toFloat() / totalSize).coerceIn(0f, 1f) else 0f
                 // Stay in Preparing until DepotDownloader starts actual chunk downloads.
@@ -830,7 +830,7 @@ class SteamContentManager @Inject constructor(
                 val cpuCores = Runtime.getRuntime().availableProcessors()
                 val maxDownloads = (cpuCores * 1.2).toInt().coerceAtLeast(2)
                 val maxDecompress = (cpuCores * 0.4).toInt().coerceAtLeast(2)
-                Log.d(TAG, "CPU cores=$cpuCores, maxDownloads=$maxDownloads, maxDecompress=$maxDecompress")
+                Log.v(TAG, "CPU cores=$cpuCores, maxDownloads=$maxDownloads, maxDecompress=$maxDecompress")
 
                 val depotDownloader = DepotDownloader(
                     client,
@@ -849,11 +849,11 @@ class SteamContentManager @Inject constructor(
                 depotDownloader.addListener(object : IDownloadListener {
 
                     override fun onItemAdded(item: DownloadItem) {
-                        Log.d(TAG, "DepotDownloader: item ${item.appId} added")
+                        Log.v(TAG, "DepotDownloader: item ${item.appId} added")
                     }
 
                     override fun onDownloadStarted(item: DownloadItem) {
-                        Log.d(TAG, "DepotDownloader: item ${item.appId} started (baseline=${baselineBytes / 1024 / 1024}MB)")
+                        Log.v(TAG, "DepotDownloader: item ${item.appId} started (baseline=${baselineBytes / 1024 / 1024}MB)")
                     }
 
                     override fun onDownloadCompleted(item: DownloadItem) {
@@ -866,7 +866,7 @@ class SteamContentManager @Inject constructor(
                     }
 
                     override fun onStatusUpdate(message: String) {
-                        Log.d(TAG, "DepotDownloader status: $message")
+                        Log.v(TAG, "DepotDownloader status: $message")
                         // Only update _downloadState -- the progress poller is the single
                         // source of truth for _activeDownload to avoid racing values
                         when {
@@ -899,7 +899,7 @@ class SteamContentManager @Inject constructor(
                     }
 
                     override fun onFileCompleted(depotId: Int, fileName: String, pct: Float) {
-                        Log.d(TAG, "DepotDownloader file completed: depot=$depotId, file=$fileName, pct=$pct")
+                        Log.v(TAG, "DepotDownloader file completed: depot=$depotId, file=$fileName, pct=$pct")
                         val manifestId = depots.firstOrNull { it.depotId == depotId }?.manifestId ?: 0L
                         val installPrefix = installDir.absolutePath + "/"
                         val relativeName = if (fileName.startsWith(installPrefix)) {
@@ -921,7 +921,7 @@ class SteamContentManager @Inject constructor(
                         bytesDownloaded.set(currentBytes)
                         val pctInt = (depotPercentComplete * 100).toInt()
                         if (pctInt % 25 == 0 && pctInt > 0) {
-                            Log.d(TAG, "Chunk: depot=$depotId, depotPct=$pctInt%, floor=${depotFloor.get() / 1024 / 1024}MB, depotBytes=${uncompressedBytes / 1024 / 1024}MB, total=${currentBytes / 1024 / 1024}MB/${totalSize / 1024 / 1024}MB")
+                            Log.v(TAG, "Chunk: depot=$depotId, depotPct=$pctInt%, floor=${depotFloor.get() / 1024 / 1024}MB, depotBytes=${uncompressedBytes / 1024 / 1024}MB, total=${currentBytes / 1024 / 1024}MB/${totalSize / 1024 / 1024}MB")
                         }
 
                         val now = System.currentTimeMillis()
@@ -984,7 +984,7 @@ class SteamContentManager @Inject constructor(
                             appId, gameName, coverPath, progress, totalSize, totalDownloaded, state,
                             if (state is SteamDownloadState.Validating) 0L else progressTracker.computeSpeed(System.currentTimeMillis())
                         )
-                        Log.d(TAG, "UI update: ${totalDownloaded / 1024 / 1024}MB / ${totalSize / 1024 / 1024}MB (${(progress * 100).toInt()}%) state=${state::class.simpleName}")
+                        Log.v(TAG, "UI update: ${totalDownloaded / 1024 / 1024}MB / ${totalSize / 1024 / 1024}MB (${(progress * 100).toInt()}%) state=${state::class.simpleName}")
 
                         val depotManifestId = depots.firstOrNull { it.depotId == depotId }?.manifestId ?: 0L
                         downloadTracker.onDepotCompleted(appId, depotId, depotManifestId)
@@ -1006,7 +1006,6 @@ class SteamContentManager @Inject constructor(
                 downloadTracker.startPeriodicFlush()
 
                 Log.i(TAG, "DepotDownloader running for $gameName -> ${installDir.absolutePath}")
-                Log.d(TAG, "DepotDownloader depotIds=$depotIds, totalSize=${totalSize / 1024 / 1024}MB, depotSizes=${depotSizes.entries.joinToString { "${it.key}=${it.value / 1024 / 1024}MB" }}")
 
                 heartbeatJob = scope.launch(heartbeatDispatcher) {
                     while (true) {

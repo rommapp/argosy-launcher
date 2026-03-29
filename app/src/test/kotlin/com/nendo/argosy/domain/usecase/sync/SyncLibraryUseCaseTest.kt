@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.sync
 
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.remote.romm.SyncProgress
 import com.nendo.argosy.data.remote.romm.SyncResult
 import com.nendo.argosy.ui.notification.NotificationManager
 import com.nendo.argosy.ui.screens.common.LibrarySyncBus
@@ -13,6 +14,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -29,6 +31,7 @@ class SyncLibraryUseCaseTest {
     @Before
     fun setup() {
         romMRepository = mockk(relaxed = true)
+        every { romMRepository.syncProgress } returns MutableStateFlow(SyncProgress())
         notificationManager = mockk(relaxed = true)
         librarySyncBus = mockk(relaxed = true)
         useCase = SyncLibraryUseCase(romMRepository, notificationManager, librarySyncBus)
@@ -169,11 +172,20 @@ class SyncLibraryUseCaseTest {
 
     @Test
     fun `invoke updates persistent notification on progress`() = runTest {
+        val syncProgressFlow = MutableStateFlow(SyncProgress())
+        every { romMRepository.syncProgress } returns syncProgressFlow
         every { romMRepository.isConnected() } returns true
         coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(2, 20))
         coEvery { romMRepository.syncLibrary(any()) } coAnswers {
-            val callback = firstArg<(Int, Int, String) -> Unit>()
-            callback(1, 2, "NES")
+            syncProgressFlow.value = SyncProgress(
+                isSyncing = true,
+                currentPlatform = "NES",
+                platformsTotal = 2,
+                platformsDone = 0,
+                gamesTotal = 10,
+                gamesDone = 3
+            )
+            kotlinx.coroutines.delay(50)
             SyncResult(2, 10, 0, 0, emptyList())
         }
 
@@ -182,7 +194,7 @@ class SyncLibraryUseCaseTest {
         verify {
             notificationManager.updatePersistent(
                 key = "romm-sync",
-                subtitle = "NES",
+                subtitle = "NES (3/10 games)",
                 progress = NotificationProgress(1, 2)
             )
         }

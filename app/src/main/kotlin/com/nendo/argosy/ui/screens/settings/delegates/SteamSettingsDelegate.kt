@@ -64,6 +64,20 @@ class SteamSettingsDelegate @Inject constructor(
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
 
+    init {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            val account = steamAuthManager.getActiveAccount()
+            if (account != null) {
+                _state.update {
+                    it.copy(
+                        connectionState = SteamConnectionState.LOGGED_IN,
+                        username = account.username
+                    )
+                }
+            }
+        }
+    }
+
     // Legacy stubs for routers that still reference these
     private val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()

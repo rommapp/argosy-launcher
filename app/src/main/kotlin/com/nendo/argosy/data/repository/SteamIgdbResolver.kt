@@ -13,7 +13,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "SteamIgdbResolver"
-private const val RESOLUTION_DELAY_MS = 250L
+private const val RESOLUTION_DELAY_MS = 1000L
+private const val RECONNECT_POLL_MS = 5000L
+private const val RECONNECT_TIMEOUT_MS = 120_000L
 
 @Singleton
 class SteamIgdbResolver @Inject constructor(
@@ -41,15 +43,37 @@ class SteamIgdbResolver @Inject constructor(
         if (unresolved.isEmpty()) return
         Log.d(TAG, "Requesting IGDB resolution for ${unresolved.size} Steam games (${RESOLUTION_DELAY_MS}ms between each)")
         for (game in unresolved) {
-            if (!socialService.isConnected()) {
-                Log.w(TAG, "Lost connection during resolution, stopping")
+            if (!awaitConnection()) {
+                Log.w(TAG, "Connection lost and did not recover, aborting resolution")
                 return
             }
             val steamAppId = game.steamAppId ?: continue
-            socialService.sendResolveSteamGame(steamAppId, game.title)
+            val sent = socialService.sendResolveSteamGame(steamAppId, game.title)
+            if (!sent) {
+                Log.w(TAG, "Failed to send resolve for ${game.title}, waiting for reconnect")
+                if (!awaitConnection()) {
+                    Log.w(TAG, "Connection lost and did not recover, aborting resolution")
+                    return
+                }
+                socialService.sendResolveSteamGame(steamAppId, game.title)
+            }
             delay(RESOLUTION_DELAY_MS)
         }
         Log.d(TAG, "IGDB resolution pass complete")
+    }
+
+    private suspend fun awaitConnection(): Boolean {
+        if (socialService.isConnected()) return true
+        Log.d(TAG, "Waiting for social connection to resume...")
+        val deadline = System.currentTimeMillis() + RECONNECT_TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            delay(RECONNECT_POLL_MS)
+            if (socialService.isConnected()) {
+                Log.d(TAG, "Social connection restored, resuming resolution")
+                return true
+            }
+        }
+        return false
     }
 
     fun requestResolution(steamAppId: Long) {

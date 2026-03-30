@@ -122,13 +122,10 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         MainSettingsItem.Platforms -> "${uiState.emulators.platforms.size} platforms"
         MainSettingsItem.BuiltinEmulator -> if (uiState.emulators.builtinLibretroEnabled) "Enabled" else "Disabled"
         MainSettingsItem.Bios -> uiState.bios.summaryText
-        MainSettingsItem.Steam -> when (uiState.steam.connectionState) {
-            com.nendo.argosy.data.steam.SteamConnectionState.LOGGED_IN ->
-                "Connected as ${uiState.steam.username ?: "Steam"}"
-            com.nendo.argosy.data.steam.SteamConnectionState.CONNECTING,
-            com.nendo.argosy.data.steam.SteamConnectionState.CONNECTED,
-            com.nendo.argosy.data.steam.SteamConnectionState.LOGGING_IN -> "Connecting..."
-            else -> if (uiState.steam.username != null) "Signed in as ${uiState.steam.username}" else "Not connected"
+        MainSettingsItem.Steam -> if (uiState.steam.username != null) {
+            uiState.steam.username
+        } else {
+            "Not signed in"
         }
         MainSettingsItem.Social -> when (uiState.social.authStatus) {
             SocialAuthStatus.CONNECTED -> "Linked as ${uiState.social.displayName ?: uiState.social.username}"

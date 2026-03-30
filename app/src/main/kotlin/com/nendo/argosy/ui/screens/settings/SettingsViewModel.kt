@@ -509,7 +509,7 @@ class SettingsViewModel @Inject constructor(
     fun connectToSteam() = steamDelegate.connectToSteam(context, viewModelScope)
     fun startSteamQrAuth() = steamDelegate.startQrAuth()
     fun cancelSteamQrAuth() = steamDelegate.cancelQrAuth()
-    fun syncSteamLibrary() = steamDelegate.syncLibrary()
+    fun syncSteamLibrary() = steamDelegate.syncLibrary(context, viewModelScope)
     fun disconnectSteam() = steamDelegate.disconnectSteam(viewModelScope)
     fun resetSteamLibrary() = steamDelegate.resetLibrary(viewModelScope)
     fun showAddSteamGameDialog() = steamDelegate.showAddSteamGameDialog()

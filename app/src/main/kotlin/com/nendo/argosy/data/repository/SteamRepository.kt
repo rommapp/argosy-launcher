@@ -168,8 +168,16 @@ class SteamRepository @Inject constructor(
             val firstScreenshot = screenshotUrls.firstOrNull()
             val backgroundUrl = firstScreenshot ?: appData.background ?: appData.backgroundRaw
 
+            val storeGenres = appData.genres
+                ?.mapNotNull { it.description }
+                ?.joinToString(", ")
+
+            val coverPath = repairCoverIfNeeded(game, steamAppId, appData)
+
             val updatedGame = game.copy(
                 description = appData.shortDescription ?: game.description,
+                genre = if (!storeGenres.isNullOrBlank()) storeGenres else game.genre,
+                coverPath = coverPath ?: game.coverPath,
                 screenshotPaths = if (screenshotUrls.isNotEmpty()) screenshotUrls.joinToString(",") else game.screenshotPaths,
                 backgroundPath = backgroundUrl ?: game.backgroundPath,
                 rating = appData.metacritic?.score?.toFloat() ?: game.rating
@@ -293,6 +301,44 @@ class SteamRepository @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to refresh Steam metadata", e)
             SteamResult.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    private fun repairCoverIfNeeded(
+        game: GameEntity,
+        steamAppId: Long,
+        appData: SteamAppData
+    ): String? {
+        val cover = game.coverPath ?: return null
+        if (!cover.startsWith("https://")) return null
+
+        val is404 = try {
+            val conn = URL(cover).openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "HEAD"
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            val code = conn.responseCode
+            conn.disconnect()
+            code == 404
+        } catch (e: Exception) {
+            true
+        }
+
+        if (!is404) return null
+
+        val fallbackUrl = appData.headerImage ?: appData.capsuleImage ?: return null
+        Log.d(TAG, "Cover 404 for ${game.title}, replacing with Store API fallback")
+        return try {
+            val file = File(cacheDir, "cover_$steamAppId.jpg")
+            URL(fallbackUrl).openStream().use { input ->
+                FileOutputStream(file).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            file.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download fallback cover for ${game.title}", e)
+            null
         }
     }
 

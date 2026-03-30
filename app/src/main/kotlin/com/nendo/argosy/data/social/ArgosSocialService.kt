@@ -724,10 +724,11 @@ class ArgosSocialService @Inject constructor(
         webSocket?.send(json.toString())
     }
 
-    fun sendResolveSteamGame(steamAppId: Long): Boolean {
-        return send(MessageTypes.RESOLVE_STEAM_GAME, mapOf(
-            "steam_app_id" to steamAppId
-        ))
+    fun sendResolveSteamGame(steamAppId: Long, title: String? = null): Boolean {
+        return send(MessageTypes.RESOLVE_STEAM_GAME, buildMap {
+            put("steam_app_id", steamAppId)
+            if (title != null) put("title", title)
+        })
     }
 
     fun sendHideGame(igdbGameId: Int?, steamAppId: Int? = null): Boolean {

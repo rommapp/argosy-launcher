@@ -66,6 +66,7 @@ class SteamLibraryManager @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val drmHazardManager: DrmHazardManager,
     private val steamRepository: dagger.Lazy<SteamRepository>,
+    private val steamIgdbResolver: dagger.Lazy<com.nendo.argosy.data.repository.SteamIgdbResolver>,
     private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -91,6 +92,7 @@ class SteamLibraryManager @Inject constructor(
     private var lastFullSyncAt: Instant? = null
     @Volatile
     private var forceSyncRequested = false
+    private var enrichmentJob: kotlinx.coroutines.Job? = null
 
     private companion object {
         val SYNC_COOLDOWN: java.time.Duration = java.time.Duration.ofHours(24)
@@ -124,9 +126,10 @@ class SteamLibraryManager @Inject constructor(
     fun forceSync() {
         forceSyncRequested = true
         scope.launch {
-            val licenses = cachedLicenses
+            val licenses = getLicenses()
             if (licenses.isEmpty()) {
                 Log.w(TAG, "Force sync: no cached licenses available, need reconnect")
+                _syncState.value = LibrarySyncState.Error("No cached licenses -- connect to Steam first")
                 return@launch
             }
             Log.d(TAG, "Force sync: re-processing ${licenses.size} licenses")
@@ -345,17 +348,26 @@ class SteamLibraryManager @Inject constructor(
             _syncState.value = LibrarySyncState.Complete(gamesAdded, gamesUpdated)
             Log.d(TAG, "Library sync complete: $gamesAdded added, $gamesUpdated updated")
 
-            // Enrich new games with Store API data (descriptions, screenshots) in background
-            if (gamesAdded > 0) {
-                scope.launch { enrichNewGames() }
+            val existing = enrichmentJob
+            if (existing != null && existing.isActive) {
+                Log.d(TAG, "Enrichment already in progress, skipping")
+            } else {
+                enrichmentJob = scope.launch {
+                    enrichIncompleteGames()
+                    steamIgdbResolver.get().requestResolutionForUnresolved()
+                }
             }
         }
     }
 
-    private suspend fun enrichNewGames() {
+    private suspend fun enrichIncompleteGames() {
         val steamGames = gameDao.getBySource(GameSource.STEAM)
-            .filter { it.description == null }
-        Log.d(TAG, "Enriching ${steamGames.size} games with Store API data")
+            .filter { it.description == null || it.screenshotPaths.isNullOrBlank() }
+        if (steamGames.isEmpty()) {
+            Log.d(TAG, "No games need enrichment")
+            return
+        }
+        Log.d(TAG, "Enriching ${steamGames.size} incomplete games with Store API data")
 
         val cacheScreenshots = preferencesRepository.userPreferences.first().syncScreenshotsEnabled
 
@@ -392,6 +404,7 @@ class SteamLibraryManager @Inject constructor(
 
         val genres = common["genres"]?.children
             ?.mapNotNull { it.asString() }
+            ?.map { STEAM_GENRE_MAP[it] ?: it }
             ?.joinToString(", ")
 
         val game = GameEntity(

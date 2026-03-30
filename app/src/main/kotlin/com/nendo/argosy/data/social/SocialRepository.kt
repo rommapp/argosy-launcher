@@ -482,19 +482,35 @@ class SocialRepository @Inject constructor(
     }
 
     private suspend fun handleSteamGameResolved(message: ArgosSocialService.IncomingMessage.SteamGameResolved) {
-        val game = gameDao.getBySteamAppId(message.steamAppId) ?: return
-        if (game.igdbId != null) return
-
-        gameDao.updateIgdbId(game.id, message.igdbId)
-
-        if (message.coverImageId != null) {
-            val coverPath = downloadIgdbCover(message.coverImageId, message.steamAppId)
-            if (coverPath != null) {
-                gameDao.updateCoverPath(game.id, coverPath)
-            }
+        val game = gameDao.getBySteamAppId(message.steamAppId)
+        if (game == null) {
+            Log.w(TAG, "IGDB resolve: game not found for steamAppId=${message.steamAppId}")
+            return
         }
 
-        Log.d(TAG, "Resolved Steam game ${message.steamAppId} -> IGDB ${message.igdbId}")
+        Log.d(TAG, "IGDB resolve: ${game.title} (steamAppId=${message.steamAppId}) -> igdbId=${message.igdbId}, coverImageId=${message.coverImageId}, currentIgdb=${game.igdbId}, currentCover=${game.coverPath?.take(60)}")
+
+        if (game.igdbId == null) {
+            gameDao.updateIgdbId(game.id, message.igdbId)
+            Log.d(TAG, "IGDB resolve: set igdbId=${message.igdbId} for gameId=${game.id}")
+        }
+
+        if (message.coverImageId != null) {
+            val needsCover = game.igdbId == null
+                || game.coverPath == null
+                || game.coverPath.startsWith("https://steamcdn-a.akamaihd.net/")
+            Log.d(TAG, "IGDB resolve: needsCover=$needsCover for ${game.title}")
+            if (needsCover) {
+                val coverPath = downloadIgdbCover(message.coverImageId, message.steamAppId)
+                Log.d(TAG, "IGDB resolve: downloaded cover -> $coverPath")
+                if (coverPath != null) {
+                    gameDao.updateCoverPath(game.id, coverPath)
+                    Log.d(TAG, "IGDB resolve: updated coverPath for gameId=${game.id}")
+                }
+            }
+        } else {
+            Log.d(TAG, "IGDB resolve: no coverImageId from server for ${game.title}")
+        }
     }
 
     private fun downloadIgdbCover(coverImageId: String, steamAppId: Long): String? {

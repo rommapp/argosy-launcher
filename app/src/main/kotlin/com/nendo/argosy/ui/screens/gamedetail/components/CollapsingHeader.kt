@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.People
@@ -203,6 +206,7 @@ private fun CoverArtImage(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TitleSection(
     game: GameDetailUi,
@@ -240,30 +244,39 @@ private fun TitleSection(
 
         Spacer(modifier = Modifier.height(Dimens.spacingXs))
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            game.developer?.let { dev ->
-                Text(
-                    text = dev,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
-            game.genre?.let { genre ->
-                if (game.developer != null) {
-                    Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+        game.developer?.let { dev ->
+            Text(
+                text = dev,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        game.genre?.let { genreString ->
+            val genres = genreString.split(",").map { it.trim() }.filter { it.isNotBlank() }
+            if (genres.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(Dimens.spacingXs))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    maxLines = 2
+                ) {
+                    genres.forEach { genre ->
+                        Text(
+                            text = genre,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                    RoundedCornerShape(Dimens.radiusSm)
+                                )
+                                .padding(horizontal = Dimens.spacingSm, vertical = 2.dp)
+                        )
+                    }
                 }
-                Text(
-                    text = genre,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
             }
         }
     }

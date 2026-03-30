@@ -75,6 +75,7 @@ class SteamSettingsDelegate @Inject constructor(
     private var observingService = false
     private var bound = false
     private var bindScope: CoroutineScope? = null
+    private var pendingSync = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -146,7 +147,18 @@ class SteamSettingsDelegate @Inject constructor(
                 )
             }
 
-            // Auto-bind if service is already running
+            val savedAccount = withContext(Dispatchers.IO) {
+                steamAuthManager.getActiveAccount()
+            }
+            if (savedAccount != null) {
+                _state.update {
+                    it.copy(
+                        connectionState = SteamConnectionState.LOGGED_IN,
+                        username = savedAccount.username
+                    )
+                }
+            }
+
             if (!bound) {
                 tryBindService(context)
             }
@@ -316,8 +328,38 @@ class SteamSettingsDelegate @Inject constructor(
         steamAuthManager.cancelQrAuth()
     }
 
-    fun syncLibrary() {
-        steamLibraryManager.requestLibrarySync()
+    fun syncLibrary(context: Context, scope: CoroutineScope) {
+        scope.launch {
+            _state.update { it.copy(syncState = LibrarySyncState.SyncingLicenses) }
+
+            val service = serviceRef
+            val isConnected = service?.state?.value?.connectionState == SteamConnectionState.LOGGED_IN
+
+            if (!isConnected) {
+                pendingSync = true
+                val intent = Intent(context, SteamService::class.java).apply {
+                    putExtra(SteamService.EXTRA_FORCE_CONNECT, true)
+                }
+                context.startService(intent)
+                if (!bound) tryBindService(context)
+
+                val deadline = System.currentTimeMillis() + 30_000L
+                while (System.currentTimeMillis() < deadline) {
+                    val current = serviceRef?.state?.value?.connectionState
+                    if (current == SteamConnectionState.LOGGED_IN) break
+                    kotlinx.coroutines.delay(500)
+                }
+                pendingSync = false
+
+                val finalState = serviceRef?.state?.value?.connectionState
+                if (finalState != SteamConnectionState.LOGGED_IN) {
+                    _state.update { it.copy(syncState = LibrarySyncState.Error("Could not connect to Steam")) }
+                    return@launch
+                }
+            }
+
+            steamLibraryManager.forceSync()
+        }
     }
 
     fun disconnectSteam(scope: CoroutineScope) {
@@ -397,18 +439,20 @@ class SteamSettingsDelegate @Inject constructor(
         scope.launch {
             serviceRef?.state?.collect { serviceState ->
                 _state.update {
-                    // While a connect-for-auth is in flight, suppress transient
-                    // DISCONNECTED states (old client teardown) and errors so the
-                    // UI stays on the spinner instead of flashing error/connect.
-                    val suppressing = pendingQrAuth &&
-                        serviceState.connectionState == SteamConnectionState.DISCONNECTED
+                    // Suppress connection state changes that would flash the login screen:
+                    // 1. During QR auth flow (old client teardown)
+                    // 2. When we have a saved account and service is still connecting
+                    // 3. During sync-initiated reconnect (hold LOGGED_IN until complete)
+                    val suppressState = pendingQrAuth || pendingSync ||
+                        (serviceState.connectionState == SteamConnectionState.DISCONNECTED &&
+                            it.connectionState == SteamConnectionState.LOGGED_IN)
 
-                    val effectiveConnection = if (suppressing)
-                        SteamConnectionState.CONNECTING
+                    val effectiveConnection = if (suppressState)
+                        it.connectionState
                     else
                         serviceState.connectionState
 
-                    val showError = !suppressing &&
+                    val showError = !suppressState &&
                         serviceState.error != null &&
                         (it.authPolling || it.qrUrl != null)
 

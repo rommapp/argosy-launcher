@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.gamedetail
 import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.steam.resolveSteamGenres
 
 fun GameEntity.toGameDetailUi(
     platformName: String,
@@ -36,7 +37,7 @@ fun GameEntity.toGameDetailUi(
         developer = developer,
         publisher = publisher,
         releaseYear = releaseYear,
-        genre = genre,
+        genre = if (source == GameSource.STEAM) resolveSteamGenres(genre) else genre,
         description = description,
         players = players,
         rating = rating,

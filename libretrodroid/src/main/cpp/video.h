@@ -73,6 +73,8 @@ public:
         ImmersiveMode::Config immersiveModeConfig
     );
 
+    ~Video();
+
     VideoLayout& getLayout() { return videoLayout; }
 
     void updateAspectRatio(float aspectRatio);

@@ -474,6 +474,12 @@ void LibretroDroid::destroy() {
     fpsSync = nullptr;
     audio = nullptr;
 
+    rewindEnabled = false;
+    rewinding = false;
+    rewindBuffer.reset();
+    rewindTempBuffer.clear();
+    rewindTempBuffer.shrink_to_fit();
+
     Environment::getInstance().deinitialize();
     VFS::getInstance().deinitialize();
 }

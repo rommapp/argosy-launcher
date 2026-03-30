@@ -154,10 +154,8 @@ class GLRetroView(
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
-        // Skip native destroy -- it corrupts EGL state for the next core
-        // when called from a dying GL thread. The native singleton will be
-        // re-initialized by the next create() call. The process-level cleanup
-        // handles resource deallocation when the activity is truly gone.
+        // Native resources are destroyed via destroyNative() in onPause,
+        // while the GL thread is still alive. No cleanup needed here.
         lifecycle = null
     }
 
@@ -360,6 +358,12 @@ class GLRetroView(
 
     fun destroyRewindBuffer() = runOnGLThread {
         LibretroDroid.destroyRewindBuffer()
+    }
+
+    fun destroyNative() {
+        runOnGLThread {
+            LibretroDroid.destroy()
+        }
     }
 
     fun getRewindBufferUsage(): Float = LibretroDroid.getRewindBufferUsage()

@@ -439,6 +439,38 @@ Video::Video(
     initializeRenderer(renderingOptions);
 }
 
+Video::~Video() {
+    for (auto& entry : shadersChain) {
+        if (entry.gProgram) glDeleteProgram(entry.gProgram);
+    }
+    shadersChain.clear();
+
+    delete renderer;
+    renderer = nullptr;
+
+    if (hwAccelerated && eglDisplay != EGL_NO_DISPLAY) {
+        if (hwRenderFBO != 0) {
+            glDeleteFramebuffers(1, &hwRenderFBO);
+            hwRenderFBO = 0;
+        }
+        if (hwRenderTexture != 0) {
+            glDeleteTextures(1, &hwRenderTexture);
+            hwRenderTexture = 0;
+        }
+        if (hwRenderDepthStencil != 0) {
+            glDeleteRenderbuffers(1, &hwRenderDepthStencil);
+            hwRenderDepthStencil = 0;
+        }
+        if (hwCtx != EGL_NO_CONTEXT) {
+            eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+            eglDestroyContext(eglDisplay, hwCtx);
+            hwCtx = EGL_NO_CONTEXT;
+        }
+    }
+
+    LOGD("Video resources destroyed");
+}
+
 void Video::updateShaderType(ShaderManager::Config shaderConfig) {
     requestedShaderConfig = std::move(shaderConfig);
     loadedShaderType = std::nullopt;  // Force shader rebuild on next frame

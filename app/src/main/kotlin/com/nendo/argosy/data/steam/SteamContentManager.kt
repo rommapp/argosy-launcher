@@ -794,10 +794,10 @@ class SteamContentManager @Inject constructor(
 
                 val depotSizes = sizeResult.depotSizes
                 val baselineBytes = progressTracker.loadPersistedBytes(installDir.absolutePath)
+                // Track cumulative uncompressed bytes per depot (concurrent-safe).
+                // Total progress = baselineBytes + sum of all per-depot bytes.
+                val perDepotBytes = java.util.concurrent.ConcurrentHashMap<Int, Long>()
                 val bytesDownloaded = java.util.concurrent.atomic.AtomicLong(baselineBytes)
-                // Floor for current depot: when a depot completes, snapshot bytesDownloaded
-                // so the next depot's per-depot uncompressedBytes adds on top correctly.
-                val depotFloor = java.util.concurrent.atomic.AtomicLong(baselineBytes)
                 val completedDepots = java.util.concurrent.atomic.AtomicInteger(0)
 
                 Log.d(TAG, "Starting: $gameName (${depots.size} depots, ${totalSize / 1024 / 1024}MB, baseline=${baselineBytes / 1024 / 1024}MB)")
@@ -916,12 +916,14 @@ class SteamContentManager @Inject constructor(
                         compressedBytes: Long,
                         uncompressedBytes: Long
                     ) {
-                        // uncompressedBytes is cumulative within this depot (resets per depot)
-                        val currentBytes = depotFloor.get() + uncompressedBytes
+                        // uncompressedBytes is cumulative within this depot.
+                        // Store per-depot and sum all depots for total progress.
+                        perDepotBytes[depotId] = uncompressedBytes
+                        val currentBytes = baselineBytes + perDepotBytes.values.sum()
                         bytesDownloaded.set(currentBytes)
                         val pctInt = (depotPercentComplete * 100).toInt()
                         if (pctInt % 25 == 0 && pctInt > 0) {
-                            Log.v(TAG, "Chunk: depot=$depotId, depotPct=$pctInt%, floor=${depotFloor.get() / 1024 / 1024}MB, depotBytes=${uncompressedBytes / 1024 / 1024}MB, total=${currentBytes / 1024 / 1024}MB/${totalSize / 1024 / 1024}MB")
+                            Log.v(TAG, "Chunk: depot=$depotId, depotPct=$pctInt%, depotBytes=${uncompressedBytes / 1024 / 1024}MB, total=${currentBytes / 1024 / 1024}MB/${totalSize / 1024 / 1024}MB")
                         }
 
                         val now = System.currentTimeMillis()
@@ -953,15 +955,12 @@ class SteamContentManager @Inject constructor(
                     }
 
                     override fun onDepotCompleted(depotId: Int, compressedBytes: Long, uncompressedBytes: Long) {
-                        // Snapshot current progress as floor for next depot.
-                        // uncompressedBytes is per-depot cumulative (resets next depot).
                         val knownSize = depotSizes[depotId] ?: 0L
                         val currentTotal = bytesDownloaded.get()
-                        depotFloor.set(currentTotal)
                         Log.i(TAG, "Depot $depotId completed: " +
                             "depotBytes=${uncompressedBytes / 1024 / 1024}MB, " +
                             "manifestSize=${knownSize / 1024 / 1024}MB, " +
-                            "newFloor=${currentTotal / 1024 / 1024}MB, " +
+                            "totalProgress=${currentTotal / 1024 / 1024}MB, " +
                             "totalSize=${totalSize / 1024 / 1024}MB")
 
                         val count = completedDepots.incrementAndGet()

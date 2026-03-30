@@ -51,6 +51,13 @@
 -keep class in.dragonbra.javasteam.** { *; }
 -keepclassmembers class in.dragonbra.javasteam.** { *; }
 
+# zstd-jni - native code accesses Java fields by name via JNI
+-keep class com.github.luben.zstd.** { *; }
+
+# SpongyCastle - loaded via reflection by JavaSteam's CryptoHelper for AES/ECB depot decryption
+-keep class org.spongycastle.** { *; }
+-dontwarn org.spongycastle.**
+
 # Discord Social SDK (optional, may not be present)
 -keep class com.discord.socialsdk.** { *; }
 -keep class discordpp.** { *; }

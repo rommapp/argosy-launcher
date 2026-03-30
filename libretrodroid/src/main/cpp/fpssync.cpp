@@ -59,6 +59,12 @@ double FPSSync::getTimeStretchFactor() {
 
 void FPSSync::wait() {
     if (useVSync) return;
+    auto now = std::chrono::steady_clock::now();
+    auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(lastFrame - now).count();
+    if (delta > 1000) {
+        LOGI("FPSSync::wait: lastFrame is %lldms in the future, resetting", (long long)delta);
+        lastFrame = now;
+    }
     std::this_thread::sleep_until(lastFrame);
 }
 

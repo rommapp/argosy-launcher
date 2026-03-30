@@ -339,6 +339,19 @@ object EmulatorRegistry {
             releaseSource = ReleaseSource.GitHub("rafaelvcaetano/melonDS-android")
         ),
         EmulatorDef(
+            id = "melondualds",
+            packageName = "me.magnum.melondualds",
+            displayName = "MelonDualDS",
+            supportedPlatforms = setOf("nds"),
+            launchAction = "me.magnum.melondualds.LAUNCH_ROM",
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "me.magnum.melonds.ui.emulator.EmulatorActivity",
+                intentExtras = mapOf("uri" to ExtraValue.FileUri)
+            ),
+            downloadUrl = "https://github.com/SapphireRhodonite/melonDS-android/releases",
+            releaseSource = ReleaseSource.GitHub("SapphireRhodonite/melonDS-android")
+        ),
+        EmulatorDef(
             id = "pizza_boy_gba",
             packageName = "it.dbtecno.pizzaboygba",
             displayName = "Pizza Boy GBA",
@@ -618,7 +631,7 @@ object EmulatorRegistry {
         "psp" to listOf("builtin", "ppsspp_gold", "ppsspp", "retroarch", "retroarch_64"),
         "vita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64"),
-        "nds" to listOf("builtin", "drastic", "melonds", "retroarch", "retroarch_64"),
+        "nds" to listOf("builtin", "drastic", "melonds", "melondualds", "retroarch", "retroarch_64"),
         "3ds" to listOf("azahar", "citra_mmj", "borked3ds", "citra", "retroarch", "retroarch_64"),
         "gc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "wii" to listOf("dolphin", "dolphin_handheld"),
@@ -1092,7 +1105,7 @@ object EmulatorRegistry {
         EmulatorFamily(
             baseId = "melonds",
             displayNamePrefix = "melonDS",
-            packagePatterns = listOf("me.magnum.melonds*"),
+            packagePatterns = listOf("me.magnum.melonds*", "me.magnum.melondualds*"),
             supportedPlatforms = setOf("nds"),
             launchConfig = LaunchConfig.Custom(
                 activityClass = "me.magnum.melonds.ui.emulator.EmulatorActivity",

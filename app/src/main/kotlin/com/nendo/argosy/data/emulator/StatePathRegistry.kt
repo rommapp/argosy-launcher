@@ -178,6 +178,18 @@ object StatePathRegistry {
             ),
             maxSlots = 8
         ),
+        "melondualds" to StatePathConfig(
+            emulatorId = "melondualds",
+            defaultPaths = listOf(
+                "{extStorage}/melonDS/states",
+                "{extStorage}/Android/data/me.magnum.melondualds/files/states"
+            ),
+            slotPattern = StateSlotPattern.NameAndSlot(
+                separator = ".",
+                extension = "mln"
+            ),
+            maxSlots = 8
+        ),
 
         "duckstation" to StatePathConfig(
             emulatorId = "duckstation",

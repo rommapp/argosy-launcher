@@ -252,6 +252,14 @@ object SavePathRegistry {
             ),
             saveExtensions = listOf("sav")
         ),
+        "melondualds" to SavePathConfig(
+            emulatorId = "melondualds",
+            defaultPaths = listOf(
+                "{extStorage}/melonDS/saves",
+                "{extStorage}/Android/data/me.magnum.melondualds/files/saves"
+            ),
+            saveExtensions = listOf("sav")
+        ),
 
         "pizza_boy_gba" to SavePathConfig(
             emulatorId = "pizza_boy_gba",
@@ -473,6 +481,7 @@ object SavePathRegistry {
         "org.mupen64plusae.v3.fzurita" to "mupen64plus_fz",
         "com.m64.fx.plus.emulate" to "m64pro_fzx_plus",
         "me.magnum.melonds" to "melonds",
+        "me.magnum.melondualds" to "melondualds",
         "com.dsemu.drastic" to "drastic",
         "it.dbtecno.pizzaboygba" to "pizza_boy_gba",
         "it.dbtecno.pizzaboy" to "pizza_boy_gb",

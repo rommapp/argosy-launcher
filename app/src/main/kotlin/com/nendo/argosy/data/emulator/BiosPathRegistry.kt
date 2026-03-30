@@ -191,6 +191,14 @@ object BiosPathRegistry {
             ),
             supportedPlatforms = setOf("nds")
         ),
+        "melondualds" to BiosPathConfig(
+            emulatorId = "melondualds",
+            defaultPaths = listOf(
+                "/storage/emulated/0/melonDS/bios",
+                "/storage/emulated/0/Android/data/me.magnum.melondualds/files/bios"
+            ),
+            supportedPlatforms = setOf("nds")
+        ),
         "flycast" to BiosPathConfig(
             emulatorId = "flycast",
             defaultPaths = listOf(

@@ -48,14 +48,14 @@ class SteamIgdbResolver @Inject constructor(
                 return
             }
             val steamAppId = game.steamAppId ?: continue
-            val sent = socialService.sendResolveSteamGame(steamAppId, game.title, game.releaseYear, force)
+            val sent = socialService.sendResolveSteamGame(steamAppId, game.title, game.releaseYear)
             if (!sent) {
                 Log.w(TAG, "Failed to send resolve for ${game.title}, waiting for reconnect")
                 if (!awaitConnection()) {
                     Log.w(TAG, "Connection lost and did not recover, aborting resolution")
                     return
                 }
-                socialService.sendResolveSteamGame(steamAppId, game.title, game.releaseYear, force)
+                socialService.sendResolveSteamGame(steamAppId, game.title, game.releaseYear)
             }
             delay(RESOLUTION_DELAY_MS)
         }

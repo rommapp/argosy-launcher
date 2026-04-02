@@ -310,11 +310,16 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             val computedSavePath = when {
                 savePathConfig == null -> null
                 isRetroArch -> {
-                    vm.retroArchConfigParser.resolveSavePaths(
-                        packageName = emulatorPackage ?: "com.retroarch",
-                        systemName = platform.slug,
-                        coreName = selectedCore
-                    ).firstOrNull()
+                    val raConfig = vm.retroArchConfigParser.parse(emulatorPackage ?: "com.retroarch")
+                    if (raConfig?.savefilesInContentDir == true) {
+                        "(ROM directory)"
+                    } else {
+                        vm.retroArchConfigParser.resolveSavePaths(
+                            packageName = emulatorPackage ?: "com.retroarch",
+                            systemName = platform.slug,
+                            coreName = selectedCore
+                        ).firstOrNull()
+                    }
                 }
                 else -> savePathConfig.defaultPaths.firstOrNull()
             }
@@ -523,10 +528,15 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         val platformEmulatorInfoMap = platformConfigs.associate { config ->
             val statePath = if (config.effectiveEmulatorIsRetroArch) {
                 config.effectiveEmulatorPackage?.let { pkg ->
-                    vm.retroArchConfigParser.resolveStatePaths(
-                        packageName = pkg,
-                        coreName = config.selectedCore
-                    ).firstOrNull()
+                    val raStateConfig = vm.retroArchConfigParser.parseStateConfig(pkg)
+                    if (raStateConfig?.savestatesInContentDir == true) {
+                        "(ROM directory)"
+                    } else {
+                        vm.retroArchConfigParser.resolveStatePaths(
+                            packageName = pkg,
+                            coreName = config.selectedCore
+                        ).firstOrNull()
+                    }
                 }
             } else null
 
@@ -582,7 +592,15 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     vsync = !builtinSettings.forceSoftwareTiming,
                     rewindEnabled = builtinSettings.rewindEnabled,
                     rewindSpeed = builtinSettings.rewindSpeedDisplay,
-                    rewindBufferDuration = builtinSettings.rewindBufferDurationDisplay
+                    rewindBufferDuration = builtinSettings.rewindBufferDurationDisplay,
+                    autoSaveState = builtinSettings.autoSaveState,
+                    autoRestoreState = builtinSettings.autoRestoreState,
+                    savePath = builtinSettings.customSavePath
+                        ?: vm.context.filesDir.resolve("libretro/saves").absolutePath,
+                    statePath = builtinSettings.customStatePath
+                        ?: vm.context.filesDir.resolve("libretro/states").absolutePath,
+                    isCustomSavePath = builtinSettings.customSavePath != null,
+                    isCustomStatePath = builtinSettings.customStatePath != null
                 ),
                 builtinControls = BuiltinControlsState(
                     rumbleEnabled = builtinSettings.rumbleEnabled,

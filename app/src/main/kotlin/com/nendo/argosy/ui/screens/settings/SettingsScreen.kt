@@ -85,6 +85,7 @@ import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.formatFileSize
+import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -302,6 +303,20 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
+        viewModel.launchBuiltinSavePathPicker.collect {
+            fileBrowserCallback = { path -> viewModel.setBuiltinSavePath(path) }
+            showFileBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.launchBuiltinStatePathPicker.collect {
+            fileBrowserCallback = { path -> viewModel.setBuiltinStatePath(path) }
+            showFileBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
         viewModel.builtinNavigationEvent.collect { target ->
             when (target) {
                 BuiltinNavigationTarget.VIDEO_SETTINGS -> viewModel.navigateToSection(SettingsSection.BUILTIN_VIDEO)
@@ -374,7 +389,7 @@ fun SettingsScreen(
                             val config = uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
                             config?.platform?.name?.uppercase() ?: "PLATFORM"
                         }
-                        SettingsSection.BUILTIN_VIDEO -> "BUILT-IN VIDEO"
+                        SettingsSection.BUILTIN_VIDEO -> "BUILT-IN A/V & PERFORMANCE"
                         SettingsSection.BUILTIN_CONTROLS -> "BUILT-IN CONTROLS"
                         SettingsSection.CORE_MANAGEMENT -> "MANAGE CORES"
                         SettingsSection.CORE_OPTIONS -> "CORE OPTIONS"
@@ -940,6 +955,20 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
             uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
             uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
             add(InputButton.LB_RB to "Platform")
+        }
+        if (uiState.currentSection == SettingsSection.BUILTIN_VIDEO &&
+            uiState.builtinVideo.isGlobalContext &&
+            uiState.builtinVideo.savePath.isNotEmpty()) {
+            val videoState = uiState.builtinVideo
+            val settingsMax = libretroSettingsMaxFocusIndex(
+                platformSlug = null,
+                canEnableBFI = videoState.canEnableBlackFrameInsertion
+            )
+            val onSavePath = uiState.focusedIndex == settingsMax + 1
+            val onStatePath = uiState.focusedIndex == settingsMax + 2
+            if ((onSavePath && videoState.isCustomSavePath) || (onStatePath && videoState.isCustomStatePath)) {
+                add(InputButton.Y to "Reset to Default")
+            }
         }
         if (uiState.currentSection == SettingsSection.CORE_OPTIONS &&
             uiState.coreOptions.availablePlatforms.isNotEmpty()) {

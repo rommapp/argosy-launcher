@@ -157,6 +157,7 @@ fun InGameSettingsScreen(
     accessor: LibretroSettingsAccessor,
     platformSlug: String?,
     canEnableBFI: Boolean,
+    menuWrapMode: com.nendo.argosy.data.preferences.MenuWrapMode = com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP,
     controlsState: InGameControlsState,
     onControlsAction: (InGameControlsAction) -> Unit,
     modalCallbacks: InGameModalCallbacks,
@@ -184,7 +185,7 @@ fun InGameSettingsScreen(
         )
     }
     val maxVideoFocusIndex = remember(platformSlug, canEnableBFI) {
-        libretroSettingsMaxFocusIndex(platformSlug, canEnableBFI)
+        libretroSettingsMaxFocusIndex(platformSlug, canEnableBFI, showSavingSection = false)
     }
     val controlsMaxFocusIndex = remember(controlsVisibility) {
         controlsLayout.maxFocusIndex(controlsVisibility)
@@ -227,13 +228,17 @@ fun InGameSettingsScreen(
     val inputHandler = remember {
         object : InputHandler {
             override fun onUp(): InputResult {
-                val newIndex = (focusedIndex - 1).coerceAtLeast(0)
+                val newIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    focusedIndex, -1, getMaxFocusIndex(), menuWrapMode
+                )
                 if (newIndex != focusedIndex) focusedIndex = newIndex
                 return InputResult.HANDLED
             }
 
             override fun onDown(): InputResult {
-                val newIndex = (focusedIndex + 1).coerceAtMost(getMaxFocusIndex())
+                val newIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    focusedIndex, 1, getMaxFocusIndex(), menuWrapMode
+                )
                 if (newIndex != focusedIndex) focusedIndex = newIndex
                 return InputResult.HANDLED
             }
@@ -333,6 +338,7 @@ fun InGameSettingsScreen(
                                 focusedIndex = focusedIndex,
                                 platformSlug = platformSlug,
                                 canEnableBFI = canEnableBFI,
+                                showSavingSection = false,
                                 listState = videoListState
                             )
                         }

@@ -3,6 +3,11 @@ package com.nendo.argosy.ui.components
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlin.math.abs
 
 data class ListSection(
     val name: String? = null,
@@ -41,12 +46,9 @@ fun SectionFocusedScroll(
     focusToListIndex: (Int) -> Int,
     sections: List<ListSection>
 ) {
-    LaunchedEffect(focusedIndex, sections) {
-        val isInSection = sections.any { section ->
-            focusedIndex in section.focusStartIndex..section.focusEndIndex
-        }
-        if (!isInSection) return@LaunchedEffect
+    var previousFocusIndex by remember { mutableIntStateOf(focusedIndex) }
 
+    LaunchedEffect(focusedIndex, sections) {
         val layoutInfo = listState.layoutInfo
         val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val visibleItems = layoutInfo.visibleItemsInfo
@@ -55,6 +57,13 @@ fun SectionFocusedScroll(
         val targetItem = visibleItems.find { it.index == listIndex }
         val itemHeight = targetItem?.size ?: visibleItems.maxOfOrNull { it.size } ?: 80
         val centerOffset = (viewportHeight - itemHeight) / 2
-        listState.animateScrollToItem(listIndex, -centerOffset)
+
+        val jumped = abs(focusedIndex - previousFocusIndex) > 1
+        previousFocusIndex = focusedIndex
+        if (jumped) {
+            listState.scrollToItem(listIndex, -centerOffset)
+        } else {
+            listState.animateScrollToItem(listIndex, -centerOffset)
+        }
     }
 }

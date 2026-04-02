@@ -338,7 +338,11 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setBuiltinRewindSpeed(speed: Int) = builtinPrefs.setBuiltinRewindSpeed(speed)
     suspend fun setBuiltinRewindBufferDuration(duration: Int) = builtinPrefs.setBuiltinRewindBufferDuration(duration)
     suspend fun setBuiltinFramesEnabled(enabled: Boolean) = builtinPrefs.setBuiltinFramesEnabled(enabled)
+    suspend fun setBuiltinAutoSaveState(enabled: Boolean) = builtinPrefs.setBuiltinAutoSaveState(enabled)
+    suspend fun setBuiltinAutoRestoreState(enabled: Boolean) = builtinPrefs.setBuiltinAutoRestoreState(enabled)
     suspend fun setBuiltinAutoRestoreStateMode(mode: String) = builtinPrefs.setBuiltinAutoRestoreStateMode(mode)
+    suspend fun setBuiltinCustomSavePath(path: String?) = builtinPrefs.setBuiltinCustomSavePath(path)
+    suspend fun setBuiltinCustomStatePath(path: String?) = builtinPrefs.setBuiltinCustomStatePath(path)
     suspend fun setBuiltinMigrationComplete() = builtinPrefs.setBuiltinMigrationComplete()
     fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = builtinPrefs.getBuiltinEmulatorSettings()
     fun getBuiltinCoreSelections(): Flow<Map<String, String>> = builtinPrefs.getBuiltinCoreSelections()
@@ -414,7 +418,11 @@ data class BuiltinEmulatorSettings(
     val rewindEnabled: Boolean = true,
     val rewindSpeed: Int = 1,
     val rewindBufferDuration: Int = 15,
-    val autoRestoreStateMode: String = "restore"
+    val autoSaveState: Boolean = true,
+    val autoRestoreState: Boolean = true,
+    val autoRestoreStateMode: String = "restore",
+    val customSavePath: String? = null,
+    val customStatePath: String? = null
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {

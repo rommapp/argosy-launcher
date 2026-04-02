@@ -17,6 +17,29 @@ internal class BuiltinVideoSectionInput(
 
     override fun onRight(): InputResult = cycleSettings(1)
 
+    override fun onSecondaryAction(): InputResult {
+        val state = viewModel.uiState.value
+        val videoState = state.builtinVideo
+        if (!videoState.isGlobalContext || videoState.savePath.isEmpty()) return InputResult.UNHANDLED
+        val maxSettingsIndex = libretroSettingsMaxFocusIndex(
+            platformSlug = videoState.currentPlatformContext?.platformSlug,
+            canEnableBFI = videoState.canEnableBlackFrameInsertion
+        )
+        val savePathIndex = maxSettingsIndex + 1
+        val statePathIndex = maxSettingsIndex + 2
+        return when (state.focusedIndex) {
+            savePathIndex -> {
+                if (videoState.isCustomSavePath) viewModel.resetBuiltinSavePath()
+                InputResult.HANDLED
+            }
+            statePathIndex -> {
+                if (videoState.isCustomStatePath) viewModel.resetBuiltinStatePath()
+                InputResult.HANDLED
+            }
+            else -> InputResult.UNHANDLED
+        }
+    }
+
     override fun onConfirm(): InputResult {
         val state = viewModel.uiState.value
         val videoState = state.builtinVideo
@@ -29,6 +52,22 @@ internal class BuiltinVideoSectionInput(
             platformSlug = platformContext?.platformSlug,
             canEnableBFI = videoState.canEnableBlackFrameInsertion
         )
+
+        if (isGlobal && videoState.savePath.isNotEmpty()) {
+            val savePathIndex = maxSettingsIndex + 1
+            val statePathIndex = maxSettingsIndex + 2
+            when (state.focusedIndex) {
+                savePathIndex -> {
+                    viewModel.openBuiltinSavePathBrowser()
+                    return InputResult.HANDLED
+                }
+                statePathIndex -> {
+                    viewModel.openBuiltinStatePathBrowser()
+                    return InputResult.HANDLED
+                }
+            }
+        }
+
         val resetAllIndex = maxSettingsIndex + 1
 
         if (!isGlobal && hasAnyOverrides && state.focusedIndex == resetAllIndex) {
@@ -85,6 +124,14 @@ internal class BuiltinVideoSectionInput(
         }
         LibretroSettingDef.Frame -> {
             viewModel.setBuiltinFramesEnabled(!videoState.framesEnabled)
+            InputResult.handled(SoundType.TOGGLE)
+        }
+        LibretroSettingDef.AutoSaveState -> {
+            viewModel.setBuiltinAutoSaveState(!videoState.autoSaveState)
+            InputResult.handled(SoundType.TOGGLE)
+        }
+        LibretroSettingDef.AutoRestoreState -> {
+            viewModel.setBuiltinAutoRestoreState(!videoState.autoRestoreState)
             InputResult.handled(SoundType.TOGGLE)
         }
     }

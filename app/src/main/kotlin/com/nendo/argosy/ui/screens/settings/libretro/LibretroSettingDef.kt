@@ -124,6 +124,20 @@ sealed class LibretroSettingDef(
         type = SettingType.Switch
     )
 
+    data object AutoSaveState : LibretroSettingDef(
+        key = "autoSaveState",
+        section = "saving",
+        title = "Save State on Exit",
+        type = SettingType.Switch
+    )
+
+    data object AutoRestoreState : LibretroSettingDef(
+        key = "autoRestoreState",
+        section = "saving",
+        title = "Restore State on Launch",
+        type = SettingType.Switch
+    )
+
     companion object {
         val ALL: List<LibretroSettingDef> = listOf(
             Shader,
@@ -140,15 +154,18 @@ sealed class LibretroSettingDef(
             RewindSpeed,
             RewindBufferDuration,
             SkipDuplicateFrames,
-            LowLatencyAudio
+            LowLatencyAudio,
+            AutoSaveState,
+            AutoRestoreState
         )
 
         val SECTIONS: Map<String, String> = mapOf(
             "shaders" to "Shaders",
             "display" to "Display",
-            "performance" to "Performance"
+            "performance" to "Performance",
+            "saving" to "Saving"
         )
 
-        val SECTION_ORDER: List<String> = listOf("shaders", "display", "performance")
+        val SECTION_ORDER: List<String> = listOf("shaders", "display", "performance", "saving")
     }
 }

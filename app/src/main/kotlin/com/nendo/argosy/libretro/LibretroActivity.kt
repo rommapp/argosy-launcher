@@ -173,6 +173,8 @@ class LibretroActivity : ComponentActivity() {
     private var hardcoreMode by mutableStateOf(false)
     private var launchMode = LaunchMode.RESUME
     private var statesSupported = true
+    private var autoSaveEnabled = true
+    private var menuWrapMode = com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP
     private var autoRestorePromptVisible by mutableStateOf(false)
     private var autoRestorePromptFocusIndex by mutableStateOf(0)
 
@@ -207,8 +209,10 @@ class LibretroActivity : ComponentActivity() {
             ?.let { File(it) }
             ?: File(filesDir, "libretro/system")
         systemDir.mkdirs()
-        val savesDir = File(filesDir, "libretro/saves").apply { mkdirs() }
-        val statesDir = File(filesDir, "libretro/states").apply { mkdirs() }
+        val savesDir = (intent.getStringExtra(EXTRA_SAVES_DIR)?.let { File(it) }
+            ?: File(filesDir, "libretro/saves")).apply { mkdirs() }
+        val statesDir = (intent.getStringExtra(EXTRA_STATES_DIR)?.let { File(it) }
+            ?: File(filesDir, "libretro/states")).apply { mkdirs() }
 
         val game = kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }
         platformId = game?.platformId ?: -1L
@@ -223,6 +227,7 @@ class LibretroActivity : ComponentActivity() {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
 
+        autoSaveEnabled = globalSettings.autoSaveState
         initializeInputHandlers()
         initializeVideoSettings(globalSettings, settings)
         detectBFICapability()
@@ -320,6 +325,7 @@ class LibretroActivity : ComponentActivity() {
         val inputPrefs = kotlinx.coroutines.runBlocking {
             preferencesRepository.preferences.first()
         }
+        menuWrapMode = inputPrefs.menuWrapMode
         val detectedLayout = ControllerDetector.detectFromActiveGamepad().layout
         val isNintendoLayout = when (inputPrefs.controllerLayout) {
             "nintendo" -> true
@@ -754,6 +760,7 @@ class LibretroActivity : ComponentActivity() {
             ),
             platformSlug = platformSlug,
             canEnableBFI = canEnableBFI,
+            menuWrapMode = menuWrapMode,
             controlsState = InGameControlsState(
                 rumbleEnabled = videoSettings.currentRumbleEnabled,
                 analogAsDpad = videoSettings.currentAnalogAsDpad,
@@ -924,7 +931,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun performAutoSaveState() {
-        if (hardcoreMode || !coreLoadedSuccessfully || !statesSupported) return
+        if (hardcoreMode || !coreLoadedSuccessfully || !statesSupported || !autoSaveEnabled) return
         try {
             val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
             val stateData = retroView.serializeState()
@@ -986,20 +993,12 @@ class LibretroActivity : ComponentActivity() {
         val settings = kotlinx.coroutines.runBlocking {
             preferencesRepository.getBuiltinEmulatorSettings().first()
         }
-        val mode = AutoRestoreMode.fromKey(settings.autoRestoreStateMode)
 
-        when (mode) {
-            AutoRestoreMode.RESTORE -> {
-                if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
-                    inGameMessage = "State restored"
-                    Log.d(TAG, "Auto-restored state from auto slot")
-                }
-            }
-            AutoRestoreMode.PROMPT -> {
-                autoRestorePromptVisible = true
-                autoRestorePromptFocusIndex = 0
-            }
-            AutoRestoreMode.OFF -> {}
+        if (!settings.autoRestoreState || hardcoreMode) return
+
+        if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
+            inGameMessage = "State restored"
+            Log.d(TAG, "Auto-restored state from auto slot")
         }
     }
 
@@ -1329,6 +1328,8 @@ class LibretroActivity : ComponentActivity() {
         const val EXTRA_CORE_NAME = "core_name"
         const val EXTRA_CORE_VAR_KEYS = "core_var_keys"
         const val EXTRA_CORE_VAR_VALUES = "core_var_values"
+        const val EXTRA_SAVES_DIR = "saves_dir"
+        const val EXTRA_STATES_DIR = "states_dir"
         const val ACTION_SHOW_MENU = "com.nendo.argosy.action.SHOW_MENU"
         const val ACTION_QUIT = "com.nendo.argosy.action.QUIT"
 

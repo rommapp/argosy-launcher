@@ -42,8 +42,8 @@ fun BuiltinEmulatorSection(
         if (builtinEnabled) {
             item(key = "builtin_video") {
                 ActionPreference(
-                    title = "Video Settings",
-                    subtitle = "Shaders, scaling, aspect ratio",
+                    title = "A/V & Performance",
+                    subtitle = "Shaders, display, performance, saving",
                     isFocused = uiState.focusedIndex == 1,
                     onClick = { viewModel.navigateToBuiltinVideo() }
                 )

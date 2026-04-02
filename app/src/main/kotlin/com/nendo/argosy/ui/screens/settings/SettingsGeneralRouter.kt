@@ -528,6 +528,12 @@ private fun routeComputeEvaluatedSavePath(vm: SettingsViewModel, platformId: Lon
     if (!emulatorConfig.effectiveEmulatorIsRetroArch) return basePathOverride
 
     val packageName = emulatorConfig.effectiveEmulatorPackage ?: return basePathOverride
+
+    if (basePathOverride == null) {
+        val raConfig = vm.retroArchConfigParser.parse(packageName)
+        if (raConfig?.savefilesInContentDir == true) return "(ROM directory)"
+    }
+
     val systemName = emulatorConfig.platform.slug
     val coreName = emulatorConfig.selectedCore
 
@@ -545,6 +551,12 @@ private fun routeComputeEvaluatedStatePath(vm: SettingsViewModel, platformId: Lo
     if (!emulatorConfig.effectiveEmulatorIsRetroArch) return basePathOverride
 
     val packageName = emulatorConfig.effectiveEmulatorPackage ?: return basePathOverride
+
+    if (basePathOverride == null) {
+        val raStateConfig = vm.retroArchConfigParser.parseStateConfig(packageName)
+        if (raStateConfig?.savestatesInContentDir == true) return "(ROM directory)"
+    }
+
     val coreName = emulatorConfig.selectedCore
 
     return vm.retroArchConfigParser.resolveStatePaths(

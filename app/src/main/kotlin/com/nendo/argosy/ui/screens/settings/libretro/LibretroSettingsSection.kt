@@ -22,13 +22,15 @@ import com.nendo.argosy.ui.theme.Dimens
 
 data class LibretroVisibilityState(
     val platformSlug: String?,
-    val canEnableBFI: Boolean
+    val canEnableBFI: Boolean,
+    val showSavingSection: Boolean = true
 )
 
 private val libretroSettingsLayout = SettingsLayout<LibretroSettingDef, LibretroVisibilityState>(
     allItems = LibretroSettingDef.ALL,
     isFocusable = { true },
     visibleWhen = { item, state ->
+        if (item.section == "saving" && !state.showSavingSection) return@SettingsLayout false
         PlatformWeightRegistry.isSettingVisible(item, state.platformSlug, state.canEnableBFI)
     },
     sectionOf = { it.section }
@@ -40,14 +42,16 @@ fun LibretroSettingsSection(
     focusedIndex: Int,
     platformSlug: String? = null,
     canEnableBFI: Boolean = false,
+    showSavingSection: Boolean = true,
     listState: LazyListState = rememberLazyListState(),
     modifier: Modifier = Modifier,
-    trailingContent: @Composable (() -> Unit)? = null
+    trailingContent: @Composable (() -> Unit)? = null,
+    trailingItems: (androidx.compose.foundation.lazy.LazyListScope.() -> Unit)? = null
 ) {
     val isPerPlatform = platformSlug != null
 
-    val visibilityState = remember(platformSlug, canEnableBFI) {
-        LibretroVisibilityState(platformSlug, canEnableBFI)
+    val visibilityState = remember(platformSlug, canEnableBFI, showSavingSection) {
+        LibretroVisibilityState(platformSlug, canEnableBFI, showSavingSection)
     }
 
     val visibleSettings = remember(visibilityState) {
@@ -74,12 +78,19 @@ fun LibretroSettingsSection(
         buildFlatItemSections(flatItems, visibleSettings)
     }
 
+    val trailingContentOffset = if (trailingContent != null) 1 else 0
+
     SectionFocusedScroll(
         listState = listState,
         focusedIndex = focusedIndex,
         focusToListIndex = { focusIdx ->
-            val setting = visibleSettings.getOrNull(focusIdx) ?: return@SectionFocusedScroll focusIdx
-            flatItems.indexOfFirst { it is LibretroSettingsListItem.Setting && it.def == setting }
+            val setting = visibleSettings.getOrNull(focusIdx)
+            if (setting != null) {
+                flatItems.indexOfFirst { it is LibretroSettingsListItem.Setting && it.def == setting }
+            } else {
+                val trailingIdx = focusIdx - visibleSettings.size
+                flatItems.size + trailingContentOffset + trailingIdx
+            }
         },
         sections = sections
     )
@@ -127,6 +138,8 @@ fun LibretroSettingsSection(
                 trailingContent()
             }
         }
+
+        trailingItems?.invoke(this)
     }
 }
 
@@ -164,8 +177,8 @@ private fun buildFlatItemSections(
     }
 }
 
-fun libretroSettingsMaxFocusIndex(platformSlug: String?, canEnableBFI: Boolean): Int =
-    libretroSettingsLayout.maxFocusIndex(LibretroVisibilityState(platformSlug, canEnableBFI))
+fun libretroSettingsMaxFocusIndex(platformSlug: String?, canEnableBFI: Boolean, showSavingSection: Boolean = true): Int =
+    libretroSettingsLayout.maxFocusIndex(LibretroVisibilityState(platformSlug, canEnableBFI, showSavingSection))
 
 fun libretroSettingsItemAtFocusIndex(
     index: Int,

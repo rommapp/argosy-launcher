@@ -257,8 +257,8 @@ fun PlatformDetailSection(
                 )
                 PlatformDetailItem.BuiltinVideo -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Built-in Video",
-                    subtitle = "Shader, filter, aspect ratio overrides",
+                    title = "Built-in A/V & Performance",
+                    subtitle = "Display, performance, and saving overrides",
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToBuiltinVideoForPlatform(detail.platformIndex) }
                 )

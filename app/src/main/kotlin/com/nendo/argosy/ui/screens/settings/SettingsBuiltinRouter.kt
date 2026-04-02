@@ -119,6 +119,113 @@ internal fun routeSetBuiltinRewindEnabled(vm: SettingsViewModel, enabled: Boolea
     }
 }
 
+internal fun routeSetBuiltinAutoSaveState(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(autoSaveState = enabled)) }
+    vm.viewModelScope.launch {
+        vm.preferencesRepository.setBuiltinAutoSaveState(enabled)
+    }
+}
+
+internal fun routeSetBuiltinAutoRestoreState(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(autoRestoreState = enabled)) }
+    vm.viewModelScope.launch {
+        vm.preferencesRepository.setBuiltinAutoRestoreState(enabled)
+        vm.preferencesRepository.setBuiltinAutoRestoreStateMode(if (enabled) "restore" else "off")
+    }
+}
+
+internal fun routeSetBuiltinSavePath(vm: SettingsViewModel, newPath: String) {
+    vm.viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        val oldPath = vm._uiState.value.builtinVideo.savePath
+        migrateFiles(java.io.File(oldPath), java.io.File(newPath))
+        vm.preferencesRepository.setBuiltinCustomSavePath(newPath)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            vm._uiState.update {
+                it.copy(builtinVideo = it.builtinVideo.copy(
+                    savePath = newPath,
+                    isCustomSavePath = true
+                ))
+            }
+        }
+    }
+}
+
+internal fun routeResetBuiltinSavePath(vm: SettingsViewModel) {
+    vm.viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        val oldPath = vm._uiState.value.builtinVideo.savePath
+        val defaultPath = vm.context.filesDir.resolve("libretro/saves").absolutePath
+        if (oldPath != defaultPath) {
+            migrateFiles(java.io.File(oldPath), java.io.File(defaultPath))
+        }
+        vm.preferencesRepository.setBuiltinCustomSavePath(null)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            vm._uiState.update {
+                it.copy(builtinVideo = it.builtinVideo.copy(
+                    savePath = defaultPath,
+                    isCustomSavePath = false
+                ))
+            }
+        }
+    }
+}
+
+internal fun routeSetBuiltinStatePath(vm: SettingsViewModel, newPath: String) {
+    vm.viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        val oldPath = vm._uiState.value.builtinVideo.statePath
+        migrateFiles(java.io.File(oldPath), java.io.File(newPath))
+        vm.preferencesRepository.setBuiltinCustomStatePath(newPath)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            vm._uiState.update {
+                it.copy(builtinVideo = it.builtinVideo.copy(
+                    statePath = newPath,
+                    isCustomStatePath = true
+                ))
+            }
+        }
+    }
+}
+
+internal fun routeResetBuiltinStatePath(vm: SettingsViewModel) {
+    vm.viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        val oldPath = vm._uiState.value.builtinVideo.statePath
+        val defaultPath = vm.context.filesDir.resolve("libretro/states").absolutePath
+        if (oldPath != defaultPath) {
+            migrateFiles(java.io.File(oldPath), java.io.File(defaultPath))
+        }
+        vm.preferencesRepository.setBuiltinCustomStatePath(null)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            vm._uiState.update {
+                it.copy(builtinVideo = it.builtinVideo.copy(
+                    statePath = defaultPath,
+                    isCustomStatePath = false
+                ))
+            }
+        }
+    }
+}
+
+private fun migrateFiles(source: java.io.File, destination: java.io.File) {
+    if (!source.exists() || source.absolutePath == destination.absolutePath) return
+    destination.mkdirs()
+    val files = source.listFiles() ?: return
+    for (file in files) {
+        val target = java.io.File(destination, file.name)
+        try {
+            if (file.isDirectory) {
+                migrateFiles(file, target)
+            } else {
+                if (!file.renameTo(target)) {
+                    file.copyTo(target, overwrite = true)
+                    file.delete()
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("BuiltinPathMigration", "Failed to migrate ${file.name}: ${e.message}")
+        }
+    }
+    if (source.listFiles()?.isEmpty() == true) source.delete()
+}
+
 internal fun routeSetBuiltinRumbleEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(rumbleEnabled = enabled)) }
     vm.viewModelScope.launch {
@@ -348,6 +455,8 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
             LibretroSettingDef.VSync -> current.copy(vsync = value?.toBooleanStrictOrNull())
             LibretroSettingDef.RewindSpeed -> current.copy(rewindSpeed = value?.removeSuffix("x")?.toIntOrNull())
             LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = value?.removeSuffix("s")?.toIntOrNull())
+            LibretroSettingDef.AutoSaveState,
+            LibretroSettingDef.AutoRestoreState -> current
         }
 
         if (updated.hasAnyOverrides()) {

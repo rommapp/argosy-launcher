@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -69,6 +70,8 @@ fun BuiltinVideoSection(
                         LibretroSettingDef.RewindEnabled -> viewModel.setBuiltinRewindEnabled(enabled)
                         LibretroSettingDef.SkipDuplicateFrames -> viewModel.setBuiltinSkipDuplicateFrames(enabled)
                         LibretroSettingDef.LowLatencyAudio -> viewModel.setBuiltinLowLatencyAudio(enabled)
+                        LibretroSettingDef.AutoSaveState -> viewModel.setBuiltinAutoSaveState(enabled)
+                        LibretroSettingDef.AutoRestoreState -> viewModel.setBuiltinAutoRestoreState(enabled)
                         else -> {}
                     }
                 },
@@ -92,13 +95,17 @@ fun BuiltinVideoSection(
         }
     }
 
+    val showResetAll = !isGlobal && hasAnyOverrides
+    val savePathFocusIndex = maxSettingsFocusIndex + 1
+    val statePathFocusIndex = maxSettingsFocusIndex + 2
+
     LibretroSettingsSection(
         accessor = accessor,
         focusedIndex = uiState.focusedIndex,
         platformSlug = platformContext?.platformSlug,
         canEnableBFI = videoState.canEnableBlackFrameInsertion,
         listState = listState,
-        trailingContent = if (!isGlobal && hasAnyOverrides) {
+        trailingContent = if (showResetAll) {
             {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
@@ -108,6 +115,32 @@ fun BuiltinVideoSection(
                     isDangerous = true,
                     onClick = { viewModel.resetAllPlatformLibretroSettings() }
                 )
+            }
+        } else null,
+        trailingItems = if (isGlobal && videoState.savePath.isNotEmpty()) {
+            {
+                item(key = "save_path") {
+                    CyclePreference(
+                        title = "Save File Path",
+                        value = formatStoragePath(videoState.savePath),
+                        subtitle = if (videoState.isCustomSavePath) "(custom)" else null,
+                        isFocused = uiState.focusedIndex == savePathFocusIndex,
+                        onClick = { viewModel.openBuiltinSavePathBrowser() },
+                        showResetButton = videoState.isCustomSavePath,
+                        onReset = { viewModel.resetBuiltinSavePath() }
+                    )
+                }
+                item(key = "state_path") {
+                    CyclePreference(
+                        title = "State Path",
+                        value = formatStoragePath(videoState.statePath),
+                        subtitle = if (videoState.isCustomStatePath) "(custom)" else null,
+                        isFocused = uiState.focusedIndex == statePathFocusIndex,
+                        onClick = { viewModel.openBuiltinStatePathBrowser() },
+                        showResetButton = videoState.isCustomStatePath,
+                        onReset = { viewModel.resetBuiltinStatePath() }
+                    )
+                }
             }
         } else null
     )
@@ -120,7 +153,8 @@ fun builtinVideoMaxFocusIndex(state: BuiltinVideoState, platformSettings: Map<Lo
         platformSlug = platformContext?.platformSlug,
         canEnableBFI = state.canEnableBlackFrameInsertion
     )
-    return if (!state.isGlobalContext && hasAnyOverrides) settingsMax + 1 else settingsMax
+    val pathItems = if (state.isGlobalContext && state.savePath.isNotEmpty()) 2 else 0
+    return if (!state.isGlobalContext && hasAnyOverrides) settingsMax + 1 else settingsMax + pathItems
 }
 
 fun builtinVideoItemAtFocusIndex(

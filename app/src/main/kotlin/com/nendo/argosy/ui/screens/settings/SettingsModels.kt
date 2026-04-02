@@ -357,6 +357,12 @@ data class BuiltinVideoState(
     val rewindEnabled: Boolean = true,
     val rewindSpeed: String = "1x",
     val rewindBufferDuration: String = "15s",
+    val autoSaveState: Boolean = true,
+    val autoRestoreState: Boolean = true,
+    val savePath: String = "",
+    val statePath: String = "",
+    val isCustomSavePath: Boolean = false,
+    val isCustomStatePath: Boolean = false,
     val platformContextIndex: Int = 0,
     val availablePlatforms: List<PlatformContext> = emptyList()
 ) {

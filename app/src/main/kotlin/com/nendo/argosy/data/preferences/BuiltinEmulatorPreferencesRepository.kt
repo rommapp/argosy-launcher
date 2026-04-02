@@ -38,7 +38,11 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_REWIND_SPEED = intPreferencesKey("builtin_rewind_speed")
         val BUILTIN_REWIND_BUFFER_DURATION = intPreferencesKey("builtin_rewind_buffer_duration")
         val BUILTIN_FRAMES_ENABLED = booleanPreferencesKey("builtin_frames_enabled")
+        val BUILTIN_AUTO_SAVE_STATE = booleanPreferencesKey("builtin_auto_save_state")
+        val BUILTIN_AUTO_RESTORE_STATE = booleanPreferencesKey("builtin_auto_restore_state")
         val BUILTIN_AUTO_RESTORE_STATE_MODE = stringPreferencesKey("builtin_auto_restore_state_mode")
+        val BUILTIN_CUSTOM_SAVE_PATH = stringPreferencesKey("builtin_custom_save_path")
+        val BUILTIN_CUSTOM_STATE_PATH = stringPreferencesKey("builtin_custom_state_path")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
     }
 
@@ -68,7 +72,12 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             rewindEnabled = prefs[Keys.BUILTIN_REWIND_ENABLED] ?: true,
             rewindSpeed = prefs[Keys.BUILTIN_REWIND_SPEED] ?: 1,
             rewindBufferDuration = prefs[Keys.BUILTIN_REWIND_BUFFER_DURATION] ?: 15,
-            autoRestoreStateMode = prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] ?: "restore"
+            autoSaveState = prefs[Keys.BUILTIN_AUTO_SAVE_STATE] ?: true,
+            autoRestoreState = prefs[Keys.BUILTIN_AUTO_RESTORE_STATE]
+                ?: (prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] != "off"),
+            autoRestoreStateMode = prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] ?: "restore",
+            customSavePath = prefs[Keys.BUILTIN_CUSTOM_SAVE_PATH],
+            customStatePath = prefs[Keys.BUILTIN_CUSTOM_STATE_PATH]
         )
     }
 
@@ -190,6 +199,28 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinFramesEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.BUILTIN_FRAMES_ENABLED] = enabled }
+    }
+
+    suspend fun setBuiltinAutoSaveState(enabled: Boolean) {
+        dataStore.edit { it[Keys.BUILTIN_AUTO_SAVE_STATE] = enabled }
+    }
+
+    suspend fun setBuiltinAutoRestoreState(enabled: Boolean) {
+        dataStore.edit { it[Keys.BUILTIN_AUTO_RESTORE_STATE] = enabled }
+    }
+
+    suspend fun setBuiltinCustomSavePath(path: String?) {
+        dataStore.edit {
+            if (path != null) it[Keys.BUILTIN_CUSTOM_SAVE_PATH] = path
+            else it.remove(Keys.BUILTIN_CUSTOM_SAVE_PATH)
+        }
+    }
+
+    suspend fun setBuiltinCustomStatePath(path: String?) {
+        dataStore.edit {
+            if (path != null) it[Keys.BUILTIN_CUSTOM_STATE_PATH] = path
+            else it.remove(Keys.BUILTIN_CUSTOM_STATE_PATH)
+        }
     }
 
     suspend fun setBuiltinAutoRestoreStateMode(mode: String) {

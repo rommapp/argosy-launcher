@@ -48,6 +48,8 @@ class GlobalLibretroSettingsAccessor(
         LibretroSettingDef.VSync -> state.vsync.toString()
         LibretroSettingDef.RewindSpeed -> state.rewindSpeed
         LibretroSettingDef.RewindBufferDuration -> state.rewindBufferDuration
+        LibretroSettingDef.AutoSaveState -> state.autoSaveState.toString()
+        LibretroSettingDef.AutoRestoreState -> state.autoRestoreState.toString()
     }
 
     override fun hasOverride(setting: LibretroSettingDef): Boolean = false
@@ -69,6 +71,8 @@ class GlobalLibretroSettingsAccessor(
             LibretroSettingDef.RewindEnabled -> state.rewindEnabled
             LibretroSettingDef.SkipDuplicateFrames -> state.skipDuplicateFrames
             LibretroSettingDef.LowLatencyAudio -> state.lowLatencyAudio
+            LibretroSettingDef.AutoSaveState -> state.autoSaveState
+            LibretroSettingDef.AutoRestoreState -> state.autoRestoreState
             else -> return
         }
         onToggle(setting, !current)
@@ -137,6 +141,8 @@ class PlatformLibretroSettingsAccessor(
         LibretroSettingDef.VSync -> globalState.vsync.toString()
         LibretroSettingDef.RewindSpeed -> globalState.rewindSpeed
         LibretroSettingDef.RewindBufferDuration -> globalState.rewindBufferDuration
+        LibretroSettingDef.AutoSaveState -> globalState.autoSaveState.toString()
+        LibretroSettingDef.AutoRestoreState -> globalState.autoRestoreState.toString()
     }
 
     override fun hasOverride(setting: LibretroSettingDef): Boolean {
@@ -190,6 +196,8 @@ class PlatformLibretroSettingsAccessor(
             LibretroSettingDef.VSync -> ps.vsync?.toString()
             LibretroSettingDef.RewindSpeed -> ps.rewindSpeed?.let { "${it}x" }
             LibretroSettingDef.RewindBufferDuration -> ps.rewindBufferDuration?.let { "${it}s" }
+            LibretroSettingDef.AutoSaveState -> null
+            LibretroSettingDef.AutoRestoreState -> null
         }
     }
 

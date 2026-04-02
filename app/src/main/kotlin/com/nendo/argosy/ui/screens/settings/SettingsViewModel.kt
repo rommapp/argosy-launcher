@@ -142,6 +142,13 @@ class SettingsViewModel @Inject constructor(
     val launchPlatformSavePathPicker: SharedFlow<Long> = storageDelegate.launchSavePathPicker
     val resetPlatformSavePathEvent: SharedFlow<Long> = storageDelegate.resetSavePathEvent
     val launchPlatformStatePathPicker: SharedFlow<Long> = storageDelegate.launchStatePathPicker
+    private val _launchBuiltinSavePathPicker = MutableSharedFlow<Unit>()
+    val launchBuiltinSavePathPicker: SharedFlow<Unit> = _launchBuiltinSavePathPicker
+    private val _launchBuiltinStatePathPicker = MutableSharedFlow<Unit>()
+    val launchBuiltinStatePathPicker: SharedFlow<Unit> = _launchBuiltinStatePathPicker
+
+    fun openBuiltinSavePathBrowser() { viewModelScope.launch { _launchBuiltinSavePathPicker.emit(Unit) } }
+    fun openBuiltinStatePathBrowser() { viewModelScope.launch { _launchBuiltinStatePathPicker.emit(Unit) } }
     val resetPlatformStatePathEvent: SharedFlow<Long> = storageDelegate.resetStatePathEvent
     val openImageCachePickerEvent: SharedFlow<Unit> = syncDelegate.openImageCachePickerEvent
     val launchBiosFolderPicker: SharedFlow<Unit> = biosDelegate.launchFolderPicker
@@ -335,6 +342,12 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinVSync(enabled: Boolean) = routeSetBuiltinVSync(this, enabled)
     fun setBuiltinFastForwardEnabled(enabled: Boolean) = routeSetBuiltinFastForwardEnabled(this, enabled)
     fun setBuiltinRewindEnabled(enabled: Boolean) = routeSetBuiltinRewindEnabled(this, enabled)
+    fun setBuiltinAutoSaveState(enabled: Boolean) = routeSetBuiltinAutoSaveState(this, enabled)
+    fun setBuiltinAutoRestoreState(enabled: Boolean) = routeSetBuiltinAutoRestoreState(this, enabled)
+    fun setBuiltinSavePath(path: String) = routeSetBuiltinSavePath(this, path)
+    fun resetBuiltinSavePath() = routeResetBuiltinSavePath(this)
+    fun setBuiltinStatePath(path: String) = routeSetBuiltinStatePath(this, path)
+    fun resetBuiltinStatePath() = routeResetBuiltinStatePath(this)
     fun setBuiltinRumbleEnabled(enabled: Boolean) = routeSetBuiltinRumbleEnabled(this, enabled)
     fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = routeSetBuiltinLimitHotkeysToPlayer1(this, enabled)
     fun setBuiltinAnalogAsDpad(enabled: Boolean) = routeSetBuiltinAnalogAsDpad(this, enabled)

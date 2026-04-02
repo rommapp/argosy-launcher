@@ -376,6 +376,40 @@ class SteamSettingsDelegate @Inject constructor(
         }
     }
 
+    fun forceSyncLibraryWithOverwrite(context: Context, scope: CoroutineScope) {
+        scope.launch {
+            _state.update { it.copy(syncState = LibrarySyncState.SyncingLicenses) }
+
+            val service = serviceRef
+            val isConnected = service?.state?.value?.connectionState == SteamConnectionState.LOGGED_IN
+
+            if (!isConnected) {
+                pendingSync = true
+                val intent = Intent(context, SteamService::class.java).apply {
+                    putExtra(SteamService.EXTRA_FORCE_CONNECT, true)
+                }
+                context.startService(intent)
+                if (!bound) tryBindService(context)
+
+                val deadline = System.currentTimeMillis() + 30_000L
+                while (System.currentTimeMillis() < deadline) {
+                    val current = serviceRef?.state?.value?.connectionState
+                    if (current == SteamConnectionState.LOGGED_IN) break
+                    kotlinx.coroutines.delay(500)
+                }
+                pendingSync = false
+
+                val finalState = serviceRef?.state?.value?.connectionState
+                if (finalState != SteamConnectionState.LOGGED_IN) {
+                    _state.update { it.copy(syncState = LibrarySyncState.Error("Could not connect to Steam")) }
+                    return@launch
+                }
+            }
+
+            steamLibraryManager.forceSyncWithOverwrite()
+        }
+    }
+
     fun disconnectSteam(scope: CoroutineScope) {
         scope.launch {
             steamAuthManager.logout()

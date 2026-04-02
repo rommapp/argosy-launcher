@@ -980,6 +980,14 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
                 add(InputButton.Y to "Reset to Default")
             }
         }
+        if (uiState.currentSection == SettingsSection.STEAM_SETTINGS) {
+            val steamItem = com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex(
+                uiState.focusedIndex, uiState.steam
+            )
+            if (steamItem == com.nendo.argosy.ui.screens.settings.sections.SteamItem.SyncLibrary) {
+                add(InputButton.X to "Force Sync")
+            }
+        }
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {
             val config = uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
             val focusedItem = config?.let {

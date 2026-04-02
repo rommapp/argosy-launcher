@@ -22,6 +22,8 @@ import com.nendo.argosy.ui.screens.settings.sections.gameDataSections
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
 import com.nendo.argosy.ui.screens.settings.sections.socialSections
+import com.nendo.argosy.ui.screens.settings.sections.SteamItem
+import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.syncSettingsItemAtFocusIndex
 
 internal class LightSectionsInput(
@@ -37,6 +39,13 @@ internal class LightSectionsInput(
         if (state.currentSection == SettingsSection.SYNC_SETTINGS) {
             viewModel.showSyncFiltersModal()
             return InputResult.HANDLED
+        }
+        if (state.currentSection == SettingsSection.STEAM_SETTINGS) {
+            val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)
+            if (item == SteamItem.SyncLibrary) {
+                viewModel.forceSyncSteamLibrary()
+                return InputResult.HANDLED
+            }
         }
         return InputResult.UNHANDLED
     }

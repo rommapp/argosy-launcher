@@ -93,7 +93,11 @@ class SteamLibraryManager @Inject constructor(
     @Volatile
     private var forceSyncRequested = false
     @Volatile
+    private var forceOverwriteRequested = false
+    @Volatile
     private var wasForceSync = false
+    @Volatile
+    private var wasForceOverwrite = false
     private var enrichmentJob: kotlinx.coroutines.Job? = null
 
     private companion object {
@@ -123,6 +127,12 @@ class SteamLibraryManager @Inject constructor(
                 handleProductInfo(callback)
             }
         }
+    }
+
+    fun forceSyncWithOverwrite() {
+        forceSyncRequested = true
+        forceOverwriteRequested = true
+        forceSync()
     }
 
     fun forceSync() {
@@ -167,6 +177,8 @@ class SteamLibraryManager @Inject constructor(
 
     private suspend fun startSyncFromLicenses(licenses: List<License>) {
         wasForceSync = forceSyncRequested
+        wasForceOverwrite = forceOverwriteRequested
+        forceOverwriteRequested = false
         syncMutex.withLock {
             _syncState.value = LibrarySyncState.SyncingLicenses
 
@@ -453,9 +465,40 @@ class SteamLibraryManager @Inject constructor(
     }
 
     private suspend fun updateExistingGame(existing: GameEntity, kv: KeyValue) {
-        val updated = existing.copy(
-            steamLauncher = existing.steamLauncher ?: "native"
-        )
+        val common = kv["common"]
+
+        val updated = if (wasForceOverwrite) {
+            val appId = existing.steamAppId ?: return
+            val name = common["name"]?.asString() ?: existing.title
+            val libraryCapsuleUrl = "https://steamcdn-a.akamaihd.net/steam/apps/$appId/library_600x900.jpg"
+            val libraryHeroUrl = "https://steamcdn-a.akamaihd.net/steam/apps/$appId/library_hero.jpg"
+            val releaseDate = common["steam_release_date"]?.asString()
+            val releaseYear = parseReleaseYear(releaseDate)
+            val genres = common["genres"]?.children
+                ?.mapNotNull { it.asString() }
+                ?.map { STEAM_GENRE_MAP[it] ?: it }
+                ?.joinToString(", ")
+
+            existing.copy(
+                title = name,
+                sortTitle = createSortTitle(name),
+                coverPath = libraryCapsuleUrl,
+                backgroundPath = libraryHeroUrl,
+                developer = extractAssociation(common, "developer") ?: existing.developer,
+                publisher = extractAssociation(common, "publisher") ?: existing.publisher,
+                releaseYear = releaseYear ?: existing.releaseYear,
+                genre = genres ?: existing.genre,
+                steamLauncher = existing.steamLauncher ?: "native",
+                storeEnrichStatus = GameEntity.STORE_NOT_ATTEMPTED,
+                igdbId = null
+            ).also {
+                imageCacheManager.queueCoverCacheByGameId(libraryCapsuleUrl, existing.id)
+            }
+        } else {
+            existing.copy(
+                steamLauncher = existing.steamLauncher ?: "native"
+            )
+        }
 
         if (updated != existing) {
             gameDao.update(updated)

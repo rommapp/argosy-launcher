@@ -187,8 +187,10 @@ fun SocialScreen(
     }
 
     LaunchedEffect(uiState.selectedTab, uiState.isConnected) {
-        if (uiState.selectedTab == SocialTab.PROFILE && uiState.isConnected && uiState.userProfile == null) {
-            viewModel.loadProfile()
+        if (uiState.selectedTab == SocialTab.PROFILE && uiState.isConnected) {
+            val needsLoad = uiState.userProfile == null ||
+                uiState.userProfile?.user?.id != uiState.connectedUser?.id
+            if (needsLoad) viewModel.loadProfile()
         }
     }
 

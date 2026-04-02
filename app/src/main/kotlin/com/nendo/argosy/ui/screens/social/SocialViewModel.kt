@@ -228,6 +228,9 @@ class SocialViewModel @Inject constructor(
             ) { profile, loading ->
                 profile to loading
             }.collect { (profile, loading) ->
+                val currentUserId = _uiState.value.connectedUser?.id
+                val isOwnProfile = profile == null || profile.user.id == currentUserId
+                if (!isOwnProfile) return@collect
                 val igdbIds = if (profile != null && profile != _uiState.value.userProfile) {
                     resolveLocalIgdbIds(profile.mostPlayed.map { it.igdbId })
                 } else {

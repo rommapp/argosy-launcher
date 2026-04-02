@@ -235,11 +235,12 @@ object EmulatorRegistry {
             downloadUrl = "https://github.com/weihuoya/citra/releases",
             releaseSource = ReleaseSource.GitHub("weihuoya/citra")
         ),
-        // NOTE: Azahar took over Lime3DS development, keeping the same package name
-        // Uses Citra's internal namespace for activities
+        // NOTE: Azahar vanilla APK changed package from io.github.lime3ds.android
+        // to org.azahar_emu.azahar. Play Store variant may keep old package.
+        // Uses Citra's internal namespace for activities.
         EmulatorDef(
             id = "azahar",
-            packageName = "io.github.lime3ds.android",
+            packageName = "org.azahar_emu.azahar",
             displayName = "Azahar",
             supportedPlatforms = setOf("3ds"),
             launchConfig = LaunchConfig.Custom(
@@ -991,7 +992,7 @@ object EmulatorRegistry {
         EmulatorFamily(
             baseId = "azahar",
             displayNamePrefix = "Azahar",
-            packagePatterns = listOf("io.github.lime3ds.*"),
+            packagePatterns = listOf("org.azahar_emu.*", "io.github.lime3ds.*", "io.github.azahar_emu.*"),
             supportedPlatforms = setOf("3ds"),
             launchConfig = LaunchConfig.Custom(
                 activityClass = "org.citra.citra_emu.activities.EmulationActivity",

@@ -148,6 +148,8 @@ object SavePathRegistry {
         "azahar" to SavePathConfig(
             emulatorId = "azahar",
             defaultPaths = listOf(
+                "{extStorage}/Android/data/org.azahar_emu.azahar/files/sdmc/Nintendo 3DS",
+                "{extStorage}/Android/data/io.github.lime3ds.android/files/sdmc/Nintendo 3DS",
                 "{extStorage}/Android/data/io.github.azahar_emu.azahar/files/sdmc/Nintendo 3DS"
             ),
             saveExtensions = listOf("*"),

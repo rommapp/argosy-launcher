@@ -513,6 +513,31 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=com.explusalpha.SaturnEmu"
         ),
         EmulatorDef(
+            id = "yabasanshiro",
+            packageName = "org.devmiyax.yabasanshioro2",
+            displayName = "Yaba Sanshiro 2",
+            supportedPlatforms = setOf("saturn"),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.uoyabause.android.Yabause",
+                intentExtras = mapOf(
+                    "org.uoyabause.android.FileNameEx" to ExtraValue.FilePath
+                )
+            ),
+            downloadUrl = "https://play.google.com/store/apps/details?id=org.devmiyax.yabasanshioro2"
+        ),
+        EmulatorDef(
+            id = "yabasanshiro_pro",
+            packageName = "org.devmiyax.yabasanshioro2.pro",
+            displayName = "Yaba Sanshiro 2 Pro",
+            supportedPlatforms = setOf("saturn"),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.uoyabause.android.Yabause",
+                intentExtras = mapOf(
+                    "org.uoyabause.android.FileNameEx" to ExtraValue.FilePath
+                )
+            )
+        ),
+        EmulatorDef(
             id = "md_emu",
             packageName = "com.explusalpha.MdEmu",
             displayName = "MD.emu",
@@ -650,7 +675,7 @@ object EmulatorRegistry {
         "scd" to listOf("builtin", "md_emu", "retroarch", "retroarch_64"),
         "32x" to listOf("builtin", "md_emu", "retroarch", "retroarch_64"),
         "dreamcast" to listOf("redream", "flycast"),
-        "saturn" to listOf("builtin", "saturn_emu", "retroarch", "retroarch_64"),
+        "saturn" to listOf("builtin", "yabasanshiro", "yabasanshiro_pro", "saturn_emu", "retroarch", "retroarch_64"),
         "arcade" to listOf("flycast", "mame4droid", "fbalpha", "retroarch", "retroarch_64"),
         "neogeo" to listOf("fbalpha", "retroarch", "retroarch_64"),
         "dos" to listOf("magic_dosbox", "dosbox_turbo"),

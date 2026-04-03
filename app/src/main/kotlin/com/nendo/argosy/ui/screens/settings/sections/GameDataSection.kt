@@ -126,7 +126,7 @@ internal fun buildGameDataItems(
     for (launcher in visibleLaunchers) {
         add(GameDataItem.InstalledLauncher(launcher))
     }
-    if (installedLaunchers.isNotEmpty()) {
+    if (visibleLaunchers.isNotEmpty()) {
         add(GameDataItem.RefreshMetadata)
     }
     for (launcher in notInstalledLaunchers) {

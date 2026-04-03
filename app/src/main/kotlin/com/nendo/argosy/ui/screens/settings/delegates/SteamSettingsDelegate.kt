@@ -412,7 +412,7 @@ class SteamSettingsDelegate @Inject constructor(
         }
     }
 
-    fun disconnectSteam(scope: CoroutineScope) {
+    fun disconnectSteam(context: Context, scope: CoroutineScope) {
         scope.launch {
             if (steamContentManager.hasActiveSteamDownload()) {
                 steamContentManager.cancelDownload()
@@ -420,7 +420,10 @@ class SteamSettingsDelegate @Inject constructor(
             for (queued in steamContentManager.downloadQueue.value) {
                 steamContentManager.cancelQueuedDownload(queued.appId)
             }
+            serviceRef?.disconnect()
             steamAuthManager.logout()
+            unbindService(context)
+            context.stopService(Intent(context, SteamService::class.java))
             _state.update {
                 it.copy(
                     connectionState = SteamConnectionState.DISCONNECTED,

@@ -524,7 +524,7 @@ class SettingsViewModel @Inject constructor(
     fun cancelSteamQrAuth() = steamDelegate.cancelQrAuth()
     fun syncSteamLibrary() = steamDelegate.syncLibrary(context, viewModelScope)
     fun forceSyncSteamLibrary() = steamDelegate.forceSyncLibraryWithOverwrite(context, viewModelScope)
-    fun disconnectSteam() = steamDelegate.disconnectSteam(viewModelScope)
+    fun disconnectSteam() = steamDelegate.disconnectSteam(context, viewModelScope)
     fun resetSteamLibrary() = steamDelegate.resetLibrary(viewModelScope)
     fun showAddSteamGameDialog() = steamDelegate.showAddSteamGameDialog()
     @Suppress("UNUSED_PARAMETER")

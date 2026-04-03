@@ -363,12 +363,13 @@ class SteamAuthManager @Inject constructor(
     }
 
     fun logout() {
+        _isLoggedIn.value = false
+        cancelQrAuth()
         steamClient?.disconnect()
         scope.launch {
-            steamAccountDao.deactivateAll()
+            steamAccountDao.deleteAll()
             _authEvents.emit(SteamAuthEvent.LoggedOut)
         }
-        _qrAuthState.value = QrAuthState.Idle
     }
 
     suspend fun getActiveAccount(): SteamAccountEntity? {

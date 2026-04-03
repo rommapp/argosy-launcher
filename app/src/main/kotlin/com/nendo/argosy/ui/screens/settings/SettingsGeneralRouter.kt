@@ -731,11 +731,29 @@ internal fun routeGetLauncherIndexFromFocus(state: SettingsUiState): Int {
 }
 
 internal fun routeMoveLauncherActionFocus(vm: SettingsViewModel, delta: Int) {
-    // Legacy: launcher action focus was for old Steam launcher scan UI
+    val state = vm._uiState.value
+    val index = routeGetLauncherIndexFromFocus(state)
+    if (index < 0) return
+    val launcher = state.steam.installedLaunchers.getOrNull(index) ?: return
+    val maxIndex = if (launcher.supportsScanning) 1 else 0
+    val current = state.steam.launcherActionIndex
+    val newIndex = (current + delta).coerceIn(0, maxIndex)
+    if (newIndex != current) {
+        vm._uiState.update { it.copy(steam = it.steam.copy(launcherActionIndex = newIndex)) }
+    }
 }
 
 internal fun routeConfirmLauncherAction(vm: SettingsViewModel) {
-    // Legacy: launcher action confirm was for old Steam launcher scan UI
+    val state = vm._uiState.value
+    val index = routeGetLauncherIndexFromFocus(state)
+    if (index < 0) return
+    val launcher = state.steam.installedLaunchers.getOrNull(index) ?: return
+    val actionIndex = state.steam.launcherActionIndex
+    if (actionIndex == 0 && launcher.supportsScanning) {
+        vm.scanSteamLauncher(launcher.packageName)
+    } else {
+        vm.showAddSteamGameDialog(launcher.packageName)
+    }
 }
 
 // --- Bios focus helpers ---

@@ -20,6 +20,7 @@ import com.nendo.argosy.data.repository.SteamResult
 import com.nendo.argosy.data.steam.LibrarySyncState
 import com.nendo.argosy.data.steam.QrAuthState
 import com.nendo.argosy.data.steam.SteamAuthManager
+import com.nendo.argosy.data.steam.SteamContentManager
 import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.data.steam.SteamLibraryManager
 import com.nendo.argosy.data.steam.SteamPathResolver
@@ -53,6 +54,7 @@ class SteamSettingsDelegate @Inject constructor(
     private val steamRepository: SteamRepository,
     private val steamAuthManager: SteamAuthManager,
     private val steamLibraryManager: SteamLibraryManager,
+    private val steamContentManager: SteamContentManager,
     private val androidDataAccessor: AndroidDataAccessor,
     private val notificationManager: NotificationManager,
     private val emulatorDownloadManager: EmulatorDownloadManager,
@@ -412,6 +414,12 @@ class SteamSettingsDelegate @Inject constructor(
 
     fun disconnectSteam(scope: CoroutineScope) {
         scope.launch {
+            if (steamContentManager.hasActiveSteamDownload()) {
+                steamContentManager.cancelDownload()
+            }
+            for (queued in steamContentManager.downloadQueue.value) {
+                steamContentManager.cancelQueuedDownload(queued.appId)
+            }
             steamAuthManager.logout()
             _state.update {
                 it.copy(

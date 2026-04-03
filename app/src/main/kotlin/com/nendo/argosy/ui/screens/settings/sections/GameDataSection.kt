@@ -85,7 +85,8 @@ internal fun buildGameDataItems(
     saveSyncEnabled: Boolean,
     installedLaunchers: List<InstalledSteamLauncher>,
     notInstalledLaunchers: List<NotInstalledSteamLauncher>,
-    hasStoragePermission: Boolean
+    hasStoragePermission: Boolean,
+    isSteamLoggedIn: Boolean = false
 ): List<GameDataItem> = buildList {
     add(GameDataItem.Header("serverHeader", "server", "SERVER"))
     add(GameDataItem.RomManager)
@@ -111,13 +112,18 @@ internal fun buildGameDataItems(
     add(GameDataItem.Header("androidHeader", "android", "ANDROID"))
     add(GameDataItem.ScanAndroid)
 
-    val launcherCount = installedLaunchers.size
+    val visibleLaunchers = if (isSteamLoggedIn) {
+        installedLaunchers.filter { it.packageName != "app.gamenative" }
+    } else {
+        installedLaunchers
+    }
+    val launcherCount = visibleLaunchers.size
     val steamSubtitle = if (launcherCount > 0) {
         "$launcherCount app${if (launcherCount > 1) "s" else ""} detected"
     } else "No launchers installed"
     add(GameDataItem.Header("steamHeader", "steam", "STEAM ($steamSubtitle)"))
 
-    for (launcher in installedLaunchers) {
+    for (launcher in visibleLaunchers) {
         add(GameDataItem.InstalledLauncher(launcher))
     }
     if (installedLaunchers.isNotEmpty()) {
@@ -140,7 +146,8 @@ internal fun buildGameDataItemsFromState(state: SettingsUiState): List<GameDataI
         saveSyncEnabled = state.syncSettings.saveSyncEnabled,
         installedLaunchers = state.steam.installedLaunchers,
         notInstalledLaunchers = state.steam.notInstalledLaunchers,
-        hasStoragePermission = state.steam.hasStoragePermission
+        hasStoragePermission = state.steam.hasStoragePermission,
+        isSteamLoggedIn = state.steam.connectionState == com.nendo.argosy.data.steam.SteamConnectionState.LOGGED_IN
     )
 }
 
@@ -238,17 +245,19 @@ private fun GameDataContent(
 
     val hasDialogOpen = uiState.steam.showAddGameDialog || uiState.steam.variantPickerInfo != null
 
+    val isSteamLoggedIn = uiState.steam.connectionState == com.nendo.argosy.data.steam.SteamConnectionState.LOGGED_IN
     val allItems = remember(
         isConnected, saveSyncEnabled,
         uiState.steam.installedLaunchers, uiState.steam.notInstalledLaunchers,
-        uiState.steam.hasStoragePermission
+        uiState.steam.hasStoragePermission, isSteamLoggedIn
     ) {
         buildGameDataItems(
             isConnected = isConnected,
             saveSyncEnabled = saveSyncEnabled,
             installedLaunchers = uiState.steam.installedLaunchers,
             notInstalledLaunchers = uiState.steam.notInstalledLaunchers,
-            hasStoragePermission = uiState.steam.hasStoragePermission
+            hasStoragePermission = uiState.steam.hasStoragePermission,
+            isSteamLoggedIn = isSteamLoggedIn
         )
     }
 

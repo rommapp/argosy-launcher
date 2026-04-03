@@ -180,12 +180,13 @@ class UpdateRepository @Inject constructor(
             Log.d(TAG, "Version comparison: current=$currentVersionInfo, latest=$latestVersion")
 
             if (latestVersion > currentVersionInfo) {
-                val deviceAbi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
-                val abiSuffix = when {
-                    deviceAbi.startsWith("arm64") -> "arm64"
-                    deviceAbi.startsWith("armeabi") || deviceAbi.startsWith("arm") -> "arm32"
-                    else -> null
+                val installedAbiType = BuildConfig.VERSION_CODE / 1_000_000
+                val abiSuffix = when (installedAbiType) {
+                    1 -> "arm32"
+                    2 -> "arm64"
+                    else -> null  // universal or debug build
                 }
+                Log.d(TAG, "APK type selection: versionCode=${BuildConfig.VERSION_CODE}, abiType=$installedAbiType, suffix=$abiSuffix")
                 val apkAssets = release.assets.filter { it.name.endsWith(".apk") }
                 val apkAsset = (if (abiSuffix != null) {
                     apkAssets.find { it.name.contains(abiSuffix) }

@@ -476,7 +476,7 @@ class GameLauncher @Inject constructor(
         game: GameEntity,
         forResume: Boolean
     ): EffectiveLaunchCommand? {
-        val base = when (val config = emulator.launchConfig) {
+        val rawBase = when (val config = emulator.launchConfig) {
             is LaunchConfig.FileUri -> commandForFileUri(emulator, romFile, forResume)
             is LaunchConfig.FilePathExtra -> commandForFilePathExtra(emulator, romFile, config, forResume)
             is LaunchConfig.Custom -> {
@@ -492,6 +492,14 @@ class GameLauncher @Inject constructor(
             is LaunchConfig.ScummVM -> commandForScummVM(emulator, romFile, forResume)
             is LaunchConfig.BuiltIn -> null // handled in buildIntent directly
         } ?: return null
+
+        // Apply the emulator's default launch method unless a commandFor* helper already set it
+        // explicitly (legacy useFileUri/useShellLaunch branches hardcode SHELL and must stay).
+        val base = if (rawBase.launchMethod == LaunchMethod.INTENT) {
+            rawBase.copy(launchMethod = emulator.defaultLaunchMethod)
+        } else {
+            rawBase
+        }
 
         // Layer user-facing launch args overrides (Launch Args modal).
         val override = emulatorLaunchArgsDao.getByPlatformAndEmulator(game.platformId, emulator.id)

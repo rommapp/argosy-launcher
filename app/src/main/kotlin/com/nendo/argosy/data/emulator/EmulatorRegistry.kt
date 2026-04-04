@@ -17,6 +17,13 @@ data class EmulatorDef(
     val supportedPlatforms: Set<String>,
     val launchAction: String = Intent.ACTION_VIEW,
     val launchConfig: LaunchConfig = LaunchConfig.FileUri,
+    /**
+     * Default method used to dispatch the launch intent. `SHELL` uses `am start`, bypassing
+     * caller-side URI permission delegation -- more reliable on scoped storage for emulators that
+     * already hold MANAGE_EXTERNAL_STORAGE. Users can override per-platform via the Launch Args
+     * modal.
+     */
+    val defaultLaunchMethod: LaunchMethod = LaunchMethod.INTENT,
     val downloadUrl: String? = null,
     val releaseSource: ReleaseSource? = null,
     val packagePatterns: List<String> = emptyList()
@@ -29,6 +36,7 @@ data class EmulatorFamily(
     val supportedPlatforms: Set<String>,
     val launchAction: String = Intent.ACTION_VIEW,
     val launchConfig: LaunchConfig = LaunchConfig.FileUri,
+    val defaultLaunchMethod: LaunchMethod = LaunchMethod.INTENT,
     val downloadUrl: String? = null
 )
 
@@ -181,6 +189,7 @@ object EmulatorRegistry {
                 activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
                 intentExtras = mapOf("AutoStartFile" to ExtraValue.FileUri)
             ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://play.google.com/store/apps/details?id=org.dolphinemu.dolphinemu"
         ),
         EmulatorDef(
@@ -247,6 +256,7 @@ object EmulatorRegistry {
                 activityClass = "org.citra.citra_emu.activities.EmulationActivity",
                 intentExtras = mapOf("SelectedGame" to ExtraValue.FilePath)
             ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/azahar-emu/azahar/releases",
             releaseSource = ReleaseSource.GitHub("azahar-emu/azahar")
         ),
@@ -284,6 +294,7 @@ object EmulatorRegistry {
             packageName = "dev.eden.eden_emulator",
             displayName = "Eden",
             supportedPlatforms = setOf("switch"),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://git.eden-emu.dev/eden-emu/eden/releases",
             releaseSource = ReleaseSource.Gitea("https://git.eden-emu.dev", "eden-emu/eden")
         ),
@@ -391,6 +402,7 @@ object EmulatorRegistry {
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
             ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://play.google.com/store/apps/details?id=com.github.stenzek.duckstation"
         ),
         EmulatorDef(
@@ -403,6 +415,7 @@ object EmulatorRegistry {
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
             ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases",
             releaseSource = ReleaseSource.GitHub("Trixarian/NetherSX2-patch")
         ),
@@ -416,7 +429,8 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
                 intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
-            )
+            ),
+            defaultLaunchMethod = LaunchMethod.SHELL
         ),
         EmulatorDef(
             id = "armsx2",
@@ -426,6 +440,7 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "kr.co.iefriends.pcsx2.activities.MainActivity"
             ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases",
             releaseSource = ReleaseSource.GitHub("ARMSX2/ARMSX2")
         ),
@@ -446,6 +461,7 @@ object EmulatorRegistry {
                 activityClass = "org.ppsspp.ppsspp.PpssppActivity",
                 mimeTypeOverride = "application/octet-stream"
             ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://play.google.com/store/apps/details?id=org.ppsspp.ppsspp"
         ),
         EmulatorDef(
@@ -502,6 +518,7 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.flycast.emulator.MainActivity"
             ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://play.google.com/store/apps/details?id=com.flycast.emulator"
         ),
         EmulatorDef(
@@ -1218,6 +1235,7 @@ object EmulatorRegistry {
             supportedPlatforms = family.supportedPlatforms,
             launchAction = family.launchAction,
             launchConfig = family.launchConfig,
+            defaultLaunchMethod = family.defaultLaunchMethod,
             downloadUrl = family.downloadUrl
         )
     }

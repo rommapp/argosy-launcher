@@ -440,7 +440,8 @@ fun InfoPreference(
     title: String,
     value: String,
     isFocused: Boolean,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    subtitle: String? = null
 ) {
     Row(
         modifier = preferenceModifier(isFocused),
@@ -456,12 +457,20 @@ fun InfoPreference(
             )
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
         }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = preferenceContentColor(isFocused),
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = preferenceContentColor(isFocused)
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = preferenceSecondaryColor(isFocused)
+                )
+            }
+        }
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,

@@ -39,9 +39,11 @@ data class PlatformLibretroSettingsEntity(
     val rumbleEnabled: Boolean? = null,
     val rewindSpeed: Int? = null,
     val rewindBufferDuration: Int? = null,
-    val vsync: Boolean? = null
+    val vsync: Boolean? = null,
+    val savePath: String? = null,
+    val statePath: String? = null
 ) {
-    fun hasAnyOverrides(): Boolean = hasAnyVideoOverrides() || hasAnyControlOverrides()
+    fun hasAnyOverrides(): Boolean = hasAnyVideoOverrides() || hasAnyControlOverrides() || hasAnyPathOverrides()
 
     fun hasAnyVideoOverrides(): Boolean =
         shader != null ||
@@ -63,4 +65,6 @@ data class PlatformLibretroSettingsEntity(
 
     fun hasAnyControlOverrides(): Boolean =
         analogAsDpad != null || dpadAsAnalog != null || rumbleEnabled != null
+
+    fun hasAnyPathOverrides(): Boolean = savePath != null || statePath != null
 }

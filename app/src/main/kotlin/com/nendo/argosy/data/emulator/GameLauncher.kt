@@ -61,6 +61,7 @@ class GameLauncher @Inject constructor(
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
     private val emulatorConfigDao: EmulatorConfigDao,
+    private val platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao,
     private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager,
     private val libretroCoreMgr: LibretroCoreManager,
@@ -375,6 +376,10 @@ class GameLauncher @Inject constructor(
 
         Logger.info(TAG, "[BuiltIn] Launching: rom=${romFile.name}, core=$coreName, romSize=${romFile.length()}b, coreVars=${coreVariables.size}")
         val builtinSettings = userPreferencesRepository.getBuiltinEmulatorSettings().first()
+        // Per-platform builtin save/state overrides (Video & Performance in platform context).
+        val platformLibretroOverride = platformLibretroSettingsDao.getByPlatformId(game.platformId)
+        val effectiveSavePath = platformLibretroOverride?.savePath ?: builtinSettings.customSavePath
+        val effectiveStatePath = platformLibretroOverride?.statePath ?: builtinSettings.customStatePath
         return Intent(context, LibretroActivity::class.java).apply {
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
             putExtra(LibretroActivity.EXTRA_CORE_PATH, corePath)
@@ -384,8 +389,8 @@ class GameLauncher @Inject constructor(
             putExtra(LibretroActivity.EXTRA_CORE_NAME, coreName)
             putExtra(LibretroActivity.EXTRA_CORE_VAR_KEYS, coreVariables.map { it.key }.toTypedArray())
             putExtra(LibretroActivity.EXTRA_CORE_VAR_VALUES, coreVariables.map { it.value }.toTypedArray())
-            builtinSettings.customSavePath?.let { putExtra(LibretroActivity.EXTRA_SAVES_DIR, it) }
-            builtinSettings.customStatePath?.let { putExtra(LibretroActivity.EXTRA_STATES_DIR, it) }
+            effectiveSavePath?.let { putExtra(LibretroActivity.EXTRA_SAVES_DIR, it) }
+            effectiveStatePath?.let { putExtra(LibretroActivity.EXTRA_STATES_DIR, it) }
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }

@@ -18,5 +18,7 @@ data class EmulatorSaveConfigEntity(
     val savePathPattern: String,
     val isAutoDetected: Boolean,
     val isUserOverride: Boolean = false,
-    val lastVerifiedAt: Instant? = null
+    val lastVerifiedAt: Instant? = null,
+    val statePathPattern: String? = null,
+    val isUserStateOverride: Boolean = false
 )

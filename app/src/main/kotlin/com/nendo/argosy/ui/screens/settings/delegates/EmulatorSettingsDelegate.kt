@@ -278,9 +278,13 @@ class EmulatorSettingsDelegate @Inject constructor(
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
+            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
             emulatorSaveConfigDao.upsert(
-                EmulatorSaveConfigEntity(
+                (existing ?: EmulatorSaveConfigEntity(
                     emulatorId = emulatorId,
+                    savePathPattern = path,
+                    isAutoDetected = false
+                )).copy(
                     savePathPattern = path,
                     isAutoDetected = false,
                     isUserOverride = true,
@@ -297,7 +301,68 @@ class EmulatorSettingsDelegate @Inject constructor(
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
-            emulatorSaveConfigDao.delete(emulatorId)
+            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
+            // If a state override is also stored on this row, preserve it by updating instead
+            // of deleting; otherwise the user's state path would be wiped by a save reset.
+            if (existing?.isUserStateOverride == true && existing.statePathPattern != null) {
+                emulatorSaveConfigDao.upsert(
+                    existing.copy(
+                        savePathPattern = "",
+                        isAutoDetected = true,
+                        isUserOverride = false
+                    )
+                )
+            } else {
+                emulatorSaveConfigDao.delete(emulatorId)
+            }
+            onLoadSettings()
+        }
+    }
+
+    fun setEmulatorStatePath(
+        scope: CoroutineScope,
+        emulatorId: String,
+        path: String,
+        onLoadSettings: suspend () -> Unit
+    ) {
+        scope.launch {
+            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
+            emulatorSaveConfigDao.upsert(
+                (existing ?: EmulatorSaveConfigEntity(
+                    emulatorId = emulatorId,
+                    savePathPattern = "",
+                    isAutoDetected = true
+                )).copy(
+                    statePathPattern = path,
+                    isUserStateOverride = true,
+                    lastVerifiedAt = Instant.now()
+                )
+            )
+            onLoadSettings()
+        }
+    }
+
+    fun resetEmulatorStatePath(
+        scope: CoroutineScope,
+        emulatorId: String,
+        onLoadSettings: suspend () -> Unit
+    ) {
+        scope.launch {
+            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
+            if (existing != null) {
+                // If the row has no save override either, drop it entirely.
+                val hasSaveOverride = existing.isUserOverride && existing.savePathPattern.isNotEmpty()
+                if (hasSaveOverride) {
+                    emulatorSaveConfigDao.upsert(
+                        existing.copy(
+                            statePathPattern = null,
+                            isUserStateOverride = false
+                        )
+                    )
+                } else {
+                    emulatorSaveConfigDao.delete(emulatorId)
+                }
+            }
             onLoadSettings()
         }
     }

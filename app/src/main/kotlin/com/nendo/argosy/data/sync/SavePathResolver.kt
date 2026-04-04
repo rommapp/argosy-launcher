@@ -154,15 +154,18 @@ class SavePathResolver @Inject constructor(
         val paths = if (isRetroArch) {
             val packageName = if (effectiveEmulatorId == "retroarch_64") "com.retroarch.aarch64" else "com.retroarch"
             val contentDir = romPath?.let { File(it).parent }
+            // RetroArch's sort_by_content_enable sorts into the ROM's parent directory basename,
+            // not the platform slug.
+            val contentDirName = romPath?.let { File(it).parentFile?.name }
             if (coreName != null) {
                 Logger.debug(TAG, "discoverSavePath: RetroArch using known core=$coreName (baseOverride=$basePathOverride)")
-                retroArchConfigParser.resolveSavePaths(packageName, platformSlug, coreName, contentDir, basePathOverride)
+                retroArchConfigParser.resolveSavePaths(packageName, contentDirName, coreName, contentDir, basePathOverride)
             } else {
                 val corePatterns = EmulatorRegistry.getRetroArchCorePatterns()[platformSlug] ?: emptyList()
                 Logger.debug(TAG, "discoverSavePath: RetroArch trying all cores=$corePatterns (baseOverride=$basePathOverride)")
                 corePatterns.flatMap { core ->
-                    retroArchConfigParser.resolveSavePaths(packageName, platformSlug, core, contentDir, basePathOverride)
-                } + retroArchConfigParser.resolveSavePaths(packageName, platformSlug, null, contentDir, basePathOverride)
+                    retroArchConfigParser.resolveSavePaths(packageName, contentDirName, core, contentDir, basePathOverride)
+                } + retroArchConfigParser.resolveSavePaths(packageName, contentDirName, null, contentDir, basePathOverride)
             }
         } else {
             resolveSavePaths(config, platformSlug)

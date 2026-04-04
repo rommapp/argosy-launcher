@@ -113,7 +113,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         SteamCompletedFileEntity::class,
         SteamCompletedDepotEntity::class
     ],
-    version = 97,
+    version = 98,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1458,6 +1458,15 @@ abstract class ALauncherDatabase : RoomDatabase() {
                     WHERE source = 'STEAM' AND description IS NOT NULL
                     AND screenshotPaths IS NOT NULL AND screenshotPaths != ''
                 """)
+            }
+        }
+
+        val MIGRATION_97_98 = object : Migration(97, 98) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE emulator_save_config ADD COLUMN statePathPattern TEXT")
+                db.execSQL("ALTER TABLE emulator_save_config ADD COLUMN isUserStateOverride INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN savePath TEXT")
+                db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN statePath TEXT")
             }
         }
 

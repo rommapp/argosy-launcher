@@ -67,8 +67,8 @@ internal sealed class PlatformDetailItem(
     data object ScanFiles : PlatformDetailItem("scan_files", "platform")
 
     data object RomPath : PlatformDetailItem("rom_path", "sync")
-    data object SavePath : PlatformDetailItem("save_path", "sync", { it.showSavePath && !it.isBuiltin })
-    data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath && !it.isBuiltin })
+    data object SavePath : PlatformDetailItem("save_path", "sync", { it.showSavePath })
+    data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath })
 
     data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
     data object PackagePath : PlatformDetailItem("package_path", "sync", { it.showSavePath })
@@ -89,7 +89,7 @@ internal sealed class PlatformDetailItem(
             Header("header_bios", "bios", "BIOS", { it.hasBios }),
             InfoItem("info_bios_status", "bios", { it.hasBios }), BiosDownload, BiosInstall, BiosCopy,
             Header("header_sync", "sync", "Storage & Sync"),
-            SyncToggle, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin }),
+            SyncToggle, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
             RomPath, SavePath, StatePath,
             RemoveFiles
         )
@@ -101,7 +101,10 @@ internal data class PlatformDetailVisibility(
     val showExtension: Boolean = false,
     val showDisplayTarget: Boolean = false,
     val showLegacyMode: Boolean = false,
+    /** In-app libretro host. Does NOT include external RetroArch -- those are separate emulators. */
     val isBuiltin: Boolean = false,
+    /** External RetroArch app. Config lives in retroarch.cfg, not Argosy's storage. */
+    val isRetroArch: Boolean = false,
     val showSavePath: Boolean = false,
     val showStatePath: Boolean = false,
     val hasDownloads: Boolean = false,
@@ -116,7 +119,8 @@ internal data class PlatformDetailVisibility(
             showExtension = config.showExtensionSelection,
             showDisplayTarget = config.showDisplayTargetOption,
             showLegacyMode = config.showLegacyModeOption,
-            isBuiltin = config.effectiveEmulatorIsRetroArch || config.effectiveEmulatorId == "builtin",
+            isBuiltin = config.effectiveEmulatorId == "builtin",
+            isRetroArch = config.effectiveEmulatorIsRetroArch,
             showSavePath = config.showSavePath,
             showStatePath = detail.supportsStatePath,
             hasDownloads = detail.downloadedGames > 0,
@@ -343,24 +347,55 @@ fun PlatformDetailSection(
                     isFocused = isFocused(item),
                     onClick = { viewModel.openPlatformFolderPicker(config.platform.id) }
                 )
-                PlatformDetailItem.SavePath -> CyclePreference(
-                    title = "Save Path",
-                    value = formatPath(detail.effectiveSavePath),
-                    subtitle = when {
-                        detail.packagePathAccessible == false && !detail.isUserSavePathOverride -> "Access blocked -- set a custom save path"
-                        detail.isUserSavePathOverride -> "(custom)"
-                        else -> null
-                    },
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.showSavePathModal(config) }
-                )
-                PlatformDetailItem.StatePath -> CyclePreference(
-                    title = "State Path",
-                    value = formatPath(detail.effectiveStatePath),
-                    subtitle = if (detail.isUserStatePathOverride) "(custom)" else null,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.launchStatePathPicker(config.platform.id) }
-                )
+                PlatformDetailItem.SavePath -> {
+                    if (config.effectiveEmulatorIsRetroArch) {
+                        // RetroArch owns its own save path via retroarch.cfg. Argosy reads, never writes.
+                        InfoPreference(
+                            title = "Save Path",
+                            value = formatPath(detail.effectiveSavePath),
+                            isFocused = isFocused(item),
+                            subtitle = if (detail.effectiveSavePath == "(ROM directory)") {
+                                "content dir (from retroarch.cfg)"
+                            } else {
+                                "from retroarch.cfg"
+                            }
+                        )
+                    } else {
+                        CyclePreference(
+                            title = "Save Path",
+                            value = formatPath(detail.effectiveSavePath),
+                            subtitle = when {
+                                detail.packagePathAccessible == false && !detail.isUserSavePathOverride -> "Access blocked -- set a custom save path"
+                                detail.isUserSavePathOverride -> "(custom)"
+                                else -> null
+                            },
+                            isFocused = isFocused(item),
+                            onClick = { viewModel.showSavePathModal(config) }
+                        )
+                    }
+                }
+                PlatformDetailItem.StatePath -> {
+                    if (config.effectiveEmulatorIsRetroArch) {
+                        InfoPreference(
+                            title = "State Path",
+                            value = formatPath(detail.effectiveStatePath),
+                            isFocused = isFocused(item),
+                            subtitle = if (detail.effectiveStatePath == "(ROM directory)") {
+                                "content dir (from retroarch.cfg)"
+                            } else {
+                                "from retroarch.cfg"
+                            }
+                        )
+                    } else {
+                        CyclePreference(
+                            title = "State Path",
+                            value = formatPath(detail.effectiveStatePath),
+                            subtitle = if (detail.isUserStatePathOverride) "(custom)" else null,
+                            isFocused = isFocused(item),
+                            onClick = { viewModel.launchStatePathPicker(config.platform.id) }
+                        )
+                    }
+                }
 
                 // -- SYNC section --
                 PlatformDetailItem.SyncToggle -> SwitchPreference(

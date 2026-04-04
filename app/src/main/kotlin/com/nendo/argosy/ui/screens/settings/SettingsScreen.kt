@@ -317,6 +317,20 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
+        viewModel.launchPlatformBuiltinSavePathPicker.collect { platformId ->
+            fileBrowserCallback = { path -> viewModel.setPlatformBuiltinSavePath(platformId, path) }
+            showFileBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.launchPlatformBuiltinStatePathPicker.collect { platformId ->
+            fileBrowserCallback = { path -> viewModel.setPlatformBuiltinStatePath(platformId, path) }
+            showFileBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
         viewModel.builtinNavigationEvent.collect { target ->
             when (target) {
                 BuiltinNavigationTarget.VIDEO_SETTINGS -> viewModel.navigateToSection(SettingsSection.BUILTIN_VIDEO)

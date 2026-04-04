@@ -96,8 +96,18 @@ fun BuiltinVideoSection(
     }
 
     val showResetAll = !isGlobal && hasAnyOverrides
-    val savePathFocusIndex = maxSettingsFocusIndex + 1
-    val statePathFocusIndex = maxSettingsFocusIndex + 2
+    // In platform context, Reset All is immediately after settings. Save/State paths come after that when shown.
+    val resetAllExtra = if (showResetAll) 1 else 0
+    val savePathFocusIndex = maxSettingsFocusIndex + 1 + resetAllExtra
+    val statePathFocusIndex = maxSettingsFocusIndex + 2 + resetAllExtra
+
+    // Effective path values depend on context. In platform context, platform override wins over global.
+    val effectiveSavePath = if (isGlobal) videoState.savePath else (platformSettings?.savePath ?: videoState.savePath)
+    val effectiveStatePath = if (isGlobal) videoState.statePath else (platformSettings?.statePath ?: videoState.statePath)
+    val hasPlatformSaveOverride = !isGlobal && platformSettings?.savePath != null
+    val hasPlatformStateOverride = !isGlobal && platformSettings?.statePath != null
+
+    val showPathItems = effectiveSavePath.isNotEmpty()
 
     LibretroSettingsSection(
         accessor = accessor,
@@ -117,28 +127,50 @@ fun BuiltinVideoSection(
                 )
             }
         } else null,
-        trailingItems = if (isGlobal && videoState.savePath.isNotEmpty()) {
+        trailingItems = if (showPathItems) {
             {
                 item(key = "save_path") {
                     CyclePreference(
                         title = "Save File Path",
-                        value = formatStoragePath(videoState.savePath),
-                        subtitle = if (videoState.isCustomSavePath) "(custom)" else null,
+                        value = formatStoragePath(effectiveSavePath),
+                        subtitle = when {
+                            isGlobal && videoState.isCustomSavePath -> "(custom)"
+                            !isGlobal && hasPlatformSaveOverride -> "(custom for this platform)"
+                            !isGlobal -> "(from global)"
+                            else -> null
+                        },
                         isFocused = uiState.focusedIndex == savePathFocusIndex,
-                        onClick = { viewModel.openBuiltinSavePathBrowser() },
-                        showResetButton = videoState.isCustomSavePath,
-                        onReset = { viewModel.resetBuiltinSavePath() }
+                        onClick = {
+                            if (isGlobal) viewModel.openBuiltinSavePathBrowser()
+                            else platformContext?.let { viewModel.openPlatformBuiltinSavePathBrowser(it.platformId) }
+                        },
+                        showResetButton = if (isGlobal) videoState.isCustomSavePath else hasPlatformSaveOverride,
+                        onReset = {
+                            if (isGlobal) viewModel.resetBuiltinSavePath()
+                            else platformContext?.let { viewModel.resetPlatformBuiltinSavePath(it.platformId) }
+                        }
                     )
                 }
                 item(key = "state_path") {
                     CyclePreference(
                         title = "State Path",
-                        value = formatStoragePath(videoState.statePath),
-                        subtitle = if (videoState.isCustomStatePath) "(custom)" else null,
+                        value = formatStoragePath(effectiveStatePath),
+                        subtitle = when {
+                            isGlobal && videoState.isCustomStatePath -> "(custom)"
+                            !isGlobal && hasPlatformStateOverride -> "(custom for this platform)"
+                            !isGlobal -> "(from global)"
+                            else -> null
+                        },
                         isFocused = uiState.focusedIndex == statePathFocusIndex,
-                        onClick = { viewModel.openBuiltinStatePathBrowser() },
-                        showResetButton = videoState.isCustomStatePath,
-                        onReset = { viewModel.resetBuiltinStatePath() }
+                        onClick = {
+                            if (isGlobal) viewModel.openBuiltinStatePathBrowser()
+                            else platformContext?.let { viewModel.openPlatformBuiltinStatePathBrowser(it.platformId) }
+                        },
+                        showResetButton = if (isGlobal) videoState.isCustomStatePath else hasPlatformStateOverride,
+                        onReset = {
+                            if (isGlobal) viewModel.resetBuiltinStatePath()
+                            else platformContext?.let { viewModel.resetPlatformBuiltinStatePath(it.platformId) }
+                        }
                     )
                 }
             }
@@ -153,8 +185,10 @@ fun builtinVideoMaxFocusIndex(state: BuiltinVideoState, platformSettings: Map<Lo
         platformSlug = platformContext?.platformSlug,
         canEnableBFI = state.canEnableBlackFrameInsertion
     )
-    val pathItems = if (state.isGlobalContext && state.savePath.isNotEmpty()) 2 else 0
-    return if (!state.isGlobalContext && hasAnyOverrides) settingsMax + 1 else settingsMax + pathItems
+    // Path items render in both global and platform contexts when the global save path is known.
+    val pathItems = if (state.savePath.isNotEmpty()) 2 else 0
+    val resetAllItem = if (!state.isGlobalContext && hasAnyOverrides) 1 else 0
+    return settingsMax + resetAllItem + pathItems
 }
 
 fun builtinVideoItemAtFocusIndex(

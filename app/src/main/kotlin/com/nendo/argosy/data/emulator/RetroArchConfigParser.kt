@@ -95,18 +95,49 @@ class RetroArchConfigParser @Inject constructor() {
         )
     }
 
+    /**
+     * Resolves candidate RetroArch save directories.
+     *
+     * @param contentDirName ROM's parent directory basename (e.g. "Super Nintendo"), used when
+     *   `sort_savefiles_by_content_enable` is set. This is NOT the platform slug -- RetroArch
+     *   sorts into the ROM's actual parent folder name, not Argosy's internal platform id.
+     *   Pass `null` when no specific ROM is available.
+     */
     fun resolveSavePaths(
         packageName: String,
-        systemName: String?,
+        contentDirName: String?,
+        coreName: String?,
+        contentDirectory: String? = null,
+        basePathOverride: String? = null
+    ): List<String> = resolveSavePathsWithConfig(
+        config = parse(packageName),
+        contentDirName = contentDirName,
+        coreName = coreName,
+        contentDirectory = contentDirectory,
+        basePathOverride = basePathOverride
+    )
+
+    /**
+     * Core save-path resolution logic, separated from file I/O for testability.
+     * Production callers should use [resolveSavePaths] which reads the on-device config.
+     */
+    internal fun resolveSavePathsWithConfig(
+        config: RetroArchSaveConfig?,
+        contentDirName: String?,
         coreName: String?,
         contentDirectory: String? = null,
         basePathOverride: String? = null
     ): List<String> {
-        val config = parse(packageName)
         val paths = mutableListOf<String>()
 
+        val sortByContentDir = config?.sortByContentDirectory == true
+        val sortByCore = config?.sortByCore == true
+
         if (basePathOverride == null && config?.savefilesInContentDir == true && contentDirectory != null) {
-            paths.addAll(getBasePathAlternatives(contentDirectory))
+            for (base in getBasePathAlternatives(contentDirectory)) {
+                paths.add(buildSortedPath(base, contentDirName, coreName, sortByContentDir, sortByCore))
+            }
+            Log.d(TAG, "resolveSavePaths: content-dir ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
             return paths
         }
 
@@ -118,13 +149,13 @@ class RetroArchConfigParser @Inject constructor() {
 
         if (config == null && coreName != null) {
             for (base in baseDirs) {
-                val baseDir = File(base)
+                val baseDirFile = File(base)
                 val coreDir = File(base, coreName)
 
                 if (coreDir.exists() && coreDir.isDirectory) {
                     paths.add(coreDir.absolutePath)
                     Log.d(TAG, "resolveSavePaths: config missing, found core folder $coreName")
-                } else if (baseDir.exists() && hasCoreFolders(baseDir)) {
+                } else if (baseDirFile.exists() && hasCoreFolders(baseDirFile)) {
                     paths.add(coreDir.absolutePath)
                     Log.d(TAG, "resolveSavePaths: config missing, base has core folders, using $coreName")
                 } else {
@@ -135,24 +166,32 @@ class RetroArchConfigParser @Inject constructor() {
             return paths
         }
 
-        val sortByContentDir = config?.sortByContentDirectory == true
-        val sortByCore = config?.sortByCore == true
-
         for (base in baseDirs) {
-            val path = buildString {
-                append(base)
-                if (sortByContentDir && systemName != null) {
-                    append("/").append(systemName)
-                }
-                if (sortByCore && coreName != null) {
-                    append("/").append(coreName)
-                }
-            }
-            paths.add(path)
+            paths.add(buildSortedPath(base, contentDirName, coreName, sortByContentDir, sortByCore))
         }
 
         Log.d(TAG, "resolveSavePaths: ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
         return paths
+    }
+
+    /**
+     * Appends RetroArch sort-flag subdirectories to a base path.
+     * Order matches RetroArch: content directory first, then core name.
+     */
+    private fun buildSortedPath(
+        base: String,
+        contentDirName: String?,
+        coreName: String?,
+        sortByContentDir: Boolean,
+        sortByCore: Boolean
+    ): String = buildString {
+        append(base)
+        if (sortByContentDir && contentDirName != null) {
+            append("/").append(contentDirName)
+        }
+        if (sortByCore && coreName != null) {
+            append("/").append(coreName)
+        }
     }
 
     private fun getBasePathAlternatives(path: String): List<String> {
@@ -226,17 +265,47 @@ class RetroArchConfigParser @Inject constructor() {
         )
     }
 
+    /**
+     * Resolves candidate RetroArch savestate directories.
+     *
+     * @param contentDirName ROM's parent directory basename, used when
+     *   `sort_savestates_by_content_enable` is set. Pass `null` when no specific ROM is available.
+     */
     fun resolveStatePaths(
         packageName: String,
+        contentDirName: String?,
+        coreName: String?,
+        contentDirectory: String? = null,
+        basePathOverride: String? = null
+    ): List<String> = resolveStatePathsWithConfig(
+        config = parseStateConfig(packageName),
+        contentDirName = contentDirName,
+        coreName = coreName,
+        contentDirectory = contentDirectory,
+        basePathOverride = basePathOverride
+    )
+
+    /**
+     * Core state-path resolution logic, separated from file I/O for testability.
+     * Production callers should use [resolveStatePaths].
+     */
+    internal fun resolveStatePathsWithConfig(
+        config: RetroArchStateConfig?,
+        contentDirName: String?,
         coreName: String?,
         contentDirectory: String? = null,
         basePathOverride: String? = null
     ): List<String> {
-        val config = parseStateConfig(packageName)
         val paths = mutableListOf<String>()
 
+        val sortByContentDir = config?.sortByContentDirectory == true
+        val sortByCore = config?.sortByCore == true
+
         if (basePathOverride == null && config?.savestatesInContentDir == true && contentDirectory != null) {
-            paths.addAll(getBasePathAlternatives(contentDirectory))
+            for (base in getBasePathAlternatives(contentDirectory)) {
+                paths.add(buildSortedPath(base, contentDirName, coreName, sortByContentDir, sortByCore))
+            }
+            Log.d(TAG, "resolveStatePaths: content-dir ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
             return paths
         }
 
@@ -265,19 +334,11 @@ class RetroArchConfigParser @Inject constructor() {
             return paths
         }
 
-        val sortByCore = config?.sortByCore == true
-
         for (base in baseDirs) {
-            val path = buildString {
-                append(base)
-                if (sortByCore && coreName != null) {
-                    append("/").append(coreName)
-                }
-            }
-            paths.add(path)
+            paths.add(buildSortedPath(base, contentDirName, coreName, sortByContentDir, sortByCore))
         }
 
-        Log.d(TAG, "resolveStatePaths: ${paths.first()} (sortByCore=$sortByCore)")
+        Log.d(TAG, "resolveStatePaths: ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
         return paths
     }
 }

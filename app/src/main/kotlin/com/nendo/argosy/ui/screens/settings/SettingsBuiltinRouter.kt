@@ -204,6 +204,49 @@ internal fun routeResetBuiltinStatePath(vm: SettingsViewModel) {
     }
 }
 
+// --- Platform-scoped builtin save/state paths ---
+// These override the global builtin save/state paths for a single platform.
+
+internal fun routeSetPlatformBuiltinSavePath(vm: SettingsViewModel, platformId: Long, newPath: String) {
+    vm.viewModelScope.launch {
+        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId)
+            ?: PlatformLibretroSettingsEntity(platformId = platformId)
+        vm.platformLibretroSettingsDao.upsert(current.copy(savePath = newPath))
+    }
+}
+
+internal fun routeResetPlatformBuiltinSavePath(vm: SettingsViewModel, platformId: Long) {
+    vm.viewModelScope.launch {
+        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId) ?: return@launch
+        val updated = current.copy(savePath = null)
+        if (updated.hasAnyOverrides()) {
+            vm.platformLibretroSettingsDao.upsert(updated)
+        } else {
+            vm.platformLibretroSettingsDao.deleteByPlatformId(platformId)
+        }
+    }
+}
+
+internal fun routeSetPlatformBuiltinStatePath(vm: SettingsViewModel, platformId: Long, newPath: String) {
+    vm.viewModelScope.launch {
+        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId)
+            ?: PlatformLibretroSettingsEntity(platformId = platformId)
+        vm.platformLibretroSettingsDao.upsert(current.copy(statePath = newPath))
+    }
+}
+
+internal fun routeResetPlatformBuiltinStatePath(vm: SettingsViewModel, platformId: Long) {
+    vm.viewModelScope.launch {
+        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId) ?: return@launch
+        val updated = current.copy(statePath = null)
+        if (updated.hasAnyOverrides()) {
+            vm.platformLibretroSettingsDao.upsert(updated)
+        } else {
+            vm.platformLibretroSettingsDao.deleteByPlatformId(platformId)
+        }
+    }
+}
+
 private fun migrateFiles(source: java.io.File, destination: java.io.File) {
     if (!source.exists() || source.absolutePath == destination.absolutePath) return
     destination.mkdirs()

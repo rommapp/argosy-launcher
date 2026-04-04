@@ -513,13 +513,21 @@ internal fun routeResetPlatformSavePath(vm: SettingsViewModel, platformId: Long)
 }
 
 internal fun routeSetPlatformStatePath(vm: SettingsViewModel, platformId: Long, basePath: String) {
+    val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
+    val emulatorId = storageConfig?.emulatorId ?: return
     val evaluatedPath = routeComputeEvaluatedStatePath(vm, platformId, basePath)
-    vm.storageDelegate.updatePlatformStatePath(platformId, evaluatedPath, true)
+    vm.emulatorDelegate.setEmulatorStatePath(vm.viewModelScope, emulatorId, basePath) {
+        vm.storageDelegate.updatePlatformStatePath(platformId, evaluatedPath, true)
+    }
 }
 
 internal fun routeResetPlatformStatePath(vm: SettingsViewModel, platformId: Long) {
-    val defaultPath = routeComputeEvaluatedStatePath(vm, platformId, null)
-    vm.storageDelegate.updatePlatformStatePath(platformId, defaultPath, false)
+    val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
+    val emulatorId = storageConfig?.emulatorId ?: return
+    vm.emulatorDelegate.resetEmulatorStatePath(vm.viewModelScope, emulatorId) {
+        val defaultPath = routeComputeEvaluatedStatePath(vm, platformId, null)
+        vm.storageDelegate.updatePlatformStatePath(platformId, defaultPath, false)
+    }
 }
 
 private fun routeComputeEvaluatedSavePath(vm: SettingsViewModel, platformId: Long, basePathOverride: String?): String? {
@@ -534,12 +542,13 @@ private fun routeComputeEvaluatedSavePath(vm: SettingsViewModel, platformId: Lon
         if (raConfig?.savefilesInContentDir == true) return "(ROM directory)"
     }
 
-    val systemName = emulatorConfig.platform.slug
+    // No specific ROM is in scope at the settings screen, so the content-dir sort suffix
+    // cannot be computed here -- resolveSavePaths will skip it when contentDirName is null.
     val coreName = emulatorConfig.selectedCore
 
     return vm.retroArchConfigParser.resolveSavePaths(
         packageName = packageName,
-        systemName = systemName,
+        contentDirName = null,
         coreName = coreName,
         basePathOverride = basePathOverride
     ).firstOrNull()
@@ -561,6 +570,7 @@ private fun routeComputeEvaluatedStatePath(vm: SettingsViewModel, platformId: Lo
 
     return vm.retroArchConfigParser.resolveStatePaths(
         packageName = packageName,
+        contentDirName = null,
         coreName = coreName,
         basePathOverride = basePathOverride
     ).firstOrNull()

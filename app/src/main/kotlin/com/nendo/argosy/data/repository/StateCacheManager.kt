@@ -7,6 +7,7 @@ import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.StatePathConfig
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.emulator.VersionValidationResult
+import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
@@ -52,6 +53,7 @@ class StateCacheManager @Inject constructor(
     private val saveCacheDao: SaveCacheDao,
     private val saveSyncDao: SaveSyncDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
+    private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val coreVersionExtractor: CoreVersionExtractor,
     private val retroArchConfigParser: RetroArchConfigParser,
@@ -112,11 +114,21 @@ class StateCacheManager @Inject constructor(
         val romBaseName = romFile.nameWithoutExtension
         Log.d(TAG, "romBaseName=$romBaseName")
 
+        val userStateOverride = emulatorSaveConfigDao.getByEmulator(emulatorId)
+            ?.takeIf { it.isUserStateOverride }
+            ?.statePathPattern
+
         val statePaths = when {
             emulatorId.startsWith("retroarch") && emulatorPackage != null -> {
                 val contentDir = romFile.parentFile?.absolutePath
-                retroArchConfigParser.resolveStatePaths(emulatorPackage, coreName, contentDir)
+                val contentDirName = romFile.parentFile?.name
+                retroArchConfigParser.resolveStatePaths(
+                    emulatorPackage, contentDirName, coreName, contentDir,
+                    basePathOverride = userStateOverride
+                )
             }
+            // User overrides take precedence for non-RA emulators regardless of cache structure.
+            userStateOverride != null -> listOf(userStateOverride)
             emulatorId == "builtin" -> {
                 val baseDir = File(context.filesDir, "libretro/states")
                 val channelDirs = baseDir.listFiles { f -> f.isDirectory }
@@ -522,11 +534,21 @@ class StateCacheManager @Inject constructor(
         val romFile = File(romPath)
         val romBaseName = romFile.nameWithoutExtension
 
-        val statePaths = if (emulatorId.startsWith("retroarch") && emulatorPackage != null) {
-            val contentDir = romFile.parentFile?.absolutePath
-            retroArchConfigParser.resolveStatePaths(emulatorPackage, coreId, contentDir)
-        } else {
-            StatePathRegistry.resolvePath(config, platformSlug)
+        val userStateOverride = emulatorSaveConfigDao.getByEmulator(emulatorId)
+            ?.takeIf { it.isUserStateOverride }
+            ?.statePathPattern
+
+        val statePaths = when {
+            emulatorId.startsWith("retroarch") && emulatorPackage != null -> {
+                val contentDir = romFile.parentFile?.absolutePath
+                val contentDirName = romFile.parentFile?.name
+                retroArchConfigParser.resolveStatePaths(
+                    emulatorPackage, contentDirName, coreId, contentDir,
+                    basePathOverride = userStateOverride
+                )
+            }
+            userStateOverride != null -> listOf(userStateOverride)
+            else -> StatePathRegistry.resolvePath(config, platformSlug)
         }
 
         val autoFileName = config.slotPattern.buildFileName(romBaseName, -1)

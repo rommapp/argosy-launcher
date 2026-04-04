@@ -146,9 +146,15 @@ class SettingsViewModel @Inject constructor(
     val launchBuiltinSavePathPicker: SharedFlow<Unit> = _launchBuiltinSavePathPicker
     private val _launchBuiltinStatePathPicker = MutableSharedFlow<Unit>()
     val launchBuiltinStatePathPicker: SharedFlow<Unit> = _launchBuiltinStatePathPicker
+    private val _launchPlatformBuiltinSavePathPicker = MutableSharedFlow<Long>()
+    val launchPlatformBuiltinSavePathPicker: SharedFlow<Long> = _launchPlatformBuiltinSavePathPicker
+    private val _launchPlatformBuiltinStatePathPicker = MutableSharedFlow<Long>()
+    val launchPlatformBuiltinStatePathPicker: SharedFlow<Long> = _launchPlatformBuiltinStatePathPicker
 
     fun openBuiltinSavePathBrowser() { viewModelScope.launch { _launchBuiltinSavePathPicker.emit(Unit) } }
     fun openBuiltinStatePathBrowser() { viewModelScope.launch { _launchBuiltinStatePathPicker.emit(Unit) } }
+    fun openPlatformBuiltinSavePathBrowser(platformId: Long) { viewModelScope.launch { _launchPlatformBuiltinSavePathPicker.emit(platformId) } }
+    fun openPlatformBuiltinStatePathBrowser(platformId: Long) { viewModelScope.launch { _launchPlatformBuiltinStatePathPicker.emit(platformId) } }
     val resetPlatformStatePathEvent: SharedFlow<Long> = storageDelegate.resetStatePathEvent
     val openImageCachePickerEvent: SharedFlow<Unit> = syncDelegate.openImageCachePickerEvent
     val launchBiosFolderPicker: SharedFlow<Unit> = biosDelegate.launchFolderPicker
@@ -348,6 +354,10 @@ class SettingsViewModel @Inject constructor(
     fun resetBuiltinSavePath() = routeResetBuiltinSavePath(this)
     fun setBuiltinStatePath(path: String) = routeSetBuiltinStatePath(this, path)
     fun resetBuiltinStatePath() = routeResetBuiltinStatePath(this)
+    fun setPlatformBuiltinSavePath(platformId: Long, path: String) = routeSetPlatformBuiltinSavePath(this, platformId, path)
+    fun resetPlatformBuiltinSavePath(platformId: Long) = routeResetPlatformBuiltinSavePath(this, platformId)
+    fun setPlatformBuiltinStatePath(platformId: Long, path: String) = routeSetPlatformBuiltinStatePath(this, platformId, path)
+    fun resetPlatformBuiltinStatePath(platformId: Long) = routeResetPlatformBuiltinStatePath(this, platformId)
     fun setBuiltinRumbleEnabled(enabled: Boolean) = routeSetBuiltinRumbleEnabled(this, enabled)
     fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = routeSetBuiltinLimitHotkeysToPlayer1(this, enabled)
     fun setBuiltinAnalogAsDpad(enabled: Boolean) = routeSetBuiltinAnalogAsDpad(this, enabled)

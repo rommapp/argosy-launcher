@@ -5,6 +5,7 @@ import com.nendo.argosy.data.emulator.CoreVersionExtractor
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.StatePathRegistry
+import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.repository.StateCacheManager
@@ -24,6 +25,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager,
     private val stateCacheDao: StateCacheDao,
     private val gameDao: GameDao,
+    private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val coreVersionExtractor: CoreVersionExtractor,
     private val retroArchConfigParser: RetroArchConfigParser
@@ -65,11 +67,19 @@ class RestoreCachedStatesUseCase @Inject constructor(
         val romFile = File(romPath)
         val romBaseName = romFile.nameWithoutExtension
         val contentDir = romFile.parentFile?.absolutePath
+        val contentDirName = romFile.parentFile?.name
 
-        val statePaths = if (emulatorId.startsWith("retroarch")) {
-            retroArchConfigParser.resolveStatePaths(emulatorPackage, effectiveCoreId, contentDir)
-        } else {
-            StatePathRegistry.resolvePath(config, game.platformSlug)
+        val userStateOverride = emulatorSaveConfigDao.getByEmulator(emulatorId)
+            ?.takeIf { it.isUserStateOverride }
+            ?.statePathPattern
+
+        val statePaths = when {
+            emulatorId.startsWith("retroarch") -> retroArchConfigParser.resolveStatePaths(
+                emulatorPackage, contentDirName, effectiveCoreId, contentDir,
+                basePathOverride = userStateOverride
+            )
+            userStateOverride != null -> listOf(userStateOverride)
+            else -> StatePathRegistry.resolvePath(config, game.platformSlug)
         }
 
         val stateDir = statePaths.map { File(it) }.firstOrNull { it.exists() && it.isDirectory }

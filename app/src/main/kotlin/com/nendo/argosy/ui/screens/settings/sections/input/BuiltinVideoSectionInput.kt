@@ -20,20 +20,37 @@ internal class BuiltinVideoSectionInput(
     override fun onSecondaryAction(): InputResult {
         val state = viewModel.uiState.value
         val videoState = state.builtinVideo
-        if (!videoState.isGlobalContext || videoState.savePath.isEmpty()) return InputResult.UNHANDLED
+        if (videoState.savePath.isEmpty()) return InputResult.UNHANDLED
+        val isGlobal = videoState.isGlobalContext
+        val platformContext = videoState.currentPlatformContext
+        val platformSettings = platformContext?.let { state.platformLibretro.platformSettings[it.platformId] }
+        val hasAnyOverrides = platformSettings?.hasAnyOverrides() == true
         val maxSettingsIndex = libretroSettingsMaxFocusIndex(
-            platformSlug = videoState.currentPlatformContext?.platformSlug,
+            platformSlug = platformContext?.platformSlug,
             canEnableBFI = videoState.canEnableBlackFrameInsertion
         )
-        val savePathIndex = maxSettingsIndex + 1
-        val statePathIndex = maxSettingsIndex + 2
+        val resetAllExtra = if (!isGlobal && hasAnyOverrides) 1 else 0
+        val savePathIndex = maxSettingsIndex + 1 + resetAllExtra
+        val statePathIndex = maxSettingsIndex + 2 + resetAllExtra
         return when (state.focusedIndex) {
             savePathIndex -> {
-                if (videoState.isCustomSavePath) viewModel.resetBuiltinSavePath()
+                if (isGlobal) {
+                    if (videoState.isCustomSavePath) viewModel.resetBuiltinSavePath()
+                } else {
+                    if (platformSettings?.savePath != null) {
+                        platformContext.let { viewModel.resetPlatformBuiltinSavePath(it.platformId) }
+                    }
+                }
                 InputResult.HANDLED
             }
             statePathIndex -> {
-                if (videoState.isCustomStatePath) viewModel.resetBuiltinStatePath()
+                if (isGlobal) {
+                    if (videoState.isCustomStatePath) viewModel.resetBuiltinStatePath()
+                } else {
+                    if (platformSettings?.statePath != null) {
+                        platformContext.let { viewModel.resetPlatformBuiltinStatePath(it.platformId) }
+                    }
+                }
                 InputResult.HANDLED
             }
             else -> InputResult.UNHANDLED
@@ -53,26 +70,28 @@ internal class BuiltinVideoSectionInput(
             canEnableBFI = videoState.canEnableBlackFrameInsertion
         )
 
-        if (isGlobal && videoState.savePath.isNotEmpty()) {
-            val savePathIndex = maxSettingsIndex + 1
-            val statePathIndex = maxSettingsIndex + 2
-            when (state.focusedIndex) {
-                savePathIndex -> {
-                    viewModel.openBuiltinSavePathBrowser()
-                    return InputResult.HANDLED
-                }
-                statePathIndex -> {
-                    viewModel.openBuiltinStatePathBrowser()
-                    return InputResult.HANDLED
-                }
-            }
-        }
-
         val resetAllIndex = maxSettingsIndex + 1
-
         if (!isGlobal && hasAnyOverrides && state.focusedIndex == resetAllIndex) {
             viewModel.resetAllPlatformLibretroSettings()
             return InputResult.HANDLED
+        }
+
+        if (videoState.savePath.isNotEmpty()) {
+            val resetAllExtra = if (!isGlobal && hasAnyOverrides) 1 else 0
+            val savePathIndex = maxSettingsIndex + 1 + resetAllExtra
+            val statePathIndex = maxSettingsIndex + 2 + resetAllExtra
+            when (state.focusedIndex) {
+                savePathIndex -> {
+                    if (isGlobal) viewModel.openBuiltinSavePathBrowser()
+                    else platformContext?.let { viewModel.openPlatformBuiltinSavePathBrowser(it.platformId) }
+                    return InputResult.HANDLED
+                }
+                statePathIndex -> {
+                    if (isGlobal) viewModel.openBuiltinStatePathBrowser()
+                    else platformContext?.let { viewModel.openPlatformBuiltinStatePathBrowser(it.platformId) }
+                    return InputResult.HANDLED
+                }
+            }
         }
 
         val setting = builtinVideoItemAtFocusIndex(state.focusedIndex, videoState) ?: return InputResult.UNHANDLED

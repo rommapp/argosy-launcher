@@ -316,7 +316,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     } else {
                         vm.retroArchConfigParser.resolveSavePaths(
                             packageName = emulatorPackage ?: "com.retroarch",
-                            systemName = platform.slug,
+                            contentDirName = null,
                             coreName = selectedCore
                         ).firstOrNull()
                     }
@@ -331,7 +331,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 isRetroArch && effectiveEmulatorDef != null -> {
                     vm.retroArchConfigParser.resolveSavePaths(
                         packageName = effectiveEmulatorDef.packageName,
-                        systemName = platform.slug,
+                        contentDirName = null,
                         coreName = selectedCore,
                         basePathOverride = userSaveConfig?.savePathPattern
                     ).firstOrNull()
@@ -525,28 +525,41 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             screenDimmerLevel = prefs.screenDimmerLevel
         ))
         vm.storageDelegate.checkAllFilesAccess()
-        val platformEmulatorInfoMap = platformConfigs.associate { config ->
-            val statePath = if (config.effectiveEmulatorIsRetroArch) {
-                config.effectiveEmulatorPackage?.let { pkg ->
+        val platformEmulatorInfoMap = mutableMapOf<Long, StorageSettingsDelegate.PlatformEmulatorInfo>()
+        for (config in platformConfigs) {
+            val emulatorId = config.effectiveEmulatorId
+            val userStateConfig = emulatorId?.let { vm.emulatorDelegate.getEmulatorSaveConfig(it) }
+            val isUserStatePathOverride = userStateConfig?.isUserStateOverride == true
+            val userStatePathPattern = userStateConfig?.statePathPattern
+
+            val statePath = when {
+                isUserStatePathOverride && userStatePathPattern != null -> userStatePathPattern
+                config.effectiveEmulatorIsRetroArch -> config.effectiveEmulatorPackage?.let { pkg ->
                     val raStateConfig = vm.retroArchConfigParser.parseStateConfig(pkg)
                     if (raStateConfig?.savestatesInContentDir == true) {
                         "(ROM directory)"
                     } else {
                         vm.retroArchConfigParser.resolveStatePaths(
                             packageName = pkg,
+                            contentDirName = null,
                             coreName = config.selectedCore
                         ).firstOrNull()
                     }
                 }
-            } else null
+                else -> null
+            }
 
-            config.platform.id to StorageSettingsDelegate.PlatformEmulatorInfo(
-                supportsStatePath = config.effectiveEmulatorIsRetroArch,
-                emulatorId = config.effectiveEmulatorId,
+            // State path support now tracks save path support -- any emulator that has
+            // a save-path concept also has a state-path concept in Argosy's path model.
+            val supportsStatePath = config.showSavePath
+
+            platformEmulatorInfoMap[config.platform.id] = StorageSettingsDelegate.PlatformEmulatorInfo(
+                supportsStatePath = supportsStatePath,
+                emulatorId = emulatorId,
                 effectiveSavePath = config.effectiveSavePath,
                 isUserSavePathOverride = config.isUserSavePathOverride,
                 effectiveStatePath = statePath,
-                isUserStatePathOverride = false
+                isUserStatePathOverride = isUserStatePathOverride
             )
         }
         vm.storageDelegate.setPendingEmulatorInfo(platformEmulatorInfoMap)

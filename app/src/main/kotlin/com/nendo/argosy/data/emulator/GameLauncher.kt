@@ -446,109 +446,134 @@ class GameLauncher @Inject constructor(
         val configType = emulator.launchConfig::class.simpleName
         Logger.debug(TAG, "buildIntent: emulator=${emulator.displayName}, config=$configType, rom=${romFile.name}, forResume=$forResume")
 
+        // Built-in libretro runs in-process and doesn't participate in the EffectiveLaunchCommand pipeline.
+        if (emulator.launchConfig is LaunchConfig.BuiltIn) {
+            return buildBuiltInIntent(romFile, game)
+        }
+
+        val command = buildEffectiveCommand(emulator, romFile, game, forResume) ?: return null
+
+        return when (command.launchMethod) {
+            LaunchMethod.INTENT -> command.toIntent(context).also { intent ->
+                Logger.debug(TAG, "Intent built: ${LogSanitizer.describeIntent(intent)}")
+            }
+            LaunchMethod.SHELL -> launchViaShell(command)
+        }
+    }
+
+    /**
+     * Transforms an [EmulatorDef.launchConfig] into a fully-resolved [EffectiveLaunchCommand]
+     * for the given game. Applies the legacy per-platform `useFileUri` override stored on
+     * [com.nendo.argosy.data.local.entity.EmulatorConfigEntity]. Future: will also apply
+     * user-set launch args overrides from `EmulatorLaunchArgsEntity` (Item B of the launch
+     * refactor plan) via a hook that currently returns null.
+     */
+    private suspend fun buildEffectiveCommand(
+        emulator: EmulatorDef,
+        romFile: File,
+        game: GameEntity,
+        forResume: Boolean
+    ): EffectiveLaunchCommand? {
         return when (val config = emulator.launchConfig) {
-            is LaunchConfig.FileUri -> buildFileUriIntent(emulator, romFile, forResume)
-            is LaunchConfig.FilePathExtra -> buildFilePathIntent(emulator, romFile, config, forResume)
-            is LaunchConfig.RetroArch -> buildRetroArchIntent(emulator, romFile, game, config, forResume)
+            is LaunchConfig.FileUri -> commandForFileUri(emulator, romFile, forResume)
+            is LaunchConfig.FilePathExtra -> commandForFilePathExtra(emulator, romFile, config, forResume)
             is LaunchConfig.Custom -> {
-                val emulatorConfig = emulatorConfigDao.getByGameId(game.id)
+                val platformConfig = emulatorConfigDao.getByGameId(game.id)
                     ?: emulatorConfigDao.getDefaultForPlatform(game.platformId)
-                val effectiveConfig = if (emulatorConfig?.useFileUri == true) {
-                    config.copy(useFileUri = true)
-                } else {
-                    config
-                }
-                buildCustomIntent(emulator, romFile, game.platformSlug, effectiveConfig, forResume)
+                val legacyUseFileUri = platformConfig?.useFileUri == true
+                val effectiveConfig = if (legacyUseFileUri) config.copy(useFileUri = true) else config
+                commandForCustom(emulator, romFile, game.platformSlug, effectiveConfig, forResume)
             }
-            is LaunchConfig.CustomScheme -> buildCustomSchemeIntent(emulator, romFile, config, forResume)
-            is LaunchConfig.Vita3K -> buildVita3KIntent(emulator, romFile, config, forResume)
-            is LaunchConfig.BuiltIn -> buildBuiltInIntent(romFile, game)
-            is LaunchConfig.ScummVM -> buildScummVMIntent(emulator, romFile, forResume)
-        }.also { intent ->
-            Logger.debug(TAG, "Intent built: ${LogSanitizer.describeIntent(intent)}")
+            is LaunchConfig.RetroArch -> commandForRetroArch(emulator, romFile, game, config)
+            is LaunchConfig.CustomScheme -> commandForCustomScheme(emulator, romFile, config, forResume)
+            is LaunchConfig.Vita3K -> commandForVita3K(emulator, romFile, config)
+            is LaunchConfig.ScummVM -> commandForScummVM(emulator, romFile, forResume)
+            is LaunchConfig.BuiltIn -> null // handled in buildIntent directly
         }
     }
 
-    private fun buildFileUriIntent(emulator: EmulatorDef, romFile: File, forResume: Boolean): Intent {
+    // --- Per-variant command builders ---
+
+    private fun commandForFileUri(emulator: EmulatorDef, romFile: File, forResume: Boolean): EffectiveLaunchCommand {
         val uri = getFileUri(romFile)
-
-        try {
-            context.grantUriPermission(emulator.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (e: Exception) {
-            Logger.warn(TAG, "Failed to grant URI permission to ${emulator.packageName}", e)
-        }
-
-        return Intent(emulator.launchAction).apply {
-            setDataAndType(uri, getMimeType(romFile))
-            setPackage(emulator.packageName)
-            addCategory(Intent.CATEGORY_DEFAULT)
-            clipData = ClipData.newRawUri(null, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            if (forResume) {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        return EffectiveLaunchCommand(
+            action = emulator.launchAction,
+            packageName = emulator.packageName,
+            activityClass = null,
+            dataUri = uri,
+            mimeType = getMimeType(romFile),
+            intentFlags = if (forResume) {
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            }
-        }
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            },
+            grantReadUriTo = listOf(uri),
+            clipDataUri = uri
+        )
     }
 
-    private fun buildFilePathIntent(
+    private fun commandForFilePathExtra(
         emulator: EmulatorDef,
         romFile: File,
         config: LaunchConfig.FilePathExtra,
         forResume: Boolean
-    ): Intent {
-        return Intent(emulator.launchAction).apply {
-            setPackage(emulator.packageName)
-            config.extraKeys.forEach { key ->
-                putExtra(key, romFile.absolutePath)
-            }
-            if (forResume) {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    ): EffectiveLaunchCommand {
+        return EffectiveLaunchCommand(
+            action = emulator.launchAction,
+            packageName = emulator.packageName,
+            activityClass = null,
+            categories = emptyList(), // legacy buildFilePathIntent did not add CATEGORY_DEFAULT
+            extras = config.extraKeys.map { key ->
+                ResolvedExtra.StringExtra(key, romFile.absolutePath)
+            },
+            intentFlags = if (forResume) {
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
-        }
+        )
     }
 
-    private suspend fun buildRetroArchIntent(
+    private suspend fun commandForRetroArch(
         emulator: EmulatorDef,
         romFile: File,
         game: GameEntity,
-        config: LaunchConfig.RetroArch,
-        forResume: Boolean
-    ): Intent? {
+        config: LaunchConfig.RetroArch
+    ): EffectiveLaunchCommand? {
         val retroArchPackage = emulator.packageName
         val dataDir = "/data/data/$retroArchPackage"
         val externalDir = "/storage/emulated/0/Android/data/$retroArchPackage/files"
         val configPath = "$externalDir/retroarch.cfg"
 
-        Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}, forResume=$forResume")
+        Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}")
 
-        val coreName = resolveCoreName(game)
-        if (coreName == null) {
+        val coreName = resolveCoreName(game) ?: run {
             Logger.error(TAG, "No compatible core found for platform: ${game.platformSlug}")
             return null
         }
 
-        // NOTE: We send just the core filename and let RetroArch resolve the path internally.
-        // This avoids Android 16 security restrictions on referencing paths in other apps' data dirs.
-        // If this breaks on some RetroArch versions, we may need to revert to Argosy-managed cores
-        // using LibretroCoreManager and passing paths within our own app directory.
+        // Just the core filename -- RetroArch resolves the path internally. Avoids Android 16
+        // restrictions on referencing paths in other apps' data dirs.
         val coreFileName = "${coreName}_libretro_android.so"
         Logger.debug(TAG, "RetroArch core: $coreFileName for platform: ${game.platformSlug}")
 
-        return Intent(emulator.launchAction).apply {
-            component = ComponentName(retroArchPackage, config.activityClass)
-            putExtra("ROM", romFile.absolutePath)
-            putExtra("LIBRETRO", coreFileName)
-            putExtra("CONFIGFILE", configPath)
-            putExtra("IME", "com.android.inputmethod.latin/.LatinIME")
-            putExtra("DATADIR", dataDir)
-            putExtra("SDCARD", "/storage/emulated/0")
-            putExtra("EXTERNAL", externalDir)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        }
+        return EffectiveLaunchCommand(
+            action = emulator.launchAction,
+            packageName = retroArchPackage,
+            activityClass = config.activityClass,
+            categories = emptyList(), // legacy buildRetroArchIntent did not add CATEGORY_DEFAULT
+            extras = listOf(
+                ResolvedExtra.StringExtra("ROM", romFile.absolutePath),
+                ResolvedExtra.StringExtra("LIBRETRO", coreFileName),
+                ResolvedExtra.StringExtra("CONFIGFILE", configPath),
+                ResolvedExtra.StringExtra("IME", "com.android.inputmethod.latin/.LatinIME"),
+                ResolvedExtra.StringExtra("DATADIR", dataDir),
+                ResolvedExtra.StringExtra("SDCARD", "/storage/emulated/0"),
+                ResolvedExtra.StringExtra("EXTERNAL", externalDir)
+            ),
+            // RetroArch handles fresh-vs-resume internally, so we always launch with SINGLE_TOP.
+            intentFlags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        )
     }
 
     suspend fun forceStopEmulator(packageName: String) {
@@ -600,216 +625,227 @@ class GameLauncher @Inject constructor(
         return coreName
     }
 
-    private fun buildCustomIntent(
+    private fun commandForCustom(
         emulator: EmulatorDef,
         romFile: File,
         platformSlug: String,
         config: LaunchConfig.Custom,
         forResume: Boolean
-    ): Intent? {
+    ): EffectiveLaunchCommand? {
+        // Legacy shell-launch modes. In the old model these short-circuited via launchViaShell with
+        // either absolute path or content URI in the -d slot and no extras. Preserved bit-for-bit.
         if (config.useFileUri && emulator.launchAction == Intent.ACTION_VIEW) {
-            return launchViaShell(emulator, romFile, config, useContentUri = false)
+            // -d <absolute-path-as-bare-URI>, no extras, no grant.
+            return EffectiveLaunchCommand(
+                action = emulator.launchAction,
+                packageName = emulator.packageName,
+                activityClass = config.activityClass,
+                categories = emptyList(),
+                dataUri = Uri.parse(romFile.absolutePath),
+                intentFlags = Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_NO_HISTORY,
+                launchMethod = LaunchMethod.SHELL
+            )
         }
-
         if (config.useShellLaunch && emulator.launchAction == Intent.ACTION_VIEW) {
-            return launchViaShell(emulator, romFile, config, useContentUri = true)
-        }
-
-        val needsUriPermission = emulator.launchAction == Intent.ACTION_VIEW ||
-            config.intentExtras.values.any { it is ExtraValue.FileUri || it is ExtraValue.DocumentUri }
-
-        if (needsUriPermission) {
             val uri = getFileUri(romFile)
-            try {
-                context.grantUriPermission(emulator.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            } catch (e: Exception) {
-                Logger.warn(TAG, "Failed to grant URI permission to ${emulator.packageName}", e)
-            }
-            // For emulators expecting a DocumentsContract content URI (e.g. NetherSX2's bootPath),
-            // also grant on the document URI so the receiver can resolve it without holding a
-            // persistent SAF tree grant itself.
-            val hasDocumentUriExtra = config.intentExtras.values.any { it is ExtraValue.DocumentUri }
-            if (hasDocumentUriExtra) {
-                getDocumentUri(romFile)?.let { docUri ->
-                    try {
-                        context.grantUriPermission(emulator.packageName, docUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    } catch (e: Exception) {
-                        Logger.warn(TAG, "Failed to grant document URI permission to ${emulator.packageName}", e)
+            return EffectiveLaunchCommand(
+                action = emulator.launchAction,
+                packageName = emulator.packageName,
+                activityClass = config.activityClass,
+                categories = emptyList(),
+                dataUri = uri,
+                intentFlags = Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_NO_HISTORY,
+                grantReadUriTo = listOf(uri),
+                launchMethod = LaunchMethod.SHELL
+            )
+        }
+
+        // ACTION_VIEW Custom: data URI + MIME type, extras are dropped (matches legacy behavior).
+        if (emulator.launchAction == Intent.ACTION_VIEW) {
+            val uri = getFileUri(romFile)
+            val mimeType = config.mimeTypeOverride ?: getMimeType(romFile)
+            return EffectiveLaunchCommand(
+                action = emulator.launchAction,
+                packageName = emulator.packageName,
+                activityClass = config.activityClass,
+                dataUri = uri,
+                mimeType = mimeType,
+                intentFlags = if (forResume) {
+                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                } else {
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                        Intent.FLAG_ACTIVITY_NO_HISTORY
+                },
+                grantReadUriTo = listOf(uri),
+                clipDataUri = uri
+            )
+        }
+
+        // ACTION_MAIN Custom: extras from intentExtras map + optional useAbsolutePath shotgun.
+        val resolvedExtras = mutableListOf<ResolvedExtra>()
+        var documentUri: Uri? = null
+        var fileUri: Uri? = null
+
+        if (config.useAbsolutePath) {
+            resolvedExtras += ResolvedExtra.StringExtra("path", romFile.absolutePath)
+            resolvedExtras += ResolvedExtra.StringExtra("file", romFile.absolutePath)
+            resolvedExtras += ResolvedExtra.StringExtra("filePath", romFile.absolutePath)
+        }
+
+        config.intentExtras.forEach { (key, extraValue) ->
+            when (extraValue) {
+                is ExtraValue.FilePath -> resolvedExtras += ResolvedExtra.StringExtra(key, romFile.absolutePath)
+                is ExtraValue.DocumentUri -> {
+                    val docUri = getDocumentUri(romFile)
+                    if (docUri == null) {
+                        Logger.error(TAG, "Cannot build document URI for ${romFile.absolutePath} -- game cannot be launched")
+                        return null
                     }
+                    documentUri = docUri
+                    resolvedExtras += ResolvedExtra.UriExtra(key, docUri)
                 }
+                is ExtraValue.FileUri -> {
+                    val uri = getFileUri(romFile)
+                    fileUri = uri
+                    resolvedExtras += ResolvedExtra.UriExtra(key, uri)
+                }
+                is ExtraValue.Platform -> resolvedExtras += ResolvedExtra.StringExtra(key, platformSlug)
+                is ExtraValue.Literal -> resolvedExtras += ResolvedExtra.StringExtra(key, extraValue.value)
+                is ExtraValue.BooleanLiteral -> resolvedExtras += ResolvedExtra.BoolExtra(key, extraValue.value)
             }
         }
 
-        return Intent(emulator.launchAction).apply {
-            if (config.activityClass != null) {
-                component = ComponentName(emulator.packageName, config.activityClass)
+        // URI permission: grant on the FileProvider URI (always for MAIN+URI variants) and also on
+        // the document URI when present. ClipData carries the document URI if set, else the
+        // FileProvider URI, so the delegated grant lands on the one the receiver reads.
+        val hasUriExtra = fileUri != null || documentUri != null
+        val grantUris = mutableListOf<Uri>()
+        var clipDataUri: Uri? = null
+        if (hasUriExtra) {
+            val providerUri = fileUri ?: getFileUri(romFile)
+            grantUris += providerUri
+            if (documentUri != null) {
+                grantUris += documentUri!!
+            }
+            clipDataUri = documentUri ?: providerUri
+        }
+
+        return EffectiveLaunchCommand(
+            action = emulator.launchAction,
+            packageName = emulator.packageName,
+            activityClass = config.activityClass,
+            extras = resolvedExtras,
+            intentFlags = if (forResume) {
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                setPackage(emulator.packageName)
-            }
-
-            addCategory(Intent.CATEGORY_DEFAULT)
-
-            if (emulator.launchAction == Intent.ACTION_VIEW) {
-                val uri = getFileUri(romFile)
-                val mimeType = config.mimeTypeOverride ?: getMimeType(romFile)
-                setDataAndType(uri, mimeType)
-                clipData = ClipData.newRawUri(null, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            if (config.useAbsolutePath) {
-                putExtra("path", romFile.absolutePath)
-                putExtra("file", romFile.absolutePath)
-                putExtra("filePath", romFile.absolutePath)
-            }
-
-            var hasFileUri = false
-            var documentUriForClip: Uri? = null
-            val shouldSkipExtras = emulator.launchAction == Intent.ACTION_VIEW
-            if (!shouldSkipExtras) {
-                config.intentExtras.forEach { (key, extraValue) ->
-                    @Suppress("UNUSED_VARIABLE")
-                    val handled: Unit = when (extraValue) {
-                        is ExtraValue.FilePath -> putExtra(key, romFile.absolutePath)
-                        is ExtraValue.DocumentUri -> {
-                            val docUri = getDocumentUri(romFile)
-                            if (docUri == null) {
-                                Logger.error(TAG, "Cannot build document URI for ${romFile.absolutePath} — game cannot be launched")
-                                return null
-                            }
-                            documentUriForClip = docUri
-                            putExtra(key, docUri.toString())
-                        }
-                        is ExtraValue.FileUri -> {
-                            hasFileUri = true
-                            putExtra(key, getFileUri(romFile).toString())
-                        }
-                        is ExtraValue.Platform -> putExtra(key, platformSlug)
-                        is ExtraValue.Literal -> putExtra(key, extraValue.value)
-                        is ExtraValue.BooleanLiteral -> putExtra(key, extraValue.value)
-                    }.let { Unit }
-                }
-            }
-
-            if (hasFileUri || needsUriPermission) {
-                // Attach the document URI to clipData when present so FLAG_GRANT_READ_URI_PERMISSION
-                // actually delegates access to the receiver for that specific URI. Fall back to the
-                // FileProvider URI otherwise.
-                val clipUri = documentUriForClip ?: getFileUri(romFile)
-                clipData = ClipData.newRawUri(null, clipUri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            if (forResume) {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            } else {
-                addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TASK or
                     Intent.FLAG_ACTIVITY_NO_HISTORY
-                )
-            }
-        }
+            },
+            grantReadUriTo = grantUris,
+            clipDataUri = clipDataUri
+        )
     }
 
-
-    private fun launchViaShell(
-        emulator: EmulatorDef,
-        romFile: File,
-        config: LaunchConfig.Custom,
-        useContentUri: Boolean
-    ): Intent {
-        val component = if (config.activityClass != null) {
-            "${emulator.packageName}/${config.activityClass}"
-        } else {
-            emulator.packageName
-        }
-
-        val data = if (useContentUri) {
-            val uri = getFileUri(romFile)
+    /**
+     * Executes an [EffectiveLaunchCommand] via `am start` and returns a sentinel Intent that
+     * [LaunchScreen] recognizes via [EXTRA_ALREADY_LAUNCHED] to skip the redundant `startActivity`.
+     * URI pre-grants are issued before exec since `am start --grant-read-uri-permission` only sets
+     * the intent flag -- it does not establish the grant.
+     */
+    private fun launchViaShell(command: EffectiveLaunchCommand): Intent {
+        command.grantReadUriTo.forEach { uri ->
             try {
-                context.grantUriPermission(emulator.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                context.grantUriPermission(command.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             } catch (e: Exception) {
-                Logger.warn(TAG, "Failed to grant URI permission to ${emulator.packageName}", e)
+                Logger.warn(TAG, "Failed to grant URI permission to ${command.packageName} for $uri", e)
             }
-            uri.toString()
-        } else {
-            romFile.absolutePath
         }
 
-        val command = arrayOf(
-            "am", "start",
-            "-n", component,
-            "-a", emulator.launchAction,
-            "-d", data,
-            "--activity-clear-task",
-            "--activity-clear-top",
-            "--activity-no-history"
-        )
+        val argv = command.toShellArgv()
+        val sanitizedArgs = argv.joinToString(" ") { arg ->
+            if (arg.startsWith("/storage") || arg.startsWith("content:")) LogSanitizer.sanitizePath(arg) else arg
+        }
+        Logger.debug(TAG, "Shell launch: $sanitizedArgs")
 
-        Logger.debug(TAG, "Shell launch: am start -n $component -a ${emulator.launchAction} -d ${LogSanitizer.sanitizePath(data)}")
-        Runtime.getRuntime().exec(command)
+        try {
+            val process = Runtime.getRuntime().exec(argv)
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                val stderr = process.errorStream.bufferedReader().use { it.readText() }.trim()
+                Logger.warn(TAG, "am start exited with code=$exitCode stderr=$stderr")
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "Failed to exec am start for ${command.packageName}", e)
+        }
 
         return Intent(Intent.ACTION_VIEW).apply {
             this.component = ComponentName(
-                emulator.packageName,
-                config.activityClass ?: emulator.packageName
+                command.packageName,
+                command.activityClass ?: command.packageName
             )
             putExtra(EXTRA_ALREADY_LAUNCHED, true)
         }
     }
 
-    private fun buildCustomSchemeIntent(
+    private fun commandForCustomScheme(
         emulator: EmulatorDef,
         romFile: File,
         config: LaunchConfig.CustomScheme,
         forResume: Boolean
-    ): Intent {
+    ): EffectiveLaunchCommand {
         val uri = Uri.Builder()
             .scheme(config.scheme)
             .authority(config.authority)
             .path(config.pathPrefix + romFile.absolutePath)
             .build()
 
-        return Intent(emulator.launchAction).apply {
-            data = uri
-            setPackage(emulator.packageName)
-            if (forResume) {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        return EffectiveLaunchCommand(
+            action = emulator.launchAction,
+            packageName = emulator.packageName,
+            activityClass = null, // legacy used setPackage
+            categories = emptyList(),
+            dataUri = uri,
+            intentFlags = if (forResume) {
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TASK or
                     Intent.FLAG_ACTIVITY_NO_HISTORY
-                )
             }
-        }
+        )
     }
 
-    private suspend fun buildVita3KIntent(
+    private fun commandForVita3K(
         emulator: EmulatorDef,
         romFile: File,
-        config: LaunchConfig.Vita3K,
-        @Suppress("UNUSED_PARAMETER") forResume: Boolean
-    ): Intent {
+        config: LaunchConfig.Vita3K
+    ): EffectiveLaunchCommand {
         val titleId = extractVitaTitleId(romFile)
+        val extras = if (titleId != null) {
+            Logger.debug(TAG, "Vita3K: titleId=$titleId from ${romFile.name}")
+            listOf(ResolvedExtra.StringArrayExtra("AppStartParameters", arrayOf("-r", titleId)))
+        } else {
+            Logger.debug(TAG, "Vita3K: no titleId in ${romFile.name}, opening emulator only")
+            emptyList()
+        }
 
-        return Intent(emulator.launchAction).apply {
-            component = ComponentName(emulator.packageName, config.activityClass)
-
-            if (titleId != null) {
-                Logger.debug(TAG, "Vita3K: titleId=$titleId from ${romFile.name}")
-                putExtra("AppStartParameters", arrayOf("-r", titleId))
-            } else {
-                Logger.debug(TAG, "Vita3K: no titleId in ${romFile.name}, opening emulator only")
-            }
-
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
+        return EffectiveLaunchCommand(
+            action = emulator.launchAction,
+            packageName = emulator.packageName,
+            activityClass = config.activityClass,
+            categories = emptyList(),
+            extras = extras,
+            // Vita3K ignores forResume (no resume semantics today).
+            intentFlags = Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TASK or
                 Intent.FLAG_ACTIVITY_NO_HISTORY
-            )
-        }
+        )
     }
 
     private fun extractVitaTitleId(romFile: File): String? {
@@ -844,7 +880,7 @@ class GameLauncher @Inject constructor(
         }
     }
 
-    private fun buildScummVMIntent(emulator: EmulatorDef, romFile: File, forResume: Boolean): Intent? {
+    private fun commandForScummVM(emulator: EmulatorDef, romFile: File, forResume: Boolean): EffectiveLaunchCommand? {
         val gameId = findScummVMGameId(romFile)
         if (gameId == null) {
             Logger.error(TAG, "[ScummVM] No .scummvm file found for: ${romFile.name}")
@@ -853,20 +889,18 @@ class GameLauncher @Inject constructor(
 
         Logger.debug(TAG, "[ScummVM] Found game ID: $gameId")
 
-        return Intent(Intent.ACTION_MAIN).apply {
-            component = ComponentName(
-                emulator.packageName,
-                "org.scummvm.scummvm.SplashActivity"
-            )
-            addCategory(Intent.CATEGORY_LAUNCHER)
-            data = Uri.fromParts("scummvm", gameId, null)
-
-            if (forResume) {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        return EffectiveLaunchCommand(
+            action = Intent.ACTION_MAIN,
+            packageName = emulator.packageName,
+            activityClass = "org.scummvm.scummvm.SplashActivity",
+            categories = listOf(Intent.CATEGORY_LAUNCHER),
+            dataUri = Uri.fromParts("scummvm", gameId, null),
+            intentFlags = if (forResume) {
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
-        }
+        )
     }
 
     private fun findScummVMGameId(romFile: File): String? {

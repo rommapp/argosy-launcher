@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,6 +61,7 @@ internal sealed class PlatformDetailItem(
     data object Extension : PlatformDetailItem("extension", "emulator", { it.showExtension })
     data object DisplayTarget : PlatformDetailItem("display_target", "emulator", { it.showDisplayTarget })
     data object LegacyMode : PlatformDetailItem("legacy_mode", "emulator", { it.showLegacyMode })
+    data object LaunchArgs : PlatformDetailItem("launch_args", "emulator", { !it.isBuiltin })
     data object BuiltinVideo : PlatformDetailItem("builtin_video", "emulator", { it.isBuiltin })
     data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin })
     data object BuiltinCoreOptions : PlatformDetailItem("builtin_core_options", "emulator", { it.isBuiltin })
@@ -82,7 +84,7 @@ internal sealed class PlatformDetailItem(
     companion object {
         val ALL: List<PlatformDetailItem> = listOf(
             Header("header_emulator", "emulator", "Emulator"),
-            Emulator, Core, Extension, DisplayTarget, LegacyMode, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
+            Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
             Header("header_platform", "platform", "Platform"),
             InfoItem("info_platform_stats", "platform"),
             ScanFiles,
@@ -197,7 +199,7 @@ fun PlatformDetailSection(
         uiState.focusedIndex == layout.focusIndexOf(item, visibility)
 
     val modalBlur by animateDpAsState(
-        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null || emulators.showLaunchArgsModal) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "platformDetailBlur"
     )
@@ -258,6 +260,13 @@ fun PlatformDetailSection(
                     isEnabled = config.useFileUri,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.toggleLegacyMode(config) }
+                )
+                PlatformDetailItem.LaunchArgs -> NavigationPreference(
+                    icon = Icons.Default.Settings,
+                    title = "Launch Args",
+                    subtitle = "Customize how Argosy launches this emulator",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.openLaunchArgsModal(config.platform.id) }
                 )
                 PlatformDetailItem.BuiltinVideo -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
@@ -503,6 +512,17 @@ fun PlatformDetailSection(
                 onVariantTap = { index -> viewModel.moveUpdateModalFocus(index - emulators.updateModalFocusIndex) },
                 onConfirmVariant = { viewModel.selectUpdateModalVariant() },
                 onDismiss = { viewModel.dismissUpdateModal() }
+            )
+        }
+
+        if (emulators.showLaunchArgsModal && emulators.launchArgsModalState != null) {
+            com.nendo.argosy.ui.screens.settings.components.LaunchArgsModal(
+                state = emulators.launchArgsModalState,
+                onCycleMethod = { viewModel.cycleLaunchArgsMethod() },
+                onCycleRomPathFormat = { viewModel.cycleLaunchArgsRomPathFormat() },
+                onToggleFlag = { bit -> viewModel.toggleLaunchArgsFlag(bit) },
+                onCycleMimeType = { viewModel.cycleLaunchArgsMimeType() },
+                onDismiss = { viewModel.closeLaunchArgsModal() }
             )
         }
     }

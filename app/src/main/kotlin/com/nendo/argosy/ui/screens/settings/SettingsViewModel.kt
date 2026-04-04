@@ -71,6 +71,7 @@ class SettingsViewModel @Inject constructor(
     internal val hapticManager: HapticFeedbackManager,
     internal val platformRepository: PlatformRepository,
     internal val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
+    internal val emulatorLaunchArgsDao: com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao,
     internal val emulatorConfigDao: EmulatorConfigDao,
     internal val emulatorDetector: EmulatorDetector,
     internal val romMRepository: RomMRepository,
@@ -358,6 +359,17 @@ class SettingsViewModel @Inject constructor(
     fun resetPlatformBuiltinSavePath(platformId: Long) = routeResetPlatformBuiltinSavePath(this, platformId)
     fun setPlatformBuiltinStatePath(platformId: Long, path: String) = routeSetPlatformBuiltinStatePath(this, platformId, path)
     fun resetPlatformBuiltinStatePath(platformId: Long) = routeResetPlatformBuiltinStatePath(this, platformId)
+
+    // --- Launch Args modal ---
+    fun openLaunchArgsModal(platformId: Long) = routeOpenLaunchArgsModal(this, platformId)
+    fun closeLaunchArgsModal() = routeCloseLaunchArgsModal(this)
+    fun moveLaunchArgsFocus(delta: Int) = routeMoveLaunchArgsFocus(this, delta)
+    fun cycleLaunchArgsMethod() = routeCycleLaunchArgsMethod(this)
+    fun cycleLaunchArgsRomPathFormat() = routeCycleLaunchArgsRomPathFormat(this)
+    fun toggleLaunchArgsFlag(flagBit: Int) = routeToggleLaunchArgsFlag(this, flagBit)
+    fun cycleLaunchArgsMimeType() = routeCycleLaunchArgsMimeType(this)
+    fun resetLaunchArgsFocused() = routeResetLaunchArgsFocused(this)
+    fun resetAllLaunchArgs() = routeResetAllLaunchArgs(this)
     fun setBuiltinRumbleEnabled(enabled: Boolean) = routeSetBuiltinRumbleEnabled(this, enabled)
     fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = routeSetBuiltinLimitHotkeysToPlayer1(this, enabled)
     fun setBuiltinAnalogAsDpad(enabled: Boolean) = routeSetBuiltinAnalogAsDpad(this, enabled)

@@ -152,7 +152,8 @@ object DatabaseModule {
                 ALauncherDatabase.MIGRATION_94_95,
                 ALauncherDatabase.MIGRATION_95_96,
                 ALauncherDatabase.MIGRATION_96_97,
-                ALauncherDatabase.MIGRATION_97_98
+                ALauncherDatabase.MIGRATION_97_98,
+                ALauncherDatabase.MIGRATION_98_99
             )
             .enableMultiInstanceInvalidation()
             .build()
@@ -186,6 +187,10 @@ object DatabaseModule {
     @Provides
     fun provideEmulatorSaveConfigDao(database: ALauncherDatabase): EmulatorSaveConfigDao =
         database.emulatorSaveConfigDao()
+
+    @Provides
+    fun provideEmulatorLaunchArgsDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao =
+        database.emulatorLaunchArgsDao()
 
     @Provides
     fun provideAchievementDao(database: ALauncherDatabase): AchievementDao =

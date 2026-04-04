@@ -278,7 +278,9 @@ data class EmulatorState(
     val variantPickerInfo: VariantPickerInfo? = null,
     val variantPickerFocusIndex: Int = 0,
     val updateModal: EmulatorUpdateModal? = null,
-    val updateModalFocusIndex: Int = 0
+    val updateModalFocusIndex: Int = 0,
+    val showLaunchArgsModal: Boolean = false,
+    val launchArgsModalState: LaunchArgsModalState? = null
 ) {
     val assignedUpdatesAvailable: Int
         get() = platforms.count { config ->
@@ -290,6 +292,32 @@ data class EmulatorUpdateModal(
     val emulatorId: String,
     val emulatorName: String,
     val state: UpdateModalState = UpdateModalState.Fetching
+)
+
+/**
+ * State for the Launch Args modal (per-platform, per-emulator launch intent customization).
+ * Null fields on [override] mean "use the emulator's default for this field"; non-null means
+ * "user has overridden this field".
+ *
+ * [defaultLaunchMethod], [defaultFlagsMask], [defaultMimeType], [defaultRomPathFormat] capture
+ * what the base [EmulatorDef.launchConfig] produces, so the modal can render subtitles like
+ * "Default: Intent" or "Default: 0x10208000" without recomputing them per frame.
+ */
+data class LaunchArgsModalState(
+    val platformId: Long,
+    val platformName: String,
+    val emulatorId: String,
+    val emulatorName: String,
+    val focusIndex: Int = 0,
+    val override: com.nendo.argosy.data.local.entity.EmulatorLaunchArgsEntity? = null,
+    val defaultLaunchMethod: String = "INTENT",   // LaunchMethod name
+    val defaultRomPathFormat: String = "AUTO",    // RomPathFormat name
+    val defaultFlagsMask: Int = 0,                // Intent flags bitmask
+    val defaultMimeType: String? = null,
+    /** Whether the emulator's config supports a user-tunable ROM path format (non-opaque sources). */
+    val supportsRomPathFormat: Boolean = true,
+    /** Whether the emulator's config emits a data URI (MIME type is only meaningful then). */
+    val supportsMimeType: Boolean = true
 )
 
 sealed class UpdateModalState {

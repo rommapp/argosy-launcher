@@ -21,6 +21,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         ) return null
 
         interceptGpuDriverPrompt(state, method)?.let { return it }
+        interceptLaunchArgsModal(state, method)?.let { return it }
         interceptSavePathModal(state, method)?.let { return it }
         interceptPlatformSettingsModal(state, method)?.let { return it }
         interceptSoundPicker(state, method)?.let { return it }
@@ -52,6 +53,31 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
                 InputResult.HANDLED
             } else InputResult.HANDLED
             InputMethod.BACK -> if (!isInstalling) { viewModel.dismissGpuDriverPrompt(); InputResult.HANDLED } else InputResult.HANDLED
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptLaunchArgsModal(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (!state.emulators.showLaunchArgsModal) return null
+        val modal = state.emulators.launchArgsModalState ?: return null
+        val rows = launchArgsModalRows(modal)
+        val focusedRow = rows.getOrNull(modal.focusIndex)
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveLaunchArgsFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveLaunchArgsFocus(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> {
+                when (focusedRow) {
+                    is LaunchArgsRow.LaunchMethod -> viewModel.cycleLaunchArgsMethod()
+                    is LaunchArgsRow.RomPathFormat -> viewModel.cycleLaunchArgsRomPathFormat()
+                    is LaunchArgsRow.Flag -> viewModel.toggleLaunchArgsFlag(focusedRow.bit)
+                    is LaunchArgsRow.MimeType -> viewModel.cycleLaunchArgsMimeType()
+                    null -> {}
+                }
+                InputResult.HANDLED
+            }
+            InputMethod.SECONDARY_ACTION -> { viewModel.resetLaunchArgsFocused(); InputResult.HANDLED }
+            InputMethod.CONTEXT_MENU -> { viewModel.resetAllLaunchArgs(); InputResult.HANDLED }
+            InputMethod.BACK -> { viewModel.closeLaunchArgsModal(); InputResult.HANDLED }
             else -> InputResult.HANDLED
         }
     }

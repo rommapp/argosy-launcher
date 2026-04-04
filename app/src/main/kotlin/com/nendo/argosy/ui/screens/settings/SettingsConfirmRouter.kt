@@ -758,6 +758,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.Extension -> vm.cycleExtensionForPlatform(config, 1)
         PlatformDetailItem.DisplayTarget -> vm.cycleDisplayTarget(config, 1)
         PlatformDetailItem.LegacyMode -> vm.toggleLegacyMode(config)
+        PlatformDetailItem.LaunchArgs -> vm.openLaunchArgsModal(config.platform.id)
         PlatformDetailItem.BuiltinVideo -> vm.navigateToBuiltinVideoForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinControls -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinCoreOptions -> vm.navigateToCoreOptionsForPlatform()

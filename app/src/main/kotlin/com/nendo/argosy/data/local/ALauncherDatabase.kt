@@ -17,6 +17,7 @@ import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.HotkeyDao
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorUpdateDao
 import com.nendo.argosy.data.local.dao.FirmwareDao
@@ -52,6 +53,7 @@ import com.nendo.argosy.data.local.entity.CoreVersionEntity
 import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
+import com.nendo.argosy.data.local.entity.EmulatorLaunchArgsEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.FirmwareEntity
@@ -111,9 +113,10 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         SteamDownloadQueueEntity::class,
         CachedLicenseEntity::class,
         SteamCompletedFileEntity::class,
-        SteamCompletedDepotEntity::class
+        SteamCompletedDepotEntity::class,
+        EmulatorLaunchArgsEntity::class
     ],
-    version = 98,
+    version = 99,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -126,6 +129,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun saveSyncDao(): SaveSyncDao
     abstract fun pendingSyncQueueDao(): PendingSyncQueueDao
     abstract fun emulatorSaveConfigDao(): EmulatorSaveConfigDao
+    abstract fun emulatorLaunchArgsDao(): EmulatorLaunchArgsDao
     abstract fun achievementDao(): AchievementDao
     abstract fun saveCacheDao(): SaveCacheDao
     abstract fun stateCacheDao(): StateCacheDao
@@ -1467,6 +1471,24 @@ abstract class ALauncherDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE emulator_save_config ADD COLUMN isUserStateOverride INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN savePath TEXT")
                 db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN statePath TEXT")
+            }
+        }
+
+        val MIGRATION_98_99 = object : Migration(98, 99) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS emulator_launch_args (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        platformId INTEGER NOT NULL,
+                        emulatorId TEXT NOT NULL,
+                        launchMethod TEXT,
+                        romPathFormat TEXT,
+                        intentFlagsMask INTEGER,
+                        mimeType TEXT,
+                        FOREIGN KEY(platformId) REFERENCES platforms(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_emulator_launch_args_platformId_emulatorId ON emulator_launch_args(platformId, emulatorId)")
             }
         }
 

@@ -22,6 +22,8 @@ import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.screens.settings.EmulatorDownloadState
 import com.nendo.argosy.ui.screens.settings.EmulatorUpdateModal
+import com.nendo.argosy.ui.screens.settings.LaunchArgsModalState
+import com.nendo.argosy.ui.screens.settings.launchArgsModalRows
 import com.nendo.argosy.ui.screens.settings.UpdateModalState
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
 import com.nendo.argosy.ui.screens.settings.EmulatorSavePathInfo
@@ -412,6 +414,45 @@ class EmulatorSettingsDelegate @Inject constructor(
             val maxIndex = 0 // Only Save Path is focusable; State Path disabled until save states supported
             val newIndex = (state.savePathModalFocusIndex + delta).coerceIn(0, maxIndex)
             state.copy(savePathModalFocusIndex = newIndex)
+        }
+    }
+
+    // --- Launch Args modal ---
+
+    fun showLaunchArgsModal(state: LaunchArgsModalState) {
+        _state.update {
+            it.copy(
+                showLaunchArgsModal = true,
+                launchArgsModalState = state
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissLaunchArgsModal() {
+        _state.update {
+            it.copy(
+                showLaunchArgsModal = false,
+                launchArgsModalState = null
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveLaunchArgsFocus(delta: Int) {
+        _state.update { state ->
+            val modal = state.launchArgsModalState ?: return@update state
+            val rowCount = launchArgsModalRows(modal).size
+            if (rowCount == 0) return@update state
+            val newIndex = (modal.focusIndex + delta).coerceIn(0, rowCount - 1)
+            state.copy(launchArgsModalState = modal.copy(focusIndex = newIndex))
+        }
+    }
+
+    fun updateLaunchArgsOverride(override: com.nendo.argosy.data.local.entity.EmulatorLaunchArgsEntity?) {
+        _state.update { state ->
+            val modal = state.launchArgsModalState ?: return@update state
+            state.copy(launchArgsModalState = modal.copy(override = override))
         }
     }
 

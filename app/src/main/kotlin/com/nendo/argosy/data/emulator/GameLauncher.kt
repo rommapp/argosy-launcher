@@ -616,7 +616,7 @@ class GameLauncher @Inject constructor(
         }
 
         val needsUriPermission = emulator.launchAction == Intent.ACTION_VIEW ||
-            config.intentExtras.values.any { it is ExtraValue.FileUri }
+            config.intentExtras.values.any { it is ExtraValue.FileUri || it is ExtraValue.DocumentUri }
 
         if (needsUriPermission) {
             val uri = getFileUri(romFile)
@@ -624,6 +624,19 @@ class GameLauncher @Inject constructor(
                 context.grantUriPermission(emulator.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             } catch (e: Exception) {
                 Logger.warn(TAG, "Failed to grant URI permission to ${emulator.packageName}", e)
+            }
+            // For emulators expecting a DocumentsContract content URI (e.g. NetherSX2's bootPath),
+            // also grant on the document URI so the receiver can resolve it without holding a
+            // persistent SAF tree grant itself.
+            val hasDocumentUriExtra = config.intentExtras.values.any { it is ExtraValue.DocumentUri }
+            if (hasDocumentUriExtra) {
+                getDocumentUri(romFile)?.let { docUri ->
+                    try {
+                        context.grantUriPermission(emulator.packageName, docUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    } catch (e: Exception) {
+                        Logger.warn(TAG, "Failed to grant document URI permission to ${emulator.packageName}", e)
+                    }
+                }
             }
         }
 
@@ -651,6 +664,7 @@ class GameLauncher @Inject constructor(
             }
 
             var hasFileUri = false
+            var documentUriForClip: Uri? = null
             val shouldSkipExtras = emulator.launchAction == Intent.ACTION_VIEW
             if (!shouldSkipExtras) {
                 config.intentExtras.forEach { (key, extraValue) ->
@@ -663,6 +677,7 @@ class GameLauncher @Inject constructor(
                                 Logger.error(TAG, "Cannot build document URI for ${romFile.absolutePath} — game cannot be launched")
                                 return null
                             }
+                            documentUriForClip = docUri
                             putExtra(key, docUri.toString())
                         }
                         is ExtraValue.FileUri -> {
@@ -677,8 +692,11 @@ class GameLauncher @Inject constructor(
             }
 
             if (hasFileUri || needsUriPermission) {
-                val uri = getFileUri(romFile)
-                clipData = ClipData.newRawUri(null, uri)
+                // Attach the document URI to clipData when present so FLAG_GRANT_READ_URI_PERMISSION
+                // actually delegates access to the receiver for that specific URI. Fall back to the
+                // FileProvider URI otherwise.
+                val clipUri = documentUriForClip ?: getFileUri(romFile)
+                clipData = ClipData.newRawUri(null, clipUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
@@ -945,16 +963,17 @@ class GameLauncher @Inject constructor(
                 Logger.warn(TAG, "Cannot build document URI for non-documentable path: ${file.absolutePath}")
                 return null
             }
-        val parentRelative = if (relativePath.contains("/")) {
-            relativePath.substringBeforeLast("/")
-        } else {
-            ""
-        }
-        val treeUri = DocumentsContract.buildTreeDocumentUri(
+        // Build a plain document URI (content://com.android.externalstorage.documents/document/...)
+        // rather than a tree-delegated URI. The tree form embeds a caller-scoped tree grant, which
+        // only resolves when the *receiver* holds a persistent SAF grant on that tree. Argosy uses
+        // MANAGE_EXTERNAL_STORAGE and never holds tree grants for ROM folders, so the tree form
+        // was effectively relying on the receiver app having its own grant -- fragile across
+        // emulator updates. The plain document form is what a caller-delegated
+        // FLAG_GRANT_READ_URI_PERMISSION can actually hand off.
+        return DocumentsContract.buildDocumentUri(
             "com.android.externalstorage.documents",
-            "$volumeId:$parentRelative"
+            "$volumeId:$relativePath"
         )
-        return DocumentsContract.buildDocumentUriUsingTree(treeUri, "$volumeId:$relativePath")
     }
 
     private fun getMimeType(file: File): String {

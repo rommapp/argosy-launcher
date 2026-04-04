@@ -280,7 +280,9 @@ data class EmulatorState(
     val updateModal: EmulatorUpdateModal? = null,
     val updateModalFocusIndex: Int = 0,
     val showLaunchArgsModal: Boolean = false,
-    val launchArgsModalState: LaunchArgsModalState? = null
+    val launchArgsModalState: LaunchArgsModalState? = null,
+    val showAppPickerModal: Boolean = false,
+    val appPickerModalState: AppPickerModalState? = null
 ) {
     val assignedUpdatesAvailable: Int
         get() = platforms.count { config ->
@@ -303,6 +305,19 @@ data class EmulatorUpdateModal(
  * what the base [EmulatorDef.launchConfig] produces, so the modal can render subtitles like
  * "Default: Intent" or "Default: 0x10208000" without recomputing them per frame.
  */
+/**
+ * State for the App Picker modal -- ad-hoc fallback when a platform has no known installed
+ * emulator. Lists launchable user-installed apps (system apps and Argosy itself excluded, known
+ * emulators excluded since they go through the standard picker).
+ */
+data class AppPickerModalState(
+    val platformId: Long,
+    val platformName: String,
+    val platformSlug: String,
+    val apps: List<com.nendo.argosy.data.platform.InstalledApp> = emptyList(),
+    val focusIndex: Int = 0
+)
+
 data class LaunchArgsModalState(
     val platformId: Long,
     val platformName: String,

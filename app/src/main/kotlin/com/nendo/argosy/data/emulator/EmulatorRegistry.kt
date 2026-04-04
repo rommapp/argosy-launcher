@@ -657,6 +657,29 @@ object EmulatorRegistry {
 
     fun getByPackage(packageName: String): EmulatorDef? = packageMap[packageName]
 
+    /** True if [packageName] is a registered emulator (for excluding from the ad-hoc app picker). */
+    fun isKnownPackage(packageName: String): Boolean = packageMap.containsKey(packageName)
+
+    /**
+     * Synthesize an [EmulatorDef] for an ad-hoc app binding on a platform that has no known
+     * installable emulator. The returned def uses the broadest-compatibility launch config
+     * (`LaunchConfig.FileUri` with ACTION_VIEW + grant); the user tunes via the Launch Args modal
+     * if the default doesn't fit. The `id` is deterministic per package so the modal's
+     * `EmulatorLaunchArgsEntity` overrides persist by key across restarts.
+     */
+    fun synthesizeAdHocEmulatorDef(
+        packageName: String,
+        displayName: String,
+        platformSlug: String
+    ): EmulatorDef = EmulatorDef(
+        id = "adhoc_$packageName",
+        packageName = packageName,
+        displayName = displayName,
+        supportedPlatforms = setOf(platformSlug),
+        launchAction = Intent.ACTION_VIEW,
+        launchConfig = LaunchConfig.FileUri
+    )
+
     fun getAlternatives(packageName: String): List<EmulatorDef> =
         emulators.filter { it.packageName == packageName }
 

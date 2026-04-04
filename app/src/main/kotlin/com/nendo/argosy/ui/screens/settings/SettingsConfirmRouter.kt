@@ -753,7 +753,15 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
     val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return InputResult.HANDLED
     val item = platformDetailItemAtFocusIndex(state.focusedIndex, config, state.platformDetail) ?: return InputResult.HANDLED
     when (item) {
-        PlatformDetailItem.Emulator -> vm.showEmulatorPicker(config)
+        PlatformDetailItem.Emulator -> {
+            val hasInstallableKnown = config.availableEmulators.isNotEmpty() ||
+                config.downloadableEmulators.isNotEmpty()
+            if (hasInstallableKnown) {
+                vm.showEmulatorPicker(config)
+            } else {
+                vm.openAppPickerModal(config.platform.id)
+            }
+        }
         PlatformDetailItem.Core -> vm.cycleCoreForPlatform(config, 1)
         PlatformDetailItem.Extension -> vm.cycleExtensionForPlatform(config, 1)
         PlatformDetailItem.DisplayTarget -> vm.cycleDisplayTarget(config, 1)

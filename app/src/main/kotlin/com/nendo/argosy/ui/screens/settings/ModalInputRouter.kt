@@ -21,6 +21,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         ) return null
 
         interceptGpuDriverPrompt(state, method)?.let { return it }
+        interceptAppPickerModal(state, method)?.let { return it }
         interceptLaunchArgsModal(state, method)?.let { return it }
         interceptSavePathModal(state, method)?.let { return it }
         interceptPlatformSettingsModal(state, method)?.let { return it }
@@ -53,6 +54,19 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
                 InputResult.HANDLED
             } else InputResult.HANDLED
             InputMethod.BACK -> if (!isInstalling) { viewModel.dismissGpuDriverPrompt(); InputResult.HANDLED } else InputResult.HANDLED
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptAppPickerModal(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (!state.emulators.showAppPickerModal) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveAppPickerFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveAppPickerFocus(1); InputResult.HANDLED }
+            InputMethod.PREV_SECTION -> { viewModel.moveAppPickerFocus(-5); InputResult.HANDLED }
+            InputMethod.NEXT_SECTION -> { viewModel.moveAppPickerFocus(5); InputResult.HANDLED }
+            InputMethod.CONFIRM -> { viewModel.confirmAppPickerSelection(); InputResult.HANDLED }
+            InputMethod.BACK -> { viewModel.closeAppPickerModal(); InputResult.HANDLED }
             else -> InputResult.HANDLED
         }
     }

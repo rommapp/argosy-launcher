@@ -72,6 +72,7 @@ class SettingsViewModel @Inject constructor(
     internal val platformRepository: PlatformRepository,
     internal val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
     internal val emulatorLaunchArgsDao: com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao,
+    internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val emulatorConfigDao: EmulatorConfigDao,
     internal val emulatorDetector: EmulatorDetector,
     internal val romMRepository: RomMRepository,
@@ -370,6 +371,12 @@ class SettingsViewModel @Inject constructor(
     fun cycleLaunchArgsMimeType() = routeCycleLaunchArgsMimeType(this)
     fun resetLaunchArgsFocused() = routeResetLaunchArgsFocused(this)
     fun resetAllLaunchArgs() = routeResetAllLaunchArgs(this)
+
+    // --- App Picker modal (ad-hoc emulator bindings) ---
+    fun openAppPickerModal(platformId: Long) = routeOpenAppPickerModal(this, platformId)
+    fun closeAppPickerModal() = routeCloseAppPickerModal(this)
+    fun moveAppPickerFocus(delta: Int) = routeMoveAppPickerFocus(this, delta)
+    fun confirmAppPickerSelection() = routeConfirmAppPickerSelection(this)
     fun setBuiltinRumbleEnabled(enabled: Boolean) = routeSetBuiltinRumbleEnabled(this, enabled)
     fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = routeSetBuiltinLimitHotkeysToPlayer1(this, enabled)
     fun setBuiltinAnalogAsDpad(enabled: Boolean) = routeSetBuiltinAnalogAsDpad(this, enabled)

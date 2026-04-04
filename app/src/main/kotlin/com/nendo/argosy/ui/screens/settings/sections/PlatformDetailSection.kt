@@ -199,7 +199,7 @@ fun PlatformDetailSection(
         uiState.focusedIndex == layout.focusIndexOf(item, visibility)
 
     val modalBlur by animateDpAsState(
-        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null || emulators.showLaunchArgsModal) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null || emulators.showLaunchArgsModal || emulators.showAppPickerModal) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "platformDetailBlur"
     )
@@ -223,12 +223,20 @@ fun PlatformDetailSection(
                 PlatformDetailItem.Emulator -> {
                     val hasUpdate = config.effectiveEmulatorId != null &&
                         config.effectiveEmulatorId in emulators.emulatorUpdateVersions
+                    val hasInstallableKnown = config.availableEmulators.isNotEmpty() ||
+                        config.downloadableEmulators.isNotEmpty()
                     CyclePreference(
-                        title = "Change Emulator",
+                        title = if (hasInstallableKnown) "Change Emulator" else "Select App",
                         value = config.effectiveEmulatorName ?: "Not installed",
                         subtitle = if (hasUpdate) "Update available" else null,
                         isFocused = isFocused(item),
-                        onClick = { viewModel.showEmulatorPicker(config) }
+                        onClick = {
+                            if (hasInstallableKnown) {
+                                viewModel.showEmulatorPicker(config)
+                            } else {
+                                viewModel.openAppPickerModal(config.platform.id)
+                            }
+                        }
                     )
                 }
                 PlatformDetailItem.Core -> CyclePreference(
@@ -523,6 +531,17 @@ fun PlatformDetailSection(
                 onToggleFlag = { bit -> viewModel.toggleLaunchArgsFlag(bit) },
                 onCycleMimeType = { viewModel.cycleLaunchArgsMimeType() },
                 onDismiss = { viewModel.closeLaunchArgsModal() }
+            )
+        }
+
+        if (emulators.showAppPickerModal && emulators.appPickerModalState != null) {
+            com.nendo.argosy.ui.screens.settings.components.AppPickerModal(
+                state = emulators.appPickerModalState,
+                onItemTap = { index ->
+                    viewModel.moveAppPickerFocus(index - emulators.appPickerModalState.focusIndex)
+                },
+                onConfirm = { viewModel.confirmAppPickerSelection() },
+                onDismiss = { viewModel.closeAppPickerModal() }
             )
         }
     }

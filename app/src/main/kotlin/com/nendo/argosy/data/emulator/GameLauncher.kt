@@ -64,6 +64,7 @@ class GameLauncher @Inject constructor(
     private val gameDiscDao: GameDiscDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorLaunchArgsDao: EmulatorLaunchArgsDao,
+    private val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     private val platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao,
     private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager,
@@ -440,6 +441,25 @@ class GameLauncher @Inject constructor(
             } else {
                 return emulatorDetector.getByPackage(platformDefault.packageName)
             }
+        }
+
+        // Ad-hoc binding fallback: if a per-game or per-platform config references a package that
+        // isn't in EmulatorRegistry but is installed on the device, synthesize an EmulatorDef so
+        // the launch pipeline and Launch Args modal can work against it transparently.
+        val adHocPackage = gameOverride?.packageName?.takeIf {
+            !EmulatorRegistry.isKnownPackage(it) && installedAppResolver.isAppInstalled(it)
+        } ?: platformDefault?.packageName?.takeIf {
+            !EmulatorRegistry.isKnownPackage(it) && installedAppResolver.isAppInstalled(it)
+        }
+        if (adHocPackage != null) {
+            val displayName = (if (adHocPackage == gameOverride?.packageName) gameOverride.displayName else platformDefault?.displayName)
+                ?: adHocPackage
+            Logger.debug(TAG, "Resolved ad-hoc emulator binding: $adHocPackage for ${game.platformSlug}")
+            return EmulatorRegistry.synthesizeAdHocEmulatorDef(
+                packageName = adHocPackage,
+                displayName = displayName,
+                platformSlug = game.platformSlug
+            )
         }
 
         return emulatorDetector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def

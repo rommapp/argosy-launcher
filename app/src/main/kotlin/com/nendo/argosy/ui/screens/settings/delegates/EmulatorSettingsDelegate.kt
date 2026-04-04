@@ -456,6 +456,37 @@ class EmulatorSettingsDelegate @Inject constructor(
         }
     }
 
+    // --- App Picker modal (ad-hoc bindings for platforms with no known installed emulator) ---
+
+    fun showAppPickerModal(modalState: com.nendo.argosy.ui.screens.settings.AppPickerModalState) {
+        _state.update {
+            it.copy(
+                showAppPickerModal = true,
+                appPickerModalState = modalState
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissAppPickerModal() {
+        _state.update {
+            it.copy(
+                showAppPickerModal = false,
+                appPickerModalState = null
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveAppPickerFocus(delta: Int) {
+        _state.update { state ->
+            val modal = state.appPickerModalState ?: return@update state
+            if (modal.apps.isEmpty()) return@update state
+            val newIndex = (modal.focusIndex + delta).coerceIn(0, modal.apps.size - 1)
+            state.copy(appPickerModalState = modal.copy(focusIndex = newIndex))
+        }
+    }
+
     fun moveSavePathModalButtonFocus(delta: Int) {
         _state.update { state ->
             val hasReset = state.savePathModalInfo?.isUserOverride == true

@@ -185,6 +185,53 @@ private fun persistLaunchArgsField(
     }
 }
 
+// --- App Picker (ad-hoc bindings) ---
+
+/**
+ * Opens the App Picker modal. Loads the list of launchable user apps off-thread and populates
+ * the modal state. Safe to call on any platform; the picker list excludes known emulators so
+ * even if this is triggered on a platform that has known installable options, the results will
+ * still be the "everything else" set.
+ */
+internal fun routeOpenAppPickerModal(vm: SettingsViewModel, platformId: Long) {
+    vm.viewModelScope.launch {
+        val config = vm._uiState.value.emulators.platforms.find { it.platform.id == platformId }
+            ?: return@launch
+        val apps = vm.installedAppResolver.getLaunchableUserApps()
+        vm.emulatorDelegate.showAppPickerModal(
+            AppPickerModalState(
+                platformId = platformId,
+                platformName = config.platform.name,
+                platformSlug = config.platform.slug,
+                apps = apps,
+                focusIndex = 0
+            )
+        )
+    }
+}
+
+internal fun routeCloseAppPickerModal(vm: SettingsViewModel) {
+    vm.emulatorDelegate.dismissAppPickerModal()
+}
+
+internal fun routeMoveAppPickerFocus(vm: SettingsViewModel, delta: Int) {
+    vm.emulatorDelegate.moveAppPickerFocus(delta)
+}
+
+internal fun routeConfirmAppPickerSelection(vm: SettingsViewModel) {
+    val modal = vm._uiState.value.emulators.appPickerModalState ?: return
+    val selected = modal.apps.getOrNull(modal.focusIndex) ?: return
+    vm.viewModelScope.launch {
+        vm.configureEmulatorUseCase.setAdHocForPlatform(
+            platformId = modal.platformId,
+            packageName = selected.packageName,
+            displayName = selected.displayName
+        )
+        vm.emulatorDelegate.dismissAppPickerModal()
+        vm.loadSettings() // refresh platform config list so the Emulator row shows the new binding
+    }
+}
+
 /** Visible rows in the Launch Args modal, used for focus management. */
 internal sealed class LaunchArgsRow {
     data object LaunchMethod : LaunchArgsRow()

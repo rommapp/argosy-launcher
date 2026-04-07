@@ -15,6 +15,36 @@ internal class PlatformDetailSectionInput(
     override fun onLeft(): InputResult = cycleItem(-1)
     override fun onRight(): InputResult = cycleItem(1)
 
+    override fun onSecondaryAction(): InputResult {
+        val state = viewModel.uiState.value
+        val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex)
+            ?: return InputResult.UNHANDLED
+        val detail = state.platformDetail
+        val item = platformDetailItemAtFocusIndex(state.focusedIndex, config, detail)
+            ?: return InputResult.UNHANDLED
+        return when (item) {
+            PlatformDetailItem.RomPath -> {
+                if (detail.customRomPath != null) {
+                    viewModel.resetPlatformRomPath(config.platform.id)
+                    InputResult.HANDLED
+                } else InputResult.UNHANDLED
+            }
+            PlatformDetailItem.SavePath -> {
+                if (!config.effectiveEmulatorIsRetroArch && detail.isUserSavePathOverride) {
+                    viewModel.resetPlatformSavePath(config.platform.id)
+                    InputResult.HANDLED
+                } else InputResult.UNHANDLED
+            }
+            PlatformDetailItem.StatePath -> {
+                if (!config.effectiveEmulatorIsRetroArch && detail.isUserStatePathOverride) {
+                    viewModel.resetPlatformStatePath(config.platform.id)
+                    InputResult.HANDLED
+                } else InputResult.UNHANDLED
+            }
+            else -> InputResult.UNHANDLED
+        }
+    }
+
     override fun onContextMenu(): InputResult {
         val state = viewModel.uiState.value
         val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex)

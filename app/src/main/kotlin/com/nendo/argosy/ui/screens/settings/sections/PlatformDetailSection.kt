@@ -362,11 +362,12 @@ fun PlatformDetailSection(
                     value = formatPath(detail.effectiveRomPath),
                     subtitle = if (detail.customRomPath != null) "(custom)" else null,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.openPlatformFolderPicker(config.platform.id) }
+                    onClick = { viewModel.openPlatformFolderPicker(config.platform.id) },
+                    showResetButton = detail.customRomPath != null,
+                    onReset = { viewModel.resetPlatformRomPath(config.platform.id) }
                 )
                 PlatformDetailItem.SavePath -> {
                     if (config.effectiveEmulatorIsRetroArch) {
-                        // RetroArch owns its own save path via retroarch.cfg. Argosy reads, never writes.
                         InfoPreference(
                             title = "Save Path",
                             value = formatPath(detail.effectiveSavePath),
@@ -378,16 +379,19 @@ fun PlatformDetailSection(
                             }
                         )
                     } else {
+                        val isBuiltinEmulator = config.effectiveEmulatorId == "builtin"
                         CyclePreference(
                             title = "Save Path",
                             value = formatPath(detail.effectiveSavePath),
                             subtitle = when {
-                                detail.packagePathAccessible == false && !detail.isUserSavePathOverride -> "Access blocked -- set a custom save path"
+                                !isBuiltinEmulator && detail.packagePathAccessible == false && !detail.isUserSavePathOverride -> "Access blocked -- set a custom save path"
                                 detail.isUserSavePathOverride -> "(custom)"
                                 else -> null
                             },
                             isFocused = isFocused(item),
-                            onClick = { viewModel.showSavePathModal(config) }
+                            onClick = { viewModel.launchSavePathPicker(config.platform.id) },
+                            showResetButton = detail.isUserSavePathOverride,
+                            onReset = { viewModel.resetPlatformSavePath(config.platform.id) }
                         )
                     }
                 }
@@ -409,7 +413,9 @@ fun PlatformDetailSection(
                             value = formatPath(detail.effectiveStatePath),
                             subtitle = if (detail.isUserStatePathOverride) "(custom)" else null,
                             isFocused = isFocused(item),
-                            onClick = { viewModel.launchStatePathPicker(config.platform.id) }
+                            onClick = { viewModel.launchStatePathPicker(config.platform.id) },
+                            showResetButton = detail.isUserStatePathOverride,
+                            onReset = { viewModel.resetPlatformStatePath(config.platform.id) }
                         )
                     }
                 }

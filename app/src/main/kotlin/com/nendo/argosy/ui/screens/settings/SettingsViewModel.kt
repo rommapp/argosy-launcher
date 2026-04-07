@@ -248,9 +248,13 @@ class SettingsViewModel @Inject constructor(
             val totalPlayTimeMs = playSessionDao.getTotalActivePlayMsByPlatform(platformSlug)
             val allBiosStatus = biosRepository.getStatusByPlatform()
             val biosStatus = allBiosStatus.find { it.platformSlug == platformSlug }
-            val packagePathAccessible = config.effectiveEmulatorPackage?.let { pkg ->
-                val emulatorId = config.effectiveEmulatorId ?: return@let null
-                titleIdDetector.validateSavePathAccess(emulatorId, pkg) is com.nendo.argosy.data.emulator.TitleIdDetector.ValidationResult.Valid
+            val packagePathAccessible = if (config.effectiveEmulatorId == "builtin") {
+                true
+            } else {
+                config.effectiveEmulatorPackage?.let { pkg ->
+                    val emulatorId = config.effectiveEmulatorId ?: return@let null
+                    titleIdDetector.validateSavePathAccess(emulatorId, pkg) is com.nendo.argosy.data.emulator.TitleIdDetector.ValidationResult.Valid
+                }
             }
 
             val storageConfig = _uiState.value.storage.platformConfigs
@@ -960,6 +964,14 @@ class SettingsViewModel @Inject constructor(
             }
             loadPlatformDetailStats(platformIndex)
         }
+    }
+
+    fun resetPlatformRomPath(platformId: Long) {
+        storageDelegate.resetPlatformToGlobal(viewModelScope, platformId)
+    }
+
+    fun launchSavePathPicker(platformId: Long) {
+        storageDelegate.emitSavePathPicker(viewModelScope, platformId)
     }
 
     fun launchStatePathPicker(platformId: Long) {

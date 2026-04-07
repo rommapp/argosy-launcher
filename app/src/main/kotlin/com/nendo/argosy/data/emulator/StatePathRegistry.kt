@@ -89,7 +89,7 @@ object StatePathRegistry {
     private val configs = mapOf(
         "builtin" to StatePathConfig(
             emulatorId = "builtin",
-            defaultPaths = listOf("{appInternal}/libretro/states"),
+            defaultPaths = listOf("{filesDir}/libretro/states"),
             slotPattern = StateSlotPattern.SuffixNumber(
                 extension = "state",
                 autoSlotSuffix = "auto"

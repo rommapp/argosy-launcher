@@ -773,7 +773,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)
         PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)
         // RetroArch owns its own save/state paths via retroarch.cfg; rows are read-only for RA.
-        PlatformDetailItem.SavePath -> if (!config.effectiveEmulatorIsRetroArch) vm.showSavePathModal(config)
+        PlatformDetailItem.SavePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchSavePathPicker(config.platform.id)
         PlatformDetailItem.StatePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchStatePathPicker(config.platform.id)
         PlatformDetailItem.SyncToggle -> vm.togglePlatformSync(config.platform.id, !state.platformDetail.syncEnabled)
         PlatformDetailItem.RemoveFiles -> vm.requestRemoveLocalFiles()

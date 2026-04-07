@@ -546,6 +546,9 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                         ).firstOrNull()
                     }
                 }
+                config.effectiveEmulatorId == "builtin" ->
+                    com.nendo.argosy.data.emulator.StatePathRegistry.getConfig("builtin")
+                        ?.defaultPaths?.firstOrNull()
                 else -> null
             }
 

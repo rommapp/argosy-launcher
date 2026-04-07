@@ -94,7 +94,7 @@ fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
     for (extra in cmdExtras) {
         when (extra) {
             is ResolvedExtra.StringExtra -> intent.putExtra(extra.key, extra.value)
-            is ResolvedExtra.UriExtra -> intent.putExtra(extra.key, extra.uri.toString())
+            is ResolvedExtra.UriExtra -> intent.putExtra(extra.key, extra.uri)
             is ResolvedExtra.BoolExtra -> intent.putExtra(extra.key, extra.value)
             is ResolvedExtra.StringArrayExtra -> intent.putExtra(extra.key, extra.values)
         }
@@ -109,43 +109,59 @@ fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
     return intent
 }
 
+private fun shellEscape(value: String): String =
+    "'" + value.replace("'", "'\\''") + "'"
+
 fun EffectiveLaunchCommand.toShellArgv(): Array<String> {
-    val args = mutableListOf("am", "start", "-a", action)
+    val cmd = StringBuilder("/system/bin/am start")
+    cmd.append(" -a ").append(shellEscape(action))
 
     if (activityClass != null) {
-        args += listOf("-n", "$packageName/$activityClass")
+        cmd.append(" -n ").append(shellEscape("$packageName/$activityClass"))
     } else {
-        args += listOf("-p", packageName)
+        cmd.append(" -p ").append(shellEscape(packageName))
     }
 
     categories.forEach { category ->
-        args += listOf("-c", category)
+        cmd.append(" -c ").append(shellEscape(category))
     }
 
     if (dataUri != null) {
-        args += listOf("-d", dataUri.toString())
+        cmd.append(" -d ").append(shellEscape(dataUri.toString()))
     }
 
     if (mimeType != null) {
-        args += listOf("-t", mimeType)
+        cmd.append(" -t ").append(shellEscape(mimeType))
     }
 
     if (intentFlags != 0) {
-        args += listOf("-f", "0x${intentFlags.toString(16)}")
+        cmd.append(" -f 0x").append(intentFlags.toString(16))
     }
 
     if (clipDataUri != null || grantReadUriTo.isNotEmpty()) {
-        args += "--grant-read-uri-permission"
+        cmd.append(" --grant-read-uri-permission")
     }
 
     extras.forEach { extra ->
         when (extra) {
-            is ResolvedExtra.StringExtra -> args += listOf("--es", extra.key, extra.value)
-            is ResolvedExtra.UriExtra -> args += listOf("--eu", extra.key, extra.uri.toString())
-            is ResolvedExtra.BoolExtra -> args += listOf("--ez", extra.key, extra.value.toString())
-            is ResolvedExtra.StringArrayExtra -> args += listOf("--esa", extra.key, extra.values.joinToString(","))
+            is ResolvedExtra.StringExtra -> {
+                cmd.append(" --es ").append(shellEscape(extra.key))
+                    .append(" ").append(shellEscape(extra.value))
+            }
+            is ResolvedExtra.UriExtra -> {
+                cmd.append(" --eu ").append(shellEscape(extra.key))
+                    .append(" ").append(shellEscape(extra.uri.toString()))
+            }
+            is ResolvedExtra.BoolExtra -> {
+                cmd.append(" --ez ").append(shellEscape(extra.key))
+                    .append(" ").append(extra.value)
+            }
+            is ResolvedExtra.StringArrayExtra -> {
+                cmd.append(" --esa ").append(shellEscape(extra.key))
+                    .append(" ").append(shellEscape(extra.values.joinToString(",")))
+            }
         }
     }
 
-    return args.toTypedArray()
+    return arrayOf("sh", "-c", cmd.toString())
 }

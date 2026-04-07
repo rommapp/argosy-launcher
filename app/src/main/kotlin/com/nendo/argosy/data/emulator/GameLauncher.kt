@@ -77,6 +77,16 @@ class GameLauncher @Inject constructor(
     private val coreSystemDataManager: CoreSystemDataManager,
     private val gameFileDao: GameFileDao
 ) {
+    private val shellAmAvailable: Boolean by lazy {
+        try {
+            val p = ProcessBuilder("sh", "-c", "/system/bin/am").redirectErrorStream(true).start()
+            p.inputStream.readBytes()
+            p.waitFor() != 255
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     suspend fun launch(
         gameId: Long,
         discId: Long? = null,
@@ -545,18 +555,28 @@ class GameLauncher @Inject constructor(
             if (command.grantReadUriTo.isNotEmpty()) append(" grants=${command.grantReadUriTo.size}")
         })
 
-        val needsIntentForContentUri = command.launchMethod == LaunchMethod.SHELL &&
-            command.dataUri?.scheme == "content"
+        val hasContentUri = command.dataUri?.scheme == "content" ||
+            command.extras.any { it is ResolvedExtra.UriExtra && it.uri.scheme == "content" } ||
+            command.clipDataUri?.scheme == "content"
+        val needsIntentForContentUri = command.launchMethod == LaunchMethod.SHELL && hasContentUri
         if (needsIntentForContentUri) {
-            Logger.debug(TAG, "Falling back to Intent for content:// data URI (shell can't grant URI permissions)")
+            Logger.debug(TAG, "Falling back to Intent (shell can't grant content:// URIs)")
         }
 
-        return when {
-            needsIntentForContentUri -> command.copy(launchMethod = LaunchMethod.INTENT).toIntent(context)
-            command.launchMethod == LaunchMethod.INTENT -> command.toIntent(context)
-            else -> launchViaShell(command)
+        val effectiveMethod = when {
+            needsIntentForContentUri -> LaunchMethod.INTENT
+            command.launchMethod == LaunchMethod.SHELL && !shellAmAvailable -> {
+                Logger.debug(TAG, "Falling back to Intent (am not available from app process)")
+                LaunchMethod.INTENT
+            }
+            else -> command.launchMethod
+        }
+
+        return when (effectiveMethod) {
+            LaunchMethod.INTENT -> command.copy(launchMethod = LaunchMethod.INTENT).toIntent(context)
+            LaunchMethod.SHELL -> launchViaShell(command)
         }?.also {
-            Logger.debug(TAG, "Launch dispatched: method=${command.launchMethod}")
+            Logger.debug(TAG, "Launch dispatched: method=$effectiveMethod")
         }
     }
 
@@ -996,16 +1016,18 @@ class GameLauncher @Inject constructor(
         }
 
         val argv = command.toShellArgv()
-        Logger.debug(TAG, "Shell argv: ${argv.joinToString(" ")}")
+        Logger.debug(TAG, "Shell command: ${argv.last()}")
 
         try {
-            val process = ProcessBuilder(*argv).redirectErrorStream(false).start()
+            val process = ProcessBuilder(*argv).redirectErrorStream(true).start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
             val exitCode = process.waitFor()
             if (exitCode != 0) {
-                val stderr = process.errorStream.bufferedReader().use { it.readText() }.trim()
-                val stdout = process.inputStream.bufferedReader().use { it.readText() }.trim()
-                Logger.error(TAG, "Shell launch failed: code=$exitCode stdout=$stdout stderr=$stderr")
+                Logger.error(TAG, "Shell launch failed: code=$exitCode output=$output")
                 return null
+            }
+            if (output.isNotEmpty()) {
+                Logger.debug(TAG, "Shell launch output: $output")
             }
         } catch (e: Exception) {
             Logger.error(TAG, "Failed to exec am start for ${command.packageName}", e)

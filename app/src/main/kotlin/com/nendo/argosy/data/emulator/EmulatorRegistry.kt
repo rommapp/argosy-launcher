@@ -412,7 +412,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://play.google.com/store/apps/details?id=com.github.stenzek.duckstation"
@@ -425,7 +425,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases",
@@ -440,7 +440,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             defaultLaunchMethod = LaunchMethod.SHELL
         ),
@@ -617,7 +617,7 @@ object EmulatorRegistry {
             launchAction = "aenu.intent.action.AX360E",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "aenu.ax360e.EmulatorActivity",
-                intentExtras = mapOf("game_uri" to ExtraValue.DocumentUri)
+                intentExtras = mapOf("game_uri" to ExtraValue.FileUri)
             )
         ),
         EmulatorDef(
@@ -628,7 +628,7 @@ object EmulatorRegistry {
             launchAction = "aenu.intent.action.AX360E",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "aenu.ax360e.EmulatorActivity",
-                intentExtras = mapOf("game_uri" to ExtraValue.DocumentUri)
+                intentExtras = mapOf("game_uri" to ExtraValue.FileUri)
             )
         ),
 
@@ -1147,7 +1147,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.DocumentUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
         ),
@@ -1169,7 +1169,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.github.stenzek.duckstation.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FileUri)
+                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
             ),
             downloadUrl = "https://www.duckstation.org/android/"
         ),
@@ -1192,7 +1192,7 @@ object EmulatorRegistry {
             launchAction = "aenu.intent.action.AX360E",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "aenu.ax360e.EmulatorActivity",
-                intentExtras = mapOf("game_uri" to ExtraValue.DocumentUri)
+                intentExtras = mapOf("game_uri" to ExtraValue.FileUri)
             )
         ),
         EmulatorFamily(

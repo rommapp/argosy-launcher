@@ -101,10 +101,17 @@ fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
     }
     if (cmdClipDataUri != null) {
         intent.clipData = ClipData.newRawUri(null, cmdClipDataUri)
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     if (cmdFlags != 0) {
         intent.addFlags(cmdFlags)
+    }
+
+    val hasContentUri = dataUri?.scheme == "content" ||
+        cmdExtras.any { it is ResolvedExtra.UriExtra && it.uri.scheme == "content" } ||
+        cmdClipDataUri?.scheme == "content" ||
+        grantReadUriTo.isNotEmpty()
+    if (hasContentUri) {
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     return intent
 }

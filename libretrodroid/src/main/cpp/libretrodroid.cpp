@@ -591,6 +591,7 @@ void LibretroDroid::step() {
         LOGI("Runtime geometry update: %ux%u aspect=%.4f", geoW, geoH, geoAR);
 
         video->updateRendererSize(geoW, geoH);
+        refreshAspectRatio();
 
         dirtyVideo = true;
     }

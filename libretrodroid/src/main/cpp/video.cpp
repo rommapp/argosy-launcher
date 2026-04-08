@@ -387,6 +387,12 @@ void Video::onNewFrame(const void *data, unsigned width, unsigned height, size_t
     } else if (data == RETRO_HW_FRAME_BUFFER_VALID) {
         renderer->lastFrameSize = { (int)width, (int)height };
         videoLayout.updateContentSize(width, height);
+        if (hwFBOHeight > 0 && height < hwFBOHeight) {
+            float usedFraction = (float)height / (float)hwFBOHeight;
+            videoLayout.setHWFrameCrop(0.0f, 1.0f - usedFraction);
+        } else {
+            videoLayout.setHWFrameCrop(0.0f, 0.0f);
+        }
         isDirty = true;
     }
 }
@@ -579,6 +585,8 @@ void Video::initializeHWRenderContext(unsigned int width, unsigned int height,
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    hwFBOWidth = width;
+    hwFBOHeight = height;
     LOGI("HW render FBO created: fbo=%u tex=%u %ux%u depth=%d stencil=%d",
          hwRenderFBO, hwRenderTexture, width, height, useDepth, useStencil);
 

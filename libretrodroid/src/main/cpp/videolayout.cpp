@@ -68,7 +68,7 @@ void VideoLayout::updateForegroundVertices() {
             scaleY = scaledHeight / screenH * viewportRect.getHeight();
             LOGD("Integer scale: %dx (%f x %f)", scale, scaledWidth, scaledHeight);
         }
-    } else {
+    } else if (screenW > 0 && screenH > 0 && aspectRatio > 0) {
         // Normal aspect ratio scaling
         float screenAspect = screenW / screenH;
         float contentAspect = aspectRatio;
@@ -285,11 +285,20 @@ void VideoLayout::setTextureCrop(float left, float top, float right, float botto
     updateTextureCoordinates();
 }
 
+void VideoLayout::setHWFrameCrop(float top, float bottom) {
+    if (this->hwCropTop != top || this->hwCropBottom != bottom) {
+        LOGD("setHWFrameCrop: top=%.4f bottom=%.4f", top, bottom);
+        this->hwCropTop = top;
+        this->hwCropBottom = bottom;
+        updateTextureCoordinates();
+    }
+}
+
 void VideoLayout::updateTextureCoordinates() {
     float u0 = cropLeft;
     float u1 = 1.0F - cropRight;
-    float v0 = cropTop;
-    float v1 = 1.0F - cropBottom;
+    float v0 = cropTop + hwCropTop;
+    float v1 = 1.0F - cropBottom - hwCropBottom;
 
     // Triangle 1: TL, BL, TR
     textureCoordinates[0] = u0;  textureCoordinates[1] = v0;

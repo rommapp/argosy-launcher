@@ -42,6 +42,8 @@ public:
 
     void setTextureCrop(float left, float top, float right, float bottom);
 
+    void setHWFrameCrop(float top, float bottom);
+
     std::array<float, 12>& getForegroundVertices() { return foregroundVertices; }
     std::array<float, 12>& getBackgroundVertices() { return backgroundVertices; }
     std::array<float, 12>& getFramebufferVertices() { return framebufferVertices; }
@@ -168,6 +170,9 @@ private:
     float cropTop = 0.0F;
     float cropRight = 0.0F;
     float cropBottom = 0.0F;
+
+    float hwCropTop = 0.0F;
+    float hwCropBottom = 0.0F;
 };
 
 } // namespace libretrodroid

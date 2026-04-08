@@ -157,6 +157,8 @@ private:
     GLuint hwRenderFBO = 0;
     GLuint hwRenderTexture = 0;
     GLuint hwRenderDepthStencil = 0;
+    unsigned hwFBOWidth = 0;
+    unsigned hwFBOHeight = 0;
 };
 
 }

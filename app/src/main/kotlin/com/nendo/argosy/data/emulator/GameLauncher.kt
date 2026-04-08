@@ -596,7 +596,7 @@ class GameLauncher @Inject constructor(
                 val effectiveConfig = if (legacyUseFileUri) config.copy(useFileUri = true) else config
                 commandForCustom(emulator, romFile, game.platformSlug, effectiveConfig, forResume)
             }
-            is LaunchConfig.RetroArch -> commandForRetroArch(emulator, romFile, game, config)
+            is LaunchConfig.RetroArch -> commandForRetroArch(emulator, romFile, game, config, forResume)
             is LaunchConfig.CustomScheme -> commandForCustomScheme(emulator, romFile, config, forResume)
             is LaunchConfig.Vita3K -> commandForVita3K(emulator, romFile, config)
             is LaunchConfig.ScummVM -> commandForScummVM(emulator, romFile, forResume)
@@ -781,7 +781,8 @@ class GameLauncher @Inject constructor(
         emulator: EmulatorDef,
         romFile: File,
         game: GameEntity,
-        config: LaunchConfig.RetroArch
+        config: LaunchConfig.RetroArch,
+        forResume: Boolean
     ): EffectiveLaunchCommand? {
         val retroArchPackage = emulator.packageName
         val dataDir = "/data/data/$retroArchPackage"
@@ -812,7 +813,13 @@ class GameLauncher @Inject constructor(
                 ResolvedExtra.StringExtra("SDCARD", "/storage/emulated/0"),
                 ResolvedExtra.StringExtra("EXTERNAL", externalDir)
             ),
-            intentFlags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            intentFlags = if (forResume) {
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            } else {
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                    Intent.FLAG_ACTIVITY_NO_HISTORY
+            }
         )
     }
 

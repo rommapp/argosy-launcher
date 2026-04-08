@@ -329,6 +329,44 @@ class DualGameDetailInputHandler(
                 }
                 return InputResult.HANDLED
             }
+            ActiveModal.DISC_PICKER -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveDiscPickerFocus(-1)
+                        onBroadcastInlineUpdate(
+                            "disc_focus",
+                            vm.discPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveDiscPickerFocus(1)
+                        onBroadcastInlineUpdate(
+                            "disc_focus",
+                            vm.discPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val disc = vm.confirmDiscSelection()
+                        if (disc != null) {
+                            onBroadcastModalClose()
+                            onBroadcastDirectAction("PLAY_DISC", vm.uiState.value.gameId, disc.filePath)
+                        }
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissDiscPicker()
+                        onBroadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.VARIANT_PICKER -> {
+                if (event == GamepadEvent.Back) {
+                    vm.dismissPicker()
+                    onBroadcastModalClose()
+                }
+                return InputResult.HANDLED
+            }
             ActiveModal.SAVE_NAME, ActiveModal.NONE -> {}
         }
 
@@ -404,6 +442,9 @@ class DualGameDetailInputHandler(
                     vm.openCorePicker(cores)
                     onBroadcastCoreModalOpen(cores, vm.uiState.value.selectedCoreName)
                 }
+            }
+            GameDetailOption.SELECT_DISC -> {
+                onBroadcastDirectAction("SELECT_DISC", gameId, null)
             }
             GameDetailOption.ADD_TO_COLLECTION -> {
                 vm.openCollectionModal()

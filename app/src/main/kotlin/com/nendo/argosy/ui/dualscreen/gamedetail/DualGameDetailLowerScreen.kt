@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -848,6 +849,9 @@ private fun OptionsTabContent(
         GameDetailOption.CHANGE_CORE -> OptionEntry(
             option, Icons.Filled.Settings, "Change Core", coreText
         )
+        GameDetailOption.SELECT_DISC -> OptionEntry(
+            option, Icons.Filled.Album, "Select Disc"
+        )
         GameDetailOption.UPDATES_DLC -> OptionEntry(
             option, Icons.Filled.SystemUpdate, "Updates & DLC"
         )
@@ -875,6 +879,7 @@ private fun OptionsTabContent(
     val managementGroup = setOf(
         GameDetailOption.CHANGE_EMULATOR,
         GameDetailOption.CHANGE_CORE,
+        GameDetailOption.SELECT_DISC,
         GameDetailOption.UPDATES_DLC,
         GameDetailOption.ADD_TO_COLLECTION,
         GameDetailOption.REFRESH_METADATA

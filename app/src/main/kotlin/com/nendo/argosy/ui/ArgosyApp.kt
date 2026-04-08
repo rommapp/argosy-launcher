@@ -878,6 +878,9 @@ fun ArgosyApp(
                             onSaveNameConfirm = {
                                 activity?.confirmDualSaveName()
                             },
+                            onDiscSelect = { index ->
+                                activity?.selectDualDisc(index)
+                            },
                             onModalDismiss = {
                                 activity?.dismissDualModal()
                             },
@@ -1363,6 +1366,9 @@ fun ArgosyApp(
                                             val allFiles = vm.updateFiles.value + vm.dlcFiles.value
                                             dualScreenManager.openUpdatesModal(allFiles)
                                         }
+                                    }
+                                    GameDetailOption.SELECT_DISC -> {
+                                        dualScreenManager.handleDirectAction("SELECT_DISC", gameId)
                                     }
                                     GameDetailOption.REFRESH_METADATA,
                                     GameDetailOption.DELETE,

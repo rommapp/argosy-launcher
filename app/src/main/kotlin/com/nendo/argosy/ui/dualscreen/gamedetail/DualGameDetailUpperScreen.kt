@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.components.GameTitle
 import androidx.compose.material3.OutlinedTextField
@@ -78,6 +79,7 @@ fun DualGameDetailUpperScreen(
     onModalCollectionCreateDismiss: () -> Unit = {},
     onSaveNameTextChange: (String) -> Unit = {},
     onSaveNameConfirm: () -> Unit = {},
+    onDiscSelect: (Int) -> Unit = {},
     onModalDismiss: () -> Unit = {},
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
@@ -172,6 +174,13 @@ fun DualGameDetailUpperScreen(
                 onApplyAll = {},
                 onDismiss = onModalDismiss
             )
+            ActiveModal.DISC_PICKER -> DualDiscPickerContent(
+                discs = state.discPickerOptions,
+                focusIndex = state.discPickerFocusIndex,
+                onSelect = onDiscSelect,
+                onDismiss = onModalDismiss
+            )
+            ActiveModal.VARIANT_PICKER -> {}
             ActiveModal.NONE -> {}
         }
     }
@@ -670,6 +679,84 @@ private fun DualCorePickerContent(
                         isCurrent = isCurrent,
                         onClick = { onSelect(itemIndex) }
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DualDiscPickerContent(
+    discs: List<DiscOption>,
+    focusIndex: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .touchOnly { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .touchOnly { }
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "SELECT DISC",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                itemsIndexed(discs, key = { _, d -> d.filePath }) { index, disc ->
+                    val isSelected = focusIndex == index
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    .copy(alpha = 0.5f)
+                                else Color.Transparent
+                            )
+                            .then(
+                                if (isSelected) Modifier.border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) else Modifier
+                            )
+                            .touchOnly { onSelect(index) }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Disc ${disc.discNumber}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = disc.fileName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
         }

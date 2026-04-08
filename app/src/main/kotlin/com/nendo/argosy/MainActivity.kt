@@ -160,6 +160,7 @@ class MainActivity : ComponentActivity() {
     fun confirmDualCollectionCreate(name: String) = dualScreenManager.confirmDualCollectionCreate(name)
     fun updateDualSaveNameText(text: String) = dualScreenManager.updateDualSaveNameText(text)
     fun confirmDualSaveName() = dualScreenManager.confirmDualSaveName()
+    fun selectDualDisc(index: Int) = dualScreenManager.selectDualDisc(index)
 
     // --- Screen Capture ---
 

@@ -15,6 +15,7 @@ import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.emulator.EmulatorResolver
@@ -141,6 +142,12 @@ class DualGameDetailViewModel(
     private val _collectionPickerFocusIndex = MutableStateFlow(0)
     val collectionPickerFocusIndex: StateFlow<Int> = _collectionPickerFocusIndex.asStateFlow()
 
+    private val _discPickerOptions = MutableStateFlow<List<DiscOption>>(emptyList())
+    val discPickerOptions: StateFlow<List<DiscOption>> = _discPickerOptions.asStateFlow()
+
+    private val _discPickerFocusIndex = MutableStateFlow(0)
+    val discPickerFocusIndex: StateFlow<Int> = _discPickerFocusIndex.asStateFlow()
+
     private var downloadObserverJob: Job? = null
     private var steamDownloadObserverJob: Job? = null
     private var ratingDebounceJob: Job? = null
@@ -256,7 +263,8 @@ class DualGameDetailViewModel(
                 }
             }
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
-            ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC -> return
+            ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC,
+            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER -> return
             ActiveModal.NONE -> return
         }
         _activeModal.value = ActiveModal.NONE
@@ -359,7 +367,8 @@ class DualGameDetailViewModel(
                 selectedCoreName = selectedCoreName,
                 selectedCoreId = selectedCoreId,
                 activeChannel = activeChannel,
-                activeSaveTimestamp = activeSaveTimestamp
+                activeSaveTimestamp = activeSaveTimestamp,
+                isMultiDisc = game.isMultiDisc
             )
             _uiState.value = newState
             _visibleOptions.value = newState.visibleOptions()
@@ -1087,6 +1096,31 @@ class DualGameDetailViewModel(
     fun getDownloadableFiles(): List<UpdateFileUi> {
         val allFiles = _updateFiles.value + _dlcFiles.value
         return allFiles.filter { !it.isDownloaded && it.gameFileId != null }
+    }
+
+    fun openDiscPicker(discs: List<DiscOption>) {
+        _discPickerOptions.value = discs
+        _discPickerFocusIndex.value = 0
+        _activeModal.value = ActiveModal.DISC_PICKER
+    }
+
+    fun moveDiscPickerFocus(delta: Int) {
+        val max = (_discPickerOptions.value.size - 1).coerceAtLeast(0)
+        _discPickerFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun confirmDiscSelection(): DiscOption? {
+        val disc = _discPickerOptions.value.getOrNull(_discPickerFocusIndex.value)
+        _activeModal.value = ActiveModal.NONE
+        _discPickerOptions.value = emptyList()
+        _discPickerFocusIndex.value = 0
+        return disc
+    }
+
+    fun dismissDiscPicker() {
+        _activeModal.value = ActiveModal.NONE
+        _discPickerOptions.value = emptyList()
+        _discPickerFocusIndex.value = 0
     }
 
 }

@@ -80,6 +80,10 @@ class SecondaryHomeBroadcastHelper(
         dsm.openUpdatesModal(updates + dlc)
     }
 
+    fun broadcastDiscModalOpen(discs: List<com.nendo.argosy.data.emulator.DiscOption>) {
+        dsm.openDiscModal(discs)
+    }
+
     fun broadcastViewModeChange(drawerOpen: Boolean? = null) {
         val state = dualHomeViewModel.uiState.value
         dsm.onViewModeChanged(

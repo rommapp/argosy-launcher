@@ -378,6 +378,9 @@ class SecondaryHomeInputHandler(
             GameDetailOption.DELETE -> {
                 broadcasts.broadcastDirectAction("DELETE", gameId)
             }
+            GameDetailOption.SELECT_DISC -> {
+                broadcasts.broadcastDirectAction("SELECT_DISC", gameId)
+            }
             GameDetailOption.HIDE -> {
                 broadcasts.broadcastDirectAction("HIDE", gameId)
             }
@@ -985,6 +988,48 @@ class SecondaryHomeInputHandler(
                         broadcasts.broadcastModalClose()
                     }
                     else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.DISC_PICKER -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveDiscPickerFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "disc_focus",
+                            vm.discPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveDiscPickerFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "disc_focus",
+                            vm.discPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val disc = vm.confirmDiscSelection()
+                        if (disc != null) {
+                            broadcasts.broadcastModalClose()
+                            broadcasts.broadcastDirectAction(
+                                "PLAY_DISC",
+                                vm.uiState.value.gameId,
+                                disc.filePath
+                            )
+                        }
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissDiscPicker()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.VARIANT_PICKER -> {
+                if (event == GamepadEvent.Back) {
+                    vm.dismissPicker()
+                    broadcasts.broadcastModalClose()
                 }
                 return InputResult.HANDLED
             }

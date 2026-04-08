@@ -3,6 +3,7 @@
  */
 package com.nendo.argosy.ui.dualscreen.gamedetail
 
+import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
@@ -19,7 +20,7 @@ enum class DualGameDetailTab {
     OPTIONS
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, COLLECTION, SAVE_NAME, UPDATES_DLC }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, COLLECTION, SAVE_NAME, UPDATES_DLC, DISC_PICKER, VARIANT_PICKER }
 
 enum class GameDetailOption {
     PLAY,
@@ -29,6 +30,7 @@ enum class GameDetailOption {
     TOGGLE_FAVORITE,
     CHANGE_EMULATOR,
     CHANGE_CORE,
+    SELECT_DISC,
     UPDATES_DLC,
     ADD_TO_COLLECTION,
     REFRESH_METADATA,
@@ -79,7 +81,8 @@ data class DualGameDetailUiState(
     val selectedCoreId: String? = null,
     val downloadProgress: Float? = null,
     val downloadState: String? = null,
-    val isDeleting: Boolean = false
+    val isDeleting: Boolean = false,
+    val isMultiDisc: Boolean = false
 )
 
 fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
@@ -92,6 +95,7 @@ fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
         add(GameDetailOption.TOGGLE_FAVORITE)
         if (isEmulated) add(GameDetailOption.CHANGE_EMULATOR)
         if (hasMultipleCores && isEmulated) add(GameDetailOption.CHANGE_CORE)
+        if (isMultiDisc && isEmulated) add(GameDetailOption.SELECT_DISC)
         if (isDownloaded && !isDeleting) add(GameDetailOption.UPDATES_DLC)
         add(GameDetailOption.ADD_TO_COLLECTION)
         if (isRommGame || isAndroidApp) add(GameDetailOption.REFRESH_METADATA)
@@ -142,7 +146,9 @@ data class DualGameDetailUpperState(
     val updatesPickerFocusIndex: Int = 0,
     val isEdenGame: Boolean = false,
     val focusedStateEntry: UnifiedStateEntry? = null,
-    val statePreviewScreenshotPath: String? = null
+    val statePreviewScreenshotPath: String? = null,
+    val discPickerOptions: List<DiscOption> = emptyList(),
+    val discPickerFocusIndex: Int = 0
 )
 
 data class SaveEntryData(

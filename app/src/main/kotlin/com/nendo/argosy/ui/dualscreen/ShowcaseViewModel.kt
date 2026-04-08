@@ -103,6 +103,15 @@ class ShowcaseViewModel(
         detailState.update { it?.copy(modalType = ActiveModal.NONE) }
     }
 
+    fun onDiscSelect(index: Int) {
+        val state = detailState.value ?: return
+        val disc = state.discPickerOptions.getOrNull(index) ?: return
+        detailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        if (isControlActive()) {
+            broadcasts.broadcastDirectAction("PLAY_DISC", state.gameId, disc.filePath)
+        }
+    }
+
     fun onModalDismiss() {
         detailState.update { it?.copy(modalType = ActiveModal.NONE) }
         if (isControlActive()) broadcasts.broadcastModalClose()
@@ -146,6 +155,15 @@ class ShowcaseViewModel(
         }
     }
 
+    fun moveDiscPickerFocus(delta: Int) {
+        detailState.update { state ->
+            val max = (state?.discPickerOptions?.size?.minus(1))?.coerceAtLeast(0) ?: 0
+            state?.copy(
+                discPickerFocusIndex = (state.discPickerFocusIndex + delta).coerceIn(0, max)
+            )
+        }
+    }
+
     fun moveCollectionFocus(delta: Int) {
         detailState.update { state ->
             val max = state?.collectionItems?.size ?: 0
@@ -180,6 +198,7 @@ class ShowcaseViewModel(
                     ActiveModal.EMULATOR -> moveEmulatorFocus(-1)
                     ActiveModal.CORE -> moveCoreFocus(-1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(-1)
+                    ActiveModal.DISC_PICKER -> moveDiscPickerFocus(-1)
                     else -> {}
                 }
             }
@@ -190,6 +209,7 @@ class ShowcaseViewModel(
                     ActiveModal.EMULATOR -> moveEmulatorFocus(1)
                     ActiveModal.CORE -> moveCoreFocus(1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(1)
+                    ActiveModal.DISC_PICKER -> moveDiscPickerFocus(1)
                     else -> {}
                 }
             }
@@ -212,6 +232,8 @@ class ShowcaseViewModel(
                             onModalCollectionShowCreate()
                         }
                     }
+                    ActiveModal.DISC_PICKER ->
+                        onDiscSelect(state.discPickerFocusIndex)
                     ActiveModal.SAVE_NAME -> onSaveNameConfirm()
                     else -> {}
                 }

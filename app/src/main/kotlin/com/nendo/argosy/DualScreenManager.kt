@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
@@ -575,7 +576,9 @@ class DualScreenManager(
 
     fun openModal(type: ActiveModal, value: Int = 0, statusSelected: String? = null, statusCurrent: String? = null) {
         when (type) {
-            ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION, ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC -> return
+            ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
+            ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC,
+            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER -> return
             else -> handleDualModalOpen(type, value, statusSelected, statusCurrent)
         }
         refocusMain()
@@ -643,6 +646,17 @@ class DualScreenManager(
                     _dualGameDetailState.update { s -> s?.copy(isEdenGame = true) }
                 }
             }
+        }
+        refocusMain()
+    }
+
+    fun openDiscModal(discs: List<DiscOption>) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.DISC_PICKER,
+                discPickerOptions = discs,
+                discPickerFocusIndex = 0
+            )
         }
         refocusMain()
     }
@@ -716,6 +730,8 @@ class DualScreenManager(
                     }
                 }
             }
+            "SELECT_DISC" -> handleSelectDisc(gameId)
+            "PLAY_DISC" -> handleDualPlayDisc(gameId, channelName)
             "INSTALL_UPDATE_FILE" -> {
                 Log.d("UpdatesDLC", "handleDirectAction: INSTALL_UPDATE_FILE gameId=$gameId")
                 scope.launch(Dispatchers.IO) {
@@ -779,6 +795,7 @@ class DualScreenManager(
                 }
             }
             "collection_create" -> _dualGameDetailState.update { s -> s?.copy(showCreateDialog = true) }
+            "disc_focus" -> _dualGameDetailState.update { s -> s?.copy(discPickerFocusIndex = intValue) }
         }
     }
 
@@ -1135,9 +1152,17 @@ class DualScreenManager(
         )
     }
 
+    fun selectDualDisc(index: Int) {
+        val state = _dualGameDetailState.value ?: return
+        val disc = state.discPickerOptions.getOrNull(index) ?: return
+        _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        handleDualPlayDisc(state.gameId, disc.filePath)
+    }
+
     // --- Game Actions ---
 
     private var syncConflictMirrorJob: kotlinx.coroutines.Job? = null
+    private var discPickerObserverJob: kotlinx.coroutines.Job? = null
 
     private fun handleDualPlay(gameId: Long, channelName: String? = null) {
         Log.d(TAG, "handleDualPlay: gameId=$gameId")
@@ -1156,6 +1181,15 @@ class DualScreenManager(
             }
         }
 
+        discPickerObserverJob?.cancel()
+        discPickerObserverJob = scope.launch {
+            gameLaunchDelegate.discPickerState.collect { pickerState ->
+                if (pickerState != null) {
+                    openDiscModal(pickerState.discs)
+                }
+            }
+        }
+
         scope.launch {
             val effectiveSwapped = resolveEmulatorDisplaySwapped(gameId)
 
@@ -1165,6 +1199,7 @@ class DualScreenManager(
                 channelName = channelName,
                 onLaunch = { intent ->
                     syncConflictMirrorJob?.cancel()
+                    discPickerObserverJob?.cancel()
                     _dualSyncConflict.value = null
                     emulatorDisplayId = displayAffinityHelper.getEmulatorDisplayId(effectiveSwapped)
                     isLaunchingGame = true
@@ -1202,6 +1237,17 @@ class DualScreenManager(
             EmulatorDisplayTarget.TOP -> false
             EmulatorDisplayTarget.BOTTOM -> true
         }
+    }
+
+    private fun handleSelectDisc(gameId: Long) {
+        handleDualPlay(gameId, null)
+    }
+
+    private fun handleDualPlayDisc(gameId: Long, discPath: String?) {
+        if (discPath == null) return
+        discPickerObserverJob?.cancel()
+        _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        gameLaunchDelegate.selectDisc(scope, discPath)
     }
 
     private fun handleDualDownload(gameId: Long) {

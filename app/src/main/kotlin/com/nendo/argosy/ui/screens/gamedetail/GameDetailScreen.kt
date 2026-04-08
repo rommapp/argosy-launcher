@@ -722,6 +722,7 @@ private fun GameDetailModals(
             game = game,
             focusIndex = uiState.moreOptionsFocusIndex,
             isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
+            hasVariants = uiState.hasVariants,
             updateCount = uiState.updateFiles.size + uiState.dlcFiles.size,
             onAction = { action -> viewModel.handleMoreOptionAction(action, onBack) },
             onDismiss = viewModel::toggleMoreOptions

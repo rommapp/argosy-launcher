@@ -147,6 +147,7 @@ sealed class MoreOptionAction {
     data object ChangeSteamLauncher : MoreOptionAction()
     data object ChangeCore : MoreOptionAction()
     data object SelectDisc : MoreOptionAction()
+    data object SelectVariant : MoreOptionAction()
     data object UpdatesDlc : MoreOptionAction()
     data object RefreshData : MoreOptionAction()
     data object AddToCollection : MoreOptionAction()
@@ -216,6 +217,7 @@ data class GameDetailUiState(
     val showAchievementList: Boolean = false,
     val achievementListFocusIndex: Int = 0,
     val isEdenGame: Boolean = false,
+    val hasVariants: Boolean = false,
     val hasSocialAccount: Boolean = false,
     val isPrivate: Boolean = false
 ) {

@@ -50,6 +50,7 @@ class MoreOptionsDelegate @Inject constructor(
         canManageSaves: Boolean,
         hasMultipleCores: Boolean,
         isMultiDisc: Boolean,
+        hasVariants: Boolean,
         isSteamGame: Boolean,
         hasUpdates: Boolean
     ) {
@@ -63,6 +64,7 @@ class MoreOptionsDelegate @Inject constructor(
         if (isSteamGame || isEmulatedGame) optionCount++
         if (hasMultipleCores && isEmulatedGame) optionCount++
         if (isMultiDisc) optionCount++
+        if (hasVariants && isEmulatedGame) optionCount++
         if (hasUpdates) optionCount++
         optionCount++  // Add to Collection (always present)
         if (isDownloaded || isAndroidApp) optionCount++
@@ -81,6 +83,7 @@ class MoreOptionsDelegate @Inject constructor(
         canManageSaves: Boolean,
         hasMultipleCores: Boolean,
         isMultiDisc: Boolean,
+        hasVariants: Boolean,
         isSteamGame: Boolean,
         hasUpdates: Boolean,
         platformSlug: String?
@@ -98,6 +101,7 @@ class MoreOptionsDelegate @Inject constructor(
         val coreIdx = if (hasMultipleCores && isEmulatedGame) currentIdx++ else -1
         val titleIdIdx = if (usesTitleId && isEmulatedGame) currentIdx++ else -1
         val discIdx = if (isMultiDisc) currentIdx++ else -1
+        val variantIdx = if (hasVariants && isEmulatedGame) currentIdx++ else -1
         val updatesIdx = if (hasUpdates) currentIdx++ else -1
         val refreshIdx = if (canTrackProgress) currentIdx++ else -1
         val addToCollectionIdx = currentIdx++
@@ -111,6 +115,7 @@ class MoreOptionsDelegate @Inject constructor(
             coreIdx -> MoreOptionAction.ChangeCore
             titleIdIdx -> MoreOptionAction.RefreshTitleId
             discIdx -> MoreOptionAction.SelectDisc
+            variantIdx -> MoreOptionAction.SelectVariant
             updatesIdx -> MoreOptionAction.UpdatesDlc
             refreshIdx -> MoreOptionAction.RefreshData
             addToCollectionIdx -> MoreOptionAction.AddToCollection

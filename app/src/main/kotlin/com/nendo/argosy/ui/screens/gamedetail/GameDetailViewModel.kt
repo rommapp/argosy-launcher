@@ -106,7 +106,9 @@ class GameDetailViewModel @Inject constructor(
     private val playOptionsDelegate: PlayOptionsDelegate,
     private val moreOptionsDelegate: MoreOptionsDelegate,
     private val socialRepository: com.nendo.argosy.data.social.SocialRepository,
-    private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager
+    private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
+    private val variantScanner: com.nendo.argosy.data.scanner.VariantScanner,
+    private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver
 ) : ViewModel() {
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
@@ -495,6 +497,9 @@ class GameDetailViewModel @Inject constructor(
             } else false
             val (updateFilesUi, dlcFilesUi) = loadUpdateAndDlcFiles(gameId, game.platformSlug, game.localPath, edenApplied)
 
+            variantScanner.scanForVariants(game)
+            val hasVariants = gameFileDao.getVariantsForGame(gameId).isNotEmpty()
+
             val downloadSizeBytes = when {
                 game.isMultiDisc -> gameDiscDao.getTotalFileSize(gameId)
                 else -> game.fileSizeBytes
@@ -529,6 +534,7 @@ class GameDetailViewModel @Inject constructor(
                     updateFiles = updateFilesUi,
                     dlcFiles = dlcFilesUi,
                     isEdenGame = isEdenGame,
+                    hasVariants = hasVariants,
                     siblingGameIds = siblingIds,
                     currentGameIndex = currentIndex,
                     isPrivate = isPrivate,
@@ -890,6 +896,7 @@ class GameDetailViewModel @Inject constructor(
             canManageSaves = state.game?.canManageSaves == true,
             hasMultipleCores = state.game?.hasMultipleCores == true,
             isMultiDisc = state.game?.isMultiDisc == true,
+            hasVariants = state.hasVariants,
             isSteamGame = state.game?.isSteamGame == true,
             hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty()
         )
@@ -907,6 +914,7 @@ class GameDetailViewModel @Inject constructor(
             MoreOptionAction.ChangeSteamLauncher -> showSteamLauncherPicker()
             MoreOptionAction.ChangeCore -> showCorePicker()
             MoreOptionAction.SelectDisc -> showDiscPicker()
+            MoreOptionAction.SelectVariant -> showVariantPickerFromMenu()
             MoreOptionAction.UpdatesDlc -> showUpdatesPicker()
             MoreOptionAction.RefreshData -> refreshAndroidOrRommData()
             MoreOptionAction.RefreshTitleId -> refreshTitleId()
@@ -934,6 +942,7 @@ class GameDetailViewModel @Inject constructor(
             canManageSaves = state.game?.canManageSaves == true,
             hasMultipleCores = state.game?.hasMultipleCores == true,
             isMultiDisc = state.game?.isMultiDisc == true,
+            hasVariants = state.hasVariants,
             isSteamGame = state.game?.isSteamGame == true,
             hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty(),
             platformSlug = state.game?.platformSlug
@@ -1119,6 +1128,14 @@ class GameDetailViewModel @Inject constructor(
     fun confirmEmulatorSelection() = pickerModalDelegate.confirmEmulatorSelection()
 
     fun showDiscPicker() { toggleMoreOptions(); playGame() }
+    fun showVariantPickerFromMenu() {
+        toggleMoreOptions()
+        viewModelScope.launch {
+            val game = gameRepository.getById(currentGameId) ?: return@launch
+            val options = variantResolver.getVariantOptions(game) ?: return@launch
+            pickerModalDelegate.showVariantPicker(options)
+        }
+    }
     fun dismissDiscPicker() = pickerModalDelegate.dismissDiscPicker()
     fun navigateDiscPicker(direction: Int) = pickerModalDelegate.moveDiscPickerFocus(direction)
     fun selectFocusedDisc() = pickerModalDelegate.confirmDiscSelection()

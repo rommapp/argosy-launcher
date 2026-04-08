@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ fun MoreOptionsModal(
     game: GameDetailUi,
     focusIndex: Int,
     isDownloaded: Boolean,
+    hasVariants: Boolean = false,
     updateCount: Int = 0,
     onAction: (MoreOptionAction) -> Unit,
     onDismiss: () -> Unit
@@ -75,6 +77,9 @@ fun MoreOptionsModal(
         }
         if (game.isMultiDisc) {
             add(MoreMenuEntry.Option(Icons.Default.Album, "Select Disc", action = MoreOptionAction.SelectDisc))
+        }
+        if (hasVariants && isEmulatedGame) {
+            add(MoreMenuEntry.Option(Icons.Default.SwapHoriz, "Select Variant", action = MoreOptionAction.SelectVariant))
         }
         if (hasUpdates) {
             add(MoreMenuEntry.Option(Icons.Default.SystemUpdate, "Updates/DLC", value = "$updateCount", action = MoreOptionAction.UpdatesDlc))

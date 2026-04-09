@@ -545,6 +545,11 @@ class MainActivity : ComponentActivity() {
             isDualScreenDevice = displayAffinityHelper.hasSecondaryDisplay
             imageCacheManager.setCustomCachePath(prefs.imageCachePath)
 
+            if (imageCacheManager.needsFlatToShardedMigration()) {
+                Log.i(TAG, "Migrating flat image cache to sharded directories")
+                imageCacheManager.migrateFlatToSharded()
+            }
+
             val validationResult = imageCacheManager.validateAndCleanCache()
             if (validationResult.deletedFiles > 0 || validationResult.clearedPaths > 0) {
                 Log.i(TAG, "Cache validation: ${validationResult.deletedFiles} files deleted, ${validationResult.clearedPaths} paths cleared")

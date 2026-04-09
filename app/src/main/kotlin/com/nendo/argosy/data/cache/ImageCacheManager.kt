@@ -92,7 +92,10 @@ class ImageCacheManager @Inject constructor(
     private val achievementDao: AchievementDao
 ) {
     private val defaultCacheDir: File by lazy {
-        File(context.cacheDir, "images").also { it.mkdirs() }
+        File(context.cacheDir, "images").also {
+            it.mkdirs()
+            ensureNoMedia(it)
+        }
     }
 
     private var customCacheBasePath: String? = null
@@ -110,7 +113,10 @@ class ImageCacheManager @Inject constructor(
     fun setCustomCachePath(path: String?) {
         customCacheBasePath = path
         if (path != null) {
-            File(path, CACHE_SUBFOLDER).mkdirs()
+            File(path, CACHE_SUBFOLDER).also {
+                it.mkdirs()
+                ensureNoMedia(it)
+            }
         }
         Log.d(TAG, "Custom cache base path set to: $path")
     }
@@ -123,6 +129,44 @@ class ImageCacheManager @Inject constructor(
 
     companion object {
         private const val CACHE_SUBFOLDER = "argosy_images"
+        private const val FALLBACK_PLATFORM = "_misc"
+        private const val LOGOS_DIR = "_logos"
+    }
+
+    private fun ensureNoMedia(dir: File) {
+        val noMedia = File(dir, ".nomedia")
+        if (!noMedia.exists()) {
+            try {
+                noMedia.createNewFile()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to create .nomedia in ${dir.absolutePath}: ${e.message}")
+            }
+        }
+    }
+
+    private fun platformDir(platformSlug: String, type: String): File {
+        return File(File(cacheDir, platformSlug), type).also { it.mkdirs() }
+    }
+
+    private fun logosDir(): File {
+        return File(cacheDir, LOGOS_DIR).also { it.mkdirs() }
+    }
+
+    private suspend fun resolveGamePlatformSlug(gameId: Long): String {
+        return gameDao.getById(gameId)?.platformSlug ?: FALLBACK_PLATFORM
+    }
+
+    private suspend fun resolveRommPlatformSlug(rommId: Long): String {
+        return gameDao.getByRommId(rommId)?.platformSlug ?: FALLBACK_PLATFORM
+    }
+
+    private suspend fun resolveSteamPlatformSlug(steamAppId: Long): String {
+        return gameDao.getBySteamAppId(steamAppId)?.platformSlug ?: FALLBACK_PLATFORM
+    }
+
+    private suspend fun resolveBadgePlatformSlug(achievementId: Long): String {
+        val achievement = achievementDao.getById(achievementId) ?: return FALLBACK_PLATFORM
+        return resolveGamePlatformSlug(achievement.gameId)
     }
 
     private val logoQueue = Channel<PlatformLogoCacheRequest>(256)
@@ -219,7 +263,9 @@ class ImageCacheManager @Inject constructor(
     private suspend fun processRequest(request: ImageCacheRequest) {
         val prefix = if (request.isSteam) "steam_bg" else "bg"
         val fileName = "${prefix}_${request.id}_${request.url.md5Hash()}.jpg"
-        val cachedFile = File(cacheDir, fileName)
+        val slug = if (request.isSteam) resolveSteamPlatformSlug(request.id)
+                   else resolveRommPlatformSlug(request.id)
+        val cachedFile = File(platformDir(slug, "backgrounds"), fileName)
 
         if (cachedFile.exists()) {
             if (isValidImageFile(cachedFile)) {
@@ -341,16 +387,27 @@ class ImageCacheManager @Inject constructor(
     }
 
     fun clearCache() {
-        cacheDir.listFiles()?.forEach { it.delete() }
+        cacheDir.listFiles()?.forEach { entry ->
+            if (entry.isDirectory) {
+                entry.deleteRecursively()
+            } else if (entry.name != ".nomedia") {
+                entry.delete()
+            }
+        }
     }
 
     suspend fun deleteGameImages(rommId: Long) {
         withContext(Dispatchers.IO) {
+            val slug = resolveRommPlatformSlug(rommId)
             val prefixes = listOf("cover_${rommId}_", "bg_${rommId}_", "ss_${rommId}_")
-            cacheDir.listFiles()?.forEach { file ->
-                if (prefixes.any { prefix -> file.name.startsWith(prefix) }) {
-                    file.delete()
-                    Log.d(TAG, "Deleted cached image: ${file.name}")
+            val types = listOf("covers", "backgrounds", "screenshots")
+            types.forEach { type ->
+                val dir = File(File(cacheDir, slug), type)
+                dir.listFiles()?.forEach { file ->
+                    if (prefixes.any { prefix -> file.name.startsWith(prefix) }) {
+                        file.delete()
+                        Log.d(TAG, "Deleted cached image: ${file.name}")
+                    }
                 }
             }
         }
@@ -361,7 +418,7 @@ class ImageCacheManager @Inject constructor(
     }
 
     fun getCacheSize(): Long {
-        return cacheDir.listFiles()?.sumOf { it.length() } ?: 0L
+        return cacheDir.walk().filter { it.isFile && it.name != ".nomedia" }.sumOf { it.length() }
     }
 
     fun getCacheSizeForBasePath(basePath: String): Long {
@@ -370,11 +427,11 @@ class ImageCacheManager @Inject constructor(
         } else {
             File(basePath, CACHE_SUBFOLDER)
         }
-        return dir.listFiles()?.sumOf { it.length() } ?: 0L
+        return dir.walk().filter { it.isFile && it.name != ".nomedia" }.sumOf { it.length() }
     }
 
     fun getCacheFileCount(): Int {
-        return cacheDir.listFiles()?.size ?: 0
+        return cacheDir.walk().count { it.isFile && it.name != ".nomedia" }
     }
 
     fun getCacheFileCountForBasePath(basePath: String): Int {
@@ -383,7 +440,7 @@ class ImageCacheManager @Inject constructor(
         } else {
             File(basePath, CACHE_SUBFOLDER)
         }
-        return dir.listFiles()?.size ?: 0
+        return dir.walk().count { it.isFile && it.name != ".nomedia" }
     }
 
     suspend fun migrateCache(
@@ -407,7 +464,7 @@ class ImageCacheManager @Inject constructor(
             return@withContext false
         }
 
-        val files = sourceDir.listFiles() ?: return@withContext false
+        val files = sourceDir.walk().filter { it.isFile && it.name != ".nomedia" }.toList()
         val total = files.size
         var copied = 0
         var failed = 0
@@ -416,7 +473,9 @@ class ImageCacheManager @Inject constructor(
 
         files.forEach { sourceFile ->
             try {
-                val destFile = File(destDir, sourceFile.name)
+                val relativePath = sourceFile.relativeTo(sourceDir).path
+                val destFile = File(destDir, relativePath)
+                destFile.parentFile?.mkdirs()
                 sourceFile.copyTo(destFile, overwrite = true)
                 copied++
                 onProgress(copied, total)
@@ -429,11 +488,15 @@ class ImageCacheManager @Inject constructor(
         Log.d(TAG, "Cache migration complete: $copied copied, $failed failed")
 
         if (failed == 0) {
-            files.forEach { it.delete() }
+            sourceDir.listFiles()?.forEach { entry ->
+                if (entry.isDirectory) entry.deleteRecursively()
+                else if (entry.name != ".nomedia") entry.delete()
+            }
             Log.d(TAG, "Source files deleted after successful migration")
             updateDatabasePaths(sourceDir.absolutePath, destDir.absolutePath)
         }
 
+        ensureNoMedia(destDir)
         failed == 0
     }
 
@@ -506,10 +569,11 @@ class ImageCacheManager @Inject constructor(
     fun queueScreenshotCacheByGameId(gameId: Long, screenshotUrls: List<String>) {
         scope.launch {
             val cachedPaths = mutableListOf<String>()
+            val slug = resolveGamePlatformSlug(gameId)
 
             screenshotUrls.forEachIndexed { index, url ->
                 val fileName = "ss_g${gameId}_${index}_${url.md5Hash()}.jpg"
-                val cachedFile = File(cacheDir, fileName)
+                val cachedFile = File(platformDir(slug, "screenshots"), fileName)
 
                 if (cachedFile.exists()) {
                     if (isValidImageFile(cachedFile)) {
@@ -560,8 +624,9 @@ class ImageCacheManager @Inject constructor(
     }
 
     suspend fun cacheSingleScreenshot(gameId: Long, url: String, index: Int): String? {
+        val slug = resolveGamePlatformSlug(gameId)
         val fileName = "ss_g${gameId}_${index}_${url.md5Hash()}.jpg"
-        val cachedFile = File(cacheDir, fileName)
+        val cachedFile = File(platformDir(slug, "screenshots"), fileName)
 
         if (cachedFile.exists() && isValidImageFile(cachedFile)) {
             return cachedFile.absolutePath
@@ -621,10 +686,11 @@ class ImageCacheManager @Inject constructor(
 
     private suspend fun processScreenshotRequest(request: ScreenshotCacheRequest) {
         val cachedPaths = mutableListOf<String>()
+        val slug = resolveRommPlatformSlug(request.rommId)
 
         request.screenshotUrls.forEachIndexed { index, url ->
             val fileName = "ss_${request.rommId}_${index}_${url.md5Hash()}.jpg"
-            val cachedFile = File(cacheDir, fileName)
+            val cachedFile = File(platformDir(slug, "screenshots"), fileName)
 
             if (cachedFile.exists()) {
                 if (isValidImageFile(cachedFile)) {
@@ -707,7 +773,7 @@ class ImageCacheManager @Inject constructor(
 
     private suspend fun processLogoRequest(request: PlatformLogoCacheRequest) {
         val fileName = "logo_${request.platformId}_${request.logoUrl.md5Hash()}.png"
-        val cachedFile = File(cacheDir, fileName)
+        val cachedFile = File(logosDir(), fileName)
 
         if (cachedFile.exists()) {
             if (isValidImageFile(cachedFile, minSizeBytes = 512)) {
@@ -835,7 +901,9 @@ class ImageCacheManager @Inject constructor(
         val isGameIdRequest = request.gameId != null
         val prefix = if (isGameIdRequest) "cover_g${request.gameId}" else "cover_${request.id}"
         val fileName = "${prefix}_${request.url.md5Hash()}.jpg"
-        val cachedFile = File(cacheDir, fileName)
+        val slug = if (isGameIdRequest) resolveGamePlatformSlug(request.gameId!!)
+                   else resolveRommPlatformSlug(request.id)
+        val cachedFile = File(platformDir(slug, "covers"), fileName)
 
         if (cachedFile.exists()) {
             if (isValidImageFile(cachedFile)) {
@@ -928,8 +996,10 @@ class ImageCacheManager @Inject constructor(
     }
 
     private suspend fun processBadgeRequest(request: AchievementBadgeCacheRequest) {
+        val slug = resolveBadgePlatformSlug(request.achievementId)
+        val badgeDir = platformDir(slug, "badges")
         val unlockedFileName = "badge_${request.achievementId}_${request.badgeUrl.md5Hash()}.png"
-        val unlockedFile = File(cacheDir, unlockedFileName)
+        val unlockedFile = File(badgeDir, unlockedFileName)
 
         if (unlockedFile.exists()) {
             if (isValidImageFile(unlockedFile, minSizeBytes = 512)) {
@@ -960,7 +1030,7 @@ class ImageCacheManager @Inject constructor(
 
         if (request.badgeUrlLock != null) {
             val lockedFileName = "badge_lock_${request.achievementId}_${request.badgeUrlLock.md5Hash()}.png"
-            val lockedFile = File(cacheDir, lockedFileName)
+            val lockedFile = File(badgeDir, lockedFileName)
 
             if (lockedFile.exists()) {
                 if (isValidImageFile(lockedFile, minSizeBytes = 512)) {
@@ -1023,8 +1093,9 @@ class ImageCacheManager @Inject constructor(
                     sourceBitmap
                 }
 
+                val slug = resolveGamePlatformSlug(gameId)
                 val fileName = "bg_custom_${gameId}_${System.currentTimeMillis()}.jpg"
-                val cachedFile = File(cacheDir, fileName)
+                val cachedFile = File(platformDir(slug, "backgrounds"), fileName)
 
                 FileOutputStream(cachedFile).use { out ->
                     resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
@@ -1076,8 +1147,9 @@ class ImageCacheManager @Inject constructor(
     }
 
     private suspend fun processAppIconRequest(request: AppIconCacheRequest) {
+        val slug = resolveGamePlatformSlug(request.gameId)
         val fileName = "appicon_${request.packageName.hashCode()}.png"
-        val cachedFile = File(cacheDir, fileName)
+        val cachedFile = File(platformDir(slug, "icons"), fileName)
 
         if (cachedFile.exists()) {
             if (isValidImageFile(cachedFile, minSizeBytes = 512)) {
@@ -1135,8 +1207,9 @@ class ImageCacheManager @Inject constructor(
 
     suspend fun cacheAppIconSync(packageName: String): String? {
         return withContext(Dispatchers.IO) {
+            val iconDir = platformDir("android", "icons")
             val fileName = "appicon_${packageName.hashCode()}.png"
-            val cachedFile = File(cacheDir, fileName)
+            val cachedFile = File(iconDir, fileName)
 
             if (cachedFile.exists()) {
                 if (isValidImageFile(cachedFile, minSizeBytes = 512)) {
@@ -1179,7 +1252,9 @@ class ImageCacheManager @Inject constructor(
         var deleted = 0
         var cleared = 0
 
-        val files = withContext(Dispatchers.IO) { cacheDir.listFiles()?.toList() ?: emptyList() }
+        val files = withContext(Dispatchers.IO) {
+            cacheDir.walk().filter { it.isFile && it.name != ".nomedia" }.toList()
+        }
         val totalFiles = files.size
         onProgress?.invoke("Checking $totalFiles cached files...", 0, totalFiles)
 
@@ -1244,5 +1319,215 @@ class ImageCacheManager @Inject constructor(
 
         Log.i(TAG, "Cache validation complete: $deleted files deleted, $cleared paths cleared")
         return CacheValidationResult(deleted, cleared)
+    }
+
+    fun needsFlatToShardedMigration(): Boolean {
+        val files = cacheDir.listFiles() ?: return false
+        return files.any { it.isFile && it.name != ".nomedia" && !it.name.endsWith(".tmp") }
+    }
+
+    suspend fun migrateFlatToSharded(
+        onProgress: (suspend (current: Int, total: Int) -> Unit)? = null
+    ) {
+        withContext(cacheDispatcher) {
+            val rootFiles = cacheDir.listFiles()
+                ?.filter { it.isFile && it.name != ".nomedia" && !it.name.endsWith(".tmp") }
+                ?: return@withContext
+
+            val total = rootFiles.size
+            Log.i(TAG, "Starting flat-to-sharded migration for $total files")
+
+            var migrated = 0
+            var failed = 0
+
+            rootFiles.forEachIndexed { index, file ->
+                try {
+                    val destination = resolveShardedDestination(file.name)
+                    if (destination != null) {
+                        destination.parentFile?.mkdirs()
+                        file.renameTo(destination)
+                        migrated++
+                    } else {
+                        val miscDir = File(File(cacheDir, FALLBACK_PLATFORM), "other")
+                        miscDir.mkdirs()
+                        file.renameTo(File(miscDir, file.name))
+                        migrated++
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to migrate ${file.name}: ${e.message}")
+                    failed++
+                }
+
+                if (index % 100 == 0) {
+                    onProgress?.invoke(index, total)
+                }
+            }
+
+            Log.i(TAG, "Flat-to-sharded migration complete: $migrated migrated, $failed failed")
+            onProgress?.invoke(total, total)
+
+            updateDatabasePathsAfterSharding()
+        }
+    }
+
+    private suspend fun resolveShardedDestination(fileName: String): File? {
+        return when {
+            fileName.startsWith("steam_bg_") -> {
+                val steamAppId = fileName.removePrefix("steam_bg_").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveSteamPlatformSlug(steamAppId)
+                File(platformDir(slug, "backgrounds"), fileName)
+            }
+            fileName.startsWith("bg_custom_") -> {
+                val gameId = fileName.removePrefix("bg_custom_").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveGamePlatformSlug(gameId)
+                File(platformDir(slug, "backgrounds"), fileName)
+            }
+            fileName.startsWith("bg_") -> {
+                val rommId = fileName.removePrefix("bg_").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveRommPlatformSlug(rommId)
+                File(platformDir(slug, "backgrounds"), fileName)
+            }
+            fileName.startsWith("cover_g") -> {
+                val gameId = fileName.removePrefix("cover_g").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveGamePlatformSlug(gameId)
+                File(platformDir(slug, "covers"), fileName)
+            }
+            fileName.startsWith("cover_") -> {
+                val rommId = fileName.removePrefix("cover_").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveRommPlatformSlug(rommId)
+                File(platformDir(slug, "covers"), fileName)
+            }
+            fileName.startsWith("ss_g") -> {
+                val gameId = fileName.removePrefix("ss_g").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveGamePlatformSlug(gameId)
+                File(platformDir(slug, "screenshots"), fileName)
+            }
+            fileName.startsWith("ss_") -> {
+                val rommId = fileName.removePrefix("ss_").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveRommPlatformSlug(rommId)
+                File(platformDir(slug, "screenshots"), fileName)
+            }
+            fileName.startsWith("badge_lock_") -> {
+                val achievementId = fileName.removePrefix("badge_lock_").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveBadgePlatformSlug(achievementId)
+                File(platformDir(slug, "badges"), fileName)
+            }
+            fileName.startsWith("badge_") -> {
+                val achievementId = fileName.removePrefix("badge_").substringBefore("_").toLongOrNull()
+                    ?: return null
+                val slug = resolveBadgePlatformSlug(achievementId)
+                File(platformDir(slug, "badges"), fileName)
+            }
+            fileName.startsWith("logo_") -> {
+                File(logosDir(), fileName)
+            }
+            fileName.startsWith("appicon_") -> {
+                File(platformDir("android", "icons"), fileName)
+            }
+            else -> null
+        }
+    }
+
+    private suspend fun updateDatabasePathsAfterSharding() {
+        val cachePath = cacheDir.absolutePath
+        var updated = 0
+
+        gameDao.getAllGames().forEach { game ->
+            var changed = false
+            var newCoverPath = game.coverPath
+            var newBackgroundPath = game.backgroundPath
+            var newCachedScreenshotPaths = game.cachedScreenshotPaths
+
+            if (game.coverPath?.startsWith(cachePath) == true && !File(game.coverPath).exists()) {
+                val fileName = File(game.coverPath).name
+                val dest = resolveShardedDestination(fileName)
+                if (dest != null && dest.exists()) {
+                    newCoverPath = dest.absolutePath
+                    changed = true
+                }
+            }
+            if (game.backgroundPath?.startsWith(cachePath) == true && !File(game.backgroundPath).exists()) {
+                val fileName = File(game.backgroundPath).name
+                val dest = resolveShardedDestination(fileName)
+                if (dest != null && dest.exists()) {
+                    newBackgroundPath = dest.absolutePath
+                    changed = true
+                }
+            }
+            if (game.cachedScreenshotPaths?.contains(cachePath) == true) {
+                val paths = game.cachedScreenshotPaths.split(",")
+                val newPaths = paths.map { path ->
+                    if (path.startsWith(cachePath) && !File(path).exists()) {
+                        val fileName = File(path).name
+                        val dest = resolveShardedDestination(fileName)
+                        if (dest != null && dest.exists()) dest.absolutePath else path
+                    } else path
+                }
+                if (newPaths != paths) {
+                    newCachedScreenshotPaths = newPaths.joinToString(",")
+                    changed = true
+                }
+            }
+
+            if (changed) {
+                gameDao.updateImagePaths(game.id, newCoverPath, newBackgroundPath, newCachedScreenshotPaths)
+                updated++
+            }
+        }
+
+        platformDao.getAllPlatforms().forEach { platform ->
+            if (platform.logoPath?.startsWith(cachePath) == true && !File(platform.logoPath).exists()) {
+                val fileName = File(platform.logoPath).name
+                val dest = resolveShardedDestination(fileName)
+                if (dest != null && dest.exists()) {
+                    platformDao.updateLogoPath(platform.id, dest.absolutePath)
+                    updated++
+                }
+            }
+        }
+
+        achievementDao.getWithUncachedBadges()
+        val allGames = gameDao.getAllGames()
+        allGames.forEach { game ->
+            val achievements = achievementDao.getByGameId(game.id)
+            achievements.forEach { achievement ->
+                var badgeChanged = false
+                var newBadgePath = achievement.cachedBadgeUrl
+                var newBadgeLockPath = achievement.cachedBadgeUrlLock
+
+                if (achievement.cachedBadgeUrl?.startsWith(cachePath) == true && !File(achievement.cachedBadgeUrl).exists()) {
+                    val fileName = File(achievement.cachedBadgeUrl).name
+                    val dest = resolveShardedDestination(fileName)
+                    if (dest != null && dest.exists()) {
+                        newBadgePath = dest.absolutePath
+                        badgeChanged = true
+                    }
+                }
+                if (achievement.cachedBadgeUrlLock?.startsWith(cachePath) == true && !File(achievement.cachedBadgeUrlLock).exists()) {
+                    val fileName = File(achievement.cachedBadgeUrlLock).name
+                    val dest = resolveShardedDestination(fileName)
+                    if (dest != null && dest.exists()) {
+                        newBadgeLockPath = dest.absolutePath
+                        badgeChanged = true
+                    }
+                }
+
+                if (badgeChanged) {
+                    if (newBadgePath != null) achievementDao.updateCachedBadgeUrl(achievement.id, newBadgePath)
+                    if (newBadgeLockPath != null) achievementDao.updateCachedBadgeUrlLock(achievement.id, newBadgeLockPath)
+                    updated++
+                }
+            }
+        }
+
+        Log.i(TAG, "Updated $updated database paths after sharding migration")
     }
 }

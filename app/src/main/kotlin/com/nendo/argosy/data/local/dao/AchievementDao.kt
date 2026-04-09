@@ -10,6 +10,9 @@ import com.nendo.argosy.data.local.entity.AchievementEntity
 @Dao
 interface AchievementDao {
 
+    @Query("SELECT * FROM achievements WHERE id = :id")
+    suspend fun getById(id: Long): AchievementEntity?
+
     @Query("SELECT * FROM achievements WHERE gameId = :gameId ORDER BY points DESC, title ASC")
     suspend fun getByGameId(gameId: Long): List<AchievementEntity>
 

@@ -39,10 +39,14 @@ fun DualHomeLowerContent(
     val uiState by viewModel.uiState.collectAsState()
     val forwardingMode by viewModel.forwardingMode.collectAsState()
 
+    val isSearchActive = uiState.viewMode == DualHomeViewMode.LIBRARY_GRID
+        && uiState.showFilterOverlay
+        && uiState.filterCategory == DualFilterCategory.SEARCH
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .focusProperties { canFocus = false }
+            .then(if (!isSearchActive) Modifier.focusProperties { canFocus = false } else Modifier)
             .background(MaterialTheme.colorScheme.background)
     ) {
         when (uiState.viewMode) {

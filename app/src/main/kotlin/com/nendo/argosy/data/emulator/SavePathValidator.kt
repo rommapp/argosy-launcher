@@ -45,21 +45,22 @@ class SavePathValidator @Inject constructor(
         val resolvedPaths = resolvePaths(emulatorId, config, emulatorPackage)
 
         for (path in resolvedPaths) {
-            if (!fileAccessLayer.exists(path) || !fileAccessLayer.isDirectory(path)) continue
+            val checkPath = packageDataRoot(path) ?: path
+            if (!fileAccessLayer.exists(checkPath) || !fileAccessLayer.isDirectory(checkPath)) continue
 
             val canRead = try {
-                fileAccessLayer.listFiles(path) != null
+                fileAccessLayer.listFiles(checkPath) != null
             } catch (e: SecurityException) {
-                Logger.debug(TAG, "[SaveSync] VALIDATE | SecurityException reading path | path=$path, error=${e.message}")
+                Logger.debug(TAG, "[SaveSync] VALIDATE | SecurityException reading path | path=$checkPath, error=${e.message}")
                 false
             }
 
             if (canRead) {
-                Logger.debug(TAG, "[SaveSync] VALIDATE | Path accessible | path=$path")
+                Logger.debug(TAG, "[SaveSync] VALIDATE | Path accessible | path=$checkPath (from $path)")
                 return Result.Valid
             } else {
-                Logger.debug(TAG, "[SaveSync] VALIDATE | Path exists but access denied (SELinux/OEM restriction?) | path=$path")
-                return Result.AccessDenied(path)
+                Logger.debug(TAG, "[SaveSync] VALIDATE | Path exists but access denied (SELinux/OEM restriction?) | path=$checkPath")
+                return Result.AccessDenied(checkPath)
             }
         }
 
@@ -91,6 +92,27 @@ class SavePathValidator @Inject constructor(
             SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
         }
     }
+
+    fun isPackageDataAccessible(emulatorId: String, emulatorPackage: String? = null): Boolean {
+        if (!hasFileAccessPermission()) return false
+
+        val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId) ?: return false
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+        val roots = resolvedPaths.mapNotNull { packageDataRoot(it) }.distinct()
+
+        return roots.any { root ->
+            try {
+                fileAccessLayer.exists(root) && fileAccessLayer.listFiles(root) != null
+            } catch (_: SecurityException) {
+                false
+            }
+        }
+    }
+
+    private val packageDataPattern = Regex(".*/Android/data/[^/]+")
+
+    private fun packageDataRoot(path: String): String? =
+        packageDataPattern.find(path)?.value
 
     private fun hasFileAccessPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

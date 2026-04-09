@@ -253,7 +253,7 @@ class SettingsViewModel @Inject constructor(
             } else {
                 config.effectiveEmulatorPackage?.let { pkg ->
                     val emulatorId = config.effectiveEmulatorId ?: return@let null
-                    savePathValidator.validateAccess(emulatorId, pkg) is com.nendo.argosy.data.emulator.SavePathValidator.Result.Valid
+                    savePathValidator.isPackageDataAccessible(emulatorId, pkg)
                 }
             }
 

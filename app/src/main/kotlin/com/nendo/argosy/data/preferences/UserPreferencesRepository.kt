@@ -798,6 +798,6 @@ enum class EmulatorDisplayTarget(val displayName: String) {
 
     companion object {
         fun fromString(value: String?): EmulatorDisplayTarget =
-            entries.find { it.name == value } ?: HERO
+            entries.find { it.name == value } ?: TOP
     }
 }

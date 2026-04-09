@@ -535,7 +535,7 @@ class EmulatorSettingsDelegate @Inject constructor(
         scope.launch {
             configureEmulatorUseCase.setDisplayTargetForPlatform(
                 config.platform.id,
-                if (next == EmulatorDisplayTarget.HERO) null else next.name
+                if (next == EmulatorDisplayTarget.TOP) null else next.name
             )
             onLoadSettings()
         }

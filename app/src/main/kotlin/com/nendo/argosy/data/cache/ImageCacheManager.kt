@@ -1313,6 +1313,19 @@ class ImageCacheManager @Inject constructor(
             }
         }
 
+        val orphanDirs = listOf("image_cache")
+        withContext(Dispatchers.IO) {
+            for (name in orphanDirs) {
+                val dir = File(context.cacheDir, name)
+                if (dir.exists() && dir.isDirectory) {
+                    val count = dir.walk().count { it.isFile }
+                    dir.deleteRecursively()
+                    deleted += count
+                    Log.i(TAG, "Cleaned up legacy cache directory: $name ($count files)")
+                }
+            }
+        }
+
         withContext(Dispatchers.Main) {
             context.imageLoader.memoryCache?.clear()
         }

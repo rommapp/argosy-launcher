@@ -2,6 +2,11 @@ package com.nendo.argosy.libretro
 
 import com.nendo.argosy.data.platform.PlatformDefinitions
 
+enum class NetplaySupportLevel {
+    SUPPORTED,
+    UNSUPPORTED
+}
+
 object LibretroCoreRegistry {
 
     data class CoreInfo(
@@ -11,7 +16,8 @@ object LibretroCoreRegistry {
         val platforms: Set<String>,
         val estimatedSizeBytes: Long,
         val requiresBios: List<String> = emptyList(),
-        val isDefault: Boolean = false
+        val isDefault: Boolean = false,
+        val netplaySupport: NetplaySupportLevel = NetplaySupportLevel.UNSUPPORTED
     )
 
     private val cores = listOf(
@@ -22,7 +28,8 @@ object LibretroCoreRegistry {
             displayName = "FCEUmm",
             platforms = setOf("nes", "fds"),
             estimatedSizeBytes = 1_500_000L,
-            isDefault = true
+            isDefault = true,
+            netplaySupport = NetplaySupportLevel.SUPPORTED
         ),
         CoreInfo(
             coreId = "nestopia",
@@ -39,7 +46,8 @@ object LibretroCoreRegistry {
             displayName = "Snes9x",
             platforms = setOf("snes"),
             estimatedSizeBytes = 2_500_000L,
-            isDefault = true
+            isDefault = true,
+            netplaySupport = NetplaySupportLevel.SUPPORTED
         ),
         CoreInfo(
             coreId = "bsnes",
@@ -64,7 +72,8 @@ object LibretroCoreRegistry {
             fileName = "gambatte_libretro_android.so",
             displayName = "Gambatte",
             platforms = setOf("gb", "gbc"),
-            estimatedSizeBytes = 800_000L
+            estimatedSizeBytes = 800_000L,
+            netplaySupport = NetplaySupportLevel.SUPPORTED
         ),
         CoreInfo(
             coreId = "vbam",
@@ -116,7 +125,8 @@ object LibretroCoreRegistry {
             displayName = "Genesis Plus GX",
             platforms = setOf("genesis", "megadrive", "sms", "gg", "scd", "segacd", "32x"),
             estimatedSizeBytes = 2_000_000L,
-            isDefault = true
+            isDefault = true,
+            netplaySupport = NetplaySupportLevel.SUPPORTED
         ),
         CoreInfo(
             coreId = "picodrive",

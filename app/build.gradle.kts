@@ -222,6 +222,11 @@ dependencies {
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)
 
+    // Netplay (Phase 2 wiring) -- XChaCha20-Poly1305 AEAD + UPnP port mapping
+    implementation("com.goterl:lazysodium-android:5.2.0@aar")
+    implementation("net.java.dev.jna:jna:5.14.0@aar")
+    implementation("org.bitlet:weupnp:0.1.4")
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

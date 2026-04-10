@@ -296,6 +296,12 @@ void LibretroDroid::onKeyEvent(unsigned int port, int action, int keyCode) {
     }
 }
 
+void LibretroDroid::setInputPortState(unsigned int port, uint32_t bitmask) {
+    if (input) {
+        input->setInputPortState(port, bitmask);
+    }
+}
+
 void LibretroDroid::create(
     unsigned int GLESVersion,
     const std::string& soFilePath,
@@ -613,6 +619,76 @@ void LibretroDroid::step() {
         if (bfiEnabled) {
             fpsSync->setExternalTimingControl(true);
         }
+
+        double effectiveSampleRate = newSampleRate * fpsSync->getTimeStretchFactor();
+        audio->updateTiming((int32_t) std::lround(effectiveSampleRate), newFps);
+        updateAudioSampleRateMultiplier();
+    }
+}
+
+void LibretroDroid::stepForNetplay() {
+    if (video && video->isHWAccelerated()) {
+        video->bindHWContext();
+    }
+
+    core->retro_run();
+
+    if (input) {
+        input->flushPendingReleases();
+    }
+
+    if (rewindEnabled && rewindBuffer) {
+        size_t sz = core->retro_serialize_size();
+        if (sz > 0 && sz <= rewindBuffer->getMaxStateSize()) {
+            if (core->retro_serialize(rewindTempBuffer.data(), sz)) {
+                rewindBuffer->push(rewindTempBuffer.data(), sz);
+            }
+        }
+    }
+
+    if (video && video->isHWAccelerated()) {
+        video->bindMainContext();
+    }
+
+    if (achievements.isActive()) {
+        achievements.evaluateFrame();
+    }
+
+    if (video && !video->rendersInVideoCallback()) {
+        video->renderFrame();
+    }
+
+    if (rumble && rumbleEnabled) {
+        rumble->fetchFromEnvironment();
+    }
+
+    if (video && Environment::getInstance().isGameGeometryUpdated()) {
+        Environment::getInstance().clearGameGeometryUpdated();
+
+        unsigned geoW = Environment::getInstance().getGameGeometryWidth();
+        unsigned geoH = Environment::getInstance().getGameGeometryHeight();
+        float geoAR = Environment::getInstance().getGameGeometryAspectRatio();
+        LOGI("Runtime geometry update: %ux%u aspect=%.4f", geoW, geoH, geoAR);
+
+        video->updateRendererSize(geoW, geoH);
+        refreshAspectRatio();
+
+        dirtyVideo = true;
+    }
+
+    if (video && Environment::getInstance().isScreenRotationUpdated()) {
+        Environment::getInstance().clearScreenRotationUpdated();
+
+        video->updateRotation(Environment::getInstance().getScreenRotation());
+    }
+
+    if (audio && fpsSync && Environment::getInstance().isGameTimingUpdated()) {
+        Environment::getInstance().clearGameTimingUpdated();
+
+        double newFps = Environment::getInstance().getGameTimingFps();
+        double newSampleRate = Environment::getInstance().getGameTimingSampleRate();
+
+        fpsSync->updateContentRefreshRate(newFps);
 
         double effectiveSampleRate = newSampleRate * fpsSync->getTimeStretchFactor();
         audio->updateTiming((int32_t) std::lround(effectiveSampleRate), newFps);

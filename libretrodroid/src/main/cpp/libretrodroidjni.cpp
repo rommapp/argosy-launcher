@@ -637,6 +637,47 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_renderFram
     LibretroDroid::getInstance().renderFrameOnly();
 }
 
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_stepForNetplay(
+    JNIEnv* env,
+    jclass obj,
+    jobject glRetroView
+) {
+    LibretroDroid::getInstance().stepForNetplay();
+
+    if (LibretroDroid::getInstance().requiresVideoRefresh()) {
+        LibretroDroid::getInstance().clearRequiresVideoRefresh();
+        jclass cls = env->GetObjectClass(glRetroView);
+        jmethodID requestAspectRatioUpdate = env->GetMethodID(cls, "refreshAspectRatio", "()V");
+        env->CallVoidMethod(glRetroView, requestAspectRatioUpdate);
+    }
+
+    if (LibretroDroid::getInstance().isRumbleEnabled()) {
+        LibretroDroid::getInstance().handleRumbleUpdates([&](int port, float weak, float strong) {
+            jclass cls = env->GetObjectClass(glRetroView);
+            jmethodID sendRumbleStrengthMethodID = env->GetMethodID(cls, "sendRumbleEvent", "(IFF)V");
+            env->CallVoidMethod(glRetroView, sendRumbleStrengthMethodID, port, weak, strong);
+        });
+    }
+
+    LibretroDroid::getInstance().handleAchievementUnlocks([&](uint32_t achievementId) {
+        jclass cls = env->GetObjectClass(glRetroView);
+        jmethodID onAchievementUnlockedMethodID = env->GetMethodID(cls, "onAchievementUnlocked", "(J)V");
+        env->CallVoidMethod(glRetroView, onAchievementUnlockedMethodID, static_cast<jlong>(achievementId));
+    });
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setInputPortState(
+    JNIEnv* env,
+    jclass obj,
+    jint port,
+    jint bitmask
+) {
+    LibretroDroid::getInstance().setInputPortState(
+        static_cast<unsigned int>(port),
+        static_cast<uint32_t>(bitmask)
+    );
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setRumbleEnabled(
     JNIEnv* env,
     jclass obj,

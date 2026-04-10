@@ -108,6 +108,8 @@ public class LibretroDroid {
     public static native void destroy();
 
     public static native void step(GLRetroView retroView);
+    public static native void stepForNetplay(GLRetroView retroView);
+    public static native void setInputPortState(int port, int bitmask);
     public static native void renderFrameOnly();
 
     public static native void reset();

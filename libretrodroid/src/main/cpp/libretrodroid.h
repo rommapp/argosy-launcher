@@ -103,6 +103,7 @@ public:
     );
     void resume();
     void step();
+    void stepForNetplay();
     void renderFrameOnly();
     void pause();
     void destroy();
@@ -116,6 +117,7 @@ public:
     void onKeyEvent(unsigned int port, int action, int keyCode);
     void onMotionEvent(unsigned int port, unsigned int source, float xAxis, float yAxis);
     void onTouchEvent(float xAxis, float yAxis);
+    void setInputPortState(unsigned int port, uint32_t bitmask);
 
     void refreshAspectRatio();
     float getAspectRatio();

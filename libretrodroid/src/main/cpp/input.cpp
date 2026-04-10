@@ -161,6 +161,19 @@ void Input::onKeyEvent(unsigned int port, int action, int keyCode) {
     }
 }
 
+void Input::setInputPortState(unsigned int port, uint32_t bitmask) {
+    if (port >= 4) return;
+
+    std::lock_guard<std::mutex> lock(inputMutex);
+    pads[port].pressedKeys.clear();
+    pads[port].pendingReleases.clear();
+    for (unsigned i = 0; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++) {
+        if ((bitmask & (1u << i)) != 0u) {
+            pads[port].pressedKeys.insert(static_cast<int>(i));
+        }
+    }
+}
+
 void Input::flushPendingReleases() {
     std::lock_guard<std::mutex> lock(inputMutex);
     for (unsigned p = 0; p < 4; p++) {

@@ -129,6 +129,9 @@ class SteamContentManager @Inject constructor(
 
     fun clearCompletedDownloads() {
         _completedDownloads.value = emptyList()
+        if (_activeDownload.value?.state is SteamDownloadState.Completed) {
+            _activeDownload.value = null
+        }
     }
 
     private var currentDownloadJob: kotlinx.coroutines.Job? = null
@@ -1064,6 +1067,7 @@ class SteamContentManager @Inject constructor(
                     appId, gameName, coverPath, 1f, finalSize, finalSize, completedState
                 )
                 _completedDownloads.value = _completedDownloads.value + completedProgress
+                _activeDownload.value = null
 
                 Log.d(TAG, "Download finalized: $gameName -> ${installDir.absolutePath}")
 

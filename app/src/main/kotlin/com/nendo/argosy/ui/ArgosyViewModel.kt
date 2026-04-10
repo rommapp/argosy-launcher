@@ -421,7 +421,9 @@ class ArgosyViewModel @Inject constructor(
         socialRepository.friends,
         socialRepository.friendCode,
         _drawerModal,
-        socialRepository.connectionState
+        socialRepository.connectionState,
+        steamContentManager.activeDownload,
+        steamContentManager.downloadQueue
     ) { values ->
         val connection = values[0] as ConnectionState
         val downloads = values[1] as DownloadQueueState
@@ -434,9 +436,12 @@ class ArgosyViewModel @Inject constructor(
         val friendCodeData = values[7] as SocialRepository.FriendCode?
         val modal = values[8] as DrawerModal
         val socialConnection = values[9] as SocialConnectionState
+        val steamActiveDownload = values[10] as com.nendo.argosy.data.steam.SteamDownloadProgress?
+        @Suppress("UNCHECKED_CAST")
+        val steamQueue = values[11] as List<com.nendo.argosy.data.steam.QueuedSteamDownload>
 
-        val steamActive = steamContentManager.activeDownload.value != null
-        val steamQueued = steamContentManager.downloadQueue.value.size
+        val steamActive = steamActiveDownload != null
+        val steamQueued = steamQueue.size
         val downloadCount = downloads.activeDownloads.size + downloads.queue.size +
             (if (steamActive) 1 else 0) + steamQueued
         val sortedFriends = friends

@@ -869,6 +869,7 @@ class DownloadManager @Inject constructor(
         when {
             progress.isGameFileDownload && progress.gameFileId != null -> {
                 gameFileDao.updateLocalPath(progress.gameFileId, finalPath, Instant.now())
+                maybeComputeRomHashPrefix(progress.gameFileId, progress.gameId, finalPath)
                 autoApplyToEdenIfNeeded(progress, finalPath)
             }
             progress.isDiscDownload && progress.discId != null -> {
@@ -896,6 +897,25 @@ class DownloadManager @Inject constructor(
         if (!tempFile.renameTo(targetFile)) {
             tempFile.copyTo(targetFile, overwrite = true)
             tempFile.delete()
+        }
+    }
+
+    private suspend fun maybeComputeRomHashPrefix(
+        gameFileId: Long,
+        gameId: Long,
+        finalPath: String
+    ) {
+        try {
+            val game = gameDao.getById(gameId) ?: return
+            if (!com.nendo.argosy.data.netplay.RomHashComputer.isNetplayEligible(game.platformSlug)) {
+                return
+            }
+            val hash = withContext(Dispatchers.IO) {
+                com.nendo.argosy.data.netplay.RomHashComputer.computeRomHashPrefix(finalPath)
+            } ?: return
+            gameFileDao.updateRomHashPrefix(gameFileId, hash)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to compute ROM hash prefix: ${e.message}")
         }
     }
 

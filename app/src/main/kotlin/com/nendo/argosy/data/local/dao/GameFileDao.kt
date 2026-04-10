@@ -71,6 +71,9 @@ interface GameFileDao {
     @Query("UPDATE game_files SET localPath = :localPath, downloadedAt = :downloadedAt WHERE id = :id")
     suspend fun updateLocalPath(id: Long, localPath: String?, downloadedAt: Instant?)
 
+    @Query("UPDATE game_files SET romHashPrefix = :hash WHERE id = :id")
+    suspend fun updateRomHashPrefix(id: Long, hash: String?)
+
     @Query("UPDATE game_files SET localPath = :localPath, downloadedAt = :downloadedAt WHERE rommFileId = :rommFileId")
     suspend fun updateLocalPathByRommFileId(rommFileId: Long, localPath: String?, downloadedAt: Instant?)
 

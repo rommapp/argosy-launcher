@@ -35,5 +35,6 @@ data class GameFileEntity(
     val downloadedAt: Instant? = null,
     val isLaunchTarget: Boolean = false,
     val isMultiDisc: Boolean = false,
-    val m3uPath: String? = null
+    val m3uPath: String? = null,
+    val romHashPrefix: String? = null
 )

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
@@ -28,6 +29,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,9 +41,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.data.netplay.NetplayPreflightResult
 import com.nendo.argosy.data.social.Friend
+import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.data.social.PresenceStatus
 import com.nendo.argosy.ui.util.clickableNoFocus
+
+sealed class FriendNetplayJoinState {
+    data object Loading : FriendNetplayJoinState()
+    data class Joinable(val filePath: String) : FriendNetplayJoinState()
+    data object RomNotFound : FriendNetplayJoinState()
+    data object RomVersionMismatch : FriendNetplayJoinState()
+    data object CoreVersionMismatch : FriendNetplayJoinState()
+    data object CoreNotSupported : FriendNetplayJoinState()
+    data object SessionBusy : FriendNetplayJoinState()
+}
+
+fun NetplayPreflightResult.toFriendJoinState(): FriendNetplayJoinState = when (this) {
+    is NetplayPreflightResult.Joinable -> FriendNetplayJoinState.Joinable(localFilePath)
+    NetplayPreflightResult.RomNotFound -> FriendNetplayJoinState.RomNotFound
+    NetplayPreflightResult.RomVersionMismatch -> FriendNetplayJoinState.RomVersionMismatch
+    NetplayPreflightResult.CoreVersionMismatch -> FriendNetplayJoinState.CoreVersionMismatch
+    NetplayPreflightResult.CoreNotSupported -> FriendNetplayJoinState.CoreNotSupported
+}
 
 @Composable
 fun FriendsTabContent(
@@ -45,7 +71,9 @@ fun FriendsTabContent(
     focusedIndex: Int,
     listState: LazyListState,
     onViewProfile: (String) -> Unit,
-    onToggleFavorite: (String) -> Unit = {}
+    onToggleFavorite: (String) -> Unit = {},
+    netplayPreflight: (suspend (NetplaySession) -> NetplayPreflightResult)? = null,
+    onJoinNetplaySession: ((Friend, NetplaySession) -> Unit)? = null
 ) {
     if (friends.isEmpty()) {
         Box(
@@ -80,7 +108,9 @@ fun FriendsTabContent(
                 friend = friend,
                 isFocused = index == focusedIndex,
                 onClick = { onViewProfile(friend.id) },
-                onToggleFavorite = { onToggleFavorite(friend.id) }
+                onToggleFavorite = { onToggleFavorite(friend.id) },
+                netplayPreflight = netplayPreflight,
+                onJoinNetplaySession = onJoinNetplaySession
             )
         }
     }
@@ -91,7 +121,9 @@ private fun FriendCard(
     friend: Friend,
     isFocused: Boolean,
     onClick: () -> Unit,
-    onToggleFavorite: () -> Unit
+    onToggleFavorite: () -> Unit,
+    netplayPreflight: (suspend (NetplaySession) -> NetplayPreflightResult)? = null,
+    onJoinNetplaySession: ((Friend, NetplaySession) -> Unit)? = null
 ) {
     val shape = RoundedCornerShape(12.dp)
     val borderModifier = if (isFocused) {
@@ -187,8 +219,22 @@ private fun FriendCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+
+                    val netplaySession = friend.currentGame?.netplaySession
+                    if (netplaySession != null) {
+                        NetplayFriendBadge()
+                    }
                 }
 
+                val netplaySession = friend.currentGame?.netplaySession
+                if (netplaySession != null && netplayPreflight != null) {
+                    FriendNetplayJoinRow(
+                        friend = friend,
+                        netplaySession = netplaySession,
+                        preflight = netplayPreflight,
+                        onJoin = { onJoinNetplaySession?.invoke(friend, netplaySession) }
+                    )
+                }
             }
 
             Box(
@@ -206,6 +252,102 @@ private fun FriendCard(
             }
         }
     }
+}
+
+@Composable
+private fun NetplayFriendBadge() {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color(0xFF6366F1).copy(alpha = 0.2f))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.SportsEsports,
+            contentDescription = "Netplay session",
+            tint = Color(0xFF6366F1),
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = "Netplay",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF6366F1),
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun FriendNetplayJoinRow(
+    friend: Friend,
+    netplaySession: NetplaySession,
+    preflight: suspend (NetplaySession) -> NetplayPreflightResult,
+    onJoin: () -> Unit
+) {
+    var joinState by remember(netplaySession.sessionId, netplaySession.joinable) {
+        mutableStateOf<FriendNetplayJoinState>(
+            if (!netplaySession.joinable) FriendNetplayJoinState.SessionBusy
+            else FriendNetplayJoinState.Loading
+        )
+    }
+
+    LaunchedEffect(netplaySession.sessionId, netplaySession.joinable) {
+        if (netplaySession.joinable) {
+            joinState = FriendNetplayJoinState.Loading
+            val result = try {
+                preflight(netplaySession)
+            } catch (e: Exception) {
+                NetplayPreflightResult.RomNotFound
+            }
+            joinState = result.toFriendJoinState()
+        } else {
+            joinState = FriendNetplayJoinState.SessionBusy
+        }
+    }
+
+    Spacer(modifier = Modifier.height(4.dp))
+    when (val state = joinState) {
+        FriendNetplayJoinState.Loading -> {
+            Text(
+                text = "Checking...",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        is FriendNetplayJoinState.Joinable -> {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickableNoFocus(onClick = onJoin)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "Join",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        FriendNetplayJoinState.RomNotFound -> DisabledLabel("You don't have this ROM")
+        FriendNetplayJoinState.RomVersionMismatch -> DisabledLabel("Different ROM version")
+        FriendNetplayJoinState.CoreVersionMismatch -> DisabledLabel("Update Argosy to match")
+        FriendNetplayJoinState.CoreNotSupported -> DisabledLabel("Core unsupported")
+        FriendNetplayJoinState.SessionBusy -> DisabledLabel("Session busy")
+    }
+}
+
+@Composable
+private fun DisabledLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+        fontWeight = FontWeight.Medium
+    )
 }
 
 @Composable

@@ -283,7 +283,13 @@ fun SocialScreen(
                                 focusedIndex = uiState.focusedFriendIndex,
                                 listState = friendsListState,
                                 onViewProfile = onViewProfile,
-                                onToggleFavorite = { friendId -> viewModel.toggleFavoriteFriend(friendId) }
+                                onToggleFavorite = { friendId -> viewModel.toggleFavoriteFriend(friendId) },
+                                netplayPreflight = { session -> viewModel.runNetplayPreflight(session) },
+                                onJoinNetplaySession = { friend, _ ->
+                                    viewModel.notificationManager.show(
+                                        title = "Launch ${friend.currentGame?.title ?: "the game"} and Join from the in-game menu"
+                                    )
+                                }
                             )
                         }
                     }

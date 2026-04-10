@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.netplay.NetplayPreflightChecker
+import com.nendo.argosy.data.netplay.NetplayPreflightResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.social.CommunityFollow
 import com.nendo.argosy.data.social.FeedEventDto
@@ -113,8 +115,13 @@ class SocialViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val gameDao: GameDao,
+    private val netplayPreflightChecker: NetplayPreflightChecker,
     val notificationManager: NotificationManager
 ) : ViewModel() {
+
+    suspend fun runNetplayPreflight(
+        session: com.nendo.argosy.data.social.NetplaySession
+    ): NetplayPreflightResult = netplayPreflightChecker.check(session)
 
     val feedOptionsDelegate = FeedOptionsDelegate()
     private var communitySearchJob: Job? = null

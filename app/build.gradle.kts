@@ -1,3 +1,4 @@
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -154,6 +155,15 @@ tasks.withType<Test> {
             exclude("**/integration/**")
         }
     }
+    listOf(
+        "/opt/homebrew/opt/libsodium/lib",
+        "/opt/homebrew/lib",
+        "/usr/local/opt/libsodium/lib",
+        "/usr/local/lib",
+        "/usr/lib/x86_64-linux-gnu"
+    ).firstOrNull { File(it).isDirectory }?.let { libDir ->
+        systemProperty("jna.library.path", libDir)
+    }
 }
 
 dependencies {
@@ -231,6 +241,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation("net.java.dev.jna:jna:5.14.0")
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

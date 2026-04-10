@@ -2,7 +2,6 @@ package com.nendo.argosy.data.netplay
 
 import android.util.Log
 import com.swordfish.libretrodroid.GLRetroView
-import com.swordfish.libretrodroid.LibretroDroid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,7 +21,8 @@ class NetplayHostDriver(
     private val guestPort: Int,
     val inputShadow: NetplayInputShadow,
     private val scope: CoroutineScope,
-    private val onSessionEnd: (reason: String) -> Unit
+    private val onSessionEnd: (reason: String) -> Unit,
+    private val libretroOps: LibretroNetplayOps = RealLibretroNetplayOps
 ) : NetplayDriver {
 
     @Volatile private var currentFrame: Long = 0L
@@ -61,10 +61,10 @@ class NetplayHostDriver(
         drainIncoming()
 
         val localBitmask = inputShadow.sample(localPort)
-        LibretroDroid.setInputPortState(localPort, localBitmask)
-        LibretroDroid.setInputPortState(guestPort, guestCurrentBitmask)
+        libretroOps.setInputPortState(localPort, localBitmask)
+        libretroOps.setInputPortState(guestPort, guestCurrentBitmask)
 
-        LibretroDroid.stepForNetplay(retroView)
+        libretroOps.stepForNetplay(retroView)
 
         val bundle = NetplayPacket.InputBundle(
             frameIndex = currentFrame,

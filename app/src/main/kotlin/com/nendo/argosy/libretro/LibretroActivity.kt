@@ -210,6 +210,8 @@ class LibretroActivity : ComponentActivity() {
 
     private var netplaySessionManager: NetplaySessionManager? = null
     private var pendingNetplayJoin: PendingNetplayJoin? = null
+    private var isGuestJoinedSession: Boolean = false
+    private var guestSessionEverStarted: Boolean = false
 
     private data class PendingNetplayJoin(val sessionId: String, val hostUserId: String)
     private var netplaySessionRules: NetplaySessionRules? = null
@@ -253,10 +255,21 @@ class LibretroActivity : ComponentActivity() {
             ?.let { File(it) }
             ?: File(filesDir, "libretro/system")
         systemDir.mkdirs()
-        val savesDir = (intent.getStringExtra(EXTRA_SAVES_DIR)?.let { File(it) }
-            ?: File(filesDir, "libretro/saves")).apply { mkdirs() }
-        val statesDir = (intent.getStringExtra(EXTRA_STATES_DIR)?.let { File(it) }
-            ?: File(filesDir, "libretro/states")).apply { mkdirs() }
+        val savesDir: File
+        val statesDir: File
+        if (isGuestJoinedSession) {
+            // Guest sessions operate on a throwaway cache directory so no
+            // SRAM is loaded from the user's real saves and nothing written
+            // during the session leaks back into their persistent store.
+            val scratch = File(cacheDir, "netplay_guest/${System.currentTimeMillis()}")
+            savesDir = File(scratch, "saves").apply { mkdirs() }
+            statesDir = File(scratch, "states").apply { mkdirs() }
+        } else {
+            savesDir = (intent.getStringExtra(EXTRA_SAVES_DIR)?.let { File(it) }
+                ?: File(filesDir, "libretro/saves")).apply { mkdirs() }
+            statesDir = (intent.getStringExtra(EXTRA_STATES_DIR)?.let { File(it) }
+                ?: File(filesDir, "libretro/states")).apply { mkdirs() }
+        }
 
         val game = kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }
         platformId = game?.platformId ?: -1L
@@ -271,7 +284,7 @@ class LibretroActivity : ComponentActivity() {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
 
-        autoSaveEnabled = globalSettings.autoSaveState
+        autoSaveEnabled = globalSettings.autoSaveState && !isGuestJoinedSession
         initializeInputHandlers()
         initializeVideoSettings(globalSettings, settings)
         detectBFICapability()
@@ -332,6 +345,12 @@ class LibretroActivity : ComponentActivity() {
         val joinHostUserId = intent.getStringExtra(EXTRA_NETPLAY_JOIN_HOST_USER_ID)
         if (!joinSessionId.isNullOrEmpty() && !joinHostUserId.isNullOrEmpty()) {
             pendingNetplayJoin = PendingNetplayJoin(joinSessionId, joinHostUserId)
+            isGuestJoinedSession = true
+            // Guests joining a netplay session do not fetch, create, or sync
+            // local saves/states. The runtime state is bound to the host's
+            // snapshot for the duration of the session. Force a fresh launch
+            // so nothing tries to auto-restore.
+            launchMode = LaunchMode.NEW_CASUAL
         }
 
         return true
@@ -1063,6 +1082,7 @@ class LibretroActivity : ComponentActivity() {
             manager.sessionState.collect { state ->
                 when (state) {
                     is NetplaySessionState.Connected -> {
+                        if (isGuestJoinedSession) guestSessionEverStarted = true
                         if (!netplayInSession) {
                             savedOrientation = requestedOrientation
                             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
@@ -1087,29 +1107,52 @@ class LibretroActivity : ComponentActivity() {
                         netplayRole = null
                         netplayReconnecting = false
                         netplayDisconnectPromptVisible = false
+                        if (isGuestJoinedSession && guestSessionEverStarted) {
+                            // A joined session cannot continue without the host.
+                            Log.d(TAG, "guest session ended; closing emulator activity")
+                            finish()
+                        }
                     }
                     is NetplaySessionState.Opening -> {
+                        if (isGuestJoinedSession) guestSessionEverStarted = true
                         if (netplayRole == NetplayMenuRole.Guest) {
                             netplayProgressState = NetplayProgressState(NetplayProgressStage.RequestingJoin)
                         }
                     }
                     is NetplaySessionState.Handshaking -> {
+                        if (isGuestJoinedSession) guestSessionEverStarted = true
                         netplayProgressState = NetplayProgressState(NetplayProgressStage.Connecting)
                     }
                     is NetplaySessionState.Reconnecting -> {
+                        if (isGuestJoinedSession) guestSessionEverStarted = true
                         netplayReconnecting = true
                     }
                     is NetplaySessionState.PeerDisconnected -> {
+                        if (isGuestJoinedSession) guestSessionEverStarted = true
                         netplayReconnecting = false
                         netplayDisconnectPromptPeer = resolveFriendDisplayName(state.peerUserId)
                         netplayDisconnectPromptFocus = 0
                         netplayDisconnectPromptVisible = true
+                        // Guest's tier-3 disconnect: no prompt, just close the emulator.
+                        if (isGuestJoinedSession) {
+                            launch {
+                                delay(1500)
+                                finish()
+                            }
+                        }
                     }
                     is NetplaySessionState.Error -> {
+                        if (isGuestJoinedSession) guestSessionEverStarted = true
                         netplayProgressState = NetplayProgressState(
                             NetplayProgressStage.Failed,
                             "Couldn't connect: ${state.reason}"
                         )
+                        if (isGuestJoinedSession) {
+                            launch {
+                                delay(2500)
+                                finish()
+                            }
+                        }
                     }
                     else -> { }
                 }
@@ -1277,6 +1320,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun performAutoSaveState() {
+        if (isGuestJoinedSession) return
         if (hardcoreMode || !coreLoadedSuccessfully || !statesSupported || !autoSaveEnabled) return
         try {
             val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
@@ -1332,6 +1376,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun attemptAutoRestore() {
+        if (isGuestJoinedSession) return
         if (launchMode != LaunchMode.RESUME || hardcoreMode || !statesSupported) return
         val autoFile = saveStateManager.getSlotFile(SaveStateManager.AUTO_SLOT)
         if (!autoFile.exists()) return

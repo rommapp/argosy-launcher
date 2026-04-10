@@ -36,6 +36,9 @@ sealed class InGameMenuAction {
     data object Settings : InGameMenuAction()
     data object Cheats : InGameMenuAction()
     data object Quit : InGameMenuAction()
+    data object DebugNetplayOpenServer : InGameMenuAction()
+    data object DebugNetplayJoin : InGameMenuAction()
+    data object DebugNetplayClose : InGameMenuAction()
 }
 
 @Composable
@@ -46,9 +49,11 @@ fun InGameMenu(
     focusedIndex: Int,
     onFocusChange: (Int) -> Unit,
     onAction: (InGameMenuAction) -> Unit,
-    isHardcoreMode: Boolean = false
+    isHardcoreMode: Boolean = false,
+    debugNetplayVisible: Boolean = false,
+    debugNetplayActive: Boolean = false
 ): InputHandler {
-    val menuItems = remember(cheatsAvailable, statesSupported, isHardcoreMode) {
+    val menuItems = remember(cheatsAvailable, statesSupported, isHardcoreMode, debugNetplayVisible, debugNetplayActive) {
         buildList {
             add("Resume" to InGameMenuAction.Resume)
             if (!isHardcoreMode && statesSupported) {
@@ -57,6 +62,14 @@ fun InGameMenu(
             add("Settings" to InGameMenuAction.Settings)
             if (cheatsAvailable) {
                 add("Cheats" to InGameMenuAction.Cheats)
+            }
+            if (debugNetplayVisible) {
+                if (debugNetplayActive) {
+                    add("[DEBUG] Close Netplay Session" to InGameMenuAction.DebugNetplayClose)
+                } else {
+                    add("[DEBUG] Open Netplay Server" to InGameMenuAction.DebugNetplayOpenServer)
+                    add("[DEBUG] Join Netplay..." to InGameMenuAction.DebugNetplayJoin)
+                }
             }
             add("Quit Game" to InGameMenuAction.Quit)
         }

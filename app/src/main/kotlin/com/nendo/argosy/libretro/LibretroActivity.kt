@@ -47,6 +47,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.cheats.CheatsRepository
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
@@ -62,6 +63,14 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.InputSource
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
+import com.nendo.argosy.data.netplay.CandidateGatherer
+import com.nendo.argosy.data.netplay.CoreHashCache
+import com.nendo.argosy.data.netplay.NetplayHandshake
+import com.nendo.argosy.data.netplay.NetplaySessionManager
+import com.nendo.argosy.data.netplay.RomHashComputer
+import com.nendo.argosy.data.social.ArgosSocialService
+import com.nendo.argosy.data.social.NetplayOpenPayload
+import com.nendo.argosy.data.social.NetplaySessionState
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import com.nendo.argosy.libretro.ui.cheats.CheatDisplayItem
@@ -70,6 +79,7 @@ import com.nendo.argosy.libretro.ui.cheats.CheatsScreen
 import com.nendo.argosy.libretro.ui.cheats.CheatsTab
 import com.nendo.argosy.libretro.ui.AchievementPopup
 import com.nendo.argosy.libretro.ui.AutoRestorePrompt
+import com.nendo.argosy.libretro.ui.DebugNetplayJoinDialog
 import com.nendo.argosy.libretro.ui.InGameMenu
 import com.nendo.argosy.libretro.ui.InGameMenuAction
 import com.nendo.argosy.libretro.ui.InGameStateManager
@@ -119,6 +129,8 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var ambientLedManager: AmbientLedManager
     @Inject lateinit var socialRepository: SocialRepository
+    @Inject lateinit var argosSocialService: ArgosSocialService
+    @Inject lateinit var coreHashCache: CoreHashCache
     @Inject lateinit var effectiveLibretroSettingsResolver: EffectiveLibretroSettingsResolver
     @Inject lateinit var platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
     @Inject lateinit var frameRegistry: FrameRegistry
@@ -186,8 +198,14 @@ class LibretroActivity : ComponentActivity() {
     private var stateManagerSlots by mutableStateOf<List<SaveStateManager.SlotInfo>>(emptyList())
     private var pendingSaveScreenshot: Bitmap? = null
 
+    private var netplaySessionManager: NetplaySessionManager? = null
+    private var debugNetplayActive by mutableStateOf(false)
+    private var debugNetplayJoinDialogVisible by mutableStateOf(false)
+    private var corePath: String = ""
+    private var resolvedCoreId: String? = null
+
     private val isAnyMenuOpen: Boolean
-        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible
+        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible || debugNetplayJoinDialogVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -232,8 +250,10 @@ class LibretroActivity : ComponentActivity() {
         initializeVideoSettings(globalSettings, settings)
         detectBFICapability()
 
-        val corePath = intent.getStringExtra(EXTRA_CORE_PATH)!!
+        corePath = intent.getStringExtra(EXTRA_CORE_PATH)!!
+        resolvedCoreId = resolveCoreIdFromPath(corePath)
         createRetroView(corePath, systemDir, savesDir, settings, restoredSram)
+        initializeNetplaySessionManager()
         setupRetroViewListeners()
         configureRetroView(settings)
         requestAudioFocus()
@@ -573,7 +593,21 @@ class LibretroActivity : ComponentActivity() {
                         focusedIndex = menuFocusIndex,
                         onFocusChange = { menuFocusIndex = it },
                         onAction = ::handleMenuAction,
-                        isHardcoreMode = hardcoreMode
+                        isHardcoreMode = hardcoreMode,
+                        debugNetplayVisible = isNetplayDebugAvailable(),
+                        debugNetplayActive = debugNetplayActive
+                    )
+                }
+                if (debugNetplayJoinDialogVisible) {
+                    activeMenuHandler = DebugNetplayJoinDialog(
+                        onDismiss = {
+                            debugNetplayJoinDialogVisible = false
+                            menuVisible = true
+                        },
+                        onConfirm = { sessionId, hostId ->
+                            debugNetplayJoinDialogVisible = false
+                            handleDebugNetplayJoin(sessionId, hostId)
+                        }
                     )
                 }
                 if (cheatsMenuVisible) {
@@ -927,7 +961,113 @@ class LibretroActivity : ComponentActivity() {
                 performAutoSaveState()
                 finish()
             }
+            InGameMenuAction.DebugNetplayOpenServer -> {
+                hideMenu()
+                handleDebugNetplayOpenServer()
+            }
+            InGameMenuAction.DebugNetplayJoin -> {
+                menuVisible = false
+                debugNetplayJoinDialogVisible = true
+            }
+            InGameMenuAction.DebugNetplayClose -> {
+                hideMenu()
+                handleDebugNetplayClose()
+            }
         }
+    }
+
+    private fun initializeNetplaySessionManager() {
+        if (!BuildConfig.DEBUG) return
+        val handshake = NetplayHandshake(
+            candidateGatherer = CandidateGatherer(),
+            socialService = argosSocialService
+        )
+        val manager = NetplaySessionManager(
+            socialService = argosSocialService,
+            handshake = handshake,
+            retroView = retroView
+        )
+        netplaySessionManager = manager
+        lifecycleScope.launch {
+            manager.sessionState.collect { state ->
+                debugNetplayActive = when (state) {
+                    is NetplaySessionState.Idle,
+                    is NetplaySessionState.Error -> false
+                    else -> true
+                }
+                if (state is NetplaySessionState.JoinRequestReceived) {
+                    launch { manager.acceptJoin(state.fromUserId) }
+                }
+            }
+        }
+    }
+
+    private fun isNetplayDebugAvailable(): Boolean {
+        if (!BuildConfig.DEBUG) return false
+        val coreId = resolvedCoreId ?: return false
+        val core = LibretroCoreRegistry.getCoreById(coreId) ?: return false
+        return core.netplaySupport == NetplaySupportLevel.SUPPORTED
+    }
+
+    private fun buildNetplayOpenPayload(): NetplayOpenPayload? {
+        val coreId = resolvedCoreId ?: return null
+        val romFile = File(romPath)
+        val romHash = com.nendo.argosy.data.netplay.RomHashComputer.computeRomHashPrefix(romFile) ?: return null
+        val coreHash = coreHashCache.getHashForCore(corePath) ?: return null
+        return NetplayOpenPayload(
+            gameIgdbId = null,
+            gameTitle = gameName,
+            coreId = coreId,
+            romHashPrefix = romHash,
+            coreHash = coreHash
+        )
+    }
+
+    private fun handleDebugNetplayOpenServer() {
+        val manager = netplaySessionManager ?: run {
+            inGameMessage = "Netplay manager unavailable"
+            return
+        }
+        val payload = buildNetplayOpenPayload() ?: run {
+            inGameMessage = "Netplay: failed to compute hashes"
+            return
+        }
+        lifecycleScope.launch {
+            val result = manager.openServer(payload)
+            inGameMessage = result.fold(
+                onSuccess = { id -> "Netplay opened: ${id.take(8)}" },
+                onFailure = { e -> "Netplay open failed: ${e.message}" }
+            )
+        }
+    }
+
+    private fun handleDebugNetplayJoin(sessionId: String, hostUserId: String) {
+        val manager = netplaySessionManager ?: return
+        lifecycleScope.launch {
+            runCatching { manager.joinSession(sessionId, hostUserId) }
+                .onFailure { inGameMessage = "Join failed: ${it.message}" }
+        }
+    }
+
+    private fun handleDebugNetplayClose() {
+        val manager = netplaySessionManager ?: return
+        lifecycleScope.launch {
+            if (manager.sessionState.value is NetplaySessionState.Waiting ||
+                manager.sessionState.value is NetplaySessionState.Connected ||
+                manager.sessionState.value is NetplaySessionState.Handshaking) {
+                val isHost = true
+                if (isHost) manager.closeServer() else manager.leaveSession()
+            }
+        }
+    }
+
+    private fun resolveCoreIdFromPath(path: String): String? {
+        val fileName = File(path).name
+        val known = LibretroCoreRegistry.getAllCores().firstOrNull { it.fileName == fileName }
+        if (known != null) return known.coreId
+        return fileName.removeSuffix("_libretro_android.so")
+            .removeSuffix("_libretro.so")
+            .takeIf { it.isNotBlank() }
     }
 
     private fun performAutoSaveState() {
@@ -1286,6 +1426,8 @@ class LibretroActivity : ComponentActivity() {
             dsm.emulatorKeyDispatcher = null
             dsm.emulatorMotionDispatcher = null
         }
+        netplaySessionManager?.shutdown()
+        netplaySessionManager = null
         raSession?.destroy()
         if (isFinishing && gameId != -1L) {
             com.nendo.argosy.DualScreenManagerHolder.instance

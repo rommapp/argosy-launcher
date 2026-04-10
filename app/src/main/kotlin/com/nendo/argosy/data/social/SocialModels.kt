@@ -246,6 +246,7 @@ object MessageTypes {
     const val NETPLAY_HANDSHAKE_TELEMETRY = "netplay_handshake_telemetry"
     const val NETPLAY_LEAVE = "netplay_leave"
     const val NETPLAY_KICK = "netplay_kick"
+    const val NETPLAY_RESERVE = "netplay_reserve"
 
     // Netplay (server -> client)
     const val NETPLAY_READY = "netplay_ready"

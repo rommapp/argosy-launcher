@@ -1551,6 +1551,13 @@ class ArgosSocialService @Inject constructor(
         })
     }
 
+    fun sendNetplayReserve(payload: NetplayReserveRequestPayload): Boolean {
+        return send(MessageTypes.NETPLAY_RESERVE, buildMap {
+            put("session_id", payload.sessionId)
+            payload.reservedForUserId?.let { put("reserved_for_user_id", it) }
+        })
+    }
+
     private fun jsonObjectToMap(obj: JSONObject): Map<String, Any?> {
         val map = mutableMapOf<String, Any?>()
         obj.keys().forEach { key ->

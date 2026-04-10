@@ -114,6 +114,12 @@ data class NetplayKickedPayload(
 )
 
 @JsonClass(generateAdapter = true)
+data class NetplayReserveRequestPayload(
+    @Json(name = "session_id") val sessionId: String,
+    @Json(name = "reserved_for_user_id") val reservedForUserId: String? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class NetplayHandshakeTelemetryPayload(
     val outcome: String,
     @Json(name = "latched_candidate") val latchedCandidate: String? = null,
@@ -143,6 +149,17 @@ sealed class NetplaySessionState {
         val sessionId: String,
         val peerUserId: String
     ) : NetplaySessionState()
+    data class Reconnecting(
+        val sessionId: String,
+        val peerUserId: String
+    ) : NetplaySessionState()
+    data class PeerDisconnected(
+        val sessionId: String,
+        val peerUserId: String,
+        val role: PeerRole
+    ) : NetplaySessionState()
     data class Ending(val sessionId: String) : NetplaySessionState()
     data class Error(val reason: String) : NetplaySessionState()
+
+    enum class PeerRole { Host, Guest }
 }

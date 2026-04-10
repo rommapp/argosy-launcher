@@ -28,7 +28,9 @@ class NetplayHostDriver(
     @Volatile private var currentFrame: Long = 0L
     @Volatile private var guestCurrentBitmask: Int = 0
     @Volatile private var lastHeartbeatNanos: Long = 0L
-    @Volatile var lastRttNanos: Long = 0L
+    @Volatile override var lastRttNanos: Long = 0L
+        private set
+    @Volatile override var lastIncomingNanos: Long = System.nanoTime()
         private set
     @Volatile private var stopped = false
 
@@ -105,6 +107,7 @@ class NetplayHostDriver(
     private fun drainIncoming() {
         while (true) {
             val incoming = incomingRing.tryReceive().getOrNull() ?: break
+            lastIncomingNanos = System.nanoTime()
             when (val packet = incoming.packet) {
                 is NetplayPacket.GuestInput -> handleGuestInput(packet)
                 is NetplayPacket.SnapshotRequest -> handleSnapshotRequest(packet)

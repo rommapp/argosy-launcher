@@ -6,6 +6,7 @@ import com.nendo.argosy.data.social.ArgosSocialService.IncomingMessage
 import com.nendo.argosy.data.social.NetplayJoinRequestPayload
 import com.nendo.argosy.data.social.NetplayJoinResponsePayload
 import com.nendo.argosy.data.social.NetplayOpenPayload
+import com.nendo.argosy.data.social.NetplayReserveRequestPayload
 import com.nendo.argosy.data.social.NetplaySessionState
 import com.swordfish.libretrodroid.GLRetroView
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +41,9 @@ class NetplaySessionManager(
     @Volatile private var activeDriver: NetplayDriver? = null
     @Volatile private var role: NetplayHandshake.Role? = null
     @Volatile private var activeSessionId: String? = null
+    @Volatile private var activePeerUserId: String? = null
     @Volatile private var pendingReadyPayload: PendingReady? = null
+    private var silenceMonitorJob: Job? = null
 
     private val peerCandidatesChannel = Channel<IncomingMessage.NetplayPeerCandidates>(capacity = Channel.BUFFERED)
     private val punchStartChannel = Channel<IncomingMessage.NetplayPunchStart>(capacity = Channel.BUFFERED)
@@ -158,6 +161,36 @@ class NetplaySessionManager(
         role = null
     }
 
+    suspend fun reserveSession(reservedForUserId: String?): Boolean {
+        val sessionId = activeSessionId ?: return false
+        val state = _sessionState.value
+        if (state is NetplaySessionState.Idle || state is NetplaySessionState.Ending) {
+            return false
+        }
+        return socialService.sendNetplayReserve(
+            NetplayReserveRequestPayload(
+                sessionId = sessionId,
+                reservedForUserId = reservedForUserId
+            )
+        )
+    }
+
+    suspend fun onHostKeepSession() {
+        val state = _sessionState.value
+        if (state is NetplaySessionState.PeerDisconnected) {
+            tearDownDriver("p2p_disconnect_keep_open")
+            _sessionState.value = NetplaySessionState.Waiting(
+                sessionId = state.sessionId,
+                gameTitle = ""
+            )
+            runCatching { retroView.resumeEmulation() }
+        }
+    }
+
+    suspend fun onHostCloseAfterDisconnect() {
+        closeServer()
+    }
+
     fun shutdown() {
         inboundJob.cancel()
         scope.launch { tearDownDriver("shutdown") }
@@ -221,6 +254,53 @@ class NetplaySessionManager(
         }
     }
 
+    private fun startSilenceMonitor(role: NetplaySessionState.PeerRole) {
+        silenceMonitorJob?.cancel()
+        silenceMonitorJob = scope.launch {
+            while (true) {
+                delay(SILENCE_TICK_MS)
+                val driver = activeDriver ?: return@launch
+                val state = _sessionState.value
+                if (state !is NetplaySessionState.Connected && state !is NetplaySessionState.Reconnecting) {
+                    continue
+                }
+                val silenceNanos = System.nanoTime() - driver.lastIncomingNanos
+                val silenceMs = silenceNanos / 1_000_000L
+                when {
+                    silenceMs >= TIER3_TIMEOUT_MS -> {
+                        val sessionId = activeSessionId ?: return@launch
+                        val peer = activePeerUserId ?: return@launch
+                        runCatching { retroView.pauseEmulation() }
+                        _sessionState.value = NetplaySessionState.PeerDisconnected(
+                            sessionId = sessionId,
+                            peerUserId = peer,
+                            role = role
+                        )
+                        return@launch
+                    }
+                    silenceMs >= TIER2_TIMEOUT_MS -> {
+                        if (state is NetplaySessionState.Connected) {
+                            runCatching { retroView.pauseEmulation() }
+                            _sessionState.value = NetplaySessionState.Reconnecting(
+                                sessionId = state.sessionId,
+                                peerUserId = state.peerUserId
+                            )
+                        }
+                    }
+                    else -> {
+                        if (state is NetplaySessionState.Reconnecting) {
+                            runCatching { retroView.resumeEmulation() }
+                            _sessionState.value = NetplaySessionState.Connected(
+                                sessionId = state.sessionId,
+                                peerUserId = state.peerUserId
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun installHostDriver(sessionId: String, guestUserId: String, result: NetplayHandshake.HandshakeResult.Success) {
         val driver = NetplayHostDriver(
             retroView = retroView,
@@ -239,12 +319,14 @@ class NetplaySessionManager(
         }
         retroView.netplayLocalPort = null
         retroView.netplayTick = { driver.tick() }
+        activePeerUserId = guestUserId
         scope.launch {
             runCatching {
                 sessionRules?.apply(NetplaySessionRules.ApplyContext(NetplaySessionRules.Role.Host))
                 val state = retroView.serializeState()
                 driver.sendInitialSnapshot(state)
                 _sessionState.value = NetplaySessionState.Connected(sessionId = sessionId, peerUserId = guestUserId)
+                startSilenceMonitor(NetplaySessionState.PeerRole.Host)
             }.onFailure {
                 Log.w(TAG, "host install failed: ${it.message}")
                 sessionRules?.release()
@@ -271,10 +353,12 @@ class NetplaySessionManager(
         }
         retroView.netplayLocalPort = GUEST_PORT
         retroView.netplayTick = { driver.tick() }
+        activePeerUserId = hostUserId
         scope.launch {
             runCatching {
                 sessionRules?.apply(NetplaySessionRules.ApplyContext(NetplaySessionRules.Role.Guest))
                 _sessionState.value = NetplaySessionState.Connected(sessionId = sessionId, peerUserId = hostUserId)
+                startSilenceMonitor(NetplaySessionState.PeerRole.Guest)
             }.onFailure {
                 Log.w(TAG, "guest install failed: ${it.message}")
                 sessionRules?.release()
@@ -284,6 +368,8 @@ class NetplaySessionManager(
     }
 
     private suspend fun tearDownDriver(reason: String) {
+        silenceMonitorJob?.cancel()
+        silenceMonitorJob = null
         val driver = activeDriver
         activeDriver = null
         retroView.netplayTick = null
@@ -293,6 +379,7 @@ class NetplaySessionManager(
         for (port in 0 until NetplayInputShadow.MAX_PORTS) {
             inputShadow.clear(port)
         }
+        activePeerUserId = null
         sessionRules?.release()
         delay(0)
     }
@@ -359,5 +446,8 @@ class NetplaySessionManager(
         private val READY_TIMEOUT = 30.seconds
         private const val LOCAL_HOST_PORT = 0
         private const val GUEST_PORT = 1
+        private const val SILENCE_TICK_MS = 100L
+        private const val TIER2_TIMEOUT_MS = 500L
+        private const val TIER3_TIMEOUT_MS = 2000L
     }
 }

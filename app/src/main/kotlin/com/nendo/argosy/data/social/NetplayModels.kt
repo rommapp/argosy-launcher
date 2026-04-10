@@ -7,6 +7,7 @@ import com.squareup.moshi.JsonClass
 data class NetplaySession(
     @Json(name = "session_id") val sessionId: String,
     @Json(name = "game_igdb_id") val gameIgdbId: Int? = null,
+    @Json(name = "game_title") val gameTitle: String,
     @Json(name = "core_id") val coreId: String,
     @Json(name = "rom_hash_prefix") val romHashPrefix: String,
     @Json(name = "core_hash") val coreHash: String,
@@ -20,22 +21,19 @@ data class NetplayOpenPayload(
     @Json(name = "game_title") val gameTitle: String,
     @Json(name = "core_id") val coreId: String,
     @Json(name = "rom_hash_prefix") val romHashPrefix: String,
-    @Json(name = "core_hash") val coreHash: String,
-    @Json(name = "reserved_for_user_id") val reservedForUserId: String? = null
+    @Json(name = "core_hash") val coreHash: String
 )
 
 @JsonClass(generateAdapter = true)
 data class NetplayReadyPayload(
     @Json(name = "session_id") val sessionId: String,
     @Json(name = "session_key") val sessionKey: String,
-    @Json(name = "protocol_version") val protocolVersion: Int,
-    @Json(name = "assigned_port") val assignedPort: Int? = null
+    @Json(name = "protocol_version") val protocolVersion: Int
 )
 
 @JsonClass(generateAdapter = true)
 data class NetplayJoinRequestPayload(
-    @Json(name = "session_id") val sessionId: String,
-    @Json(name = "host_user_id") val hostUserId: String
+    @Json(name = "session_id") val sessionId: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -48,7 +46,7 @@ data class NetplayJoinRequestedPayload(
 @JsonClass(generateAdapter = true)
 data class NetplayJoinResponsePayload(
     @Json(name = "session_id") val sessionId: String,
-    @Json(name = "joiner_user_id") val joinerUserId: String,
+    @Json(name = "guest_id") val guestId: String,
     val accept: Boolean,
     val reason: String? = null
 )
@@ -92,7 +90,7 @@ data class NetplayHandshakeResultPayload(
     @Json(name = "session_id") val sessionId: String,
     val success: Boolean,
     @Json(name = "measured_rtt_ms") val measuredRttMs: Int? = null,
-    @Json(name = "jitter_ms") val jitterMs: Int? = null,
+    @Json(name = "measured_jitter_ms") val measuredJitterMs: Int? = null,
     @Json(name = "latched_candidate") val latchedCandidate: String? = null,
     val reason: String? = null
 )

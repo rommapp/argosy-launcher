@@ -675,8 +675,7 @@ class ArgosSocialService @Inject constructor(
                             NetplayReadyPayload(
                                 sessionId = payload.getString("session_id"),
                                 sessionKey = payload.getString("session_key"),
-                                protocolVersion = payload.getInt("protocol_version"),
-                                assignedPort = if (payload.has("assigned_port")) payload.optInt("assigned_port") else null
+                                protocolVersion = payload.getInt("protocol_version")
                             )
                         )
                     } else null
@@ -684,11 +683,12 @@ class ArgosSocialService @Inject constructor(
 
                 MessageTypes.NETPLAY_JOIN_REQUESTED -> {
                     if (payload != null) {
+                        val fromUser = payload.getJSONObject("from_user")
                         IncomingMessage.NetplayJoinRequested(
                             NetplayJoinRequestedPayload(
                                 sessionId = payload.getString("session_id"),
-                                fromUserId = payload.getString("from_user_id"),
-                                fromUsername = payload.getString("from_username")
+                                fromUserId = fromUser.getString("id"),
+                                fromUsername = fromUser.getString("username")
                             )
                         )
                     } else null
@@ -1436,6 +1436,7 @@ class ArgosSocialService @Inject constructor(
             NetplaySession(
                 sessionId = obj.getString("session_id"),
                 gameIgdbId = if (obj.has("game_igdb_id")) obj.optInt("game_igdb_id") else null,
+                gameTitle = obj.getString("game_title"),
                 coreId = obj.getString("core_id"),
                 romHashPrefix = obj.getString("rom_hash_prefix"),
                 coreHash = obj.getString("core_hash"),
@@ -1468,12 +1469,11 @@ class ArgosSocialService @Inject constructor(
 
     fun sendNetplayOpen(payload: NetplayOpenPayload): Boolean {
         return send(MessageTypes.NETPLAY_OPEN, buildMap {
-            put("game_igdb_id", payload.gameIgdbId)
+            if (payload.gameIgdbId != null) put("game_igdb_id", payload.gameIgdbId)
             put("game_title", payload.gameTitle)
             put("core_id", payload.coreId)
             put("rom_hash_prefix", payload.romHashPrefix)
             put("core_hash", payload.coreHash)
-            if (payload.reservedForUserId != null) put("reserved_for_user_id", payload.reservedForUserId)
         })
     }
 
@@ -1483,15 +1483,14 @@ class ArgosSocialService @Inject constructor(
 
     fun sendNetplayJoinRequest(payload: NetplayJoinRequestPayload): Boolean {
         return send(MessageTypes.NETPLAY_JOIN_REQUEST, mapOf(
-            "session_id" to payload.sessionId,
-            "host_user_id" to payload.hostUserId
+            "session_id" to payload.sessionId
         ))
     }
 
     fun sendNetplayJoinResponse(payload: NetplayJoinResponsePayload): Boolean {
         return send(MessageTypes.NETPLAY_JOIN_RESPONSE, buildMap {
             put("session_id", payload.sessionId)
-            put("joiner_user_id", payload.joinerUserId)
+            put("guest_id", payload.guestId)
             put("accept", payload.accept)
             if (payload.reason != null) put("reason", payload.reason)
         })
@@ -1523,7 +1522,7 @@ class ArgosSocialService @Inject constructor(
             put("session_id", payload.sessionId)
             put("success", payload.success)
             if (payload.measuredRttMs != null) put("measured_rtt_ms", payload.measuredRttMs)
-            if (payload.jitterMs != null) put("jitter_ms", payload.jitterMs)
+            if (payload.measuredJitterMs != null) put("measured_jitter_ms", payload.measuredJitterMs)
             if (payload.latchedCandidate != null) put("latched_candidate", payload.latchedCandidate)
             if (payload.reason != null) put("reason", payload.reason)
         })
@@ -1544,10 +1543,10 @@ class ArgosSocialService @Inject constructor(
         return send(MessageTypes.NETPLAY_LEAVE, mapOf("session_id" to sessionId))
     }
 
-    fun sendNetplayKick(sessionId: String, joinerUserId: String, reason: String? = null): Boolean {
+    fun sendNetplayKick(sessionId: String, guestId: String, reason: String? = null): Boolean {
         return send(MessageTypes.NETPLAY_KICK, buildMap {
             put("session_id", sessionId)
-            put("joiner_user_id", joinerUserId)
+            put("guest_id", guestId)
             if (reason != null) put("reason", reason)
         })
     }

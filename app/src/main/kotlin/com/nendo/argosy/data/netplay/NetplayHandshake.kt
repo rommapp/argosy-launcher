@@ -1,0 +1,279 @@
+package com.nendo.argosy.data.netplay
+
+import com.nendo.argosy.data.social.ArgosSocialService
+import com.nendo.argosy.data.social.ArgosSocialService.IncomingMessage
+import com.nendo.argosy.data.social.NetplayCandidate
+import com.nendo.argosy.data.social.NetplayCandidatesPayload
+import com.nendo.argosy.data.social.NetplayHandshakeResultPayload
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import kotlin.math.sqrt
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+
+class NetplayHandshake(
+    private val candidateGatherer: CandidateGatherer,
+    private val socialService: ArgosSocialService
+) {
+
+    enum class Role { Host, Guest }
+
+    data class HandshakeArgs(
+        val sessionId: String,
+        val sessionKey: ByteArray,
+        val role: Role,
+        val peerUserId: String,
+        val localSocket: DatagramSocket,
+        val peerCandidatesChannel: Channel<IncomingMessage.NetplayPeerCandidates>,
+        val punchStartChannel: Channel<IncomingMessage.NetplayPunchStart>,
+        val scope: CoroutineScope
+    )
+
+    sealed class HandshakeResult {
+        data class Success(
+            val latchedCandidate: NetplayCandidate,
+            val transport: NetplayTransport,
+            val peerAddress: InetSocketAddress,
+            val measuredRttMs: Int,
+            val measuredJitterMs: Int
+        ) : HandshakeResult()
+
+        data class Failure(val reason: String) : HandshakeResult()
+    }
+
+    suspend fun performHandshake(args: HandshakeArgs): HandshakeResult {
+        val localCandidates = try {
+            candidateGatherer.gatherCandidates(args.localSocket)
+        } catch (_: Throwable) {
+            emptyList()
+        }
+        if (localCandidates.isEmpty()) {
+            reportFailure(args.sessionId, "no_candidates")
+            return HandshakeResult.Failure("no_candidates")
+        }
+
+        socialService.sendNetplayCandidates(
+            NetplayCandidatesPayload(sessionId = args.sessionId, candidates = localCandidates)
+        )
+
+        val peerMessage = withTimeoutOrNull(PEER_CANDIDATES_TIMEOUT) {
+            args.peerCandidatesChannel.receive()
+        } ?: run {
+            reportFailure(args.sessionId, "peer_candidates_timeout")
+            return HandshakeResult.Failure("peer_candidates_timeout")
+        }
+        val peerCandidates = peerMessage.payload.candidates
+        if (peerCandidates.isEmpty()) {
+            reportFailure(args.sessionId, "peer_candidates_timeout")
+            return HandshakeResult.Failure("peer_candidates_timeout")
+        }
+
+        val punchStart = withTimeoutOrNull(PUNCH_START_TIMEOUT) {
+            args.punchStartChannel.receive()
+        } ?: run {
+            reportFailure(args.sessionId, "punch_start_timeout")
+            return HandshakeResult.Failure("punch_start_timeout")
+        }
+
+        val clockSkewMs = punchStart.payload.serverNowUnixMs - System.currentTimeMillis()
+        val localStartMs = punchStart.payload.startAtUnixMs - clockSkewMs
+        val sleepMs = (localStartMs - System.currentTimeMillis()).coerceAtLeast(0L)
+        if (sleepMs > 0) delay(sleepMs.milliseconds)
+
+        val crypto = PacketCrypto.fromMasterKey(args.sessionKey)
+        val localDirection = when (args.role) {
+            Role.Host -> PacketCrypto.Direction.HostToGuest
+            Role.Guest -> PacketCrypto.Direction.GuestToHost
+        }
+        val transport = NetplayTransport(
+            crypto = crypto,
+            socket = args.localSocket,
+            localDirection = localDirection,
+            scope = args.scope
+        )
+
+        val latched = simultaneousPunch(transport, peerCandidates)
+        if (latched == null) {
+            transport.close()
+            reportFailure(args.sessionId, "candidate_pair_failed")
+            return HandshakeResult.Failure("candidate_pair_failed")
+        }
+
+        val (latchedCandidate, peerAddress) = latched
+        val burst = runRttBurst(transport, peerAddress)
+        if (burst == null) {
+            transport.close()
+            reportFailure(args.sessionId, "candidate_pair_failed")
+            return HandshakeResult.Failure("candidate_pair_failed")
+        }
+
+        val (medianRttMs, jitterMs) = burst
+        if (medianRttMs > QUALITY_MAX_RTT_MS || jitterMs > QUALITY_MAX_JITTER_MS) {
+            transport.close()
+            socialService.sendNetplayHandshakeResult(
+                NetplayHandshakeResultPayload(
+                    sessionId = args.sessionId,
+                    success = false,
+                    measuredRttMs = medianRttMs,
+                    measuredJitterMs = jitterMs,
+                    latchedCandidate = latchedCandidate.type,
+                    reason = "quality_rejected"
+                )
+            )
+            return HandshakeResult.Failure("quality_rejected")
+        }
+
+        socialService.sendNetplayHandshakeResult(
+            NetplayHandshakeResultPayload(
+                sessionId = args.sessionId,
+                success = true,
+                measuredRttMs = medianRttMs,
+                measuredJitterMs = jitterMs,
+                latchedCandidate = latchedCandidate.type
+            )
+        )
+
+        return HandshakeResult.Success(
+            latchedCandidate = latchedCandidate,
+            transport = transport,
+            peerAddress = peerAddress,
+            measuredRttMs = medianRttMs,
+            measuredJitterMs = jitterMs
+        )
+    }
+
+    private suspend fun simultaneousPunch(
+        transport: NetplayTransport,
+        peerCandidates: List<NetplayCandidate>
+    ): Pair<NetplayCandidate, InetSocketAddress>? = coroutineScope {
+        val resolved = peerCandidates.mapNotNull { cand ->
+            try {
+                val addr = withContext(Dispatchers.IO) { InetAddress.getByName(cand.address) }
+                cand to InetSocketAddress(addr, cand.port)
+            } catch (_: Throwable) {
+                null
+            }
+        }
+        if (resolved.isEmpty()) return@coroutineScope null
+
+        val firstResponse = Channel<NetplayTransport.Incoming>(capacity = Channel.BUFFERED)
+        val collectorJob = launch {
+            transport.incomingPackets
+                .filter { incoming ->
+                    resolved.any { (_, addr) ->
+                        addr.address == incoming.source.address && addr.port == incoming.source.port
+                    }
+                }
+                .collect { incoming ->
+                    firstResponse.trySend(incoming)
+                }
+        }
+
+        delay(10)
+
+        val senderJob = launch(Dispatchers.IO) {
+            repeat(PUNCH_ROUNDS) {
+                for ((_, addr) in resolved) {
+                    runCatching {
+                        transport.send(addr, NetplayPacket.Ping(System.nanoTime()))
+                    }
+                }
+                delay(PUNCH_INTERVAL)
+            }
+        }
+
+        val latched = withTimeoutOrNull(PUNCH_RESPONSE_TIMEOUT) {
+            firstResponse.receive()
+        }
+        senderJob.cancel()
+        collectorJob.cancel()
+
+        if (latched == null) return@coroutineScope null
+        val match = resolved.first { (_, addr) ->
+            addr.address == latched.source.address && addr.port == latched.source.port
+        }
+        match
+    }
+
+    private suspend fun runRttBurst(
+        transport: NetplayTransport,
+        peer: InetSocketAddress
+    ): Pair<Int, Int>? = coroutineScope {
+        val pongChannel = Channel<Pair<Long, Long>>(capacity = Channel.BUFFERED)
+        val collectorJob = launch {
+            transport.incomingPackets
+                .filter { it.packet is NetplayPacket.Pong && it.source.address == peer.address && it.source.port == peer.port }
+                .collect { incoming ->
+                    val pong = incoming.packet as NetplayPacket.Pong
+                    pongChannel.trySend(pong.timestampNanos to System.nanoTime())
+                }
+        }
+
+        delay(10)
+
+        val senderJob = launch(Dispatchers.IO) {
+            repeat(RTT_BURST_COUNT) {
+                val sentAt = System.nanoTime()
+                runCatching { transport.send(peer, NetplayPacket.Ping(sentAt)) }
+                delay(RTT_BURST_INTERVAL)
+            }
+        }
+
+        val samples = mutableListOf<Long>()
+        withTimeoutOrNull(RTT_BURST_TIMEOUT) {
+            while (samples.size < RTT_BURST_COUNT) {
+                val (sentAt, receivedAt) = pongChannel.receive()
+                val rttNanos = receivedAt - sentAt
+                if (rttNanos > 0) samples.add(rttNanos / 1_000_000L)
+            }
+        }
+
+        senderJob.cancel()
+        collectorJob.cancel()
+
+        if (samples.size < RTT_MIN_SAMPLES) return@coroutineScope null
+
+        val sorted = samples.sorted()
+        val median = sorted[sorted.size / 2]
+        val mean = sorted.average()
+        val variance = sorted.sumOf { (it - mean) * (it - mean) } / sorted.size
+        val stdev = sqrt(variance)
+        median.toInt() to stdev.toInt()
+    }
+
+    private fun reportFailure(sessionId: String, reason: String) {
+        socialService.sendNetplayHandshakeResult(
+            NetplayHandshakeResultPayload(
+                sessionId = sessionId,
+                success = false,
+                reason = reason
+            )
+        )
+    }
+
+    companion object {
+        private val PEER_CANDIDATES_TIMEOUT = 10.seconds
+        private val PUNCH_START_TIMEOUT = 10.seconds
+        private val PUNCH_RESPONSE_TIMEOUT = 3.seconds
+        private val PUNCH_INTERVAL = 100.milliseconds
+        private const val PUNCH_ROUNDS = 20
+
+        private val RTT_BURST_INTERVAL = 50.milliseconds
+        private val RTT_BURST_TIMEOUT = 3.seconds
+        private const val RTT_BURST_COUNT = 20
+        private const val RTT_MIN_SAMPLES = 5
+
+        private const val QUALITY_MAX_RTT_MS = 300
+        private const val QUALITY_MAX_JITTER_MS = 50
+    }
+}

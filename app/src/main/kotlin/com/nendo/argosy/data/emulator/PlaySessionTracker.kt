@@ -590,7 +590,13 @@ class PlaySessionTracker @Inject constructor(
 
         val channelName = if (isHardcore) null else game.activeSaveChannel
 
-        Logger.debug(TAG, "[GameSession] Starting service for gameId=$gameId | watchPath=$watchPath | savePath=$savePath")
+        val emulatorDisplayId = if (sessionStateStore.isRolesSwapped()) {
+            android.view.Display.DEFAULT_DISPLAY + 1
+        } else {
+            android.view.Display.DEFAULT_DISPLAY
+        }
+
+        Logger.debug(TAG, "[GameSession] Starting service for gameId=$gameId | watchPath=$watchPath | savePath=$savePath | displayId=$emulatorDisplayId")
         GameSessionService.start(
             context = application,
             watchPath = watchPath,
@@ -601,7 +607,8 @@ class PlaySessionTracker @Inject constructor(
             gameTitle = game.title,
             channelName = channelName,
             isHardcore = isHardcore,
-            sessionStartTime = sessionStartTime
+            sessionStartTime = sessionStartTime,
+            emulatorDisplayId = emulatorDisplayId
         )
     }
 

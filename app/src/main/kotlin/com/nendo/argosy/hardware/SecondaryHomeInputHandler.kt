@@ -63,7 +63,7 @@ class SecondaryHomeInputHandler(
 
     fun handleSyncConflictInput(event: GamepadEvent): InputResult {
         val dsm = com.nendo.argosy.DualScreenManagerHolder.instance ?: return InputResult.UNHANDLED
-        dsm.dualSyncConflict.value ?: return InputResult.UNHANDLED
+        dsm.dualSyncOverlay.value ?: return InputResult.UNHANDLED
 
         when (event) {
             GamepadEvent.Up -> dsm.moveSyncConflictFocus(-1)

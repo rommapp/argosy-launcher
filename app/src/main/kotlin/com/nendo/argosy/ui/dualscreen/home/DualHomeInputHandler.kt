@@ -28,7 +28,7 @@ class DualHomeInputHandler(
 
     fun dispatch(event: com.nendo.argosy.ui.input.GamepadEvent): InputResult {
         val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
-        if (dsm?.dualSyncConflict?.value != null) {
+        if (dsm?.dualSyncOverlay?.value != null) {
             when (event) {
                 com.nendo.argosy.ui.input.GamepadEvent.Up -> dsm.moveSyncConflictFocus(-1)
                 com.nendo.argosy.ui.input.GamepadEvent.Down -> dsm.moveSyncConflictFocus(1)

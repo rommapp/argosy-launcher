@@ -178,28 +178,28 @@ class DualScreenManager(
     val dualCollectionShowcase: StateFlow<DualCollectionShowcaseState> =
         _dualCollectionShowcase
 
-    private val _dualSyncConflict = MutableStateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?>(null)
-    val dualSyncConflict: StateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?> = _dualSyncConflict
+    private val _dualSyncOverlay = MutableStateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?>(null)
+    val dualSyncOverlay: StateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?> = _dualSyncOverlay
 
-    private val _dualSyncConflictFocusIndex = MutableStateFlow(0)
-    val dualSyncConflictFocusIndex: StateFlow<Int> = _dualSyncConflictFocusIndex
+    private val _dualSyncOverlayFocusIndex = MutableStateFlow(0)
+    val dualSyncOverlayFocusIndex: StateFlow<Int> = _dualSyncOverlayFocusIndex
 
     fun moveSyncConflictFocus(direction: Int) {
-        val state = _dualSyncConflict.value ?: return
+        val state = _dualSyncOverlay.value ?: return
         val maxIndex = when (state.syncProgress) {
             is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict -> 2
             is com.nendo.argosy.domain.model.SyncProgress.LocalModified -> 1
             is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict -> 1
             else -> return
         }
-        _dualSyncConflictFocusIndex.value = (_dualSyncConflictFocusIndex.value + direction).coerceIn(0, maxIndex)
+        _dualSyncOverlayFocusIndex.value = (_dualSyncOverlayFocusIndex.value + direction).coerceIn(0, maxIndex)
     }
 
     fun handleConflictInput(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean): Boolean {
-        if (_dualSyncConflict.value == null && _dualSaveConflict.value == null) return false
+        if (_dualSyncOverlay.value == null && _dualSaveConflict.value == null) return false
         val event = com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
             ?: return true
-        if (_dualSyncConflict.value != null) {
+        if (_dualSyncOverlay.value != null) {
             when (event) {
                 com.nendo.argosy.ui.input.GamepadEvent.Up -> moveSyncConflictFocus(-1)
                 com.nendo.argosy.ui.input.GamepadEvent.Down -> moveSyncConflictFocus(1)
@@ -225,9 +225,9 @@ class DualScreenManager(
     }
 
     fun confirmSyncConflict() {
-        val state = _dualSyncConflict.value ?: return
+        val state = _dualSyncOverlay.value ?: return
         val wasPostSession = state.syncProgress is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict
-        val index = _dualSyncConflictFocusIndex.value
+        val index = _dualSyncOverlayFocusIndex.value
         when (state.syncProgress) {
             is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict -> when (index) {
                 0 -> state.onKeepHardcore?.invoke()
@@ -244,31 +244,31 @@ class DualScreenManager(
             }
             else -> {}
         }
-        _dualSyncConflict.value = null
-        _dualSyncConflictFocusIndex.value = 0
+        _dualSyncOverlay.value = null
+        _dualSyncOverlayFocusIndex.value = 0
     }
 
     fun dismissSyncConflict() {
-        val state = _dualSyncConflict.value ?: return
+        val state = _dualSyncOverlay.value ?: return
         when (state.syncProgress) {
             is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict -> state.onKeepLocal?.invoke()
             is com.nendo.argosy.domain.model.SyncProgress.LocalModified -> state.onKeepLocalModified?.invoke()
             is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict -> state.syncProgress.onSkipSync?.invoke()
             else -> {}
         }
-        _dualSyncConflict.value = null
-        _dualSyncConflictFocusIndex.value = 0
+        _dualSyncOverlay.value = null
+        _dualSyncOverlayFocusIndex.value = 0
     }
 
     fun setDualSyncConflictFromSaveConflict(state: com.nendo.argosy.ui.screens.common.SyncOverlayState) {
-        _dualSyncConflictFocusIndex.value = 0
-        _dualSyncConflict.value = state
+        _dualSyncOverlayFocusIndex.value = 0
+        _dualSyncOverlay.value = state
     }
 
     fun clearDualSyncConflictIfPostSession() {
-        if (_dualSyncConflict.value?.syncProgress is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict) {
-            _dualSyncConflict.value = null
-            _dualSyncConflictFocusIndex.value = 0
+        if (_dualSyncOverlay.value?.syncProgress is com.nendo.argosy.domain.model.SyncProgress.PostSessionConflict) {
+            _dualSyncOverlay.value = null
+            _dualSyncOverlayFocusIndex.value = 0
             resyncShowcaseFromHome()
         }
     }
@@ -1185,15 +1185,9 @@ class DualScreenManager(
                 val isConflict = state?.syncProgress is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict ||
                     state?.syncProgress is com.nendo.argosy.domain.model.SyncProgress.LocalModified
                 if (isConflict) {
-                    Log.d(TAG, "[DualSync] Conflict detected, mirroring to dual screen: ${state?.syncProgress}")
-                    _dualSyncConflictFocusIndex.value = 0
-                    _dualSyncConflict.value = state
-                } else {
-                    if (_dualSyncConflict.value != null) {
-                        Log.d(TAG, "[DualSync] Clearing dual sync conflict (state no longer conflict)")
-                    }
-                    _dualSyncConflict.value = null
+                    _dualSyncOverlayFocusIndex.value = 0
                 }
+                _dualSyncOverlay.value = state
             }
         }
 
@@ -1223,7 +1217,7 @@ class DualScreenManager(
                 onLaunch = { intent ->
                     syncConflictMirrorJob?.cancel()
                     discPickerObserverJob?.cancel()
-                    _dualSyncConflict.value = null
+                    _dualSyncOverlay.value = null
                     emulatorDisplayId = displayAffinityHelper.getEmulatorDisplayId(effectiveSwapped)
                     isLaunchingGame = true
                     launchGuardJob?.cancel()

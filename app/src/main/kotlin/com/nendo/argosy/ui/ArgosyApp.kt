@@ -954,11 +954,11 @@ fun ArgosyApp(
                         )
                     }
 
-                    val dualSyncConflict by activity?.dualScreenManager
-                        ?.dualSyncConflict?.collectAsState() ?: remember { mutableStateOf(null) }
+                    val dualSyncOverlay by activity?.dualScreenManager
+                        ?.dualSyncOverlay?.collectAsState() ?: remember { mutableStateOf(null) }
                     val dualSyncFocusIndex by activity?.dualScreenManager
-                        ?.dualSyncConflictFocusIndex?.collectAsState() ?: remember { mutableStateOf(0) }
-                    dualSyncConflict?.let { conflictState ->
+                        ?.dualSyncOverlayFocusIndex?.collectAsState() ?: remember { mutableStateOf(0) }
+                    dualSyncOverlay?.let { conflictState ->
                         val isHardcore = conflictState.syncProgress is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict
                         com.nendo.argosy.ui.components.SyncOverlay(
                             syncProgress = conflictState.syncProgress,

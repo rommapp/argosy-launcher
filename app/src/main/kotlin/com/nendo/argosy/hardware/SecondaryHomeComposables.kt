@@ -319,9 +319,9 @@ fun ShowcaseRoleContent(
 
         }
 
-        val dualSyncConflict by syncConflictState.collectAsState()
+        val dualSyncOverlay by syncConflictState.collectAsState()
         val dualSyncFocusIndex by syncConflictFocusIndex.collectAsState()
-        dualSyncConflict?.let { conflictState ->
+        dualSyncOverlay?.let { conflictState ->
             val isHardcore = conflictState.syncProgress is com.nendo.argosy.domain.model.SyncProgress.HardcoreConflict
             com.nendo.argosy.ui.components.SyncOverlay(
                 syncProgress = conflictState.syncProgress,

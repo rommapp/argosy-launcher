@@ -142,8 +142,8 @@ class SecondaryHomeActivity :
                             showcaseViewMode = _showcaseViewMode,
                             collectionShowcaseState = _showcaseCollectionState,
                             gameDetailState = _showcaseGameDetailState,
-                            syncConflictState = dsm.dualSyncConflict,
-                            syncConflictFocusIndex = dsm.dualSyncConflictFocusIndex,
+                            syncConflictState = dsm.dualSyncOverlay,
+                            syncConflictFocusIndex = dsm.dualSyncOverlayFocusIndex,
                             onAppClick = ::launchApp
                         )
                     } else {

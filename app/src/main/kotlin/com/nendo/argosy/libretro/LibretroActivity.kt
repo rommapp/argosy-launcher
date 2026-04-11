@@ -1666,7 +1666,10 @@ class LibretroActivity : ComponentActivity() {
         gracefullyEndNetplaySessionIfActive()
         if (coreLoadedSuccessfully) {
             performAutoSaveState()
-            saveStateManager.saveSram(retroView)
+            if (!isGuestJoinedSession) {
+                // guest session SRAM is ephemeral and must not touch the persistent file
+                saveStateManager.saveSram(retroView)
+            }
             if (isFinishing) {
                 retroView.destroyNative()
             }

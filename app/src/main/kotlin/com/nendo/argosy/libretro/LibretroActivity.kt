@@ -1151,7 +1151,7 @@ class LibretroActivity : ComponentActivity() {
                         if (isGuestJoinedSession) guestSessionEverStarted = true
                         netplayProgressState = NetplayProgressState(
                             NetplayProgressStage.Failed,
-                            "Couldn't connect: ${state.reason}"
+                            netplayErrorMessage(state.reason)
                         )
                         if (isGuestJoinedSession) {
                             launch {
@@ -1192,6 +1192,29 @@ class LibretroActivity : ComponentActivity() {
 
     private fun resolveFriendDisplayName(userId: String): String {
         return socialRepository.friends.value.firstOrNull { it.id == userId }?.displayName ?: "Friend"
+    }
+
+    private fun netplayErrorMessage(reason: String): String = when (reason) {
+        "protocol_version_mismatch" -> "Update Argosy to join this netplay session."
+        "rate_limited" -> "You've started too many netplay sessions recently. Please wait a few minutes."
+        "send_failed" -> "Couldn't reach Argosy. Check your connection."
+        "ready_timeout", "handshake_timeout" -> "Connection timed out. Try again."
+        "candidate_pair_failed" -> "Couldn't establish a direct connection with your friend."
+        "quality_rejected" -> "Connection quality too poor for netplay."
+        "no_candidates" -> "No network paths available for netplay."
+        "not_found" -> "That session is no longer available."
+        "not_friend" -> "You can only join sessions from friends."
+        "session_full" -> "That session is full."
+        "already_open" -> "You already have an active netplay session."
+        "already_filled", "already_joined" -> "Someone else already joined that session."
+        "disabled" -> "Netplay is currently disabled on the server."
+        "core_unsupported" -> "This core doesn't support netplay."
+        "self_join" -> "You can't join your own session."
+        "host_install_failed", "guest_install_failed" -> "Couldn't start the netplay session."
+        "socket_bind_failed" -> "Couldn't open a network socket for netplay."
+        "invalid_payload", "invalid_state" -> "Netplay request was rejected by the server."
+        "db_error", "internal_error" -> "A server error occurred. Try again shortly."
+        else -> "Couldn't connect: $reason"
     }
 
     private fun isNetplayCoreSupported(): Boolean {

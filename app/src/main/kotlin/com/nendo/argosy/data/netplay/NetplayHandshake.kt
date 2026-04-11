@@ -5,6 +5,7 @@ import com.nendo.argosy.data.social.ArgosSocialService.IncomingMessage
 import com.nendo.argosy.data.social.NetplayCandidate
 import com.nendo.argosy.data.social.NetplayCandidatesPayload
 import com.nendo.argosy.data.social.NetplayHandshakeResultPayload
+import com.nendo.argosy.data.social.NetplayHandshakeTelemetryPayload
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -59,6 +60,7 @@ class NetplayHandshake(
         }
         if (localCandidates.isEmpty()) {
             reportFailure(args.sessionId, "no_candidates")
+            sendTelemetry(TelemetryOutcome.HANDSHAKE_TIMEOUT)
             return HandshakeResult.Failure("no_candidates")
         }
 
@@ -70,11 +72,13 @@ class NetplayHandshake(
             args.peerCandidatesChannel.receive()
         } ?: run {
             reportFailure(args.sessionId, "peer_candidates_timeout")
+            sendTelemetry(TelemetryOutcome.HANDSHAKE_TIMEOUT)
             return HandshakeResult.Failure("peer_candidates_timeout")
         }
         val peerCandidates = peerMessage.payload.candidates
         if (peerCandidates.isEmpty()) {
             reportFailure(args.sessionId, "peer_candidates_timeout")
+            sendTelemetry(TelemetryOutcome.HANDSHAKE_TIMEOUT)
             return HandshakeResult.Failure("peer_candidates_timeout")
         }
 
@@ -82,6 +86,7 @@ class NetplayHandshake(
             args.punchStartChannel.receive()
         } ?: run {
             reportFailure(args.sessionId, "punch_start_timeout")
+            sendTelemetry(TelemetryOutcome.HANDSHAKE_TIMEOUT)
             return HandshakeResult.Failure("punch_start_timeout")
         }
 
@@ -106,6 +111,7 @@ class NetplayHandshake(
         if (latched == null) {
             transport.close()
             reportFailure(args.sessionId, "candidate_pair_failed")
+            sendTelemetry(TelemetryOutcome.CANDIDATE_PAIR_FAILED)
             return HandshakeResult.Failure("candidate_pair_failed")
         }
 
@@ -114,6 +120,7 @@ class NetplayHandshake(
         if (burst == null) {
             transport.close()
             reportFailure(args.sessionId, "candidate_pair_failed")
+            sendTelemetry(TelemetryOutcome.CANDIDATE_PAIR_FAILED, latchedCandidate = latchedCandidate.type)
             return HandshakeResult.Failure("candidate_pair_failed")
         }
 
@@ -130,6 +137,12 @@ class NetplayHandshake(
                     reason = "quality_rejected"
                 )
             )
+            sendTelemetry(
+                outcome = TelemetryOutcome.QUALITY_REJECTED,
+                latchedCandidate = latchedCandidate.type,
+                rttMs = medianRttMs,
+                jitterMs = jitterMs
+            )
             return HandshakeResult.Failure("quality_rejected")
         }
 
@@ -142,6 +155,12 @@ class NetplayHandshake(
                 latchedCandidate = latchedCandidate.type
             )
         )
+        sendTelemetry(
+            outcome = TelemetryOutcome.SUCCESS,
+            latchedCandidate = latchedCandidate.type,
+            rttMs = medianRttMs,
+            jitterMs = jitterMs
+        )
 
         return HandshakeResult.Success(
             latchedCandidate = latchedCandidate,
@@ -150,6 +169,31 @@ class NetplayHandshake(
             measuredRttMs = medianRttMs,
             measuredJitterMs = jitterMs
         )
+    }
+
+    internal enum class TelemetryOutcome(val wire: String) {
+        SUCCESS("success"),
+        QUALITY_REJECTED("quality_rejected"),
+        CANDIDATE_PAIR_FAILED("candidate_pair_failed"),
+        HANDSHAKE_TIMEOUT("handshake_timeout")
+    }
+
+    private fun sendTelemetry(
+        outcome: TelemetryOutcome,
+        latchedCandidate: String? = null,
+        rttMs: Int? = null,
+        jitterMs: Int? = null
+    ) {
+        runCatching {
+            socialService.sendNetplayHandshakeTelemetry(
+                NetplayHandshakeTelemetryPayload(
+                    outcome = outcome.wire,
+                    latchedCandidate = latchedCandidate,
+                    measuredRttMs = rttMs,
+                    measuredJitterMs = jitterMs
+                )
+            )
+        }
     }
 
     private suspend fun simultaneousPunch(

@@ -1,12 +1,21 @@
 package com.nendo.argosy.data.netplay
 
 import com.nendo.argosy.data.social.ArgosSocialService
+import com.nendo.argosy.data.social.NetplayJoinDeclinedPayload
+import com.nendo.argosy.data.social.NetplayJoinRequestedPayload
+import com.nendo.argosy.data.social.NetplayHandshakeFailedPayload
+import com.nendo.argosy.data.social.NetplayKickedPayload
 import com.nendo.argosy.data.social.NetplayOpenPayload
 import com.nendo.argosy.data.social.NetplayReadyPayload
+import com.nendo.argosy.data.social.NetplayReserveRequestPayload
+import com.nendo.argosy.data.social.NetplaySessionEndedPayload
 import com.nendo.argosy.data.social.NetplaySessionState
 import com.swordfish.libretrodroid.GLRetroView
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,8 +25,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Base64
@@ -36,6 +47,7 @@ class NetplaySessionManagerTest {
         every { svc.sendNetplayJoinResponse(any()) } returns true
         every { svc.sendNetplayClose(any()) } returns true
         every { svc.sendNetplayLeave(any()) } returns true
+        every { svc.sendNetplayReserve(any()) } returns true
         return svc
     }
 
@@ -44,6 +56,39 @@ class NetplaySessionManagerTest {
             candidateGatherer = mockk(relaxed = true),
             socialService = mockk(relaxed = true)
         )
+    }
+
+    private fun samplePayload() = NetplayOpenPayload(
+        gameIgdbId = null,
+        gameTitle = "Super Mario",
+        coreId = "fceumm",
+        romHashPrefix = "abc",
+        coreHash = "def"
+    )
+
+    private fun readyMessage(sessionId: String = "sess-1"): ArgosSocialService.IncomingMessage.NetplayReady {
+        val key = ByteArray(32) { it.toByte() }
+        return ArgosSocialService.IncomingMessage.NetplayReady(
+            NetplayReadyPayload(
+                sessionId = sessionId,
+                sessionKey = Base64.getEncoder().encodeToString(key),
+                protocolVersion = 1
+            )
+        )
+    }
+
+    private suspend fun openAndWait(
+        manager: NetplaySessionManager,
+        incoming: MutableSharedFlow<ArgosSocialService.IncomingMessage>,
+        scope: CoroutineScope,
+        sessionId: String = "sess-1"
+    ) {
+        val openJob = scope.launch {
+            manager.openServer(samplePayload())
+        }
+        delay(50)
+        incoming.emit(readyMessage(sessionId))
+        openJob.join()
     }
 
     @Test
@@ -132,5 +177,399 @@ class NetplaySessionManagerTest {
         manager.joinSession("sess-x", "host-user")
         assertEquals(NetplaySessionState.Error("send_failed"), manager.sessionState.value)
         manager.shutdown()
+    }
+
+    @Test
+    fun joinRequestedMessageTransitionsToJoinRequestReceived() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+        assertTrue(manager.sessionState.value is NetplaySessionState.Waiting)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload(
+                    sessionId = "sess-1",
+                    fromUserId = "guest-42",
+                    fromUsername = "guest42"
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        val state = manager.sessionState.value
+        assertTrue("expected JoinRequestReceived, got $state", state is NetplaySessionState.JoinRequestReceived)
+        assertEquals("guest-42", (state as NetplaySessionState.JoinRequestReceived).fromUserId)
+        assertEquals("guest42", state.fromUsername)
+        manager.shutdown()
+    }
+
+    @Test
+    fun declineJoinSendsResponseAndReturnsToWaiting() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-42", "guest42")
+            )
+        )
+        advanceUntilIdle()
+
+        val responseSlot = slot<com.nendo.argosy.data.social.NetplayJoinResponsePayload>()
+        every { svc.sendNetplayJoinResponse(capture(responseSlot)) } returns true
+
+        manager.declineJoin("guest-42", reason = "busy")
+        advanceUntilIdle()
+
+        assertEquals("sess-1", responseSlot.captured.sessionId)
+        assertEquals("guest-42", responseSlot.captured.guestId)
+        assertEquals(false, responseSlot.captured.accept)
+        assertEquals("busy", responseSlot.captured.reason)
+        assertTrue(manager.sessionState.value is NetplaySessionState.Waiting)
+        manager.shutdown()
+    }
+
+    @Test
+    fun closeServerFromWaitingSendsCloseAndReturnsIdle() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val rules = mockk<NetplaySessionRules>(relaxed = true)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            sessionRules = rules,
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        manager.closeServer()
+        advanceUntilIdle()
+
+        verify { svc.sendNetplayClose("sess-1") }
+        verify { rules.release() }
+        assertEquals(NetplaySessionState.Idle, manager.sessionState.value)
+        assertTrue(manager.currentDriver() == null)
+        manager.shutdown()
+    }
+
+    @Test
+    fun leaveSessionFromOpeningSendsLeaveAndReturnsIdle() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this, sessionId = "sess-leave")
+
+        manager.leaveSession()
+        advanceUntilIdle()
+
+        verify { svc.sendNetplayLeave("sess-leave") }
+        assertEquals(NetplaySessionState.Idle, manager.sessionState.value)
+        manager.shutdown()
+    }
+
+    @Test
+    fun kickedMessageTearsDownAndReturnsIdle() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val rules = mockk<NetplaySessionRules>(relaxed = true)
+        val retroView = mockk<GLRetroView>(relaxed = true)
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = retroView,
+            sessionRules = rules,
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayKicked(
+                NetplayKickedPayload(sessionId = "sess-1", reason = "host_kicked")
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals(NetplaySessionState.Idle, manager.sessionState.value)
+        verify { rules.release() }
+        manager.shutdown()
+    }
+
+    @Test
+    fun sessionEndedMessageReturnsIdle() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplaySessionEnded(
+                NetplaySessionEndedPayload(sessionId = "sess-1", reason = "expired")
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals(NetplaySessionState.Idle, manager.sessionState.value)
+        manager.shutdown()
+    }
+
+    @Test
+    fun handshakeFailedMessageSetsErrorState() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayHandshakeFailed(
+                NetplayHandshakeFailedPayload(sessionId = "sess-1", reason = "candidate_pair_failed")
+            )
+        )
+        advanceUntilIdle()
+
+        val state = manager.sessionState.value
+        assertTrue("expected Error, got $state", state is NetplaySessionState.Error)
+        assertEquals("candidate_pair_failed", (state as NetplaySessionState.Error).reason)
+        manager.shutdown()
+    }
+
+    @Test
+    fun joinDeclinedMessageSetsErrorState() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        // Let the inbound collector subscribe before emitting.
+        advanceUntilIdle()
+        delay(50)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinDeclined(
+                NetplayJoinDeclinedPayload(sessionId = "sess-1", reason = "host_busy")
+            )
+        )
+        advanceUntilIdle()
+
+        val state = manager.sessionState.value
+        assertTrue("expected Error, got $state", state is NetplaySessionState.Error)
+        assertEquals("host_busy", (state as NetplaySessionState.Error).reason)
+        manager.shutdown()
+    }
+
+    @Test
+    fun reserveSessionSendsReserveWhenActive() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        val reserveSlot = slot<NetplayReserveRequestPayload>()
+        every { svc.sendNetplayReserve(capture(reserveSlot)) } returns true
+
+        val ok = manager.reserveSession("friend-7")
+        assertTrue(ok)
+        assertEquals("sess-1", reserveSlot.captured.sessionId)
+        assertEquals("friend-7", reserveSlot.captured.reservedForUserId)
+        manager.shutdown()
+    }
+
+    @Test
+    fun reserveSessionReturnsFalseWhenIdle() = runTest {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        val ok = manager.reserveSession("friend-7")
+        assertTrue(!ok)
+        verify(exactly = 0) { svc.sendNetplayReserve(any()) }
+        manager.shutdown()
+    }
+
+    @Test
+    fun openServerRejectsSecondOpenWhileActive() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        val second = manager.openServer(samplePayload())
+        assertTrue(second.isFailure)
+        assertTrue(manager.sessionState.value is NetplaySessionState.Waiting)
+        manager.shutdown()
+    }
+
+    @Test
+    fun joinSessionRejectsWhenNotIdle() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        manager.joinSession("sess-other", "host-user")
+        advanceUntilIdle()
+        assertTrue(manager.sessionState.value is NetplaySessionState.Waiting)
+        verify(exactly = 0) { svc.sendNetplayJoinRequest(any()) }
+        manager.shutdown()
+    }
+
+    @Test
+    fun acceptJoinIgnoredWhenNotInJoinRequestedOrWaiting() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+
+        manager.acceptJoin("guest-x")
+        advanceUntilIdle()
+        verify(exactly = 0) { svc.sendNetplayJoinResponse(any()) }
+        assertEquals(NetplaySessionState.Idle, manager.sessionState.value)
+        manager.shutdown()
+    }
+
+    @Test
+    fun openServerRejectsMismatchedProtocolVersion() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+
+        val openJob = launch { manager.openServer(samplePayload()) }
+        delay(50)
+
+        val key = ByteArray(32) { it.toByte() }
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayReady(
+                NetplayReadyPayload(
+                    sessionId = "sess-1",
+                    sessionKey = Base64.getEncoder().encodeToString(key),
+                    protocolVersion = 99
+                )
+            )
+        )
+        openJob.join()
+
+        val state = manager.sessionState.value
+        assertTrue("expected Error, got $state", state is NetplaySessionState.Error)
+        assertEquals("protocol_version_mismatch", (state as NetplaySessionState.Error).reason)
+        verify { svc.sendNetplayHandshakeTelemetry(match { it.outcome == "protocol_version_mismatch" }) }
+        manager.shutdown()
+    }
+
+    @Test
+    fun openServerRateLimitedErrorPropagatesAsErrorState() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+
+        val openJob = launch { manager.openServer(samplePayload()) }
+        delay(50)
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.Error(
+                code = "rate_limited",
+                message = "Too many opens"
+            )
+        )
+        openJob.join()
+
+        val state = manager.sessionState.value
+        assertTrue("expected Error, got $state", state is NetplaySessionState.Error)
+        assertEquals("rate_limited", (state as NetplaySessionState.Error).reason)
+        manager.shutdown()
+    }
+
+    @Test
+    fun shutdownCancelsInboundCollectionAndClearsDriver() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        manager.shutdown()
+        advanceUntilIdle()
+
+        // After shutdown, inbound messages should no longer mutate state.
+        val stateBefore = manager.sessionState.value
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayKicked(NetplayKickedPayload("sess-1", null))
+        )
+        advanceUntilIdle()
+        assertEquals(stateBefore, manager.sessionState.value)
     }
 }

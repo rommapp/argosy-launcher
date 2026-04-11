@@ -3,6 +3,7 @@ package com.nendo.argosy.data.netplay
 import android.util.Log
 import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.data.social.ArgosSocialService.IncomingMessage
+import com.nendo.argosy.data.social.NetplayHandshakeTelemetryPayload
 import com.nendo.argosy.data.social.NetplayJoinRequestPayload
 import com.nendo.argosy.data.social.NetplayJoinResponsePayload
 import com.nendo.argosy.data.social.NetplayOpenPayload
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.DatagramSocket
@@ -49,6 +51,7 @@ class NetplaySessionManager(
     private val punchStartChannel = Channel<IncomingMessage.NetplayPunchStart>(capacity = Channel.BUFFERED)
     private val readyChannel = Channel<IncomingMessage.NetplayReady>(capacity = Channel.BUFFERED)
     private val joinRequestedChannel = Channel<IncomingMessage.NetplayJoinRequested>(capacity = Channel.BUFFERED)
+    private val errorChannel = Channel<IncomingMessage.Error>(capacity = Channel.BUFFERED)
 
     private val inboundJob: Job = scope.launch {
         socialService.incomingMessages.collect { message ->
@@ -62,15 +65,29 @@ class NetplaySessionManager(
         if (_sessionState.value !is NetplaySessionState.Idle) {
             return Result.failure(IllegalStateException("session not idle"))
         }
+        drainPendingChannels()
         _sessionState.value = NetplaySessionState.Opening(payload.gameTitle)
         if (!socialService.sendNetplayOpen(payload)) {
             _sessionState.value = NetplaySessionState.Error("send_failed")
             return Result.failure(IllegalStateException("send_failed"))
         }
-        val ready = withTimeoutOrNull(READY_TIMEOUT) { readyChannel.receive() }
-        if (ready == null) {
-            _sessionState.value = NetplaySessionState.Error("ready_timeout")
-            return Result.failure(IllegalStateException("ready_timeout"))
+        val ready = when (val outcome = awaitReadyOrError()) {
+            is ReadyOutcome.Ready -> outcome.message
+            is ReadyOutcome.ServerError -> {
+                _sessionState.value = NetplaySessionState.Error(outcome.code)
+                return Result.failure(IllegalStateException(outcome.code))
+            }
+            ReadyOutcome.Timeout -> {
+                _sessionState.value = NetplaySessionState.Error("ready_timeout")
+                sendTelemetry("handshake_timeout")
+                return Result.failure(IllegalStateException("ready_timeout"))
+            }
+        }
+        if (ready.payload.protocolVersion != NETPLAY_PROTOCOL_VERSION) {
+            Log.w(TAG, "openServer: protocol_version mismatch client=$NETPLAY_PROTOCOL_VERSION server=${ready.payload.protocolVersion}")
+            _sessionState.value = NetplaySessionState.Error("protocol_version_mismatch")
+            sendTelemetry("protocol_version_mismatch")
+            return Result.failure(IllegalStateException("protocol_version_mismatch"))
         }
         activeSessionId = ready.payload.sessionId
         pendingReadyPayload = PendingReady(
@@ -120,14 +137,28 @@ class NetplaySessionManager(
             Log.w(TAG, "joinSession ignored in state ${_sessionState.value}")
             return
         }
+        drainPendingChannels()
         _sessionState.value = NetplaySessionState.Opening("")
         if (!socialService.sendNetplayJoinRequest(NetplayJoinRequestPayload(sessionId = sessionId))) {
             _sessionState.value = NetplaySessionState.Error("send_failed")
             return
         }
-        val ready = withTimeoutOrNull(READY_TIMEOUT) { readyChannel.receive() }
-        if (ready == null) {
-            _sessionState.value = NetplaySessionState.Error("ready_timeout")
+        val ready = when (val outcome = awaitReadyOrError()) {
+            is ReadyOutcome.Ready -> outcome.message
+            is ReadyOutcome.ServerError -> {
+                _sessionState.value = NetplaySessionState.Error(outcome.code)
+                return
+            }
+            ReadyOutcome.Timeout -> {
+                _sessionState.value = NetplaySessionState.Error("ready_timeout")
+                sendTelemetry("handshake_timeout")
+                return
+            }
+        }
+        if (ready.payload.protocolVersion != NETPLAY_PROTOCOL_VERSION) {
+            Log.w(TAG, "joinSession: protocol_version mismatch client=$NETPLAY_PROTOCOL_VERSION server=${ready.payload.protocolVersion}")
+            _sessionState.value = NetplaySessionState.Error("protocol_version_mismatch")
+            sendTelemetry("protocol_version_mismatch")
             return
         }
         activeSessionId = ready.payload.sessionId
@@ -392,8 +423,42 @@ class NetplaySessionManager(
         role = null
     }
 
+    private sealed class ReadyOutcome {
+        data class Ready(val message: IncomingMessage.NetplayReady) : ReadyOutcome()
+        data class ServerError(val code: String) : ReadyOutcome()
+        data object Timeout : ReadyOutcome()
+    }
+
+    private suspend fun awaitReadyOrError(): ReadyOutcome {
+        return withTimeoutOrNull(READY_TIMEOUT) {
+            select<ReadyOutcome> {
+                readyChannel.onReceive { ReadyOutcome.Ready(it) }
+                errorChannel.onReceive { err ->
+                    Log.w(TAG, "awaitReadyOrError: server error code=${err.code} message=${err.message}")
+                    ReadyOutcome.ServerError(err.code)
+                }
+            }
+        } ?: ReadyOutcome.Timeout
+    }
+
+    private fun drainPendingChannels() {
+        while (readyChannel.tryReceive().isSuccess) { }
+        while (errorChannel.tryReceive().isSuccess) { }
+    }
+
+    private fun sendTelemetry(outcome: String) {
+        runCatching {
+            socialService.sendNetplayHandshakeTelemetry(
+                NetplayHandshakeTelemetryPayload(outcome = outcome)
+            )
+        }
+    }
+
     private fun dispatchIncoming(message: IncomingMessage) {
         when (message) {
+            is IncomingMessage.Error -> {
+                errorChannel.trySend(message)
+            }
             is IncomingMessage.NetplayReady -> {
                 pendingReadyPayload = PendingReady(
                     sessionId = message.payload.sessionId,
@@ -449,5 +514,6 @@ class NetplaySessionManager(
         private const val SILENCE_TICK_MS = 100L
         private const val TIER2_TIMEOUT_MS = 500L
         private const val TIER3_TIMEOUT_MS = 2000L
+        const val NETPLAY_PROTOCOL_VERSION = 1
     }
 }

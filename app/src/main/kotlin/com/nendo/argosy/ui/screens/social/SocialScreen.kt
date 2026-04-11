@@ -305,6 +305,9 @@ fun SocialScreen(
                                 netplayPreflight = { session -> viewModel.runNetplayPreflight(session) },
                                 onJoinNetplaySession = { friend, session ->
                                     viewModel.launchNetplayJoin(friend, session)
+                                },
+                                onJoinableChanged = { friendId, joinable ->
+                                    viewModel.reportFriendNetplayJoinable(friendId, joinable)
                                 }
                             )
                         }
@@ -360,7 +363,10 @@ fun SocialScreen(
                             add(FooterHintItem(InputButton.SELECT, "Options"))
                         }
                         SocialTab.FRIENDS -> {
-                            add(FooterHintItem(InputButton.A, "Profile", enabled = uiState.friends.isNotEmpty()))
+                            val focusedFriend = uiState.friends.getOrNull(uiState.focusedFriendIndex)
+                            val canJoin = focusedFriend != null && focusedFriend.id in uiState.joinableFriendIds
+                            val primaryLabel = if (canJoin) "Join" else "Profile"
+                            add(FooterHintItem(InputButton.A, primaryLabel, enabled = uiState.friends.isNotEmpty()))
                             add(FooterHintItem(InputButton.Y, "Favorite", enabled = uiState.friends.isNotEmpty()))
                         }
                         SocialTab.NOTIFICATIONS -> {

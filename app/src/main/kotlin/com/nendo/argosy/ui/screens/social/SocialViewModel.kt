@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -77,7 +78,8 @@ data class SocialUiState(
     val communitySearchQuery: String = "",
     val communitySearchResults: List<GamePickerItem> = emptyList(),
     val communitySearchFocusIndex: Int = 0,
-    val communitySearchFieldFocused: Boolean = true
+    val communitySearchFieldFocused: Boolean = true,
+    val joinableFriendIds: Set<String> = emptySet()
 ) {
     val profileFocusCount: Int
         get() = PROFILE_DISPLAY_SECTIONS + (userProfile?.mostPlayed?.size ?: 0)
@@ -139,6 +141,18 @@ class SocialViewModel @Inject constructor(
     suspend fun runNetplayPreflight(
         session: NetplaySession
     ): NetplayPreflightResult = netplayPreflightChecker.check(session)
+
+    fun reportFriendNetplayJoinable(friendId: String, joinable: Boolean) {
+        _uiState.update { state ->
+            val current = state.joinableFriendIds
+            val next = when {
+                joinable && friendId !in current -> current + friendId
+                !joinable && friendId in current -> current - friendId
+                else -> current
+            }
+            if (next === current) state else state.copy(joinableFriendIds = next)
+        }
+    }
 
     fun launchNetplayJoin(friend: Friend, session: NetplaySession) {
         viewModelScope.launch {
@@ -706,7 +720,12 @@ class SocialViewModel @Inject constructor(
                 SocialTab.FRIENDS -> {
                     val state = _uiState.value
                     val friend = state.friends.getOrNull(state.focusedFriendIndex)
-                    friend?.let { onViewProfile(it.id) }
+                    val session = friend?.currentGame?.netplaySession
+                    if (friend != null && session != null && friend.id in state.joinableFriendIds) {
+                        launchNetplayJoin(friend, session)
+                    } else {
+                        friend?.let { onViewProfile(it.id) }
+                    }
                     InputResult.HANDLED
                 }
                 SocialTab.NOTIFICATIONS -> {

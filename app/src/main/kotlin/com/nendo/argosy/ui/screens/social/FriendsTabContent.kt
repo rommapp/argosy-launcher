@@ -29,6 +29,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,7 +74,8 @@ fun FriendsTabContent(
     onViewProfile: (String) -> Unit,
     onToggleFavorite: (String) -> Unit = {},
     netplayPreflight: (suspend (NetplaySession) -> NetplayPreflightResult)? = null,
-    onJoinNetplaySession: ((Friend, NetplaySession) -> Unit)? = null
+    onJoinNetplaySession: ((Friend, NetplaySession) -> Unit)? = null,
+    onJoinableChanged: ((String, Boolean) -> Unit)? = null
 ) {
     if (friends.isEmpty()) {
         Box(
@@ -110,7 +112,8 @@ fun FriendsTabContent(
                 onClick = { onViewProfile(friend.id) },
                 onToggleFavorite = { onToggleFavorite(friend.id) },
                 netplayPreflight = netplayPreflight,
-                onJoinNetplaySession = onJoinNetplaySession
+                onJoinNetplaySession = onJoinNetplaySession,
+                onJoinableChanged = onJoinableChanged
             )
         }
     }
@@ -123,7 +126,8 @@ private fun FriendCard(
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
     netplayPreflight: (suspend (NetplaySession) -> NetplayPreflightResult)? = null,
-    onJoinNetplaySession: ((Friend, NetplaySession) -> Unit)? = null
+    onJoinNetplaySession: ((Friend, NetplaySession) -> Unit)? = null,
+    onJoinableChanged: ((String, Boolean) -> Unit)? = null
 ) {
     val shape = RoundedCornerShape(12.dp)
     val borderModifier = if (isFocused) {
@@ -232,7 +236,8 @@ private fun FriendCard(
                         friend = friend,
                         netplaySession = netplaySession,
                         preflight = netplayPreflight,
-                        onJoin = { onJoinNetplaySession?.invoke(friend, netplaySession) }
+                        onJoin = { onJoinNetplaySession?.invoke(friend, netplaySession) },
+                        onJoinableChanged = onJoinableChanged
                     )
                 }
             }
@@ -284,7 +289,8 @@ private fun FriendNetplayJoinRow(
     friend: Friend,
     netplaySession: NetplaySession,
     preflight: suspend (NetplaySession) -> NetplayPreflightResult,
-    onJoin: () -> Unit
+    onJoin: () -> Unit,
+    onJoinableChanged: ((String, Boolean) -> Unit)? = null
 ) {
     var joinState by remember(netplaySession.sessionId, netplaySession.joinable) {
         mutableStateOf<FriendNetplayJoinState>(
@@ -304,6 +310,13 @@ private fun FriendNetplayJoinRow(
             joinState = result.toFriendJoinState()
         } else {
             joinState = FriendNetplayJoinState.SessionBusy
+        }
+        onJoinableChanged?.invoke(friend.id, joinState is FriendNetplayJoinState.Joinable)
+    }
+
+    DisposableEffect(friend.id) {
+        onDispose {
+            onJoinableChanged?.invoke(friend.id, false)
         }
     }
 

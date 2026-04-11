@@ -1175,6 +1175,14 @@ class LibretroActivity : ComponentActivity() {
                 netplayLastRttMs = if (rtt > 0L) (rtt / 1_000_000L).toInt() else null
             }
         }
+        lifecycleScope.launch {
+            manager.guestLeftEvents.collect { event ->
+                val name = resolveFriendDisplayName(event.guestUserId)
+                inGameMessage = "$name left your session"
+                netplayPeerDisplayName = "Friend"
+                netplayLastRttMs = null
+            }
+        }
 
         val pending = pendingNetplayJoin
         if (pending != null) {

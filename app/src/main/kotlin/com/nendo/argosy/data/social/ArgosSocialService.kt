@@ -165,6 +165,7 @@ class ArgosSocialService @Inject constructor(
         data class NetplayHandshakeFailed(val payload: NetplayHandshakeFailedPayload) : IncomingMessage()
         data class NetplayKicked(val payload: NetplayKickedPayload) : IncomingMessage()
         data class NetplaySessionEnded(val payload: NetplaySessionEndedPayload) : IncomingMessage()
+        data class NetplayGuestLeft(val payload: NetplayGuestLeftPayload) : IncomingMessage()
     }
 
     fun connect(token: String) {
@@ -757,6 +758,18 @@ class ArgosSocialService @Inject constructor(
                         IncomingMessage.NetplaySessionEnded(
                             NetplaySessionEndedPayload(
                                 sessionId = payload.getString("session_id"),
+                                reason = payload.optString("reason", null)
+                            )
+                        )
+                    } else null
+                }
+
+                MessageTypes.NETPLAY_GUEST_LEFT -> {
+                    if (payload != null) {
+                        IncomingMessage.NetplayGuestLeft(
+                            NetplayGuestLeftPayload(
+                                sessionId = payload.getString("session_id"),
+                                guestId = payload.getString("guest_id"),
                                 reason = payload.optString("reason", null)
                             )
                         )

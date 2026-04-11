@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.netplay
 
 import com.nendo.argosy.data.social.ArgosSocialService
+import com.nendo.argosy.data.social.NetplayGuestLeftPayload
 import com.nendo.argosy.data.social.NetplayJoinDeclinedPayload
 import com.nendo.argosy.data.social.NetplayJoinRequestedPayload
 import com.nendo.argosy.data.social.NetplayHandshakeFailedPayload
@@ -485,6 +486,43 @@ class NetplaySessionManagerTest {
         advanceUntilIdle()
         verify(exactly = 0) { svc.sendNetplayJoinResponse(any()) }
         assertEquals(NetplaySessionState.Idle, manager.sessionState.value)
+        manager.shutdown()
+    }
+
+    @Test
+    fun guestLeftMessageRevertsToWaitingAndEmitsEvent() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val manager = NetplaySessionManager(
+            socialService = fakeService(incoming),
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        openAndWait(manager, incoming, this)
+
+        val receivedEvents = mutableListOf<NetplaySessionManager.GuestLeftEvent>()
+        val collectorJob = launch { manager.guestLeftEvents.collect { receivedEvents += it } }
+        delay(50)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayGuestLeft(
+                NetplayGuestLeftPayload(
+                    sessionId = "sess-1",
+                    guestId = "guest-42",
+                    reason = "guest_left"
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        val state = manager.sessionState.value
+        assertTrue("expected Waiting, got $state", state is NetplaySessionState.Waiting)
+        assertEquals("sess-1", (state as NetplaySessionState.Waiting).sessionId)
+        assertEquals(1, receivedEvents.size)
+        assertEquals("guest-42", receivedEvents[0].guestUserId)
+
+        collectorJob.cancel()
         manager.shutdown()
     }
 

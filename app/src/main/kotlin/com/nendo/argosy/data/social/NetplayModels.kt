@@ -114,6 +114,13 @@ data class NetplayKickedPayload(
 )
 
 @JsonClass(generateAdapter = true)
+data class NetplayGuestLeftPayload(
+    @Json(name = "session_id") val sessionId: String,
+    @Json(name = "guest_id") val guestId: String,
+    val reason: String? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class NetplayReserveRequestPayload(
     @Json(name = "session_id") val sessionId: String,
     @Json(name = "reserved_for_user_id") val reservedForUserId: String? = null

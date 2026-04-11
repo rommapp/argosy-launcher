@@ -3,6 +3,7 @@ package com.nendo.argosy.data.netplay
 import android.util.Log
 import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.data.social.ArgosSocialService.IncomingMessage
+import com.nendo.argosy.data.social.NetplayGuestLeftPayload
 import com.nendo.argosy.data.social.NetplayHandshakeTelemetryPayload
 import com.nendo.argosy.data.social.NetplayJoinRequestPayload
 import com.nendo.argosy.data.social.NetplayJoinResponsePayload
@@ -16,8 +17,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
@@ -37,6 +41,11 @@ class NetplaySessionManager(
 
     private val _sessionState = MutableStateFlow<NetplaySessionState>(NetplaySessionState.Idle)
     val sessionState: StateFlow<NetplaySessionState> = _sessionState.asStateFlow()
+
+    private val _guestLeftEvents = MutableSharedFlow<GuestLeftEvent>(extraBufferCapacity = 8)
+    val guestLeftEvents: SharedFlow<GuestLeftEvent> = _guestLeftEvents.asSharedFlow()
+
+    data class GuestLeftEvent(val sessionId: String, val guestUserId: String, val reason: String?)
 
     private val inputShadow = NetplayInputShadow()
 
@@ -423,6 +432,24 @@ class NetplaySessionManager(
         role = null
     }
 
+    private suspend fun handleGuestLeft(payload: NetplayGuestLeftPayload) {
+        val sessionId = activeSessionId ?: return
+        if (sessionId != payload.sessionId) {
+            Log.w(TAG, "handleGuestLeft: stale sessionId=${payload.sessionId} active=$sessionId")
+            return
+        }
+        tearDownDriver("guest_left")
+        runCatching { retroView.resumeEmulation() }
+        _sessionState.value = NetplaySessionState.Waiting(sessionId = sessionId, gameTitle = "")
+        _guestLeftEvents.tryEmit(
+            GuestLeftEvent(
+                sessionId = payload.sessionId,
+                guestUserId = payload.guestId,
+                reason = payload.reason
+            )
+        )
+    }
+
     private sealed class ReadyOutcome {
         data class Ready(val message: IncomingMessage.NetplayReady) : ReadyOutcome()
         data class ServerError(val code: String) : ReadyOutcome()
@@ -492,6 +519,9 @@ class NetplaySessionManager(
             }
             is IncomingMessage.NetplaySessionEnded -> {
                 scope.launch { handleSessionEnd("session_ended") }
+            }
+            is IncomingMessage.NetplayGuestLeft -> {
+                scope.launch { handleGuestLeft(message.payload) }
             }
             else -> {
             }

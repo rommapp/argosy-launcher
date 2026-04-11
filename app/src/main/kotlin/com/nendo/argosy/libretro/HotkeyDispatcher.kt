@@ -1,6 +1,7 @@
 package com.nendo.argosy.libretro
 
 import com.nendo.argosy.data.local.entity.HotkeyAction
+import com.nendo.argosy.libretro.ui.NetplayMenuRole
 import com.swordfish.libretrodroid.GLRetroView
 
 class HotkeyDispatcher(
@@ -11,6 +12,7 @@ class HotkeyDispatcher(
     private val showToast: (String) -> Unit,
     private val isHardcoreMode: () -> Boolean,
     private val isNetplayInSession: () -> Boolean,
+    private val getNetplayRole: () -> NetplayMenuRole?,
     private val onShowMenu: () -> Unit,
     private val onFastForwardChanged: (Boolean) -> Unit,
     private val onRewindChanged: (Boolean) -> Unit,
@@ -25,7 +27,7 @@ class HotkeyDispatcher(
                 return true
             }
             HotkeyAction.QUICK_SAVE -> {
-                if (isNetplayInSession()) {
+                if (isNetplayInSession() && getNetplayRole() != NetplayMenuRole.Host) {
                     showToast("Save states disabled during netplay")
                 } else if (isHardcoreMode()) {
                     showToast("Save states disabled in Hardcore mode")

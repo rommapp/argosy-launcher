@@ -89,22 +89,27 @@ fun InGameMenu(
     ) {
         buildList {
             add("Resume" to InGameMenuAction.Resume)
-            if (!isInNetplaySession && !isHardcoreMode && statesSupported) {
+            val showManageStates = !isHardcoreMode && statesSupported &&
+                (!isInNetplaySession || netplayRole == NetplayMenuRole.Host)
+            if (showManageStates) {
                 add("Manage States" to InGameMenuAction.ManageStates)
             }
-            add("Settings" to InGameMenuAction.Settings)
             if (!isInNetplaySession && cheatsAvailable) {
                 add("Cheats" to InGameMenuAction.Cheats)
             }
             if (netplaySupported) {
                 if (isInNetplaySession) {
-                    val closeLabel = if (netplayRole == NetplayMenuRole.Guest) "Leave Session" else "Close Server"
-                    add(closeLabel to InGameMenuAction.CloseNetplaySession)
+                    if (netplayRole == NetplayMenuRole.Host) {
+                        add("Invite Friend..." to InGameMenuAction.InviteFriend)
+                        add("Close Netplay Server" to InGameMenuAction.CloseNetplaySession)
+                    } else {
+                        add("Leave Netplay Session" to InGameMenuAction.CloseNetplaySession)
+                    }
                 } else {
-                    add("Open to Friends" to InGameMenuAction.OpenToFriends)
-                    add("Invite Friend..." to InGameMenuAction.InviteFriend)
+                    add("Open Netplay Server" to InGameMenuAction.OpenToFriends)
                 }
             }
+            add("Settings" to InGameMenuAction.Settings)
             add("Quit Game" to InGameMenuAction.Quit)
         }
     }

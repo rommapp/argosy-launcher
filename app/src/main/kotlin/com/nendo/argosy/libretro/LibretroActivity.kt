@@ -585,6 +585,7 @@ class LibretroActivity : ComponentActivity() {
             showToast = { msg -> inGameMessage = msg },
             isHardcoreMode = { hardcoreMode },
             isNetplayInSession = { netplayInSession },
+            getNetplayRole = { netplayRole },
             onShowMenu = ::showMenu,
             onFastForwardChanged = { ff ->
                 if (!netplayInSession && ff && !isFastForwarding && videoSettings.fastForwardEnabled) {
@@ -776,7 +777,8 @@ class LibretroActivity : ComponentActivity() {
                             stateManagerShowDelete = false
                             stateManagerDeleteTarget = -1
                         },
-                        onDismiss = ::dismissStateManager
+                        onDismiss = ::dismissStateManager,
+                        loadAllowed = !netplayInSession
                     )
                 }
                 if (!isAnyMenuOpen) {

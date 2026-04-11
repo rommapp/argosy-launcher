@@ -70,7 +70,8 @@ fun InGameStateManager(
     onDeleteRequest: (Int) -> Unit,
     onDeleteConfirm: () -> Unit,
     onDeleteCancel: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    loadAllowed: Boolean = true
 ): InputHandler {
     val currentFocusedIndex = rememberUpdatedState(focusedIndex)
     val currentSlots = rememberUpdatedState(slots)
@@ -84,6 +85,7 @@ fun InGameStateManager(
     val currentOnDeleteCancel = rememberUpdatedState(onDeleteCancel)
     val currentOnDismiss = rememberUpdatedState(onDismiss)
     val currentViewMode = rememberUpdatedState(viewMode)
+    val currentLoadAllowed = rememberUpdatedState(loadAllowed)
 
     val inputHandler = remember {
         object : InputHandler {
@@ -135,7 +137,7 @@ fun InGameStateManager(
                     return InputResult.HANDLED
                 }
                 val slot = currentSlots.value.getOrNull(currentFocusedIndex.value) ?: return InputResult.HANDLED
-                if (slot.file != null) {
+                if (slot.file != null && currentLoadAllowed.value) {
                     currentOnLoad.value(slot.slotNumber)
                 }
                 return InputResult.HANDLED
@@ -226,7 +228,8 @@ fun InGameStateManager(
                         focusedIndex = focusedIndex,
                         onFocusChange = onFocusChange,
                         onSave = onSave,
-                        onLoad = onLoad
+                        onLoad = onLoad,
+                        loadAllowed = loadAllowed
                     )
                     StateManagerViewMode.CAROUSEL -> CarouselLayout(
                         slots = slots,
@@ -239,12 +242,12 @@ fun InGameStateManager(
             }
 
             // Footer
-            val footerHints = buildFooterHints(isOccupied, effectiveMode)
+            val footerHints = buildFooterHints(isOccupied, effectiveMode, loadAllowed)
             FooterBarWithState(
                 hints = footerHints,
                 onHintClick = { button ->
                     when (button) {
-                        InputButton.A -> if (isOccupied) focusedSlot?.let { onLoad(it.slotNumber) }
+                        InputButton.A -> if (isOccupied && loadAllowed) focusedSlot?.let { onLoad(it.slotNumber) }
                         InputButton.X -> focusedSlot?.let { onSave(it.slotNumber) }
                         InputButton.Y -> if (isOccupied) focusedSlot?.let { onDeleteRequest(it.slotNumber) }
                         InputButton.SELECT -> onViewModeToggle()
@@ -285,7 +288,8 @@ private fun SplitLayout(
     focusedIndex: Int,
     onFocusChange: (Int) -> Unit,
     onSave: (Int) -> Unit,
-    onLoad: (Int) -> Unit
+    onLoad: (Int) -> Unit,
+    loadAllowed: Boolean = true
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         // Left panel: screenshot preview (40%)
@@ -378,8 +382,9 @@ private fun SplitLayout(
                     isFocused = index == focusedIndex,
                     onClick = { onFocusChange(index) },
                     onDoubleAction = {
-                        if (slot.file != null) onLoad(slot.slotNumber)
-                        else onSave(slot.slotNumber)
+                        if (slot.file != null) {
+                            if (loadAllowed) onLoad(slot.slotNumber)
+                        } else onSave(slot.slotNumber)
                     }
                 )
             }
@@ -594,7 +599,8 @@ private fun slotLabel(slotNumber: Int): String {
 
 private fun buildFooterHints(
     isOccupied: Boolean,
-    viewMode: StateManagerViewMode
+    viewMode: StateManagerViewMode,
+    loadAllowed: Boolean
 ): List<FooterHintItem> {
     val modeLabel = when (viewMode) {
         StateManagerViewMode.SPLIT -> "Carousel"
@@ -602,7 +608,9 @@ private fun buildFooterHints(
     }
     return buildList {
         if (isOccupied) {
-            add(FooterHintItem(InputButton.A, "Load"))
+            if (loadAllowed) {
+                add(FooterHintItem(InputButton.A, "Load"))
+            }
             add(FooterHintItem(InputButton.X, "Save Over"))
             add(FooterHintItem(InputButton.Y, "Delete"))
         } else {

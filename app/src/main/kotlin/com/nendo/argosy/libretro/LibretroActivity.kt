@@ -90,6 +90,7 @@ import com.nendo.argosy.libretro.ui.NetplayMenuRole
 import com.nendo.argosy.libretro.ui.NetplayProgressStage
 import com.nendo.argosy.libretro.ui.NetplayProgressState
 import com.nendo.argosy.libretro.ui.NetplayQualityInfo
+import com.nendo.argosy.libretro.ui.NetplayQualityWarningPrompt
 import com.nendo.argosy.libretro.ui.NetplayReconnectingOverlay
 import com.nendo.argosy.libretro.ui.InGameStateManager
 import com.nendo.argosy.libretro.ui.StateManagerViewMode
@@ -229,13 +230,18 @@ class LibretroActivity : ComponentActivity() {
     private var netplayFriendPickerEntries by mutableStateOf<List<NetplayFriendPickerEntry>>(emptyList())
     private var netplayPeerDisplayName by mutableStateOf("Friend")
     private var netplayLastRttMs by mutableStateOf<Int?>(null)
+    private var netplayQualityWarningVisible by mutableStateOf(false)
+    private var netplayQualityWarningRttMs by mutableStateOf(0)
+    private var netplayQualityWarningJitterMs by mutableStateOf(0)
+    private var netplayQualityWarningLabel by mutableStateOf("")
+    private var netplayQualityWarningFocus by mutableStateOf(0)
     private var savedOrientation: Int = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     private var corePath: String = ""
     private var resolvedCoreId: String? = null
 
     private val isAnyMenuOpen: Boolean
         get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible ||
-            netplayProgressState != null || netplayDisconnectPromptVisible || netplayFriendPickerVisible
+            netplayProgressState != null || netplayDisconnectPromptVisible || netplayFriendPickerVisible || netplayQualityWarningVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -682,6 +688,17 @@ class LibretroActivity : ComponentActivity() {
                         onFocusChange = { netplayDisconnectPromptFocus = it },
                         onKeepOpen = ::handleNetplayKeepSession,
                         onCloseAndEnd = ::handleNetplayCloseAfterDisconnect
+                    )
+                }
+                if (netplayQualityWarningVisible) {
+                    activeMenuHandler = NetplayQualityWarningPrompt(
+                        rttMs = netplayQualityWarningRttMs,
+                        jitterMs = netplayQualityWarningJitterMs,
+                        ratingLabel = netplayQualityWarningLabel,
+                        focusedIndex = netplayQualityWarningFocus,
+                        onFocusChange = { netplayQualityWarningFocus = it },
+                        onAccept = ::handleNetplayQualityAccept,
+                        onDecline = ::handleNetplayQualityDecline
                     )
                 }
                 netplayProgressState?.let { progress ->
@@ -1219,6 +1236,19 @@ class LibretroActivity : ComponentActivity() {
                 netplayLastRttMs = null
             }
         }
+        lifecycleScope.launch {
+            manager.qualityWarningPending.collect { warning ->
+                if (warning != null) {
+                    netplayQualityWarningRttMs = warning.measuredRttMs
+                    netplayQualityWarningJitterMs = warning.measuredJitterMs
+                    netplayQualityWarningLabel = warning.ratingLabel
+                    netplayQualityWarningFocus = 0
+                    netplayQualityWarningVisible = true
+                } else {
+                    netplayQualityWarningVisible = false
+                }
+            }
+        }
 
         val pending = pendingNetplayJoin
         if (pending != null) {
@@ -1357,6 +1387,16 @@ class LibretroActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun handleNetplayQualityAccept() {
+        netplayQualityWarningVisible = false
+        netplaySessionManager?.acceptQualityWarning()
+    }
+
+    private fun handleNetplayQualityDecline() {
+        netplayQualityWarningVisible = false
+        netplaySessionManager?.declineQualityWarning()
     }
 
     private fun handleNetplayKeepSession() {

@@ -49,6 +49,18 @@ class NetplaySessionManager(
 
     private val inputShadow = NetplayInputShadow()
 
+    data class PendingQualityWarning(
+        val sessionId: String,
+        val peerUserId: String,
+        val measuredRttMs: Int,
+        val measuredJitterMs: Int,
+        val ratingLabel: String,
+        val handshakeResult: NetplayHandshake.HandshakeResult.QualityWarning
+    )
+
+    private val _qualityWarningPending = MutableStateFlow<PendingQualityWarning?>(null)
+    val qualityWarningPending: StateFlow<PendingQualityWarning?> = _qualityWarningPending.asStateFlow()
+
     @Volatile private var activeDriver: NetplayDriver? = null
     @Volatile private var role: NetplayHandshake.Role? = null
     @Volatile private var activeSessionId: String? = null
@@ -231,6 +243,30 @@ class NetplaySessionManager(
         closeServer()
     }
 
+    fun acceptQualityWarning() {
+        val pending = _qualityWarningPending.value ?: return
+        _qualityWarningPending.value = null
+        val result = pending.handshakeResult
+        installHostDriver(pending.sessionId, pending.peerUserId, NetplayHandshake.HandshakeResult.Success(
+            latchedCandidate = result.latchedCandidate,
+            transport = result.transport,
+            peerAddress = result.peerAddress,
+            measuredRttMs = result.measuredRttMs,
+            measuredJitterMs = result.measuredJitterMs
+        ))
+    }
+
+    fun declineQualityWarning() {
+        val pending = _qualityWarningPending.value ?: return
+        _qualityWarningPending.value = null
+        pending.handshakeResult.transport.close()
+        sendTelemetry("quality_rejected")
+        _sessionState.value = NetplaySessionState.Waiting(
+            sessionId = pending.sessionId,
+            gameTitle = ""
+        )
+    }
+
     fun shutdown() {
         inboundJob.cancel()
         scope.launch { tearDownDriver("shutdown") }
@@ -258,6 +294,16 @@ class NetplaySessionManager(
             is NetplayHandshake.HandshakeResult.Failure -> {
                 runCatching { localSocket.close() }
                 _sessionState.value = NetplaySessionState.Error(result.reason)
+            }
+            is NetplayHandshake.HandshakeResult.QualityWarning -> {
+                _qualityWarningPending.value = PendingQualityWarning(
+                    sessionId = sessionId,
+                    peerUserId = guestUserId,
+                    measuredRttMs = result.measuredRttMs,
+                    measuredJitterMs = result.measuredJitterMs,
+                    ratingLabel = result.ratingLabel,
+                    handshakeResult = result
+                )
             }
             is NetplayHandshake.HandshakeResult.Success -> {
                 installHostDriver(sessionId, guestUserId, result)
@@ -287,6 +333,15 @@ class NetplaySessionManager(
             is NetplayHandshake.HandshakeResult.Failure -> {
                 runCatching { localSocket.close() }
                 _sessionState.value = NetplaySessionState.Error(result.reason)
+            }
+            is NetplayHandshake.HandshakeResult.QualityWarning -> {
+                installGuestDriver(sessionId, hostUserId, NetplayHandshake.HandshakeResult.Success(
+                    latchedCandidate = result.latchedCandidate,
+                    transport = result.transport,
+                    peerAddress = result.peerAddress,
+                    measuredRttMs = result.measuredRttMs,
+                    measuredJitterMs = result.measuredJitterMs
+                ))
             }
             is NetplayHandshake.HandshakeResult.Success -> {
                 installGuestDriver(sessionId, hostUserId, result)

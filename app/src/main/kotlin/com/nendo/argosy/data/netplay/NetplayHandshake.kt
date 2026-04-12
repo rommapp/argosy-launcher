@@ -49,6 +49,15 @@ class NetplayHandshake(
             val measuredJitterMs: Int
         ) : HandshakeResult()
 
+        data class QualityWarning(
+            val latchedCandidate: NetplayCandidate,
+            val transport: NetplayTransport,
+            val peerAddress: InetSocketAddress,
+            val measuredRttMs: Int,
+            val measuredJitterMs: Int,
+            val ratingLabel: String
+        ) : HandshakeResult()
+
         data class Failure(val reason: String) : HandshakeResult()
     }
 
@@ -146,6 +155,32 @@ class NetplayHandshake(
             return HandshakeResult.Failure("quality_rejected")
         }
 
+        if (medianRttMs > QUALITY_WARN_RTT_MS) {
+            socialService.sendNetplayHandshakeResult(
+                NetplayHandshakeResultPayload(
+                    sessionId = args.sessionId,
+                    success = true,
+                    measuredRttMs = medianRttMs,
+                    measuredJitterMs = jitterMs,
+                    latchedCandidate = latchedCandidate.type
+                )
+            )
+            sendTelemetry(
+                outcome = TelemetryOutcome.QUALITY_WARN,
+                latchedCandidate = latchedCandidate.type,
+                rttMs = medianRttMs,
+                jitterMs = jitterMs
+            )
+            return HandshakeResult.QualityWarning(
+                latchedCandidate = latchedCandidate,
+                transport = transport,
+                peerAddress = peerAddress,
+                measuredRttMs = medianRttMs,
+                measuredJitterMs = jitterMs,
+                ratingLabel = "Bad"
+            )
+        }
+
         socialService.sendNetplayHandshakeResult(
             NetplayHandshakeResultPayload(
                 sessionId = args.sessionId,
@@ -173,6 +208,7 @@ class NetplayHandshake(
 
     internal enum class TelemetryOutcome(val wire: String) {
         SUCCESS("success"),
+        QUALITY_WARN("quality_warn"),
         QUALITY_REJECTED("quality_rejected"),
         CANDIDATE_PAIR_FAILED("candidate_pair_failed"),
         HANDSHAKE_TIMEOUT("handshake_timeout")
@@ -317,6 +353,7 @@ class NetplayHandshake(
         private const val RTT_BURST_COUNT = 20
         private const val RTT_MIN_SAMPLES = 5
 
+        private const val QUALITY_WARN_RTT_MS = 200
         private const val QUALITY_MAX_RTT_MS = 300
         private const val QUALITY_MAX_JITTER_MS = 50
     }

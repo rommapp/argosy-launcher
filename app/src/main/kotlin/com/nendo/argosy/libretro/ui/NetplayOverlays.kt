@@ -239,6 +239,93 @@ fun NetplayHostDisconnectPrompt(
     return inputHandler
 }
 
+@Composable
+fun NetplayQualityWarningPrompt(
+    rttMs: Int,
+    jitterMs: Int,
+    ratingLabel: String,
+    focusedIndex: Int,
+    onFocusChange: (Int) -> Unit,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit
+): InputHandler {
+    val currentFocus = rememberUpdatedState(focusedIndex)
+    val currentOnFocusChange = rememberUpdatedState(onFocusChange)
+    val currentOnAccept = rememberUpdatedState(onAccept)
+    val currentOnDecline = rememberUpdatedState(onDecline)
+
+    val inputHandler = remember {
+        object : InputHandler {
+            override fun onLeft(): InputResult {
+                if (currentFocus.value != 0) currentOnFocusChange.value(0)
+                return InputResult.HANDLED
+            }
+            override fun onRight(): InputResult {
+                if (currentFocus.value != 1) currentOnFocusChange.value(1)
+                return InputResult.HANDLED
+            }
+            override fun onConfirm(): InputResult {
+                if (currentFocus.value == 0) currentOnAccept.value() else currentOnDecline.value()
+                return InputResult.HANDLED
+            }
+            override fun onBack(): InputResult {
+                currentOnDecline.value()
+                return InputResult.HANDLED
+            }
+        }
+    }
+
+    NetplayScrim {
+        Surface(
+            modifier = Modifier
+                .widthIn(max = 420.dp)
+                .padding(32.dp)
+                .focusProperties { canFocus = false },
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Connection Warning",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Connection quality is $ratingLabel (${rttMs}ms ping, ${jitterMs}ms jitter). Gameplay may be choppy.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    NetplayPromptButton(
+                        text = "Continue Anyway",
+                        isFocused = focusedIndex == 0,
+                        onClick = onAccept,
+                        modifier = Modifier.weight(1f)
+                    )
+                    NetplayPromptButton(
+                        text = "Cancel",
+                        isFocused = focusedIndex == 1,
+                        onClick = onDecline,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+
+    return inputHandler
+}
+
 data class NetplayFriendPickerEntry(
     val userId: String,
     val displayName: String,

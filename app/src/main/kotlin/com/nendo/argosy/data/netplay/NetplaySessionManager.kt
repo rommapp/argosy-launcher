@@ -50,6 +50,9 @@ class NetplaySessionManager(
     private val _progressHint = MutableStateFlow<ProgressHint?>(null)
     val progressHint: StateFlow<ProgressHint?> = _progressHint.asStateFlow()
 
+    @Volatile var initialRttMs: Int? = null
+        private set
+
     data class GuestLeftEvent(val sessionId: String, val guestUserId: String, val reason: String?)
 
     private val inputShadow = NetplayInputShadow()
@@ -406,6 +409,7 @@ class NetplaySessionManager(
     }
 
     private fun installHostDriver(sessionId: String, guestUserId: String, result: NetplayHandshake.HandshakeResult.Success) {
+        initialRttMs = result.measuredRttMs
         val driver = NetplayHostDriver(
             retroView = retroView,
             transport = result.transport,
@@ -442,6 +446,7 @@ class NetplaySessionManager(
     }
 
     private fun installGuestDriver(sessionId: String, hostUserId: String, result: NetplayHandshake.HandshakeResult.Success) {
+        initialRttMs = result.measuredRttMs
         val driver = NetplayGuestDriver(
             retroView = retroView,
             transport = result.transport,
@@ -497,6 +502,7 @@ class NetplaySessionManager(
         _sessionState.value = NetplaySessionState.Idle
         activeSessionId = null
         pendingReadyPayload = null
+        initialRttMs = null
         role = null
     }
 

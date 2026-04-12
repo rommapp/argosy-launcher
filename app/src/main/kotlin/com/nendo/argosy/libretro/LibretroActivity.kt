@@ -90,6 +90,7 @@ import com.nendo.argosy.libretro.ui.NetplayMenuRole
 import com.nendo.argosy.libretro.ui.NetplayProgressStage
 import com.nendo.argosy.libretro.ui.NetplayProgressState
 import com.nendo.argosy.libretro.ui.NetplayQualityInfo
+import com.nendo.argosy.libretro.ui.NetplayQualityLabel
 import com.nendo.argosy.libretro.ui.NetplayQualityWarningPrompt
 import com.nendo.argosy.libretro.ui.NetplayReconnectingOverlay
 import com.nendo.argosy.libretro.ui.InGameStateManager
@@ -235,6 +236,8 @@ class LibretroActivity : ComponentActivity() {
     private var netplayQualityWarningJitterMs by mutableStateOf(0)
     private var netplayQualityWarningLabel by mutableStateOf("")
     private var netplayQualityWarningFocus by mutableStateOf(0)
+    private var lastAnnouncedTier: NetplayQualityLabel? = null
+    private var tierChangeTimestamp: Long = 0L
     private var savedOrientation: Int = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     private var corePath: String = ""
     private var resolvedCoreId: String? = null
@@ -708,7 +711,7 @@ class LibretroActivity : ComponentActivity() {
                     )
                 }
                 if (netplayReconnecting) {
-                    NetplayReconnectingOverlay()
+                    NetplayReconnectingOverlay(lastRttMs = netplayLastRttMs)
                 }
                 if (cheatsMenuVisible) {
                     activeMenuHandler = CheatsScreen(
@@ -1132,15 +1135,21 @@ class LibretroActivity : ComponentActivity() {
                         netplayDisconnectPromptVisible = false
                         val peerName = resolveFriendDisplayName(state.peerUserId)
                         netplayPeerDisplayName = peerName
+                        val initRtt = manager.initialRttMs
+                        val rttSuffix = if (initRtt != null) " -- ${initRtt}ms" else ""
                         if (netplayRole == NetplayMenuRole.Host &&
                             !wasReconnecting &&
                             lastJoinedToastPeerId != state.peerUserId
                         ) {
                             lastJoinedToastPeerId = state.peerUserId
-                            inGameMessage = "$peerName joined your session"
+                            inGameMessage = "$peerName joined your session$rttSuffix"
                         }
                         if (netplayProgressState?.stage != NetplayProgressStage.Failed) {
-                            netplayProgressState = NetplayProgressState(NetplayProgressStage.Ready)
+                            val label = NetplayQualityInfo.labelForRttMs(initRtt)
+                            val readyMsg = if (initRtt != null) "Ready -- ${initRtt}ms [${label.name}]" else null
+                            netplayProgressState = NetplayProgressState(NetplayProgressStage.Ready, readyMsg)
+                            lastAnnouncedTier = if (initRtt != null) label else null
+                            tierChangeTimestamp = System.currentTimeMillis()
                             delay(800)
                             if (netplayProgressState?.stage == NetplayProgressStage.Ready) {
                                 netplayProgressState = null
@@ -1155,6 +1164,7 @@ class LibretroActivity : ComponentActivity() {
                         netplayRole = null
                         netplaySessionIsReserved = false
                         lastJoinedToastPeerId = null
+                        lastAnnouncedTier = null
                         netplayReconnecting = false
                         netplayDisconnectPromptVisible = false
                         if (isGuestJoinedSession && guestSessionEverStarted) {
@@ -1221,11 +1231,31 @@ class LibretroActivity : ComponentActivity() {
             }
         }
         lifecycleScope.launch {
+            var candidateTier: NetplayQualityLabel? = null
+            var candidateStartMs = 0L
             while (true) {
                 kotlinx.coroutines.delay(500)
                 val driver = manager.currentDriver()
                 val rtt = driver?.lastRttNanos ?: 0L
-                netplayLastRttMs = if (rtt > 0L) (rtt / 1_000_000L).toInt() else null
+                val rttMs = if (rtt > 0L) (rtt / 1_000_000L).toInt() else null
+                netplayLastRttMs = rttMs
+                if (!netplayInSession || rttMs == null) {
+                    candidateTier = null
+                    continue
+                }
+                val currentTier = NetplayQualityInfo.labelForRttMs(rttMs)
+                if (currentTier != lastAnnouncedTier) {
+                    if (currentTier != candidateTier) {
+                        candidateTier = currentTier
+                        candidateStartMs = System.currentTimeMillis()
+                    } else if (System.currentTimeMillis() - candidateStartMs >= TIER_CHANGE_DEBOUNCE_MS) {
+                        lastAnnouncedTier = currentTier
+                        tierChangeTimestamp = System.currentTimeMillis()
+                        inGameMessage = "Connection: ${currentTier.name} (${rttMs}ms)"
+                    }
+                } else {
+                    candidateTier = null
+                }
             }
         }
         lifecycleScope.launch {
@@ -1863,6 +1893,7 @@ class LibretroActivity : ComponentActivity() {
     companion object {
         private const val TAG = "LibretroActivity"
         private const val NETPLAY_CLOSE_TIMEOUT_MS = 500L
+        private const val TIER_CHANGE_DEBOUNCE_MS = 2000L
 
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_CORE_PATH = "core_path"

@@ -57,7 +57,7 @@ fun NetplayConnectionProgressOverlay(
         NetplayProgressStage.Connecting -> "Connecting..."
         NetplayProgressStage.Measuring -> "Measuring connection..."
         NetplayProgressStage.LoadingState -> "Loading game state..."
-        NetplayProgressStage.Ready -> "Ready!"
+        NetplayProgressStage.Ready -> state.message ?: "Ready!"
         NetplayProgressStage.Failed -> state.message ?: "Couldn't connect"
     }
     val isTerminal = state.stage == NetplayProgressStage.Failed
@@ -123,7 +123,8 @@ fun NetplayConnectionProgressOverlay(
 }
 
 @Composable
-fun NetplayReconnectingOverlay() {
+fun NetplayReconnectingOverlay(lastRttMs: Int? = null) {
+    val detail = if (lastRttMs != null) "Reconnecting... (last: ${lastRttMs}ms)" else "Reconnecting..."
     NetplayScrim {
         Surface(
             modifier = Modifier
@@ -144,7 +145,7 @@ fun NetplayReconnectingOverlay() {
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Reconnecting...",
+                    text = detail,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface

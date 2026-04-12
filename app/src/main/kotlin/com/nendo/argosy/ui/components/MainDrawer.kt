@@ -436,7 +436,11 @@ private fun FriendItem(
                     )
                     Text(
                         text = if (friend.currentGame != null) {
-                            "Playing ${friend.currentGame.title}"
+                            if (friend.currentGame.netplaySession != null) {
+                                "Hosting ${friend.currentGame.title}"
+                            } else {
+                                "Playing ${friend.currentGame.title}"
+                            }
                         } else {
                             "In Game"
                         },

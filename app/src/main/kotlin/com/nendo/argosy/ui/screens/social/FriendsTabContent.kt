@@ -200,7 +200,11 @@ private fun FriendCard(
                 ) {
                     Text(
                         text = if (friend.presence == PresenceStatus.IN_GAME && friend.currentGame != null) {
-                            "Playing ${friend.currentGame.title}"
+                            if (friend.currentGame.netplaySession != null) {
+                                "Hosting ${friend.currentGame.title}"
+                            } else {
+                                "Playing ${friend.currentGame.title}"
+                            }
                         } else {
                             presenceLabel(friend.presence)
                         },

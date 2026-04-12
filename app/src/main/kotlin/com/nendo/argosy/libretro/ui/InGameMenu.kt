@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -112,6 +113,11 @@ fun InGameMenu(
             add("Settings" to InGameMenuAction.Settings)
             add("Quit Game" to InGameMenuAction.Quit)
         }
+    }
+
+    LaunchedEffect(menuItems.size) {
+        val clamped = focusedIndex.coerceIn(0, (menuItems.size - 1).coerceAtLeast(0))
+        if (clamped != focusedIndex) onFocusChange(clamped)
     }
 
     val isDarkTheme = isSystemInDarkTheme()

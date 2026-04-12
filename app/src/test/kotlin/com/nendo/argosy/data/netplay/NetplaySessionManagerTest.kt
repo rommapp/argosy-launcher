@@ -10,6 +10,7 @@ import com.nendo.argosy.data.social.NetplayOpenPayload
 import com.nendo.argosy.data.social.NetplayReadyPayload
 import com.nendo.argosy.data.social.NetplayReserveRequestPayload
 import com.nendo.argosy.data.social.NetplaySessionEndedPayload
+import com.nendo.argosy.data.social.NetplaySessionMode
 import com.nendo.argosy.data.social.NetplaySessionState
 import com.swordfish.libretrodroid.GLRetroView
 import io.mockk.coVerify
@@ -181,7 +182,7 @@ class NetplaySessionManagerTest {
     }
 
     @Test
-    fun joinRequestedMessageTransitionsToJoinRequestReceived() = runTest(StandardTestDispatcher()) {
+    fun joinRequestInPrivateModeQueuesWithoutAutoAccept() = runTest(StandardTestDispatcher()) {
         val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
         val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
         val manager = NetplaySessionManager(
@@ -190,6 +191,7 @@ class NetplaySessionManagerTest {
             retroView = mockk(relaxed = true),
             scope = scope
         )
+        manager.sessionMode = NetplaySessionMode.PRIVATE
         openAndWait(manager, incoming, this)
         assertTrue(manager.sessionState.value is NetplaySessionState.Waiting)
 
@@ -205,14 +207,16 @@ class NetplaySessionManagerTest {
         advanceUntilIdle()
 
         val state = manager.sessionState.value
-        assertTrue("expected JoinRequestReceived, got $state", state is NetplaySessionState.JoinRequestReceived)
-        assertEquals("guest-42", (state as NetplaySessionState.JoinRequestReceived).fromUserId)
-        assertEquals("guest42", state.fromUsername)
+        assertTrue("expected Waiting, got $state", state is NetplaySessionState.Waiting)
+        val queue = manager.joinRequestQueue.value
+        assertEquals(1, queue.size)
+        assertEquals("guest-42", queue[0].fromUserId)
+        assertEquals("guest42", queue[0].fromUsername)
         manager.shutdown()
     }
 
     @Test
-    fun declineJoinSendsResponseAndReturnsToWaiting() = runTest(StandardTestDispatcher()) {
+    fun declineJoinSendsResponseAndRemovesFromQueue() = runTest(StandardTestDispatcher()) {
         val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
         val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
         val svc = fakeService(incoming)
@@ -222,6 +226,7 @@ class NetplaySessionManagerTest {
             retroView = mockk(relaxed = true),
             scope = scope
         )
+        manager.sessionMode = NetplaySessionMode.PRIVATE
         openAndWait(manager, incoming, this)
         incoming.emit(
             ArgosSocialService.IncomingMessage.NetplayJoinRequested(
@@ -241,6 +246,7 @@ class NetplaySessionManagerTest {
         assertEquals(false, responseSlot.captured.accept)
         assertEquals("busy", responseSlot.captured.reason)
         assertTrue(manager.sessionState.value is NetplaySessionState.Waiting)
+        assertTrue(manager.joinRequestQueue.value.isEmpty())
         manager.shutdown()
     }
 
@@ -471,7 +477,7 @@ class NetplaySessionManagerTest {
     }
 
     @Test
-    fun acceptJoinIgnoredWhenNotInJoinRequestedOrWaiting() = runTest(StandardTestDispatcher()) {
+    fun acceptJoinIgnoredWhenNotInWaiting() = runTest(StandardTestDispatcher()) {
         val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
         val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
         val svc = fakeService(incoming)
@@ -609,5 +615,167 @@ class NetplaySessionManagerTest {
         )
         advanceUntilIdle()
         assertEquals(stateBefore, manager.sessionState.value)
+    }
+
+    @Test
+    fun acceptFirstDeclineSecondInPrivateMode() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        manager.sessionMode = NetplaySessionMode.PRIVATE
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-A", "guestA")
+            )
+        )
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-B", "guestB")
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals(2, manager.joinRequestQueue.value.size)
+        assertEquals("guest-A", manager.joinRequestQueue.value[0].fromUserId)
+        assertEquals("guest-B", manager.joinRequestQueue.value[1].fromUserId)
+
+        manager.acceptJoin("guest-A")
+        advanceUntilIdle()
+
+        assertTrue(manager.joinRequestQueue.value.isEmpty())
+        verify { svc.sendNetplayJoinResponse(match { it.guestId == "guest-A" && it.accept }) }
+        verify { svc.sendNetplayJoinResponse(match { it.guestId == "guest-B" && !it.accept && it.reason == "session_busy" }) }
+        manager.shutdown()
+    }
+
+    @Test
+    fun declineFirstShowsSecondInQueue() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        manager.sessionMode = NetplaySessionMode.PRIVATE
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-A", "guestA")
+            )
+        )
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-B", "guestB")
+            )
+        )
+        advanceUntilIdle()
+
+        manager.declineJoin("guest-A", "host_declined")
+        advanceUntilIdle()
+
+        val queue = manager.joinRequestQueue.value
+        assertEquals(1, queue.size)
+        assertEquals("guest-B", queue[0].fromUserId)
+        manager.shutdown()
+    }
+
+    @Test
+    fun joinRequestDuringHandshakingIsAutoDeclined() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        manager.sessionMode = NetplaySessionMode.PRIVATE
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-A", "guestA")
+            )
+        )
+        advanceUntilIdle()
+        manager.acceptJoin("guest-A")
+        advanceUntilIdle()
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-B", "guestB")
+            )
+        )
+        advanceUntilIdle()
+
+        assertTrue(manager.joinRequestQueue.value.isEmpty())
+        verify { svc.sendNetplayJoinResponse(match { it.guestId == "guest-B" && !it.accept && it.reason == "session_busy" }) }
+        manager.shutdown()
+    }
+
+    @Test
+    fun openModeAutoAcceptsFirstRequest() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        manager.sessionMode = NetplaySessionMode.OPEN
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-A", "guestA")
+            )
+        )
+        advanceUntilIdle()
+
+        verify { svc.sendNetplayJoinResponse(match { it.guestId == "guest-A" && it.accept }) }
+        assertTrue(manager.joinRequestQueue.value.isEmpty())
+        manager.shutdown()
+    }
+
+    @Test
+    fun privateModeDoesNotAutoAccept() = runTest(StandardTestDispatcher()) {
+        val incoming = MutableSharedFlow<ArgosSocialService.IncomingMessage>(replay = 0, extraBufferCapacity = 16)
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val svc = fakeService(incoming)
+        val manager = NetplaySessionManager(
+            socialService = svc,
+            handshake = fakeHandshake(),
+            retroView = mockk(relaxed = true),
+            scope = scope
+        )
+        manager.sessionMode = NetplaySessionMode.PRIVATE
+        openAndWait(manager, incoming, this)
+
+        incoming.emit(
+            ArgosSocialService.IncomingMessage.NetplayJoinRequested(
+                NetplayJoinRequestedPayload("sess-1", "guest-A", "guestA")
+            )
+        )
+        advanceUntilIdle()
+
+        verify(exactly = 0) { svc.sendNetplayJoinResponse(match { it.guestId == "guest-A" && it.accept }) }
+        assertEquals(1, manager.joinRequestQueue.value.size)
+        assertTrue(manager.sessionState.value is NetplaySessionState.Waiting)
+        manager.shutdown()
     }
 }

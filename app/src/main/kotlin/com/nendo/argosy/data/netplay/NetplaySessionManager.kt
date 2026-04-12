@@ -3,12 +3,14 @@ package com.nendo.argosy.data.netplay
 import android.util.Log
 import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.data.social.ArgosSocialService.IncomingMessage
+import com.nendo.argosy.data.social.JoinRequest
 import com.nendo.argosy.data.social.NetplayGuestLeftPayload
 import com.nendo.argosy.data.social.NetplayHandshakeTelemetryPayload
 import com.nendo.argosy.data.social.NetplayJoinRequestPayload
 import com.nendo.argosy.data.social.NetplayJoinResponsePayload
 import com.nendo.argosy.data.social.NetplayOpenPayload
 import com.nendo.argosy.data.social.NetplayReserveRequestPayload
+import com.nendo.argosy.data.social.NetplaySessionMode
 import com.nendo.argosy.data.social.NetplaySessionState
 import com.swordfish.libretrodroid.GLRetroView
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +43,11 @@ class NetplaySessionManager(
 
     private val _sessionState = MutableStateFlow<NetplaySessionState>(NetplaySessionState.Idle)
     val sessionState: StateFlow<NetplaySessionState> = _sessionState.asStateFlow()
+
+    private val _joinRequestQueue = MutableStateFlow<List<JoinRequest>>(emptyList())
+    val joinRequestQueue: StateFlow<List<JoinRequest>> = _joinRequestQueue.asStateFlow()
+
+    var sessionMode: NetplaySessionMode = NetplaySessionMode.OPEN
 
     private val _guestLeftEvents = MutableSharedFlow<GuestLeftEvent>(extraBufferCapacity = 8)
     val guestLeftEvents: SharedFlow<GuestLeftEvent> = _guestLeftEvents.asSharedFlow()
@@ -133,7 +140,7 @@ class NetplaySessionManager(
 
     suspend fun acceptJoin(guestUserId: String) {
         val state = _sessionState.value
-        if (state !is NetplaySessionState.JoinRequestReceived && state !is NetplaySessionState.Waiting) {
+        if (state !is NetplaySessionState.Waiting) {
             Log.w(TAG, "acceptJoin ignored in state $state")
             return
         }
@@ -148,6 +155,13 @@ class NetplaySessionManager(
         socialService.sendNetplayJoinResponse(
             NetplayJoinResponsePayload(sessionId = sessionId, guestId = guestUserId, accept = true)
         )
+        val remaining = _joinRequestQueue.value.filter { it.fromUserId != guestUserId }
+        for (declined in remaining) {
+            socialService.sendNetplayJoinResponse(
+                NetplayJoinResponsePayload(sessionId = sessionId, guestId = declined.fromUserId, accept = false, reason = "session_busy")
+            )
+        }
+        _joinRequestQueue.value = emptyList()
         _sessionState.value = NetplaySessionState.Handshaking(sessionId = sessionId, peerUserId = guestUserId)
         runHandshakeAsHost(sessionId = sessionId, sessionKey = ready.sessionKey, guestUserId = guestUserId)
     }
@@ -157,8 +171,20 @@ class NetplaySessionManager(
         socialService.sendNetplayJoinResponse(
             NetplayJoinResponsePayload(sessionId = sessionId, guestId = guestUserId, accept = false, reason = reason)
         )
-        val gameTitle = (_sessionState.value as? NetplaySessionState.JoinRequestReceived)?.let { "" }
-        _sessionState.value = NetplaySessionState.Waiting(sessionId, gameTitle ?: "")
+        _joinRequestQueue.value = _joinRequestQueue.value.filter { it.fromUserId != guestUserId }
+    }
+
+    fun clearJoinQueue() {
+        val sessionId = activeSessionId
+        val queue = _joinRequestQueue.value
+        if (sessionId != null) {
+            for (request in queue) {
+                socialService.sendNetplayJoinResponse(
+                    NetplayJoinResponsePayload(sessionId = sessionId, guestId = request.fromUserId, accept = false, reason = "session_closed")
+                )
+            }
+        }
+        _joinRequestQueue.value = emptyList()
     }
 
     suspend fun joinSession(sessionId: String, hostUserId: String) {
@@ -200,6 +226,7 @@ class NetplaySessionManager(
     }
 
     suspend fun closeServer() {
+        clearJoinQueue()
         val sessionId = activeSessionId
         tearDownDriver("host_close")
         if (sessionId != null) {
@@ -498,6 +525,7 @@ class NetplaySessionManager(
     }
 
     private suspend fun handleSessionEnd(reason: String) {
+        clearJoinQueue()
         tearDownDriver(reason)
         _sessionState.value = NetplaySessionState.Idle
         activeSessionId = null
@@ -569,12 +597,30 @@ class NetplaySessionManager(
                 readyChannel.trySend(message)
             }
             is IncomingMessage.NetplayJoinRequested -> {
-                joinRequestedChannel.trySend(message)
-                _sessionState.value = NetplaySessionState.JoinRequestReceived(
-                    sessionId = message.payload.sessionId,
-                    fromUserId = message.payload.fromUserId,
-                    fromUsername = message.payload.fromUsername
-                )
+                val state = _sessionState.value
+                if (state !is NetplaySessionState.Waiting) {
+                    val sid = activeSessionId
+                    if (sid != null) {
+                        socialService.sendNetplayJoinResponse(
+                            NetplayJoinResponsePayload(
+                                sessionId = sid,
+                                guestId = message.payload.fromUserId,
+                                accept = false,
+                                reason = "session_busy"
+                            )
+                        )
+                    }
+                } else {
+                    val request = JoinRequest(
+                        sessionId = message.payload.sessionId,
+                        fromUserId = message.payload.fromUserId,
+                        fromUsername = message.payload.fromUsername
+                    )
+                    _joinRequestQueue.value = _joinRequestQueue.value + request
+                    if (sessionMode == NetplaySessionMode.OPEN || sessionMode == NetplaySessionMode.INVITE_ONLY) {
+                        scope.launch { acceptJoin(request.fromUserId) }
+                    }
+                }
             }
             is IncomingMessage.NetplayJoinDeclined -> {
                 _sessionState.value = NetplaySessionState.Error(message.payload.reason)

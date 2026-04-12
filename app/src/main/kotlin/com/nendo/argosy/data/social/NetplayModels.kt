@@ -149,17 +149,24 @@ data class NetplayHandshakeTelemetryPayload(
     @Json(name = "region_pair_hint") val regionPairHint: String? = null
 )
 
+enum class NetplaySessionMode {
+    OPEN,
+    PRIVATE,
+    INVITE_ONLY
+}
+
+data class JoinRequest(
+    val sessionId: String,
+    val fromUserId: String,
+    val fromUsername: String
+)
+
 sealed class NetplaySessionState {
     data object Idle : NetplaySessionState()
     data class Opening(val gameTitle: String) : NetplaySessionState()
     data class Waiting(
         val sessionId: String,
         val gameTitle: String
-    ) : NetplaySessionState()
-    data class JoinRequestReceived(
-        val sessionId: String,
-        val fromUserId: String,
-        val fromUsername: String
     ) : NetplaySessionState()
     data class Handshaking(
         val sessionId: String,

@@ -1225,9 +1225,6 @@ class LibretroActivity : ComponentActivity() {
                     }
                     else -> { }
                 }
-                if (state is NetplaySessionState.JoinRequestReceived) {
-                    launch { manager.acceptJoin(state.fromUserId) }
-                }
             }
         }
         lifecycleScope.launch {

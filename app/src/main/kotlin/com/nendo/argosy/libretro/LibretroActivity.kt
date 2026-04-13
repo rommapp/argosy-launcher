@@ -249,6 +249,8 @@ class LibretroActivity : ComponentActivity() {
     private var netplayHudSessionMode by mutableStateOf(NetplaySessionMode.OPEN)
     private var netplayHudAveragePingMs by mutableStateOf<Int?>(null)
     private var netplayHudHostUsername by mutableStateOf("")
+    private var netplayHudHostAvatarColor by mutableStateOf<String?>(null)
+    private var netplayHudGuestAvatarColor by mutableStateOf<String?>(null)
     private var netplayPeerConnected by mutableStateOf(false)
     private val rttRingBuffer = IntArray(RTT_RING_BUFFER_SIZE)
     private var rttRingIndex = 0
@@ -864,15 +866,17 @@ class LibretroActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     if (netplayInSession && !menuVisible) {
                         val playerCount = if (netplayPeerConnected) 2 else 1
+                        val isLocalHost = netplayRole == NetplayMenuRole.Host
                         NetplayBorderHud(
                             sessionMode = netplayHudSessionMode,
                             playerCount = playerCount,
                             averagePingMs = netplayHudAveragePingMs,
-                            hostUsername = if (netplayRole == NetplayMenuRole.Host) netplayHudHostUsername else netplayPeerDisplayName,
+                            hostUsername = if (isLocalHost) netplayHudHostUsername else netplayPeerDisplayName,
                             guestUsername = if (netplayPeerConnected) {
-                                if (netplayRole == NetplayMenuRole.Host) netplayPeerDisplayName else netplayHudHostUsername
+                                if (isLocalHost) netplayPeerDisplayName else netplayHudHostUsername
                             } else null,
-                            isHost = netplayRole == NetplayMenuRole.Host,
+                            hostAvatarColor = if (isLocalHost) netplayHudHostAvatarColor else netplayHudGuestAvatarColor,
+                            guestAvatarColor = if (isLocalHost) netplayHudGuestAvatarColor else netplayHudHostAvatarColor,
                             modifier = Modifier
                                 .align(Alignment.CenterStart)
                                 .padding(start = 4.dp)
@@ -1191,9 +1195,12 @@ class LibretroActivity : ComponentActivity() {
             sessionRules = rules
         )
         netplaySessionManager = manager
-        netplayHudHostUsername = kotlinx.coroutines.runBlocking {
+        kotlinx.coroutines.runBlocking {
             preferencesRepository.userPreferences.first()
-        }.let { it.socialDisplayName ?: it.socialUsername ?: "" }
+        }.let { prefs ->
+            netplayHudHostUsername = prefs.socialDisplayName ?: prefs.socialUsername ?: ""
+            netplayHudHostAvatarColor = prefs.socialAvatarColor
+        }
         lifecycleScope.launch {
             manager.sessionState.collect { state ->
                 when (state) {
@@ -1210,6 +1217,7 @@ class LibretroActivity : ComponentActivity() {
                         val peerName = resolveFriendDisplayName(state.peerUserId)
                         netplayPeerDisplayName = peerName
                         netplayPeerConnected = true
+                        netplayHudGuestAvatarColor = resolveFriendAvatarColor(state.peerUserId)
                         val initRtt = manager.initialRttMs
                         val rttSuffix = if (initRtt != null) " -- ${initRtt}ms" else ""
                         if (netplayRole == NetplayMenuRole.Host &&
@@ -1375,6 +1383,7 @@ class LibretroActivity : ComponentActivity() {
                 inGameMessage = "$name left your session"
                 netplayPeerDisplayName = "Friend"
                 netplayPeerConnected = false
+                netplayHudGuestAvatarColor = null
                 netplayLastRttMs = null
             }
         }
@@ -1436,6 +1445,10 @@ class LibretroActivity : ComponentActivity() {
 
     private fun resolveFriendDisplayName(userId: String): String {
         return socialRepository.friends.value.firstOrNull { it.id == userId }?.displayName ?: "Friend"
+    }
+
+    private fun resolveFriendAvatarColor(userId: String): String? {
+        return socialRepository.friends.value.firstOrNull { it.id == userId }?.avatarColor
     }
 
     private fun netplayErrorMessage(reason: String): String = when (reason) {

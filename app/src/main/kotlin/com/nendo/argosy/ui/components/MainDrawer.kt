@@ -115,7 +115,9 @@ fun MainDrawer(
             }
 
             if (drawerState.currentTab == DrawerTab.FRIENDS) {
-                FriendsFooter()
+                val focusedFriend = drawerState.friends.getOrNull(drawerState.friendsFocusIndex)
+                val focusedIsJoinable = focusedFriend?.currentGame?.netplaySession?.joinable == true
+                FriendsFooter(showJoinHint = focusedIsJoinable)
             }
         }
     }
@@ -476,9 +478,14 @@ private fun FriendItem(
 }
 
 @Composable
-private fun FriendsFooter() {
+private fun FriendsFooter(showJoinHint: Boolean) {
+    val hints = buildList {
+        add(InputButton.Y to "Favorite")
+        add(InputButton.X to "Options")
+        if (showJoinHint) add(InputButton.A to "Join")
+    }
     FooterBar(
-        hints = listOf(InputButton.Y to "Favorite", InputButton.X to "Options"),
+        hints = hints,
         modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
     )
 }

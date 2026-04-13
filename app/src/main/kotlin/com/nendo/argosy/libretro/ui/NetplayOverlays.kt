@@ -32,6 +32,8 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import com.nendo.argosy.data.social.NetplaySessionMode
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -769,16 +771,29 @@ fun NetplayBorderHud(
     averagePingMs: Int?,
     hostUsername: String,
     guestUsername: String?,
-    isHost: Boolean,
+    hostAvatarColor: String?,
+    guestAvatarColor: String?,
     modifier: Modifier = Modifier
 ) {
-    val textAlpha = 0.5f
-    val textColor = Color.White.copy(alpha = textAlpha)
+    val nameColor = Color.White.copy(alpha = 0.6f)
+    val statusColor = Color.White.copy(alpha = 0.4f)
     val tagColor = Color.White.copy(alpha = 0.35f)
-    val textStyle = MaterialTheme.typography.labelSmall.copy(
+    val nameStyle = MaterialTheme.typography.labelSmall.copy(
         fontSize = 10.sp,
         lineHeight = 14.sp
     )
+    val statusStyle = MaterialTheme.typography.labelSmall.copy(
+        fontSize = 9.sp,
+        lineHeight = 13.sp
+    )
+    val pingStyle = MaterialTheme.typography.labelSmall.copy(
+        fontSize = 9.sp,
+        lineHeight = 13.sp,
+        fontFamily = FontFamily.Monospace
+    )
+
+    val hostDotColor = parseAvatarColor(hostAvatarColor)
+    val guestDotColor = parseAvatarColor(guestAvatarColor)
 
     val modeLabel = when (sessionMode) {
         NetplaySessionMode.OPEN -> "Open"
@@ -786,53 +801,91 @@ fun NetplayBorderHud(
         NetplaySessionMode.INVITE_ONLY -> "Invite Only"
     }
 
-    val pingLabel = if (averagePingMs != null) " | ${averagePingMs}ms" else ""
-    val statusLine = "$modeLabel | $playerCount player${if (playerCount != 1) "s" else ""}$pingLabel"
+    val pingLabel = if (averagePingMs != null) " | " else ""
+    val statusPrefix = "$modeLabel | $playerCount player${if (playerCount != 1) "s" else ""}"
 
-    val hostLabel = if (isHost) hostUsername else guestUsername ?: hostUsername
-    val guestLabel = if (isHost) guestUsername else hostUsername
-
-    Column(
+    Row(
         modifier = modifier
-            .background(Color.Black.copy(alpha = 0.3f))
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color.Black.copy(alpha = 0.35f))
     ) {
-        Text(
-            text = statusLine,
-            style = textStyle,
-            color = textColor,
-            maxLines = 1
+        Box(
+            modifier = Modifier
+                .width(2.dp)
+                .heightIn(min = 36.dp)
+                .background(hostDotColor)
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(text = "P1", style = textStyle, color = tagColor)
-            Text(
-                text = if (isHost) hostUsername else (guestUsername ?: ""),
-                style = textStyle,
-                color = textColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
-            )
-            if (isHost) {
-                Text(text = "[HOST]", style = textStyle, color = tagColor)
-            }
-        }
-        if (guestLabel != null && playerCount >= 2) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = "P2", style = textStyle, color = tagColor)
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = guestLabel,
-                    style = textStyle,
-                    color = textColor,
+                    text = statusPrefix,
+                    style = statusStyle,
+                    color = statusColor,
+                    maxLines = 1
+                )
+                if (averagePingMs != null) {
+                    Text(text = pingLabel, style = statusStyle, color = statusColor)
+                    Text(
+                        text = "${averagePingMs}ms",
+                        style = pingStyle,
+                        color = statusColor,
+                        maxLines = 1
+                    )
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(hostDotColor)
+                )
+                Text(text = "P1", style = nameStyle, color = tagColor)
+                Text(
+                    text = hostUsername,
+                    style = nameStyle,
+                    color = nameColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                if (!isHost) {
-                    Text(text = "[HOST]", style = textStyle, color = tagColor)
+                Text(text = "[HOST]", style = nameStyle, color = tagColor)
+            }
+            if (guestUsername != null && playerCount >= 2) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(guestDotColor)
+                    )
+                    Text(text = "P2", style = nameStyle, color = tagColor)
+                    Text(
+                        text = guestUsername,
+                        style = nameStyle,
+                        color = nameColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
                 }
             }
         }
     }
+}
+
+private fun parseAvatarColor(hex: String?): Color {
+    if (hex == null) return Color(0xFF6366F1)
+    return runCatching {
+        Color(android.graphics.Color.parseColor(hex))
+    }.getOrDefault(Color(0xFF6366F1))
 }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.Duration
 import java.time.Instant
 import java.util.zip.ZipInputStream
 import javax.inject.Inject
@@ -236,4 +237,84 @@ class LibretroCoreManager @Inject constructor(
     }
 
     fun getCoresDir(): File = downloadedCoresDir
+
+    suspend fun checkAndUpdateCoresIfDue() {
+        val all = coreVersionDao.getAll()
+        if (all.isEmpty()) return
+
+        val lastCheck = all.mapNotNull { it.lastCheckedAt }.maxOrNull()
+        val dayAgo = Instant.now().minus(Duration.ofHours(24))
+        if (lastCheck != null && lastCheck.isAfter(dayAgo)) {
+            Log.d(TAG, "Core update check skipped (last check: $lastCheck)")
+            return
+        }
+
+        Log.i(TAG, "Checking for core updates...")
+        val outdated = checkForCoreUpdates()
+        if (outdated.isEmpty()) {
+            Log.i(TAG, "All cores up to date")
+            return
+        }
+
+        Log.i(TAG, "${outdated.size} core(s) have updates available, downloading...")
+        val updated = updateInstalledCores()
+        Log.i(TAG, "Updated $updated core(s)")
+    }
+
+    suspend fun checkForCoreUpdates(): List<CoreVersionEntity> {
+        val installed = coreVersionDao.getAll()
+        if (installed.isEmpty()) return emptyList()
+
+        val updated = mutableListOf<CoreVersionEntity>()
+        for (core in installed) {
+            try {
+                val coreInfo = LibretroCoreRegistry.getCoreById(core.coreId) ?: continue
+                val zipUrl = "${LibretroBuildbot.baseUrl}/${coreInfo.fileName}.zip"
+                val latestVersion = headLastModified(zipUrl) ?: continue
+                val needsUpdate = core.installedVersion != latestVersion
+                coreVersionDao.updateVersionCheck(
+                    core.coreId, latestVersion, Instant.now(), needsUpdate
+                )
+                if (needsUpdate) {
+                    updated.add(core.copy(latestVersion = latestVersion, updateAvailable = true))
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to check update for ${core.coreId}: ${e.message}")
+            }
+        }
+        return updated
+    }
+
+    suspend fun updateInstalledCores(): Int {
+        val outdated = coreVersionDao.getWithUpdatesAvailable()
+        var count = 0
+        for (core in outdated) {
+            val coreInfo = LibretroCoreRegistry.getCoreById(core.coreId) ?: continue
+            val result = downloadCore(coreInfo)
+            if (result.isSuccess) count++
+        }
+        return count
+    }
+
+    private suspend fun headLastModified(urlString: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 10_000
+            try {
+                connection.connect()
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    connection.getHeaderField("Last-Modified")
+                } else {
+                    null
+                }
+            } finally {
+                connection.disconnect()
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

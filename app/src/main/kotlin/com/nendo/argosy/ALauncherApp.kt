@@ -95,6 +95,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
                 LibretroBuildbot.abiOverride = it
             }
             coreManager.migrateAbiIfNeeded()
+            coreManager.checkAndUpdateCoresIfDue()
         }
         appScope.launch { playSessionTracker.checkOrphanedSession() }
         appScope.launch { gameDao.resetAllActiveSaveApplied() }

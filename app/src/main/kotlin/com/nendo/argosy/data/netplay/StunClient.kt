@@ -29,10 +29,15 @@ open class StunClient {
             val owningSocket = localSocket == null
             try {
                 socket.soTimeout = timeout.inWholeMilliseconds.toInt()
+                val resolved = if (server.isUnresolved) {
+                    InetSocketAddress(InetAddress.getByName(server.hostString), server.port)
+                } else {
+                    server
+                }
                 val txid = ByteArray(TRANSACTION_ID_BYTES)
                 secureRandom.nextBytes(txid)
                 val request = buildBindingRequest(txid)
-                socket.send(DatagramPacket(request, request.size, server))
+                socket.send(DatagramPacket(request, request.size, resolved))
 
                 val buf = ByteArray(1500)
                 val dgram = DatagramPacket(buf, buf.size)
@@ -61,10 +66,10 @@ open class StunClient {
         private const val STUN_HEADER_BYTES = 20
 
         val PUBLIC_SERVERS: List<InetSocketAddress> = listOf(
-            InetSocketAddress("stun.l.google.com", 19302),
-            InetSocketAddress("stun1.l.google.com", 19302),
-            InetSocketAddress("stun2.l.google.com", 19302),
-            InetSocketAddress("stun.cloudflare.com", 3478)
+            InetSocketAddress.createUnresolved("stun.l.google.com", 19302),
+            InetSocketAddress.createUnresolved("stun1.l.google.com", 19302),
+            InetSocketAddress.createUnresolved("stun2.l.google.com", 19302),
+            InetSocketAddress.createUnresolved("stun.cloudflare.com", 3478)
         )
 
         internal fun buildBindingRequest(txid: ByteArray): ByteArray {

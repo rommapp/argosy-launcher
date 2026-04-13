@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.netplay
 
+import android.util.Log
 import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.data.social.ArgosSocialService.IncomingMessage
 import com.nendo.argosy.data.social.NetplayCandidate
@@ -240,15 +241,18 @@ class NetplayHandshake(
         transport: NetplayTransport,
         peerCandidates: List<NetplayCandidate>
     ): Pair<NetplayCandidate, InetSocketAddress>? = coroutineScope {
+        Log.d(TAG, "simultaneousPunch: ${peerCandidates.size} peer candidates")
         val resolved = peerCandidates.mapNotNull { cand ->
             try {
                 val addr = withContext(Dispatchers.IO) { InetAddress.getByName(cand.address) }
+                Log.d(TAG, "resolved candidate: ${cand.type} ${cand.address}:${cand.port} -> ${addr.hostAddress}:${cand.port}")
                 cand to InetSocketAddress(addr, cand.port)
-            } catch (_: Throwable) {
+            } catch (t: Throwable) {
+                Log.w(TAG, "failed to resolve candidate ${cand.address}: ${t.message}")
                 null
             }
         }
-        if (resolved.isEmpty()) return@coroutineScope null
+        if (resolved.isEmpty()) { Log.w(TAG, "no resolved candidates"); return@coroutineScope null }
 
         val firstResponse = Channel<NetplayTransport.Incoming>(capacity = Channel.BUFFERED)
         val collectorJob = launch {
@@ -266,14 +270,16 @@ class NetplayHandshake(
         delay(10)
 
         val senderJob = launch(Dispatchers.IO) {
-            repeat(PUNCH_ROUNDS) {
-                for ((_, addr) in resolved) {
+            repeat(PUNCH_ROUNDS) { round ->
+                for ((cand, addr) in resolved) {
                     runCatching {
                         transport.send(addr, NetplayPacket.Ping(System.nanoTime()))
-                    }
+                        if (round == 0) Log.d(TAG, "punch send #$round to ${cand.type} ${addr.address.hostAddress}:${addr.port}")
+                    }.onFailure { Log.w(TAG, "punch send failed to ${addr}: ${it.message}") }
                 }
                 delay(PUNCH_INTERVAL)
             }
+            Log.d(TAG, "punch sender done after $PUNCH_ROUNDS rounds")
         }
 
         val latched = withTimeoutOrNull(PUNCH_RESPONSE_TIMEOUT) {
@@ -282,6 +288,7 @@ class NetplayHandshake(
         senderJob.cancel()
         collectorJob.cancel()
 
+        Log.d(TAG, "punch result: ${if (latched != null) "latched from ${latched.source}" else "TIMEOUT - no response"}")
         if (latched == null) return@coroutineScope null
         val match = resolved.first { (_, addr) ->
             addr.address == latched.source.address && addr.port == latched.source.port
@@ -296,10 +303,18 @@ class NetplayHandshake(
         val pongChannel = Channel<Pair<Long, Long>>(capacity = Channel.BUFFERED)
         val collectorJob = launch {
             transport.incomingPackets
-                .filter { it.packet is NetplayPacket.Pong && it.source.address == peer.address && it.source.port == peer.port }
+                .filter { it.source.address == peer.address && it.source.port == peer.port }
                 .collect { incoming ->
-                    val pong = incoming.packet as NetplayPacket.Pong
-                    pongChannel.trySend(pong.timestampNanos to System.nanoTime())
+                    when (incoming.packet) {
+                        is NetplayPacket.Pong -> {
+                            val pong = incoming.packet
+                            pongChannel.trySend(pong.timestampNanos to System.nanoTime())
+                        }
+                        is NetplayPacket.Ping -> {
+                            runCatching { transport.send(peer, NetplayPacket.Pong(incoming.packet.timestampNanos)) }
+                        }
+                        else -> {}
+                    }
                 }
         }
 
@@ -346,6 +361,7 @@ class NetplayHandshake(
     }
 
     companion object {
+        private const val TAG = "NetplayHandshake"
         private val PEER_CANDIDATES_TIMEOUT = 10.seconds
         private val PUNCH_START_TIMEOUT = 10.seconds
         private val PUNCH_RESPONSE_TIMEOUT = 3.seconds

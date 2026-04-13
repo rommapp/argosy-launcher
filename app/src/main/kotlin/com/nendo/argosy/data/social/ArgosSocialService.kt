@@ -262,7 +262,9 @@ class ArgosSocialService @Inject constructor(
 
                 MessageTypes.PRESENCE_UPDATE -> {
                     if (payload != null) {
-                        val netplay = parseNetplaySession(payload.optJSONObject("netplay_session"))
+                        val netplayJson = payload.optJSONObject("netplay_session")
+                        Log.d(TAG, "PRESENCE_UPDATE: user=${payload.optString("user_id")} hasNetplay=${netplayJson != null} keys=${payload.names()}")
+                        val netplay = parseNetplaySession(netplayJson)
                         val update = PresenceUpdate(
                             userId = payload.getString("user_id"),
                             status = payload.getString("status"),

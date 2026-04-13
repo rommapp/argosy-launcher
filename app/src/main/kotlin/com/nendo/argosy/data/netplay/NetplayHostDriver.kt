@@ -28,6 +28,7 @@ class NetplayHostDriver(
     @Volatile private var currentFrame: Long = 0L
     @Volatile private var guestCurrentBitmask: Int = 0
     @Volatile private var lastHeartbeatNanos: Long = 0L
+    @Volatile private var lastTickNanos: Long = 0L
     @Volatile override var lastRttNanos: Long = 0L
         private set
     @Volatile override var lastIncomingNanos: Long = System.nanoTime()
@@ -59,6 +60,10 @@ class NetplayHostDriver(
 
     override fun tick() {
         if (stopped) return
+
+        val now = System.nanoTime()
+        if (now - lastTickNanos < FRAME_PERIOD_NANOS) return
+        lastTickNanos = now
 
         drainIncoming()
 
@@ -235,5 +240,6 @@ class NetplayHostDriver(
         private const val SNAPSHOT_CHUNK_BYTES = 1280
         private const val SNAPSHOT_RETRANSMIT_INTERVAL_MS = 100L
         private const val SNAPSHOT_MAX_ATTEMPTS = 10
+        private const val FRAME_PERIOD_NANOS = 16_666_667L // ~60Hz
     }
 }

@@ -1370,12 +1370,20 @@ class LibretroActivity : ComponentActivity() {
         if (pending != null) {
             pendingNetplayJoin = null
             netplayRole = NetplayMenuRole.Guest
+            Log.d(TAG, "auto-join: pending sessionId=${pending.sessionId} hostUserId=${pending.hostUserId}")
             lifecycleScope.launch {
+                Log.d(TAG, "auto-join: waiting for social WS connection...")
+                argosSocialService.connectionState
+                    .first { it is ArgosSocialService.ConnectionState.Connected }
+                Log.d(TAG, "auto-join: social WS connected, waiting 1s for emulator settle")
+                kotlinx.coroutines.delay(1000)
+                Log.d(TAG, "auto-join: calling joinSession")
                 runCatching {
                     manager.joinSession(pending.sessionId, pending.hostUserId)
                 }.onFailure { err ->
                     Log.w(TAG, "auto-join from intent failed: ${err.message}")
                 }
+                Log.d(TAG, "auto-join: joinSession returned")
             }
         }
     }
@@ -1418,8 +1426,11 @@ class LibretroActivity : ComponentActivity() {
         val romFile = File(romPath)
         val romHash = com.nendo.argosy.data.netplay.RomHashComputer.computeRomHashPrefix(romFile) ?: return null
         val coreHash = coreHashCache.getHashForCore(corePath) ?: return null
+        val igdbId = if (gameId != -1L) {
+            kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }?.igdbId?.toInt()
+        } else null
         return NetplayOpenPayload(
-            gameIgdbId = null,
+            gameIgdbId = igdbId,
             gameTitle = gameName,
             coreId = coreId,
             romHashPrefix = romHash,

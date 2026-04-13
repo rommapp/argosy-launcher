@@ -81,6 +81,7 @@ class NetplaySessionManager(
     @Volatile private var activeSessionId: String? = null
     @Volatile private var activePeerUserId: String? = null
     @Volatile private var pendingReadyPayload: PendingReady? = null
+    @Volatile private var lastOpenPayload: NetplayOpenPayload? = null
     private var silenceMonitorJob: Job? = null
 
     private val peerCandidatesChannel = Channel<IncomingMessage.NetplayPeerCandidates>(capacity = Channel.BUFFERED)
@@ -101,6 +102,7 @@ class NetplaySessionManager(
         if (_sessionState.value !is NetplaySessionState.Idle) {
             return Result.failure(IllegalStateException("session not idle"))
         }
+        lastOpenPayload = payload
         drainPendingChannels()
         _sessionState.value = NetplaySessionState.Opening(payload.gameTitle)
         if (!socialService.sendNetplayOpen(payload)) {
@@ -331,7 +333,9 @@ class NetplaySessionManager(
         when (result) {
             is NetplayHandshake.HandshakeResult.Failure -> {
                 runCatching { localSocket.close() }
-                _sessionState.value = NetplaySessionState.Error(result.reason)
+                Log.d(TAG, "host handshake failed (${result.reason}), kicking stale guest and reverting to Waiting")
+                runCatching { socialService.sendNetplayKick(sessionId, guestUserId, "handshake_failed") }
+                _sessionState.value = NetplaySessionState.Waiting(sessionId = sessionId, gameTitle = "")
             }
             is NetplayHandshake.HandshakeResult.QualityWarning -> {
                 _qualityWarningPending.value = PendingQualityWarning(
@@ -525,6 +529,7 @@ class NetplaySessionManager(
     }
 
     private suspend fun handleSessionEnd(reason: String) {
+        Log.d(TAG, "handleSessionEnd($reason): state=${_sessionState.value}")
         clearJoinQueue()
         tearDownDriver(reason)
         _sessionState.value = NetplaySessionState.Idle
@@ -535,14 +540,14 @@ class NetplaySessionManager(
     }
 
     private suspend fun handleGuestLeft(payload: NetplayGuestLeftPayload) {
-        val sessionId = activeSessionId ?: return
-        if (sessionId != payload.sessionId) {
-            Log.w(TAG, "handleGuestLeft: stale sessionId=${payload.sessionId} active=$sessionId")
-            return
-        }
+        Log.d(TAG, "handleGuestLeft: sessionId=${payload.sessionId} active=$activeSessionId state=${_sessionState.value}")
         tearDownDriver("guest_left")
+        activeSessionId = payload.sessionId
+        pendingReadyPayload?.let {
+            if (it.sessionId != payload.sessionId) pendingReadyPayload = null
+        }
         runCatching { retroView.resumeEmulation() }
-        _sessionState.value = NetplaySessionState.Waiting(sessionId = sessionId, gameTitle = "")
+        _sessionState.value = NetplaySessionState.Waiting(sessionId = payload.sessionId, gameTitle = "")
         _guestLeftEvents.tryEmit(
             GuestLeftEvent(
                 sessionId = payload.sessionId,
@@ -632,7 +637,13 @@ class NetplaySessionManager(
                 punchStartChannel.trySend(message)
             }
             is IncomingMessage.NetplayHandshakeFailed -> {
-                _sessionState.value = NetplaySessionState.Error(message.payload.reason)
+                val sid = activeSessionId
+                if (role == NetplayHandshake.Role.Host && sid != null) {
+                    Log.d(TAG, "handshake_failed on host, reverting to Waiting")
+                    _sessionState.value = NetplaySessionState.Waiting(sessionId = sid, gameTitle = "")
+                } else {
+                    _sessionState.value = NetplaySessionState.Error(message.payload.reason)
+                }
             }
             is IncomingMessage.NetplayKicked -> {
                 scope.launch { handleSessionEnd("kicked") }
@@ -641,7 +652,13 @@ class NetplaySessionManager(
                 scope.launch { handleSessionEnd("session_ended") }
             }
             is IncomingMessage.NetplayGuestLeft -> {
-                scope.launch { handleGuestLeft(message.payload) }
+                val savedReady = pendingReadyPayload
+                scope.launch {
+                    handleGuestLeft(message.payload)
+                    if (pendingReadyPayload == null && savedReady != null && savedReady.sessionId == message.payload.sessionId) {
+                        pendingReadyPayload = savedReady
+                    }
+                }
             }
             else -> {
             }

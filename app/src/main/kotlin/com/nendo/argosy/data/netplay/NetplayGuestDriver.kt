@@ -48,6 +48,7 @@ class NetplayGuestDriver(
     private val pendingBundles = TreeMap<Long, NetplayPacket.InputBundle>()
     private val reassembly = ConcurrentHashMap<Int, ReassemblyBuffer>()
     private var activeReassemblyId: Int? = null
+    @Volatile private var lastAppliedSnapshotId: Int = -1
     private var lastAckEmitNanos = 0L
 
     private val receiveJob: Job = scope.launch {
@@ -151,9 +152,12 @@ class NetplayGuestDriver(
         }
     }
 
+    private var drainLogCounter = 0
     private fun drainIncoming() {
+        var count = 0
         while (true) {
             val incoming = incomingRing.tryReceive().getOrNull() ?: break
+            count++
             lastIncomingNanos = System.nanoTime()
             when (val packet = incoming.packet) {
                 is NetplayPacket.InputBundle -> handleInputBundle(packet)
@@ -177,6 +181,9 @@ class NetplayGuestDriver(
                 }
             }
         }
+        if (count > 0 && drainLogCounter++ % 60 == 0) {
+            Log.d(TAG, "drain: $count packets, frame=$currentFrame hostFrame=$lastKnownHostFrame behind=$framesBehindHost catchingUp=$catchingUp pendingBundles=${pendingBundles.size}")
+        }
     }
 
     private fun handleInputBundle(bundle: NetplayPacket.InputBundle) {
@@ -186,6 +193,7 @@ class NetplayGuestDriver(
     }
 
     private fun handleSnapshotChunk(chunk: NetplayPacket.SnapshotChunk) {
+        if (chunk.snapshotId <= lastAppliedSnapshotId) return
         val activeId = activeReassemblyId
         if (activeId != null && chunk.snapshotId != activeId && chunk.snapshotId > activeId) {
             reassembly.remove(activeId)
@@ -209,6 +217,7 @@ class NetplayGuestDriver(
     }
 
     private fun applySnapshot(snapshotId: Int, bytes: ByteArray) {
+        Log.d(TAG, "applySnapshot: id=$snapshotId size=${bytes.size} currentFrame=$currentFrame hostFrame=$lastKnownHostFrame")
         try {
             val ok = retroView.unserializeState(bytes)
             if (!ok) {
@@ -219,9 +228,11 @@ class NetplayGuestDriver(
             Log.w(TAG, "unserializeState threw: ${t.message}")
             return
         }
-        currentFrame = lastKnownHostFrame
+        lastAppliedSnapshotId = snapshotId
+        currentFrame = lastKnownHostFrame + 1
         pendingBundles.clear()
         catchingUp = false
+        Log.d(TAG, "applySnapshot: done, currentFrame now=$currentFrame (will consume from next host bundle)")
     }
 
     private fun maybeEmitAck() {

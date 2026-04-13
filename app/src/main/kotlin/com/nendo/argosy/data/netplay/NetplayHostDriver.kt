@@ -40,6 +40,7 @@ class NetplayHostDriver(
     private val pendingSnapshots = ConcurrentHashMap<Int, OutboundSnapshot>()
 
     private val receiveJob: Job = scope.launch {
+        Log.d(TAG, "receiveJob: listening for peer ${peerAddress.address.hostAddress}:${peerAddress.port}")
         transport.incomingPackets.collect { incoming ->
             if (incoming.source.address == peerAddress.address &&
                 incoming.source.port == peerAddress.port) {
@@ -146,10 +147,12 @@ class NetplayHostDriver(
     }
 
     private fun handleSnapshotRequest(packet: NetplayPacket.SnapshotRequest) {
+        Log.d(TAG, "received SnapshotRequest reason=${packet.reasonCode}")
         scope.launch {
             try {
                 val state = retroView.serializeState()
                 val snapshotId = nextSnapshotId.getAndIncrement()
+                Log.d(TAG, "sending snapshot id=$snapshotId size=${state.size}")
                 enqueueSnapshot(snapshotId, state)
             } catch (t: Throwable) {
                 Log.w(TAG, "serializeState failed: ${t.message}")

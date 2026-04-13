@@ -1142,6 +1142,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun initializeNetplaySessionManager() {
+        if (netplaySessionManager != null) return
         val handshake = NetplayHandshake(
             candidateGatherer = CandidateGatherer(),
             socialService = argosSocialService
@@ -1236,6 +1237,9 @@ class LibretroActivity : ComponentActivity() {
                             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
                         }
                         netplayInSession = true
+                        netplayReconnecting = false
+                        netplayDisconnectPromptVisible = false
+                        netplayProgressState = null
                     }
                     is NetplaySessionState.Handshaking -> {
                         if (isGuestJoinedSession) guestSessionEverStarted = true
@@ -1372,14 +1376,18 @@ class LibretroActivity : ComponentActivity() {
             netplayRole = NetplayMenuRole.Guest
             Log.d(TAG, "auto-join: pending sessionId=${pending.sessionId} hostUserId=${pending.hostUserId}")
             lifecycleScope.launch {
-                Log.d(TAG, "auto-join: waiting for social WS connection...")
+                Log.d(TAG, "auto-join: waiting for first frame render...")
+                retroView.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
+                Log.d(TAG, "auto-join: emulator ready, waiting for social WS...")
                 argosSocialService.connectionState
                     .first { it is ArgosSocialService.ConnectionState.Connected }
-                Log.d(TAG, "auto-join: social WS connected, waiting 1s for emulator settle")
-                kotlinx.coroutines.delay(1000)
-                Log.d(TAG, "auto-join: calling joinSession")
+                val currentSessionId = socialRepository.friends.value
+                    .firstOrNull { it.id == pending.hostUserId }
+                    ?.currentGame?.netplaySession?.sessionId
+                    ?: pending.sessionId
+                Log.d(TAG, "auto-join: calling joinSession (intent=${pending.sessionId}, current=$currentSessionId)")
                 runCatching {
-                    manager.joinSession(pending.sessionId, pending.hostUserId)
+                    manager.joinSession(currentSessionId, pending.hostUserId)
                 }.onFailure { err ->
                     Log.w(TAG, "auto-join from intent failed: ${err.message}")
                 }

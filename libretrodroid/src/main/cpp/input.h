@@ -66,6 +66,7 @@ public:
 
     void setInputPortState(unsigned int port, uint32_t bitmask);
     uint32_t getInputPortBitmask(unsigned port);
+    void setNetplayActive(bool active);
 
 private:
     const int UNKNOWN_KEY = -1;
@@ -77,6 +78,8 @@ private:
     int convertAndroidToLibretroKey(int keyCode) const;
 
     GamePadState pads[4];
+    GamePadState captured[4];
+    bool netplayActive = false;
 };
 
 }

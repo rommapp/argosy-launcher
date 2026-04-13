@@ -309,6 +309,12 @@ uint32_t LibretroDroid::getInputPortBitmask(unsigned int port) {
     return 0;
 }
 
+void LibretroDroid::setNetplayActive(bool active) {
+    if (input) {
+        input->setNetplayActive(active);
+    }
+}
+
 void LibretroDroid::create(
     unsigned int GLESVersion,
     const std::string& soFilePath,

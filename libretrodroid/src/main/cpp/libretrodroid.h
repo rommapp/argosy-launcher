@@ -119,6 +119,7 @@ public:
     void onTouchEvent(float xAxis, float yAxis);
     void setInputPortState(unsigned int port, uint32_t bitmask);
     uint32_t getInputPortBitmask(unsigned int port);
+    void setNetplayActive(bool active);
 
     void refreshAspectRatio();
     float getAspectRatio();

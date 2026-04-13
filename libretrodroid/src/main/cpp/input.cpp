@@ -153,11 +153,23 @@ void Input::onKeyEvent(unsigned int port, int action, int keyCode) {
     }
 
     std::lock_guard<std::mutex> lock(inputMutex);
+    auto& target = netplayActive ? captured[port] : pads[port];
     if (action == AKEY_EVENT_ACTION_DOWN) {
-        pads[port].pressedKeys.insert(retroKeyCode);
-        pads[port].pendingReleases.erase(retroKeyCode);
+        target.pressedKeys.insert(retroKeyCode);
+        target.pendingReleases.erase(retroKeyCode);
     } else if (action == AKEY_EVENT_ACTION_UP) {
-        pads[port].pendingReleases.insert(retroKeyCode);
+        target.pendingReleases.insert(retroKeyCode);
+    }
+}
+
+void Input::setNetplayActive(bool active) {
+    std::lock_guard<std::mutex> lock(inputMutex);
+    netplayActive = active;
+    if (active) {
+        for (unsigned p = 0; p < 4; p++) {
+            captured[p].pressedKeys = pads[p].pressedKeys;
+            captured[p].pendingReleases.clear();
+        }
     }
 }
 
@@ -177,9 +189,16 @@ void Input::setInputPortState(unsigned int port, uint32_t bitmask) {
 uint32_t Input::getInputPortBitmask(unsigned port) {
     if (port >= 4) return 0;
     std::lock_guard<std::mutex> lock(inputMutex);
+    auto& source = netplayActive ? captured[port] : pads[port];
+    // Flush pending releases on the captured state so held-then-released
+    // keys don't stick.
+    for (int key : source.pendingReleases) {
+        source.pressedKeys.erase(key);
+    }
+    source.pendingReleases.clear();
     uint32_t bitmask = 0;
     for (unsigned i = 0; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++) {
-        if (pads[port].pressedKeys.count(i) > 0) {
+        if (source.pressedKeys.count(i) > 0) {
             bitmask |= (1u << i);
         }
     }

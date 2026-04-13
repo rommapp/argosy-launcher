@@ -688,6 +688,14 @@ JNIEXPORT jint JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_getInputPo
     ));
 }
 
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setNetplayActive(
+    JNIEnv* env,
+    jclass obj,
+    jboolean active
+) {
+    LibretroDroid::getInstance().setNetplayActive(active);
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setRumbleEnabled(
     JNIEnv* env,
     jclass obj,

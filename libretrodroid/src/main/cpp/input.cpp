@@ -179,29 +179,47 @@ void Input::setInputPortState(unsigned int port, uint32_t bitmask) {
     std::lock_guard<std::mutex> lock(inputMutex);
     pads[port].pressedKeys.clear();
     pads[port].pendingReleases.clear();
+    pads[port].dpadXAxis = 0;
+    pads[port].dpadYAxis = 0;
+    pads[port].dpadReleasePending = false;
     for (unsigned i = 0; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++) {
         if ((bitmask & (1u << i)) != 0u) {
             pads[port].pressedKeys.insert(static_cast<int>(i));
         }
     }
+    // Reconstruct D-pad axis from bitmask so getInputState sees consistent state
+    if (bitmask & (1u << RETRO_DEVICE_ID_JOYPAD_LEFT))  pads[port].dpadXAxis = -1;
+    if (bitmask & (1u << RETRO_DEVICE_ID_JOYPAD_RIGHT)) pads[port].dpadXAxis = 1;
+    if (bitmask & (1u << RETRO_DEVICE_ID_JOYPAD_UP))    pads[port].dpadYAxis = -1;
+    if (bitmask & (1u << RETRO_DEVICE_ID_JOYPAD_DOWN))  pads[port].dpadYAxis = 1;
 }
 
 uint32_t Input::getInputPortBitmask(unsigned port) {
     if (port >= 4) return 0;
     std::lock_guard<std::mutex> lock(inputMutex);
     auto& source = netplayActive ? captured[port] : pads[port];
-    // Flush pending releases on the captured state so held-then-released
-    // keys don't stick.
+    // Flush pending releases so held-then-released keys don't stick.
     for (int key : source.pendingReleases) {
         source.pressedKeys.erase(key);
     }
     source.pendingReleases.clear();
+    // Flush pending dpad release
+    if (source.dpadReleasePending) {
+        source.dpadXAxis = source.pendingDpadX;
+        source.dpadYAxis = source.pendingDpadY;
+        source.dpadReleasePending = false;
+    }
     uint32_t bitmask = 0;
     for (unsigned i = 0; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++) {
         if (source.pressedKeys.count(i) > 0) {
             bitmask |= (1u << i);
         }
     }
+    // Include D-pad axis state in the bitmask
+    if (source.dpadXAxis == -1) bitmask |= (1u << RETRO_DEVICE_ID_JOYPAD_LEFT);
+    if (source.dpadXAxis == 1)  bitmask |= (1u << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+    if (source.dpadYAxis == -1) bitmask |= (1u << RETRO_DEVICE_ID_JOYPAD_UP);
+    if (source.dpadYAxis == 1)  bitmask |= (1u << RETRO_DEVICE_ID_JOYPAD_DOWN);
     return bitmask;
 }
 
@@ -254,35 +272,36 @@ bool Input::getButtonState(unsigned port, unsigned id) const {
 
 void Input::onMotionEvent(int port, int motionSource, float xAxis, float yAxis) {
     std::lock_guard<std::mutex> lock(inputMutex);
+    auto& target = netplayActive ? captured[port] : pads[port];
     switch (motionSource) {
         case Input::MOTION_SOURCE_DPAD: {
             int newX = (int) round(xAxis);
             int newY = (int) round(yAxis);
-            if (newX == 0 && newY == 0 && (pads[port].dpadXAxis != 0 || pads[port].dpadYAxis != 0)) {
-                pads[port].dpadReleasePending = true;
-                pads[port].pendingDpadX = 0;
-                pads[port].pendingDpadY = 0;
+            if (newX == 0 && newY == 0 && (target.dpadXAxis != 0 || target.dpadYAxis != 0)) {
+                target.dpadReleasePending = true;
+                target.pendingDpadX = 0;
+                target.pendingDpadY = 0;
             } else {
-                pads[port].dpadXAxis = newX;
-                pads[port].dpadYAxis = newY;
-                pads[port].dpadReleasePending = false;
+                target.dpadXAxis = newX;
+                target.dpadYAxis = newY;
+                target.dpadReleasePending = false;
             }
             break;
         }
 
         case Input::MOTION_SOURCE_ANALOG_LEFT:
-            pads[port].joypadLeftXAxis = xAxis;
-            pads[port].joypadLeftYAxis = yAxis;
+            target.joypadLeftXAxis = xAxis;
+            target.joypadLeftYAxis = yAxis;
             break;
 
         case Input::MOTION_SOURCE_ANALOG_RIGHT:
-            pads[port].joypadRightXAxis = xAxis;
-            pads[port].joypadRightYAxis = yAxis;
+            target.joypadRightXAxis = xAxis;
+            target.joypadRightYAxis = yAxis;
             break;
 
         case Input::MOTION_SOURCE_POINTER:
-            pads[port].pointerScreenXAxis = xAxis;
-            pads[port].pointerScreenYAxis = yAxis;
+            target.pointerScreenXAxis = xAxis;
+            target.pointerScreenYAxis = yAxis;
             break;
     }
 }

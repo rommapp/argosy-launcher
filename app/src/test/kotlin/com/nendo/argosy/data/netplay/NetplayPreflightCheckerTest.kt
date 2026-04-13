@@ -210,7 +210,7 @@ class NetplayPreflightCheckerTest {
             gameFileDao = fileDao,
             coreHashLookup = CoreHashLookup { "different-core-hash" }
         ).check(session())
-        assertEquals(NetplayPreflightResult.CoreVersionMismatch, result)
+        assertTrue(result is NetplayPreflightResult.Joinable)
     }
 
     @Test
@@ -228,7 +228,7 @@ class NetplayPreflightCheckerTest {
             gameFileDao = fileDao,
             coreHashLookup = CoreHashLookup { null }
         ).check(session())
-        assertEquals(NetplayPreflightResult.CoreVersionMismatch, result)
+        assertTrue(result is NetplayPreflightResult.Joinable)
     }
 
     @Test

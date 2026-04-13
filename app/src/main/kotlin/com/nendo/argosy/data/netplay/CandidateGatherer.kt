@@ -20,7 +20,7 @@ open class CandidateGatherer(
         val localPort = localSocket.localPort
 
         val lanDeferred = async { enumerateLocalAddresses(localPort) }
-        val stunDeferred = async { queryStunCandidate(localPort) }
+        val stunDeferred = async { queryStunCandidate(localPort, localSocket) }
         val upnpDeferred = async { queryUpnpCandidate(localPort) }
 
         val (lan, stun, upnp) = awaitAll(lanDeferred, stunDeferred, upnpDeferred)
@@ -75,10 +75,10 @@ open class CandidateGatherer(
         return out
     }
 
-    private suspend fun queryStunCandidate(port: Int): List<NetplayCandidate> {
+    private suspend fun queryStunCandidate(port: Int, localSocket: DatagramSocket): List<NetplayCandidate> {
         for (server in stunServers) {
             try {
-                val mapped = stunClient.discoverReflexiveAddress(server) ?: continue
+                val mapped = stunClient.discoverReflexiveAddress(server, localSocket = localSocket) ?: continue
                 val host = mapped.address?.hostAddress ?: continue
                 return listOf(
                     NetplayCandidate(

@@ -1219,24 +1219,43 @@ class LibretroActivity : ComponentActivity() {
                     }
                     is NetplaySessionState.Opening -> {
                         if (isGuestJoinedSession) guestSessionEverStarted = true
+                        if (!netplayInSession) {
+                            savedOrientation = requestedOrientation
+                            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
+                        }
+                        netplayInSession = true
                         retroView.suppressAutoResume = false
                         retroView.resumeEmulation()
                         if (netplayRole == NetplayMenuRole.Guest) {
                             netplayProgressState = NetplayProgressState(NetplayProgressStage.RequestingJoin)
                         }
                     }
+                    is NetplaySessionState.Waiting -> {
+                        if (!netplayInSession) {
+                            savedOrientation = requestedOrientation
+                            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
+                        }
+                        netplayInSession = true
+                    }
                     is NetplaySessionState.Handshaking -> {
                         if (isGuestJoinedSession) guestSessionEverStarted = true
+                        if (!netplayInSession) {
+                            savedOrientation = requestedOrientation
+                            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
+                        }
+                        netplayInSession = true
                         retroView.suppressAutoResume = false
                         retroView.resumeEmulation()
                         netplayProgressState = NetplayProgressState(NetplayProgressStage.Connecting)
                     }
                     is NetplaySessionState.Reconnecting -> {
                         if (isGuestJoinedSession) guestSessionEverStarted = true
+                        netplayInSession = true
                         netplayReconnecting = true
                     }
                     is NetplaySessionState.PeerDisconnected -> {
                         if (isGuestJoinedSession) guestSessionEverStarted = true
+                        netplayInSession = true
                         netplayReconnecting = false
                         netplayDisconnectPromptPeer = resolveFriendDisplayName(state.peerUserId)
                         netplayDisconnectPromptFocus = 0
@@ -1254,8 +1273,18 @@ class LibretroActivity : ComponentActivity() {
                             netplayDisconnectPromptVisible = true
                         }
                     }
+                    is NetplaySessionState.Ending -> {
+                        if (netplayInSession) {
+                            requestedOrientation = savedOrientation
+                        }
+                        netplayInSession = false
+                    }
                     is NetplaySessionState.Error -> {
                         if (isGuestJoinedSession) guestSessionEverStarted = true
+                        if (netplayInSession) {
+                            requestedOrientation = savedOrientation
+                        }
+                        netplayInSession = false
                         netplayProgressState = NetplayProgressState(
                             NetplayProgressStage.Failed,
                             netplayErrorMessage(state.reason)
@@ -1267,7 +1296,6 @@ class LibretroActivity : ComponentActivity() {
                             }
                         }
                     }
-                    else -> { }
                 }
             }
         }

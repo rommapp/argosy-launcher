@@ -9,7 +9,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
-import java.util.ArrayDeque
+import kotlin.collections.ArrayDeque
 import java.util.TreeMap
 import java.util.concurrent.ConcurrentHashMap
 
@@ -42,9 +42,19 @@ class NetplayGuestDriver(
     @Volatile private var nextTickTargetNanos: Long = System.nanoTime()
 
     private val latestHostInputs = mutableMapOf<Int, Int>()
-    @Volatile private var speculativeFrames: Int = 0
 
     @Volatile var shouldSkipRender: Boolean = false
+
+    private data class RollbackEntry(
+        val frame: Long,
+        val state: ByteArray,
+        val p1Bitmask: Int,
+        val p2Bitmask: Int,
+        val wasSpeculative: Boolean
+    )
+
+    private val rollbackBuffer = ArrayDeque<RollbackEntry>(ROLLBACK_DEPTH)
+    private var lastConfirmedP1: Int = 0
 
     val framesBehindHost: Long
         get() = (lastKnownHostFrame - currentFrame).coerceAtLeast(0L)
@@ -100,23 +110,35 @@ class NetplayGuestDriver(
         sampleAndSendLocalInput()
 
         if (!catchingUp) {
-            // Drain stale bundles
             while (pendingBundles.isNotEmpty() && pendingBundles.firstKey() < currentFrame) {
-                pendingBundles.pollFirstEntry()
+                val staleBundle = pendingBundles.pollFirstEntry().value
+                updateLastConfirmedP1(staleBundle)
             }
 
-            // Step only when we have the real bundle for this frame
-            if (pendingBundles.isNotEmpty() && pendingBundles.firstKey() == currentFrame) {
-                val bundle = pendingBundles.pollFirstEntry().value
-                bundle.ports.forEach { port ->
-                    libretroOps.setInputPortState(port.port, port.bitmask)
-                }
-                libretroOps.stepForNetplay(retroView)
-                currentFrame++
+            checkAndRollback()
+
+            val bundle = pendingBundles.remove(currentFrame)
+            val p1: Int
+            val p2: Int
+            val speculative: Boolean
+
+            if (bundle != null) {
+                p1 = extractPortBitmask(bundle, hostPort)
+                p2 = extractPortBitmask(bundle, localPort)
+                lastConfirmedP1 = p1
+                speculative = false
             } else {
-                // No bundle yet — re-present current frame (no step, no stutter)
-                libretroOps.renderFrameOnly()
+                p1 = lastConfirmedP1
+                p2 = lastLocalBitmask
+                speculative = true
             }
+
+            saveRollbackState(currentFrame, p1, p2, speculative)
+
+            libretroOps.setInputPortState(hostPort, p1)
+            libretroOps.setInputPortState(localPort, p2)
+            libretroOps.stepForNetplay(retroView)
+            currentFrame++
         }
 
         if (framesBehindHost > catchupThresholdFrames && !catchingUp) {
@@ -132,6 +154,112 @@ class NetplayGuestDriver(
         }
     }
 
+
+    private fun extractPortBitmask(bundle: NetplayPacket.InputBundle, port: Int): Int {
+        return bundle.ports.firstOrNull { it.port == port }?.bitmask ?: 0
+    }
+
+    private fun updateLastConfirmedP1(bundle: NetplayPacket.InputBundle) {
+        lastConfirmedP1 = extractPortBitmask(bundle, hostPort)
+    }
+
+    private fun saveRollbackState(frame: Long, p1: Int, p2: Int, speculative: Boolean) {
+        if (rollbackBuffer.size >= ROLLBACK_DEPTH) {
+            rollbackBuffer.removeFirst()
+        }
+        val state = try {
+            retroView.serializeState()
+        } catch (t: Throwable) {
+            Log.w(TAG, "serializeState failed for frame $frame: ${t.message}")
+            return
+        }
+        rollbackBuffer.addLast(RollbackEntry(frame, state, p1, p2, speculative))
+    }
+
+    private fun checkAndRollback() {
+        var earliestMispredictIdx = -1
+        for (i in rollbackBuffer.indices) {
+            val entry = rollbackBuffer[i]
+            if (!entry.wasSpeculative) continue
+            val bundle = pendingBundles[entry.frame] ?: continue
+            val realP1 = extractPortBitmask(bundle, hostPort)
+            val realP2 = extractPortBitmask(bundle, localPort)
+            if (realP1 != entry.p1Bitmask || realP2 != entry.p2Bitmask) {
+                earliestMispredictIdx = i
+                break
+            }
+        }
+        if (earliestMispredictIdx < 0) {
+            confirmMatchedEntries()
+            return
+        }
+
+        val rewindEntry = rollbackBuffer[earliestMispredictIdx]
+        try {
+            retroView.unserializeState(rewindEntry.state)
+        } catch (t: Throwable) {
+            Log.w(TAG, "rollback unserializeState failed: ${t.message}")
+            return
+        }
+
+        val savedCurrentFrame = currentFrame
+        currentFrame = rewindEntry.frame
+
+        val replayRange = rollbackBuffer.size
+        val entriesToReplay = ArrayList<RollbackEntry>(replayRange - earliestMispredictIdx)
+        for (i in earliestMispredictIdx until replayRange) {
+            entriesToReplay.add(rollbackBuffer[i])
+        }
+        while (rollbackBuffer.size > earliestMispredictIdx) {
+            rollbackBuffer.removeLast()
+        }
+
+        for (entry in entriesToReplay) {
+            val bundle = pendingBundles.remove(entry.frame)
+            val p1: Int
+            val p2: Int
+            val speculative: Boolean
+
+            if (bundle != null) {
+                p1 = extractPortBitmask(bundle, hostPort)
+                p2 = extractPortBitmask(bundle, localPort)
+                lastConfirmedP1 = p1
+                speculative = false
+            } else {
+                p1 = lastConfirmedP1
+                p2 = entry.p2Bitmask
+                speculative = true
+            }
+
+            if (rollbackBuffer.size >= ROLLBACK_DEPTH) {
+                rollbackBuffer.removeFirst()
+            }
+            rollbackBuffer.addLast(RollbackEntry(entry.frame, entry.state, p1, p2, speculative))
+
+            libretroOps.setInputPortState(hostPort, p1)
+            libretroOps.setInputPortState(localPort, p2)
+            libretroOps.stepForNetplay(retroView)
+            currentFrame++
+        }
+
+        currentFrame = savedCurrentFrame
+    }
+
+    private fun confirmMatchedEntries() {
+        val iter = rollbackBuffer.iterator()
+        while (iter.hasNext()) {
+            val entry = iter.next()
+            if (!entry.wasSpeculative) continue
+            val bundle = pendingBundles[entry.frame] ?: break
+            val realP1 = extractPortBitmask(bundle, hostPort)
+            val realP2 = extractPortBitmask(bundle, localPort)
+            if (realP1 == entry.p1Bitmask && realP2 == entry.p2Bitmask) {
+                pendingBundles.remove(entry.frame)
+            } else {
+                break
+            }
+        }
+    }
 
     private fun sampleAndSendLocalInput() {
         val current = libretroOps.getInputPortBitmask(0)
@@ -155,6 +283,7 @@ class NetplayGuestDriver(
         receiveJob.cancel()
         reassemblyTimerJob.cancel()
         pendingBundles.clear()
+        rollbackBuffer.clear()
         reassembly.clear()
         scope.launch {
             runCatching { transport.send(peerAddress, NetplayPacket.SessionControl.Goodbye) }
@@ -198,7 +327,9 @@ class NetplayGuestDriver(
 
     private fun handleInputBundle(bundle: NetplayPacket.InputBundle) {
         if (bundle.frameIndex > lastKnownHostFrame) lastKnownHostFrame = bundle.frameIndex
-        if (bundle.frameIndex < currentFrame) return
+        val oldestRollbackFrame = if (rollbackBuffer.isEmpty()) currentFrame
+            else rollbackBuffer[0].frame
+        if (bundle.frameIndex < oldestRollbackFrame) return
         pendingBundles[bundle.frameIndex] = bundle
     }
 
@@ -242,6 +373,8 @@ class NetplayGuestDriver(
         lastAppliedSnapshotId = snapshotId
         currentFrame = if (snapshotFrame == 0L) 0L else snapshotFrame + 1
         pendingBundles.clear()
+        rollbackBuffer.clear()
+        lastConfirmedP1 = 0
         catchingUp = false
         Log.d(TAG, "applySnapshot: done, currentFrame now=$currentFrame")
     }
@@ -329,7 +462,7 @@ class NetplayGuestDriver(
         private const val FRAME_PERIOD_NANOS = 16_666_667L
         private const val MAX_STEPS_PER_TICK = 4
         private const val BURST_THRESHOLD = 10
-        private const val MAX_SPECULATIVE_FRAMES = 15
+        private const val ROLLBACK_DEPTH = 8
         const val DEFAULT_CATCHUP_THRESHOLD = 30
     }
 }

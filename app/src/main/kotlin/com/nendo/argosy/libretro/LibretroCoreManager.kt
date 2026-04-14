@@ -8,9 +8,11 @@ import com.nendo.argosy.data.local.entity.CoreVersionEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
 import java.util.zip.ZipInputStream
@@ -23,7 +25,8 @@ private const val TAG = "LibretroCoreManager"
 class LibretroCoreManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val coreVersionDao: CoreVersionDao,
-    private val coreSystemDataManager: CoreSystemDataManager
+    private val coreSystemDataManager: CoreSystemDataManager,
+    private val compatCoreCache: CompatCoreCache
 ) {
     private val downloadedCoresDir = File(context.filesDir, "libretro/cores").apply { mkdirs() }
     private val nativeLibDir = context.applicationInfo.nativeLibraryDir
@@ -149,6 +152,10 @@ class LibretroCoreManager @Inject constructor(
         withContext(Dispatchers.IO) {
             runCatching {
                 val targetFile = File(downloadedCoresDir, coreInfo.fileName)
+                if (targetFile.exists()) {
+                    val existingHash = computeFileHash(targetFile)
+                    compatCoreCache.storeCompatCore(targetFile, existingHash)
+                }
                 val zipUrl = "${LibretroBuildbot.baseUrl}/${coreInfo.fileName}.zip"
 
                 Log.i(TAG, "Downloading ${coreInfo.displayName}: $zipUrl")
@@ -218,6 +225,51 @@ class LibretroCoreManager @Inject constructor(
                 targetFile
             }
         }
+
+    suspend fun resolveNetplayCorePath(coreId: String, hostCoreHash: String): NetplayCoreResolution {
+        val currentPath = getCorePathForCoreId(coreId)
+        if (currentPath != null) {
+            val currentHash = computeFileHash(File(currentPath))
+            if (currentHash.equals(hostCoreHash, ignoreCase = true)) {
+                return NetplayCoreResolution.Matched(currentPath)
+            }
+        }
+
+        val coreInfo = LibretroCoreRegistry.getCoreById(coreId)
+        if (coreInfo != null) {
+            try {
+                val result = withTimeoutOrNull(15_000) { downloadCore(coreInfo) }
+                if (result?.isSuccess == true) {
+                    val updatedPath = getCorePathForCoreId(coreId)
+                    if (updatedPath != null) {
+                        val updatedHash = computeFileHash(File(updatedPath))
+                        if (updatedHash.equals(hostCoreHash, ignoreCase = true)) {
+                            return NetplayCoreResolution.Updated(updatedPath)
+                        }
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+
+        val compatPath = compatCoreCache.getCompatCorePath(hostCoreHash)
+        if (compatPath != null) {
+            return NetplayCoreResolution.CompatFound(compatPath)
+        }
+
+        return NetplayCoreResolution.Unresolvable
+    }
+
+    private fun computeFileHash(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { stream ->
+            val buffer = ByteArray(8192)
+            var read: Int
+            while (stream.read(buffer).also { read = it } != -1) {
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
 
     private val systemDir: File
         get() = File(context.filesDir, "libretro/system").apply { mkdirs() }

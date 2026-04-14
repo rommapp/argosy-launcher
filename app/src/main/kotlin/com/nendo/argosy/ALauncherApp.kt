@@ -23,6 +23,7 @@ import com.nendo.argosy.data.update.UpdateCheckWorker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.BuiltinEmulatorPreferencesRepository
 import com.nendo.argosy.libretro.CoreUpdateCheckWorker
+import com.nendo.argosy.libretro.CompatCoreCache
 import com.nendo.argosy.libretro.LibretroBuildbot
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
@@ -71,6 +72,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var coreManager: LibretroCoreManager
 
     @Inject
+    lateinit var compatCoreCache: CompatCoreCache
+
+    @Inject
     lateinit var playSessionTracker: PlaySessionTracker
 
     @Inject
@@ -96,6 +100,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             }
             coreManager.migrateAbiIfNeeded()
             coreManager.checkAndUpdateCoresIfDue()
+            compatCoreCache.evictStale()
         }
         appScope.launch { playSessionTracker.checkOrphanedSession() }
         appScope.launch { gameDao.resetAllActiveSaveApplied() }

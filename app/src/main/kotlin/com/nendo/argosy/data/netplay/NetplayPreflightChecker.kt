@@ -6,13 +6,17 @@ import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.LibretroCoreRegistry
+import com.nendo.argosy.libretro.NetplayCoreResolution
 import com.nendo.argosy.libretro.NetplaySupportLevel
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 sealed class NetplayPreflightResult {
-    data class Joinable(val localFilePath: String) : NetplayPreflightResult()
+    data class Joinable(
+        val localFilePath: String,
+        val resolvedCorePath: String? = null
+    ) : NetplayPreflightResult()
     data object RomNotFound : NetplayPreflightResult()
     data object RomVersionMismatch : NetplayPreflightResult()
     data object CoreVersionMismatch : NetplayPreflightResult()
@@ -33,18 +37,21 @@ class NetplayPreflightChecker(
     private val gameFileDao: GameFileDao,
     private val coreHashLookup: CoreHashLookup,
     private val romHashProvider: RomHashProvider,
-    private val coreRegistry: CoreRegistryAdapter
+    private val coreRegistry: CoreRegistryAdapter,
+    private val coreManager: LibretroCoreManager? = null
 ) {
     @Inject constructor(
         gameDao: GameDao,
         gameFileDao: GameFileDao,
-        netplayCoreHashLookup: NetplayCoreHashLookup
+        netplayCoreHashLookup: NetplayCoreHashLookup,
+        libretroCoreManager: LibretroCoreManager
     ) : this(
         gameDao = gameDao,
         gameFileDao = gameFileDao,
         coreHashLookup = netplayCoreHashLookup,
         romHashProvider = DefaultRomHashProvider,
-        coreRegistry = DefaultCoreRegistryAdapter
+        coreRegistry = DefaultCoreRegistryAdapter,
+        coreManager = libretroCoreManager
     )
 
     suspend fun check(session: NetplaySession): NetplayPreflightResult {
@@ -79,7 +86,7 @@ class NetplayPreflightChecker(
                 android.util.Log.d("NetplayPreflight", "legacy hash=$hash vs session=${session.romHashPrefix}")
                 if (hash != null && hash.equals(session.romHashPrefix, ignoreCase = true)) {
                     android.util.Log.d("NetplayPreflight", "SUCCESS via legacy path")
-                    return NetplayPreflightResult.Joinable(legacyPath)
+                    return resolveCore(session, legacyPath)
                 } else if (hash != null) {
                     return NetplayPreflightResult.RomVersionMismatch
                 }
@@ -119,7 +126,22 @@ class NetplayPreflightChecker(
         }
 
         android.util.Log.d("NetplayPreflight", "SUCCESS via game_files path")
-        return NetplayPreflightResult.Joinable(resolved.localPath!!)
+        return resolveCore(session, resolved.localPath!!)
+    }
+
+    private suspend fun resolveCore(
+        session: NetplaySession,
+        romPath: String
+    ): NetplayPreflightResult {
+        if (coreManager == null || session.coreHash.isNullOrEmpty()) {
+            return NetplayPreflightResult.Joinable(romPath)
+        }
+        return when (val resolution = coreManager.resolveNetplayCorePath(session.coreId, session.coreHash)) {
+            is NetplayCoreResolution.Matched -> NetplayPreflightResult.Joinable(romPath, resolution.corePath)
+            is NetplayCoreResolution.Updated -> NetplayPreflightResult.Joinable(romPath, resolution.corePath)
+            is NetplayCoreResolution.CompatFound -> NetplayPreflightResult.Joinable(romPath, resolution.corePath)
+            NetplayCoreResolution.Unresolvable -> NetplayPreflightResult.CoreVersionMismatch
+        }
     }
 }
 

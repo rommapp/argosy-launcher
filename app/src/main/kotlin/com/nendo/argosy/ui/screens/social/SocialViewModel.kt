@@ -176,6 +176,9 @@ class SocialViewModel @Inject constructor(
                     val decorated = Intent(result.intent).apply {
                         putExtra(LibretroActivity.EXTRA_NETPLAY_JOIN_SESSION_ID, session.sessionId)
                         putExtra(LibretroActivity.EXTRA_NETPLAY_JOIN_HOST_USER_ID, friend.id)
+                        if (preflight.resolvedCorePath != null) {
+                            putExtra(LibretroActivity.EXTRA_CORE_PATH, preflight.resolvedCorePath)
+                        }
                     }
                     _launchEvents.emit(SocialLaunchEvent.LaunchIntent(decorated))
                 }

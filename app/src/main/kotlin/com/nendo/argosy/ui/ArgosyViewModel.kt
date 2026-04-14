@@ -896,8 +896,11 @@ class ArgosyViewModel @Inject constructor(
                 subtitle = "Checking compatibility...",
                 key = "netplay-join"
             )
-            val preflight = netplayPreflightChecker.check(session)
-            notificationManager.dismissByKey("netplay-join")
+            val preflight = try {
+                netplayPreflightChecker.check(session)
+            } finally {
+                notificationManager.dismissByKey("netplay-join")
+            }
             if (preflight !is NetplayPreflightResult.Joinable) {
                 val reason = when (preflight) {
                     NetplayPreflightResult.RomNotFound -> "ROM not found"

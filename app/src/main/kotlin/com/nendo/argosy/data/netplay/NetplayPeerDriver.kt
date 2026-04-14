@@ -126,13 +126,21 @@ class NetplayPeerDriver(
         localInputHistory[delayedFrame] = sampledInput
         sendFrameInput(delayedFrame, sampledInput)
 
-        // No frame leash — both sides run at their natural display rate.
-        // The input delay + rollback mechanism handles any drift.
-        // A leash causes audio underrun/overflow from pause/resume cycles.
+        // Frame-lock: don't step unless we have confirmed remote input.
+        // With 2-frame input delay on LAN, the input is almost always here.
+        // On skip-frames, re-present current video (no audio disruption since
+        // we don't starve the FIFO — we just don't produce new samples).
+        // During startup (remotePeerFrame < 0), skip the gate to avoid deadlock.
+        val hasConfirmed = confirmedRemoteInputs.containsKey(currentFrame)
+        if (!hasConfirmed && remotePeerFrame >= 0) {
+            libretroOps.renderFrameOnly()
+            heartbeat()
+            return
+        }
 
         val localInput = localInputHistory[currentFrame] ?: 0
         val remoteInput = resolveRemoteInput(currentFrame)
-        val predicted = confirmedRemoteInputs[currentFrame] == null
+        val predicted = !hasConfirmed
 
         saveState(currentFrame, remoteInput)
 

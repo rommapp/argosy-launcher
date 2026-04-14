@@ -66,11 +66,13 @@ class NetplayHandshake(
         args: HandshakeArgs,
         onRttBurstStarted: (() -> Unit)? = null
     ): HandshakeResult {
+        Log.d(TAG, "handshake: starting as ${args.role} for session ${args.sessionId}")
         val localCandidates = try {
             candidateGatherer.gatherCandidates(args.localSocket)
         } catch (_: Throwable) {
             emptyList()
         }
+        Log.d(TAG, "handshake: gathered ${localCandidates.size} local candidates")
         if (localCandidates.isEmpty()) {
             reportFailure(args.sessionId, "no_candidates")
             sendTelemetry(TelemetryOutcome.HANDSHAKE_TIMEOUT)
@@ -89,6 +91,7 @@ class NetplayHandshake(
             return HandshakeResult.Failure("peer_candidates_timeout")
         }
         val peerCandidates = peerMessage.payload.candidates
+        Log.d(TAG, "handshake: received ${peerCandidates.size} peer candidates")
         if (peerCandidates.isEmpty()) {
             reportFailure(args.sessionId, "peer_candidates_timeout")
             sendTelemetry(TelemetryOutcome.HANDSHAKE_TIMEOUT)
@@ -103,6 +106,7 @@ class NetplayHandshake(
             return HandshakeResult.Failure("punch_start_timeout")
         }
 
+        Log.d(TAG, "handshake: received punch_start, startAt=${punchStart.payload.startAtUnixMs}")
         val clockSkewMs = punchStart.payload.serverNowUnixMs - System.currentTimeMillis()
         val localStartMs = punchStart.payload.startAtUnixMs - clockSkewMs
         val sleepMs = (localStartMs - System.currentTimeMillis()).coerceAtLeast(0L)
@@ -129,9 +133,11 @@ class NetplayHandshake(
         }
 
         val (latchedCandidate, peerAddress) = latched
+        Log.d(TAG, "handshake: punch succeeded via ${latchedCandidate.type}, starting RTT burst to $peerAddress")
         onRttBurstStarted?.invoke()
         val burst = runRttBurst(transport, peerAddress)
         if (burst == null) {
+            Log.w(TAG, "handshake: RTT burst failed (insufficient samples)")
             transport.close()
             reportFailure(args.sessionId, "candidate_pair_failed")
             sendTelemetry(TelemetryOutcome.CANDIDATE_PAIR_FAILED, latchedCandidate = latchedCandidate.type)
@@ -139,6 +145,7 @@ class NetplayHandshake(
         }
 
         val (medianRttMs, jitterMs) = burst
+        Log.d(TAG, "handshake: RTT burst complete, median=${medianRttMs}ms jitter=${jitterMs}ms")
         if (medianRttMs > QUALITY_MAX_RTT_MS || jitterMs > QUALITY_MAX_JITTER_MS) {
             transport.close()
             socialService.sendNetplayHandshakeResult(
@@ -368,6 +375,7 @@ class NetplayHandshake(
         senderJob.cancel()
         collectorJob.cancel()
 
+        Log.d(TAG, "rttBurst: collected ${samples.size}/$RTT_BURST_COUNT samples (need $RTT_MIN_SAMPLES)")
         if (samples.size < RTT_MIN_SAMPLES) return@coroutineScope null
 
         val sorted = samples.sorted()

@@ -93,8 +93,7 @@ fun InGameMenu(
     ) {
         buildList {
             add("Resume" to InGameMenuAction.Resume)
-            val showManageStates = !isHardcoreMode && statesSupported &&
-                (!isInNetplaySession || netplayRole == NetplayMenuRole.Host)
+            val showManageStates = !isHardcoreMode && statesSupported && !isInNetplaySession
             if (showManageStates) {
                 add("Manage States" to InGameMenuAction.ManageStates)
             }
@@ -201,10 +200,6 @@ fun InGameMenu(
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2
                 )
-
-                if (isInNetplaySession && netplayQuality != null) {
-                    NetplayQualityRow(info = netplayQuality)
-                }
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),

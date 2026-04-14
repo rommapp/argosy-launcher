@@ -831,7 +831,7 @@ fun NetplayBorderHud(
             modifier = Modifier
                 .width(2.dp)
                 .heightIn(min = 36.dp)
-                .background(hostDotColor)
+                .background(accentColor)
         )
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),

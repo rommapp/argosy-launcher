@@ -71,6 +71,24 @@ class NetplayPeerDriverTest {
         )
     }
 
+    private suspend fun makeReady(driver: NetplayPeerDriver) {
+        incomingFlow.emit(
+            NetplayTransport.Incoming(
+                source = peer,
+                packet = NetplayPacket.FrameInput(
+                    frameIndex = -1L,
+                    playerPort = 1,
+                    bitmask = 0,
+                    senderFrame = 0L
+                )
+            )
+        )
+        driver.tick()
+        sentPackets.clear()
+        fakeOps.stepCount = 0
+        fakeOps.setCalls.clear()
+    }
+
     @After
     fun tearDown() {
         unmockkAll()
@@ -79,6 +97,8 @@ class NetplayPeerDriverTest {
     @Test
     fun `tick sends FrameInput and steps simulation`() = runTest(UnconfinedTestDispatcher()) {
         val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         val inputBits = (1 shl NetplayInputShadow.RETRO_DEVICE_ID_JOYPAD_A)
         fakeOps.setFakeInputBitmask(0, inputBits)
@@ -99,6 +119,8 @@ class NetplayPeerDriverTest {
     @Test
     fun `consecutive ticks advance frame counter`() = runTest(UnconfinedTestDispatcher()) {
         val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         driver.tick()
         driver.tick()
@@ -119,6 +141,8 @@ class NetplayPeerDriverTest {
     @Test
     fun `remote FrameInput is applied to remote port`() = runTest(UnconfinedTestDispatcher()) {
         val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         val remoteBitmask = (1 shl NetplayInputShadow.RETRO_DEVICE_ID_JOYPAD_B)
         incomingFlow.emit(
@@ -148,6 +172,8 @@ class NetplayPeerDriverTest {
     @Test
     fun `prediction uses last confirmed remote input`() = runTest(UnconfinedTestDispatcher()) {
         val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         val remoteBitmask = (1 shl NetplayInputShadow.RETRO_DEVICE_ID_JOYPAD_RIGHT)
         incomingFlow.emit(
@@ -183,6 +209,8 @@ class NetplayPeerDriverTest {
             CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()),
             inputDelay = 2
         )
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         val inputBits = (1 shl NetplayInputShadow.RETRO_DEVICE_ID_JOYPAD_A)
         fakeOps.setFakeInputBitmask(0, inputBits)
@@ -206,6 +234,8 @@ class NetplayPeerDriverTest {
     @Test
     fun `rollback replays when prediction is wrong`() = runTest(UnconfinedTestDispatcher()) {
         val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         driver.tick()
         testScheduler.runCurrent()
@@ -240,6 +270,8 @@ class NetplayPeerDriverTest {
     @Test
     fun `redundant inputs in FrameInput are stored`() = runTest(UnconfinedTestDispatcher()) {
         val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         val bitmask0 = 1
         val bitmask1 = 2
@@ -343,6 +375,8 @@ class NetplayPeerDriverTest {
             CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()),
             serializeBytes = largeState
         )
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         incomingFlow.emit(
             NetplayTransport.Incoming(
@@ -365,6 +399,8 @@ class NetplayPeerDriverTest {
     @Test
     fun `snapshot chunk reassembly applies state`() = runTest(UnconfinedTestDispatcher()) {
         val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+        testScheduler.runCurrent()
+        makeReady(driver)
 
         val snapshotBytes = ByteArray(100) { it.toByte() }
         val chunk = NetplayPacket.SnapshotChunk(
@@ -379,8 +415,7 @@ class NetplayPeerDriverTest {
         testScheduler.runCurrent()
 
         io.mockk.verify { retroView.unserializeState(snapshotBytes) }
-        // Snapshot sets currentFrame to 43, then tick() runs one more step -> 44
-        assertEquals(44L, driver.currentFrame)
+        assertEquals(1L, driver.currentFrame)
 
         driver.stop()
     }
@@ -438,6 +473,9 @@ class NetplayPeerDriverTest {
     fun `symmetric driver pair both use FrameInput`() = runTest(UnconfinedTestDispatcher()) {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job())
         val hostDriver = buildDriver(scope, localPort = 0, remotePort = 1)
+        testScheduler.runCurrent()
+        makeReady(hostDriver)
+
         hostDriver.tick()
         testScheduler.runCurrent()
 
@@ -448,6 +486,9 @@ class NetplayPeerDriverTest {
         hostDriver.stop()
 
         val guestDriver = buildDriver(scope, localPort = 1, remotePort = 0)
+        testScheduler.runCurrent()
+        makeReady(guestDriver)
+
         guestDriver.tick()
         testScheduler.runCurrent()
 
@@ -455,5 +496,152 @@ class NetplayPeerDriverTest {
         assertTrue(guestFrameInputs.any { it.playerPort == 1 })
 
         guestDriver.stop()
+    }
+
+    private suspend fun emitRemoteFrameInput(senderFrame: Long, frameIndex: Long = senderFrame, bitmask: Int = 0) {
+        incomingFlow.emit(
+            NetplayTransport.Incoming(
+                source = peer,
+                packet = NetplayPacket.FrameInput(
+                    frameIndex = frameIndex,
+                    playerPort = 1,
+                    bitmask = bitmask,
+                    senderFrame = senderFrame
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `catchup activates when behind by threshold for 500ms`() = runTest(UnconfinedTestDispatcher()) {
+        val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+
+        emitRemoteFrameInput(senderFrame = 0)
+        testScheduler.runCurrent()
+        driver.tick()
+        testScheduler.runCurrent()
+
+        emitRemoteFrameInput(senderFrame = 10, frameIndex = 10)
+        testScheduler.runCurrent()
+
+        fakeOps.stepCount = 0
+        driver.tick()
+        testScheduler.runCurrent()
+
+        assertEquals(
+            "before observation window elapses, only 1 frame should execute",
+            1, fakeOps.stepCount
+        )
+
+        // Simulate 500ms+ passing by calling tick many times
+        // (framePeriodNanos=0 so each tick passes the timer gate)
+        // The observation needs real nanoTime to elapse, so we
+        // advance the remote peer further to sustain the gap
+        Thread.sleep(510)
+        emitRemoteFrameInput(senderFrame = 20, frameIndex = 20)
+        testScheduler.runCurrent()
+
+        fakeOps.stepCount = 0
+        driver.tick()
+        testScheduler.runCurrent()
+
+        assertTrue(
+            "after 500ms observation, catch-up should execute multiple frames per tick, got ${fakeOps.stepCount}",
+            fakeOps.stepCount > 1
+        )
+
+        driver.stop()
+    }
+
+    @Test
+    fun `catchup exits when gap closes`() = runTest(UnconfinedTestDispatcher()) {
+        val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+
+        emitRemoteFrameInput(senderFrame = 0)
+        testScheduler.runCurrent()
+        driver.tick()
+        testScheduler.runCurrent()
+
+        emitRemoteFrameInput(senderFrame = 10, frameIndex = 10)
+        testScheduler.runCurrent()
+
+        // Wait for observation window
+        Thread.sleep(510)
+        emitRemoteFrameInput(senderFrame = 10, frameIndex = 11)
+        testScheduler.runCurrent()
+
+        driver.tick()
+        testScheduler.runCurrent()
+
+        // Now bring remote peer close to local frame
+        val currentFrame = driver.currentFrame
+        emitRemoteFrameInput(senderFrame = currentFrame + 1, frameIndex = currentFrame + 1)
+        testScheduler.runCurrent()
+
+        fakeOps.stepCount = 0
+        driver.tick()
+        testScheduler.runCurrent()
+
+        assertEquals(
+            "after gap closes, should execute exactly 1 frame per tick",
+            1, fakeOps.stepCount
+        )
+
+        driver.stop()
+    }
+
+    @Test
+    fun `hard stall activates at 30-frame gap ahead`() = runTest(UnconfinedTestDispatcher()) {
+        val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+
+        emitRemoteFrameInput(senderFrame = 0)
+        testScheduler.runCurrent()
+
+        // Run enough ticks to get well ahead of remotePeerFrame (stuck at 0)
+        for (i in 0 until 35) {
+            driver.tick()
+            testScheduler.runCurrent()
+        }
+
+        assertTrue(
+            "driver should have advanced past 30",
+            driver.currentFrame > 30
+        )
+
+        fakeOps.stepCount = 0
+        driver.tick()
+        testScheduler.runCurrent()
+
+        assertEquals(
+            "hard stall: no frame execution when 30+ frames ahead",
+            0, fakeOps.stepCount
+        )
+
+        driver.stop()
+    }
+
+    @Test
+    fun `no leash pause at small gap`() = runTest(UnconfinedTestDispatcher()) {
+        val driver = buildDriver(CoroutineScope(UnconfinedTestDispatcher(testScheduler) + Job()))
+
+        emitRemoteFrameInput(senderFrame = 0)
+        testScheduler.runCurrent()
+
+        // Run a few ticks -- gap stays small (remotePeerFrame=0, currentFrame grows)
+        for (i in 0 until 5) {
+            driver.tick()
+            testScheduler.runCurrent()
+        }
+
+        fakeOps.stepCount = 0
+        driver.tick()
+        testScheduler.runCurrent()
+
+        assertEquals(
+            "at small gap (<30), should still execute frames normally",
+            1, fakeOps.stepCount
+        )
+
+        driver.stop()
     }
 }

@@ -24,7 +24,6 @@ class NetplayPeerDriver(
     private val onSessionEnd: (reason: String) -> Unit,
     private val inputDelay: Int = DEFAULT_INPUT_DELAY,
     private val rollbackWindow: Int = DEFAULT_ROLLBACK_WINDOW,
-    private val catchupThresholdFrames: Int = DEFAULT_CATCHUP_THRESHOLD,
     private val desyncCheckInterval: Int = DEFAULT_DESYNC_CHECK_INTERVAL,
     private val libretroOps: LibretroNetplayOps = RealLibretroNetplayOps,
     private val framePeriodNanos: Long = FRAME_PERIOD_NANOS
@@ -62,6 +61,10 @@ class NetplayPeerDriver(
     @Volatile private var lastAppliedSnapshotId: Int = -1
     private var lastAckEmitNanos = 0L
     @Volatile private var catchingUp = false
+
+    private var catchupObservationStartNanos: Long = 0L
+    private var catchupObservationGap: Long = 0L
+    private var catchupActive = false
 
     private val receiveJob: Job = scope.launch {
         transport.incomingPackets.collect { incoming ->
@@ -120,22 +123,37 @@ class NetplayPeerDriver(
             return
         }
 
-        // Peer-frame leash: only the AHEAD side pauses. Can't deadlock
-        // because the behind side always keeps running and sending input.
-        // Must check BEFORE sampling input — otherwise a paused tick samples
-        // and sends input for currentFrame+delay, then the next un-paused tick
-        // re-samples for the same target frame, causing input divergence.
-        if (remotePeerFrame >= 0 && currentFrame > remotePeerFrame + FRAME_LEASH) {
-            // Send a Ping so the peer's RTT stays fresh, but do NOT send
-            // FrameInput — we haven't sampled input for the next frame yet,
-            // and sending stale/zero input would poison the peer's confirmed
-            // input table via dedup (storeConfirmedRemoteInput keeps first).
+        evaluateCatchup(now)
+
+        if (catchupActive) {
+            var extraFrames = 0
+            while (extraFrames < MAX_CATCHUP_FRAMES_PER_TICK) {
+                drainIncoming()
+                val gap = remotePeerFrame - currentFrame
+                if (gap < CATCHUP_EXIT_THRESHOLD) {
+                    exitCatchup()
+                    break
+                }
+                executeFrame()
+                extraFrames++
+            }
+        }
+
+        if (remotePeerFrame >= 0 && currentFrame > remotePeerFrame + HARD_STALL_FRAMES) {
             libretroOps.renderFrameOnly()
             heartbeat()
             return
         }
 
-        // Sample and send local input (tagged for future frame due to delay)
+        executeFrame()
+        heartbeat()
+    }
+
+    fun setStartFrame(frame: Long) {
+        currentFrame = frame
+    }
+
+    private fun executeFrame() {
         val sampledInput = libretroOps.getInputPortBitmask(0)
         val delayedFrame = currentFrame + inputDelay
         localInputHistory[delayedFrame] = sampledInput
@@ -143,7 +161,6 @@ class NetplayPeerDriver(
 
         val localInput = localInputHistory[currentFrame] ?: 0
         val remoteInput = resolveRemoteInput(currentFrame)
-        val predicted = confirmedRemoteInputs[currentFrame] == null
 
         saveState(currentFrame, remoteInput)
 
@@ -160,11 +177,35 @@ class NetplayPeerDriver(
         }
 
         trimHistory()
-        heartbeat()
     }
 
-    fun setStartFrame(frame: Long) {
-        currentFrame = frame
+    private fun evaluateCatchup(now: Long) {
+        if (remotePeerFrame < 0) return
+        val gap = remotePeerFrame - currentFrame
+        if (gap < CATCHUP_THRESHOLD) {
+            if (catchupActive) exitCatchup()
+            catchupObservationStartNanos = 0L
+            return
+        }
+        if (catchupActive) return
+        if (catchupObservationStartNanos == 0L) {
+            catchupObservationStartNanos = now
+            catchupObservationGap = gap
+            return
+        }
+        if (now - catchupObservationStartNanos < CATCHUP_OBSERVATION_NANOS) return
+        if (gap >= catchupObservationGap) {
+            catchupActive = true
+            Log.d(TAG, "catch-up engaged: gap=$gap (was $catchupObservationGap)")
+        }
+        catchupObservationStartNanos = 0L
+    }
+
+    private fun exitCatchup() {
+        catchupActive = false
+        catchupObservationStartNanos = 0L
+        nextTickTargetNanos = System.nanoTime()
+        Log.d(TAG, "catch-up exited: frame=$currentFrame remotePeerFrame=$remotePeerFrame")
     }
 
     suspend fun sendInitialSnapshot(state: ByteArray, frameIndex: Long): Int {
@@ -182,8 +223,8 @@ class NetplayPeerDriver(
         remotePeerFrame = -1L
         for (i in stateRing.indices) stateRing[i] = null
         stateRingHead = 0
-        // Host waits for the guest's first FrameInput before ticking.
-        // ready stays false — it will be set when remotePeerFrame goes >= 0.
+        catchupActive = false
+        catchupObservationStartNanos = 0L
     }
 
     override fun stop() {
@@ -439,6 +480,8 @@ class NetplayPeerDriver(
         nextTickTargetNanos = System.nanoTime()
         ready = true
         catchingUp = false
+        catchupActive = false
+        catchupObservationStartNanos = 0L
     }
 
     private fun handleSnapshotAck(ack: NetplayPacket.SessionControl.SnapshotAck) {
@@ -588,8 +631,7 @@ class NetplayPeerDriver(
     companion object {
         private const val TAG = "NetplayPeerDriver"
         const val DEFAULT_INPUT_DELAY = 2
-        const val DEFAULT_ROLLBACK_WINDOW = 8
-        const val DEFAULT_CATCHUP_THRESHOLD = 30
+        const val DEFAULT_ROLLBACK_WINDOW = 12
         const val DEFAULT_DESYNC_CHECK_INTERVAL = 60
         private const val REDUNDANT_INPUT_COUNT = 3
         private const val HEARTBEAT_INTERVAL_NANOS = 250_000_000L
@@ -600,6 +642,10 @@ class NetplayPeerDriver(
         private const val REASSEMBLY_TIMEOUT_NANOS = 1_000_000_000L
         private const val REASON_CATCHUP = 1
         private const val FRAME_PERIOD_NANOS = 16_666_667L
-        private const val FRAME_LEASH = 3L
+        private const val HARD_STALL_FRAMES = 30L
+        private const val CATCHUP_THRESHOLD = 3L
+        private const val CATCHUP_EXIT_THRESHOLD = 1L
+        private const val CATCHUP_OBSERVATION_NANOS = 500_000_000L
+        private const val MAX_CATCHUP_FRAMES_PER_TICK = 5
     }
 }

@@ -1267,11 +1267,14 @@ class ArgosSocialService @Inject constructor(
                 val presenceObj = obj.optJSONObject("presence")
                 val gameTitle = presenceObj?.optString("game_title", null)
                     ?.takeIf { it.isNotEmpty() }
-                val gameInfo = if (gameTitle != null) {
+                val netplay = presenceObj?.optJSONObject("netplay_session")?.let {
+                    parseNetplaySession(it)
+                }
+                val gameInfo = if (gameTitle != null || netplay != null) {
                     PresenceGameInfo(
-                        title = gameTitle,
+                        title = gameTitle ?: netplay?.gameTitle ?: "",
                         coverThumb = null,
-                        netplaySession = null
+                        netplaySession = netplay
                     )
                 } else null
 

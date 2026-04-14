@@ -94,15 +94,29 @@ class NetplaySessionManager(
         }
     }
 
+    private var sessionIdBeforeDisconnect: String? = null
+
     private val connectionWatchJob: Job = scope.launch {
         socialService.connectionState.collect { state ->
-            if (state is ArgosSocialService.ConnectionState.Disconnected ||
-                state is ArgosSocialService.ConnectionState.Reconnecting) {
-                val current = _sessionState.value
-                if (current !is NetplaySessionState.Idle) {
-                    Log.w(TAG, "WS disconnected during active session ($current), resetting to Idle")
-                    handleSessionEnd("ws_disconnected")
+            when (state) {
+                is ArgosSocialService.ConnectionState.Disconnected,
+                is ArgosSocialService.ConnectionState.Reconnecting -> {
+                    val current = _sessionState.value
+                    if (current !is NetplaySessionState.Idle) {
+                        sessionIdBeforeDisconnect = activeSessionId
+                        Log.w(TAG, "WS disconnected during active session ($current), resetting to Idle")
+                        handleSessionEnd("ws_disconnected")
+                    }
                 }
+                is ArgosSocialService.ConnectionState.Connected -> {
+                    val staleId = sessionIdBeforeDisconnect
+                    if (staleId != null) {
+                        sessionIdBeforeDisconnect = null
+                        Log.d(TAG, "WS reconnected, closing stale session $staleId on server")
+                        socialService.sendNetplayClose(staleId)
+                    }
+                }
+                else -> {}
             }
         }
     }

@@ -79,8 +79,8 @@ open class StunClient {
             InetSocketAddress.createUnresolved("stun.nextcloud.com", 443)
         )
 
-        val PUBLIC_SERVERS: List<InetSocketAddress>
-            get() = PRIMARY_STUN_SERVERS.shuffled() + FALLBACK_STUN_SERVERS
+        fun newShuffledServerList(): List<InetSocketAddress> =
+            PRIMARY_STUN_SERVERS.shuffled() + FALLBACK_STUN_SERVERS
 
         internal fun buildBindingRequest(txid: ByteArray): ByteArray {
             require(txid.size == TRANSACTION_ID_BYTES)

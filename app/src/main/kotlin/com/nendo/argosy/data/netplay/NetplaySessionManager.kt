@@ -279,20 +279,27 @@ class NetplaySessionManager(
         role = null
     }
 
+    private fun isJoinAuthorized(guestUserId: String): Boolean {
+        val reserved = reservedForUserId ?: return false
+        return reserved == guestUserId
+    }
+
     suspend fun reserveSession(reservedForUserId: String?): Boolean {
         val sessionId = activeSessionId ?: return false
         val state = _sessionState.value
         if (state is NetplaySessionState.Idle || state is NetplaySessionState.Ending) {
             return false
         }
+        val previousReservation = this.reservedForUserId
+        this.reservedForUserId = reservedForUserId
         val sent = socialService.sendNetplayReserve(
             NetplayReserveRequestPayload(
                 sessionId = sessionId,
                 reservedForUserId = reservedForUserId
             )
         )
-        if (sent) {
-            this.reservedForUserId = reservedForUserId
+        if (!sent) {
+            this.reservedForUserId = previousReservation
         }
         return sent
     }
@@ -650,12 +657,9 @@ class NetplaySessionManager(
                     )
                     _joinRequestQueue.value = _joinRequestQueue.value + request
                     when (sessionMode) {
-                        NetplaySessionMode.OPEN -> {
-                            scope.launch { acceptJoin(request.fromUserId) }
-                        }
+                        NetplaySessionMode.OPEN -> scope.launch { acceptJoin(request.fromUserId) }
                         NetplaySessionMode.INVITE_ONLY -> {
-                            val reserved = reservedForUserId
-                            if (reserved != null && reserved == request.fromUserId) {
+                            if (isJoinAuthorized(request.fromUserId)) {
                                 scope.launch { acceptJoin(request.fromUserId) }
                             } else {
                                 declineJoin(request.fromUserId, reason = "not_invited")

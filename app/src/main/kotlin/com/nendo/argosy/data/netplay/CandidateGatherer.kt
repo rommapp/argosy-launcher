@@ -13,7 +13,7 @@ import java.net.NetworkInterface
 open class CandidateGatherer(
     private val stunClient: StunClient = StunClient(),
     private val upnpProbe: UpnpProbe = UpnpProbe(),
-    private val stunServers: List<InetSocketAddress> = StunClient.PUBLIC_SERVERS
+    private val stunServers: List<InetSocketAddress> = StunClient.newShuffledServerList()
 ) {
 
     open suspend fun gatherCandidates(localSocket: DatagramSocket): List<NetplayCandidate> = coroutineScope {

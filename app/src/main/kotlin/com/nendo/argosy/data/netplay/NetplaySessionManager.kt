@@ -94,6 +94,19 @@ class NetplaySessionManager(
         }
     }
 
+    private val connectionWatchJob: Job = scope.launch {
+        socialService.connectionState.collect { state ->
+            if (state is ArgosSocialService.ConnectionState.Disconnected ||
+                state is ArgosSocialService.ConnectionState.Reconnecting) {
+                val current = _sessionState.value
+                if (current !is NetplaySessionState.Idle) {
+                    Log.w(TAG, "WS disconnected during active session ($current), resetting to Idle")
+                    handleSessionEnd("ws_disconnected")
+                }
+            }
+        }
+    }
+
     fun currentDriver(): NetplayDriver? = activeDriver
 
     suspend fun openServer(payload: NetplayOpenPayload): Result<String> {
@@ -311,6 +324,7 @@ class NetplaySessionManager(
 
     fun shutdown() {
         inboundJob.cancel()
+        connectionWatchJob.cancel()
         scope.launch { tearDownDriver("shutdown") }
     }
 

@@ -265,16 +265,24 @@ class ArgosSocialService @Inject constructor(
                         val netplayJson = payload.optJSONObject("netplay_session")
                         Log.d(TAG, "PRESENCE_UPDATE: user=${payload.optString("user_id")} hasNetplay=${netplayJson != null} keys=${payload.names()}")
                         val netplay = parseNetplaySession(netplayJson)
+                        val gameFromPayload = payload.optJSONObject("game")?.let { gameJson ->
+                            PresenceGameInfo(
+                                title = gameJson.getString("title"),
+                                coverThumb = gameJson.optString("cover_thumb", null),
+                                netplaySession = netplay
+                            )
+                        }
+                        val gameInfo = gameFromPayload ?: if (netplay != null) {
+                            PresenceGameInfo(
+                                title = netplay.gameTitle,
+                                coverThumb = null,
+                                netplaySession = netplay
+                            )
+                        } else null
                         val update = PresenceUpdate(
                             userId = payload.getString("user_id"),
                             status = payload.getString("status"),
-                            game = payload.optJSONObject("game")?.let { gameJson ->
-                                PresenceGameInfo(
-                                    title = gameJson.getString("title"),
-                                    coverThumb = gameJson.optString("cover_thumb", null),
-                                    netplaySession = netplay
-                                )
-                            },
+                            game = gameInfo,
                             deviceName = payload.optString("device_name", null),
                             timestamp = payload.getString("timestamp")
                         )

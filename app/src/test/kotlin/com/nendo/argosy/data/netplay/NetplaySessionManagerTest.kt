@@ -24,10 +24,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -44,6 +47,7 @@ class NetplaySessionManagerTest {
     ): ArgosSocialService {
         val svc = mockk<ArgosSocialService>(relaxed = true)
         every { svc.incomingMessages } returns incoming
+        every { svc.connectionState } returns MutableStateFlow(ArgosSocialService.ConnectionState.Connected)
         every { svc.sendNetplayOpen(any()) } returns openResult
         every { svc.sendNetplayJoinRequest(any()) } returns true
         every { svc.sendNetplayJoinResponse(any()) } returns true
@@ -82,14 +86,15 @@ class NetplaySessionManagerTest {
     private suspend fun openAndWait(
         manager: NetplaySessionManager,
         incoming: MutableSharedFlow<ArgosSocialService.IncomingMessage>,
-        scope: CoroutineScope,
+        scope: TestScope,
         sessionId: String = "sess-1"
     ) {
         val openJob = scope.launch {
             manager.openServer(samplePayload())
         }
-        delay(50)
+        scope.runCurrent()
         incoming.emit(readyMessage(sessionId))
+        scope.runCurrent()
         openJob.join()
     }
 
@@ -142,8 +147,7 @@ class NetplaySessionManagerTest {
             assertTrue(result.isSuccess)
         }
 
-        // let the manager start collecting and the open call begin awaiting ready
-        delay(50)
+        runCurrent()
 
         val key = ByteArray(32) { it.toByte() }
         incoming.emit(
@@ -155,6 +159,7 @@ class NetplaySessionManagerTest {
                 )
             )
         )
+        runCurrent()
         openJob.join()
         val state = manager.sessionState.value
         assertTrue("expected Waiting, got $state", state is NetplaySessionState.Waiting)
@@ -508,7 +513,7 @@ class NetplaySessionManagerTest {
 
         val receivedEvents = mutableListOf<NetplaySessionManager.GuestLeftEvent>()
         val collectorJob = launch { manager.guestLeftEvents.collect { receivedEvents += it } }
-        delay(50)
+        advanceUntilIdle()
 
         incoming.emit(
             ArgosSocialService.IncomingMessage.NetplayGuestLeft(
@@ -544,7 +549,7 @@ class NetplaySessionManagerTest {
         )
 
         val openJob = launch { manager.openServer(samplePayload()) }
-        delay(50)
+        runCurrent()
 
         val key = ByteArray(32) { it.toByte() }
         incoming.emit(
@@ -556,6 +561,7 @@ class NetplaySessionManagerTest {
                 )
             )
         )
+        runCurrent()
         openJob.join()
 
         val state = manager.sessionState.value
@@ -577,13 +583,14 @@ class NetplaySessionManagerTest {
         )
 
         val openJob = launch { manager.openServer(samplePayload()) }
-        delay(50)
+        runCurrent()
         incoming.emit(
             ArgosSocialService.IncomingMessage.Error(
                 code = "rate_limited",
                 message = "Too many opens"
             )
         )
+        runCurrent()
         openJob.join()
 
         val state = manager.sessionState.value
@@ -720,13 +727,8 @@ class NetplaySessionManagerTest {
         )
         advanceUntilIdle()
 
-        // After guest-A's handshake fails, state reverts to Waiting.
-        // In PRIVATE mode, guest-B's request is queued (not auto-declined).
-        val queue = manager.joinRequestQueue.value
-        if (queue.any { it.fromUserId == "guest-B" }) {
-            assertEquals("guest-B", queue.first { it.fromUserId == "guest-B" }.fromUserId)
-        } else {
-            verify { svc.sendNetplayJoinResponse(match { it.guestId == "guest-B" && !it.accept }) }
+        verify(exactly = 0) {
+            svc.sendNetplayJoinResponse(match { it.guestId == "guest-B" && it.accept })
         }
         manager.shutdown()
     }

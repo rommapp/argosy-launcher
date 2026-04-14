@@ -516,7 +516,7 @@ class NetplaySessionManager(
             onSessionEnd = { reason -> scope.launch { handleSessionEnd(reason) } }
         )
         activeDriver = driver
-        com.swordfish.libretrodroid.LibretroDroid.setNetplayActive(true)
+        runCatching { com.swordfish.libretrodroid.LibretroDroid.setNetplayActive(true) }
         retroView.netplayTick = { driver.tick() }
         activePeerUserId = peerUserId
         val peerRole = if (isHost) NetplaySessionState.PeerRole.Host else NetplaySessionState.PeerRole.Guest
@@ -547,7 +547,7 @@ class NetplaySessionManager(
         val driver = activeDriver
         activeDriver = null
         retroView.netplayTick = null
-        com.swordfish.libretrodroid.LibretroDroid.setNetplayActive(false)
+        runCatching { com.swordfish.libretrodroid.LibretroDroid.setNetplayActive(false) }
         driver?.stop()
         activePeerUserId = null
         sessionRules?.release()

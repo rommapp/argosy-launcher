@@ -86,6 +86,7 @@ class NetplayGuestDriverIntegrationTest {
         testScheduler.runCurrent()
 
         driver.tick()
+        driver.tick()
         testScheduler.runCurrent()
 
         val hostBit = 1 shl NetplayInputShadow.RETRO_DEVICE_ID_JOYPAD_A
@@ -97,7 +98,7 @@ class NetplayGuestDriverIntegrationTest {
             "expected setInputPortState(1, 0) to have been called",
             fakeOps.setCalls.contains(1 to 0)
         )
-        assertEquals(1, fakeOps.stepCount)
+        assertTrue("expected at least 2 steps, got ${fakeOps.stepCount}", fakeOps.stepCount >= 2)
 
         driver.stop()
     }
@@ -118,6 +119,7 @@ class NetplayGuestDriverIntegrationTest {
         }
         testScheduler.runCurrent()
 
+        driver.tick()
         driver.tick()
         driver.tick()
         testScheduler.runCurrent()

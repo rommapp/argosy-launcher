@@ -112,6 +112,7 @@ class NetplayHandshake(
         val sleepMs = (localStartMs - System.currentTimeMillis()).coerceAtLeast(0L)
         if (sleepMs > 0) delay(sleepMs.milliseconds)
 
+        args.localSocket.soTimeout = 0
         val crypto = PacketCrypto.fromMasterKey(args.sessionKey)
         val localDirection = when (args.role) {
             Role.Host -> PacketCrypto.Direction.HostToGuest

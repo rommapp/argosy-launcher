@@ -49,6 +49,8 @@ class NetplaySessionManager(
 
     var sessionMode: NetplaySessionMode = NetplaySessionMode.OPEN
 
+    @Volatile private var reservedForUserId: String? = null
+
     private val _guestLeftEvents = MutableSharedFlow<GuestLeftEvent>(extraBufferCapacity = 8)
     val guestLeftEvents: SharedFlow<GuestLeftEvent> = _guestLeftEvents.asSharedFlow()
 
@@ -283,12 +285,16 @@ class NetplaySessionManager(
         if (state is NetplaySessionState.Idle || state is NetplaySessionState.Ending) {
             return false
         }
-        return socialService.sendNetplayReserve(
+        val sent = socialService.sendNetplayReserve(
             NetplayReserveRequestPayload(
                 sessionId = sessionId,
                 reservedForUserId = reservedForUserId
             )
         )
+        if (sent) {
+            this.reservedForUserId = reservedForUserId
+        }
+        return sent
     }
 
     suspend fun onHostKeepSession() {
@@ -557,6 +563,7 @@ class NetplaySessionManager(
         pendingReadyPayload = null
         initialRttMs = null
         role = null
+        reservedForUserId = null
     }
 
     private suspend fun handleGuestLeft(payload: NetplayGuestLeftPayload) {
@@ -642,8 +649,19 @@ class NetplaySessionManager(
                         fromUsername = message.payload.fromUsername
                     )
                     _joinRequestQueue.value = _joinRequestQueue.value + request
-                    if (sessionMode == NetplaySessionMode.OPEN || sessionMode == NetplaySessionMode.INVITE_ONLY) {
-                        scope.launch { acceptJoin(request.fromUserId) }
+                    when (sessionMode) {
+                        NetplaySessionMode.OPEN -> {
+                            scope.launch { acceptJoin(request.fromUserId) }
+                        }
+                        NetplaySessionMode.INVITE_ONLY -> {
+                            val reserved = reservedForUserId
+                            if (reserved != null && reserved == request.fromUserId) {
+                                scope.launch { acceptJoin(request.fromUserId) }
+                            } else {
+                                declineJoin(request.fromUserId, reason = "not_invited")
+                            }
+                        }
+                        NetplaySessionMode.PRIVATE -> { }
                     }
                 }
             }

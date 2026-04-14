@@ -401,6 +401,11 @@ class NetplayPeerDriver(
     }
 
     private fun storeConfirmedRemoteInput(frame: Long, bitmask: Int) {
+        val cur = currentFrame
+        val minAcceptable = cur - rollbackWindow - REDUNDANT_INPUT_COUNT - MAX_FRAME_LOOKBACK_EXTRA
+        val maxAcceptable = cur + MAX_FRAME_LOOKAHEAD
+        if (frame < minAcceptable || frame > maxAcceptable) return
+        if (confirmedRemoteInputs.size >= MAX_INPUT_MAP_ENTRIES) return
         if (confirmedRemoteInputs.containsKey(frame)) return
         confirmedRemoteInputs[frame] = bitmask
         if (frame > lastConfirmedRemoteFrame) {
@@ -433,6 +438,11 @@ class NetplayPeerDriver(
     }
 
     private fun handleSnapshotChunk(chunk: NetplayPacket.SnapshotChunk) {
+        if (chunk.chunkTotal <= 0 || chunk.chunkTotal > MAX_CHUNKS_PER_SNAPSHOT) return
+        if (chunk.chunkIndex < 0 || chunk.chunkIndex >= chunk.chunkTotal) return
+        val nowNanos = System.nanoTime()
+        reassembly.entries.removeAll { (_, buf) -> nowNanos - buf.createdNanos > REASSEMBLY_TTL_NANOS }
+        if (!reassembly.containsKey(chunk.snapshotId) && reassembly.size >= MAX_CONCURRENT_SNAPSHOTS) return
         if (chunk.snapshotId <= lastAppliedSnapshotId) return
         val activeId = activeReassemblyId
         if (activeId != null && chunk.snapshotId != activeId && chunk.snapshotId > activeId) {
@@ -597,6 +607,7 @@ class NetplayPeerDriver(
         val received = java.util.TreeMap<Int, ByteArray>()
         @Volatile var lastProgressNanos: Long = System.nanoTime()
         @Volatile var snapshotFrame: Long = 0L
+        val createdNanos: Long = System.nanoTime()
 
         @Synchronized
         fun addChunk(chunk: NetplayPacket.SnapshotChunk) {
@@ -647,5 +658,11 @@ class NetplayPeerDriver(
         private const val CATCHUP_EXIT_THRESHOLD = 1L
         private const val CATCHUP_OBSERVATION_NANOS = 500_000_000L
         private const val MAX_CATCHUP_FRAMES_PER_TICK = 5
+        private const val MAX_FRAME_LOOKAHEAD = 300L
+        private const val MAX_FRAME_LOOKBACK_EXTRA = 60L
+        private const val MAX_INPUT_MAP_ENTRIES = 10_000
+        private const val MAX_CHUNKS_PER_SNAPSHOT = 2048
+        private const val MAX_CONCURRENT_SNAPSHOTS = 2
+        private const val REASSEMBLY_TTL_NANOS = 30_000_000_000L
     }
 }

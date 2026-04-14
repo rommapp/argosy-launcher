@@ -144,6 +144,15 @@ void LibretroDroid::setControllerType(unsigned int port, unsigned int type) {
 }
 
 bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
+    size_t expectedSize = core->retro_serialize_size();
+    if (expectedSize == 0) {
+        LOGE("unserializeState: core reports no serialization support");
+        return false;
+    }
+    if (size != expectedSize) {
+        LOGE("unserializeState: size mismatch (got %zu, expected %zu)", size, expectedSize);
+        return false;
+    }
     bool result = core->retro_unserialize(data, size);
     if (result && video && video->isHWAccelerated()) {
         auto contextReset = Environment::getInstance().getHwContextReset();

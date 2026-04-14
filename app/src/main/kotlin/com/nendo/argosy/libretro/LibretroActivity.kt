@@ -218,6 +218,7 @@ class LibretroActivity : ComponentActivity() {
     private var pendingNetplayJoin: PendingNetplayJoin? = null
     private var isGuestJoinedSession: Boolean = false
     private var guestSessionEverStarted: Boolean = false
+    private var netplayScratchDir: File? = null
 
     private data class PendingNetplayJoin(val sessionId: String, val hostUserId: String)
     private var netplaySessionRules: NetplaySessionRules? = null
@@ -293,6 +294,7 @@ class LibretroActivity : ComponentActivity() {
             // SRAM is loaded from the user's real saves and nothing written
             // during the session leaks back into their persistent store.
             val scratch = File(cacheDir, "netplay_guest/${System.currentTimeMillis()}")
+            netplayScratchDir = scratch
             savesDir = File(scratch, "saves").apply { mkdirs() }
             statesDir = File(scratch, "states").apply { mkdirs() }
         } else {
@@ -2045,6 +2047,8 @@ class LibretroActivity : ComponentActivity() {
         }
         netplaySessionManager?.shutdown()
         netplaySessionManager = null
+        netplayScratchDir?.takeIf { it.exists() }?.deleteRecursively()
+        netplayScratchDir = null
         raSession?.destroy()
         if (isFinishing && gameId != -1L) {
             com.nendo.argosy.DualScreenManagerHolder.instance

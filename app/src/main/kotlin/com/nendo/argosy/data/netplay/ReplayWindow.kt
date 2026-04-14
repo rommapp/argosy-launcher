@@ -39,6 +39,6 @@ class ReplayWindow(private val capacity: Int = DEFAULT_CAPACITY) {
     }
 
     companion object {
-        const val DEFAULT_CAPACITY = 1024
+        const val DEFAULT_CAPACITY = 8192
     }
 }

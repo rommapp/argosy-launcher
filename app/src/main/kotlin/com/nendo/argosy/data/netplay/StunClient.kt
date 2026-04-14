@@ -65,12 +65,22 @@ open class StunClient {
         private const val ATTR_XOR_MAPPED_ADDRESS: Short = 0x0020
         private const val STUN_HEADER_BYTES = 20
 
-        val PUBLIC_SERVERS: List<InetSocketAddress> = listOf(
+        val PRIMARY_STUN_SERVERS: List<InetSocketAddress> = listOf(
             InetSocketAddress.createUnresolved("stun.l.google.com", 19302),
             InetSocketAddress.createUnresolved("stun1.l.google.com", 19302),
             InetSocketAddress.createUnresolved("stun2.l.google.com", 19302),
-            InetSocketAddress.createUnresolved("stun.cloudflare.com", 3478)
+            InetSocketAddress.createUnresolved("stun3.l.google.com", 19302),
+            InetSocketAddress.createUnresolved("stun4.l.google.com", 19302),
+            InetSocketAddress.createUnresolved("stun.cloudflare.com", 3478),
+            InetSocketAddress.createUnresolved("global.stun.twilio.com", 3478)
         )
+
+        val FALLBACK_STUN_SERVERS: List<InetSocketAddress> = listOf(
+            InetSocketAddress.createUnresolved("stun.nextcloud.com", 443)
+        )
+
+        val PUBLIC_SERVERS: List<InetSocketAddress>
+            get() = PRIMARY_STUN_SERVERS.shuffled() + FALLBACK_STUN_SERVERS
 
         internal fun buildBindingRequest(txid: ByteArray): ByteArray {
             require(txid.size == TRANSACTION_ID_BYTES)

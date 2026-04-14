@@ -323,6 +323,8 @@ class NetplayGuestDriver(
     }
 
     private fun handleInputBundle(bundle: NetplayPacket.InputBundle) {
+        if (bundle.frameIndex > lastKnownHostFrame + MAX_FRAME_LOOKAHEAD) return
+        if (pendingBundles.size >= MAX_INPUT_MAP_ENTRIES) return
         if (bundle.frameIndex > lastKnownHostFrame) lastKnownHostFrame = bundle.frameIndex
         val oldestRollbackFrame = if (rollbackBuffer.isEmpty()) currentFrame
             else rollbackBuffer[0].frame
@@ -331,6 +333,11 @@ class NetplayGuestDriver(
     }
 
     private fun handleSnapshotChunk(chunk: NetplayPacket.SnapshotChunk) {
+        if (chunk.chunkTotal <= 0 || chunk.chunkTotal > MAX_CHUNKS_PER_SNAPSHOT) return
+        if (chunk.chunkIndex < 0 || chunk.chunkIndex >= chunk.chunkTotal) return
+        val nowNanos = System.nanoTime()
+        reassembly.entries.removeAll { (_, buf) -> nowNanos - buf.createdNanos > REASSEMBLY_TTL_NANOS }
+        if (!reassembly.containsKey(chunk.snapshotId) && reassembly.size >= MAX_CONCURRENT_SNAPSHOTS) return
         if (chunk.snapshotId <= lastAppliedSnapshotId) return
         val activeId = activeReassemblyId
         if (activeId != null && chunk.snapshotId != activeId && chunk.snapshotId > activeId) {
@@ -417,6 +424,7 @@ class NetplayGuestDriver(
         val received = TreeMap<Int, ByteArray>()
         @Volatile var lastProgressNanos: Long = System.nanoTime()
         @Volatile var snapshotFrame: Long = 0L
+        val createdNanos: Long = System.nanoTime()
 
         @Synchronized
         fun addChunk(chunk: NetplayPacket.SnapshotChunk) {
@@ -461,5 +469,11 @@ class NetplayGuestDriver(
         private const val BURST_THRESHOLD = 10
         private const val ROLLBACK_DEPTH = 8
         const val DEFAULT_CATCHUP_THRESHOLD = 30
+        private const val MAX_FRAME_LOOKAHEAD = 300L
+        private const val MAX_FRAME_LOOKBACK_EXTRA = 60L
+        private const val MAX_INPUT_MAP_ENTRIES = 10_000
+        private const val MAX_CHUNKS_PER_SNAPSHOT = 2048
+        private const val MAX_CONCURRENT_SNAPSHOTS = 2
+        private const val REASSEMBLY_TTL_NANOS = 30_000_000_000L
     }
 }

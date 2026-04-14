@@ -54,6 +54,7 @@ class NetplayTransport(
     }
 
     private suspend fun receiveLoop() {
+        socket.soTimeout = 0
         val buffer = ByteArray(MAX_DATAGRAM_SIZE)
         val dgram = DatagramPacket(buffer, buffer.size)
         while (scopeActive()) {
@@ -61,6 +62,8 @@ class NetplayTransport(
                 socket.receive(dgram)
             } catch (_: SocketException) {
                 return
+            } catch (_: java.net.SocketTimeoutException) {
+                continue
             } catch (t: Throwable) {
                 if (!socket.isClosed) Log.d(TAG, "receive error: ${t.message}")
                 return

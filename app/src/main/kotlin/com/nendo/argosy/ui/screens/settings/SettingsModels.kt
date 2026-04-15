@@ -691,6 +691,7 @@ data class SteamSettingsState(
     // Install volume
     val steamInstallVolume: String? = null,
     val availableVolumes: List<com.nendo.argosy.data.steam.SteamInstallVolume> = emptyList(),
+    val installedGamesByVolume: Map<String, Int> = emptyMap(),
 
     // Steam connection
     val connectionState: com.nendo.argosy.data.steam.SteamConnectionState =

@@ -88,7 +88,8 @@ data class QueuedSteamDownload(
     val appId: Long,
     val gameName: String,
     val coverPath: String?,
-    val appInfo: KeyValue?
+    val appInfo: KeyValue?,
+    val targetInstallPath: String? = null
 )
 
 @Singleton
@@ -201,11 +202,11 @@ class SteamContentManager @Inject constructor(
 
             val restPaused = paused.drop(1)
             _downloadQueue.value = (restPaused + queued).map { entity ->
-                QueuedSteamDownload(entity.appId, entity.gameName, entity.coverPath, null)
+                QueuedSteamDownload(entity.appId, entity.gameName, entity.coverPath, null, entity.installPath)
             }
         } else if (queued.isNotEmpty()) {
             _downloadQueue.value = queued.map { entity ->
-                QueuedSteamDownload(entity.appId, entity.gameName, entity.coverPath, null)
+                QueuedSteamDownload(entity.appId, entity.gameName, entity.coverPath, null, entity.installPath)
             }
         }
 
@@ -528,21 +529,29 @@ class SteamContentManager @Inject constructor(
 
     private fun persistQueueEntry(appId: Long, gameName: String, coverPath: String?) {
         scope.launch(Dispatchers.IO) {
+            val snapshotPath = runCatching {
+                pathResolver.snapshotInstallDirAtEnqueue(appId, null).absolutePath
+            }.getOrNull()
             try {
                 steamDownloadQueueDao.insert(SteamDownloadQueueEntity(
                     appId = appId,
                     gameName = gameName,
                     coverPath = coverPath,
                     installDir = null,
-                    installPath = null,
+                    installPath = snapshotPath,
                     totalBytes = 0L,
                     bytesDownloaded = 0L,
                     state = SteamDownloadDbState.QUEUED.name,
                     errorReason = null
                 ))
-                Log.d(TAG, "Persisted queue entry: $gameName")
+                Log.d(TAG, "Persisted queue entry: $gameName -> ${snapshotPath ?: "<resolve later>"}")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to persist queue entry for $gameName", e)
+            }
+            if (snapshotPath != null) {
+                _downloadQueue.value = _downloadQueue.value.map {
+                    if (it.appId == appId && it.targetInstallPath == null) it.copy(targetInstallPath = snapshotPath) else it
+                }
             }
         }
     }
@@ -563,13 +572,16 @@ class SteamContentManager @Inject constructor(
 
         val installDirName = appInfo["config"]?.get("installdir")?.asString()
         scope.launch(Dispatchers.IO) {
+            val snapshotPath = runCatching {
+                pathResolver.snapshotInstallDirAtEnqueue(appId, installDirName).absolutePath
+            }.getOrNull()
             try {
                 steamDownloadQueueDao.insert(SteamDownloadQueueEntity(
                     appId = appId,
                     gameName = gameName,
                     coverPath = coverPath,
                     installDir = installDirName,
-                    installPath = null,
+                    installPath = snapshotPath,
                     totalBytes = 0L,
                     bytesDownloaded = 0L,
                     state = SteamDownloadDbState.QUEUED.name,
@@ -578,14 +590,13 @@ class SteamContentManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to persist queue entry for $gameName", e)
             }
-        }
+            val queued = QueuedSteamDownload(appId, gameName, coverPath, appInfo, snapshotPath)
+            _downloadQueue.value = _downloadQueue.value + queued
+            Log.d(TAG, "Queued Steam download: $gameName -> ${snapshotPath ?: "<resolve later>"} (queue size: ${_downloadQueue.value.size})")
 
-        val queued = QueuedSteamDownload(appId, gameName, coverPath, appInfo)
-        _downloadQueue.value = _downloadQueue.value + queued
-        Log.d(TAG, "Queued Steam download: $gameName (queue size: ${_downloadQueue.value.size})")
-
-        if (currentDownloadJob?.isActive != true) {
-            processNextInQueue()
+            if (currentDownloadJob?.isActive != true) {
+                processNextInQueue()
+            }
         }
     }
 
@@ -641,7 +652,7 @@ class SteamContentManager @Inject constructor(
                 steamDownloadQueueDao.updateState(next.appId, SteamDownloadDbState.PAUSED.name)
                 return@launch
             }
-            startDownload(next.appId, next.gameName, appInfo, next.coverPath)
+            startDownload(next.appId, next.gameName, appInfo, next.coverPath, next.targetInstallPath)
         }
     }
 
@@ -658,7 +669,8 @@ class SteamContentManager @Inject constructor(
         appId: Long,
         gameName: String,
         appInfo: KeyValue,
-        coverPath: String?
+        coverPath: String?,
+        snapshottedInstallPath: String? = null
     ) {
         val client = steamClient
         if (client == null) {
@@ -679,12 +691,13 @@ class SteamContentManager @Inject constructor(
             try {
                 _downloadState.value = SteamDownloadState.Preparing(appId, gameName)
 
-                // Resolve destination -- download directly to final path
+                // Resolve destination: honor enqueue-time snapshot so mid-queue preference
+                // changes don't redirect an in-flight download. New downloads re-snapshot.
                 val steamInstallDir = appInfo["config"]?.get("installdir")?.asString()
-                val installDir = if (steamInstallDir != null) {
-                    pathResolver.getInstallDirByName(steamInstallDir)
-                } else {
-                    pathResolver.getInstallDir(appId)
+                val installDir = when {
+                    snapshottedInstallPath != null -> File(snapshottedInstallPath)
+                    steamInstallDir != null -> pathResolver.getInstallDirByName(steamInstallDir)
+                    else -> pathResolver.getInstallDir(appId)
                 }
                 installDir.mkdirs()
                 if (!installDir.exists() || !installDir.canWrite()) {

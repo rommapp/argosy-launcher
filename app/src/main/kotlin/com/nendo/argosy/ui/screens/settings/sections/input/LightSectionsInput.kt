@@ -159,7 +159,14 @@ internal class LightSectionsInput(
     }
 
     private fun handleSteamLeftRight(direction: Int): InputResult {
-        return InputResult.UNHANDLED
+        val state = viewModel.uiState.value
+        return when (steamItemAtFocusIndex(state.focusedIndex, state.steam)) {
+            SteamItem.InstallPath -> {
+                viewModel.cycleSteamInstallVolume(direction)
+                InputResult.HANDLED
+            }
+            else -> InputResult.UNHANDLED
+        }
     }
 
     private fun handleBuiltinEmulatorLeftRight(direction: Int): InputResult {

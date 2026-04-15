@@ -65,7 +65,8 @@ internal data class SteamLayoutState(
     val isLoggedIn: Boolean,
     val gnInstalled: Boolean,
     val gnConfigured: Boolean,
-    val isSyncing: Boolean
+    val isSyncing: Boolean,
+    val hasInstalledGames: Boolean
 )
 
 internal sealed class SteamItem(
@@ -90,6 +91,8 @@ internal sealed class SteamItem(
         visibleWhen = { it.gnInstalled && !it.gnConfigured })
     data object InstallPath : SteamItem("installPath", "setup",
         visibleWhen = { it.gnConfigured })
+    data object InstallTriage : SteamItem("installTriage", "setup",
+        visibleWhen = { it.gnConfigured && it.hasInstalledGames })
     data object AccountInfo : SteamItem("accountInfo", "account")
     data object SyncLibrary : SteamItem("syncLibrary", "library")
     data object AddManual : SteamItem("addManual", "library")
@@ -106,7 +109,7 @@ internal sealed class SteamItem(
         private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
 
         val ALL: List<SteamItem> = listOf(
-            SetupHeader, GnStatus, GnInstall, GnStorageWarning, InstallPath,
+            SetupHeader, GnStatus, GnInstall, GnStorageWarning, InstallPath, InstallTriage,
             AccountSpacer, AccountHeader, AccountInfo,
             LibrarySpacer, LibraryHeader, SyncLibrary, AddManual,
             DangerSpacer, DangerHeader, Disconnect, ResetLibrary
@@ -148,7 +151,8 @@ private fun steamLayoutState(steam: SteamSettingsState) = SteamLayoutState(
     gnConfigured = steam.gnStoragePath != null,
     isSyncing = steam.syncState !is LibrarySyncState.Idle &&
         steam.syncState !is LibrarySyncState.Complete &&
-        steam.syncState !is LibrarySyncState.Error
+        steam.syncState !is LibrarySyncState.Error,
+    hasInstalledGames = steam.installedGamesByVolume.isNotEmpty()
 )
 
 @Composable
@@ -236,6 +240,18 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         subtitle = subtitle,
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleSteamInstallVolume() }
+                    )
+                }
+
+                SteamItem.InstallTriage -> {
+                    val summary = steam.installedGamesByVolume.entries.joinToString(", ") { (label, count) ->
+                        "$label ($count)"
+                    }
+                    InfoPreference(
+                        title = "Installed Games",
+                        value = summary,
+                        icon = Icons.Default.CheckCircle,
+                        isFocused = isFocused(item)
                     )
                 }
 
@@ -666,8 +682,8 @@ private fun installVolumeLabel(
     selectedVolume: String?,
     volumes: List<com.nendo.argosy.data.steam.SteamInstallVolume>
 ): String {
-    if (selectedVolume == null) return "Auto"
-    return volumes.find { it.path == selectedVolume }?.label ?: "Auto"
+    if (selectedVolume == null) return "Automatic"
+    return volumes.find { it.target.toPreferenceValue() == selectedVolume }?.label ?: "Automatic"
 }
 
 private fun installVolumeSubtitle(
@@ -675,14 +691,14 @@ private fun installVolumeSubtitle(
     volumes: List<com.nendo.argosy.data.steam.SteamInstallVolume>
 ): String? {
     val vol = if (selectedVolume == null) {
-        volumes.find { it.hasGnPath }
+        volumes.firstOrNull { it.target is com.nendo.argosy.data.steam.SteamInstallTarget.CustomVolume && it.hasGnPath }
+            ?: volumes.firstOrNull { it.target is com.nendo.argosy.data.steam.SteamInstallTarget.Internal && it.hasGnPath }
     } else {
-        volumes.find { it.path == selectedVolume }
+        volumes.find { it.target.toPreferenceValue() == selectedVolume }
     } ?: return null
-    val freeMb = vol.freeBytes / (1024 * 1024)
-    val freeGb = freeMb / 1024
-    val freeLabel = if (freeGb > 0) "${freeGb}GB free" else "${freeMb}MB free"
-    return if (selectedVolume == null) "Auto-detect (${vol.label}, $freeLabel)" else freeLabel
+    if (!vol.hasGnPath) return "Not writable"
+    val freeGb = vol.freeBytes / (1024L * 1024L * 1024L)
+    return if (selectedVolume == null) "${vol.label} · ${freeGb}GB free" else "${freeGb}GB free"
 }
 
 @Composable

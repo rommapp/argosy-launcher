@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.steam
 
 import android.content.Context
+import android.os.Environment
 import android.os.StatFs
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
@@ -22,7 +23,8 @@ data class SteamInstallVolume(
     val path: String,
     val label: String,
     val freeBytes: Long,
-    val hasGnPath: Boolean
+    val hasGnPath: Boolean,
+    val target: SteamInstallTarget
 )
 
 @Singleton
@@ -31,8 +33,33 @@ class SteamPathResolver @Inject constructor(
     private val gameDao: GameDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val androidDataAccessor: AndroidDataAccessor,
-    private val storageVolumeDetector: StorageVolumeDetector
+    private val storageVolumeDetector: StorageVolumeDetector,
+    private val gnInstallProbe: GnInstallProbe
 ) {
+
+    suspend fun getConfiguredTarget(): SteamInstallTarget {
+        val raw = preferencesRepository.userPreferences.first().steamInstallVolume
+        return SteamInstallTarget.fromPreferenceValue(raw)
+    }
+
+    fun resolveBaseForTarget(target: SteamInstallTarget): String? {
+        val result = gnInstallProbe.probe(target)
+        val pkgRoot = result.resolvedPackageRoot ?: fallbackPackageRoot(target)
+        if (!result.writable) {
+            Log.w(TAG, "Target $target probe not writable; using $pkgRoot anyway (explicit selection)")
+        }
+        return pkgRoot?.let { "$it/files" }
+    }
+
+    private fun fallbackPackageRoot(target: SteamInstallTarget): String? {
+        val root = when (target) {
+            is SteamInstallTarget.Internal -> Environment.getExternalStorageDirectory().absolutePath
+            is SteamInstallTarget.CustomVolume -> target.path
+            is SteamInstallTarget.ExternalAuto -> return null
+        }
+        val raw = "$root/Android/data/$GN_PACKAGE"
+        return if (target is SteamInstallTarget.Internal) androidDataAccessor.transformPath(raw) else raw
+    }
 
     suspend fun getInstallDirByName(dirName: String): File {
         val configuredBase = getConfiguredInstallBase()
@@ -48,6 +75,10 @@ class SteamPathResolver @Inject constructor(
             ?: externalFilesDir()
             ?: internalFilesDir()
         return File(basePath, "$STEAM_PLATFORM_DIR/$dirName")
+    }
+
+    suspend fun snapshotInstallDirAtEnqueue(appId: Long, steamInstallDir: String?): File {
+        return if (steamInstallDir != null) getInstallDirByName(steamInstallDir) else getInstallDir(appId)
     }
 
     suspend fun getInstallDir(appId: Long): File {
@@ -197,32 +228,36 @@ class SteamPathResolver @Inject constructor(
     }
 
     fun getAvailableVolumes(): List<SteamInstallVolume> {
-        val volumes = storageVolumeDetector.detectStorageVolumes()
-        return volumes.map { vol ->
-            SteamInstallVolume(
-                path = vol.path,
-                label = vol.displayName,
-                freeBytes = vol.availableBytes,
-                hasGnPath = hasGnSteamPath(vol.path)
-            )
-        }
-    }
-
-    private fun hasGnSteamPath(volumeRoot: String): Boolean {
-        val steamappsPath = "$volumeRoot/Android/data/$GN_PACKAGE/files/Steam/steamapps"
-        return File(steamappsPath).exists() || androidDataAccessor.exists(steamappsPath)
+        val primaryPath = Environment.getExternalStorageDirectory().absolutePath
+        // NOTE: removed Internal (/storage/emulated/0/Android/data/app.gamenative/) from
+        // selectable targets. GN's library scan (SteamService.allInstallPaths) skips the
+        // primary external volume explicitly and scans /data/user/0/app.gamenative/ for
+        // "internal" -- which is private app data we cannot write to. Files we drop on
+        // primary external are orphaned from GN's POV. Only non-primary removable volumes
+        // round-trip cleanly through GN. Re-enable once GN gains an external scan path
+        // we can target, or we find a GN-compatible internal write location.
+        return storageVolumeDetector.detectStorageVolumes()
+            .filter { it.path != primaryPath }
+            .map { vol ->
+                val target = SteamInstallTarget.CustomVolume(vol.path)
+                SteamInstallVolume(
+                    path = vol.path,
+                    label = vol.displayName,
+                    freeBytes = vol.availableBytes,
+                    hasGnPath = gnInstallProbe.probe(target).writable,
+                    target = target
+                )
+            }
     }
 
     private suspend fun getConfiguredInstallBase(): String? {
-        val volume = preferencesRepository.userPreferences.first().steamInstallVolume ?: return null
-        val basePath = "$volume/Android/data/$GN_PACKAGE/files"
-        val steamappsPath = "$basePath/Steam/steamapps"
-
-        if (File(steamappsPath).exists()) return basePath
-        if (androidDataAccessor.exists(steamappsPath)) return androidDataAccessor.transformPath(basePath)
-
-        Log.w(TAG, "Configured volume $volume not accessible, falling back to auto-detect")
-        return null
+        val target = getConfiguredTarget()
+        if (target is SteamInstallTarget.ExternalAuto) return null
+        val base = resolveBaseForTarget(target)
+        if (base == null) {
+            Log.w(TAG, "Configured target $target has no resolvable package root; will NOT fall back to auto-detect")
+        }
+        return base
     }
 
     private suspend fun findGnInstallPath(appId: Long): File? {

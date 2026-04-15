@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.SteamIgdbResolver
@@ -61,7 +62,8 @@ class SteamSettingsDelegate @Inject constructor(
     private val emulatorUpdateRepository: EmulatorUpdateRepository,
     private val steamIgdbResolver: SteamIgdbResolver,
     private val preferencesRepository: UserPreferencesRepository,
-    private val steamPathResolver: SteamPathResolver
+    private val steamPathResolver: SteamPathResolver,
+    private val gameDao: GameDao
 ) {
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
@@ -150,6 +152,7 @@ class SteamSettingsDelegate @Inject constructor(
 
             val prefs = preferencesRepository.userPreferences.first()
             val volumes = withContext(Dispatchers.IO) { steamPathResolver.getAvailableVolumes() }
+            val installedByVolume = withContext(Dispatchers.IO) { loadInstalledSteamSummary(volumes) }
 
             _state.update {
                 it.copy(
@@ -159,7 +162,8 @@ class SteamSettingsDelegate @Inject constructor(
                     installedLaunchers = installedLaunchers,
                     notInstalledLaunchers = notInstalledLaunchers,
                     steamInstallVolume = prefs.steamInstallVolume,
-                    availableVolumes = volumes
+                    availableVolumes = volumes,
+                    installedGamesByVolume = installedByVolume
                 )
             }
 
@@ -181,19 +185,28 @@ class SteamSettingsDelegate @Inject constructor(
         }
     }
 
-    fun cycleSteamInstallVolume(scope: CoroutineScope) {
+    fun cycleSteamInstallVolume(scope: CoroutineScope, direction: Int = 1) {
         val current = _state.value.steamInstallVolume
-        val volumes = _state.value.availableVolumes.filter { it.hasGnPath }
-        if (volumes.isEmpty()) return
+        val values = listOf<String?>(null) + _state.value.availableVolumes.map { it.target.toPreferenceValue() }
+        if (values.size <= 1) return
 
-        val paths = listOf<String?>(null) + volumes.map { it.path }
-        val currentIndex = paths.indexOf(current)
-        val nextIndex = (currentIndex + 1) % paths.size
-        val nextVolume = paths[nextIndex]
+        val currentIndex = values.indexOf(current).coerceAtLeast(0)
+        val step = if (direction >= 0) 1 else -1
+        val nextIndex = ((currentIndex + step) % values.size + values.size) % values.size
+        val nextVolume = values[nextIndex]
 
         scope.launch {
+            val active = steamContentManager.hasActiveSteamDownload()
+            val queued = steamContentManager.downloadQueue.value.size
             preferencesRepository.setSteamInstallVolume(nextVolume)
             _state.update { it.copy(steamInstallVolume = nextVolume) }
+            val inFlight = (if (active) 1 else 0) + queued
+            if (inFlight > 0) {
+                notificationManager.show(
+                    title = "Install path changed",
+                    subtitle = "$inFlight download(s) in progress will finish at their original location. New downloads use the new target."
+                )
+            }
         }
     }
 
@@ -571,6 +584,21 @@ class SteamSettingsDelegate @Inject constructor(
                 }
             }
         }
+    }
+
+    private suspend fun loadInstalledSteamSummary(
+        volumes: List<com.nendo.argosy.data.steam.SteamInstallVolume>
+    ): Map<String, Int> {
+        val games = gameDao.getInstalledSteamGames()
+        if (games.isEmpty()) return emptyMap()
+        val buckets = linkedMapOf<String, Int>()
+        val volumesByPath = volumes.sortedByDescending { it.path.length }
+        for (game in games) {
+            val path = game.localPath ?: continue
+            val label = volumesByPath.firstOrNull { path.startsWith(it.path) }?.label ?: "Other"
+            buckets[label] = (buckets[label] ?: 0) + 1
+        }
+        return buckets
     }
 
     private fun isGnInstalled(context: Context): Boolean {

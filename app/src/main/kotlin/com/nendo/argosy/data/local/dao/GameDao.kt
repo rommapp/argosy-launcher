@@ -671,6 +671,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE source = 'STEAM' AND steamAppId IS NOT NULL")
     suspend fun getAllSteamGamesForResolve(): List<GameEntity>
 
+    @Query("SELECT * FROM games WHERE source = 'STEAM' AND localPath IS NOT NULL")
+    suspend fun getInstalledSteamGames(): List<GameEntity>
+
 }
 
 data class SearchCandidate(

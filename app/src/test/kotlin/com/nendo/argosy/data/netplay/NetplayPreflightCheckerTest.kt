@@ -124,7 +124,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `game not in library returns RomNotFound`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns null
+            coEvery { getAllByIgdbId(1234L) } returns emptyList()
         }
         val fileDao = mockk<GameFileDao>()
         val result = checker(gameDao, fileDao).check(session())
@@ -134,7 +134,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `no files returns RomNotFound`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns game()
+            coEvery { getAllByIgdbId(1234L) } returns listOf(game())
         }
         val fileDao = mockk<GameFileDao> {
             coEvery { getFilesForGame(10L) } returns emptyList()
@@ -146,7 +146,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `hash mismatch on cached hash returns RomVersionMismatch`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns game()
+            coEvery { getAllByIgdbId(1234L) } returns listOf(game())
         }
         val fileDao = mockk<GameFileDao> {
             coEvery { getFilesForGame(10L) } returns listOf(
@@ -160,7 +160,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `joinable when cached hash matches and core hash matches`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns game()
+            coEvery { getAllByIgdbId(1234L) } returns listOf(game())
         }
         val fileDao = mockk<GameFileDao> {
             coEvery { getFilesForGame(10L) } returns listOf(
@@ -175,7 +175,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `on-demand hash computation persists and matches`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns game()
+            coEvery { getAllByIgdbId(1234L) } returns listOf(game())
         }
         val fileDao = mockk<GameFileDao>(relaxUnitFun = true) {
             coEvery { getFilesForGame(10L) } returns listOf(
@@ -198,7 +198,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `core hash mismatch returns CoreVersionMismatch`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns game()
+            coEvery { getAllByIgdbId(1234L) } returns listOf(game())
         }
         val fileDao = mockk<GameFileDao> {
             coEvery { getFilesForGame(10L) } returns listOf(
@@ -216,7 +216,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `missing local core hash returns CoreVersionMismatch`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns game()
+            coEvery { getAllByIgdbId(1234L) } returns listOf(game())
         }
         val fileDao = mockk<GameFileDao> {
             coEvery { getFilesForGame(10L) } returns listOf(
@@ -234,7 +234,7 @@ class NetplayPreflightCheckerTest {
     @Test
     fun `uncomputable hash falls through to RomNotFound`() = runTest {
         val gameDao = mockk<GameDao> {
-            coEvery { getByIgdbId(1234L) } returns game()
+            coEvery { getAllByIgdbId(1234L) } returns listOf(game())
         }
         val fileDao = mockk<GameFileDao> {
             coEvery { getFilesForGame(10L) } returns listOf(

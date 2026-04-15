@@ -231,7 +231,13 @@ class GameSessionService : Service() {
             return
         }
 
-        var inForeground = permissionHelper.isPackageInForeground(this, pkg, withinMs = EMULATOR_FOREGROUND_FRESHNESS_MS)
+        val currentFg = permissionHelper.currentForegroundPackage(this)
+        var inForeground = when {
+            currentFg == null -> wasEmulatorInForeground
+            currentFg == pkg -> true
+            SYSTEM_FOREGROUND_PACKAGES.any { currentFg.startsWith(it) } -> wasEmulatorInForeground
+            else -> false
+        }
 
         if (inForeground && emulatorDisplayId != android.view.Display.DEFAULT_DISPLAY) {
             if (!isProcessRunning(pkg)) {
@@ -241,10 +247,10 @@ class GameSessionService : Service() {
         }
 
         if (inForeground && !wasEmulatorInForeground) {
-            Logger.debug(TAG, "Emulator $pkg returned to foreground")
+            Logger.debug(TAG, "Emulator $pkg returned to foreground (currentFg=$currentFg)")
             playSessionTracker.onEmulatorForegrounded()
         } else if (!inForeground && wasEmulatorInForeground) {
-            Logger.debug(TAG, "Emulator $pkg left foreground")
+            Logger.debug(TAG, "Emulator $pkg left foreground (currentFg=$currentFg)")
             playSessionTracker.onEmulatorBackgrounded()
         }
         wasEmulatorInForeground = inForeground
@@ -728,7 +734,15 @@ class GameSessionService : Service() {
         private const val CACHE_DEBOUNCE_MS = 250L
         private const val EMULATOR_MONITOR_INITIAL_DELAY_MS = 5_000L
         private const val EMULATOR_POLL_INTERVAL_MS = 5_000L
-        private const val EMULATOR_FOREGROUND_FRESHNESS_MS = 30_000L
+
+        private val SYSTEM_FOREGROUND_PACKAGES = setOf(
+            "com.android.systemui",
+            "com.android.inputmethod",
+            "com.google.android.inputmethod",
+            "com.samsung.android.inputmethod",
+            "com.android.permissioncontroller",
+            "android",
+        )
         private val IGNORED_DIRECTORY_PATTERNS = setOf(
             "cache",
             "shader",

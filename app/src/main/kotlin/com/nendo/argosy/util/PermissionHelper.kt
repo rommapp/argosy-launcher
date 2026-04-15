@@ -58,6 +58,24 @@ class PermissionHelper @Inject constructor() {
         return if (last <= 0) null else last
     }
 
+    fun currentForegroundPackage(context: Context, lookbackMs: Long = 5 * 60 * 1000L): String? {
+        if (!hasUsageStatsPermission(context)) return null
+        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val now = System.currentTimeMillis()
+        val events = usm.queryEvents(now - lookbackMs, now)
+        val event = UsageEvents.Event()
+        var pkg: String? = null
+        var ts = 0L
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND && event.timeStamp > ts) {
+                ts = event.timeStamp
+                pkg = event.packageName
+            }
+        }
+        return pkg
+    }
+
     data class SessionDurations(
         val foregroundMs: Long,
         val screenOnMs: Long

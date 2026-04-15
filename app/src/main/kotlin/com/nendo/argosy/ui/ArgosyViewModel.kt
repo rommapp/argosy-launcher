@@ -913,25 +913,27 @@ class ArgosyViewModel @Inject constructor(
                 )
                 return@launch
             }
-            val igdbId = session.gameIgdbId?.toLong() ?: run {
-                notificationManager.show(
-                    title = "Can't join ${session.gameTitle}",
-                    subtitle = "Missing game id for session",
-                    type = NotificationType.ERROR,
-                    duration = NotificationDuration.MEDIUM
-                )
-                return@launch
+            val gameId = preflight.gameId ?: run {
+                val igdbId = session.gameIgdbId?.toLong() ?: run {
+                    notificationManager.show(
+                        title = "Can't join ${session.gameTitle}",
+                        subtitle = "Missing game id for session",
+                        type = NotificationType.ERROR,
+                        duration = NotificationDuration.MEDIUM
+                    )
+                    return@launch
+                }
+                gameDao.getByIgdbId(igdbId)?.id ?: run {
+                    notificationManager.show(
+                        title = "Can't join ${session.gameTitle}",
+                        subtitle = "Local game not found",
+                        type = NotificationType.ERROR,
+                        duration = NotificationDuration.MEDIUM
+                    )
+                    return@launch
+                }
             }
-            val game = gameDao.getByIgdbId(igdbId) ?: run {
-                notificationManager.show(
-                    title = "Can't join ${session.gameTitle}",
-                    subtitle = "Local game not found",
-                    type = NotificationType.ERROR,
-                    duration = NotificationDuration.MEDIUM
-                )
-                return@launch
-            }
-            when (val result = launchGameUseCase(gameId = game.id)) {
+            when (val result = launchGameUseCase(gameId = gameId)) {
                 is LaunchResult.Success -> {
                     val decorated = android.content.Intent(result.intent).apply {
                         putExtra(LibretroActivity.EXTRA_NETPLAY_JOIN_SESSION_ID, session.sessionId)

@@ -59,6 +59,11 @@ object LibretroCoreRegistry {
         ),
 
         // Nintendo Handheld
+        // NOTE: mgba/gambatte are netplay-compliant in libretro but GB/GBC/GBA
+        // multiplayer requires Link Cable emulation (two emulated machines with
+        // a synchronized serial buffer). Our rollback architecture runs a single
+        // emulated machine with two controller inputs, so Link-Cable titles
+        // won't desync gracefully. Re-enable once we add dual-instance link sync.
         CoreInfo(
             coreId = "mgba",
             fileName = "mgba_libretro_android.so",
@@ -66,16 +71,14 @@ object LibretroCoreRegistry {
             platforms = setOf("gb", "gbc", "gba"),
             estimatedSizeBytes = 3_000_000L,
             requiresBios = listOf("gba_bios.bin"),
-            isDefault = true,
-            netplaySupport = NetplaySupportLevel.SUPPORTED
+            isDefault = true
         ),
         CoreInfo(
             coreId = "gambatte",
             fileName = "gambatte_libretro_android.so",
             displayName = "Gambatte",
             platforms = setOf("gb", "gbc"),
-            estimatedSizeBytes = 800_000L,
-            netplaySupport = NetplaySupportLevel.SUPPORTED
+            estimatedSizeBytes = 800_000L
         ),
         CoreInfo(
             coreId = "vbam",
@@ -221,15 +224,15 @@ object LibretroCoreRegistry {
             isDefault = true
         ),
 
-        // Virtual Boy
+        // NOTE: Virtual Boy is single-player by design (stereoscopic handheld).
+        // Core is netplay-compliant but no meaningful multiplayer content exists.
         CoreInfo(
             coreId = "mednafen_vb",
             fileName = "mednafen_vb_libretro_android.so",
             displayName = "Beetle VB",
             platforms = setOf("vb", "virtualboy"),
             estimatedSizeBytes = 1_500_000L,
-            isDefault = true,
-            netplaySupport = NetplaySupportLevel.SUPPORTED
+            isDefault = true
         ),
 
         // Atari 5200
@@ -273,26 +276,25 @@ object LibretroCoreRegistry {
             requiresBios = listOf("lynxboot.img")
         ),
 
-        // WonderSwan / WonderSwan Color
+        // NOTE: WonderSwan and NGP multiplayer both rely on handheld link cables.
+        // Cores are netplay-compliant but require dual-instance link sync we don't
+        // implement; rollback-over-single-instance can't route link data.
         CoreInfo(
             coreId = "mednafen_wswan",
             fileName = "mednafen_wswan_libretro_android.so",
             displayName = "Beetle WS",
             platforms = setOf("wonderswan", "wsc"),
             estimatedSizeBytes = 1_000_000L,
-            isDefault = true,
-            netplaySupport = NetplaySupportLevel.SUPPORTED
+            isDefault = true
         ),
 
-        // Neo Geo Pocket / Color
         CoreInfo(
             coreId = "mednafen_ngp",
             fileName = "mednafen_ngp_libretro_android.so",
             displayName = "Beetle NGP",
             platforms = setOf("ngp", "ngpc"),
             estimatedSizeBytes = 1_000_000L,
-            isDefault = true,
-            netplaySupport = NetplaySupportLevel.SUPPORTED
+            isDefault = true
         ),
 
         // ColecoVision
@@ -361,15 +363,15 @@ object LibretroCoreRegistry {
             estimatedSizeBytes = 1_500_000L
         ),
 
-        // Vectrex
+        // NOTE: Vectrex is predominantly single-player; core is netplay-compliant
+        // but lacks meaningful 2P content for launch-target testing.
         CoreInfo(
             coreId = "vecx",
             fileName = "vecx_libretro_android.so",
             displayName = "vecx",
             platforms = setOf("vectrex"),
             estimatedSizeBytes = 300_000L,
-            isDefault = true,
-            netplaySupport = NetplaySupportLevel.SUPPORTED
+            isDefault = true
         ),
 
         // Odyssey 2
@@ -445,7 +447,8 @@ object LibretroCoreRegistry {
             isDefault = true
         ),
 
-        // Pokemon Mini
+        // NOTE: Pokemon Mini is a single-player handheld. Core is netplay-compliant
+        // but there is no multiplayer content to run; excluded from launch targets.
         CoreInfo(
             coreId = "pokemini",
             fileName = "pokemini_libretro_android.so",
@@ -453,8 +456,7 @@ object LibretroCoreRegistry {
             platforms = setOf("pokemini"),
             estimatedSizeBytes = 500_000L,
             requiresBios = listOf("bios.min"),
-            isDefault = true,
-            netplaySupport = NetplaySupportLevel.SUPPORTED
+            isDefault = true
         ),
 
         // Game & Watch

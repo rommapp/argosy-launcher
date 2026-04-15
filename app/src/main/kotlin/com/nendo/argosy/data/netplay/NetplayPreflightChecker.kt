@@ -2,6 +2,7 @@ package com.nendo.argosy.data.netplay
 
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.libretro.LibretroCoreManager
@@ -15,7 +16,8 @@ import javax.inject.Singleton
 sealed class NetplayPreflightResult {
     data class Joinable(
         val localFilePath: String,
-        val resolvedCorePath: String? = null
+        val resolvedCorePath: String? = null,
+        val gameId: Long? = null
     ) : NetplayPreflightResult()
     data object RomNotFound : NetplayPreflightResult()
     data object RomVersionMismatch : NetplayPreflightResult()
@@ -38,20 +40,23 @@ class NetplayPreflightChecker(
     private val coreHashLookup: CoreHashLookup,
     private val romHashProvider: RomHashProvider,
     private val coreRegistry: CoreRegistryAdapter,
-    private val coreManager: LibretroCoreManager? = null
+    private val coreManager: LibretroCoreManager? = null,
+    private val platformDao: PlatformDao? = null
 ) {
     @Inject constructor(
         gameDao: GameDao,
         gameFileDao: GameFileDao,
         netplayCoreHashLookup: NetplayCoreHashLookup,
-        libretroCoreManager: LibretroCoreManager
+        libretroCoreManager: LibretroCoreManager,
+        platformDao: PlatformDao
     ) : this(
         gameDao = gameDao,
         gameFileDao = gameFileDao,
         coreHashLookup = netplayCoreHashLookup,
         romHashProvider = DefaultRomHashProvider,
         coreRegistry = DefaultCoreRegistryAdapter,
-        coreManager = libretroCoreManager
+        coreManager = libretroCoreManager,
+        platformDao = platformDao
     )
 
     suspend fun check(session: NetplaySession): NetplayPreflightResult {
@@ -64,10 +69,18 @@ class NetplayPreflightChecker(
 
         val igdbId = session.gameIgdbId?.toLong()
             ?: run { android.util.Log.d("NetplayPreflight", "FAIL: igdbId is null"); return NetplayPreflightResult.RomNotFound }
-        val game = gameDao.getByIgdbId(igdbId)
-            ?: run { android.util.Log.d("NetplayPreflight", "FAIL: no local game for igdbId=$igdbId"); return NetplayPreflightResult.RomNotFound }
+        val candidates = gameDao.getAllByIgdbId(igdbId)
+        if (candidates.isEmpty()) {
+            android.util.Log.d("NetplayPreflight", "FAIL: no local game for igdbId=$igdbId")
+            return NetplayPreflightResult.RomNotFound
+        }
+        val game = selectBestCandidate(candidates)
+        if (candidates.size > 1) {
+            android.util.Log.d("NetplayPreflight", "multiple candidates for igdbId=$igdbId (${candidates.size}); picked id=${game.id} platform=${game.platformSlug} localPath=${game.localPath}")
+        }
 
         if (game.platformSlug.isNotEmpty() && !coreInfo.supportsPlatform(game.platformSlug)) {
+            android.util.Log.d("NetplayPreflight", "FAIL: core ${session.coreId} (supports=${coreInfo.supportedPlatforms}) does not support game platform '${game.platformSlug}'")
             return NetplayPreflightResult.CoreNotSupported
         }
 
@@ -86,7 +99,7 @@ class NetplayPreflightChecker(
                 android.util.Log.d("NetplayPreflight", "legacy hash=$hash vs session=${session.romHashPrefix}")
                 if (hash != null && hash.equals(session.romHashPrefix, ignoreCase = true)) {
                     android.util.Log.d("NetplayPreflight", "SUCCESS via legacy path")
-                    return resolveCore(session, legacyPath)
+                    return resolveCore(session, legacyPath, game.id)
                 } else if (hash != null) {
                     return NetplayPreflightResult.RomVersionMismatch
                 }
@@ -126,20 +139,30 @@ class NetplayPreflightChecker(
         }
 
         android.util.Log.d("NetplayPreflight", "SUCCESS via game_files path")
-        return resolveCore(session, resolved.localPath!!)
+        return resolveCore(session, resolved.localPath!!, game.id)
+    }
+
+    private suspend fun selectBestCandidate(candidates: List<com.nendo.argosy.data.local.entity.GameEntity>): com.nendo.argosy.data.local.entity.GameEntity {
+        return candidates.maxByOrNull { game ->
+            val fileCount = gameFileDao.getFilesForGame(game.id).count { !it.localPath.isNullOrEmpty() }
+            val hasLegacyPath = if (!game.localPath.isNullOrEmpty() && java.io.File(game.localPath!!).exists()) 1 else 0
+            val platformVisible = if (platformDao?.getById(game.platformId)?.isVisible == true) 1 else 0
+            (platformVisible * 100) + (fileCount * 10) + hasLegacyPath
+        } ?: candidates.first()
     }
 
     private suspend fun resolveCore(
         session: NetplaySession,
-        romPath: String
+        romPath: String,
+        gameId: Long
     ): NetplayPreflightResult {
         if (coreManager == null || session.coreHash.isNullOrEmpty()) {
-            return NetplayPreflightResult.Joinable(romPath)
+            return NetplayPreflightResult.Joinable(romPath, gameId = gameId)
         }
         return when (val resolution = coreManager.resolveNetplayCorePath(session.coreId, session.coreHash)) {
-            is NetplayCoreResolution.Matched -> NetplayPreflightResult.Joinable(romPath, resolution.corePath)
-            is NetplayCoreResolution.Updated -> NetplayPreflightResult.Joinable(romPath, resolution.corePath)
-            is NetplayCoreResolution.CompatFound -> NetplayPreflightResult.Joinable(romPath, resolution.corePath)
+            is NetplayCoreResolution.Matched -> NetplayPreflightResult.Joinable(romPath, resolution.corePath, gameId)
+            is NetplayCoreResolution.Updated -> NetplayPreflightResult.Joinable(romPath, resolution.corePath, gameId)
+            is NetplayCoreResolution.CompatFound -> NetplayPreflightResult.Joinable(romPath, resolution.corePath, gameId)
             NetplayCoreResolution.Unresolvable -> NetplayPreflightResult.CoreVersionMismatch
         }
     }
@@ -154,8 +177,13 @@ data class CoreDescriptor(
     val netplaySupport: NetplaySupportLevel,
     val supportedPlatforms: Set<String>
 ) {
-    fun supportsPlatform(platformSlug: String): Boolean =
-        supportedPlatforms.any { it.equals(platformSlug, ignoreCase = true) }
+    fun supportsPlatform(platformSlug: String): Boolean {
+        val canonical = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug)
+        return supportedPlatforms.any {
+            val coreCanonical = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(it)
+            coreCanonical.equals(canonical, ignoreCase = true)
+        }
+    }
 }
 
 object DefaultCoreRegistryAdapter : CoreRegistryAdapter {

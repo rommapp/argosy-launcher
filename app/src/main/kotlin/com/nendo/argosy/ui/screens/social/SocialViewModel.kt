@@ -166,17 +166,13 @@ class SocialViewModel @Inject constructor(
                 _launchEvents.emit(SocialLaunchEvent.LaunchError("This session is not joinable"))
                 return@launch
             }
-            val igdbId = session.gameIgdbId?.toLong()
-            if (igdbId == null) {
-                _launchEvents.emit(SocialLaunchEvent.LaunchError("Missing game id for session"))
-                return@launch
+            val gameId = preflight.gameId ?: run {
+                val igdbId = session.gameIgdbId?.toLong()
+                    ?: return@launch _launchEvents.emit(SocialLaunchEvent.LaunchError("Missing game id for session"))
+                gameDao.getByIgdbId(igdbId)?.id
+                    ?: return@launch _launchEvents.emit(SocialLaunchEvent.LaunchError("Local game not found"))
             }
-            val game = gameDao.getByIgdbId(igdbId)
-            if (game == null) {
-                _launchEvents.emit(SocialLaunchEvent.LaunchError("Local game not found"))
-                return@launch
-            }
-            when (val result = launchGameUseCase(gameId = game.id)) {
+            when (val result = launchGameUseCase(gameId = gameId)) {
                 is LaunchResult.Success -> {
                     val decorated = Intent(result.intent).apply {
                         putExtra(LibretroActivity.EXTRA_NETPLAY_JOIN_SESSION_ID, session.sessionId)

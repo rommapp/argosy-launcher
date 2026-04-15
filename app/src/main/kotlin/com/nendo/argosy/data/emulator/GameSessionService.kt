@@ -224,15 +224,15 @@ class GameSessionService : Service() {
 
     private fun checkEmulatorForeground() {
         val pkg = currentEmulatorPackage ?: return
-        // Use the full session duration as the event query window so we always
-        // capture the initial MOVE_TO_FOREGROUND, capped at 4 hours.
-        val elapsed = System.currentTimeMillis() - sessionStartTime
-        val window = elapsed.coerceIn(30_000L, 4 * 60 * 60 * 1000L)
-        var inForeground = permissionHelper.isPackageInForeground(this, pkg, withinMs = window)
 
-        // Supplementary check for secondary display: UsageStatsManager is display-agnostic
-        // and may not detect exits reliably when the emulator runs on a non-primary display.
-        // If UsageStats thinks it's still foreground, verify the process is actually alive.
+        val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        if (!powerManager.isInteractive) {
+            handler.postDelayed(emulatorMonitorRunnable, EMULATOR_POLL_INTERVAL_MS)
+            return
+        }
+
+        var inForeground = permissionHelper.isPackageInForeground(this, pkg, withinMs = EMULATOR_FOREGROUND_FRESHNESS_MS)
+
         if (inForeground && emulatorDisplayId != android.view.Display.DEFAULT_DISPLAY) {
             if (!isProcessRunning(pkg)) {
                 Logger.debug(TAG, "Emulator $pkg process not running (secondary display fallback)")
@@ -728,6 +728,7 @@ class GameSessionService : Service() {
         private const val CACHE_DEBOUNCE_MS = 250L
         private const val EMULATOR_MONITOR_INITIAL_DELAY_MS = 5_000L
         private const val EMULATOR_POLL_INTERVAL_MS = 5_000L
+        private const val EMULATOR_FOREGROUND_FRESHNESS_MS = 30_000L
         private val IGNORED_DIRECTORY_PATTERNS = setOf(
             "cache",
             "shader",

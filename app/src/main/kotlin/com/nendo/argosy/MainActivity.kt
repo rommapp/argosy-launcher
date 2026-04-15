@@ -191,6 +191,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         if (display != null && display!!.displayId != Display.DEFAULT_DISPLAY) {
+            if (!sessionStateStore.isDualScreenEnabled()) {
+                Log.d(TAG, "MainActivity on non-default display with dual-screen disabled, finishing")
+                finish()
+                return
+            }
             val companionIntent = Intent(this, SecondaryHomeActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }

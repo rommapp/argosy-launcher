@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.ui.dualscreen.ShowcaseViewModel
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
@@ -89,6 +90,12 @@ class SecondaryHomeActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!SessionStateStore(applicationContext).isDualScreenEnabled()) {
+            android.util.Log.d("SecondaryHome", "dualScreenEnabled=false, finishing")
+            finish()
+            return
+        }
 
         val existing = DualScreenManagerHolder.instance
         if (existing != null) {

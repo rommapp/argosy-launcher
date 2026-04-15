@@ -98,9 +98,10 @@ class SteamService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "SteamService started")
-        promoteToForeground()
 
         if (intent?.getBooleanExtra(EXTRA_CONNECT_FOR_AUTH, false) == true) {
+            promoteToForeground("Signing in")
+            observeStateForNotification()
             scope.launch {
                 Log.d(TAG, "Connecting for QR auth, stopping reconnect loop")
                 isRunning = false
@@ -109,6 +110,8 @@ class SteamService : Service() {
                 connectForAuth()
             }
         } else if (intent?.getBooleanExtra(EXTRA_FORCE_CONNECT, false) == true) {
+            promoteToForeground("Connecting")
+            observeStateForNotification()
             scope.launch {
                 Log.d(TAG, "Force connecting to Steam (on-demand)")
                 connect()
@@ -119,19 +122,57 @@ class SteamService : Service() {
                 val account = steamAuthManager.getActiveAccount()
                 if (account == null) {
                     Log.d(TAG, "No saved account, skipping connect")
+                    stopSelf()
                     return@launch
                 }
                 val hasPendingWork = steamContentManager.hasPendingDownloads()
                 if (hasPendingWork) {
                     Log.d(TAG, "Pending downloads found in DB, auto-connecting for ${account.username}")
+                    promoteToForeground("Syncing Steam library")
+                    observeStateForNotification()
                     connect()
                 } else {
-                    Log.d(TAG, "No pending work, deferring Steam connection")
+                    Log.d(TAG, "No pending work, stopping service")
+                    stopSelf()
                 }
             }
+        } else {
+            stopSelf()
         }
 
         return START_STICKY
+    }
+
+    private var notificationObserverJob: Job? = null
+
+    private fun observeStateForNotification() {
+        if (notificationObserverJob?.isActive == true) return
+        notificationObserverJob = scope.launch {
+            _state.collect { state ->
+                when (state.connectionState) {
+                    SteamConnectionState.CONNECTING -> updateForegroundNotification("Connecting")
+                    SteamConnectionState.CONNECTED,
+                    SteamConnectionState.LOGGING_IN -> updateForegroundNotification("Signing in")
+                    SteamConnectionState.LOGGED_IN -> {
+                        val hasWork = runCatching { steamContentManager.hasPendingDownloads() }.getOrDefault(false)
+                        if (hasWork) {
+                            updateForegroundNotification("Syncing Steam library")
+                        } else {
+                            Log.d(TAG, "Logged in with no pending work, dropping foreground notification")
+                            stopForeground(STOP_FOREGROUND_REMOVE)
+                        }
+                    }
+                    SteamConnectionState.DISCONNECTED,
+                    SteamConnectionState.LOGGED_OUT -> stopForeground(STOP_FOREGROUND_REMOVE)
+                }
+            }
+        }
+    }
+
+    private fun updateForegroundNotification(status: String) {
+        val notification = buildNotification(status)
+        val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+        nm.notify(NOTIFICATION_ID, notification)
     }
 
     companion object {
@@ -142,24 +183,29 @@ class SteamService : Service() {
         private const val NOTIFICATION_ID = 9201
     }
 
-    private fun promoteToForeground() {
+    private fun promoteToForeground(status: String) {
         com.nendo.argosy.data.sync.SyncNotificationChannel.create(this)
-        val notification = androidx.core.app.NotificationCompat.Builder(
-            this, com.nendo.argosy.data.sync.SyncNotificationChannel.CHANNEL_ID
-        )
-            .setSmallIcon(com.nendo.argosy.R.drawable.ic_helm)
-            .setContentTitle("Steam")
-            .setContentText("Connecting...")
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .build()
+        val notification = buildNotification(status)
         try {
             startForeground(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to promote to foreground: ${e.message}")
         }
+    }
+
+    private fun buildNotification(status: String): android.app.Notification {
+        com.nendo.argosy.data.sync.SyncNotificationChannel.create(this)
+        return androidx.core.app.NotificationCompat.Builder(
+            this, com.nendo.argosy.data.sync.SyncNotificationChannel.CHANNEL_ID
+        )
+            .setSmallIcon(com.nendo.argosy.R.drawable.ic_helm)
+            .setContentTitle("Steam")
+            .setContentText(status)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .build()
     }
 
     override fun onDestroy() {

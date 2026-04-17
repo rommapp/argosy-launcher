@@ -775,7 +775,12 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         // RetroArch owns its own save/state paths via retroarch.cfg; rows are read-only for RA.
         PlatformDetailItem.SavePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchSavePathPicker(config.platform.id)
         PlatformDetailItem.StatePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchStatePathPicker(config.platform.id)
-        PlatformDetailItem.SyncToggle -> vm.togglePlatformSync(config.platform.id, !state.platformDetail.syncEnabled)
+        PlatformDetailItem.SyncToggle -> {
+            val currentSync = state.storage.platformConfigs
+                .find { it.platformId == config.platform.id }
+                ?.syncEnabled ?: true
+            vm.togglePlatformSync(config.platform.id, !currentSync)
+        }
         PlatformDetailItem.RemoveFiles -> vm.requestRemoveLocalFiles()
         PlatformDetailItem.BiosDownload -> vm.downloadBiosForPlatform(config.platform.slug)
         PlatformDetailItem.BiosInstall -> vm.distributeBiosForPlatformWithNotification(config.platform.slug)

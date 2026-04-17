@@ -367,7 +367,6 @@ data class PlatformDetailState(
     val effectiveStatePath: String? = null,
     val isUserStatePathOverride: Boolean = false,
     val supportsStatePath: Boolean = false,
-    val syncEnabled: Boolean = true,
     val isScanning: Boolean = false,
     val downloadedSizeBytes: Long = 0
 ) {

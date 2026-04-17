@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.download
 
 import android.util.Log
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
 import org.apache.commons.compress.archivers.zip.ZipFile
 import java.io.File
@@ -130,16 +131,21 @@ private val PLATFORM_CONFIGS = listOf(
 object ZipExtractor {
 
     fun isNswPlatform(platformSlug: String): Boolean {
-        return platformSlug.lowercase() in NSW_PLATFORM_SLUGS
+        val lower = platformSlug.lowercase()
+        if (lower in NSW_PLATFORM_SLUGS) return true
+        return PlatformDefinitions.getCanonicalSlug(lower) in NSW_PLATFORM_SLUGS
     }
 
     fun usesZipAsRomFormat(platformSlug: String): Boolean {
-        return platformSlug.lowercase() in ZIP_AS_ROM_PLATFORMS
+        val lower = platformSlug.lowercase()
+        if (lower in ZIP_AS_ROM_PLATFORMS) return true
+        return PlatformDefinitions.getCanonicalSlug(lower) in ZIP_AS_ROM_PLATFORMS
     }
 
     fun getPlatformConfig(platformSlug: String): PlatformExtractConfig? {
         val slug = platformSlug.lowercase()
-        return PLATFORM_CONFIGS.find { slug in it.platformSlugs }
+        val canonical = PlatformDefinitions.getCanonicalSlug(slug)
+        return PLATFORM_CONFIGS.find { slug in it.platformSlugs || canonical in it.platformSlugs }
     }
 
     fun hasUpdateSupport(platformSlug: String): Boolean {
@@ -244,8 +250,11 @@ object ZipExtractor {
         if (archiveFile.extension.equals("apk", ignoreCase = true)) return false
 
         val slug = platformSlug?.lowercase()
-        val zipIsRomFormat = slug?.let { it in ZIP_AS_ROM_PLATFORMS } ?: false
-        val alwaysExtract = slug?.let { it in ALWAYS_EXTRACT_ZIP_PLATFORMS } ?: false
+        val canonical = slug?.let { PlatformDefinitions.getCanonicalSlug(it) }
+        val zipIsRomFormat = slug != null &&
+            (slug in ZIP_AS_ROM_PLATFORMS || canonical in ZIP_AS_ROM_PLATFORMS)
+        val alwaysExtract = slug != null &&
+            (slug in ALWAYS_EXTRACT_ZIP_PLATFORMS || canonical in ALWAYS_EXTRACT_ZIP_PLATFORMS)
 
         return when {
             isSevenZFile(archiveFile) -> {

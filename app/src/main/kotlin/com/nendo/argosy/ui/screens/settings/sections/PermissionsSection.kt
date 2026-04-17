@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.ui.components.PermissionCard
 import com.nendo.argosy.ui.screens.settings.PermissionsState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -180,88 +181,3 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 }
 
-@Composable
-private fun PermissionCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    isGranted: Boolean,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(Dimens.radiusLg)
-    val backgroundColor = when {
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surface
-    }
-    val contentColor = when {
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val secondaryColor = when {
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = Dimens.settingsItemMinHeight)
-            .clip(shape)
-            .clickableNoFocus(onClick = onClick)
-            .background(backgroundColor, shape)
-            .padding(Dimens.spacingMd),
-        verticalAlignment = Alignment.Top
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(Dimens.iconMd)
-        )
-        Spacer(modifier = Modifier.width(Dimens.spacingMd))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = contentColor
-            )
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = secondaryColor
-            )
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isGranted) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(Dimens.iconSm)
-                    )
-                    Spacer(modifier = Modifier.width(Dimens.spacingXs))
-                    Text(
-                        text = "Granted",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(Dimens.iconSm)
-                    )
-                    Spacer(modifier = Modifier.width(Dimens.spacingXs))
-                    Text(
-                        text = "Tap to grant",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-    }
-}

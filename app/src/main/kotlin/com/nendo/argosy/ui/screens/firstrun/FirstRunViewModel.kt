@@ -17,6 +17,8 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.formatCoreDownloadError
 import com.nendo.argosy.ui.input.GamepadInputHandler
+import com.nendo.argosy.ui.input.HapticFeedbackManager
+import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -91,7 +93,8 @@ class FirstRunViewModel @Inject constructor(
     private val platformRepository: PlatformRepository,
     private val permissionHelper: PermissionHelper,
     private val coreManager: LibretroCoreManager,
-    private val gamepadInputHandler: GamepadInputHandler
+    private val gamepadInputHandler: GamepadInputHandler,
+    private val hapticManager: HapticFeedbackManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -327,7 +330,10 @@ class FirstRunViewModel @Inject constructor(
         val state = _uiState.value
         val maxIndex = getMaxFocusIndex()
         val newIndex = (state.focusedIndex + delta).coerceIn(0, maxIndex)
-        if (newIndex == state.focusedIndex) return false
+        if (newIndex == state.focusedIndex) {
+            if (delta != 0) hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+            return false
+        }
         _uiState.update { it.copy(focusedIndex = newIndex) }
         return true
     }
@@ -337,7 +343,10 @@ class FirstRunViewModel @Inject constructor(
         if (state.currentStep != FirstRunStep.PLATFORM_SELECT) return false
         if (state.focusedIndex < state.platforms.size) return false
         val newIndex = (state.platformButtonFocus + delta).coerceIn(0, 1)
-        if (newIndex == state.platformButtonFocus) return false
+        if (newIndex == state.platformButtonFocus) {
+            if (delta != 0) hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+            return false
+        }
         _uiState.update { it.copy(platformButtonFocus = newIndex) }
         return true
     }

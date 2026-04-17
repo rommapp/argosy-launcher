@@ -28,9 +28,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Switch
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -67,7 +64,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -81,6 +77,8 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.ui.components.PermissionCard
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -178,12 +176,7 @@ fun FirstRunScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer(
-                scaleX = 0.85f,
-                scaleY = 0.85f
-            ),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         AnimatedContent(
@@ -414,7 +407,7 @@ private fun RommLoginStep(
     }
 
     StepColumn {
-        StepHeader(step = 1, title = "Rom Manager Login", totalSteps = 4)
+        StepHeader(title = "Rom Manager Login")
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         OutlinedTextField(
@@ -563,7 +556,7 @@ private fun PermissionsStep(
     onContinue: () -> Unit
 ) {
     StepColumn {
-        StepHeader(step = 2, title = "Permissions", totalSteps = 4)
+        StepHeader(title = "Permissions")
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
             text = "Argosy needs these to manage your library and emulators.",
@@ -578,35 +571,35 @@ private fun PermissionsStep(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {
-            PermissionRow(
+            PermissionCard(
                 icon = Icons.Default.Folder,
                 title = "Manage Storage",
-                subtitle = "Required to download games and sync saves.",
-                granted = hasStorage,
+                description = "Required to download games and sync saves.",
+                isGranted = hasStorage,
                 isFocused = focusedIndex == 0,
                 onClick = onRequestStorage
             )
-            PermissionRow(
+            PermissionCard(
                 icon = Icons.Default.Notifications,
                 title = "Notifications",
-                subtitle = "Shows download and sync progress.",
-                granted = hasNotifications,
+                description = "Shows download and sync progress.",
+                isGranted = hasNotifications,
                 isFocused = focusedIndex == 1,
                 onClick = onRequestNotifications
             )
-            PermissionRow(
+            PermissionCard(
                 icon = Icons.Default.Visibility,
                 title = "Display Over Other Apps",
-                subtitle = "Enables in-game save detection overlays.",
-                granted = hasOverlay,
+                description = "Enables in-game save detection overlays.",
+                isGranted = hasOverlay,
                 isFocused = focusedIndex == 2,
                 onClick = onRequestOverlay
             )
-            PermissionRow(
+            PermissionCard(
                 icon = Icons.Default.Timer,
                 title = "Usage Access",
-                subtitle = "Enables accurate play time tracking and resume.",
-                granted = hasUsageStats,
+                description = "Enables accurate play time tracking and resume.",
+                isGranted = hasUsageStats,
                 isFocused = focusedIndex == 3,
                 onClick = onRequestUsageStats
             )
@@ -629,65 +622,6 @@ private fun PermissionsStep(
 }
 
 @Composable
-private fun PermissionRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    granted: Boolean,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(Dimens.radiusMd)
-    val background = when {
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        granted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
-    val contentColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
-    val subtitleColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(background, shape)
-            .padding(Dimens.spacingMd),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = contentColor
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = contentColor
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = subtitleColor
-            )
-        }
-        Icon(
-            imageVector = if (granted) Icons.Default.CheckCircle else Icons.Default.Lock,
-            contentDescription = if (granted) "Granted" else "Not granted",
-            tint = if (granted) MaterialTheme.colorScheme.primary else contentColor
-        )
-    }
-}
-
-@Composable
 private fun RomPathStep(
     currentPath: String?,
     folderSelected: Boolean,
@@ -696,7 +630,7 @@ private fun RomPathStep(
     onContinue: () -> Unit
 ) {
     StepColumn {
-        StepHeader(step = 3, title = "Games Path", totalSteps = 4)
+        StepHeader(title = "Games Path")
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
             text = "Choose where your game files will be stored. We'll create subfolders for each console automatically.",
@@ -852,7 +786,7 @@ private fun SaveSyncStep(
     onSkip: () -> Unit
 ) {
     StepColumn {
-        StepHeader(step = 4, title = "Save Data Sync", totalSteps = 4)
+        StepHeader(title = "Save Data Sync")
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
             text = "Sync your game saves with your RomM server to continue playing across multiple devices.",
@@ -942,8 +876,10 @@ private fun PlatformSelectStep(
         ) {
             itemsIndexed(platforms, key = { _, p -> p.id }) { index, platform ->
                 val isFocused = index == focusedIndex
-                PlatformToggleItem(
-                    platform = platform,
+                SwitchPreference(
+                    title = platform.name,
+                    subtitle = "${platform.gameCount} games",
+                    isEnabled = platform.syncEnabled,
                     isFocused = isFocused,
                     onToggle = { onToggle(platform.id) }
                 )
@@ -968,49 +904,6 @@ private fun PlatformSelectStep(
                 onClick = onContinue
             )
         }
-    }
-}
-
-@Composable
-private fun PlatformToggleItem(
-    platform: PlatformEntity,
-    isFocused: Boolean,
-    onToggle: () -> Unit
-) {
-    val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor, RoundedCornerShape(Dimens.radiusMd))
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = platform.name,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "${platform.gameCount} games",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Switch(
-            checked = platform.syncEnabled,
-            onCheckedChange = { onToggle() },
-            modifier = Modifier.focusProperties { canFocus = false },
-            interactionSource = remember { MutableInteractionSource() }
-        )
     }
 }
 
@@ -1313,19 +1206,12 @@ private fun CompleteStep(
 }
 
 @Composable
-private fun StepHeader(step: Int, title: String, totalSteps: Int = 4) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "SETUP $step/$totalSteps",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(Dimens.spacingSm))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall
-        )
-    }
+private fun StepHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmall,
+        color = MaterialTheme.colorScheme.onSurface
+    )
 }
 
 @Composable

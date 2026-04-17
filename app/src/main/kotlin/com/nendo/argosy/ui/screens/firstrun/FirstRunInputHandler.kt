@@ -53,6 +53,8 @@ class FirstRunInputHandler(
             return InputResult.UNHANDLED
         }
         if (state.currentStep == FirstRunStep.PLATFORM_SELECT) {
+            // Platform selection commits toggles to the DB as the user navigates,
+            // so "back" is interpreted as "done" rather than "undo".
             viewModel.proceedFromPlatformSelect()
             return InputResult.HANDLED
         }

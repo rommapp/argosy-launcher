@@ -136,9 +136,10 @@ class DownloadThermalManager @Inject constructor(
 
     private fun onScreenOn() {
         isScreenOff = false
-        Log.d(TAG, "Screen on, cancelling fan refresh")
+        Log.d(TAG, "Screen on, cancelling fan refresh and clearing throttle")
         fanRefreshJob?.cancel()
         releaseFanControl()
+        _thermalStatus.value = ThermalStatus()
     }
 
     private fun startFanRefresh() {
@@ -229,6 +230,13 @@ class DownloadThermalManager @Inject constructor(
     }
 
     private fun calculateThermalStatus(cpuTemp: Float, batteryTemp: Float): ThermalStatus {
+        // Throttling only engages during standby. When the screen is on the
+        // user is attending the device and can decide to stop downloads, and
+        // per-core junction sensors on modern SoCs routinely read hot under
+        // normal use -- throttling here would pause every download forever.
+        if (!isScreenOff) {
+            return ThermalStatus(ThermalState.NORMAL, cpuTemp, batteryTemp, 1.0f)
+        }
         val cpuSane = cpuTemp in PLAUSIBLE_CPU_RANGE
         val batSane = batteryTemp in PLAUSIBLE_BATTERY_RANGE
         if (!cpuSane || !batSane) {

@@ -88,6 +88,9 @@ class GameLauncher @Inject constructor(
     }
 
     @Volatile
+    private var shellLaunchRejected: Boolean = false
+
+    @Volatile
     private var lastCoreDownloadError: String? = null
 
     suspend fun launch(
@@ -578,14 +581,28 @@ class GameLauncher @Inject constructor(
                 Logger.debug(TAG, "Falling back to Intent (am not available from app process)")
                 LaunchMethod.INTENT
             }
+            command.launchMethod == LaunchMethod.SHELL && shellLaunchRejected -> {
+                Logger.debug(TAG, "Falling back to Intent (shell launch previously rejected on this device)")
+                LaunchMethod.INTENT
+            }
             else -> command.launchMethod
         }
 
-        return when (effectiveMethod) {
+        var dispatchedMethod = effectiveMethod
+        val dispatched = when (effectiveMethod) {
             LaunchMethod.INTENT -> command.copy(launchMethod = LaunchMethod.INTENT).toIntent(context)
-            LaunchMethod.SHELL -> launchViaShell(command)
-        }?.also {
-            Logger.debug(TAG, "Launch dispatched: method=$effectiveMethod")
+            LaunchMethod.SHELL -> when (val outcome = launchViaShell(command)) {
+                is ShellLaunchOutcome.Success -> outcome.stubIntent
+                ShellLaunchOutcome.Rejected -> {
+                    shellLaunchRejected = true
+                    dispatchedMethod = LaunchMethod.INTENT
+                    Logger.info(TAG, "Shell launch rejected, launching via intent")
+                    command.copy(launchMethod = LaunchMethod.INTENT).toIntent(context)
+                }
+            }
+        }
+        return dispatched?.also {
+            Logger.debug(TAG, "Launch dispatched: method=$dispatchedMethod")
         }
     }
 
@@ -1022,7 +1039,12 @@ class GameLauncher @Inject constructor(
         )
     }
 
-    private fun launchViaShell(command: EffectiveLaunchCommand): Intent? {
+    private sealed class ShellLaunchOutcome {
+        data class Success(val stubIntent: Intent) : ShellLaunchOutcome()
+        object Rejected : ShellLaunchOutcome()
+    }
+
+    private fun launchViaShell(command: EffectiveLaunchCommand): ShellLaunchOutcome {
         command.grantReadUriTo.forEach { uri ->
             try {
                 context.grantUriPermission(command.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -1039,24 +1061,25 @@ class GameLauncher @Inject constructor(
             val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
             val exitCode = process.waitFor()
             if (exitCode != 0) {
-                Logger.error(TAG, "Shell launch failed: code=$exitCode output=$output")
-                return null
+                Logger.debug(TAG, "Shell launch exit=$exitCode output=$output")
+                return ShellLaunchOutcome.Rejected
             }
             if (output.isNotEmpty()) {
                 Logger.debug(TAG, "Shell launch output: $output")
             }
         } catch (e: Exception) {
-            Logger.error(TAG, "Failed to exec am start for ${command.packageName}", e)
-            return null
+            Logger.debug(TAG, "Shell exec threw for ${command.packageName}: ${e.message}")
+            return ShellLaunchOutcome.Rejected
         }
 
-        return Intent(Intent.ACTION_VIEW).apply {
+        val stub = Intent(Intent.ACTION_VIEW).apply {
             this.component = ComponentName(
                 command.packageName,
                 command.activityClass ?: command.packageName
             )
             putExtra(EXTRA_ALREADY_LAUNCHED, true)
         }
+        return ShellLaunchOutcome.Success(stub)
     }
 
     private fun commandForCustomScheme(

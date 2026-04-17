@@ -935,27 +935,6 @@ class GameLauncher @Inject constructor(
             )
         }
 
-        if (emulator.launchAction == Intent.ACTION_VIEW) {
-            val uri = getFileUri(romFile)
-            val mimeType = config.mimeTypeOverride ?: getMimeType(romFile)
-            return EffectiveLaunchCommand(
-                action = emulator.launchAction,
-                packageName = emulator.packageName,
-                activityClass = config.activityClass,
-                dataUri = uri,
-                mimeType = mimeType,
-                intentFlags = if (forResume) {
-                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                } else {
-                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                },
-                grantReadUriTo = listOf(uri),
-                clipDataUri = uri
-            )
-        }
-
         val resolvedExtras = mutableListOf<ResolvedExtra>()
         var documentUri: Uri? = null
         var fileUri: Uri? = null
@@ -987,6 +966,32 @@ class GameLauncher @Inject constructor(
                 is ExtraValue.Literal -> resolvedExtras += ResolvedExtra.StringExtra(key, extraValue.value)
                 is ExtraValue.BooleanLiteral -> resolvedExtras += ResolvedExtra.BoolExtra(key, extraValue.value)
             }
+        }
+
+        if (emulator.launchAction == Intent.ACTION_VIEW) {
+            val uri = fileUri ?: getFileUri(romFile)
+            val mimeType = config.mimeTypeOverride ?: getMimeType(romFile)
+            val grantUris = mutableListOf(uri)
+            if (documentUri != null && documentUri !in grantUris) {
+                grantUris += documentUri!!
+            }
+            return EffectiveLaunchCommand(
+                action = emulator.launchAction,
+                packageName = emulator.packageName,
+                activityClass = config.activityClass,
+                dataUri = uri,
+                mimeType = mimeType,
+                extras = resolvedExtras,
+                intentFlags = if (forResume) {
+                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                } else {
+                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                },
+                grantReadUriTo = grantUris,
+                clipDataUri = documentUri ?: uri
+            )
         }
 
         val hasUriExtra = fileUri != null || documentUri != null

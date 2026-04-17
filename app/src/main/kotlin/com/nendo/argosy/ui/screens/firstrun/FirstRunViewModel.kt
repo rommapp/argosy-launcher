@@ -358,6 +358,10 @@ class FirstRunViewModel @Inject constructor(
         _uiState.update { it.copy(rommPairingCode = code, connectionError = null) }
     }
 
+    fun clearRommPairingCode() {
+        _uiState.update { it.copy(rommPairingCode = "", connectionError = null) }
+    }
+
     fun showScanner() {
         _uiState.update { it.copy(rommShowScanner = true) }
     }
@@ -391,7 +395,8 @@ class FirstRunViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isConnecting = false,
-                    connectionError = "Enter the full 8-character pairing code"
+                    connectionError = "Enter the full 8-character pairing code",
+                    rommPairingCode = ""
                 )
             }
             return
@@ -403,7 +408,8 @@ class FirstRunViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isConnecting = false,
-                        connectionError = result.message
+                        connectionError = result.message,
+                        rommPairingCode = ""
                     )
                 }
             }
@@ -429,7 +435,8 @@ class FirstRunViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isConnecting = false,
-                        connectionError = "Failed to fetch library: ${summary.message}"
+                        connectionError = "Failed to fetch library: ${summary.message}",
+                        rommPairingCode = ""
                     )
                 }
             }

@@ -34,6 +34,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Sync
@@ -42,6 +43,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -56,10 +58,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
@@ -211,6 +217,7 @@ fun FirstRunScreen(
                     rommFocusField = uiState.rommFocusField,
                     onUrlChange = viewModel::setRommUrl,
                     onPairingCodeChange = viewModel::setRommPairingCode,
+                    onClearPairingCode = { viewModel.clearRommPairingCode() },
                     onConnect = { viewModel.connectToRomm() },
                     onScan = { viewModel.showScanner() },
                     onBack = { viewModel.previousStep() },
@@ -317,12 +324,25 @@ fun FirstRunScreen(
 }
 
 @Composable
-private fun WelcomeStep(isFocused: Boolean, onGetStarted: () -> Unit) {
+private fun StepColumn(
+    modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+        horizontalAlignment = horizontalAlignment,
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd),
+        content = content
+    )
+}
+
+@Composable
+private fun WelcomeStep(isFocused: Boolean, onGetStarted: () -> Unit) {
+    StepColumn {
+        Spacer(modifier = Modifier.height(Dimens.spacingXl))
         Text(
             text = "ARGOSY",
             style = MaterialTheme.typography.displayMedium,
@@ -355,6 +375,7 @@ private fun RommLoginStep(
     rommFocusField: Int?,
     onUrlChange: (String) -> Unit,
     onPairingCodeChange: (String) -> Unit,
+    onClearPairingCode: () -> Unit,
     onConnect: () -> Unit,
     onScan: () -> Unit,
     onBack: () -> Unit,
@@ -363,6 +384,12 @@ private fun RommLoginStep(
     val inputShape = RoundedCornerShape(Dimens.radiusMd)
     val urlFocusRequester = remember { FocusRequester() }
     val pairingCodeFocusRequester = remember { FocusRequester() }
+    val focusManager: FocusManager = LocalFocusManager.current
+    val keyboard: SoftwareKeyboardController? = LocalSoftwareKeyboardController.current
+
+    val normalizedCode = pairingCode.replace("-", "").replace(" ", "")
+    val codeComplete = normalizedCode.length == 8
+    val canConnect = !isConnecting && url.isNotBlank() && codeComplete
 
     val hasScanButton = hasCamera
     val connectIndex = 2
@@ -379,10 +406,14 @@ private fun RommLoginStep(
         }
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    LaunchedEffect(codeComplete) {
+        if (codeComplete) {
+            keyboard?.hide()
+            focusManager.clearFocus()
+        }
+    }
+
+    StepColumn {
         StepHeader(step = 1, title = "Rom Manager Login", totalSteps = 4)
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
@@ -413,12 +444,29 @@ private fun RommLoginStep(
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-        com.nendo.argosy.ui.screens.settings.components.PairingCodeInput(
-            code = pairingCode,
-            onCodeChange = onPairingCodeChange,
-            isFocused = focusedIndex == 1,
-            focusRequester = pairingCodeFocusRequester
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            com.nendo.argosy.ui.screens.settings.components.PairingCodeInput(
+                code = pairingCode,
+                onCodeChange = onPairingCodeChange,
+                isFocused = focusedIndex == 1,
+                focusRequester = pairingCodeFocusRequester
+            )
+            if (pairingCode.isNotEmpty()) {
+                IconButton(
+                    onClick = onClearPairingCode,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = "Clear code",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
 
         if (error != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -444,7 +492,7 @@ private fun RommLoginStep(
             FocusableButton(
                 text = if (isConnecting) "Connecting..." else "Connect",
                 isFocused = focusedIndex == connectIndex,
-                enabled = !isConnecting && url.isNotBlank(),
+                enabled = canConnect,
                 onClick = onConnect
             )
         }
@@ -469,10 +517,7 @@ private fun RommSuccessStep(
     isFocused: Boolean,
     onContinue: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    StepColumn {
         Icon(
             Icons.Default.Check,
             contentDescription = null,
@@ -517,10 +562,7 @@ private fun PermissionsStep(
     onRequestUsageStats: () -> Unit,
     onContinue: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    StepColumn {
         StepHeader(step = 2, title = "Permissions", totalSteps = 4)
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
@@ -653,10 +695,7 @@ private fun RomPathStep(
     onChooseFolder: () -> Unit,
     onContinue: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    StepColumn {
         StepHeader(step = 3, title = "Games Path", totalSteps = 4)
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
@@ -724,10 +763,7 @@ private fun ImageCacheStep(
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    StepColumn {
         Text(
             text = "OPTIONAL",
             style = MaterialTheme.typography.labelMedium,
@@ -815,10 +851,7 @@ private fun SaveSyncStep(
     onEnable: () -> Unit,
     onSkip: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    StepColumn {
         StepHeader(step = 4, title = "Save Data Sync", totalSteps = 4)
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
@@ -880,7 +913,7 @@ private fun PlatformSelectStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
-            .padding(Dimens.spacingXl)
+            .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd)
     ) {
         Text(
             text = "SELECT PLATFORMS",
@@ -988,10 +1021,7 @@ private fun CorePromptStep(
     onDownload: () -> Unit,
     onSkip: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    StepColumn {
         Icon(
             imageVector = Icons.Default.Download,
             contentDescription = null,
@@ -1073,7 +1103,7 @@ private fun CoreDownloadStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
-            .padding(Dimens.spacingXl)
+            .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd)
     ) {
         Icon(
             imageVector = Icons.Default.Download,
@@ -1246,10 +1276,7 @@ private fun CompleteStep(
     isFocused: Boolean,
     onStart: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(Dimens.spacingXl)
-    ) {
+    StepColumn {
         Icon(
             imageVector = Icons.Default.Check,
             contentDescription = null,

@@ -1516,7 +1516,8 @@ abstract class ALauncherDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "UPDATE emulator_launch_args SET extraBinding = NULL " +
-                        "WHERE emulatorId IN ('nethersx2', 'aethersx2') AND extraBinding = 'FILE_PROVIDER'"
+                        "WHERE emulatorId IN ('nethersx2', 'aethersx2', 'duckstation') " +
+                        "AND extraBinding = 'FILE_PROVIDER'"
                 )
             }
         }

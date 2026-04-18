@@ -41,6 +41,7 @@ import javax.inject.Singleton
 
 private const val TAG = "SteamContentManager"
 private const val DOWNLOAD_INFO_DIR = ".DownloadInfo"
+private const val GN_PACKAGE_PATH = "/Android/data/app.gamenative/"
 
 sealed class SteamDownloadState {
     data object Idle : SteamDownloadState()
@@ -1274,7 +1275,62 @@ class SteamContentManager @Inject constructor(
         val gameName: String?
     )
 
+    private suspend fun reclaimStrandedInstalls() {
+        val steamGames = gameDao.getAllWithSteamAppId()
+        var attempted = 0
+        for (game in steamGames) {
+            val appId = game.steamAppId ?: continue
+            val current = game.localPath ?: continue
+            if (current.contains(GN_PACKAGE_PATH)) continue
+
+            val source = File(current)
+            if (!source.exists() || !source.isDirectory) continue
+            if (!File(source, ".download_complete").exists()) {
+                Log.d(TAG, "Skipping reclaim for ${game.title}: no .download_complete at $current")
+                continue
+            }
+
+            if (_activeDownload.value?.appId == appId) {
+                Log.w(TAG, "Cancelling in-progress download for ${game.title} before reclaim")
+                cancelDownload()
+                kotlinx.coroutines.delay(500)
+            }
+
+            val target = pathResolver.snapshotInstallDirAtEnqueue(appId, game.steamInstallDir)
+            if (target.absolutePath == current) continue
+            if (target.exists() && target.listFiles()?.isNotEmpty() == true) {
+                Log.w(TAG, "Skipping reclaim for ${game.title}: destination non-empty at ${target.absolutePath}")
+                continue
+            }
+
+            val parent = target.parentFile ?: continue
+            parent.mkdirs()
+            val free = pathResolver.getAvailableBytes(parent)
+            val needed = pathResolver.getDirectorySize(source)
+            if (free != null && free < needed) {
+                Log.w(TAG, "Skipping reclaim for ${game.title}: need ${needed / 1024 / 1024}MB, have ${(free / 1024 / 1024)}MB at ${parent.absolutePath}")
+                continue
+            }
+
+            attempted++
+            Log.i(TAG, "Reclaiming ${game.title}: $current -> ${target.absolutePath}")
+            if (pathResolver.moveDirectory(source, target)) {
+                if (!File(target, ".download_complete").exists()) {
+                    runCatching { File(target, ".download_complete").createNewFile() }
+                }
+                gameDao.update(game.copy(localPath = target.absolutePath, source = GameSource.STEAM))
+                steamDownloadQueueDao.updateInstallPath(appId, target.absolutePath)
+            } else {
+                Log.w(TAG, "Reclaim move failed for ${game.title}; leaving at $current")
+            }
+        }
+        if (attempted > 0) {
+            Log.i(TAG, "Reclaim pass: attempted $attempted stranded install(s)")
+        }
+    }
+
     suspend fun discoverLocalSteamGames(): Int = withContext(Dispatchers.IO) {
+        reclaimStrandedInstalls()
         var discovered = 0
 
         val steamDir = pathResolver.getSteamDir()

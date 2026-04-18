@@ -962,6 +962,11 @@ class GameLauncher @Inject constructor(
                     fileUri = uri
                     resolvedExtras += ResolvedExtra.UriExtra(key, uri)
                 }
+                is ExtraValue.FileUriString -> {
+                    val uri = getFileUri(romFile)
+                    fileUri = uri
+                    resolvedExtras += ResolvedExtra.StringExtra(key, uri.toString())
+                }
                 is ExtraValue.Platform -> resolvedExtras += ResolvedExtra.StringExtra(key, platformSlug)
                 is ExtraValue.Literal -> resolvedExtras += ResolvedExtra.StringExtra(key, extraValue.value)
                 is ExtraValue.BooleanLiteral -> resolvedExtras += ResolvedExtra.BoolExtra(key, extraValue.value)

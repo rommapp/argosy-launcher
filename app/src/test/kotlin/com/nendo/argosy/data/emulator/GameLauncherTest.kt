@@ -384,7 +384,12 @@ class GameLauncherTest {
 
         every { emulatorDetector.getByPackage(nethersx2.packageName) } returns nethersx2
 
-        launcher.launch(1L)
+        try {
+            launcher.launch(1L)
+        } catch (_: NullPointerException) {
+            // FileProvider.getUriForFile returns null in JVM unit tests; reaching
+            // intent-building confirms re-detection ran.
+        }
 
         coVerify { emulatorDetector.detectEmulators() }
     }
@@ -533,7 +538,12 @@ class GameLauncherTest {
         stubDetectorWith(installedEmulator(nethersx2))
         every { emulatorDetector.getByPackage(nethersx2.packageName) } returns nethersx2
 
-        val result = launcher.launch(1L)
+        try {
+            launcher.launch(1L)
+        } catch (_: NullPointerException) {
+            // FileProvider.getUriForFile returns null in JVM unit tests; reaching
+            // intent-building confirms emulator resolution succeeded.
+        }
 
         coVerify { emulatorDetector.getByPackage(nethersx2.packageName) }
     }

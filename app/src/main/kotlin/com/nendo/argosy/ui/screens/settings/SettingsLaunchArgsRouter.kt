@@ -78,17 +78,24 @@ internal fun computeBindingDefaults(emulator: EmulatorDef): BindingDefaults {
             else -> {
                 val hasDocUri = config.intentExtras.values.any { it is ExtraValue.DocumentUri }
                 val hasFileUri = config.intentExtras.values.any { it is ExtraValue.FileUri }
+                val hasFileUriString = config.intentExtras.values.any { it is ExtraValue.FileUriString }
                 val hasFilePath = config.intentExtras.values.any { it is ExtraValue.FilePath }
                 val hasAbsPath = config.useAbsolutePath
 
                 val extrasLabel = when {
                     hasDocUri -> "Document URI (SAF)"
                     hasFileUri -> "FileProvider URI"
+                    hasFileUriString -> "FileProvider URI (string)"
                     hasFilePath || hasAbsPath -> "Absolute path"
                     else -> "None"
                 }
                 val extraKeys = config.intentExtras.entries
-                    .filter { it.value is ExtraValue.FilePath || it.value is ExtraValue.FileUri || it.value is ExtraValue.DocumentUri }
+                    .filter {
+                        it.value is ExtraValue.FilePath ||
+                            it.value is ExtraValue.FileUri ||
+                            it.value is ExtraValue.FileUriString ||
+                            it.value is ExtraValue.DocumentUri
+                    }
                     .map { it.key }
                 val extrasWithKeys = if (extraKeys.isNotEmpty()) {
                     "$extrasLabel (${extraKeys.joinToString()})"

@@ -78,6 +78,7 @@ sealed class LaunchConfig {
 sealed class ExtraValue {
     object FilePath : ExtraValue()
     object FileUri : ExtraValue()
+    object FileUriString : ExtraValue()
     object DocumentUri : ExtraValue()
     object Platform : ExtraValue()
     data class Literal(val value: String) : ExtraValue()
@@ -425,9 +426,8 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
+                intentExtras = mapOf("bootPath" to ExtraValue.FileUriString)
             ),
-            defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases",
             releaseSource = ReleaseSource.GitHub("Trixarian/NetherSX2-patch")
         ),
@@ -440,9 +440,8 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
-            ),
-            defaultLaunchMethod = LaunchMethod.SHELL
+                intentExtras = mapOf("bootPath" to ExtraValue.FileUriString)
+            )
         ),
         EmulatorDef(
             id = "armsx2",
@@ -1147,7 +1146,7 @@ object EmulatorRegistry {
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.Custom(
                 activityClass = "xyz.aethersx2.android.EmulationActivity",
-                intentExtras = mapOf("bootPath" to ExtraValue.FilePath)
+                intentExtras = mapOf("bootPath" to ExtraValue.FileUriString)
             ),
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
         ),

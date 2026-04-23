@@ -635,6 +635,12 @@ class LibretroActivity : ComponentActivity() {
                     }
                 }
             },
+            onResetGame = {
+                if (!netplayInSession) {
+                    retroView.reset()
+                    inGameMessage = "Game reset"
+                }
+            },
             onRewindChanged = { rw ->
                 if (!netplayInSession && rw && !isRewinding) {
                     isRewinding = true
@@ -645,6 +651,11 @@ class LibretroActivity : ComponentActivity() {
             onAutoSaveState = ::performAutoSaveState,
             onQuit = ::finish
         )
+        // Deferred hold-timer firings and tap-on-release dispatches route back
+        // through HotkeyDispatcher via this callback.
+        inputConfig.hotkeyManager.setDispatch { action ->
+            hotkeyDispatcher.dispatch(action)
+        }
     }
 
     private fun buildContentView() {
@@ -1040,6 +1051,10 @@ class LibretroActivity : ComponentActivity() {
             },
             onClearHotkey = { action ->
                 repo.deleteHotkey(action)
+                inputConfig.refreshHotkeys()
+            },
+            onSetHotkeyHoldMs = { action, holdMs ->
+                repo.setHotkeyHoldMs(action, holdMs)
                 inputConfig.refreshHotkeys()
             }
         )

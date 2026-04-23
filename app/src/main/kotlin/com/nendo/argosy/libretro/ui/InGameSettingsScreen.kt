@@ -100,7 +100,8 @@ data class InGameModalCallbacks(
     val onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean, String?) -> Unit,
     val onApplyPreset: suspend (ControllerInfo, String) -> Unit,
     val onSaveHotkey: suspend (HotkeyAction, List<Int>) -> Unit,
-    val onClearHotkey: suspend (HotkeyAction) -> Unit
+    val onClearHotkey: suspend (HotkeyAction) -> Unit,
+    val onSetHotkeyHoldMs: suspend (HotkeyAction, Long) -> Unit
 )
 
 internal sealed class InGameControlsItem(
@@ -402,6 +403,7 @@ fun InGameSettingsScreen(
                 hotkeys = modalCallbacks.hotkeys,
                 onSaveHotkey = modalCallbacks.onSaveHotkey,
                 onClearHotkey = modalCallbacks.onClearHotkey,
+                onSetHoldMs = modalCallbacks.onSetHotkeyHoldMs,
                 onDismiss = { showHotkeysModal = false }
             )
         }

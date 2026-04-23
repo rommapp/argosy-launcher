@@ -302,6 +302,7 @@ fun BuiltinControlsSection(
                 hotkeys = hotkeys,
                 onSaveHotkey = { action, keyCodes -> viewModel.saveHotkey(action, keyCodes) },
                 onClearHotkey = { action -> viewModel.clearHotkey(action) },
+                onSetHoldMs = { action, holdMs -> viewModel.setHotkeyHoldMs(action, holdMs) },
                 onDismiss = { viewModel.hideHotkeysModal() }
             )
         }

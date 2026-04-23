@@ -426,6 +426,13 @@ class SettingsViewModel @Inject constructor(
         inputConfigRepository.deleteHotkey(action)
     }
 
+    suspend fun setHotkeyHoldMs(
+        action: com.nendo.argosy.data.local.entity.HotkeyAction,
+        holdMs: Long
+    ) {
+        inputConfigRepository.setHotkeyHoldMs(action, holdMs)
+    }
+
     fun setBuiltinBlackFrameInsertion(enabled: Boolean) = routeSetBuiltinBlackFrameInsertion(this, enabled)
     fun cycleBuiltinShader(direction: Int) = routeCycleBuiltinShader(this, direction)
 

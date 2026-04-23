@@ -116,7 +116,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         SteamCompletedDepotEntity::class,
         EmulatorLaunchArgsEntity::class
     ],
-    version = 106,
+    version = 107,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -1525,6 +1525,12 @@ abstract class ALauncherDatabase : RoomDatabase() {
         val MIGRATION_104_105 = object : Migration(104, 105) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN isManagedByGn INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_106_107 = object : Migration(106, 107) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE hotkeys ADD COLUMN holdMs INTEGER NOT NULL DEFAULT 0")
             }
         }
 

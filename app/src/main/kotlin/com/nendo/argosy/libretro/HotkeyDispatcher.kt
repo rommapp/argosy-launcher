@@ -16,6 +16,7 @@ class HotkeyDispatcher(
     private val onShowMenu: () -> Unit,
     private val onFastForwardChanged: (Boolean) -> Unit,
     private val onRewindChanged: (Boolean) -> Unit,
+    private val onResetGame: () -> Unit,
     private val onAutoSaveState: () -> Unit,
     private val onQuit: () -> Unit
 ) {
@@ -79,6 +80,15 @@ class HotkeyDispatcher(
                 onAutoSaveState()
                 saveStateManager.saveSram(getRetroView())
                 onQuit()
+                return true
+            }
+            HotkeyAction.RESET_GAME -> {
+                if (isNetplayInSession()) {
+                    showToast("Reset disabled during netplay")
+                    return true
+                }
+                onResetGame()
+                hotkeyManager.clearState()
                 return true
             }
         }

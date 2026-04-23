@@ -34,6 +34,9 @@ interface HotkeyDao {
     @Query("UPDATE hotkeys SET buttonComboJson = :buttonComboJson, isEnabled = :isEnabled WHERE action = :action AND (controllerId IS NULL AND :controllerId IS NULL OR controllerId = :controllerId)")
     suspend fun updateCombo(action: HotkeyAction, controllerId: String?, buttonComboJson: String, isEnabled: Boolean)
 
+    @Query("UPDATE hotkeys SET holdMs = :holdMs WHERE action = :action AND (controllerId IS NULL AND :controllerId IS NULL OR controllerId = :controllerId)")
+    suspend fun updateHoldMs(action: HotkeyAction, controllerId: String?, holdMs: Long)
+
     @Query("DELETE FROM hotkeys WHERE action = :action")
     suspend fun deleteByAction(action: HotkeyAction)
 

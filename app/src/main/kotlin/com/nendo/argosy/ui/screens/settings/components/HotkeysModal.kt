@@ -55,12 +55,15 @@ import kotlinx.coroutines.launch
 
 private val HOTKEY_ACTIONS = listOf(
     HotkeyAction.IN_GAME_MENU,
+    HotkeyAction.RESET_GAME,
     HotkeyAction.QUICK_SAVE,
     HotkeyAction.QUICK_LOAD,
     HotkeyAction.FAST_FORWARD,
     HotkeyAction.REWIND,
     HotkeyAction.QUICK_SUSPEND
 )
+
+private val HOLD_DELAY_CYCLE = listOf(0L, 1000L, 2000L, 3000L)
 
 private sealed class HotkeysState {
     data class ActionList(val focusedIndex: Int = 0) : HotkeysState()
@@ -77,6 +80,7 @@ fun HotkeysModal(
     hotkeys: List<HotkeyEntity>,
     onSaveHotkey: suspend (HotkeyAction, List<Int>) -> Unit,
     onClearHotkey: suspend (HotkeyAction) -> Unit,
+    onSetHoldMs: suspend (HotkeyAction, Long) -> Unit,
     onDismiss: () -> Unit
 ) {
     var state by remember { mutableStateOf<HotkeysState>(HotkeysState.ActionList()) }
@@ -86,6 +90,17 @@ fun HotkeysModal(
     fun getComboForAction(action: HotkeyAction): List<Int> {
         val entity = hotkeys.find { it.action == action } ?: return emptyList()
         return parseComboJson(entity.buttonComboJson)
+    }
+
+    fun getHoldMsForAction(action: HotkeyAction): Long {
+        return hotkeys.find { it.action == action }?.holdMs ?: 0L
+    }
+
+    fun cycleHoldDelay(action: HotkeyAction) {
+        val currentHoldMs = getHoldMsForAction(action)
+        val currentIdx = HOLD_DELAY_CYCLE.indexOf(currentHoldMs).coerceAtLeast(0)
+        val nextHoldMs = HOLD_DELAY_CYCLE[(currentIdx + 1) % HOLD_DELAY_CYCLE.size]
+        scope.launch { onSetHoldMs(action, nextHoldMs) }
     }
 
     DisposableEffect(state, gamepadInputHandler) {
@@ -108,6 +123,10 @@ fun HotkeysModal(
                                 if (action != null) {
                                     scope.launch { onClearHotkey(action) }
                                 }
+                            }
+                            KeyEvent.KEYCODE_BUTTON_X -> {
+                                val action = HOTKEY_ACTIONS.getOrNull(currentState.focusedIndex)
+                                if (action != null) cycleHoldDelay(action)
                             }
                             KeyEvent.KEYCODE_DPAD_UP -> {
                                 if (currentState.focusedIndex > 0) {
@@ -159,7 +178,9 @@ fun HotkeysModal(
             hotkeys = hotkeys,
             focusedIndex = currentState.focusedIndex,
             getComboForAction = ::getComboForAction,
+            getHoldMsForAction = ::getHoldMsForAction,
             onSelectAction = { action -> state = HotkeysState.Recording(action = action) },
+            onCycleHoldDelay = ::cycleHoldDelay,
             onDismiss = onDismiss
         )
         is HotkeysState.Recording -> RecordingContent(
@@ -192,7 +213,9 @@ private fun ActionListContent(
     hotkeys: List<HotkeyEntity>,
     focusedIndex: Int,
     getComboForAction: (HotkeyAction) -> List<Int>,
+    getHoldMsForAction: (HotkeyAction) -> Long,
     onSelectAction: (HotkeyAction) -> Unit,
+    onCycleHoldDelay: (HotkeyAction) -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -207,6 +230,7 @@ private fun ActionListContent(
         footerHints = listOf(
             InputButton.A to "Record",
             InputButton.B to "Back",
+            InputButton.X to "Hold delay",
             InputButton.Y to "Clear"
         )
     ) {
@@ -217,11 +241,14 @@ private fun ActionListContent(
         ) {
             itemsIndexed(HOTKEY_ACTIONS) { index, action ->
                 val combo = getComboForAction(action)
+                val holdMs = getHoldMsForAction(action)
                 HotkeyRow(
                     action = action,
                     combo = combo,
+                    holdMs = holdMs,
                     isFocused = index == focusedIndex,
-                    onClick = { onSelectAction(action) }
+                    onClick = { onSelectAction(action) },
+                    onSecondaryClick = { onCycleHoldDelay(action) }
                 )
             }
         }
@@ -232,8 +259,10 @@ private fun ActionListContent(
 private fun HotkeyRow(
     action: HotkeyAction,
     combo: List<Int>,
+    holdMs: Long,
     isFocused: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onSecondaryClick: () -> Unit
 ) {
     val backgroundColor = if (isFocused) {
         MaterialTheme.colorScheme.primaryContainer
@@ -250,6 +279,7 @@ private fun HotkeyRow(
     } else {
         MaterialTheme.colorScheme.onSurface
     }
+    val secondaryAlpha = if (isFocused) 1.0f else 0.7f
 
     Row(
         modifier = Modifier
@@ -271,11 +301,24 @@ private fun HotkeyRow(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (holdMs > 0L) {
+                Text(
+                    text = "Hold ${holdMs / 1000}s",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor.copy(alpha = secondaryAlpha),
+                    modifier = Modifier.clickableNoFocus(onClick = onSecondaryClick)
+                )
+                Text(
+                    text = "·",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor.copy(alpha = secondaryAlpha * 0.6f)
+                )
+            }
             Text(
                 text = HotkeyManager.formatCombo(combo),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (combo.isNotEmpty()) {
-                    contentColor.copy(alpha = 0.7f)
+                    contentColor.copy(alpha = secondaryAlpha)
                 } else {
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 }
@@ -415,6 +458,7 @@ private fun RecordingContent(
 private fun getActionDisplayName(action: HotkeyAction): String {
     return when (action) {
         HotkeyAction.IN_GAME_MENU -> "In-Game Menu"
+        HotkeyAction.RESET_GAME -> "Reset Game"
         HotkeyAction.QUICK_SAVE -> "Quick Save"
         HotkeyAction.QUICK_LOAD -> "Quick Load"
         HotkeyAction.FAST_FORWARD -> "Fast Forward"

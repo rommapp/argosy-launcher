@@ -33,7 +33,7 @@ class InputConfigCoordinator(
         private set
 
     fun initialize() {
-        hotkeyManager = HotkeyManager(inputConfigRepository)
+        hotkeyManager = HotkeyManager(inputConfigRepository, scope)
 
         scope.launch {
             inputConfigRepository.clearAutoDetectedMappings()

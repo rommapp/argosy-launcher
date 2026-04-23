@@ -291,7 +291,8 @@ class InputConfigRepository @Inject constructor(
         action: HotkeyAction,
         keyCodes: List<Int>,
         controllerId: String? = null,
-        enabled: Boolean = true
+        enabled: Boolean = true,
+        holdMs: Long = 0
     ) = withContext(Dispatchers.IO) {
         val comboJson = encodeComboJson(keyCodes)
 
@@ -309,11 +310,20 @@ class InputConfigRepository @Inject constructor(
                     action = action,
                     buttonComboJson = comboJson,
                     controllerId = controllerId,
-                    isEnabled = enabled
+                    isEnabled = enabled,
+                    holdMs = holdMs
                 )
             )
         }
         Logger.info(TAG, "Set hotkey for $action: ${keyCodes.map { KeyEvent.keyCodeToString(it) }}")
+    }
+
+    suspend fun setHotkeyHoldMs(
+        action: HotkeyAction,
+        holdMs: Long,
+        controllerId: String? = null
+    ) = withContext(Dispatchers.IO) {
+        hotkeyDao.updateHoldMs(action, controllerId, holdMs)
     }
 
     suspend fun enableHotkey(action: HotkeyAction, enabled: Boolean) = withContext(Dispatchers.IO) {
@@ -357,6 +367,12 @@ class InputConfigRepository @Inject constructor(
         setHotkey(
             action = HotkeyAction.REWIND,
             keyCodes = listOf(KeyEvent.KEYCODE_BUTTON_L2)
+        )
+
+        setHotkey(
+            action = HotkeyAction.RESET_GAME,
+            keyCodes = listOf(KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_BUTTON_SELECT),
+            holdMs = 1000
         )
     }
 

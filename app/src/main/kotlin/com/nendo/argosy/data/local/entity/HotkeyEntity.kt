@@ -10,7 +10,8 @@ enum class HotkeyAction {
     FAST_FORWARD,
     REWIND,
     IN_GAME_MENU,
-    QUICK_SUSPEND
+    QUICK_SUSPEND,
+    RESET_GAME
 }
 
 @Entity(
@@ -23,5 +24,7 @@ data class HotkeyEntity(
     val action: HotkeyAction,
     val buttonComboJson: String,
     val controllerId: String? = null,
-    val isEnabled: Boolean = true
+    val isEnabled: Boolean = true,
+    /** 0 = fire immediately on combo match; >0 = combo must be held this many ms to fire. */
+    val holdMs: Long = 0
 )

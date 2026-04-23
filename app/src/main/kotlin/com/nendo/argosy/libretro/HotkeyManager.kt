@@ -1,13 +1,19 @@
 package com.nendo.argosy.libretro
 
+import android.os.SystemClock
 import android.view.KeyEvent
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.repository.InputConfigRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 
 class HotkeyManager(
-    private val inputConfigRepository: InputConfigRepository
+    private val inputConfigRepository: InputConfigRepository,
+    private val scope: CoroutineScope? = null
 ) {
     private var hotkeys: List<HotkeyConfig> = emptyList()
     private val pressedKeys = mutableSetOf<Int>()
@@ -15,12 +21,25 @@ class HotkeyManager(
     private var limitToPlayer1 = true
     private var player1ControllerId: String? = null
     private var platformMappedButtons: Set<Int> = emptySet()
+    private var dispatchCallback: ((HotkeyAction) -> Unit)? = null
+
+    // Pending combo state — used when a combo has a hold variant, an instant+hold
+    // pair, or any hold-only hotkey. Instant actions that share a combo with a hold
+    // variant are deferred so we can distinguish tap vs hold on release.
+    private var pendingHoldJob: Job? = null
+    private var pendingComboKeyCodes: Set<Int> = emptySet()
+    private var pendingInstantAction: HotkeyAction? = null
+    private var pendingHoldAction: HotkeyAction? = null
+    private var pendingHoldMs: Long = 0
+    private var pendingComboStartTime: Long = 0
+    private var holdHasFired: Boolean = false
 
     data class HotkeyConfig(
         val action: HotkeyAction,
         val keyCodes: Set<Int>,
         val controllerId: String?,
-        val isEnabled: Boolean
+        val isEnabled: Boolean,
+        val holdMs: Long
     )
 
     fun setHotkeys(entities: List<HotkeyEntity>) {
@@ -29,7 +48,8 @@ class HotkeyManager(
                 action = entity.action,
                 keyCodes = parseComboJson(entity.buttonComboJson).toSet(),
                 controllerId = entity.controllerId,
-                isEnabled = entity.isEnabled
+                isEnabled = entity.isEnabled,
+                holdMs = entity.holdMs
             )
         }
     }
@@ -46,6 +66,16 @@ class HotkeyManager(
         platformMappedButtons = buttons
     }
 
+    /**
+     * Register the dispatcher used for async firing (hold-timer completion and
+     * deferred tap-on-release). Instant hotkeys with no hold sibling still fire
+     * via [onKeyDown]'s return value so the existing synchronous call path keeps
+     * working.
+     */
+    fun setDispatch(callback: (HotkeyAction) -> Unit) {
+        dispatchCallback = callback
+    }
+
     fun onKeyDown(keyCode: Int, controllerId: String?): HotkeyAction? {
         if (!isHotkeyKey(keyCode)) return null
 
@@ -57,27 +87,96 @@ class HotkeyManager(
         pressedKeys.add(keyCode)
         triggeredAction = null
 
-        for (hotkey in hotkeys) {
-            if (!hotkey.isEnabled) continue
-            if (hotkey.controllerId != null && hotkey.controllerId != controllerId) continue
-            if (hotkey.keyCodes.isNotEmpty() && pressedKeys.containsAll(hotkey.keyCodes)) {
-                if (alreadyPressed.containsAll(hotkey.keyCodes)) continue
-                if (hotkey.keyCodes.size == 1 && hotkey.keyCodes.first() in platformMappedButtons) {
-                    continue
-                }
-                triggeredAction = hotkey.action
-                return hotkey.action
-            }
+        val newlyMatched = hotkeys.filter { hotkey ->
+            if (!hotkey.isEnabled) return@filter false
+            if (hotkey.controllerId != null && hotkey.controllerId != controllerId) return@filter false
+            if (hotkey.keyCodes.isEmpty()) return@filter false
+            if (!pressedKeys.containsAll(hotkey.keyCodes)) return@filter false
+            if (alreadyPressed.containsAll(hotkey.keyCodes)) return@filter false
+            if (hotkey.keyCodes.size == 1 && hotkey.keyCodes.first() in platformMappedButtons) return@filter false
+            true
         }
 
-        return null
+        if (newlyMatched.isEmpty()) return null
+
+        val instantHotkey = newlyMatched.firstOrNull { it.holdMs == 0L }
+        val holdHotkey = newlyMatched.firstOrNull { it.holdMs > 0L }
+
+        return when {
+            holdHotkey == null && instantHotkey != null -> {
+                triggeredAction = instantHotkey.action
+                instantHotkey.action
+            }
+            holdHotkey != null -> {
+                startPending(holdHotkey, instantHotkey)
+                null
+            }
+            else -> null
+        }
+    }
+
+    private fun startPending(holdHotkey: HotkeyConfig, instantHotkey: HotkeyConfig?) {
+        cancelPending()
+        pendingInstantAction = instantHotkey?.action
+        pendingHoldAction = holdHotkey.action
+        pendingComboKeyCodes = holdHotkey.keyCodes
+        pendingHoldMs = holdHotkey.holdMs
+        pendingComboStartTime = SystemClock.elapsedRealtime()
+        holdHasFired = false
+
+        val launchScope = scope
+        if (launchScope != null) {
+            pendingHoldJob = launchScope.launch {
+                delay(holdHotkey.holdMs)
+                // Re-check inside the scope -- the combo might have been released.
+                if (pressedKeys.containsAll(pendingComboKeyCodes) &&
+                    pendingHoldAction == holdHotkey.action
+                ) {
+                    holdHasFired = true
+                    triggeredAction = holdHotkey.action
+                    dispatchCallback?.invoke(holdHotkey.action)
+                }
+            }
+        }
+    }
+
+    private fun cancelPending() {
+        pendingHoldJob?.cancel()
+        pendingHoldJob = null
+    }
+
+    private fun clearPending() {
+        cancelPending()
+        pendingInstantAction = null
+        pendingHoldAction = null
+        pendingComboKeyCodes = emptySet()
+        pendingHoldMs = 0
+        pendingComboStartTime = 0
+        holdHasFired = false
     }
 
     fun onKeyUp(keyCode: Int): HotkeyAction? {
+        val wasInCombo = keyCode in pendingComboKeyCodes
         pressedKeys.remove(keyCode)
+
+        // Pending combo broken before hold timer fired — decide whether tap wins.
+        if (wasInCombo && !holdHasFired && pendingHoldAction != null) {
+            val elapsed = SystemClock.elapsedRealtime() - pendingComboStartTime
+            val instantAction = pendingInstantAction
+            val tapQualifies = instantAction != null && elapsed < TAP_THRESHOLD_MS
+            clearPending()
+            if (tapQualifies) {
+                triggeredAction = instantAction
+                dispatchCallback?.invoke(instantAction!!)
+                return instantAction
+            }
+            // 200ms <= elapsed < holdMs: discard both (nothing fires).
+        }
+
         val action = triggeredAction
         if (pressedKeys.isEmpty()) {
             triggeredAction = null
+            clearPending()
         }
         return action
     }
@@ -92,6 +191,7 @@ class HotkeyManager(
     fun clearState() {
         pressedKeys.clear()
         triggeredAction = null
+        clearPending()
     }
 
     private fun parseComboJson(jsonStr: String): List<Int> {
@@ -108,6 +208,14 @@ class HotkeyManager(
     }
 
     companion object {
+        /**
+         * Max elapsed ms between combo-press and combo-release that still counts as
+         * a "tap" when an instant+hold pair shares a combo. Above this but below the
+         * hold's own threshold, both actions are discarded -- the user didn't commit
+         * to either.
+         */
+        private const val TAP_THRESHOLD_MS = 200L
+
         private val HOTKEY_KEYS = setOf(
             KeyEvent.KEYCODE_BUTTON_A,
             KeyEvent.KEYCODE_BUTTON_B,

@@ -177,8 +177,14 @@ class FirstRunViewModel @Inject constructor(
     }
 
     fun skipCorePrompt() {
+        val hadMissingCores = _uiState.value.missingCoreCount > 0
         _uiState.update { state ->
             state.copy(currentStep = FirstRunStep.COMPLETE, focusedIndex = 0)
+        }
+        if (hadMissingCores) {
+            viewModelScope.launch {
+                preferencesRepository.setBuiltinLibretroEnabled(false)
+            }
         }
     }
 

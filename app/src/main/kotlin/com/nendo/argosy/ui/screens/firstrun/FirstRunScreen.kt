@@ -918,7 +918,7 @@ private fun CorePromptStep(
         }
 
         FocusableOutlinedButton(
-            text = if (missingCoreCount > 0) "Skip (Use Standalone Emulators)" else "Continue",
+            text = if (missingCoreCount > 0) "Skip (Disable Built-in Emulator)" else "Continue",
             isFocused = if (missingCoreCount > 0) focusedIndex == 1 else focusedIndex == 0,
             onClick = onSkip
         )
@@ -926,8 +926,9 @@ private fun CorePromptStep(
         if (missingCoreCount > 0) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "You can download cores later from Settings.",
+                text = "Skipping turns off the built-in emulator. You can re-enable it and download cores later from Settings.",
                 style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

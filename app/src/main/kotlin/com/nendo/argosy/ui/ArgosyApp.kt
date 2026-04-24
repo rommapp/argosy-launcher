@@ -27,6 +27,9 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import android.content.Intent
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import com.nendo.argosy.libretro.LibretroActivity
@@ -96,6 +99,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArgosyApp(
     viewModel: ArgosyViewModel = hiltViewModel(),
@@ -891,6 +895,12 @@ fun ArgosyApp(
                     .fillMaxSize()
                     .focusRequester(rootFocusRequester)
                     .focusable()
+                    .combinedClickable(
+                        onClick = {},
+                        onDoubleClick = { openQuickMenu() },
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
             ) {
                 LaunchedEffect(Unit) {
                     rootFocusRequester.requestFocus()
@@ -1541,7 +1551,8 @@ fun ArgosyApp(
                     navController.navigate(Screen.GameDetail.createRoute(gameId)) {
                         launchSingleTop = true
                     }
-                }
+                },
+                closeQuickMenu = closeQuickMenu
             )
 
             // Quick Settings Panel (right-side drawer)

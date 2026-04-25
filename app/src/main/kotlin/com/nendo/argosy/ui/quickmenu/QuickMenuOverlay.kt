@@ -124,19 +124,23 @@ fun QuickMenuOverlay(
 
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
-            QuickMenuContent(
-                uiState = uiState,
-                isFocused = uiState.contentFocused,
-                onSearchQueryChange = viewModel::updateSearchQuery,
-                onGameSelect = { gameId ->
-                    viewModel.hide()
-                    onGameSelect(gameId)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .alpha(contentAlpha)
-            )
+            if (contentAlpha > 0f) {
+                QuickMenuContent(
+                    uiState = uiState,
+                    isFocused = uiState.contentFocused,
+                    onSearchQueryChange = viewModel::updateSearchQuery,
+                    onGameSelect = { gameId ->
+                        viewModel.hide()
+                        onGameSelect(gameId)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .alpha(contentAlpha)
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
             if (topSpacerWeight > 0.01f) {
                 Spacer(modifier = Modifier.weight(topSpacerWeight))

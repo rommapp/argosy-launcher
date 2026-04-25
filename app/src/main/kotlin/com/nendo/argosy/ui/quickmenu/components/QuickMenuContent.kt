@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
@@ -54,16 +55,19 @@ import com.nendo.argosy.ui.theme.Dimens
 @Composable
 fun QuickMenuContent(
     uiState: QuickMenuUiState,
+    isFocused: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onGameSelect: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val contentAlpha = if (isFocused) 1f else 0.7f
+
     AnimatedContent(
         targetState = uiState.selectedOrb,
         transitionSpec = {
             fadeIn(animationSpec = tween(150)) togetherWith fadeOut(animationSpec = tween(100))
         },
-        modifier = modifier,
+        modifier = modifier.alpha(contentAlpha),
         label = "quickMenuContent"
     ) { orb ->
         when (orb) {
@@ -72,36 +76,41 @@ fun QuickMenuContent(
                 results = uiState.searchResults,
                 recentSearches = uiState.recentSearches,
                 focusedIndex = uiState.focusedContentIndex,
-                isInputFocused = uiState.searchInputFocused,
-                isListFocused = uiState.searchInputFocused,
+                isInputFocused = isFocused && uiState.searchInputFocused,
+                isListFocused = isFocused && !uiState.searchInputFocused,
                 onQueryChange = onSearchQueryChange,
                 onGameSelect = onGameSelect
             )
             QuickMenuOrb.RANDOM -> RandomContent(
                 game = uiState.randomGame,
+                isFocused = isFocused,
                 onClick = { uiState.randomGame?.id?.let { onGameSelect(it) } }
             )
             QuickMenuOrb.MOST_PLAYED -> ListContent(
                 games = uiState.mostPlayedGames,
                 focusedIndex = uiState.focusedContentIndex,
+                isFocused = isFocused,
                 emptyMessage = "No games played yet",
                 onGameSelect = onGameSelect
             )
             QuickMenuOrb.TOP_UNPLAYED -> ListContent(
                 games = uiState.topUnplayedGames,
                 focusedIndex = uiState.focusedContentIndex,
+                isFocused = isFocused,
                 emptyMessage = "No rated games found",
                 onGameSelect = onGameSelect
             )
             QuickMenuOrb.RECENT -> ListContent(
                 games = uiState.recentGames,
                 focusedIndex = uiState.focusedContentIndex,
+                isFocused = isFocused,
                 emptyMessage = "No recent games",
                 onGameSelect = onGameSelect
             )
             QuickMenuOrb.FAVORITES -> ListContent(
                 games = uiState.favoriteGames,
                 focusedIndex = uiState.focusedContentIndex,
+                isFocused = isFocused,
                 emptyMessage = "No favorites yet",
                 onGameSelect = onGameSelect
             )
@@ -187,6 +196,7 @@ private fun SearchContent(
             GameList(
                 games = results,
                 focusedIndex = focusedIndex,
+                isFocused = isListFocused,
                 onGameSelect = onGameSelect
             )
         }
@@ -196,6 +206,7 @@ private fun SearchContent(
 @Composable
 private fun RandomContent(
     game: GameCardUi?,
+    isFocused: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -205,14 +216,17 @@ private fun RandomContent(
     }
 
     val shape = RoundedCornerShape(Dimens.radiusXl)
-    val borderModifier = Modifier.border(Dimens.borderMedium, MaterialTheme.colorScheme.primary, shape)
+    val borderModifier = if (isFocused) {
+        Modifier.border(Dimens.borderMedium, MaterialTheme.colorScheme.primary, shape)
+    } else Modifier
 
     Row(
         modifier = modifier
             .fillMaxSize()
             .then(borderModifier)
             .background(
-                MaterialTheme.colorScheme.primaryContainer,
+                if (isFocused) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surface,
                 shape
             )
             .clip(shape)
@@ -321,6 +335,7 @@ private fun RandomContent(
 private fun ListContent(
     games: List<GameRowUi>,
     focusedIndex: Int,
+    isFocused: Boolean,
     emptyMessage: String,
     onGameSelect: (Long) -> Unit,
     modifier: Modifier = Modifier
@@ -333,6 +348,7 @@ private fun ListContent(
     GameList(
         games = games,
         focusedIndex = focusedIndex,
+        isFocused = isFocused,
         onGameSelect = onGameSelect,
         modifier = modifier
     )
@@ -342,6 +358,7 @@ private fun ListContent(
 private fun GameList(
     games: List<GameRowUi>,
     focusedIndex: Int,
+    isFocused: Boolean,
     onGameSelect: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -368,7 +385,7 @@ private fun GameList(
         itemsIndexed(games, key = { _, game -> game.id }) { index, game ->
             QuickMenuGameRow(
                 game = game,
-                isFocused = index == focusedIndex,
+                isFocused = isFocused && index == focusedIndex,
                 onClick = { onGameSelect(game.id) }
             )
         }

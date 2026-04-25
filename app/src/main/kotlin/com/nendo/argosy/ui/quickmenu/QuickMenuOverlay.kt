@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import com.nendo.argosy.ui.quickmenu.components.QuickMenuContent
@@ -56,12 +55,6 @@ fun QuickMenuOverlay(
         targetValue = if (uiState.contentFocused) 0f else 1f,
         animationSpec = Motion.focusSpring,
         label = "topSpacerWeight"
-    )
-
-    val contentAlpha by animateFloatAsState(
-        targetValue = if (uiState.contentFocused) 1f else 0f,
-        animationSpec = tween(200),
-        label = "contentAlpha"
     )
 
     AnimatedVisibility(
@@ -124,19 +117,21 @@ fun QuickMenuOverlay(
 
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
-            QuickMenuContent(
-                uiState = uiState,
-                isFocused = uiState.contentFocused,
-                onSearchQueryChange = viewModel::updateSearchQuery,
-                onGameSelect = { gameId ->
-                    viewModel.hide()
-                    onGameSelect(gameId)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .alpha(contentAlpha)
-            )
+            if (uiState.contentFocused) {
+                QuickMenuContent(
+                    uiState = uiState,
+                    onSearchQueryChange = viewModel::updateSearchQuery,
+                    onGameSelect = { gameId ->
+                        viewModel.hide()
+                        onGameSelect(gameId)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
             if (topSpacerWeight > 0.01f) {
                 Spacer(modifier = Modifier.weight(topSpacerWeight))

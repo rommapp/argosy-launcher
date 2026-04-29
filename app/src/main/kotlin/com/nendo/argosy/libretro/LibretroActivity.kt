@@ -1753,6 +1753,10 @@ class LibretroActivity : ComponentActivity() {
         stateManagerDeleteTarget = -1
         pendingSaveScreenshot?.recycle()
         pendingSaveScreenshot = null
+        if (!netplayInSession) {
+            retroView.suppressAutoResume = false
+            retroView.resumeEmulation()
+        }
     }
 
     private fun attemptAutoRestore() {

@@ -4,8 +4,12 @@ import android.content.Intent
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.view.Display
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -90,6 +94,8 @@ class SecondaryHomeActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        hideSystemUI()
 
         if (!SessionStateStore(applicationContext).isDualScreenEnabled()) {
             android.util.Log.d("SecondaryHome", "dualScreenEnabled=false, finishing")
@@ -756,6 +762,21 @@ class SecondaryHomeActivity :
         currentScreen = CompanionScreen.GAME_DETAIL
         dsm.sessionStateStore.setCompanionScreen("GAME_DETAIL", gameId)
         broadcasts.broadcastGameDetailOpened(gameId)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemUI()
+    }
+
+    private fun hideSystemUI() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
 }

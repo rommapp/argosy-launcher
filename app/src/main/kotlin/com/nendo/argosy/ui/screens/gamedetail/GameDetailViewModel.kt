@@ -407,11 +407,13 @@ class GameDetailViewModel @Inject constructor(
             val platformDefaultConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
             val emulatorConfig = gameSpecificConfig ?: platformDefaultConfig
 
+            val prefs = preferencesRepository.userPreferences.first()
+
             val emulatorName = emulatorConfig?.displayName
-                ?: emulatorDetector.getPreferredEmulator(game.platformSlug)?.def?.displayName
+                ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def?.displayName
 
             val emulatorDef = emulatorConfig?.packageName?.let { emulatorDetector.getByPackage(it) }
-                ?: emulatorDetector.getPreferredEmulator(game.platformSlug)?.def
+                ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def
             val isRetroArch = emulatorDef?.launchConfig is LaunchConfig.RetroArch
             val isBuiltIn = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
 
@@ -481,7 +483,6 @@ class GameDetailViewModel @Inject constructor(
             val cachedAchievements = achievementDelegate.achievements.value
 
             val emulatorId = emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, game.platformSlug)
-            val prefs = preferencesRepository.userPreferences.first()
             val canManageSaves = prefs.saveSyncEnabled &&
                 downloadStatus == GameDownloadStatus.DOWNLOADED &&
                 game.rommId != null &&

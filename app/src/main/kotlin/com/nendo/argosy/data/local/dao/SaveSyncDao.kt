@@ -71,6 +71,12 @@ interface SaveSyncDao {
     @Query("DELETE FROM save_sync WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("SELECT DISTINCT gameId FROM save_sync")
+    suspend fun getAllGameIds(): List<Long>
+
+    @Query("UPDATE save_sync SET emulatorId = :newEmulatorId WHERE gameId = :gameId AND emulatorId != :newEmulatorId")
+    suspend fun rekeyEmulatorForGame(gameId: Long, newEmulatorId: String): Int
+
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
 

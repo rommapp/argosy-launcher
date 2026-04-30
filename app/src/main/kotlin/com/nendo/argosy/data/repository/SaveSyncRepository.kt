@@ -96,8 +96,15 @@ class SaveSyncRepository @Inject constructor(
         emulatorId: String,
         gameTitle: String,
         platformSlug: String,
-        romPath: String?
-    ): String? = apiClient.constructSavePath(emulatorId, gameTitle, platformSlug, romPath)
+        romPath: String?,
+        coreName: String? = null
+    ): String? = apiClient.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
+
+    suspend fun resolveCoreForGame(gameId: Long): String? =
+        apiClient.resolveCoreForGame(gameId)
+
+    suspend fun rekeySaveSyncToLocalEmulators(): Int =
+        apiClient.rekeySaveSyncToLocalEmulators()
 
     suspend fun getSyncStatus(gameId: Long, emulatorId: String): SaveSyncEntity? =
         entityManager.getSyncStatus(gameId, emulatorId)

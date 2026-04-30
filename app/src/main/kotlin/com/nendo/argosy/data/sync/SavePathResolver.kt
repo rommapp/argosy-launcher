@@ -193,9 +193,7 @@ class SavePathResolver @Inject constructor(
             }
         }
 
-        Logger.verbose(TAG) {
-            "discoverSavePath: FAILED - no save found for '$gameTitle' (romPath=$romPath) after checking ${paths.size} paths"
-        }
+        Logger.debug(TAG, "discoverSavePath: FAILED - no save found for '$gameTitle' | emulatorId=$effectiveEmulatorId, package=$emulatorPackage, core=$coreName, platformSlug=$platformSlug, romPath=$romPath, candidatePaths=${paths.size}")
         null
     }
 
@@ -475,7 +473,10 @@ class SavePathResolver @Inject constructor(
         romPath: String?,
         coreName: String? = null
     ): String? {
-        val config = SavePathRegistry.getConfig(emulatorId) ?: return null
+        val config = SavePathRegistry.getConfig(emulatorId) ?: run {
+            Logger.debug(TAG, "constructSavePath: FAILED - no SavePathConfig | emulatorId=$emulatorId, platformSlug=$platformSlug")
+            return null
+        }
 
         if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
             return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
@@ -489,6 +490,9 @@ class SavePathResolver @Inject constructor(
             null
         } ?: run {
             val resolvedPaths = resolveSavePaths(config, platformSlug)
+            if (resolvedPaths.isEmpty()) {
+                Logger.debug(TAG, "constructSavePath: FAILED - no candidate paths | emulatorId=$emulatorId, platformSlug=$platformSlug, configEmulatorId=${config.emulatorId}")
+            }
             resolvedPaths.firstOrNull { directoryExists(it) }
                 ?: resolvedPaths.firstOrNull()
         } ?: return null
@@ -517,8 +521,14 @@ class SavePathResolver @Inject constructor(
         )
         val resolvedCore = preferredCore
             ?: SavePathRegistry.getRetroArchCore(platformSlug, raConfig?.lastLoadedCore)
-            ?: return null
-        val saveConfig = SavePathRegistry.getConfig(emulatorId) ?: return null
+            ?: run {
+                Logger.debug(TAG, "constructRetroArchSavePath: FAILED - no core for platform | emulatorId=$emulatorId, platformSlug=$platformSlug, raLastLoaded=${raConfig?.lastLoadedCore}")
+                return null
+            }
+        val saveConfig = SavePathRegistry.getConfig(emulatorId) ?: run {
+            Logger.debug(TAG, "constructRetroArchSavePath: FAILED - no SavePathConfig for emulatorId=$emulatorId")
+            return null
+        }
         val extension = saveConfig.saveExtensions.firstOrNull() ?: "srm"
 
         val req = com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
@@ -527,7 +537,10 @@ class SavePathResolver @Inject constructor(
             romPath = romPath,
         )
         val dirs = retroArchPathResolver.resolveSaveDirectories(req)
-        val baseDir = dirs.firstOrNull { directoryExists(it) } ?: dirs.firstOrNull() ?: return null
+        val baseDir = dirs.firstOrNull { directoryExists(it) } ?: dirs.firstOrNull() ?: run {
+            Logger.debug(TAG, "constructRetroArchSavePath: FAILED - no save directories | emulatorId=$emulatorId, core=$resolvedCore, platformSlug=$platformSlug, romPath=$romPath")
+            return null
+        }
 
         val fileName = buildRetroArchFileName(gameTitle, romPath, extension)
         return "$baseDir/$fileName"

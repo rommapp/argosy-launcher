@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
@@ -93,6 +94,14 @@ class SyncPreferencesRepository @Inject constructor(
         val LAST_STATE_VALIDATION = stringPreferencesKey("last_state_validation")
         val SOCIAL_LAST_PLAY_SESSION_SYNC = stringPreferencesKey("social_last_play_session_sync")
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
+        val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
+    }
+
+    suspend fun isSaveSyncLocalRekeyDone(): Boolean =
+        dataStore.data.map { it[Keys.SAVE_SYNC_LOCAL_REKEY_DONE] ?: false }.first()
+
+    suspend fun setSaveSyncLocalRekeyDone() {
+        dataStore.edit { it[Keys.SAVE_SYNC_LOCAL_REKEY_DONE] = true }
     }
 
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->

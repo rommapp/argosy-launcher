@@ -78,6 +78,10 @@ class SaveDownloader @Inject constructor(
             Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game not found in database")
             return@withContext SaveSyncResult.Error("Game not found")
         }
+        if (game.localPath == null) {
+            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game has no local ROM, skipping save sync")
+            return@withContext SaveSyncResult.NoSaveFound
+        }
 
         val resolvedEmulatorId = if (emulatorId == "default" || emulatorId.isBlank()) {
             client.resolveEmulatorForGame(game) ?: run {
@@ -92,16 +96,21 @@ class SaveDownloader @Inject constructor(
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
         val preferredCore = client.resolveCoreForGame(game)
 
-        val serverSave = try {
-            (if (deviceId != null) api.getSaveWithDevice(saveId, deviceId) else api.getSave(saveId)).body()
+        val saveInfoResponse = try {
+            if (deviceId != null) api.getSaveWithDevice(saveId, deviceId) else api.getSave(saveId)
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | getSave API call failed", e)
             return@withContext SaveSyncResult.Error("Failed to get save info: ${e.message}")
         }
+        val serverSave = saveInfoResponse.body()
         if (serverSave == null) {
-            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server save deleted, dropping orphan tracking row | saveId=$saveId, syncEntityId=${syncEntity.id}")
-            saveSyncDao.deleteById(syncEntity.id)
-            return@withContext SaveSyncResult.NoSaveFound
+            if (saveInfoResponse.code() == 404) {
+                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server save deleted (HTTP 404), dropping orphan tracking row | saveId=$saveId, syncEntityId=${syncEntity.id}")
+                saveSyncDao.deleteById(syncEntity.id)
+                return@withContext SaveSyncResult.NoSaveFound
+            }
+            Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | getSave returned no body | status=${saveInfoResponse.code()}, treating as transient")
+            return@withContext SaveSyncResult.Error("Failed to fetch save info: HTTP ${saveInfoResponse.code()}")
         }
 
         val config = SavePathRegistry.getConfigForPlatform(resolvedEmulatorId, game.platformSlug)
@@ -184,8 +193,8 @@ class SaveDownloader @Inject constructor(
         }
 
         if (!isSwitchEmulator && !isFolderBased && !isGciFormat && preDownloadTargetPath == null) {
-            Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine save path for non-Switch file save")
-            return@withContext SaveSyncResult.Error("Cannot determine save path")
+            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine save path for non-Switch file save | emulator=$resolvedEmulatorId, package=$emulatorPackage, core=$preferredCore, romPath=${game.localPath}, platformSlug=${game.platformSlug}")
+            return@withContext SaveSyncResult.NoSaveFound
         }
 
         var tempZipFile: File? = null
@@ -247,8 +256,8 @@ class SaveDownloader @Inject constructor(
                         ?: savePathResolver.resolveSwitchSaveTargetPath(tempZipFile, config, emulatorPackage)
                         ?: savePathResolver.constructFolderSavePathWithOverride(resolvedEmulatorId, game.platformSlug, game.localPath, gameId, game.title, game.titleId, emulatorPackage)
                     if (resolved == null) {
-                        Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine Switch save path from ZIP or ROM")
-                        return@withContext SaveSyncResult.Error("Cannot determine save path from ZIP or ROM")
+                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine Switch save path from ZIP or ROM | emulator=$resolvedEmulatorId, package=$emulatorPackage, romPath=${game.localPath}")
+                        return@withContext SaveSyncResult.NoSaveFound
                     }
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Switch save target resolved | path=$resolved, method=${if (preDownloadTargetPath != null) "cached" else "from_zip_or_rom"}")
                     resolved
@@ -322,8 +331,8 @@ class SaveDownloader @Inject constructor(
                 }
 
                 if (game.localPath == null) {
-                    Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot extract GCI without ROM path")
-                    return@withContext SaveSyncResult.Error("Cannot determine save path without ROM")
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot extract GCI without ROM path")
+                    return@withContext SaveSyncResult.NoSaveFound
                 }
 
                 val body = response.body()
@@ -364,8 +373,8 @@ class SaveDownloader @Inject constructor(
                 }
             } else {
                 targetPath = preDownloadTargetPath ?: run {
-                    Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine file save path")
-                    return@withContext SaveSyncResult.Error("Cannot determine save path")
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine file save path | emulator=$resolvedEmulatorId, package=$emulatorPackage, core=$preferredCore")
+                    return@withContext SaveSyncResult.NoSaveFound
                 }
 
                 if (!client.hasEnoughDiskSpace(targetPath, contentLength)) {

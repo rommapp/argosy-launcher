@@ -110,6 +110,28 @@ class SaveSyncApiClient @Inject constructor(
         return platformConfig?.coreName
     }
 
+    suspend fun resolveCoreForGame(gameId: Long): String? {
+        val game = gameDao.getById(gameId) ?: return null
+        return resolveCoreForGame(game)
+    }
+
+    suspend fun rekeySaveSyncToLocalEmulators(): Int = withContext(Dispatchers.IO) {
+        val gameIds = saveSyncDao.getAllGameIds()
+        var rewritten = 0
+        for (gameId in gameIds) {
+            val game = gameDao.getById(gameId) ?: continue
+            val localEmulator = resolveEmulatorForGame(game) ?: continue
+            val updated = saveSyncDao.rekeyEmulatorForGame(gameId, localEmulator)
+            if (updated > 0) {
+                rewritten += updated
+                Logger.debug(TAG, "[SaveSync] REKEY gameId=$gameId | rewrote $updated rows to emulatorId=$localEmulator")
+            }
+        }
+        if (rewritten > 0) Logger.info(TAG, "[SaveSync] REKEY | Rewrote $rewritten save_sync rows to local emulator")
+        saveSyncDao.deleteDuplicateRows()
+        rewritten
+    }
+
     suspend fun deleteServerSaves(saveIds: List<Long>): Boolean = withContext(Dispatchers.IO) {
         if (saveIds.isEmpty()) return@withContext true
         val api = this@SaveSyncApiClient.api ?: return@withContext false
@@ -164,8 +186,7 @@ class SaveSyncApiClient @Inject constructor(
         for (serverSave in serverSaves) {
             if (isStateShapedSave(serverSave)) continue
             val game = downloadedGames.find { it.rommId == serverSave.romId } ?: continue
-            val emulatorId = serverSave.emulator?.takeIf { it != "default" && it.isNotBlank() }
-                ?: resolveEmulatorForGame(game)
+            val emulatorId = resolveEmulatorForGame(game)
             if (emulatorId == null) {
                 Logger.warn(TAG, "[SaveSync] WORKER gameId=${game.id} | Skipping save - cannot resolve emulator | serverSaveId=${serverSave.id}, fileName=${serverSave.fileName}")
                 continue

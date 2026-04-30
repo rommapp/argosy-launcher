@@ -72,6 +72,12 @@ class SyncCoordinator @Inject constructor(
                 Logger.debug(TAG, "processQueue: Promoted $promoted FAILED rows back to PENDING")
             }
 
+            if (!syncPreferencesRepository.isSaveSyncLocalRekeyDone()) {
+                val rewritten = saveSyncRepository.get().rekeySaveSyncToLocalEmulators()
+                Logger.info(TAG, "processQueue: Save-sync rekey migration complete | rowsRewritten=$rewritten")
+                syncPreferencesRepository.setSaveSyncLocalRekeyDone()
+            }
+
             val deduped = saveSyncDao.deleteDuplicateRows()
             if (deduped > 0) {
                 Logger.info(TAG, "processQueue: Deduped $deduped redundant save_sync rows")
@@ -139,6 +145,10 @@ class SyncCoordinator @Inject constructor(
 
     private suspend fun processSaveFile(item: PendingSyncQueueEntity): Boolean {
         val game = gameDao.getById(item.gameId) ?: return false
+        if (game.localPath == null) {
+            Logger.debug(TAG, "processSaveFile: dropping queue item for non-local game gameId=${item.gameId}")
+            return true
+        }
         val payload = payloadCodec.decodeSaveFile(item.payloadJson) ?: return false
 
         syncQueueManager.addOperation(
@@ -247,6 +257,10 @@ class SyncCoordinator @Inject constructor(
         for (cache in nonChannelCaches) {
             val game = gameDao.getById(cache.gameId) ?: continue
             if (game.rommId == null) continue
+            if (game.localPath == null) {
+                Logger.debug(TAG, "processDirtySaveCaches: skipping conflict-check for non-local game gameId=${cache.gameId}")
+                continue
+            }
 
             val conflictInfo = saveSyncRepository.get().checkForConflict(
                 gameId = cache.gameId,
@@ -282,6 +296,10 @@ class SyncCoordinator @Inject constructor(
         for (cache in channelCaches) {
             val game = gameDao.getById(cache.gameId) ?: continue
             if (game.rommId == null) continue
+            if (game.localPath == null) {
+                Logger.debug(TAG, "processDirtySaveCaches: skipping channel cache for non-local game gameId=${cache.gameId}, cacheId=${cache.id}")
+                continue
+            }
 
             val cacheFile = saveCacheManager.get().getCacheFile(cache)
             if (!cacheFile.exists()) {
@@ -372,6 +390,10 @@ class SyncCoordinator @Inject constructor(
         for (cache in nonChannelCaches) {
             val game = gameDao.getById(cache.gameId) ?: continue
             if (game.rommId == null) continue
+            if (game.localPath == null) {
+                Logger.debug(TAG, "processDirtySaveCaches: skipping non-channel cache for non-local game gameId=${cache.gameId}, cacheId=${cache.id}")
+                continue
+            }
 
             val resolution = resolutions[cache.gameId]
 

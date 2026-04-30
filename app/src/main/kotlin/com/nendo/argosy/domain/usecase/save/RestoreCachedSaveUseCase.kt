@@ -31,8 +31,13 @@ class RestoreCachedSaveUseCase @Inject constructor(
     ): Result {
         val game = gameDao.getById(gameId)
             ?: return Result.Error("Game not found")
+        if (game.localPath == null) {
+            Log.d(TAG, "Skipping restore: game $gameId has no local ROM")
+            return Result.Error("Game has no local copy")
+        }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val coreName = saveSyncRepository.resolveCoreForGame(gameId)
 
         val targetPath = saveSyncRepository.discoverSavePath(
             emulatorId = emulatorId,
@@ -40,10 +45,11 @@ class RestoreCachedSaveUseCase @Inject constructor(
             platformSlug = game.platformSlug,
             romPath = game.localPath,
             cachedTitleId = game.titleId,
+            coreName = coreName,
             emulatorPackage = emulatorPackage,
             gameId = gameId
         ) ?: saveSyncRepository.constructSavePath(
-            emulatorId, game.title, game.platformSlug, game.localPath
+            emulatorId, game.title, game.platformSlug, game.localPath, coreName
         ) ?: return Result.Error("Cannot determine save location")
 
         if (!saveSyncRepository.clearSaveAtPath(targetPath)) {
@@ -106,15 +112,18 @@ class RestoreCachedSaveUseCase @Inject constructor(
 
     suspend fun clearActiveSave(gameId: Long, emulatorId: String): Boolean {
         val game = gameDao.getById(gameId) ?: return true
+        if (game.localPath == null) return true
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(
             gameId, game.platformId, game.platformSlug
         )
+        val coreName = saveSyncRepository.resolveCoreForGame(gameId)
         val targetPath = saveSyncRepository.discoverSavePath(
             emulatorId = emulatorId,
             gameTitle = game.title,
             platformSlug = game.platformSlug,
             romPath = game.localPath,
             cachedTitleId = game.titleId,
+            coreName = coreName,
             emulatorPackage = emulatorPackage,
             gameId = gameId
         ) ?: return true

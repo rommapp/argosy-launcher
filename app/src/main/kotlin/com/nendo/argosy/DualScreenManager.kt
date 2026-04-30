@@ -231,6 +231,7 @@ class DualScreenManager(
     }
 
     fun handleConflictInput(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean): Boolean {
+        if (!_isDualScreenDevice.value) return false
         if (_dualSyncOverlay.value == null && _dualSaveConflict.value == null) return false
         val event = com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
             ?: return true

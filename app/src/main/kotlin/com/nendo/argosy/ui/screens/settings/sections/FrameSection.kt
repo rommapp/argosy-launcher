@@ -115,7 +115,7 @@ fun FrameSection(
                         isDownloading = false,
                         isFocused = uiState.focusedIndex == 0,
                         onClick = { viewModel.updatePlatformLibretroSetting(
-                            com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef.Frame, null
+                            com.nendo.argosy.core.emulator.LibretroSettingDef.Frame, null
                         ) },
                         onDownload = {}
                     )
@@ -129,7 +129,7 @@ fun FrameSection(
                         isDownloading = false,
                         isFocused = uiState.focusedIndex == 1,
                         onClick = { viewModel.updatePlatformLibretroSetting(
-                            com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef.Frame, "none"
+                            com.nendo.argosy.core.emulator.LibretroSettingDef.Frame, "none"
                         ) },
                         onDownload = {}
                     )
@@ -150,7 +150,7 @@ fun FrameSection(
                         onClick = {
                             if (isInstalled) {
                                 viewModel.updatePlatformLibretroSetting(
-                                    com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef.Frame, frame.id
+                                    com.nendo.argosy.core.emulator.LibretroSettingDef.Frame, frame.id
                                 )
                             }
                         },

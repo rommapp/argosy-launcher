@@ -4,7 +4,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
-import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
+import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.libretro.PlatformLibretroSettingsAccessor
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoItemAtFocusIndex

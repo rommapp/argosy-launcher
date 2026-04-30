@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.screens.settings.libretro
+package com.nendo.argosy.core.emulator
 
 sealed class LibretroSettingDef(
     val key: String,

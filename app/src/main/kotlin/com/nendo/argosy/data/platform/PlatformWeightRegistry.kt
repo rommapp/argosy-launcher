@@ -1,6 +1,6 @@
 package com.nendo.argosy.data.platform
 
-import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
+import com.nendo.argosy.core.emulator.LibretroSettingDef
 
 object PlatformWeightRegistry {
     enum class Weight { LIGHT, MEDIUM, HEAVY }

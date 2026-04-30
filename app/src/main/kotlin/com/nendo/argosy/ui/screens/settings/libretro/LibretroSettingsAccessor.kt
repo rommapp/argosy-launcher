@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.libretro
 
+import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
 

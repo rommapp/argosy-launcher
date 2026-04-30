@@ -57,7 +57,7 @@ import com.nendo.argosy.ui.screens.settings.components.ControllerOrderModal
 import com.nendo.argosy.ui.screens.settings.components.HotkeysModal
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.screens.settings.components.InputMappingModal
-import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
+import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsAccessor
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsSection

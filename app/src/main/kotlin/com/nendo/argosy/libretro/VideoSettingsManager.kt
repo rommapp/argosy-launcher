@@ -12,7 +12,7 @@ import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.frame.FrameRegistry
 import com.nendo.argosy.libretro.shader.ShaderRegistry
-import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
+import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.ShaderConfig
 import kotlinx.coroutines.CoroutineScope

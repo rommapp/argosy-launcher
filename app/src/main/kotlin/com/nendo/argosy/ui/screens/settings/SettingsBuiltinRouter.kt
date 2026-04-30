@@ -12,8 +12,8 @@ import com.nendo.argosy.libretro.shader.ShaderChainConfig
 import com.nendo.argosy.libretro.shader.ShaderChainManager
 import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.ui.input.HapticPattern
-import com.nendo.argosy.ui.notification.NotificationType
-import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.core.notification.NotificationType
+import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingDef
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first

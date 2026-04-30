@@ -27,9 +27,9 @@ import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.domain.usecase.save.SyncSaveOnSessionEndUseCase
 import com.nendo.argosy.domain.usecase.state.StateSyncResult
 import com.nendo.argosy.domain.usecase.state.SyncStatesOnSessionEndUseCase
-import com.nendo.argosy.ui.notification.NotificationDuration
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.ui.screens.common.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper

@@ -4,8 +4,8 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.SyncResult
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

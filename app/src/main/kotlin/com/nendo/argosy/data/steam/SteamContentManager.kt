@@ -7,8 +7,8 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
 import com.nendo.argosy.data.local.entity.SteamDownloadDbState
 import com.nendo.argosy.data.local.entity.SteamDownloadQueueEntity
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext

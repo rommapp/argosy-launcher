@@ -2,8 +2,8 @@ package com.nendo.argosy.data.steam
 
 import android.util.Log
 import com.nendo.argosy.data.local.dao.SteamAccountDao
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.local.entity.SteamAccountEntity
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.authentication.AuthPollResult

@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.notification
+package com.nendo.argosy.core.notification
 
 fun NotificationManager.showError(message: String) {
     show(

@@ -25,8 +25,8 @@ import com.nendo.argosy.data.social.SocialConnectionState
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.libretro.LibretroActivity
-import com.nendo.argosy.ui.notification.NotificationDuration
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.DefaultView
@@ -63,9 +63,9 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.navigation.Screen
-import com.nendo.argosy.ui.notification.DownloadNotificationObserver
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.SyncNotificationObserver
+import com.nendo.argosy.core.notification.DownloadNotificationObserver
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.SyncNotificationObserver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -367,8 +367,8 @@ class ArgosyViewModel @Inject constructor(
                     notificationManager.show(
                         title = "Built-in Emulator Ready",
                         subtitle = "Downloaded ${result.coresDownloaded.size} cores",
-                        type = com.nendo.argosy.ui.notification.NotificationType.INFO,
-                        duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM
+                        type = com.nendo.argosy.core.notification.NotificationType.INFO,
+                        duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
                     )
                 }
             }

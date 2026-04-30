@@ -14,9 +14,9 @@ import com.nendo.argosy.domain.usecase.collection.PinCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.RefreshAllCollectionsUseCase
 import com.nendo.argosy.domain.usecase.collection.UnpinCollectionUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
-import com.nendo.argosy.ui.notification.NotificationDuration
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOption

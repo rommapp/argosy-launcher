@@ -39,8 +39,8 @@ import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.toShowcaseState
 import com.nendo.argosy.ui.input.InputDedupBuffer
 import com.nendo.argosy.ui.input.InputSignature
-import com.nendo.argosy.ui.notification.showError
-import com.nendo.argosy.ui.notification.showSuccess
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.hardware.FocusAccessibilityService
@@ -86,7 +86,7 @@ class DualScreenManager(
     internal val preferencesRepository: UserPreferencesRepository,
     internal val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     private val edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager,
-    private val notificationManager: com.nendo.argosy.ui.notification.NotificationManager,
+    private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     internal val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao,
     internal val steamRepository: com.nendo.argosy.data.repository.SteamRepository,

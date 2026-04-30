@@ -8,8 +8,8 @@ import com.nendo.argosy.domain.model.ChangelogEntry
 import com.nendo.argosy.domain.model.RequiredAction
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryResult
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

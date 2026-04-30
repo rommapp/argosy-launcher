@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.notification
+package com.nendo.argosy.core.notification
 
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.SyncDirection

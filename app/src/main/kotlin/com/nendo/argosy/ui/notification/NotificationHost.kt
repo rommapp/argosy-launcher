@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.notification
+package com.nendo.argosy.core.notification
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring

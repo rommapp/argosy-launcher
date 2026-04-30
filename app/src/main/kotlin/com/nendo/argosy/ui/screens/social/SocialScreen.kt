@@ -154,7 +154,7 @@ fun SocialScreen(
                 is SocialLaunchEvent.LaunchError -> {
                     viewModel.notificationManager.show(
                         title = event.message,
-                        type = com.nendo.argosy.ui.notification.NotificationType.ERROR
+                        type = com.nendo.argosy.core.notification.NotificationType.ERROR
                     )
                 }
             }

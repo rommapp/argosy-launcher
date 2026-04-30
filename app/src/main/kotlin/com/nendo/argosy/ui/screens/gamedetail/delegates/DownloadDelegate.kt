@@ -15,9 +15,9 @@ import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.ui.common.toDownloadStatus
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
-import com.nendo.argosy.ui.notification.showSuccess
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.gamedetail.ExtractionFailedInfo
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus

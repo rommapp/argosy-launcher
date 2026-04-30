@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.notification
+package com.nendo.argosy.core.notification
 
 import android.util.Log
 import com.nendo.argosy.util.SafeCoroutineScope

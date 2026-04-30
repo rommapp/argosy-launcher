@@ -21,7 +21,7 @@ import com.nendo.argosy.data.social.UserProfileData
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.ui.input.InputHandler
-import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.doodle.GamePickerItem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -165,7 +165,7 @@ class SocialViewModel @Inject constructor(
             notificationManager.show(
                 title = "Joining ${session.gameTitle}",
                 subtitle = "Checking compatibility...",
-                duration = com.nendo.argosy.ui.notification.NotificationDuration.LONG
+                duration = com.nendo.argosy.core.notification.NotificationDuration.LONG
             )
             val preflight = netplayPreflightChecker.check(session)
             if (preflight !is NetplayPreflightResult.Joinable) {

@@ -11,9 +11,9 @@ import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.domain.usecase.sync.SyncLibraryResult
 import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.ui.notification.NotificationProgress
-import com.nendo.argosy.ui.notification.NotificationType
-import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationType
+import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.GameDataItem

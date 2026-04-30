@@ -4,10 +4,10 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.SyncProgress
 import com.nendo.argosy.data.remote.romm.SyncResult
-import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.ui.screens.common.LibrarySyncBus
-import com.nendo.argosy.ui.notification.NotificationProgress
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

@@ -29,8 +29,8 @@ import com.nendo.argosy.data.steam.SteamService
 import com.nendo.argosy.data.storage.AndroidDataAccessor
 import com.nendo.argosy.ui.screens.settings.InstalledSteamLauncher
 import com.nendo.argosy.ui.screens.settings.NotInstalledSteamLauncher
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.SteamSettingsState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

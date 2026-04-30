@@ -18,9 +18,9 @@ import com.nendo.argosy.data.sync.SocialSyncCoordinator
 import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.nendo.argosy.ui.notification.NotificationDuration
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.NotificationType
+import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationType
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream

@@ -9,8 +9,8 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.ui.common.savechannel.SaveChannelDelegate
 import com.nendo.argosy.ui.common.savechannel.SaveTab
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus

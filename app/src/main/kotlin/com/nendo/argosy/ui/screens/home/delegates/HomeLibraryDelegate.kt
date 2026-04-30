@@ -14,9 +14,9 @@ import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
 import com.nendo.argosy.domain.usecase.recommendation.GenerateRecommendationsUseCase
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
-import com.nendo.argosy.ui.notification.showSuccess
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameGradientRequest
 import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.screens.home.HomeGameUi

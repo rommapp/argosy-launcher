@@ -18,8 +18,8 @@ import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
 import com.nendo.argosy.ui.screens.settings.SyncSettingsState
 import kotlinx.coroutines.CoroutineScope

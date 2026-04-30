@@ -34,7 +34,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.ui.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.BiosSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
@@ -293,8 +293,8 @@ class SettingsViewModel @Inject constructor(
             notificationManager.show(
                 title = "Scan Complete",
                 subtitle = "$platformName: ${parts.joinToString(", ")}",
-                type = com.nendo.argosy.ui.notification.NotificationType.SUCCESS,
-                duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM
+                type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+                duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )
         }
     }
@@ -918,15 +918,15 @@ class SettingsViewModel @Inject constructor(
                 notificationManager.show(
                     title = "BIOS Installed",
                     subtitle = "$platformTotal file${if (platformTotal > 1) "s" else ""} copied for $platformName",
-                    type = com.nendo.argosy.ui.notification.NotificationType.SUCCESS,
-                    duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM
+                    type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+                    duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
                 )
             } else {
                 notificationManager.show(
                     title = "BIOS Install",
                     subtitle = "No files to copy for $platformName",
-                    type = com.nendo.argosy.ui.notification.NotificationType.INFO,
-                    duration = com.nendo.argosy.ui.notification.NotificationDuration.SHORT
+                    type = com.nendo.argosy.core.notification.NotificationType.INFO,
+                    duration = com.nendo.argosy.core.notification.NotificationDuration.SHORT
                 )
             }
             loadPlatformDetailStats(_uiState.value.platformDetail.platformIndex)
@@ -959,8 +959,8 @@ class SettingsViewModel @Inject constructor(
                 notificationManager.show(
                     title = "Files Removed",
                     subtitle = "$deleted file${if (deleted > 1) "s" else ""} removed from ${config.platform.name}",
-                    type = com.nendo.argosy.ui.notification.NotificationType.SUCCESS,
-                    duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM
+                    type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+                    duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
                 )
             }
             loadPlatformDetailStats(platformIndex)
@@ -992,8 +992,8 @@ class SettingsViewModel @Inject constructor(
                 notificationManager.show(
                     title = "BIOS Copied",
                     subtitle = "$copied file${if (copied > 1) "s" else ""} copied",
-                    type = com.nendo.argosy.ui.notification.NotificationType.SUCCESS,
-                    duration = com.nendo.argosy.ui.notification.NotificationDuration.MEDIUM
+                    type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+                    duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
                 )
             }
         }

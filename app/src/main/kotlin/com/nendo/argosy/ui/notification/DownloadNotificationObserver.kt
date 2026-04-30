@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.notification
+package com.nendo.argosy.core.notification
 
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadProgress

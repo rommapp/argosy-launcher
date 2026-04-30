@@ -7,9 +7,9 @@ import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.input.SoundType
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
-import com.nendo.argosy.ui.notification.showSuccess
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.RefreshAndroidResult
 import com.nendo.argosy.ui.screens.home.HomeGameUi

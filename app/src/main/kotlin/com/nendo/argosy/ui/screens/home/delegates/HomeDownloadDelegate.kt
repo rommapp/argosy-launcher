@@ -9,9 +9,9 @@ import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.ui.common.appId
 import com.nendo.argosy.ui.common.toIndicator
-import com.nendo.argosy.ui.notification.NotificationManager
-import com.nendo.argosy.ui.notification.showError
-import com.nendo.argosy.ui.notification.showSuccess
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import kotlinx.coroutines.CoroutineScope

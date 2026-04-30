@@ -61,7 +61,7 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.SoundType
 import com.nendo.argosy.ui.navigation.NavGraph
 import com.nendo.argosy.ui.navigation.Screen
-import com.nendo.argosy.ui.notification.NotificationHost
+import com.nendo.argosy.core.notification.NotificationHost
 import com.nendo.argosy.ui.quickmenu.QuickMenuInputHandler
 import com.nendo.argosy.ui.quickmenu.QuickMenuOverlay
 import com.nendo.argosy.ui.quickmenu.QuickMenuViewModel

@@ -57,7 +57,13 @@ sealed class LaunchConfig {
         val mimeTypeOverride: String? = null,
         val useAbsolutePath: Boolean = false,
         val useFileUri: Boolean = false,
-        val useShellLaunch: Boolean = false
+        val useShellLaunch: Boolean = false,
+        // Bake a data-URI binding into the default launch command. Equivalent
+        // to a user-set Launch Args data-binding override for this emulator,
+        // applied when no per-(platform, emulator) override exists. Needed for
+        // emulators (e.g. MelonDualDS) that require Intent.setData() with a
+        // FileProvider URI alongside their custom action+extras.
+        val defaultDataBinding: RomBindingFormat? = null
     ) : LaunchConfig()
 
     data class CustomScheme(
@@ -372,7 +378,10 @@ object EmulatorRegistry {
             launchAction = "me.magnum.melondualds.LAUNCH_ROM",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "me.magnum.melonds.ui.emulator.EmulatorActivity",
-                intentExtras = mapOf("uri" to ExtraValue.FileUri)
+                intentExtras = mapOf("uri" to ExtraValue.FileUri),
+                // MelonDualDS rejects launches without a FileProvider data URI;
+                // confirmed by user testing. melonDS proper doesn't need this.
+                defaultDataBinding = RomBindingFormat.FILE_PROVIDER
             ),
             downloadUrl = "https://github.com/SapphireRhodonite/melonDS-android/releases",
             releaseSource = ReleaseSource.GitHub("SapphireRhodonite/melonDS-android")

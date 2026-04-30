@@ -1041,12 +1041,38 @@ class GameLauncher @Inject constructor(
             clipDataUri = documentUri ?: providerUri
         }
 
-        val grantFlag = if (hasUriExtra) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0
+        // Apply baked-in data binding (e.g. MelonDualDS requires Intent.setData
+        // with a FileProvider URI even when the ROM is also passed via extras).
+        var defaultDataUri: Uri? = null
+        when (config.defaultDataBinding) {
+            RomBindingFormat.FILE_PROVIDER -> {
+                val providerUri = fileUri ?: getFileUri(romFile)
+                defaultDataUri = providerUri
+                if (providerUri !in grantUris) grantUris += providerUri
+            }
+            RomBindingFormat.DOCUMENT_URI -> {
+                val docUri = documentUri ?: getDocumentUri(romFile)
+                if (docUri != null) {
+                    defaultDataUri = docUri
+                    if (docUri !in grantUris) grantUris += docUri
+                }
+            }
+            RomBindingFormat.ABSOLUTE_PATH -> {
+                defaultDataUri = Uri.parse(romFile.absolutePath)
+            }
+            RomBindingFormat.NONE, null -> {}
+        }
+        val needsGrantFlag = hasUriExtra ||
+            config.defaultDataBinding == RomBindingFormat.FILE_PROVIDER ||
+            config.defaultDataBinding == RomBindingFormat.DOCUMENT_URI
+
+        val grantFlag = if (needsGrantFlag) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0
 
         return EffectiveLaunchCommand(
             action = emulator.launchAction,
             packageName = emulator.packageName,
             activityClass = config.activityClass,
+            dataUri = defaultDataUri,
             extras = resolvedExtras,
             intentFlags = if (forResume) {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or grantFlag

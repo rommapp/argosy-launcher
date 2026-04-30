@@ -18,6 +18,9 @@ import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -91,6 +94,9 @@ class ImageCacheManager @Inject constructor(
     private val platformDao: PlatformDao,
     private val achievementDao: AchievementDao
 ) {
+    private val _localCoverWritten = MutableSharedFlow<Pair<Long, String>>(extraBufferCapacity = 64)
+    val localCoverWritten: SharedFlow<Pair<Long, String>> = _localCoverWritten.asSharedFlow()
+
     private val defaultCacheDir: File by lazy {
         File(context.cacheDir, "images").also {
             it.mkdirs()
@@ -909,6 +915,7 @@ class ImageCacheManager @Inject constructor(
             if (isValidImageFile(cachedFile)) {
                 if (isGameIdRequest) {
                     gameDao.updateCoverPath(request.gameId!!, cachedFile.absolutePath)
+                    _localCoverWritten.tryEmit(request.gameId to cachedFile.absolutePath)
                 } else {
                     updateGameCover(request.id, cachedFile.absolutePath)
                 }
@@ -936,6 +943,7 @@ class ImageCacheManager @Inject constructor(
         Log.d(TAG, "Cached cover for $idLabel: ${cachedFile.length() / 1024}KB")
         if (isGameIdRequest) {
             gameDao.updateCoverPath(request.gameId!!, cachedFile.absolutePath)
+            _localCoverWritten.tryEmit(request.gameId to cachedFile.absolutePath)
         } else {
             updateGameCover(request.id, cachedFile.absolutePath)
         }
@@ -945,6 +953,7 @@ class ImageCacheManager @Inject constructor(
         val game = gameDao.getByRommId(rommId) ?: return
         if (game.coverPath?.startsWith("/") == true) return
         gameDao.updateCoverPath(game.id, localPath)
+        _localCoverWritten.tryEmit(game.id to localPath)
     }
 
     fun resumePendingCoverCache() {

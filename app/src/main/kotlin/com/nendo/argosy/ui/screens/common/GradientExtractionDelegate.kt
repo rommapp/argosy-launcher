@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.common
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.data.cache.GradientPreset
+import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.common.GradientColorExtractor
@@ -12,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +27,8 @@ data class GameGradientRequest(
 class GradientExtractionDelegate @Inject constructor(
     private val gradientColorExtractor: GradientColorExtractor,
     private val gameRepository: GameRepository,
-    private val backgroundProcessor: GradientBackgroundProcessor
+    private val backgroundProcessor: GradientBackgroundProcessor,
+    private val imageCacheManager: ImageCacheManager
 ) {
     private val _gradients = MutableStateFlow<Map<Long, Pair<Color, Color>>>(emptyMap())
     val gradients: StateFlow<Map<Long, Pair<Color, Color>>> = _gradients.asStateFlow()
@@ -57,6 +60,11 @@ class GradientExtractionDelegate @Inject constructor(
         backgroundProcessor.start(scope) { gameId ->
             scope.launch(Dispatchers.Main) {
                 loadPersistedGradient(gameId)
+            }
+        }
+        scope.launch {
+            imageCacheManager.localCoverWritten.collect { (gameId, coverPath) ->
+                extractForGame(scope, gameId, coverPath, prioritize = false)
             }
         }
     }
@@ -142,6 +150,7 @@ class GradientExtractionDelegate @Inject constructor(
         prioritize: Boolean = false
     ) {
         if (coverPath == null) return
+        if (!coverPath.startsWith("/")) return
         if (hasGradient(gameId)) return
         if (pendingExtractions.contains(gameId)) return
 

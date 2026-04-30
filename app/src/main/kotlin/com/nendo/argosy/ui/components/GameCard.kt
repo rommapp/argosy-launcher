@@ -321,7 +321,7 @@ fun GameCard(
         if (effectiveCoverPath != null) {
             val imageData = rememberFileImageModel(effectiveCoverPath)
 
-            if (downloadIndicator.isActive) {
+            if (downloadIndicator.isActive && imageData != null) {
                 DownloadProgressCover(
                     imageData = imageData,
                     progress = downloadIndicator.progress,

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -126,16 +127,18 @@ fun EmulatorPickerPopup(
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
             .clickableNoFocus(onClick = onDismiss),
         contentAlignment = Alignment.Center
     ) {
+        val popupMaxHeight = maxHeight * 0.85f
         Column(
             modifier = Modifier
                 .width(Dimens.modalWidthLg)
+                .heightIn(max = popupMaxHeight)
                 .clip(RoundedCornerShape(Dimens.radiusLg))
                 .background(MaterialTheme.colorScheme.surface)
                 .clickableNoFocus(enabled = false) {}
@@ -157,7 +160,7 @@ fun EmulatorPickerPopup(
 
             LazyColumn(
                 state = listState,
-                modifier = Modifier.heightIn(max = Dimens.headerHeightLg + Dimens.headerHeightLg + Dimens.iconSm),
+                modifier = Modifier.weight(1f, fill = false),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 items(visibleItems, key = { it.key }) { item ->

@@ -434,11 +434,15 @@ class SaveDownloader @Inject constructor(
                 }
             }
 
+            val downloadedHash = saveCacheManager.get().calculateLocalSaveHash(targetPath)
+            val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
             saveSyncDao.upsert(
                 syncEntity.copy(
                     localSavePath = targetPath,
                     localUpdatedAt = Instant.now(),
                     lastSyncedAt = Instant.now(),
+                    serverUpdatedAt = serverTimestamp,
+                    lastUploadedHash = downloadedHash ?: syncEntity.lastUploadedHash,
                     syncStatus = SaveSyncEntity.STATUS_SYNCED
                 )
             )

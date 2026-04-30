@@ -162,6 +162,7 @@ class SaveSyncApiClient @Inject constructor(
             .filter { it.rommId != null }
 
         for (serverSave in serverSaves) {
+            if (isStateShapedSave(serverSave)) continue
             val game = downloadedGames.find { it.rommId == serverSave.romId } ?: continue
             val emulatorId = serverSave.emulator?.takeIf { it != "default" && it.isNotBlank() }
                 ?: resolveEmulatorForGame(game)
@@ -436,6 +437,15 @@ class SaveSyncApiClient @Inject constructor(
 
         internal fun isTimestampSaveName(baseName: String): Boolean {
             return TIMESTAMP_ONLY_PATTERN.matches(baseName)
+        }
+
+        private val STATE_SLOT_PATTERN = Regex("""^state_""", RegexOption.IGNORE_CASE)
+        private val STATE_FILE_PATTERN = Regex("""\.state\d*(\.zip)?$""", RegexOption.IGNORE_CASE)
+
+        internal fun isStateShapedSave(save: RomMSave): Boolean {
+            val slot = save.slot
+            if (slot != null && STATE_SLOT_PATTERN.containsMatchIn(slot)) return true
+            return STATE_FILE_PATTERN.containsMatchIn(save.fileName)
         }
     }
 }

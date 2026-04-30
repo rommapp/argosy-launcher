@@ -260,7 +260,7 @@ class GameLaunchDelegate @Inject constructor(
                     val info = localModifiedInfo!!
                     when (localModifiedChoice!!) {
                         LocalModifiedChoice.KEEP_LOCAL -> {
-                            android.util.Log.d("GameLaunchDelegate", "User chose to keep local save - caching as new version")
+                            android.util.Log.d("GameLaunchDelegate", "User chose to keep local save - caching and uploading as new authoritative version")
                             if (emulatorId != null) {
                                 val cacheResult = saveCacheManager.cacheCurrentSave(
                                     gameId = gameId,
@@ -273,6 +273,13 @@ class GameLaunchDelegate @Inject constructor(
                                     gameRepository.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
                                 }
                                 gameRepository.updateActiveSaveApplied(gameId, true)
+                                val uploadResult = saveSyncRepository.uploadSave(
+                                    gameId = gameId,
+                                    emulatorId = emulatorId,
+                                    channelName = info.channelName,
+                                    forceOverwrite = true
+                                )
+                                android.util.Log.d("GameLaunchDelegate", "Upload after LocalModified keep: $uploadResult")
                             }
                         }
                         LocalModifiedChoice.RESTORE_SELECTED -> {

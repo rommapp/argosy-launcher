@@ -35,6 +35,7 @@ class SyncSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: SaveSyncRepository,
     private val saveCacheRepository: SaveCacheRepository,
+    private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator,
     private val platformRepository: PlatformRepository,
     private val rommRepository: RomMRepository,
     private val imageCacheManager: ImageCacheManager,
@@ -321,16 +322,17 @@ class SyncSettingsDelegate @Inject constructor(
             try {
                 notificationManager.show("Syncing saves...")
                 saveSyncRepository.checkForAllServerUpdates()
-                val uploaded = saveSyncRepository.processPendingUploads()
-                val downloaded = saveSyncRepository.downloadPendingServerSaves()
+                val result = syncCoordinator.processQueue()
                 val pendingCounts = saveCacheRepository.getPendingSyncCounts()
                 _state.update { it.copy(pendingUploadsCount = pendingCounts.total) }
 
-                val message = when {
-                    uploaded > 0 && downloaded > 0 -> "Uploaded $uploaded, downloaded $downloaded saves"
-                    uploaded > 0 -> "Uploaded $uploaded saves"
-                    downloaded > 0 -> "Downloaded $downloaded saves"
-                    else -> "Saves are up to date"
+                val message = when (result) {
+                    is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.NotConnected ->
+                        "Not connected"
+                    is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.Completed ->
+                        if (result.processed == 0) "Saves are up to date"
+                        else "Synced ${result.processed} item(s)" +
+                            (if (result.failed > 0) " (${result.failed} failed)" else "")
                 }
                 notificationManager.show(message)
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -550,16 +552,17 @@ class SyncSettingsDelegate @Inject constructor(
 
                 notificationManager.show("Syncing saves...")
                 saveSyncRepository.checkForAllServerUpdates()
-                val uploaded = saveSyncRepository.processPendingUploads()
-                val downloaded = saveSyncRepository.downloadPendingServerSaves()
+                val result = syncCoordinator.processQueue()
                 val pendingCounts = saveCacheRepository.getPendingSyncCounts()
                 _state.update { it.copy(pendingUploadsCount = pendingCounts.total) }
 
-                val message = when {
-                    uploaded > 0 && downloaded > 0 -> "Uploaded $uploaded, downloaded $downloaded saves"
-                    uploaded > 0 -> "Uploaded $uploaded saves"
-                    downloaded > 0 -> "Downloaded $downloaded saves"
-                    else -> "Saves are up to date"
+                val message = when (result) {
+                    is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.NotConnected ->
+                        "Not connected"
+                    is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.Completed ->
+                        if (result.processed == 0) "Saves are up to date"
+                        else "Synced ${result.processed} item(s)" +
+                            (if (result.failed > 0) " (${result.failed} failed)" else "")
                 }
                 notificationManager.show(message)
             } catch (e: kotlinx.coroutines.CancellationException) {

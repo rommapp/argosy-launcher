@@ -92,6 +92,10 @@ class SyncCoordinator @Inject constructor(
             val dirtySaves = processDirtySaveCaches()
             processed += dirtySaves
 
+            // Drain pending server-side downloads marked on save_sync rows
+            val downloaded = saveSyncRepository.get().downloadPendingServerSaves()
+            processed += downloaded
+
             // Validate save states (weekly)
             val validated = validateSaveStates()
             processed += validated
@@ -124,12 +128,30 @@ class SyncCoordinator @Inject constructor(
         val game = gameDao.getById(item.gameId) ?: return false
         val payload = SaveFilePayload.fromJson(item.payloadJson) ?: return false
 
+        syncQueueManager.addOperation(
+            SyncOperation(
+                gameId = item.gameId,
+                gameName = game.title,
+                channelName = payload.channelName,
+                coverPath = game.coverPath,
+                direction = SyncDirection.UPLOAD,
+                status = SyncStatus.IN_PROGRESS
+            )
+        )
+
         val result = saveSyncRepository.get().uploadSave(
             gameId = item.gameId,
             emulatorId = payload.emulatorId,
             channelName = payload.channelName,
             forceOverwrite = false
         )
+
+        when (result) {
+            is SaveSyncResult.Success -> syncQueueManager.completeOperation(item.gameId)
+            is SaveSyncResult.Error -> syncQueueManager.completeOperation(item.gameId, result.message)
+            is SaveSyncResult.Conflict -> syncQueueManager.completeOperation(item.gameId, "Server has newer save")
+            else -> syncQueueManager.completeOperation(item.gameId, "Skipped")
+        }
 
         return result is SaveSyncResult.Success
     }
@@ -407,22 +429,6 @@ class SyncCoordinator @Inject constructor(
         }
 
         return synced
-    }
-
-    // Queue operations for callers to add items
-    suspend fun queueSaveUpload(gameId: Long, rommId: Long, emulatorId: String, channelName: String? = null) {
-        val payload = SaveFilePayload(emulatorId, channelName)
-        // Remove any existing pending for same game+type
-        pendingSyncQueueDao.deleteByGameAndType(gameId, SyncType.SAVE_FILE)
-        pendingSyncQueueDao.insert(
-            PendingSyncQueueEntity(
-                gameId = gameId,
-                rommId = rommId,
-                syncType = SyncType.SAVE_FILE,
-                priority = SyncPriority.SAVE_FILE,
-                payloadJson = payload.toJson()
-            )
-        )
     }
 
     suspend fun queueStateUpload(gameId: Long, rommId: Long, stateCacheId: Long, emulatorId: String) {

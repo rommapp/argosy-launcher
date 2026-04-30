@@ -96,59 +96,6 @@ class SaveSyncOrchestrator @Inject constructor(
         queued
     }
 
-    suspend fun processPendingUploads(): Int = withContext(Dispatchers.IO) {
-        val pending = pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_FILE)
-        if (pending.isEmpty()) {
-            return@withContext 0
-        }
-        Logger.info(TAG, "Processing ${pending.size} pending save uploads")
-
-        for (item in pending) {
-            val game = gameDao.getById(item.gameId) ?: continue
-            syncQueueManager.addOperation(
-                SyncOperation(
-                    gameId = item.gameId,
-                    gameName = game.title,
-                    coverPath = game.coverPath,
-                    direction = SyncDirection.UPLOAD,
-                    status = SyncStatus.PENDING
-                )
-            )
-        }
-
-        var processed = 0
-        val client = apiClient.get()
-
-        for (item in pending) {
-            val payload = SaveFilePayload.fromJson(item.payloadJson) ?: continue
-            Logger.debug(TAG, "Processing pending upload: gameId=${item.gameId}, emulator=${payload.emulatorId}")
-            syncQueueManager.updateOperation(item.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
-
-            when (val result = client.uploadSave(item.gameId, payload.emulatorId)) {
-                is SaveSyncResult.Success -> {
-                    pendingSyncQueueDao.deleteById(item.id)
-                    syncQueueManager.completeOperation(item.gameId)
-                    processed++
-                }
-                is SaveSyncResult.Conflict -> {
-                    Logger.debug(TAG, "Pending upload conflict for gameId=${item.gameId}, leaving in queue")
-                    syncQueueManager.completeOperation(item.gameId, "Server has newer save")
-                }
-                is SaveSyncResult.Error -> {
-                    Logger.debug(TAG, "Pending upload failed for gameId=${item.gameId}: ${result.message}")
-                    pendingSyncQueueDao.markFailed(item.id, result.message)
-                    syncQueueManager.completeOperation(item.gameId, result.message)
-                }
-                else -> {
-                    syncQueueManager.completeOperation(item.gameId, "Sync not available")
-                }
-            }
-        }
-
-        Logger.info(TAG, "Processed $processed/${pending.size} pending uploads")
-        processed
-    }
-
     suspend fun downloadPendingServerSaves(): Int = withContext(Dispatchers.IO) {
         val pendingDownloads = saveSyncDao.getPendingDownloads()
         if (pendingDownloads.isEmpty()) {

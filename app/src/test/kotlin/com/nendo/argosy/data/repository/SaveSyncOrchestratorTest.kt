@@ -199,49 +199,6 @@ class SaveSyncOrchestratorTest {
         coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any()) }
     }
 
-    // --- processPendingUploads ---
-
-    @Test
-    fun `processPendingUploads uploads all queued saves`() = runTest {
-        val item1 = makePendingItem(id = 1L, gameId = 1L)
-        val item2 = makePendingItem(id = 2L, gameId = 1L)
-        coEvery { pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_FILE) } returns listOf(item1, item2)
-        coEvery { mockApiClient.uploadSave(any(), any()) } returns SaveSyncResult.Success()
-
-        val result = orchestrator.processPendingUploads()
-
-        assertEquals(2, result)
-        coVerify(exactly = 2) { pendingSyncQueueDao.deleteById(any()) }
-    }
-
-    @Test
-    fun `processPendingUploads conflict result leaves entry in queue`() = runTest {
-        val item = makePendingItem(id = 1L, gameId = 1L)
-        coEvery { pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_FILE) } returns listOf(item)
-        coEvery { mockApiClient.uploadSave(any(), any()) } returns SaveSyncResult.Conflict(
-            gameId = 1L,
-            localTimestamp = java.time.Instant.now(),
-            serverTimestamp = java.time.Instant.now()
-        )
-
-        val result = orchestrator.processPendingUploads()
-
-        assertEquals(0, result)
-        coVerify(exactly = 0) { pendingSyncQueueDao.deleteById(any()) }
-    }
-
-    @Test
-    fun `processPendingUploads error result marks failed for retry`() = runTest {
-        val item = makePendingItem(id = 1L, gameId = 1L)
-        coEvery { pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_FILE) } returns listOf(item)
-        coEvery { mockApiClient.uploadSave(any(), any()) } returns SaveSyncResult.Error("upload failed")
-
-        val result = orchestrator.processPendingUploads()
-
-        assertEquals(0, result)
-        coVerify { pendingSyncQueueDao.markFailed(1L, "upload failed", any()) }
-    }
-
     // --- helpers ---
 
     private fun makeServerSave(

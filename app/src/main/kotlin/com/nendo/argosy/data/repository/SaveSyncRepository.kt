@@ -170,7 +170,6 @@ class SaveSyncRepository @Inject constructor(
 
     suspend fun scanAndQueueLocalChanges(): Int = orchestrator.scanAndQueueLocalChanges()
 
-    suspend fun processPendingUploads(): Int = orchestrator.processPendingUploads()
 
     suspend fun downloadPendingServerSaves(): Int = orchestrator.downloadPendingServerSaves()
 

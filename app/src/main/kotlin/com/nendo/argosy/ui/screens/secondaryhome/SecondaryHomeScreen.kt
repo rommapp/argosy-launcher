@@ -66,9 +66,9 @@ import com.nendo.argosy.ui.common.GamepadLongPressEffect
 import com.nendo.argosy.ui.common.LongPressAnimationConfig
 import com.nendo.argosy.ui.common.longPressGesture
 import com.nendo.argosy.ui.common.longPressGraphicsLayer
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.rememberLongPressAnimationState
 import com.nendo.argosy.ui.theme.Dimens
-import java.io.File
 
 @Composable
 fun SecondaryHomeScreen(
@@ -283,9 +283,7 @@ private fun GameGridItem(
     onClick: () -> Unit,
     onLongPressAction: () -> Unit
 ) {
-    val imageData = game.coverPath?.let { path ->
-        if (path.startsWith("/")) File(path) else path
-    }
+    val imageData = rememberFileImageModel(game.coverPath)
     val grayscaleMatrix = ColorMatrix().apply { setToSaturation(0f) }
     val isDownloading = game.downloadProgress != null
     val progress = game.downloadProgress ?: 0f

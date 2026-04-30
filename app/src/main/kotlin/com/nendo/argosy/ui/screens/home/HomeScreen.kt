@@ -63,6 +63,7 @@ import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.icons.InputIcons
 import androidx.compose.runtime.Composable
@@ -507,14 +508,9 @@ fun HomeScreen(
                     label = "background"
                 ) { backgroundPath ->
                     if (backgroundPath != null) {
-                        val imageData = if (backgroundPath.startsWith("/")) {
-                            java.io.File(backgroundPath)
-                        } else {
-                            backgroundPath
-                        }
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(imageData)
+                                .data(rememberFileImageModel(backgroundPath))
                                 .size(640, 360)
                                 .build(),
                             contentDescription = null,

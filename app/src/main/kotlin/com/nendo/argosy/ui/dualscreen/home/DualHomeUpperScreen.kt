@@ -36,10 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.util.formatPlayTime
-import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -127,9 +127,8 @@ fun DualHomeUpperScreen(
             label = "hero-bg"
         ) { bgPath ->
             if (bgPath != null) {
-                val imageModel = if (bgPath.startsWith("/")) File(bgPath) else bgPath
                 AsyncImage(
-                    model = imageModel,
+                    model = rememberFileImageModel(bgPath),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),

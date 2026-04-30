@@ -66,11 +66,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.hardware.CompanionAppBar
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.util.touchOnly
-import java.io.File
 import kotlin.math.abs
 
 private val CARD_WIDTH = 100.dp
@@ -433,11 +433,8 @@ private fun CollectionCoverMosaic(
                 )
             }
             coverPaths.size == 1 -> {
-                val imageData = coverPaths[0].let { path ->
-                    if (path.startsWith("/")) File(path) else path
-                }
                 AsyncImage(
-                    model = imageData,
+                    model = rememberFileImageModel(coverPaths[0]),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -449,7 +446,7 @@ private fun CollectionCoverMosaic(
                     Row(modifier = Modifier.weight(1f)) {
                         displayed.getOrNull(0)?.let { path ->
                             AsyncImage(
-                                model = if (path.startsWith("/")) File(path) else path,
+                                model = rememberFileImageModel(path),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -459,7 +456,7 @@ private fun CollectionCoverMosaic(
                         }
                         displayed.getOrNull(1)?.let { path ->
                             AsyncImage(
-                                model = if (path.startsWith("/")) File(path) else path,
+                                model = rememberFileImageModel(path),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -472,7 +469,7 @@ private fun CollectionCoverMosaic(
                         Row(modifier = Modifier.weight(1f)) {
                             displayed.getOrNull(2)?.let { path ->
                                 AsyncImage(
-                                    model = if (path.startsWith("/")) File(path) else path,
+                                    model = rememberFileImageModel(path),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
@@ -482,7 +479,7 @@ private fun CollectionCoverMosaic(
                             }
                             displayed.getOrNull(3)?.let { path ->
                                 AsyncImage(
-                                    model = if (path.startsWith("/")) File(path) else path,
+                                    model = rememberFileImageModel(path),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier

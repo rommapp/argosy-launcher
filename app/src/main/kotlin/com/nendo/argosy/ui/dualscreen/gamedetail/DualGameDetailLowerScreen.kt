@@ -72,8 +72,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.color
-import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.domain.model.UnifiedStateEntry
+import com.nendo.argosy.ui.common.icon
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.StateSlotRow
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
@@ -81,7 +82,6 @@ import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
 import com.nendo.argosy.ui.util.touchOnly
-import java.io.File
 
 @Composable
 fun DualGameDetailLowerScreen(
@@ -713,7 +713,7 @@ private fun ScreenshotThumbnail(
             .touchOnly { onClick() }
     ) {
         AsyncImage(
-            model = if (path.startsWith("/")) File(path) else path,
+            model = rememberFileImageModel(path),
             contentDescription = "Screenshot",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

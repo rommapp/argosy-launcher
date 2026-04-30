@@ -56,6 +56,7 @@ class DualGameDetailViewModel(
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
+    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -299,7 +300,7 @@ class DualGameDetailViewModel(
             val isDownloaded = when {
                 game.source == GameSource.ANDROID_APP -> true
                 game.steamAppId != null && game.localPath != null ->
-                    java.io.File(game.localPath, ".download_complete").exists()
+                    downloadFileStatusRepository.isDownloadComplete(game.localPath)
                 else -> game.localPath != null
             }
             val isPlayable = when {
@@ -402,7 +403,7 @@ class DualGameDetailViewModel(
                     val isNowPlayable = when {
                         game.source == GameSource.ANDROID_APP -> true
                         game.steamAppId != null && game.localPath != null ->
-                            java.io.File(game.localPath, ".download_complete").exists()
+                            downloadFileStatusRepository.isDownloadComplete(game.localPath)
                         else -> game.localPath != null
                     }
                     _uiState.update {
@@ -437,7 +438,7 @@ class DualGameDetailViewModel(
                         if (_uiState.value.downloadState != null) {
                             val game = gameRepository.getById(gameId) ?: return@collect
                             val isNowDownloaded = game.steamAppId != null && game.localPath != null &&
-                                java.io.File(game.localPath, ".download_complete").exists()
+                                downloadFileStatusRepository.isDownloadComplete(game.localPath)
                             _uiState.update {
                                 it.copy(
                                     downloadProgress = null,
@@ -464,7 +465,7 @@ class DualGameDetailViewModel(
                     } else if (_uiState.value.downloadState != null && _uiState.value.isSteamGame) {
                         val game = gameRepository.getById(gameId) ?: return@collect
                         val isNowDownloaded = game.steamAppId != null && game.localPath != null &&
-                            java.io.File(game.localPath, ".download_complete").exists()
+                            downloadFileStatusRepository.isDownloadComplete(game.localPath)
                         _uiState.update {
                             it.copy(
                                 downloadProgress = null,

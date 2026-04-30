@@ -96,6 +96,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var steamRepository: com.nendo.argosy.data.repository.SteamRepository
     @Inject lateinit var playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker
     @Inject lateinit var repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
+    @Inject lateinit var downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
     @Inject lateinit var steamContentManager: com.nendo.argosy.data.steam.SteamContentManager
     @Inject lateinit var presenceManager: com.nendo.argosy.data.social.PresenceManager
     @Inject lateinit var discordPresenceManager: com.nendo.argosy.data.social.discord.DiscordPresenceManager
@@ -254,6 +255,7 @@ class MainActivity : ComponentActivity() {
                 playSessionTracker = playSessionTracker,
                 steamContentManager = steamContentManager,
                 repairImageCacheUseCase = repairImageCacheUseCase,
+                downloadFileStatusRepository = downloadFileStatusRepository,
                 initialRolesSwapped = initialSwapped
             )
             DualScreenManagerHolder.instance = dualScreenManager

@@ -564,7 +564,8 @@ class SecondaryHomeActivity :
             context = applicationContext,
             steamContentManager = dsm.steamContentManager,
             preferencesRepository = dsm.preferencesRepository,
-            repairImageCacheUseCase = dsm.repairImageCacheUseCase
+            repairImageCacheUseCase = dsm.repairImageCacheUseCase,
+            downloadFileStatusRepository = dsm.downloadFileStatusRepository
         )
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
@@ -579,7 +580,8 @@ class SecondaryHomeActivity :
             steamRepository = dsm.steamRepository,
             configureEmulatorUseCase = dsm.configureEmulatorUseCase,
             steamContentManager = dsm.steamContentManager,
-            displayAffinityHelper = affinityHelper
+            displayAffinityHelper = affinityHelper,
+            downloadFileStatusRepository = dsm.downloadFileStatusRepository
         )
 
         inputHandler = SecondaryHomeInputHandler(

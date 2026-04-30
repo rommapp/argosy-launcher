@@ -7,6 +7,7 @@ import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.DownloadFileStatusRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.domain.model.CompletionStatus
@@ -36,7 +37,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -89,7 +89,8 @@ class HomeLibraryDelegate @Inject constructor(
     private val gradientExtractionDelegate: GradientExtractionDelegate,
     private val emulatorDetector: EmulatorDetector,
     private val notificationManager: NotificationManager,
-    private val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
+    private val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase,
+    private val downloadFileStatusRepository: DownloadFileStatusRepository
 ) {
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
@@ -598,7 +599,7 @@ class HomeLibraryDelegate @Inject constructor(
                 game.source != GameSource.STEAM &&
                 game.source != GameSource.ANDROID_APP &&
                 game.localPath != null &&
-                !File(game.localPath).exists()
+                !downloadFileStatusRepository.pathExists(game.localPath)
             }
             if (staleGames.isEmpty()) return@launch
             staleGames.forEach { game ->
@@ -612,7 +613,7 @@ class HomeLibraryDelegate @Inject constructor(
             game.source != GameSource.STEAM &&
             game.source != GameSource.ANDROID_APP &&
             game.rommId != null &&
-            (game.localPath == null || !File(game.localPath).exists())
+            (game.localPath == null || !downloadFileStatusRepository.pathExists(game.localPath))
         }
         if (gamesNeedingDiscovery.isEmpty()) return false
         withContext(Dispatchers.IO) {
@@ -623,12 +624,12 @@ class HomeLibraryDelegate @Inject constructor(
         return true
     }
 
-    private fun filterPlayable(candidates: List<GameEntity>): List<GameEntity> {
+    private suspend fun filterPlayable(candidates: List<GameEntity>): List<GameEntity> {
         return candidates.filter { game ->
             when {
                 game.source == GameSource.ANDROID_APP -> true
                 game.source == GameSource.STEAM && game.isExternallyManaged -> true
-                game.localPath != null -> File(game.localPath).exists()
+                game.localPath != null -> downloadFileStatusRepository.pathExists(game.localPath)
                 else -> false
             }
         }

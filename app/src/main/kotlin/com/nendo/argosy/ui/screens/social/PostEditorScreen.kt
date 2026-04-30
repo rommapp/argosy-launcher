@@ -54,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -436,13 +437,8 @@ private fun GameSection(
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (linkedGameCoverPath != null) {
-            val imageData = if (linkedGameCoverPath.startsWith("/")) {
-                java.io.File(linkedGameCoverPath)
-            } else {
-                linkedGameCoverPath
-            }
             AsyncImage(
-                model = imageData,
+                model = rememberFileImageModel(linkedGameCoverPath),
                 contentDescription = linkedGameTitle,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -750,13 +746,8 @@ private fun PostGamePickerDialog(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     if (item.coverPath != null) {
-                        val imageData = if (item.coverPath.startsWith("/")) {
-                            java.io.File(item.coverPath)
-                        } else {
-                            item.coverPath
-                        }
                         AsyncImage(
-                            model = imageData,
+                            model = rememberFileImageModel(item.coverPath),
                             contentDescription = item.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier

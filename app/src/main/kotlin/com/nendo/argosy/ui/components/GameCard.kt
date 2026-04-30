@@ -77,12 +77,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import java.io.File
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.SystemIconPosition
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.theme.Dimens
@@ -319,11 +319,7 @@ fun GameCard(
         ) ?: remember { mutableStateOf(0f) }
 
         if (effectiveCoverPath != null) {
-            val imageData = if (effectiveCoverPath.startsWith("/")) {
-                File(effectiveCoverPath)
-            } else {
-                effectiveCoverPath
-            }
+            val imageData = rememberFileImageModel(effectiveCoverPath)
 
             if (downloadIndicator.isActive) {
                 DownloadProgressCover(
@@ -595,9 +591,7 @@ fun GameCard(
             )
 
             val innerEffectShape = InnerEffectShape(outerCornerRadiusPx, animatedFrameWidth, innerEffectWidth)
-            val gradientImageData = effectiveCoverPath?.let { path ->
-                if (path.startsWith("/")) File(path) else path
-            }
+            val gradientImageData = rememberFileImageModel(effectiveCoverPath)
             when (innerEffect) {
                 BoxArtInnerEffect.GLASS -> {
                     if (gradientImageData != null) {

@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
-import java.io.File
 import com.nendo.argosy.data.steam.SteamDownloadState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -109,7 +108,8 @@ class GameDetailViewModel @Inject constructor(
     private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
     private val variantScanner: com.nendo.argosy.data.scanner.VariantScanner,
     private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver,
-    private val downloadManager: com.nendo.argosy.data.download.DownloadManager
+    private val downloadManager: com.nendo.argosy.data.download.DownloadManager,
+    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
 ) : ViewModel() {
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
@@ -417,11 +417,15 @@ class GameDetailViewModel @Inject constructor(
             } else null
             val fileExists = gameRepository.validateAndDiscoverGame(gameId)
 
+            val steamPathExists = isSteamGame && downloadFileStatusRepository.pathExists(game.localPath)
+            val steamDownloadComplete = isSteamGame && downloadFileStatusRepository.isDownloadComplete(game.localPath)
+            val steamDownloadInProgress = isSteamGame && downloadFileStatusRepository.isDownloadInProgress(game.localPath)
+
             val canPlay = when {
                 game.source == GameSource.ANDROID_APP -> true
                 isAndroidApp -> game.packageName != null
                 isSteamGame -> {
-                    game.localPath != null && File(game.localPath).exists() && run {
+                    game.localPath != null && steamPathExists && run {
                         val launcher = game.steamLauncher?.let { SteamLaunchers.getByPackage(it) }
                             ?: SteamLaunchers.getPreferred(context)
                         launcher?.isInstalled(context) == true
@@ -441,10 +445,8 @@ class GameDetailViewModel @Inject constructor(
                 game.source == GameSource.ANDROID_APP -> GameDownloadStatus.DOWNLOADED
                 isAndroidApp && fileExists && game.packageName == null -> GameDownloadStatus.NEEDS_INSTALL
                 isSteamGame && game.isExternallyManaged -> GameDownloadStatus.DOWNLOADED
-                isSteamGame && game.localPath != null &&
-                    File(game.localPath, ".download_complete").exists() -> GameDownloadStatus.DOWNLOADED
-                isSteamGame && game.localPath != null &&
-                    File(game.localPath, ".download_in_progress").exists() -> GameDownloadStatus.DOWNLOADING
+                isSteamGame && game.localPath != null && steamDownloadComplete -> GameDownloadStatus.DOWNLOADED
+                isSteamGame && game.localPath != null && steamDownloadInProgress -> GameDownloadStatus.DOWNLOADING
                 isSteamDownloading -> GameDownloadStatus.DOWNLOADING
                 fileExists -> GameDownloadStatus.DOWNLOADED
                 game.isMultiDisc -> {

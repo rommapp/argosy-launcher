@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SyncOverlay
@@ -462,13 +463,8 @@ private fun GameDetailContent(
         Box(modifier = Modifier.fillMaxSize().blur(combinedBlur)) {
             val effectiveBackgroundPath = uiState.repairedBackgroundPath ?: game.backgroundPath
             if (effectiveBackgroundPath != null) {
-                val imageData = if (effectiveBackgroundPath.startsWith("/")) {
-                    java.io.File(effectiveBackgroundPath)
-                } else {
-                    effectiveBackgroundPath
-                }
                 AsyncImage(
-                    model = imageData,
+                    model = rememberFileImageModel(effectiveBackgroundPath),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

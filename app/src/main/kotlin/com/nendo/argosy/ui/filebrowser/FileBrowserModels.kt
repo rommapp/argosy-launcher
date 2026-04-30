@@ -1,8 +1,6 @@
 package com.nendo.argosy.ui.filebrowser
 
 import com.nendo.argosy.core.storage.StorageVolume
-import com.nendo.argosy.core.storage.StorageVolumeType
-import java.io.File
 
 data class FileEntry(
     val name: String,
@@ -58,10 +56,3 @@ data class FileBrowserState(
     val createFolderError: String? = null
 )
 
-fun File.toFileEntry(): FileEntry = FileEntry(
-    name = name,
-    path = absolutePath,
-    isDirectory = isDirectory,
-    size = if (isFile) length() else 0L,
-    lastModified = lastModified()
-)

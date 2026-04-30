@@ -3,8 +3,8 @@ package com.nendo.argosy.ui.util
 import android.content.Context
 import coil.imageLoader
 import coil.request.ImageRequest
+import com.nendo.argosy.ui.common.fileImageModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,9 +17,8 @@ class ImagePrefetchManager @Inject constructor(
     fun prefetchBackgrounds(paths: List<String>) {
         paths.forEach { path ->
             try {
-                val data = if (path.startsWith("/")) File(path) else path
                 val request = ImageRequest.Builder(context)
-                    .data(data)
+                    .data(fileImageModel(path))
                     .size(640, 360)
                     .build()
                 imageLoader.enqueue(request)

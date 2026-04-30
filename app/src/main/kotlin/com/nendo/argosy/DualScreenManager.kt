@@ -94,6 +94,7 @@ class DualScreenManager(
     internal val playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker,
     internal val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     internal val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase? = null,
+    internal val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -452,7 +453,8 @@ class DualScreenManager(
             context = appContext,
             steamContentManager = steamContentManager,
             preferencesRepository = preferencesRepository,
-            repairImageCacheUseCase = repairImageCacheUseCase
+            repairImageCacheUseCase = repairImageCacheUseCase,
+            downloadFileStatusRepository = downloadFileStatusRepository
         )
     }
 
@@ -1611,6 +1613,7 @@ class DualScreenManager(
             configureEmulatorUseCase = configureEmulatorUseCase,
             steamContentManager = steamContentManager,
             displayAffinityHelper = displayAffinityHelper,
+            downloadFileStatusRepository = downloadFileStatusRepository,
             context = appContext
         )
         vm.loadGame(gameId)

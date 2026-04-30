@@ -78,6 +78,7 @@ import com.nendo.argosy.data.social.CommunityFollow
 import com.nendo.argosy.data.social.FeedEventDto
 import com.nendo.argosy.data.social.FeedEventType
 import com.nendo.argosy.data.social.SocialConnectionState
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.doodle.GamePickerItem
 import com.nendo.argosy.ui.screens.doodle.CanvasSize
@@ -1471,13 +1472,8 @@ private fun CommunitySearchDialog(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     if (item.coverPath != null) {
-                        val imageData: Any = if (item.coverPath.startsWith("/")) {
-                            java.io.File(item.coverPath)
-                        } else {
-                            item.coverPath
-                        }
                         AsyncImage(
-                            model = imageData,
+                            model = rememberFileImageModel(item.coverPath),
                             contentDescription = item.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier

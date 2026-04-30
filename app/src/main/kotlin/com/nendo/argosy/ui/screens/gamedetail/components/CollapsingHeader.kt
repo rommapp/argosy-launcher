@@ -39,6 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.theme.ALauncherColors
@@ -46,7 +47,6 @@ import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.util.formatPlayTime
-import java.io.File
 
 private val EXPANDED_COVER_WIDTH = 200.dp
 private val EXPANDED_COVER_HEIGHT = 280.dp
@@ -194,11 +194,8 @@ private fun CoverArtImage(
     contentDescription: String,
     modifier: Modifier = Modifier
 ) {
-    val imageData = coverPath?.let { path ->
-        if (path.startsWith("/")) File(path) else path
-    }
     AsyncImage(
-        model = imageData,
+        model = rememberFileImageModel(coverPath),
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = modifier
@@ -405,11 +402,8 @@ internal fun CollapsedHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
     ) {
-        val imageData = game.coverPath?.let { path ->
-            if (path.startsWith("/")) File(path) else path
-        }
         AsyncImage(
-            model = imageData,
+            model = rememberFileImageModel(game.coverPath),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier

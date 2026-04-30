@@ -64,13 +64,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import java.io.File
 import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadState
-import com.nendo.argosy.ui.input.LocalInputDispatcher
-import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.formatBytes
 
@@ -491,13 +491,8 @@ private fun CompletedDownloadItem(
 @Composable
 private fun DownloadCover(download: DownloadProgress) {
     if (download.coverPath != null) {
-        val imageData = if (download.coverPath.startsWith("/")) {
-            File(download.coverPath)
-        } else {
-            download.coverPath
-        }
         AsyncImage(
-            model = imageData,
+            model = rememberFileImageModel(download.coverPath),
             contentDescription = download.gameTitle,
             modifier = Modifier
                 .size(56.dp)

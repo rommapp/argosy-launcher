@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import java.io.File
+import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.quickmenu.GameRowUi
 import com.nendo.argosy.ui.quickmenu.MetadataType
@@ -61,11 +60,8 @@ fun QuickMenuGameRow(
             .padding(Dimens.radiusLg),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val imageData = game.coverPath?.let { path ->
-            if (path.startsWith("/")) File(path) else path
-        }
         AsyncImage(
-            model = imageData,
+            model = rememberFileImageModel(game.coverPath),
             contentDescription = game.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

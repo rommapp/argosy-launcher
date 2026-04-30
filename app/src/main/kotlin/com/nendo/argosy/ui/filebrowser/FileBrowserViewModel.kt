@@ -2,11 +2,11 @@ package com.nendo.argosy.ui.filebrowser
 
 import android.os.Build
 import android.os.Environment
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.core.storage.StorageVolume
-import com.nendo.argosy.data.storage.ManagedStorageAccessor
+import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.storage.FileInfo
 import com.nendo.argosy.data.storage.StorageVolumeDetector
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,15 +19,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import javax.inject.Inject
-
-private const val TAG = "FileBrowserViewModel"
 
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
     private val volumeDetector: StorageVolumeDetector,
-    private val managedStorageAccessor: ManagedStorageAccessor
+    private val fileAccessLayer: FileAccessLayer
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FileBrowserState())
@@ -89,102 +86,68 @@ class FileBrowserViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            try {
-                val entries = withContext(Dispatchers.IO) {
-                    loadDirectory(path)
+            val result = withContext(Dispatchers.IO) {
+                loadDirectory(path)
+            }
+            when (result) {
+                is DirectoryListing.Success -> {
+                    _state.update { state ->
+                        state.copy(
+                            currentPath = path,
+                            entries = result.entries,
+                            fileFocusIndex = 0,
+                            focusedPane = FocusedPane.FILES,
+                            isLoading = false
+                        )
+                    }
                 }
-                _state.update { state ->
-                    state.copy(
-                        currentPath = path,
-                        entries = entries,
-                        fileFocusIndex = 0,
-                        focusedPane = FocusedPane.FILES,
-                        isLoading = false
-                    )
-                }
-            } catch (@Suppress("SwallowedException") e: SecurityException) {
-                _state.update { state ->
-                    state.copy(
-                        error = "Cannot access directory",
-                        isLoading = false
-                    )
-                }
-            } catch (@Suppress("SwallowedException") e: Exception) {
-                _state.update { state ->
-                    state.copy(
-                        error = e.message ?: "Unknown error",
-                        isLoading = false
-                    )
+                is DirectoryListing.Error -> {
+                    _state.update { state ->
+                        state.copy(
+                            error = result.message,
+                            isLoading = false
+                        )
+                    }
                 }
             }
         }
     }
 
-    private fun loadDirectory(path: String): List<FileEntry> {
-        val entries = mutableListOf<FileEntry>()
+    private sealed interface DirectoryListing {
+        data class Success(val entries: List<FileEntry>) : DirectoryListing
+        data class Error(val message: String) : DirectoryListing
+    }
+
+    private fun loadDirectory(path: String): DirectoryListing {
         val isVolumeRoot = _state.value.volumes.any { it.path == path }
         val fileFilter = _state.value.fileFilter
 
-        // Check if this is an Android/data or Android/obb path that needs managed access
-        val managedResult = tryManagedAccess(path)
+        val children = fileAccessLayer.listFiles(path)
+            ?: return DirectoryListing.Error("Cannot access directory")
 
-        if (managedResult != null) {
-            // Using managed storage access for Android/data paths
-            if (!isVolumeRoot) {
-                val parentPath = File(path).parent
-                if (parentPath != null) {
-                    entries.add(
-                        FileEntry(
-                            name = "..",
-                            path = parentPath,
-                            isDirectory = true,
-                            isParentLink = true
-                        )
+        val entries = mutableListOf<FileEntry>()
+
+        if (!isVolumeRoot) {
+            parentOf(path)?.let { parentPath ->
+                entries.add(
+                    FileEntry(
+                        name = "..",
+                        path = parentPath,
+                        isDirectory = true,
+                        isParentLink = true
                     )
-                }
-            }
-
-            val sortedDirs = managedResult
-                .filter { it.isDirectory && !it.displayName.startsWith(".") }
-                .sortedBy { it.displayName.lowercase() }
-                .map { it.toFileEntry(path) }
-
-            val sortedFiles = managedResult
-                .filter { !it.isDirectory && !it.displayName.startsWith(".") }
-                .filter { fileFilter?.matches(it.displayName) ?: true }
-                .sortedBy { it.displayName.lowercase() }
-                .map { it.toFileEntry(path) }
-
-            entries.addAll(sortedDirs)
-            entries.addAll(sortedFiles)
-            return entries
-        }
-
-        // Standard file access for non-restricted paths
-        val dir = File(path)
-        if (!dir.canRead()) throw SecurityException("Cannot read directory")
-
-        if (!isVolumeRoot && dir.parent != null) {
-            entries.add(
-                FileEntry(
-                    name = "..",
-                    path = dir.parent!!,
-                    isDirectory = true,
-                    isParentLink = true
                 )
-            )
+            }
         }
 
-        val children = dir.listFiles()
-            ?.filter { !it.name.startsWith(".") }
-            ?: emptyList()
+        val visible = children.filter { !it.name.startsWith(".") }
 
-        val sortedDirs = children
+        val sortedDirs = visible
             .filter { it.isDirectory }
             .sortedBy { it.name.lowercase() }
             .map { it.toFileEntry() }
 
-        val sortedFiles = children
+        val sortedFiles = visible
             .filter { it.isFile }
             .filter { fileFilter?.matches(it.name) ?: true }
             .sortedBy { it.name.lowercase() }
@@ -192,51 +155,23 @@ class FileBrowserViewModel @Inject constructor(
 
         entries.addAll(sortedDirs)
         entries.addAll(sortedFiles)
-
-        return entries
+        return DirectoryListing.Success(entries)
     }
 
-    private fun tryManagedAccess(path: String): List<ManagedStorageAccessor.DocumentFile>? {
-        // Extract volume and relative path from absolute path
-        val primaryRoot = "/storage/emulated/0"
-        val sdcardPattern = Regex("^/storage/([A-F0-9-]+)")
+    private fun FileInfo.toFileEntry(): FileEntry = FileEntry(
+        name = name,
+        path = path,
+        isDirectory = isDirectory,
+        size = if (isFile) size else 0L,
+        lastModified = lastModified
+    )
 
-        val (volumeId, relativePath) = when {
-            path.startsWith(primaryRoot) -> {
-                val rel = path.removePrefix(primaryRoot).trimStart('/')
-                "primary" to rel
-            }
-            path.matches(Regex("^/storage/[A-F0-9-]+.*")) -> {
-                val match = sdcardPattern.find(path)
-                if (match != null) {
-                    val volId = match.groupValues[1]
-                    val rel = path.removePrefix("/storage/$volId").trimStart('/')
-                    volId to rel
-                } else {
-                    return null
-                }
-            }
-            else -> return null
-        }
-
-        // Only use managed access for Android/data and Android/obb paths
-        if (!relativePath.startsWith("Android/data") && !relativePath.startsWith("Android/obb")) {
-            return null
-        }
-
-        Log.d(TAG, "Attempting managed access: volumeId=$volumeId, relativePath=$relativePath")
-        return managedStorageAccessor.listFiles(volumeId, relativePath)
-    }
-
-    private fun ManagedStorageAccessor.DocumentFile.toFileEntry(parentPath: String): FileEntry {
-        return FileEntry(
-            name = displayName,
-            path = "$parentPath/$displayName",
-            isDirectory = isDirectory,
-            isParentLink = false,
-            size = size,
-            lastModified = lastModified
-        )
+    private fun parentOf(path: String): String? {
+        val trimmed = path.trimEnd('/')
+        if (trimmed.isEmpty() || trimmed == "/") return null
+        val idx = trimmed.lastIndexOf('/')
+        if (idx <= 0) return null
+        return trimmed.substring(0, idx)
     }
 
     fun goUp() {
@@ -244,10 +179,7 @@ class FileBrowserViewModel @Inject constructor(
         val isVolumeRoot = _state.value.volumes.any { it.path == currentPath }
 
         if (!isVolumeRoot) {
-            val parent = File(currentPath).parent
-            if (parent != null) {
-                navigate(parent)
-            }
+            parentOf(currentPath)?.let { navigate(it) }
         }
     }
 
@@ -367,18 +299,17 @@ class FileBrowserViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            val newPath = "${state.currentPath.trimEnd('/')}/$folderName"
             val success = withContext(Dispatchers.IO) {
-                try {
-                    val newFolder = File(state.currentPath, folderName)
-                    if (newFolder.exists()) {
-                        _state.update { it.copy(createFolderError = "Folder already exists") }
-                        return@withContext false
-                    }
-                    newFolder.mkdir()
-                } catch (e: Exception) {
-                    _state.update { it.copy(createFolderError = e.message ?: "Failed to create folder") }
-                    false
+                if (fileAccessLayer.exists(newPath)) {
+                    _state.update { it.copy(createFolderError = "Folder already exists") }
+                    return@withContext false
                 }
+                if (!fileAccessLayer.mkdirs(newPath)) {
+                    _state.update { it.copy(createFolderError = "Failed to create folder") }
+                    return@withContext false
+                }
+                true
             }
 
             if (success) {

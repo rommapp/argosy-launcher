@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.flow.first
-import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -170,7 +169,8 @@ class DualHomeViewModel(
     private val context: Context,
     private val preferencesRepository: UserPreferencesRepository? = null,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
-    private val repairImageCacheUseCase: RepairImageCacheUseCase? = null
+    private val repairImageCacheUseCase: RepairImageCacheUseCase? = null,
+    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -406,12 +406,12 @@ class DualHomeViewModel(
         viewModelScope.launch { loadGamesForCurrentSectionSuspend() }
     }
 
-    private fun filterPlayable(games: List<GameEntity>): List<GameEntity> {
+    private suspend fun filterPlayable(games: List<GameEntity>): List<GameEntity> {
         return games.filter { game ->
             when {
                 game.source == GameSource.ANDROID_APP -> true
                 game.source == GameSource.STEAM -> true
-                game.localPath != null -> File(game.localPath).exists()
+                game.localPath != null -> downloadFileStatusRepository.pathExists(game.localPath)
                 else -> false
             }
         }

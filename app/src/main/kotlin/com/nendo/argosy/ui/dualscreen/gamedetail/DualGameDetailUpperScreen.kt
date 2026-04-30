@@ -52,15 +52,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.emulator.DiscOption
-import com.nendo.argosy.domain.model.UnifiedStateEntry
-import com.nendo.argosy.ui.components.GameTitle
 import androidx.compose.material3.OutlinedTextField
+import com.nendo.argosy.domain.model.UnifiedStateEntry
+import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
-import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.screens.gamedetail.RatingType
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
+import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.util.touchOnly
 import com.nendo.argosy.util.formatPlayTime
 import java.io.File
@@ -197,8 +198,7 @@ private fun ScreenshotViewer(
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
-            model = if (imagePath.startsWith("/")) File(imagePath)
-                else imagePath,
+            model = rememberFileImageModel(imagePath),
             contentDescription = "Screenshot",
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize(),

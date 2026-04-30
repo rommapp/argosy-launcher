@@ -9,7 +9,7 @@ import com.nendo.argosy.data.cache.ImageCacheProgress
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
-import com.nendo.argosy.data.local.dao.CoreOptionOverrideDao
+import com.nendo.argosy.data.repository.CoreOptionsRepository
 import com.nendo.argosy.data.repository.EmulatorConfigRepository
 import com.nendo.argosy.data.repository.LibretroSettingsRepository
 import com.nendo.argosy.data.repository.PlatformRepository
@@ -108,8 +108,7 @@ class SettingsViewModel @Inject constructor(
     internal val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
     internal val socialRepository: SocialRepository,
     internal val discordPresenceManager: DiscordPresenceManager,
-    internal val coreOptionOverrideDao: CoreOptionOverrideDao,
-    private val gameDao: com.nendo.argosy.data.local.dao.GameDao,
+    internal val coreOptionsRepo: CoreOptionsRepository,
     private val playStatsRepo: com.nendo.argosy.data.repository.PlayStatsRepository,
     private val biosRepository: com.nendo.argosy.data.repository.BiosRepository,
     private val savePathValidator: com.nendo.argosy.data.emulator.SavePathValidator
@@ -244,8 +243,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val platformId = config.platform.id
             val platformSlug = config.platform.slug
-            val downloaded = gameDao.countDownloadedByPlatform(platformId)
-            val favorites = gameDao.countFavoritesByPlatform(platformId)
+            val downloaded = gameRepository.countDownloadedByPlatform(platformId)
+            val favorites = gameRepository.countFavoritesByPlatform(platformId)
             val totalPlayTimeMs = playStatsRepo.getTotalActivePlayMsByPlatform(platformSlug)
             val allBiosStatus = biosRepository.getStatusByPlatform()
             val biosStatus = allBiosStatus.find { it.platformSlug == platformSlug }

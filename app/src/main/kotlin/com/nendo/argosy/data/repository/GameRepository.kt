@@ -707,6 +707,9 @@ class GameRepository @Inject constructor(
     suspend fun countDownloadedByPlatform(platformId: Long): Int =
         gameDao.countDownloadedByPlatform(platformId)
 
+    suspend fun countFavoritesByPlatform(platformId: Long): Int =
+        gameDao.countFavoritesByPlatform(platformId)
+
     suspend fun updateSteamLauncher(
         gameId: Long,
         launcher: String?,

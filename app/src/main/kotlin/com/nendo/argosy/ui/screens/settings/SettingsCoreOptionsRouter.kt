@@ -96,7 +96,7 @@ internal fun routeCycleCoreOptionValue(vm: SettingsViewModel, optionKey: String,
     val newValue = values[newIndex]
 
     vm.viewModelScope.launch {
-        vm.coreOptionOverrideDao.upsert(
+        vm.coreOptionsRepo.upsert(
             CoreOptionOverrideEntity(core.coreId, optionKey, newValue)
         )
         val optionItems = loadOptionsForCore(vm, core.coreId)
@@ -114,7 +114,7 @@ internal fun routeCycleCoreOptionValue(vm: SettingsViewModel, optionKey: String,
 internal fun routeResetCoreOption(vm: SettingsViewModel, optionKey: String) {
     val core = vm._uiState.value.coreOptions.selectedCore ?: return
     vm.viewModelScope.launch {
-        vm.coreOptionOverrideDao.delete(core.coreId, optionKey)
+        vm.coreOptionsRepo.delete(core.coreId, optionKey)
         val optionItems = loadOptionsForCore(vm, core.coreId)
         vm._uiState.update {
             it.copy(
@@ -130,7 +130,7 @@ internal fun routeResetCoreOption(vm: SettingsViewModel, optionKey: String) {
 internal fun routeResetAllCoreOptions(vm: SettingsViewModel) {
     val core = vm._uiState.value.coreOptions.selectedCore ?: return
     vm.viewModelScope.launch {
-        vm.coreOptionOverrideDao.deleteAllForCore(core.coreId)
+        vm.coreOptionsRepo.deleteAllForCore(core.coreId)
         val optionItems = loadOptionsForCore(vm, core.coreId)
         vm._uiState.update {
             it.copy(
@@ -164,7 +164,7 @@ private suspend fun loadOptionsForCore(
     if (coreId == null) return emptyList<CoreOptionViewItem>() to emptyMap()
     val manifest = CoreOptionManifestRegistry.getManifest(coreId)
         ?: return emptyList<CoreOptionViewItem>() to emptyMap()
-    val overrides = vm.coreOptionOverrideDao.getOverridesForCore(coreId)
+    val overrides = vm.coreOptionsRepo.getOverridesForCore(coreId)
         .associate { it.optionKey to it.value }
     val items = manifest.options.map { def ->
         val overrideValue = overrides[def.key]

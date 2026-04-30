@@ -31,6 +31,7 @@ import javax.inject.Singleton
 class SyncCoordinator @Inject constructor(
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val saveCacheDao: SaveCacheDao,
+    private val saveSyncDao: com.nendo.argosy.data.local.dao.SaveSyncDao,
     private val gameDao: GameDao,
     private val romMRepository: Lazy<RomMRepository>,
     private val saveSyncRepository: Lazy<SaveSyncRepository>,
@@ -65,6 +66,11 @@ class SyncCoordinator @Inject constructor(
             val promoted = pendingSyncQueueDao.promoteEligibleFailedToPending()
             if (promoted > 0) {
                 Logger.debug(TAG, "processQueue: Promoted $promoted FAILED rows back to PENDING")
+            }
+
+            val deduped = saveSyncDao.deleteDuplicateRows()
+            if (deduped > 0) {
+                Logger.info(TAG, "processQueue: Deduped $deduped redundant save_sync rows")
             }
 
             // Process queued items by priority (lower priority value = higher importance)

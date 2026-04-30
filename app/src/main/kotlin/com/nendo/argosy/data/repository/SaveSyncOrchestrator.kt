@@ -155,18 +155,24 @@ class SaveSyncOrchestrator @Inject constructor(
             val channelName = SaveSyncApiClient.parseServerChannelNameForSync(serverSave.fileName, romBaseName)
             val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
 
+            val existing = if (channelName != null) {
+                saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+            } else {
+                saveSyncDao.getByGameEmulatorAndNullChannel(gameId, emulatorId)
+            }
+
             saveSyncDao.upsert(
                 SaveSyncEntity(
-                    id = 0,
+                    id = existing?.id ?: 0,
                     gameId = gameId,
                     rommId = rommId,
                     emulatorId = emulatorId,
                     channelName = channelName,
                     rommSaveId = serverSave.id,
-                    localSavePath = null,
-                    localUpdatedAt = null,
+                    localSavePath = existing?.localSavePath,
+                    localUpdatedAt = existing?.localUpdatedAt,
                     serverUpdatedAt = serverTime,
-                    lastSyncedAt = null,
+                    lastSyncedAt = existing?.lastSyncedAt,
                     syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
                 )
             )

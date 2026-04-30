@@ -104,6 +104,7 @@ class SyncCoordinatorChannelConflictTest {
         coordinator = SyncCoordinator(
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
+            saveSyncDao = mockk(relaxed = true),
             gameDao = gameDao,
             romMRepository = romMRepository,
             saveSyncRepository = saveSyncRepository,
@@ -148,6 +149,7 @@ class SyncCoordinatorChannelConflictTest {
         coordinator = SyncCoordinator(
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
+            saveSyncDao = mockk(relaxed = true),
             gameDao = gameDao,
             romMRepository = romMRepository,
             saveSyncRepository = saveSyncRepository,
@@ -201,6 +203,7 @@ class SyncCoordinatorChannelConflictTest {
         coordinator = SyncCoordinator(
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
+            saveSyncDao = mockk(relaxed = true),
             gameDao = gameDao,
             romMRepository = romMRepository,
             saveSyncRepository = saveSyncRepository,

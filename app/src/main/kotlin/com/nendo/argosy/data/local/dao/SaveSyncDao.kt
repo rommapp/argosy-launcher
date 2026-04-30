@@ -16,6 +16,18 @@ interface SaveSyncDao {
     @Query("SELECT * FROM save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName = :channelName")
     suspend fun getByGameEmulatorAndChannel(gameId: Long, emulatorId: String, channelName: String): SaveSyncEntity?
 
+    @Query("SELECT * FROM save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName IS NULL ORDER BY id DESC LIMIT 1")
+    suspend fun getByGameEmulatorAndNullChannel(gameId: Long, emulatorId: String): SaveSyncEntity?
+
+    @Query("""
+        DELETE FROM save_sync
+        WHERE id NOT IN (
+            SELECT MAX(id) FROM save_sync
+            GROUP BY gameId, emulatorId, IFNULL(channelName, '__null__')
+        )
+    """)
+    suspend fun deleteDuplicateRows(): Int
+
     @Query("SELECT * FROM save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId AND (channelName IS NULL OR channelName = :defaultChannelName)")
     suspend fun getByGameAndEmulatorWithDefault(gameId: Long, emulatorId: String, defaultChannelName: String): SaveSyncEntity?
 

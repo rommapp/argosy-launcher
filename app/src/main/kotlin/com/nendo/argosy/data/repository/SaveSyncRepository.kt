@@ -40,7 +40,7 @@ class SaveSyncRepository @Inject constructor(
     private val conflictResolver: SaveSyncConflictResolver,
     private val orchestrator: SaveSyncOrchestrator,
     private val entityManager: SaveSyncEntityManager,
-    private val stateCacheManager: dagger.Lazy<StateCacheManager>
+    private val stateCacheManager: StateCacheManager
 ) {
     val syncQueueState: StateFlow<SyncQueueState> = entityManager.syncQueueState
 
@@ -112,7 +112,7 @@ class SaveSyncRepository @Inject constructor(
         val saves = apiClient.checkSavesForGame(gameId, rommId)
         val api = apiClient.getApi()
         if (api != null && saves.any { it.slot?.startsWith("state_") == true }) {
-            stateCacheManager.get().migrateStatesFromSaves(rommId, api, saves)
+            stateCacheManager.migrateStatesFromSaves(rommId, api, saves)
         }
         return saves.filter { it.slot?.startsWith("state_") != true }
     }

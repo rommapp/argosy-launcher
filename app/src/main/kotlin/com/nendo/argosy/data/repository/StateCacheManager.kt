@@ -59,7 +59,7 @@ class StateCacheManager @Inject constructor(
     private val coreVersionExtractor: CoreVersionExtractor,
     private val retroArchConfigParser: RetroArchConfigParser,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
-    private val saveSyncRepository: dagger.Lazy<SaveSyncRepository>
+    private val saveSyncApiClient: SaveSyncApiClient
 ) {
     companion object {
         private const val TAG = "StateCacheManager"
@@ -1098,7 +1098,7 @@ class StateCacheManager @Inject constructor(
     }
 
     suspend fun processPendingStateUploads(): Int = withContext(Dispatchers.IO) {
-        val api = saveSyncRepository.get().getApi()
+        val api = saveSyncApiClient.getApi()
         if (api == null) {
             Log.d(TAG, "[StateSync] processPendingStateUploads | No API connection")
             return@withContext 0

@@ -51,7 +51,6 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -152,7 +151,7 @@ class LibretroActivity : ComponentActivity() {
     private val portResolver = ControllerPortResolver()
     private val inputMapper = ControllerInputMapper()
     private lateinit var inputConfig: InputConfigCoordinator
-    private lateinit var hotkeyDispatcher: HotkeyDispatcher
+    private lateinit var hotkeyDispatcher: LibretroHotkeyDispatcher
     private lateinit var motionProcessor: MotionEventProcessor
     private var vibrator: Vibrator? = null
     private lateinit var romPath: String
@@ -178,8 +177,6 @@ class LibretroActivity : ComponentActivity() {
     private var lastCheatsTab by mutableStateOf(CheatsTab.CHEATS)
     private var inGameMessage by mutableStateOf<String?>(null)
     private var gameName: String = ""
-    private var isFastForwarding = false
-    private var isRewinding = false
     private var canEnableBFI = false
 
     private var limitHotkeysToPlayer1 by mutableStateOf(true)
@@ -601,50 +598,19 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun initializeHotkeyDispatcher() {
-        hotkeyDispatcher = HotkeyDispatcher(
+        hotkeyDispatcher = LibretroHotkeyDispatcher(
+            hotkeyManager = inputConfig.hotkeyManager,
             saveStateManager = saveStateManager,
             videoSettings = videoSettings,
-            hotkeyManager = inputConfig.hotkeyManager,
             getRetroView = { retroView },
             showToast = { msg -> inGameMessage = msg },
             isHardcoreMode = { hardcoreMode },
             isNetplayInSession = { netplayInSession },
             getNetplayRole = { netplayRole },
             onShowMenu = ::showMenu,
-            onFastForwardChanged = { ff ->
-                if (!netplayInSession && ff && videoSettings.fastForwardEnabled) {
-                    val toggleMode = videoSettings.fastForwardMode ==
-                        com.nendo.argosy.data.local.entity.FastForwardMode.TOGGLE
-                    if (toggleMode && isFastForwarding) {
-                        isFastForwarding = false
-                        retroView.frameSpeed = 1
-                    } else if (!isFastForwarding) {
-                        isFastForwarding = true
-                        retroView.frameSpeed = videoSettings.fastForwardSpeed
-                    }
-                }
-            },
-            onResetGame = {
-                if (!netplayInSession) {
-                    retroView.reset()
-                    inGameMessage = "Game reset"
-                }
-            },
-            onRewindChanged = { rw ->
-                if (!netplayInSession && rw && !isRewinding) {
-                    isRewinding = true
-                    retroView.isRewinding = true
-                    retroView.frameSpeed = 1
-                }
-            },
             onAutoSaveState = ::performAutoSaveState,
             onQuit = ::finish
         )
-        // Deferred hold-timer firings and tap-on-release dispatches route back
-        // through HotkeyDispatcher via this callback.
-        inputConfig.hotkeyManager.setDispatch { action ->
-            hotkeyDispatcher.dispatch(action)
-        }
     }
 
     private fun buildContentView() {
@@ -1184,12 +1150,7 @@ class LibretroActivity : ComponentActivity() {
         val rules = NetplaySessionRules(
             retroView = retroView,
             raSessionManager = { achievementBridge.sessionManager },
-            onFastForwardRelease = {
-                if (isFastForwarding) {
-                    isFastForwarding = false
-                    retroView.frameSpeed = 1
-                }
-            }
+            onFastForwardRelease = { hotkeyDispatcher.releaseFastForward() }
         )
         netplaySessionRules = rules
         val manager = NetplaySessionManager(
@@ -1963,10 +1924,7 @@ class LibretroActivity : ComponentActivity() {
         if (isAnyMenuOpen) return super.onKeyDown(keyCode, event)
 
         val controllerId = event.device?.let { getControllerId(it) }
-        val triggeredAction = inputConfig.hotkeyManager.onKeyDown(keyCode, controllerId)
-        if (triggeredAction != null) {
-            return hotkeyDispatcher.dispatch(triggeredAction)
-        }
+        if (hotkeyDispatcher.onKeyDown(keyCode, controllerId)) return true
 
         if (shouldFilterShoulderButton(keyCode)) return true
 
@@ -1977,18 +1935,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (isAnyMenuOpen) return super.onKeyUp(keyCode, event)
 
-        inputConfig.hotkeyManager.onKeyUp(keyCode)
-
-        val holdMode = videoSettings.fastForwardMode ==
-            com.nendo.argosy.data.local.entity.FastForwardMode.HOLD
-        if (holdMode && !inputConfig.hotkeyManager.isHotkeyActive(HotkeyAction.FAST_FORWARD) && isFastForwarding) {
-            isFastForwarding = false
-            retroView.frameSpeed = 1
-        }
-        if (!inputConfig.hotkeyManager.isHotkeyActive(HotkeyAction.REWIND) && isRewinding) {
-            isRewinding = false
-            retroView.isRewinding = false
-        }
+        hotkeyDispatcher.onKeyUp(keyCode)
 
         if (shouldFilterShoulderButton(keyCode)) return true
 

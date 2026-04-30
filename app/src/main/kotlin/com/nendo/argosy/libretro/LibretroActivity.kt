@@ -160,7 +160,7 @@ class LibretroActivity : ComponentActivity() {
     private lateinit var saveStateManager: SaveStateManager
     private lateinit var videoSettings: VideoSettingsManager
     private lateinit var cheatManager: CheatSessionManager
-    private var raSession: RetroAchievementsSessionManager? = null
+    private lateinit var achievementBridge: LibretroAchievementBridge
 
     private var gameId: Long = -1L
     private var platformId: Long = -1L
@@ -321,6 +321,17 @@ class LibretroActivity : ComponentActivity() {
         corePath = intent.getStringExtra(EXTRA_CORE_PATH)!!
         resolvedCoreId = resolveCoreIdFromPath(corePath)
         createRetroView(corePath, systemDir, savesDir, settings, restoredSram)
+        achievementBridge = LibretroAchievementBridge(
+            gameDao = gameDao,
+            achievementDao = achievementDao,
+            raRepository = raRepository,
+            verifyRAGameIdUseCase = verifyRAGameIdUseCase,
+            achievementUpdateBus = achievementUpdateBus,
+            ambientLedManager = ambientLedManager,
+            socialRepository = socialRepository,
+            scope = lifecycleScope,
+            context = this
+        )
         initializeNetplaySessionManager()
         setupRetroViewListeners()
         audioController = LibretroAudioController(this, getRetroView = { retroView })
@@ -358,7 +369,7 @@ class LibretroActivity : ComponentActivity() {
             val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
             playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName, hardcoreMode, isNewGame, isNetplayGuest = isGuestJoinedSession)
             cheatManager.loadCheats(hardcoreMode)
-            initializeRASession()
+            achievementBridge.start(gameId, romPath, hardcoreMode, retroView)
         }
     }
 
@@ -889,15 +900,15 @@ class LibretroActivity : ComponentActivity() {
                         )
                     }
                     AchievementPopup(
-                        achievement = raSession?.currentAchievementUnlock,
-                        onDismiss = { raSession?.showNextUnlock() },
+                        achievement = achievementBridge.currentUnlock,
+                        onDismiss = { achievementBridge.showNextUnlock() },
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .statusBarsPadding()
                     )
                     RAConnectionNotification(
-                        connectionInfo = raSession?.raConnectionInfo,
-                        onDismiss = { raSession?.dismissConnectionInfo() },
+                        connectionInfo = achievementBridge.connectionInfo,
+                        onDismiss = { achievementBridge.dismissConnectionInfo() },
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .statusBarsPadding()
@@ -1045,25 +1056,6 @@ class LibretroActivity : ComponentActivity() {
         )
     }
 
-    private fun initializeRASession() {
-        val session = RetroAchievementsSessionManager(
-            gameId = gameId,
-            romPath = romPath,
-            hardcoreMode = hardcoreMode,
-            gameDao = gameDao,
-            achievementDao = achievementDao,
-            raRepository = raRepository,
-            verifyRAGameIdUseCase = verifyRAGameIdUseCase,
-            achievementUpdateBus = achievementUpdateBus,
-            ambientLedManager = ambientLedManager,
-            socialRepository = socialRepository,
-            scope = lifecycleScope,
-            context = this
-        )
-        raSession = session
-        session.initialize(retroView)
-    }
-
     private fun setupRumble() {
         vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager
@@ -1191,7 +1183,7 @@ class LibretroActivity : ComponentActivity() {
         )
         val rules = NetplaySessionRules(
             retroView = retroView,
-            raSessionManager = { raSession },
+            raSessionManager = { achievementBridge.sessionManager },
             onFastForwardRelease = {
                 if (isFastForwarding) {
                     isFastForwarding = false
@@ -2080,7 +2072,7 @@ class LibretroActivity : ComponentActivity() {
         netplaySessionManager = null
         netplayScratchDir?.takeIf { it.exists() }?.deleteRecursively()
         netplayScratchDir = null
-        raSession?.destroy()
+        if (::achievementBridge.isInitialized) achievementBridge.destroy()
         if (isFinishing && gameId != -1L) {
             com.nendo.argosy.DualScreenManagerHolder.instance
                 ?.onSessionChanged(-1L)

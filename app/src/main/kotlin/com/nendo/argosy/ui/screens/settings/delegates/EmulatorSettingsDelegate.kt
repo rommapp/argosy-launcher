@@ -507,22 +507,6 @@ class EmulatorSettingsDelegate @Inject constructor(
         return emulatorConfigRepo.getPreferredExtension(platformId)
     }
 
-    suspend fun getAllEmulatorSavePaths(): List<EmulatorSavePathInfo> {
-        val saveConfigs = emulatorSaveConfigRepository.getAll()
-        val installedEmulators = state.value.installedEmulators
-
-        return saveConfigs.mapNotNull { config ->
-            val emulator = installedEmulators.find { it.def.id == config.emulatorId }
-            val emulatorName = emulator?.def?.displayName ?: return@mapNotNull null
-
-            EmulatorSavePathInfo(
-                emulatorId = config.emulatorId,
-                emulatorName = emulatorName,
-                savePath = config.savePathPattern,
-                isCustom = config.isUserOverride
-            )
-        }
-    }
 
     fun updateCoreCounts() {
         val installedCores = coreManager.getInstalledCores()

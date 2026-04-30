@@ -3,8 +3,8 @@ package com.nendo.argosy.ui.screens.common
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.data.cache.GradientPreset
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.common.GradientColorExtractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +24,7 @@ data class GameGradientRequest(
 @Singleton
 class GradientExtractionDelegate @Inject constructor(
     private val gradientColorExtractor: GradientColorExtractor,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val backgroundProcessor: GradientBackgroundProcessor
 ) {
     private val _gradients = MutableStateFlow<Map<Long, Pair<Color, Color>>>(emptyMap())
@@ -94,7 +94,7 @@ class GradientExtractionDelegate @Inject constructor(
         val missing = gameIds.filter { !hasGradient(it) }
         if (missing.isEmpty()) return
 
-        val entities = gameDao.getByIds(missing)
+        val entities = gameRepository.getByIds(missing)
         val loaded = mutableMapOf<Long, Pair<Color, Color>>()
         for (entity in entities) {
             val json = entity.gradientColors ?: continue
@@ -170,14 +170,14 @@ class GradientExtractionDelegate @Inject constructor(
 
         val allPresets = gradientColorExtractor.extractAllPresets(coverPath) ?: return
         val json = gradientColorExtractor.serializeAllPresets(allPresets)
-        gameDao.updateGradientColors(gameId, json)
+        gameRepository.updateGradientColors(gameId, json)
         persistedPresets[gameId] = allPresets
         val colors = allPresets[currentPreset] ?: return
         _gradients.value = _gradients.value + (gameId to colors)
     }
 
     private suspend fun loadPersistedGradient(gameId: Long) {
-        val entity = gameDao.getById(gameId) ?: return
+        val entity = gameRepository.getById(gameId) ?: return
         val json = entity.gradientColors ?: return
         val allPresets = gradientColorExtractor.deserializeAllPresets(json) ?: return
         persistedPresets[gameId] = allPresets

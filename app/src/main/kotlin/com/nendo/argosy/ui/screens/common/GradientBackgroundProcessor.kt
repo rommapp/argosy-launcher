@@ -1,6 +1,6 @@
 package com.nendo.argosy.ui.screens.common
 
-import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.ui.common.GradientColorExtractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 class GradientBackgroundProcessor @Inject constructor(
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val gradientColorExtractor: GradientColorExtractor
 ) {
     private var job: Job? = null
@@ -27,7 +27,7 @@ class GradientBackgroundProcessor @Inject constructor(
         if (job?.isActive == true) return
         paused = false
         job = scope.launch(dispatcher) {
-            val localGames = gameDao.getLocalGamesNeedingGradients()
+            val localGames = gameRepository.getLocalGamesNeedingGradients()
             for (game in localGames) {
                 yield()
                 if (paused) return@launch
@@ -44,7 +44,7 @@ class GradientBackgroundProcessor @Inject constructor(
     ) {
         val presets = gradientColorExtractor.extractAllPresets(coverPath) ?: return
         val json = gradientColorExtractor.serializeAllPresets(presets)
-        gameDao.updateGradientColors(gameId, json)
+        gameRepository.updateGradientColors(gameId, json)
         onGameProcessed(gameId)
     }
 

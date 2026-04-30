@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings
 
+import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.ui.common.GradientExtractionResult
 import com.nendo.argosy.data.cache.GradientPreset
@@ -124,14 +125,6 @@ data class EmulatorUpdateInfo(
     val assetSize: Long,
     val installedVariant: String? = null
 )
-
-sealed class EmulatorDownloadState {
-    data object Idle : EmulatorDownloadState()
-    data class Downloading(val progress: Float) : EmulatorDownloadState()
-    data object WaitingForInstall : EmulatorDownloadState()
-    data object Installed : EmulatorDownloadState()
-    data class Failed(val message: String) : EmulatorDownloadState()
-}
 
 data class EmulatorPickerInfo(
     val platformId: Long,

@@ -40,7 +40,7 @@ import com.nendo.argosy.data.remote.github.VersionFormatter
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
-import com.nendo.argosy.ui.screens.settings.EmulatorDownloadState
+import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
 import com.nendo.argosy.ui.screens.settings.EmulatorUpdateInfo
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout

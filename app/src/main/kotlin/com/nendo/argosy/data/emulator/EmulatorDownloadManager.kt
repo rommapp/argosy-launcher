@@ -8,7 +8,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.nendo.argosy.data.update.AppInstaller
-import com.nendo.argosy.ui.screens.settings.EmulatorDownloadState
+import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers

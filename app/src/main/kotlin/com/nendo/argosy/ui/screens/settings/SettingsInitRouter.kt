@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings
 
 import android.content.Context
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.platform.PlatformDefinitions

@@ -27,6 +27,7 @@ class SaveManagementDelegate @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val saveCacheManager: SaveCacheManager,
     private val notificationManager: NotificationManager,
+    private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
     val saveChannelDelegate: SaveChannelDelegate
 ) {
 
@@ -111,6 +112,19 @@ class SaveManagementDelegate @Inject constructor(
     }
 
     private suspend fun computeEffectiveSavePath(emulatorId: String, platformSlug: String): String? {
+        if (com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(emulatorId)) {
+            val coreName = SavePathRegistry.getRetroArchCore(platformSlug)
+            val req = com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
+                emulatorId = emulatorId,
+                coreName = coreName,
+                romPath = null,
+            )
+            return when (val display = retroArchPathResolver.displaySavePath(req)) {
+                is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.ContentDirectory -> "(ROM directory)"
+                is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Resolved -> display.path
+                com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
+            }
+        }
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
         if (userConfig?.isUserOverride == true) {
             return userConfig.savePathPattern

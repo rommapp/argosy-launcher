@@ -86,6 +86,7 @@ class SettingsViewModel @Inject constructor(
     internal val soundManager: SoundFeedbackManager,
     internal val saveCacheDao: SaveCacheDao,
     internal val retroArchConfigParser: RetroArchConfigParser,
+    internal val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
     val displayDelegate: DisplaySettingsDelegate,
     val controlsDelegate: ControlsSettingsDelegate,
     val soundsDelegate: SoundSettingsDelegate,

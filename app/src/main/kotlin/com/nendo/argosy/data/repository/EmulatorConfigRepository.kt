@@ -6,10 +6,6 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Settings UI facade over [EmulatorConfigDao] for global, per-platform, and
- * per-game emulator configuration entries.
- */
 @Singleton
 class EmulatorConfigRepository @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao
@@ -48,7 +44,7 @@ class EmulatorConfigRepository @Inject constructor(
         emulatorConfigDao.updateCoreNameForPlatform(platformId, coreName)
 
     suspend fun getPreferredExtension(platformId: Long): String? =
-        emulatorConfigDao.getPreferredExtension(platformId)
+        emulatorConfigDao.getPreferredExtension(platformId)?.ifEmpty { null }
 
     suspend fun updatePreferredExtension(platformId: Long, extension: String) =
         emulatorConfigDao.updatePreferredExtension(platformId, extension)

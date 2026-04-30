@@ -10,9 +10,9 @@ import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorRegistry
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SteamIgdbResolver
 import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
 import com.nendo.argosy.data.remote.github.FetchReleaseResult
@@ -45,7 +45,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import javax.inject.Inject
 
 private const val GN_PACKAGE = "app.gamenative"
@@ -62,7 +61,7 @@ class SteamSettingsDelegate @Inject constructor(
     private val steamIgdbResolver: SteamIgdbResolver,
     private val preferencesRepository: UserPreferencesRepository,
     private val steamPathResolver: SteamPathResolver,
-    private val gameDao: GameDao
+    private val gameRepository: GameRepository
 ) {
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
@@ -603,7 +602,7 @@ class SteamSettingsDelegate @Inject constructor(
     private suspend fun loadInstalledSteamSummary(
         volumes: List<com.nendo.argosy.data.steam.SteamInstallVolume>
     ): Map<String, Int> {
-        val games = gameDao.getInstalledSteamGames()
+        val games = gameRepository.getInstalledSteamGames()
         if (games.isEmpty()) return emptyMap()
         val buckets = linkedMapOf<String, Int>()
         val volumesByPath = volumes.sortedByDescending { it.path.length }

@@ -7,16 +7,12 @@ import android.os.Build
 import android.os.Environment
 import androidx.core.content.ContextCompat
 import com.nendo.argosy.data.cache.ImageCacheManager
-import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
-import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.repository.PlatformRepository
-import com.nendo.argosy.data.local.dao.SaveSyncDao
-import com.nendo.argosy.data.local.dao.StateCacheDao
-import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.repository.SaveCacheRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
@@ -30,20 +26,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class SyncSettingsDelegate @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: SaveSyncRepository,
-    private val pendingSyncQueueDao: PendingSyncQueueDao,
-    private val saveSyncDao: SaveSyncDao,
-    private val saveCacheDao: SaveCacheDao,
-    private val stateCacheDao: StateCacheDao,
+    private val saveCacheRepository: SaveCacheRepository,
     private val platformRepository: PlatformRepository,
     private val rommRepository: RomMRepository,
     private val imageCacheManager: ImageCacheManager,
@@ -73,14 +64,10 @@ class SyncSettingsDelegate @Inject constructor(
             val prefs = preferencesRepository.preferences.first()
             val hasStoragePermission = checkStoragePermission()
             val hasNotificationPermission = checkNotificationPermission()
-            val pendingUploads = saveCacheDao.countNeedingRemoteSync()
-            val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
-            val totalPending = pendingUploads + pendingDownloads
+            val pendingCounts = saveCacheRepository.getPendingSyncCounts()
             val enabledPlatformCount = platformRepository.getEnabledPlatformCount()
             val totalPlatformCount = platformRepository.getTotalPlatformCount()
-            val saveCount = saveCacheDao.count()
-            val stateCount = stateCacheDao.count()
-            val pathCount = saveSyncDao.countWithPaths()
+            val cacheCounts = saveCacheRepository.getCounts()
             _state.update {
                 it.copy(
                     syncFilters = prefs.syncFilters,
@@ -89,14 +76,14 @@ class SyncSettingsDelegate @Inject constructor(
                     saveCacheLimit = prefs.saveCacheLimit,
                     hasStoragePermission = hasStoragePermission,
                     hasNotificationPermission = hasNotificationPermission,
-                    pendingUploadsCount = totalPending,
+                    pendingUploadsCount = pendingCounts.total,
                     imageCachePath = prefs.imageCachePath,
                     defaultImageCachePath = imageCacheManager.getDefaultCachePath(),
                     enabledPlatformCount = enabledPlatformCount,
                     totalPlatforms = totalPlatformCount,
-                    saveCacheCount = saveCount,
-                    stateCacheCount = stateCount,
-                    pathCacheCount = pathCount
+                    saveCacheCount = cacheCounts.saveCacheCount,
+                    stateCacheCount = cacheCounts.stateCacheCount,
+                    pathCacheCount = cacheCounts.pathCacheCount
                 )
             }
             imageCacheManager.setCustomCachePath(prefs.imageCachePath)
@@ -336,10 +323,8 @@ class SyncSettingsDelegate @Inject constructor(
                 saveSyncRepository.checkForAllServerUpdates()
                 val uploaded = saveSyncRepository.processPendingUploads()
                 val downloaded = saveSyncRepository.downloadPendingServerSaves()
-                val pendingUploads = saveCacheDao.countNeedingRemoteSync()
-                val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
-                val totalPending = pendingUploads + pendingDownloads
-                _state.update { it.copy(pendingUploadsCount = totalPending) }
+                val pendingCounts = saveCacheRepository.getPendingSyncCounts()
+                _state.update { it.copy(pendingUploadsCount = pendingCounts.total) }
 
                 val message = when {
                     uploaded > 0 && downloaded > 0 -> "Uploaded $uploaded, downloaded $downloaded saves"
@@ -509,11 +494,7 @@ class SyncSettingsDelegate @Inject constructor(
     fun confirmResetSaveCache(scope: CoroutineScope) {
         _state.update { it.copy(showResetSaveCacheConfirm = false, isResettingSaveCache = true) }
         scope.launch {
-            withContext(Dispatchers.IO) {
-                pendingSyncQueueDao.deleteAll()
-                stateCacheDao.deleteAll()
-                saveCacheDao.deleteAll()
-            }
+            saveCacheRepository.resetSaveCache()
             _state.update { it.copy(isResettingSaveCache = false, saveCacheCount = 0, stateCacheCount = 0) }
         }
     }
@@ -529,9 +510,7 @@ class SyncSettingsDelegate @Inject constructor(
     fun confirmClearPathCache(scope: CoroutineScope) {
         _state.update { it.copy(showClearPathCacheConfirm = false, isClearingPathCache = true) }
         scope.launch {
-            withContext(Dispatchers.IO) {
-                saveSyncDao.clearAllPaths()
-            }
+            saveCacheRepository.clearPathCache()
             _state.update { it.copy(isClearingPathCache = false, pathCacheCount = 0) }
         }
     }
@@ -573,10 +552,8 @@ class SyncSettingsDelegate @Inject constructor(
                 saveSyncRepository.checkForAllServerUpdates()
                 val uploaded = saveSyncRepository.processPendingUploads()
                 val downloaded = saveSyncRepository.downloadPendingServerSaves()
-                val pendingUploads = saveCacheDao.countNeedingRemoteSync()
-                val pendingDownloads = saveSyncDao.countByStatus(SaveSyncEntity.STATUS_SERVER_NEWER)
-                val totalPending = pendingUploads + pendingDownloads
-                _state.update { it.copy(pendingUploadsCount = totalPending) }
+                val pendingCounts = saveCacheRepository.getPendingSyncCounts()
+                _state.update { it.copy(pendingUploadsCount = pendingCounts.total) }
 
                 val message = when {
                     uploaded > 0 && downloaded > 0 -> "Uploaded $uploaded, downloaded $downloaded saves"

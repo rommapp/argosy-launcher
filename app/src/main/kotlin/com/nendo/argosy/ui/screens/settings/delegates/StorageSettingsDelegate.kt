@@ -3,9 +3,8 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import android.os.Build
 import android.os.Environment
 import android.util.Log
-import com.nendo.argosy.data.cache.ImageCacheManager
-import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.DatabaseAdminRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.storage.ManagedStorageAccessor
@@ -41,8 +40,7 @@ class StorageSettingsDelegate @Inject constructor(
     private val migratePlatformStorageUseCase: MigratePlatformStorageUseCase,
     private val purgePlatformUseCase: PurgePlatformUseCase,
     private val syncPlatformUseCase: SyncPlatformUseCase,
-    private val database: ALauncherDatabase,
-    private val imageCacheManager: ImageCacheManager,
+    private val databaseAdminRepository: DatabaseAdminRepository,
     private val managedStorageAccessor: ManagedStorageAccessor
 ) {
     private val _state = MutableStateFlow(StorageState())
@@ -646,10 +644,7 @@ class StorageSettingsDelegate @Inject constructor(
     fun confirmPurgeAll(scope: CoroutineScope) {
         _state.update { it.copy(showPurgeAllConfirm = false, isPurgingAll = true) }
         scope.launch {
-            withContext(Dispatchers.IO) {
-                database.clearAllTables()
-                imageCacheManager.clearCache()
-            }
+            databaseAdminRepository.purgeAll()
             _state.update { it.copy(isPurgingAll = false, platformConfigs = emptyList()) }
             refreshCollectionStats(scope)
         }

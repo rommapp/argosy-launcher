@@ -9,11 +9,11 @@ import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
 import com.nendo.argosy.data.remote.github.FetchReleaseResult
-import com.nendo.argosy.data.local.dao.CoreVersionDao
-import com.nendo.argosy.data.repository.EmulatorConfigRepository
-import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
+import com.nendo.argosy.data.repository.CoreVersionRepository
+import com.nendo.argosy.data.repository.EmulatorConfigRepository
+import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.LibretroCoreRegistry
@@ -39,10 +39,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import javax.inject.Inject
 
 enum class BuiltinNavigationTarget {
@@ -56,10 +54,10 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val soundManager: SoundFeedbackManager,
-    private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
+    private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository,
     private val emulatorConfigRepo: EmulatorConfigRepository,
     private val coreManager: LibretroCoreManager,
-    private val coreVersionDao: CoreVersionDao,
+    private val coreVersionRepository: CoreVersionRepository,
     private val emulatorUpdateManager: EmulatorUpdateManager,
     private val emulatorDownloadManager: EmulatorDownloadManager,
     private val emulatorUpdateRepository: EmulatorUpdateRepository
@@ -279,19 +277,7 @@ class EmulatorSettingsDelegate @Inject constructor(
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
-            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
-            emulatorSaveConfigDao.upsert(
-                (existing ?: EmulatorSaveConfigEntity(
-                    emulatorId = emulatorId,
-                    savePathPattern = path,
-                    isAutoDetected = false
-                )).copy(
-                    savePathPattern = path,
-                    isAutoDetected = false,
-                    isUserOverride = true,
-                    lastVerifiedAt = Instant.now()
-                )
-            )
+            emulatorSaveConfigRepository.setSavePath(emulatorId, path)
             onLoadSettings()
         }
     }
@@ -302,19 +288,7 @@ class EmulatorSettingsDelegate @Inject constructor(
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
-            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
-            // Preserve co-located state override when clearing save override.
-            if (existing?.isUserStateOverride == true && existing.statePathPattern != null) {
-                emulatorSaveConfigDao.upsert(
-                    existing.copy(
-                        savePathPattern = "",
-                        isAutoDetected = true,
-                        isUserOverride = false
-                    )
-                )
-            } else {
-                emulatorSaveConfigDao.delete(emulatorId)
-            }
+            emulatorSaveConfigRepository.resetSavePath(emulatorId)
             onLoadSettings()
         }
     }
@@ -326,18 +300,7 @@ class EmulatorSettingsDelegate @Inject constructor(
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
-            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
-            emulatorSaveConfigDao.upsert(
-                (existing ?: EmulatorSaveConfigEntity(
-                    emulatorId = emulatorId,
-                    savePathPattern = "",
-                    isAutoDetected = true
-                )).copy(
-                    statePathPattern = path,
-                    isUserStateOverride = true,
-                    lastVerifiedAt = Instant.now()
-                )
-            )
+            emulatorSaveConfigRepository.setStatePath(emulatorId, path)
             onLoadSettings()
         }
     }
@@ -348,26 +311,13 @@ class EmulatorSettingsDelegate @Inject constructor(
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
-            val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
-            if (existing != null) {
-                val hasSaveOverride = existing.isUserOverride && existing.savePathPattern.isNotEmpty()
-                if (hasSaveOverride) {
-                    emulatorSaveConfigDao.upsert(
-                        existing.copy(
-                            statePathPattern = null,
-                            isUserStateOverride = false
-                        )
-                    )
-                } else {
-                    emulatorSaveConfigDao.delete(emulatorId)
-                }
-            }
+            emulatorSaveConfigRepository.resetStatePath(emulatorId)
             onLoadSettings()
         }
     }
 
     suspend fun getEmulatorSaveConfig(emulatorId: String): EmulatorSaveConfigEntity? {
-        return emulatorSaveConfigDao.getByEmulator(emulatorId)
+        return emulatorSaveConfigRepository.getByEmulator(emulatorId)
     }
 
     fun showSavePathModal(
@@ -554,7 +504,24 @@ class EmulatorSettingsDelegate @Inject constructor(
     }
 
     suspend fun getPreferredExtension(platformId: Long): String? {
-        return emulatorConfigRepo.getPreferredExtension(platformId)?.ifEmpty { null }
+        return emulatorConfigRepo.getPreferredExtension(platformId)
+    }
+
+    suspend fun getAllEmulatorSavePaths(): List<EmulatorSavePathInfo> {
+        val saveConfigs = emulatorSaveConfigRepository.getAll()
+        val installedEmulators = state.value.installedEmulators
+
+        return saveConfigs.mapNotNull { config ->
+            val emulator = installedEmulators.find { it.def.id == config.emulatorId }
+            val emulatorName = emulator?.def?.displayName ?: return@mapNotNull null
+
+            EmulatorSavePathInfo(
+                emulatorId = config.emulatorId,
+                emulatorName = emulatorName,
+                savePath = config.savePathPattern,
+                isCustom = config.isUserOverride
+            )
+        }
     }
 
     fun updateCoreCounts() {
@@ -568,7 +535,7 @@ class EmulatorSettingsDelegate @Inject constructor(
         }
     }
 
-    fun observeCoreUpdateCount(): Flow<Int> = coreVersionDao.observeUpdateCount()
+    fun observeCoreUpdateCount(): Flow<Int> = coreVersionRepository.observeUpdateCount()
 
     fun updateCoreUpdatesAvailable(count: Int) {
         _state.update { it.copy(coreUpdatesAvailable = count) }
@@ -619,7 +586,7 @@ class EmulatorSettingsDelegate @Inject constructor(
     }
 
     fun triggerUpdateForEmulator(emulatorId: String, scope: CoroutineScope) {
-        val emulatorDef = com.nendo.argosy.data.emulator.EmulatorRegistry.getById(emulatorId) ?: return
+        val emulatorDef = EmulatorRegistry.getById(emulatorId) ?: return
 
         _state.update {
             it.copy(updateModal = EmulatorUpdateModal(

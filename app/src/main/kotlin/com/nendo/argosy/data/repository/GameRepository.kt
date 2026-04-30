@@ -765,4 +765,7 @@ class GameRepository @Inject constructor(
 
     suspend fun getGameFilesForGame(gameId: Long): List<com.nendo.argosy.data.local.entity.GameFileEntity> =
         gameFileDao.getFilesForGame(gameId)
+
+    suspend fun getInstalledSteamGames(): List<GameEntity> =
+        gameDao.getInstalledSteamGames()
 }

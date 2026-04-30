@@ -1,9 +1,8 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
-import com.nendo.argosy.data.cache.ImageCacheManager
-import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.storage.ManagedStorageAccessor
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.DatabaseAdminRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.domain.usecase.MigratePlatformStorageUseCase
@@ -39,8 +38,7 @@ class StorageSettingsDelegateTest {
     private lateinit var migratePlatformStorageUseCase: MigratePlatformStorageUseCase
     private lateinit var purgePlatformUseCase: PurgePlatformUseCase
     private lateinit var syncPlatformUseCase: SyncPlatformUseCase
-    private lateinit var database: ALauncherDatabase
-    private lateinit var imageCacheManager: ImageCacheManager
+    private lateinit var databaseAdminRepository: DatabaseAdminRepository
     private lateinit var managedStorageAccessor: ManagedStorageAccessor
     private lateinit var delegate: StorageSettingsDelegate
 
@@ -55,8 +53,7 @@ class StorageSettingsDelegateTest {
         migratePlatformStorageUseCase = mockk(relaxed = true)
         purgePlatformUseCase = mockk(relaxed = true)
         syncPlatformUseCase = mockk(relaxed = true)
-        database = mockk(relaxed = true)
-        imageCacheManager = mockk(relaxed = true)
+        databaseAdminRepository = mockk(relaxed = true)
         managedStorageAccessor = mockk(relaxed = true)
 
         delegate = StorageSettingsDelegate(
@@ -67,8 +64,7 @@ class StorageSettingsDelegateTest {
             migratePlatformStorageUseCase = migratePlatformStorageUseCase,
             purgePlatformUseCase = purgePlatformUseCase,
             syncPlatformUseCase = syncPlatformUseCase,
-            database = database,
-            imageCacheManager = imageCacheManager,
+            databaseAdminRepository = databaseAdminRepository,
             managedStorageAccessor = managedStorageAccessor
         )
     }

@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
+import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.data.launcher.SteamLaunchers
-import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.steam.resolveSteamGenres
@@ -76,17 +76,3 @@ fun GameEntity.toGameDetailUi(
     )
 }
 
-fun AchievementEntity.toAchievementUi() = AchievementUi(
-    raId = raId,
-    title = title,
-    description = description,
-    points = points,
-    type = type,
-    badgeUrl = if (isUnlocked) {
-        cachedBadgeUrl ?: badgeUrl
-    } else {
-        cachedBadgeUrlLock ?: badgeUrlLock ?: cachedBadgeUrl ?: badgeUrl
-    },
-    isUnlocked = isUnlocked,
-    isUnlockedHardcore = unlockedHardcoreAt != null
-)

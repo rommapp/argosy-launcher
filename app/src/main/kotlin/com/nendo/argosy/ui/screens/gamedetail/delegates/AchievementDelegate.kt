@@ -4,7 +4,7 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.repository.GameRepository
-import com.nendo.argosy.ui.screens.gamedetail.toAchievementUi
+import com.nendo.argosy.core.game.toAchievementUi
 import com.nendo.argosy.data.remote.romm.RomMEarnedAchievement
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
@@ -13,7 +13,7 @@ import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import com.nendo.argosy.domain.usecase.achievement.VerifyRAGameIdUseCase
 import com.nendo.argosy.core.event.AchievementUpdateBus
 import com.nendo.argosy.util.parseTimestamp
-import com.nendo.argosy.ui.screens.gamedetail.AchievementUi
+import com.nendo.argosy.core.game.AchievementUi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

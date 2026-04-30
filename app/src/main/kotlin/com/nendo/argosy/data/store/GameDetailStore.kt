@@ -7,8 +7,8 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
-import com.nendo.argosy.ui.screens.gamedetail.AchievementUi
-import com.nendo.argosy.ui.screens.gamedetail.toAchievementUi
+import com.nendo.argosy.core.game.AchievementUi
+import com.nendo.argosy.core.game.toAchievementUi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged

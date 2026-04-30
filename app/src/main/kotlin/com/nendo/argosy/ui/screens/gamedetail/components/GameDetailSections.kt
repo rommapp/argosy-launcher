@@ -72,7 +72,7 @@ import com.nendo.argosy.ui.screens.gamedetail.GameDetailUiState
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailViewModel
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
 import com.nendo.argosy.ui.screens.gamedetail.ScreenshotPair
-import com.nendo.argosy.ui.screens.gamedetail.AchievementUi
+import com.nendo.argosy.core.game.AchievementUi
 import kotlinx.coroutines.delay
 
 @Composable

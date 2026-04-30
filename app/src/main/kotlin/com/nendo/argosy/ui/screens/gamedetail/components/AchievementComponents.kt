@@ -31,7 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.nendo.argosy.ui.screens.gamedetail.AchievementUi
+import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.ui.theme.Dimens
 
 private val goldColor = Color(0xFFFFD700)

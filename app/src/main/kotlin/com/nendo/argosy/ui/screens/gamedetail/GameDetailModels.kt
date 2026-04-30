@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail
 
 import android.content.Intent
+import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.common.savechannel.SaveChannelState
@@ -55,17 +56,6 @@ data class CollectionItemUi(
     val id: Long,
     val name: String,
     val isInCollection: Boolean
-)
-
-data class AchievementUi(
-    val raId: Long,
-    val title: String,
-    val description: String?,
-    val points: Int,
-    val type: String?,
-    val badgeUrl: String?,
-    val isUnlocked: Boolean = false,
-    val isUnlockedHardcore: Boolean = false
 )
 
 data class GameDetailUi(

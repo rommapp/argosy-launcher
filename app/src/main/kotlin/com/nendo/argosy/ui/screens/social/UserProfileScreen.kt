@@ -29,7 +29,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.data.social.UserProfileData
 import com.nendo.argosy.ui.components.FooterBarWithState
@@ -77,7 +77,7 @@ data class UserProfileUiState(
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     val notificationManager: NotificationManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -92,7 +92,7 @@ class UserProfileViewModel @Inject constructor(
             socialRepository.userProfile.collect { profile ->
                 if (profile != null && profile.user.id == userId) {
                     val igdbIds = profile.mostPlayed.map { it.igdbId }
-                        .filter { gameDao.getByIgdbId(it.toLong()) != null }
+                        .filter { gameRepository.getByIgdbId(it.toLong()) != null }
                         .toSet()
                     _uiState.value = _uiState.value.copy(
                         profile = profile,
@@ -136,7 +136,7 @@ class UserProfileViewModel @Inject constructor(
     }
 
     suspend fun getLocalGameId(igdbId: Int): Long? {
-        return gameDao.getByIgdbId(igdbId.toLong())?.id
+        return gameRepository.getByIgdbId(igdbId.toLong())?.id
     }
 
     fun createInputHandler(

@@ -66,7 +66,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.social.FeedComment
 import com.nendo.argosy.data.social.FeedEventDto
 import com.nendo.argosy.data.social.FeedEventType
@@ -108,7 +108,7 @@ data class FeedEventDetailUiState(
 @HiltViewModel
 class FeedEventDetailViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
-    private val gameDao: GameDao
+    private val gameRepository: GameRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedEventDetailUiState())
@@ -131,7 +131,7 @@ class FeedEventDetailViewModel @Inject constructor(
                 val state = _uiState.value
                 val igdbId = event?.igdbId ?: event?.game?.igdbId
                 val localGameId = if (igdbId != null && state.localGameId == null) {
-                    gameDao.getByIgdbId(igdbId.toLong())?.id
+                    gameRepository.getByIgdbId(igdbId.toLong())?.id
                 } else {
                     state.localGameId
                 }

@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.emulator.LaunchResult
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.netplay.NetplayPreflightChecker
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.netplay.NetplayPreflightResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.social.CommunityFollow
@@ -129,7 +129,7 @@ sealed class SocialLaunchEvent {
 class SocialViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val gameDao: GameDao,
+    private val gameRepository: GameRepository,
     private val netplayPreflightChecker: NetplayPreflightChecker,
     private val netplayJoinService: com.nendo.argosy.data.netplay.NetplayJoinService,
     private val launchGameUseCase: LaunchGameUseCase,
@@ -175,7 +175,7 @@ class SocialViewModel @Inject constructor(
             val gameId = preflight.gameId ?: run {
                 val igdbId = session.gameIgdbId?.toLong()
                     ?: return@launch _launchEvents.emit(SocialLaunchEvent.LaunchError("Missing game id for session"))
-                gameDao.getByIgdbId(igdbId)?.id
+                gameRepository.getByIgdbId(igdbId)?.id
                     ?: return@launch _launchEvents.emit(SocialLaunchEvent.LaunchError("Local game not found"))
             }
             when (val result = launchGameUseCase(gameId = gameId)) {
@@ -359,7 +359,7 @@ class SocialViewModel @Inject constructor(
             communitySearchFieldFocused = true
         )
         viewModelScope.launch {
-            val recent = gameDao.getRecentlyPlayed(10)
+            val recent = gameRepository.getRecentlyPlayed(10)
             _uiState.value = _uiState.value.copy(
                 communitySearchResults = recent.map { it.toPickerItem() }
             )
@@ -379,7 +379,7 @@ class SocialViewModel @Inject constructor(
         communitySearchJob?.cancel()
         if (query.isBlank()) {
             viewModelScope.launch {
-                val recent = gameDao.getRecentlyPlayed(10)
+                val recent = gameRepository.getRecentlyPlayed(10)
                 _uiState.value = _uiState.value.copy(
                     communitySearchResults = recent.map { it.toPickerItem() }
                 )
@@ -388,7 +388,7 @@ class SocialViewModel @Inject constructor(
         }
         communitySearchJob = viewModelScope.launch {
             delay(300)
-            val results = gameDao.searchForQuickMenu(query, 15).first()
+            val results = gameRepository.searchForQuickMenu(query, 15).first()
             _uiState.value = _uiState.value.copy(
                 communitySearchResults = results.map { it.toPickerItem() }
             )
@@ -525,7 +525,7 @@ class SocialViewModel @Inject constructor(
 
     private suspend fun resolveLocalIgdbIds(igdbIds: List<Int>): Set<Int> {
         return igdbIds.filter { igdbId ->
-            gameDao.getByIgdbId(igdbId.toLong()) != null
+            gameRepository.getByIgdbId(igdbId.toLong()) != null
         }.toSet()
     }
 
@@ -758,7 +758,7 @@ class SocialViewModel @Inject constructor(
                         val game = profileState.userProfile?.mostPlayed?.getOrNull(profileState.focusedMostPlayedIndex)
                         if (game != null) {
                             viewModelScope.launch {
-                                val localGame = gameDao.getByIgdbId(game.igdbId.toLong())
+                                val localGame = gameRepository.getByIgdbId(game.igdbId.toLong())
                                 if (localGame != null) {
                                     onNavigateToGameDetail(localGame.id.toInt())
                                 } else {

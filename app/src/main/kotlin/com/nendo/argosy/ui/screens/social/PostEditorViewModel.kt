@@ -3,7 +3,7 @@ package com.nendo.argosy.ui.screens.social
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.ui.screens.doodle.GamePickerItem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,7 +61,7 @@ private const val MAX_BODY_LENGTH = 2000
 @HiltViewModel
 class PostEditorViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
-    private val gameDao: GameDao
+    private val gameRepository: GameRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PostEditorUiState())
@@ -134,7 +134,7 @@ class PostEditorViewModel @Inject constructor(
             )
         }
         viewModelScope.launch {
-            val recent = gameDao.getRecentlyPlayed(10)
+            val recent = gameRepository.getRecentlyPlayed(10)
             val items = recent.map { it.toPickerItem() }
             _uiState.update { it.copy(gamePickerResults = items) }
         }
@@ -149,14 +149,14 @@ class PostEditorViewModel @Inject constructor(
         gameSearchJob?.cancel()
         if (query.isBlank()) {
             viewModelScope.launch {
-                val recent = gameDao.getRecentlyPlayed(10)
+                val recent = gameRepository.getRecentlyPlayed(10)
                 _uiState.update { it.copy(gamePickerResults = recent.map { g -> g.toPickerItem() }) }
             }
             return
         }
         gameSearchJob = viewModelScope.launch {
             delay(SEARCH_DEBOUNCE_MS)
-            val results = gameDao.searchForQuickMenu(query, 10).first()
+            val results = gameRepository.searchForQuickMenu(query, 10).first()
             _uiState.update { it.copy(gamePickerResults = results.map { g -> g.toPickerItem() }) }
         }
     }

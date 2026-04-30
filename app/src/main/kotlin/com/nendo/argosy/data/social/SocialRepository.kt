@@ -15,7 +15,7 @@ import com.nendo.argosy.data.local.entity.SocialSyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.SocialSyncCoordinator
-import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.core.event.AchievementUpdateBus
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.core.notification.NotificationDuration

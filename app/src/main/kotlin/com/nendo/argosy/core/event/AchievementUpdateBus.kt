@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.screens.common
+package com.nendo.argosy.core.event
 
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -8,20 +8,20 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GameUpdateBus @Inject constructor() {
-    data class GameUpdate(
+class AchievementUpdateBus @Inject constructor() {
+    data class AchievementUpdate(
         val gameId: Long,
-        val playTimeMinutes: Int? = null,
-        val status: String? = null
+        val totalCount: Int,
+        val earnedCount: Int
     )
 
-    private val _updates = MutableSharedFlow<GameUpdate>(
+    private val _updates = MutableSharedFlow<AchievementUpdate>(
         extraBufferCapacity = 10,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    val updates: SharedFlow<GameUpdate> = _updates.asSharedFlow()
+    val updates: SharedFlow<AchievementUpdate> = _updates.asSharedFlow()
 
-    suspend fun emit(update: GameUpdate) {
+    suspend fun emit(update: AchievementUpdate) {
         _updates.emit(update)
     }
 }

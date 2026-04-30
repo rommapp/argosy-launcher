@@ -72,7 +72,7 @@ import com.nendo.argosy.data.social.NetplayOpenPayload
 import com.nendo.argosy.data.social.NetplaySessionMode
 import com.nendo.argosy.data.social.NetplaySessionState
 import com.nendo.argosy.data.social.SocialRepository
-import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.core.event.AchievementUpdateBus
 import com.nendo.argosy.libretro.ui.cheats.CheatDisplayItem
 import com.nendo.argosy.libretro.ui.cheats.CheatVariantInfo
 import com.nendo.argosy.libretro.ui.cheats.CheatsScreen

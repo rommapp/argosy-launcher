@@ -42,7 +42,7 @@ import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
-import com.nendo.argosy.ui.screens.common.GameUpdateBus
+import com.nendo.argosy.core.event.GameUpdateBus
 import com.nendo.argosy.ui.screens.gamedetail.delegates.AchievementDelegate
 import com.nendo.argosy.ui.screens.gamedetail.delegates.DownloadDelegate
 import com.nendo.argosy.ui.screens.gamedetail.delegates.MoreOptionsDelegate

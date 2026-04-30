@@ -15,7 +15,7 @@ import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
-import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.core.event.AchievementUpdateBus
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate

@@ -11,7 +11,7 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.repository.RA_BADGE_BASE_URL
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import com.nendo.argosy.domain.usecase.achievement.VerifyRAGameIdUseCase
-import com.nendo.argosy.ui.screens.common.AchievementUpdateBus
+import com.nendo.argosy.core.event.AchievementUpdateBus
 import com.nendo.argosy.util.parseTimestamp
 import com.nendo.argosy.ui.screens.gamedetail.AchievementUi
 import kotlinx.coroutines.CoroutineScope

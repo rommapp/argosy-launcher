@@ -31,7 +31,7 @@ import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.DualScreenManagerHolder
-import com.nendo.argosy.ui.screens.common.GameUpdateBus
+import com.nendo.argosy.core.event.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers

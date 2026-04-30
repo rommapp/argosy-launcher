@@ -68,6 +68,9 @@ interface SaveSyncDao {
     @Query("UPDATE save_sync SET lastUploadedHash = :hash WHERE id = :id")
     suspend fun updateLastUploadedHash(id: Long, hash: String)
 
+    @Query("DELETE FROM save_sync WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
 

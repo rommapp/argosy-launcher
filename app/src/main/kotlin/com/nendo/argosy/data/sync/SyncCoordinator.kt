@@ -161,6 +161,8 @@ class SyncCoordinator @Inject constructor(
 
         when (result) {
             is SaveSyncResult.Success -> syncQueueManager.completeOperation(item.gameId)
+            is SaveSyncResult.NoSaveFound,
+            is SaveSyncResult.NotConfigured -> syncQueueManager.completeOperation(item.gameId)
             is SaveSyncResult.Error -> syncQueueManager.completeOperation(item.gameId, result.message)
             is SaveSyncResult.Conflict -> syncQueueManager.completeOperation(item.gameId, "Server has newer save")
             else -> syncQueueManager.completeOperation(item.gameId, "Skipped")
@@ -354,6 +356,11 @@ class SyncCoordinator @Inject constructor(
                     syncQueueManager.completeOperation(cache.gameId, result.message)
                     Logger.warn(TAG, "processDirtySaveCaches: Failed channel cache id=${cache.id} gameId=${cache.gameId} | ${result.message}")
                 }
+                is SaveSyncResult.NoSaveFound,
+                is SaveSyncResult.NotConfigured -> {
+                    syncQueueManager.completeOperation(cache.gameId)
+                    Logger.debug(TAG, "processDirtySaveCaches: Skipped channel cache id=${cache.id} | result=$result")
+                }
                 else -> {
                     syncQueueManager.completeOperation(cache.gameId, "Skipped")
                     Logger.debug(TAG, "processDirtySaveCaches: Skipped channel cache id=${cache.id} | result=$result")
@@ -433,6 +440,11 @@ class SyncCoordinator @Inject constructor(
                 is SaveSyncResult.Conflict -> {
                     syncQueueManager.completeOperation(cache.gameId, "Conflict not resolved")
                     Logger.debug(TAG, "processDirtySaveCaches: Conflict gameId=${cache.gameId}")
+                }
+                is SaveSyncResult.NoSaveFound,
+                is SaveSyncResult.NotConfigured -> {
+                    syncQueueManager.completeOperation(cache.gameId)
+                    Logger.debug(TAG, "processDirtySaveCaches: Skipped gameId=${cache.gameId} | result=$result")
                 }
                 else -> {
                     syncQueueManager.completeOperation(cache.gameId, "Skipped")

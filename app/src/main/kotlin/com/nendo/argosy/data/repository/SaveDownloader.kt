@@ -99,8 +99,9 @@ class SaveDownloader @Inject constructor(
             return@withContext SaveSyncResult.Error("Failed to get save info: ${e.message}")
         }
         if (serverSave == null) {
-            Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Save not found on server | saveId=$saveId")
-            return@withContext SaveSyncResult.Error("Save not found on server")
+            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server save deleted, dropping orphan tracking row | saveId=$saveId, syncEntityId=${syncEntity.id}")
+            saveSyncDao.deleteById(syncEntity.id)
+            return@withContext SaveSyncResult.NoSaveFound
         }
 
         val config = SavePathRegistry.getConfigForPlatform(resolvedEmulatorId, game.platformSlug)
@@ -253,8 +254,8 @@ class SaveDownloader @Inject constructor(
                     resolved
                 } else {
                     preDownloadTargetPath ?: run {
-                        Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine folder save path")
-                        return@withContext SaveSyncResult.Error("Cannot determine save path")
+                        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot determine folder save path, skipping (likely missing titleId mapping)")
+                        return@withContext SaveSyncResult.NoSaveFound
                     }
                 }
 

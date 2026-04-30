@@ -67,7 +67,7 @@ class WiiUSaveHandler @Inject constructor(
             ExtractResult(true, targetPath)
         }
 
-    fun findSaveFolderByTitleId(basePath: String, titleId: String): String? {
+    override fun findSaveFolderByTitleId(basePath: String, titleId: String): String? {
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
             Logger.debug(TAG, "Base path does not exist | path=$basePath")
             return null
@@ -86,11 +86,11 @@ class WiiUSaveHandler @Inject constructor(
         return null
     }
 
-    fun constructSavePath(baseDir: String, titleId: String): String {
+    override fun constructSavePath(baseDir: String, titleId: String): String {
         return "$baseDir/$titleId"
     }
 
-    fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
+    override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
         if (basePathOverride != null) {
             return basePathOverride
         }

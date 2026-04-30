@@ -68,7 +68,8 @@ class PS2SaveHandler @Inject constructor(
             ExtractResult(true, targetPath)
         }
 
-    fun findSaveFolderByTitleId(basePath: String, serial: String): String? {
+    override fun findSaveFolderByTitleId(basePath: String, titleId: String): String? {
+        val serial = titleId
         Logger.debug(TAG, "findSaveFolderByTitleId: Searching | basePath=$basePath, serial=$serial, normalized=${toFolderName(serial)}")
 
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
@@ -98,7 +99,8 @@ class PS2SaveHandler @Inject constructor(
         return null
     }
 
-    fun constructSavePath(baseDir: String, serial: String): String {
+    override fun constructSavePath(baseDir: String, titleId: String): String {
+        val serial = titleId
         val folderCards = fal.listFiles(baseDir)?.filter {
             it.isDirectory && it.name.endsWith(".ps2", ignoreCase = true)
         } ?: emptyList()
@@ -107,7 +109,7 @@ class PS2SaveHandler @Inject constructor(
         return "$cardDir/${toFolderName(serial)}"
     }
 
-    fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
+    override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
         if (basePathOverride != null) return basePathOverride
 
         val resolvedPaths = SavePathRegistry.resolvePath(config, "ps2", null)

@@ -72,7 +72,7 @@ class N3dsSaveHandler @Inject constructor(
             ExtractResult(true, targetPath)
         }
 
-    fun findSaveFolderByTitleId(basePath: String, titleId: String): String? {
+    override fun findSaveFolderByTitleId(basePath: String, titleId: String): String? {
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
             Logger.debug(TAG, "Base path does not exist | path=$basePath")
             return null
@@ -121,7 +121,7 @@ class N3dsSaveHandler @Inject constructor(
         return bestMatchPath
     }
 
-    fun constructSavePath(baseDir: String, titleId: String): String? {
+    override fun constructSavePath(baseDir: String, titleId: String): String? {
         val category = if (titleId.length >= 16) titleId.take(8) else DEFAULT_CATEGORY
         val shortTitleId = if (titleId.length > 8) titleId.takeLast(8) else titleId
 
@@ -143,7 +143,7 @@ class N3dsSaveHandler @Inject constructor(
         return savePath
     }
 
-    fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
+    override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
         if (basePathOverride != null) {
             return if (basePathOverride.endsWith("/sdmc/Nintendo 3DS") || basePathOverride.endsWith("/sdmc/Nintendo 3DS/")) {
                 basePathOverride.trimEnd('/')

@@ -3,9 +3,37 @@ package com.nendo.argosy.data.sync.platform
 import com.nendo.argosy.data.emulator.SavePathConfig
 import java.io.File
 
+/**
+ * Per-platform save bundling, extraction, and discovery. The two `prepareForUpload`/
+ * `extractDownload` methods are total -- every handler implements them. The folder-discovery
+ * methods (`findSaveFolderByTitleId`, `resolveBasePath`, `constructSavePath`) are optional and
+ * return null when the platform doesn't follow a per-title-id folder layout (e.g. RetroArch's
+ * single-file saves, GCI memory cards, Default file-based saves).
+ *
+ * Adding a new folder-based platform = register a new entry in [PlatformSaveHandlerRegistry];
+ * no other call site changes.
+ */
 interface PlatformSaveHandler {
     suspend fun prepareForUpload(localPath: String, context: SaveContext): PreparedSave?
     suspend fun extractDownload(tempFile: File, context: SaveContext): ExtractResult
+
+    /**
+     * Locate an existing save folder under [basePath] for [titleId]. Returns null when the
+     * platform doesn't store saves per-title-id, or when no match is found.
+     */
+    fun findSaveFolderByTitleId(basePath: String, titleId: String): String? = null
+
+    /**
+     * Resolve the platform's save root, applying any user override. Returns null when the
+     * platform doesn't expose a single base path (the default for non-folder handlers).
+     */
+    fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? = null
+
+    /**
+     * Construct the path where a save for [titleId] should live under [baseDir]. Default returns
+     * null (handler does not own a folder layout). Folder-based handlers override this.
+     */
+    fun constructSavePath(baseDir: String, titleId: String): String? = null
 }
 
 data class SaveContext(

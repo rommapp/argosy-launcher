@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.util.Logger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 @Singleton
 class SavePathValidator @Inject constructor(
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
-    private val fileAccessLayer: FileAccessLayer
+    private val fileAccessLayer: FileAccessLayer,
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
 ) {
     companion object {
         private const val TAG = "SavePathValidator"
@@ -77,16 +79,11 @@ class SavePathValidator @Inject constructor(
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
         return if (userConfig?.isUserOverride == true) {
             val basePath = userConfig.savePathPattern
-            val effectivePath = when (platformSlug) {
-                "3ds" -> {
-                    if (basePath.endsWith("/sdmc/Nintendo 3DS") || basePath.endsWith("/sdmc/Nintendo 3DS/")) {
-                        basePath.trimEnd('/')
-                    } else {
-                        "$basePath/sdmc/Nintendo 3DS"
-                    }
-                }
-                else -> basePath
-            }
+            // Defer per-platform path normalization (e.g. 3DS Nintendo 3DS subfolder) to the
+            // platform handler so this validator stays platform-agnostic.
+            val effectivePath = platformSlug?.let { slug ->
+                saveHandlerRegistry.getFolderHandler(slug)?.resolveBasePath(config, basePath)
+            } ?: basePath
             listOf(effectivePath)
         } else {
             SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)

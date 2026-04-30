@@ -1,7 +1,6 @@
 package com.nendo.argosy.data.sync
 
 import android.content.Context
-import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
@@ -11,13 +10,8 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.platform.GciSaveHandler
-import com.nendo.argosy.data.sync.platform.N3dsSaveHandler
-import com.nendo.argosy.data.sync.platform.PspSaveHandler
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
-import com.nendo.argosy.data.sync.platform.VitaSaveHandler
-import com.nendo.argosy.data.sync.platform.WiiSaveHandler
-import com.nendo.argosy.data.sync.platform.PS2SaveHandler
-import com.nendo.argosy.data.sync.platform.WiiUSaveHandler
 import com.nendo.argosy.data.titledb.TitleDbRepository
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -43,12 +37,7 @@ class SavePathResolver @Inject constructor(
     private val saveArchiver: SaveArchiver,
     private val switchSaveHandler: SwitchSaveHandler,
     private val gciSaveHandler: GciSaveHandler,
-    private val n3dsSaveHandler: N3dsSaveHandler,
-    private val vitaSaveHandler: VitaSaveHandler,
-    private val pspSaveHandler: PspSaveHandler,
-    private val wiiSaveHandler: WiiSaveHandler,
-    private val wiiUSaveHandler: WiiUSaveHandler,
-    private val ps2SaveHandler: PS2SaveHandler
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
 ) {
     suspend fun discoverSavePath(
         emulatorId: String,
@@ -224,20 +213,16 @@ class SavePathResolver @Inject constructor(
     ): String? {
         val romFile = File(romPath)
         val resolvedPaths = if (basePathOverride != null) {
-            val effectivePath = when (platformSlug) {
-                "3ds" -> {
-                    if (basePathOverride.endsWith("/sdmc/Nintendo 3DS") || basePathOverride.endsWith("/sdmc/Nintendo 3DS/")) {
-                        basePathOverride.trimEnd('/')
-                    } else {
-                        "$basePathOverride/sdmc/Nintendo 3DS"
-                    }
-                }
-                "switch" -> switchSaveHandler.resolveBasePath(
+            val effectivePath = if (platformSlug == "switch") {
+                switchSaveHandler.resolveBasePath(
                     SavePathRegistry.getConfig(config.emulatorId)!!,
                     basePathOverride,
                     emulatorPackage
                 ) ?: basePathOverride
-                else -> basePathOverride
+            } else {
+                saveHandlerRegistry.getFolderHandler(platformSlug)
+                    ?.resolveBasePath(config, basePathOverride)
+                    ?: basePathOverride
             }
             listOf(effectivePath)
         } else {
@@ -375,16 +360,11 @@ class SavePathResolver @Inject constructor(
         }
         Logger.debug(TAG, "[SaveSync] DISCOVER | Scanning base path | path=$basePath, titleId=$titleId, platform=$platformSlug")
 
-        return when (platformSlug) {
-            "vita", "psvita" -> vitaSaveHandler.findSaveFolderByTitleId(basePath, titleId)
-            "switch" -> switchSaveHandler.findSaveFolderByTitleId(basePath, titleId)
-            "3ds" -> n3dsSaveHandler.findSaveFolderByTitleId(basePath, titleId)
-            "psp" -> pspSaveHandler.findSaveFolderByTitleId(basePath, titleId)
-            "wii" -> wiiSaveHandler.findSaveFolderByTitleId(basePath, titleId)
-            "wiiu" -> wiiUSaveHandler.findSaveFolderByTitleId(basePath, titleId)
-            "ps2" -> ps2SaveHandler.findSaveFolderByTitleId(basePath, titleId)
-            else -> null
+        if (platformSlug == "switch") {
+            return switchSaveHandler.findSaveFolderByTitleId(basePath, titleId)
         }
+        return saveHandlerRegistry.getFolderHandler(platformSlug)
+            ?.findSaveFolderByTitleId(basePath, titleId)
     }
 
     fun findNewestFileTime(folderPath: String): Long {
@@ -594,15 +574,13 @@ class SavePathResolver @Inject constructor(
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
         val basePathOverride = userConfig?.takeIf { it.isUserOverride }?.savePathPattern
 
-        val baseDir = when (platformSlug) {
-            "3ds" -> n3dsSaveHandler.resolveBasePath(config, basePathOverride)
-            "vita", "psvita" -> vitaSaveHandler.resolveBasePath(config, basePathOverride)
-            "psp" -> pspSaveHandler.resolveBasePath(config, basePathOverride)
-            "wii" -> wiiSaveHandler.resolveBasePath(config, basePathOverride)
-            "wiiu" -> wiiUSaveHandler.resolveBasePath(config, basePathOverride)
-            "ps2" -> ps2SaveHandler.resolveBasePath(config, basePathOverride)
-            "switch" -> switchSaveHandler.resolveBasePath(config, basePathOverride, emulatorPackage)
-            else -> basePathOverride ?: config.defaultPaths.firstOrNull { directoryExists(it) }
+        val baseDir = if (platformSlug == "switch") {
+            switchSaveHandler.resolveBasePath(config, basePathOverride, emulatorPackage)
+        } else {
+            saveHandlerRegistry.getFolderHandler(platformSlug)
+                ?.resolveBasePath(config, basePathOverride)
+                ?: basePathOverride
+                ?: config.defaultPaths.firstOrNull { directoryExists(it) }
                 ?: config.defaultPaths.firstOrNull()
         } ?: return null
 
@@ -622,16 +600,11 @@ class SavePathResolver @Inject constructor(
 
         Logger.debug(TAG, "[SaveSync] CONSTRUCT | Building path | baseDir=$baseDir, titleId=$titleId, platform=$platformSlug")
 
-        return when (platformSlug) {
-            "vita", "psvita" -> vitaSaveHandler.constructSavePath(baseDir, titleId)
-            "3ds" -> n3dsSaveHandler.constructSavePath(baseDir, titleId)
-            "psp" -> pspSaveHandler.constructSavePath(baseDir, titleId)
-            "wii" -> wiiSaveHandler.constructSavePath(baseDir, titleId)
-            "wiiu" -> wiiUSaveHandler.constructSavePath(baseDir, titleId)
-            "ps2" -> ps2SaveHandler.constructSavePath(baseDir, titleId)
-            "switch" -> switchSaveHandler.constructSavePath(baseDir, titleId, emulatorPackage)
-            else -> null
+        if (platformSlug == "switch") {
+            return switchSaveHandler.constructSavePath(baseDir, titleId, emulatorPackage)
         }
+        return saveHandlerRegistry.getFolderHandler(platformSlug)
+            ?.constructSavePath(baseDir, titleId)
     }
 
     suspend fun resolveSwitchSaveTargetPath(

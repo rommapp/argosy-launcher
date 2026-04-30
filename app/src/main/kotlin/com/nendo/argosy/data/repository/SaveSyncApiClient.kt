@@ -18,18 +18,11 @@ import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
-import com.nendo.argosy.data.sync.platform.DefaultSaveHandler
 import com.nendo.argosy.data.sync.platform.GciSaveHandler
-import com.nendo.argosy.data.sync.platform.N3dsSaveHandler
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandler
-import com.nendo.argosy.data.sync.platform.PspSaveHandler
-import com.nendo.argosy.data.sync.platform.RetroArchSaveHandler
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.data.sync.platform.SaveContext
 import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
-import com.nendo.argosy.data.sync.platform.VitaSaveHandler
-import com.nendo.argosy.data.sync.platform.WiiSaveHandler
-import com.nendo.argosy.data.sync.platform.PS2SaveHandler
-import com.nendo.argosy.data.sync.platform.WiiUSaveHandler
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.titledb.TitleDbRepository
 import com.nendo.argosy.util.Logger
@@ -64,14 +57,7 @@ class SaveSyncApiClient @Inject constructor(
     private val fal: FileAccessLayer,
     private val switchSaveHandler: SwitchSaveHandler,
     private val gciSaveHandler: GciSaveHandler,
-    private val n3dsSaveHandler: N3dsSaveHandler,
-    private val vitaSaveHandler: VitaSaveHandler,
-    private val pspSaveHandler: PspSaveHandler,
-    private val wiiSaveHandler: WiiSaveHandler,
-    private val wiiUSaveHandler: WiiUSaveHandler,
-    private val ps2SaveHandler: PS2SaveHandler,
-    private val retroArchSaveHandler: RetroArchSaveHandler,
-    private val defaultSaveHandler: DefaultSaveHandler
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
 ) {
     private var api: RomMApi? = null
     private var deviceId: String? = null
@@ -92,20 +78,7 @@ class SaveSyncApiClient @Inject constructor(
         config: SavePathConfig?,
         platformSlug: String,
         emulatorId: String
-    ): PlatformSaveHandler {
-        return when {
-            emulatorId in listOf("retroarch", "retroarch_64") -> retroArchSaveHandler
-            config?.usesGciFormat == true -> gciSaveHandler
-            platformSlug == "switch" -> switchSaveHandler
-            platformSlug == "3ds" -> n3dsSaveHandler
-            platformSlug in listOf("vita", "psvita") -> vitaSaveHandler
-            platformSlug == "psp" -> pspSaveHandler
-            platformSlug == "wii" -> wiiSaveHandler
-            platformSlug == "wiiu" -> wiiUSaveHandler
-            platformSlug == "ps2" -> ps2SaveHandler
-            else -> defaultSaveHandler
-        }
-    }
+    ): PlatformSaveHandler = saveHandlerRegistry.getHandler(config, platformSlug, emulatorId)
 
     internal suspend fun isFolderSaveSyncEnabled(): Boolean {
         val prefs = userPreferencesRepository.preferences.first()

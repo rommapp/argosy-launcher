@@ -22,23 +22,22 @@ class FileAccessLayerImpl @Inject constructor(
     }
 
     override fun exists(path: String): Boolean {
-        if (androidDataAccessor.isAltAccessSupported() && isRestrictedPath(path)) {
-            val result = androidDataAccessor.exists(path)
-            if (result) {
-                Logger.verbose(TAG) { "[AltAccess] exists=true | path=$path" }
-                return true
-            }
+        if (File(path).exists()) return true
+
+        if (!isRestrictedPath(path)) return false
+
+        if (androidDataAccessor.isAltAccessSupported() && androidDataAccessor.exists(path)) {
+            Logger.verbose(TAG) { "[AltAccess] exists=true | path=$path" }
+            return true
         }
 
-        if (isRestrictedPath(path)) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return File(path).exists()
-            if (managedStorageAccessor.existsAtPath(volumeId, relativePath)) {
-                Logger.verbose(TAG) { "[ManagedAccess] exists=true | path=$path" }
-                return true
-            }
+        val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
+        if (managedStorageAccessor.existsAtPath(volumeId, relativePath)) {
+            Logger.verbose(TAG) { "[ManagedAccess] exists=true | path=$path" }
+            return true
         }
 
-        return File(path).exists()
+        return false
     }
 
     override fun isDirectory(path: String): Boolean {

@@ -218,7 +218,7 @@ class ManagedStorageAccessor @Inject constructor(
             return file.exists()
         }
 
-        initializeBlocking()
+        if (!hasValidSafGrant()) return false
 
         val treeUri = cachedTreeUri
         if (treeUri != null) {

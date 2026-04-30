@@ -10,7 +10,7 @@ import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.local.dao.CoreOptionOverrideDao
-import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.repository.EmulatorConfigRepository
 import com.nendo.argosy.data.repository.LibretroSettingsRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.dao.SaveCacheDao
@@ -73,7 +73,7 @@ class SettingsViewModel @Inject constructor(
     internal val libretroSettingsRepo: LibretroSettingsRepository,
     internal val launchArgsRepo: com.nendo.argosy.data.repository.LaunchArgsRepository,
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
-    internal val emulatorConfigDao: EmulatorConfigDao,
+    internal val emulatorConfigRepo: EmulatorConfigRepository,
     internal val emulatorDetector: EmulatorDetector,
     internal val romMRepository: RomMRepository,
     internal val notificationManager: NotificationManager,

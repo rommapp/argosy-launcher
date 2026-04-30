@@ -10,7 +10,7 @@ import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
 import com.nendo.argosy.data.remote.github.FetchReleaseResult
 import com.nendo.argosy.data.local.dao.CoreVersionDao
-import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.repository.EmulatorConfigRepository
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
@@ -57,7 +57,7 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val soundManager: SoundFeedbackManager,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
-    private val emulatorConfigDao: EmulatorConfigDao,
+    private val emulatorConfigRepo: EmulatorConfigRepository,
     private val coreManager: LibretroCoreManager,
     private val coreVersionDao: CoreVersionDao,
     private val emulatorUpdateManager: EmulatorUpdateManager,
@@ -554,7 +554,7 @@ class EmulatorSettingsDelegate @Inject constructor(
     }
 
     suspend fun getPreferredExtension(platformId: Long): String? {
-        return emulatorConfigDao.getPreferredExtension(platformId)?.ifEmpty { null }
+        return emulatorConfigRepo.getPreferredExtension(platformId)?.ifEmpty { null }
     }
 
     fun updateCoreCounts() {

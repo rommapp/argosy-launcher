@@ -45,7 +45,8 @@ data class SaveContext(
     val gameTitle: String,
     val platformSlug: String,
     val emulatorId: String,
-    val localSavePath: String? = null
+    val localSavePath: String? = null,
+    val coreName: String? = null
 )
 
 data class PreparedSave(

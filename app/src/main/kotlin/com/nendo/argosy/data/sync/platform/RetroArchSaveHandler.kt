@@ -60,7 +60,7 @@ class RetroArchSaveHandler @Inject constructor(
         }
 
     suspend fun discoverSavePath(context: SaveContext): String? {
-        val coreName = SavePathRegistry.getRetroArchCore(context.platformSlug)
+        val coreName = context.coreName ?: SavePathRegistry.getRetroArchCore(context.platformSlug)
         if (coreName == null) {
             Logger.debug(TAG, "discoverSavePath: No core mapping for platform | platform=${context.platformSlug}")
             return null
@@ -90,7 +90,7 @@ class RetroArchSaveHandler @Inject constructor(
     }
 
     suspend fun constructSavePath(context: SaveContext): String? {
-        val coreName = SavePathRegistry.getRetroArchCore(context.platformSlug)
+        val coreName = context.coreName ?: SavePathRegistry.getRetroArchCore(context.platformSlug)
         if (coreName == null) {
             Logger.debug(TAG, "constructSavePath: No core mapping for platform | platform=${context.platformSlug}")
             return null

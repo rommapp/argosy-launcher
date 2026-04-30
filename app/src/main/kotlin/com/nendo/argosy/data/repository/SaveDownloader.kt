@@ -90,6 +90,7 @@ class SaveDownloader @Inject constructor(
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Using emulator=$resolvedEmulatorId (original=$emulatorId)")
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val preferredCore = client.resolveCoreForGame(game)
 
         val serverSave = try {
             (if (deviceId != null) api.getSaveWithDevice(saveId, deviceId) else api.getSave(saveId)).body()
@@ -133,6 +134,7 @@ class SaveDownloader @Inject constructor(
                         platformSlug = game.platformSlug,
                         romPath = game.localPath,
                         cachedTitleId = game.titleId,
+                        coreName = preferredCore,
                         emulatorPackage = emulatorPackage,
                         gameId = gameId,
                         isFolderSaveSyncEnabled = folderSyncEnabled
@@ -153,6 +155,7 @@ class SaveDownloader @Inject constructor(
                     platformSlug = game.platformSlug,
                     romPath = game.localPath,
                     cachedTitleId = game.titleId,
+                    coreName = preferredCore,
                     emulatorPackage = emulatorPackage,
                     gameId = gameId,
                     isFolderSaveSyncEnabled = folderSyncEnabled
@@ -167,13 +170,14 @@ class SaveDownloader @Inject constructor(
                     platformSlug = game.platformSlug,
                     romPath = game.localPath,
                     cachedTitleId = null,
+                    coreName = preferredCore,
                     emulatorPackage = emulatorPackage,
                     gameId = gameId,
                     isFolderSaveSyncEnabled = folderSyncEnabled
                 )
             } else discovered
 
-            (retried ?: savePathResolver.constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath)).also {
+            (retried ?: savePathResolver.constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath, preferredCore)).also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, discovered=${retried != null}, path=$it")
             }
         }
@@ -300,7 +304,8 @@ class SaveDownloader @Inject constructor(
                     gameTitle = game.title,
                     platformSlug = game.platformSlug,
                     emulatorId = resolvedEmulatorId,
-                    localSavePath = targetPath
+                    localSavePath = targetPath,
+                    coreName = preferredCore
                 )
                 val handler = client.getHandler(config, game.platformSlug, resolvedEmulatorId)
                 val result = handler.extractDownload(tempZipFile, saveContext)
@@ -343,7 +348,8 @@ class SaveDownloader @Inject constructor(
                         gameId = gameId,
                         gameTitle = game.title,
                         platformSlug = game.platformSlug,
-                        emulatorId = resolvedEmulatorId
+                        emulatorId = resolvedEmulatorId,
+                        coreName = preferredCore
                     )
                     val result = gciSaveHandler.extractDownload(tempGciFile, saveContext)
                     if (!result.success) {

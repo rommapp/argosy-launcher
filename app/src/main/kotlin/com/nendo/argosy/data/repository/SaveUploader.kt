@@ -86,6 +86,7 @@ class SaveUploader @Inject constructor(
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Using emulator=$resolvedEmulatorId (original=$emulatorId)")
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val preferredCore = client.resolveCoreForGame(game)
 
         val folderSyncEnabled = client.isFolderSaveSyncEnabled()
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
@@ -101,6 +102,7 @@ class SaveUploader @Inject constructor(
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
                 cachedTitleId = game.titleId,
+                coreName = preferredCore,
                 emulatorPackage = emulatorPackage,
                 gameId = gameId,
                 isFolderSaveSyncEnabled = folderSyncEnabled
@@ -115,6 +117,7 @@ class SaveUploader @Inject constructor(
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
                 cachedTitleId = null,
+                coreName = preferredCore,
                 emulatorPackage = emulatorPackage,
                 gameId = gameId,
                 isFolderSaveSyncEnabled = folderSyncEnabled
@@ -162,7 +165,8 @@ class SaveUploader @Inject constructor(
             gameTitle = game.title,
             platformSlug = game.platformSlug,
             emulatorId = resolvedEmulatorId,
-            localSavePath = localPath
+            localSavePath = localPath,
+            coreName = preferredCore
         )
 
         val prepared = handler.prepareForUpload(localPath, saveContext)

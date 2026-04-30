@@ -103,6 +103,13 @@ class SaveSyncApiClient @Inject constructor(
         return null
     }
 
+    internal suspend fun resolveCoreForGame(game: GameEntity): String? {
+        val gameConfig = emulatorConfigDao.getByGameId(game.id)
+        if (gameConfig?.coreName != null) return gameConfig.coreName
+        val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
+        return platformConfig?.coreName
+    }
+
     suspend fun deleteServerSaves(saveIds: List<Long>): Boolean = withContext(Dispatchers.IO) {
         if (saveIds.isEmpty()) return@withContext true
         val api = this@SaveSyncApiClient.api ?: return@withContext false
@@ -297,8 +304,9 @@ class SaveSyncApiClient @Inject constructor(
         emulatorId: String,
         gameTitle: String,
         platformSlug: String,
-        romPath: String?
-    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath)
+        romPath: String?,
+        coreName: String? = null
+    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
 
     internal suspend fun <T> withRetry(
         maxAttempts: Int = 3,

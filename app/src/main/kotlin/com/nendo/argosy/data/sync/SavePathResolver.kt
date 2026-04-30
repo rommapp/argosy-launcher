@@ -472,12 +472,13 @@ class SavePathResolver @Inject constructor(
         emulatorId: String,
         gameTitle: String,
         platformSlug: String,
-        romPath: String?
+        romPath: String?,
+        coreName: String? = null
     ): String? {
         val config = SavePathRegistry.getConfig(emulatorId) ?: return null
 
         if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
-            return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath)
+            return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
         }
 
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
@@ -508,19 +509,21 @@ class SavePathResolver @Inject constructor(
         emulatorId: String,
         gameTitle: String,
         platformSlug: String,
-        romPath: String?
+        romPath: String?,
+        preferredCore: String? = null
     ): String? {
         val raConfig = retroArchConfigParser.parse(
             com.nendo.argosy.data.emulator.RetroArchPathResolver.packageForEmulatorId(emulatorId)
         )
-        val coreName = SavePathRegistry.getRetroArchCore(platformSlug, raConfig?.lastLoadedCore)
+        val resolvedCore = preferredCore
+            ?: SavePathRegistry.getRetroArchCore(platformSlug, raConfig?.lastLoadedCore)
             ?: return null
         val saveConfig = SavePathRegistry.getConfig(emulatorId) ?: return null
         val extension = saveConfig.saveExtensions.firstOrNull() ?: "srm"
 
         val req = com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
             emulatorId = emulatorId,
-            coreName = coreName,
+            coreName = resolvedCore,
             romPath = romPath,
         )
         val dirs = retroArchPathResolver.resolveSaveDirectories(req)

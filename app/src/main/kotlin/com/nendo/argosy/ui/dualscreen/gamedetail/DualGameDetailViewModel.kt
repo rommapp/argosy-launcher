@@ -21,6 +21,9 @@ import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.steam.SteamDownloadState
 import com.nendo.argosy.ui.common.appId
+import com.nendo.argosy.ui.common.isAndroidApp
+import com.nendo.argosy.ui.common.isRommGame
+import com.nendo.argosy.ui.common.isSteamGame
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.model.GameSource
@@ -353,10 +356,10 @@ class DualGameDetailViewModel(
                 isLoading = false,
                 achievementCount = game.achievementCount,
                 earnedAchievementCount = game.earnedAchievementCount,
-                isRommGame = game.rommId != null,
-                isSteamGame = game.source == GameSource.STEAM || game.steamAppId != null,
+                isRommGame = game.isRommGame,
+                isSteamGame = game.isSteamGame,
                 steamAppId = game.steamAppId,
-                isAndroidApp = game.source == GameSource.ANDROID_APP,
+                isAndroidApp = game.isAndroidApp,
                 isDownloaded = isDownloaded,
                 platformSlug = game.platformSlug,
                 platformId = game.platformId,

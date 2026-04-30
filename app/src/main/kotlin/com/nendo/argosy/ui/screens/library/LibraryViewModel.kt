@@ -36,6 +36,7 @@ import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.ui.common.toLibraryGameUi
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -1205,47 +1206,17 @@ class LibraryViewModel @Inject constructor(
         collectionModalDelegate.createAndAdd(viewModelScope, name)
     }
 
-    private fun GameEntity.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): LibraryGameUi {
-        return LibraryGameUi(
-            id = id,
-            title = title,
-            sortTitle = sortTitle,
-            platformId = platformId,
-            platformSlug = platformSlug,
-            platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
-            coverPath = coverPath,
-            gradientColors = gradientExtractionDelegate.getGradient(id),
-            source = source,
-            isFavorite = isFavorite,
-            isDownloaded = localPath != null || source == GameSource.ANDROID_APP,
-            isRommGame = rommId != null || source == GameSource.STEAM,
-            isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
-            emulatorName = null,
-            needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP,
-            isHidden = isHidden
+    private fun GameEntity.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): LibraryGameUi =
+        toLibraryGameUi(
+            platformDisplayName = platformDisplayNames[platformId],
+            gradientColors = gradientExtractionDelegate.getGradient(id)
         )
-    }
 
-    private fun GameListItem.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): LibraryGameUi {
-        return LibraryGameUi(
-            id = id,
-            title = title,
-            sortTitle = sortTitle,
-            platformId = platformId,
-            platformSlug = platformSlug,
-            platformDisplayName = platformDisplayNames[platformId] ?: platformSlug,
-            coverPath = coverPath,
-            gradientColors = gradientExtractionDelegate.getGradient(id),
-            source = source,
-            isFavorite = isFavorite,
-            isDownloaded = isDownloaded || source == GameSource.ANDROID_APP,
-            isRommGame = rommId != null,
-            isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
-            emulatorName = null,
-            needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP,
-            isHidden = isHidden
+    private fun GameListItem.toUi(platformDisplayNames: Map<Long, String> = emptyMap()): LibraryGameUi =
+        toLibraryGameUi(
+            platformDisplayName = platformDisplayNames[platformId],
+            gradientColors = gradientExtractionDelegate.getGradient(id)
         )
-    }
 
     fun enterTouchMode() {
         _uiState.update { it.copy(isTouchMode = true, hasSelectedGame = false) }

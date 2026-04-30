@@ -39,6 +39,8 @@ import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
+import com.nendo.argosy.ui.common.isAndroidApp
+import com.nendo.argosy.ui.common.isSteamGame
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
@@ -426,8 +428,8 @@ class GameDetailViewModel @Inject constructor(
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null
 
-            val isSteamGame = game.source == GameSource.STEAM || game.steamAppId != null
-            val isAndroidApp = game.source == GameSource.ANDROID_APP || game.platformSlug == "android"
+            val isSteamGame = game.isSteamGame
+            val isAndroidApp = game.isAndroidApp
             val steamLauncherName = if (isSteamGame) {
                 game.steamLauncher?.let { SteamLaunchers.getByPackage(it)?.displayName } ?: "Auto"
             } else null

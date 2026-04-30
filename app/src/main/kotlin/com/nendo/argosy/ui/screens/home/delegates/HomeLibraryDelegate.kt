@@ -17,6 +17,7 @@ import com.nendo.argosy.domain.usecase.recommendation.GenerateRecommendationsUse
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
+import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.common.GameGradientRequest
 import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -653,43 +654,10 @@ class HomeLibraryDelegate @Inject constructor(
         )
     }
 
-    private fun GameEntity.toUi(): HomeGameUi {
-        val firstScreenshot = screenshotPaths?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
-        val effectiveBackground = backgroundPath ?: firstScreenshot ?: coverPath
-        val newThreshold = Instant.now().minus(24, ChronoUnit.HOURS)
-        return HomeGameUi(
-            id = id,
-            title = title,
-            platformId = platformId,
-            platformSlug = platformSlug,
-            platformDisplayName = cachedPlatformDisplayNames[platformId] ?: platformSlug,
-            coverPath = coverPath,
-            gradientColors = gradientExtractionDelegate.getGradient(id),
-            backgroundPath = effectiveBackground,
-            developer = developer,
-            releaseYear = releaseYear,
-            genre = genre,
-            isFavorite = isFavorite,
-            isDownloaded = when {
-                source == GameSource.ANDROID_APP -> true
-                steamAppId != null && isExternallyManaged -> true
-                steamAppId != null && localPath != null -> java.io.File(localPath, ".download_complete").exists()
-                else -> localPath != null
-            },
-            isRommGame = rommId != null || source == GameSource.STEAM,
-            isSteamGame = source == GameSource.STEAM || steamAppId != null,
-            rating = rating,
-            userRating = userRating,
-            userDifficulty = userDifficulty,
-            achievementCount = achievementCount,
-            earnedAchievementCount = earnedAchievementCount,
-            isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
-            packageName = packageName,
-            needsInstall = platformSlug == "android" && localPath != null && packageName == null && source != GameSource.ANDROID_APP,
-            youtubeVideoId = youtubeVideoId,
-            isNew = addedAt.isAfter(newThreshold) && lastPlayed == null
-        )
-    }
+    private fun GameEntity.toUi(): HomeGameUi = toHomeGameUi(
+        platformDisplayName = cachedPlatformDisplayNames[platformId],
+        gradientColors = gradientExtractionDelegate.getGradient(id)
+    )
 }
 
 data class RefreshResult(

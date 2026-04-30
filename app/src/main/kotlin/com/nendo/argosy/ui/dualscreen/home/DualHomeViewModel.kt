@@ -31,6 +31,7 @@ import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.util.DisplayAffinityHelper
@@ -1243,46 +1244,7 @@ class DualHomeViewModel(
 
     // --- Private: Entity to UI ---
 
-    private fun GameEntity.toUi(): HomeGameUi {
-        val firstScreenshot = screenshotPaths?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
-        val effectiveBackground = backgroundPath ?: firstScreenshot ?: coverPath
-        val isDownloaded = when {
-            source == GameSource.ANDROID_APP -> true
-            steamAppId != null && localPath != null -> java.io.File(localPath, ".download_complete").exists()
-            else -> localPath != null
-        }
-        val isPlayable = isDownloaded || source == GameSource.ANDROID_APP
-        return HomeGameUi(
-            id = id,
-            title = title,
-            platformId = platformId,
-            platformSlug = platformSlug,
-            platformDisplayName = platformSlug,
-            coverPath = coverPath,
-            gradientColors = null,
-            backgroundPath = effectiveBackground,
-            developer = developer,
-            releaseYear = releaseYear,
-            genre = genre,
-            isFavorite = isFavorite,
-            isDownloaded = isDownloaded,
-            isRommGame = rommId != null,
-            rating = rating,
-            userRating = userRating,
-            userDifficulty = userDifficulty,
-            sortTitle = sortTitle,
-            gameModes = gameModes,
-            franchises = franchises,
-            addedAt = addedAt.toEpochMilli(),
-            playCount = playCount,
-            playTimeMinutes = playTimeMinutes,
-            lastPlayedAt = lastPlayed?.toEpochMilli(),
-            isPlayable = isPlayable,
-            description = description,
-            status = status,
-            titleId = null
-        )
-    }
+    private fun GameEntity.toUi(): HomeGameUi = toHomeGameUi()
 
     // --- Cover Repair ---
 

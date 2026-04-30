@@ -5,6 +5,9 @@ import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.steam.resolveSteamGenres
+import com.nendo.argosy.ui.common.isAndroidApp
+import com.nendo.argosy.ui.common.isRommGame
+import com.nendo.argosy.ui.common.isSteamGame
 
 fun GameEntity.toGameDetailUi(
     platformName: String,
@@ -46,7 +49,7 @@ fun GameEntity.toGameDetailUi(
         userDifficulty = userDifficulty,
         completion = completion,
         status = status,
-        isRommGame = rommId != null || source == GameSource.STEAM,
+        isRommGame = isRommGame,
         isFavorite = isFavorite,
         playCount = playCount,
         playTimeMinutes = playTimeMinutes,
@@ -61,13 +64,13 @@ fun GameEntity.toGameDetailUi(
         hasMultipleCores = hasMultipleCores,
         selectedCoreName = selectedCoreName,
         canManageSaves = canManageSaves,
-        isSteamGame = source == GameSource.STEAM || steamAppId != null,
+        isSteamGame = isSteamGame,
         steamLauncherName = steamLauncherName,
         isExternallyManaged = isExternallyManaged,
         managingLauncherDisplayName = steamLauncher
             ?.takeIf { it != GameEntity.LAUNCHER_UNSPECIFIED }
             ?.let { SteamLaunchers.displayNameForPackage(it) },
-        isAndroidApp = source == GameSource.ANDROID_APP || platformSlug == "android",
+        isAndroidApp = isAndroidApp,
         packageName = packageName,
         isHidden = isHidden,
         titleId = titleId,

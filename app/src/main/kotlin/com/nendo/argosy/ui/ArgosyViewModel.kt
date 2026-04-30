@@ -15,7 +15,6 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadQueueState
 import com.nendo.argosy.data.emulator.LaunchResult
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.netplay.NetplayPreflightChecker
 import com.nendo.argosy.data.netplay.NetplayPreflightResult
 import com.nendo.argosy.data.social.Friend
@@ -174,7 +173,6 @@ class ArgosyViewModel @Inject constructor(
     private val netplayPreflightChecker: NetplayPreflightChecker,
     private val netplayJoinService: com.nendo.argosy.data.netplay.NetplayJoinService,
     private val launchGameUseCase: LaunchGameUseCase,
-    private val gameDao: GameDao,
     private val homeLibraryDelegate: com.nendo.argosy.ui.screens.home.delegates.HomeLibraryDelegate
 ) : ViewModel() {
 
@@ -942,7 +940,7 @@ class ArgosyViewModel @Inject constructor(
                     )
                     return@launch
                 }
-                gameDao.getByIgdbId(igdbId)?.id ?: run {
+                gameRepository.getByIgdbId(igdbId)?.id ?: run {
                     notificationManager.show(
                         title = "Can't join ${session.gameTitle}",
                         subtitle = "Local game not found",
@@ -1024,7 +1022,7 @@ class ArgosyViewModel @Inject constructor(
                 )
                 return@launch
             }
-            val game = gameDao.getByIgdbId(igdbId) ?: run {
+            val game = gameRepository.getByIgdbId(igdbId) ?: run {
                 notificationManager.show(
                     title = "Can't join ${invite.gameTitle}",
                     subtitle = "Local game not found",

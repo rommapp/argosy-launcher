@@ -64,6 +64,7 @@ import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+import com.nendo.argosy.util.formatRelativeTimeShort
 
 @Composable
 fun SyncOverlay(
@@ -561,8 +562,8 @@ private fun PostSessionConflictContent(
 
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-        val localLabel = formatTimestamp(localTimestamp)
-        val serverLabel = formatTimestamp(serverTimestamp)
+        val localLabel = formatRelativeTimeShort(localTimestamp)
+        val serverLabel = formatRelativeTimeShort(serverTimestamp)
         val deviceSuffix = if (serverDeviceName != null) " ($serverDeviceName)" else ""
 
         Row(
@@ -619,19 +620,6 @@ private fun TimestampLabel(
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(Dimens.iconMd))
         Text(label, style = MaterialTheme.typography.labelMedium, color = tint)
         Text(timestamp, style = MaterialTheme.typography.bodySmall, color = tint)
-    }
-}
-
-private fun formatTimestamp(instant: java.time.Instant): String {
-    val now = java.time.Instant.now()
-    val duration = java.time.Duration.between(instant, now)
-    return when {
-        duration.isNegative -> "in the future"
-        duration.toMinutes() < 1 -> "just now"
-        duration.toHours() < 1 -> "${duration.toMinutes()}m ago"
-        duration.toDays() < 1 -> "${duration.toHours()}h ago"
-        duration.toDays() < 30 -> "${duration.toDays()}d ago"
-        else -> "${duration.toDays() / 30}mo ago"
     }
 }
 

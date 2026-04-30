@@ -72,6 +72,7 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.util.formatBytes
 
 @Composable
 fun DownloadsScreen(
@@ -518,14 +519,6 @@ private fun DownloadCover(download: DownloadProgress) {
             )
         }
     }
-}
-
-private fun formatBytes(bytes: Long): String {
-    if (bytes <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB")
-    val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
-    val safeIndex = digitGroups.coerceIn(0, units.lastIndex)
-    return String.format(java.util.Locale.US, "%.1f %s", bytes / Math.pow(1024.0, safeIndex.toDouble()), units[safeIndex])
 }
 
 private fun formatSpeed(bytesPerSecond: Long): String {

@@ -36,8 +36,7 @@ import androidx.compose.ui.zIndex
 import com.nendo.argosy.data.social.SocialNotification
 import com.nendo.argosy.data.social.SocialUser
 import com.nendo.argosy.ui.util.clickableNoFocus
-import java.time.Duration
-import java.time.Instant
+import com.nendo.argosy.util.formatRelativeTime
 
 @Composable
 fun NotificationsTabContent(
@@ -256,37 +255,6 @@ private fun formatNotificationText(notification: SocialNotification): String {
         "friend_accepted" -> "$actorName accepted your friend request"
         "friend_added" -> "$actorName added you as a friend"
         else -> "New notification"
-    }
-}
-
-private fun formatRelativeTime(timestamp: String): String {
-    return try {
-        val instant = parseTimestamp(timestamp)
-        val now = Instant.now()
-        val duration = Duration.between(instant, now)
-
-        when {
-            duration.toMinutes() < 1 -> "Just now"
-            duration.toMinutes() < 60 -> "${duration.toMinutes()}m ago"
-            duration.toHours() < 24 -> "${duration.toHours()}h ago"
-            duration.toDays() < 7 -> "${duration.toDays()}d ago"
-            duration.toDays() < 30 -> "${duration.toDays() / 7}w ago"
-            else -> "${duration.toDays() / 30}mo ago"
-        }
-    } catch (e: Exception) {
-        ""
-    }
-}
-
-private fun parseTimestamp(timestamp: String): Instant {
-    return try {
-        Instant.parse(timestamp)
-    } catch (e: Exception) {
-        try {
-            java.time.OffsetDateTime.parse(timestamp).toInstant()
-        } catch (e: Exception) {
-            Instant.now()
-        }
     }
 }
 

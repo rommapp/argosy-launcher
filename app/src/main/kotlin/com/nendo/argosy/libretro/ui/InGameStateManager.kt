@@ -44,8 +44,8 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.nendo.argosy.libretro.SaveStateManager
-import com.nendo.argosy.ui.common.savechannel.formatSize
-import com.nendo.argosy.ui.common.savechannel.formatTimestamp
+import com.nendo.argosy.util.formatSaveSize
+import com.nendo.argosy.util.formatSaveTimestamp
 import com.nendo.argosy.ui.components.FooterBarWithState
 import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
@@ -339,12 +339,12 @@ private fun SplitLayout(
                     )
                     if (focusedSlot.timestamp != null) {
                         Text(
-                            text = formatTimestamp(focusedSlot.timestamp),
+                            text = formatSaveTimestamp(focusedSlot.timestamp),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.7f)
                         )
                         Text(
-                            text = formatSize(focusedSlot.size),
+                            text = formatSaveSize(focusedSlot.size),
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.5f)
                         )
@@ -476,12 +476,12 @@ private fun CarouselLayout(
                 if (focusedSlot.timestamp != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = formatTimestamp(focusedSlot.timestamp),
+                            text = formatSaveTimestamp(focusedSlot.timestamp),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.7f)
                         )
                         Text(
-                            text = formatSize(focusedSlot.size),
+                            text = formatSaveSize(focusedSlot.size),
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.5f)
                         )
@@ -574,14 +574,14 @@ private fun SlotCard(
 
         if (!isEmpty && slot.timestamp != null) {
             Text(
-                text = formatTimestamp(slot.timestamp),
+                text = formatSaveTimestamp(slot.timestamp),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = formatSize(slot.size),
+                text = formatSaveSize(slot.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 maxLines = 1

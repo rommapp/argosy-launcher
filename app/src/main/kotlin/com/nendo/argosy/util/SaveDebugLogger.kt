@@ -71,7 +71,7 @@ object SaveDebugLogger {
             gameName = gameName,
             channel = channel,
             details = buildString {
-                append("size=${formatSize(sizeBytes)}")
+                append("size=${formatBytes(sizeBytes)}")
                 append(", hash=${contentHash.take(12)}...")
                 append(", hardcore=$isHardcore")
                 append(", needsSync=$needsRemoteSync")
@@ -154,7 +154,7 @@ object SaveDebugLogger {
             gameId = gameId,
             gameName = gameName,
             channel = channel,
-            details = "size=${formatSize(sizeBytes)}, hash=${contentHash.take(12)}..."
+            details = "size=${formatBytes(sizeBytes)}, hash=${contentHash.take(12)}..."
         )
     }
 
@@ -216,7 +216,7 @@ object SaveDebugLogger {
             gameId = gameId,
             gameName = gameName,
             channel = channel,
-            details = "size=${formatSize(sizeBytes)}, duration=${durationMs}ms"
+            details = "size=${formatBytes(sizeBytes)}, duration=${durationMs}ms"
         )
     }
 
@@ -499,14 +499,6 @@ object SaveDebugLogger {
         } catch (_: Exception) { }
         fileWriter = null
         currentLogDate = null
-    }
-
-    private fun formatSize(bytes: Long): String {
-        return when {
-            bytes < 1024 -> "${bytes}B"
-            bytes < 1024 * 1024 -> "${bytes / 1024}KB"
-            else -> "${bytes / (1024 * 1024)}MB"
-        }
     }
 
     private fun formatInstant(instant: Instant): String {

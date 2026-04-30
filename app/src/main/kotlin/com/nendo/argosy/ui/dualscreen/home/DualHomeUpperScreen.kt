@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.theme.ALauncherColors
+import com.nendo.argosy.util.formatPlayTime
 import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -365,14 +366,6 @@ private fun StatsCard(
                 color = MaterialTheme.colorScheme.primary
             )
         }
-    }
-}
-
-private fun formatPlayTime(minutes: Int): String {
-    return when {
-        minutes < 60 -> "${minutes}m"
-        minutes < 1440 -> "${minutes / 60}h ${minutes % 60}m"
-        else -> "${minutes / 60}h"
     }
 }
 

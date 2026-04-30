@@ -50,6 +50,9 @@ import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
 import com.nendo.argosy.ui.common.StateScreenshotViewer
+import com.nendo.argosy.util.formatSaveSize
+import com.nendo.argosy.util.formatSaveTimestamp
+
 @Composable
 fun SaveChannelModal(
     state: SaveChannelState,
@@ -636,7 +639,7 @@ private fun HistoryRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = formatTimestamp(item.timestamp),
+                    text = formatSaveTimestamp(item.timestamp),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
@@ -658,7 +661,7 @@ private fun HistoryRow(
                 }
             }
             Text(
-                text = formatSize(item.size),
+                text = formatSaveSize(item.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

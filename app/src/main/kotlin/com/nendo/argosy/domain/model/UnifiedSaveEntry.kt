@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.model
 
+import com.nendo.argosy.util.formatAbsoluteTimestamp
 import java.time.Instant
 
 data class UnifiedSaveEntry(
@@ -32,12 +33,6 @@ data class UnifiedSaveEntry(
             channelName != null && isLatest -> "$channelName [Latest]"
             channelName != null -> channelName
             isLatest -> "Latest"
-            else -> formatTimestamp()
+            else -> formatAbsoluteTimestamp(timestamp)
         }
-
-    private fun formatTimestamp(): String {
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
-            .withZone(java.time.ZoneId.systemDefault())
-        return formatter.format(timestamp)
-    }
 }

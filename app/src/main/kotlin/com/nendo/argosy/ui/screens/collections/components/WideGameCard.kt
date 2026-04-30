@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.collections.components
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.focusBorder
+import com.nendo.argosy.util.formatPlayTime
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -349,15 +350,5 @@ private fun FooterStat(
             color = contentColor
         )
     }
-}
-
-private fun formatPlayTime(minutes: Int): String = when {
-    minutes < 60 -> "${minutes}m"
-    minutes < 600 -> {
-        val hours = minutes / 60
-        val mins = minutes % 60
-        if (mins > 0) "${hours}h ${mins}m" else "${hours}h"
-    }
-    else -> "${minutes / 60}h"
 }
 

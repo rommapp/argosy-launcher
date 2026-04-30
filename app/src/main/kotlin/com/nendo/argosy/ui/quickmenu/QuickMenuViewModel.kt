@@ -10,6 +10,8 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.usecase.quickmenu.GetTopUnplayedUseCase
 import com.nendo.argosy.ui.screens.common.LibrarySyncBus
 import com.nendo.argosy.util.FuzzySearch
+import com.nendo.argosy.util.formatPlayTime
+import com.nendo.argosy.util.formatRelativeTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,8 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Duration
-import java.time.Instant
 import javax.inject.Inject
 
 enum class QuickMenuOrb {
@@ -375,25 +375,7 @@ class QuickMenuViewModel @Inject constructor(
         }
     }
 
-    private fun formatPlayTime(minutes: Int): String {
-        val hours = minutes / 60
-        val mins = minutes % 60
-        return if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
-    }
-
     private fun formatRating(rating: Float?): String {
         return rating?.let { "${it.toInt()}%" } ?: ""
-    }
-
-    private fun formatRelativeTime(instant: Instant?): String {
-        if (instant == null) return ""
-        val days = Duration.between(instant, Instant.now()).toDays()
-        return when {
-            days == 0L -> "Today"
-            days == 1L -> "Yesterday"
-            days < 7 -> "${days}d ago"
-            days < 30 -> "${days / 7}w ago"
-            else -> "${days / 30}mo ago"
-        }
     }
 }

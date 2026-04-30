@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.UnifiedStateEntry
+import com.nendo.argosy.util.formatSaveTimestamp
 import java.io.File
 
 @Composable
@@ -105,7 +106,7 @@ fun StateSlotRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = formatTimestamp(entry.timestamp.toEpochMilli()),
+                        text = formatSaveTimestamp(entry.timestamp.toEpochMilli()),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

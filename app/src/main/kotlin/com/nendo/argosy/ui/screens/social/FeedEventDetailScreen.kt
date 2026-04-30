@@ -78,6 +78,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.parseInlineMarkdown
 import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.util.formatRelativeTime
 import com.nendo.argosy.ui.screens.doodle.CanvasSize
 import com.nendo.argosy.ui.screens.doodle.DoodleEncoder
 import com.nendo.argosy.ui.screens.doodle.DoodlePreview
@@ -87,8 +88,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import java.time.Duration
-import java.time.Instant
 import javax.inject.Inject
 
 data class FeedEventDetailUiState(
@@ -1115,43 +1114,6 @@ private fun parseColor(hexColor: String): Color {
         Color(android.graphics.Color.parseColor(hexColor))
     } catch (e: Exception) {
         Color(0xFF6366F1)
-    }
-}
-
-private fun formatRelativeTime(timestamp: String): String {
-    return try {
-        val instant = parseTimestamp(timestamp)
-        val now = Instant.now()
-        val duration = Duration.between(instant, now)
-
-        when {
-            duration.isNegative -> "now"
-            duration.toMinutes() < 1 -> "now"
-            duration.toMinutes() < 60 -> "${duration.toMinutes()}m ago"
-            duration.toHours() < 24 -> "${duration.toHours()}h ago"
-            duration.toDays() < 7 -> "${duration.toDays()}d ago"
-            duration.toDays() < 30 -> "${duration.toDays() / 7}w ago"
-            else -> "${duration.toDays() / 30}mo ago"
-        }
-    } catch (e: Exception) {
-        ""
-    }
-}
-
-private fun parseTimestamp(timestamp: String): Instant {
-    return try {
-        Instant.parse(timestamp)
-    } catch (e: Exception) {
-        val epochValue = timestamp.toLongOrNull()
-        if (epochValue != null) {
-            when {
-                epochValue > 1_000_000_000_000_000L -> Instant.ofEpochSecond(epochValue / 1_000_000_000)
-                epochValue > 1_000_000_000_000L -> Instant.ofEpochMilli(epochValue)
-                else -> Instant.ofEpochSecond(epochValue)
-            }
-        } else {
-            throw IllegalArgumentException("Unknown timestamp format: $timestamp")
-        }
     }
 }
 

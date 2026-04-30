@@ -45,6 +45,7 @@ import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.util.formatPlayTime
 import java.io.File
 
 private val EXPANDED_COVER_WIDTH = 200.dp
@@ -525,13 +526,3 @@ internal fun CollapsedHeader(
     }
 }
 
-private fun formatPlayTime(minutes: Int): String {
-    return when {
-        minutes < 60 -> "${minutes}m"
-        minutes < 1440 -> "${minutes / 60}h ${minutes % 60}m"
-        else -> {
-            val hours = minutes / 60
-            "${hours}h"
-        }
-    }
-}

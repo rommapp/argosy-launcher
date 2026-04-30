@@ -89,8 +89,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.util.clickableNoFocus
-import java.time.Duration
-import java.time.Instant
+import com.nendo.argosy.util.formatRelativeTime
 
 @Composable
 fun SocialScreen(
@@ -1274,43 +1273,6 @@ private fun parseColor(hexColor: String): Color {
         Color(android.graphics.Color.parseColor(hexColor))
     } catch (e: Exception) {
         Color(0xFF6366F1)
-    }
-}
-
-private fun formatRelativeTime(timestamp: String): String {
-    return try {
-        val instant = parseTimestamp(timestamp)
-        val now = Instant.now()
-        val duration = Duration.between(instant, now)
-
-        when {
-            duration.isNegative -> "now"
-            duration.toMinutes() < 1 -> "now"
-            duration.toMinutes() < 60 -> "${duration.toMinutes()}m ago"
-            duration.toHours() < 24 -> "${duration.toHours()}h ago"
-            duration.toDays() < 7 -> "${duration.toDays()}d ago"
-            duration.toDays() < 30 -> "${duration.toDays() / 7}w ago"
-            else -> "${duration.toDays() / 30}mo ago"
-        }
-    } catch (e: Exception) {
-        ""
-    }
-}
-
-private fun parseTimestamp(timestamp: String): Instant {
-    return try {
-        Instant.parse(timestamp)
-    } catch (e: Exception) {
-        val epochValue = timestamp.toLongOrNull()
-        if (epochValue != null) {
-            when {
-                epochValue > 1_000_000_000_000_000L -> Instant.ofEpochSecond(epochValue / 1_000_000_000)
-                epochValue > 1_000_000_000_000L -> Instant.ofEpochMilli(epochValue)
-                else -> Instant.ofEpochSecond(epochValue)
-            }
-        } else {
-            throw IllegalArgumentException("Unknown timestamp format: $timestamp")
-        }
     }
 }
 

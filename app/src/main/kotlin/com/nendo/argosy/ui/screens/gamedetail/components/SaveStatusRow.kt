@@ -25,7 +25,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
-import java.time.Duration
+import com.nendo.argosy.util.formatAbsoluteTimestamp
+import com.nendo.argosy.util.formatRelativeTimeVerbose
 import java.time.Instant
 
 enum class SaveSyncStatus {
@@ -46,7 +47,7 @@ data class SaveStatusInfo(
     val displayLabel: String
         get() = when {
             channelName != null -> channelName
-            activeSaveTimestamp != null -> formatTimestamp(activeSaveTimestamp)
+            activeSaveTimestamp != null -> formatAbsoluteTimestamp(activeSaveTimestamp)
             else -> "Latest"
         }
 
@@ -55,8 +56,8 @@ data class SaveStatusInfo(
 
     val displayTime: String?
         get() = when {
-            activeSaveTimestamp != null -> formatRelativeFromEpoch(activeSaveTimestamp)
-            lastSyncTime != null -> formatRelativeTime(lastSyncTime)
+            activeSaveTimestamp != null -> formatRelativeTimeVerbose(Instant.ofEpochMilli(activeSaveTimestamp))
+            lastSyncTime != null -> formatRelativeTimeVerbose(lastSyncTime)
             else -> null
         }
 }
@@ -156,26 +157,3 @@ private val SaveSyncStatus.displayName: String
         SaveSyncStatus.NOT_CONFIGURED -> "Not configured"
     }
 
-private fun formatRelativeTime(instant: Instant): String {
-    val now = Instant.now()
-    val duration = Duration.between(instant, now)
-
-    return when {
-        duration.toMinutes() < 1 -> "just now"
-        duration.toMinutes() < 60 -> "${duration.toMinutes()} min ago"
-        duration.toHours() < 24 -> "${duration.toHours()} hr ago"
-        duration.toDays() < 7 -> "${duration.toDays()} days ago"
-        else -> "${duration.toDays() / 7} weeks ago"
-    }
-}
-
-private fun formatRelativeFromEpoch(epochMillis: Long): String {
-    return formatRelativeTime(Instant.ofEpochMilli(epochMillis))
-}
-
-private fun formatTimestamp(epochMillis: Long): String {
-    val instant = Instant.ofEpochMilli(epochMillis)
-    val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d, h:mm a")
-        .withZone(java.time.ZoneId.systemDefault())
-    return formatter.format(instant)
-}

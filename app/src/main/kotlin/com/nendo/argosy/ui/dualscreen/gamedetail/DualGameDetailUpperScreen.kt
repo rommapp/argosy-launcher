@@ -62,6 +62,7 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
 import com.nendo.argosy.ui.util.touchOnly
+import com.nendo.argosy.util.formatPlayTime
 import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -1035,14 +1036,6 @@ private fun StatePreviewDisplay(
         )
 
         footerHints()
-    }
-}
-
-private fun formatPlayTime(minutes: Int): String {
-    return when {
-        minutes < 60 -> "${minutes}m"
-        minutes < 1440 -> "${minutes / 60}h ${minutes % 60}m"
-        else -> "${minutes / 60}h"
     }
 }
 

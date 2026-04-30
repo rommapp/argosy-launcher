@@ -577,6 +577,7 @@ class SecondaryHomeActivity :
             emulatorConfigDao = dsm.emulatorConfigDao,
             downloadQueueRepository = dsm.downloadQueueRepository,
             steamRepository = dsm.steamRepository,
+            configureEmulatorUseCase = dsm.configureEmulatorUseCase,
             steamContentManager = dsm.steamContentManager,
             displayAffinityHelper = affinityHelper
         )

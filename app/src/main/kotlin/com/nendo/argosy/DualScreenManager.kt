@@ -88,6 +88,7 @@ class DualScreenManager(
     private val edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
+    internal val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
     internal val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao,
     internal val steamRepository: com.nendo.argosy.data.repository.SteamRepository,
     internal val playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker,
@@ -1607,6 +1608,7 @@ class DualScreenManager(
             emulatorConfigDao = emulatorConfigDao,
             downloadQueueRepository = downloadQueueRepository,
             steamRepository = steamRepository,
+            configureEmulatorUseCase = configureEmulatorUseCase,
             steamContentManager = steamContentManager,
             displayAffinityHelper = displayAffinityHelper,
             context = appContext

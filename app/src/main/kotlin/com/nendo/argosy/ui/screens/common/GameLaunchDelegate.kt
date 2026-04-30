@@ -42,6 +42,16 @@ import javax.inject.Inject
 enum class HardcoreConflictChoice { KEEP_HARDCORE, DOWNGRADE_TO_CASUAL, KEEP_LOCAL }
 enum class LocalModifiedChoice { KEEP_LOCAL, RESTORE_SELECTED }
 
+data class LaunchResultCallbacks(
+    val onLaunch: (Intent) -> Unit,
+    val onSelectDisc: ((List<DiscOption>) -> Unit)? = null,
+    val onSelectVariant: ((List<com.nendo.argosy.data.emulator.VariantOption>) -> Unit)? = null,
+    val onNoEmulator: (() -> Unit)? = null,
+    val onNoCore: (() -> Unit)? = null,
+    val onMissingDiscs: ((List<Int>) -> Unit)? = null,
+    val onLaunchFailed: () -> Unit = {}
+)
+
 data class SyncOverlayState(
     val gameTitle: String,
     val syncProgress: SyncProgress,
@@ -160,63 +170,8 @@ class GameLaunchDelegate @Inject constructor(
                 val resolvedVariantId = variantResolver.resolveVariant(game)?.id
 
                 if (canResume) {
-                    when (val result = launchGameUseCase(gameId, discId, forResume = true, variantFileId = resolvedVariantId, prefetchedGame = game)) {
-                        is LaunchResult.Success -> {
-                            soundManager.play(SoundType.LAUNCH_GAME)
-                            onLaunch(result.intent)
-                        }
-                        is LaunchResult.SelectDisc -> {
-                            _discPickerState.value = DiscPickerState(
-                                gameId = result.gameId,
-                                discs = result.discs,
-                                channelName = channelName,
-                                onLaunch = onLaunch
-                            )
-                        }
-                        is LaunchResult.SelectVariant -> {
-                            _variantPickerState.value = VariantPickerState(
-                                gameId = result.gameId,
-                                variants = result.variants,
-                                channelName = channelName,
-                                onLaunch = onLaunch
-                            )
-                        }
-                        is LaunchResult.NoEmulator -> {
-                            notificationManager.showError("No emulator installed for this platform")
-                            onLaunchFailed()
-                        }
-                        is LaunchResult.NoRomFile -> {
-                            notificationManager.showError("ROM file not found")
-                            onLaunchFailed()
-                        }
-                        is LaunchResult.NoSteamLauncher -> {
-                            notificationManager.showError("Steam launcher not installed")
-                            onLaunchFailed()
-                        }
-                        is LaunchResult.NoCore -> {
-                            val base = "No core available for ${result.platformSlug}"
-                            val message = result.reason?.let { "$base: $it" } ?: base
-                            notificationManager.showError(message)
-                            onLaunchFailed()
-                        }
-                        is LaunchResult.MissingDiscs -> {
-                            val discText = result.missingDiscNumbers.joinToString(", ")
-                            notificationManager.showError("Missing discs: $discText. View game details to repair.")
-                            onLaunchFailed()
-                        }
-                        is LaunchResult.NoScummVMGameId -> {
-                            notificationManager.showError("Missing .scummvm file for ${result.gameName}")
-                            onLaunchFailed()
-                        }
-                        is LaunchResult.Error -> {
-                            notificationManager.showError(result.message)
-                            onLaunchFailed()
-                        }
-                        is LaunchResult.NoAndroidApp -> {
-                            notificationManager.showError("Android app not installed: ${result.packageName}")
-                            onLaunchFailed()
-                        }
-                    }
+                    val result = launchGameUseCase(gameId, discId, forResume = true, variantFileId = resolvedVariantId, prefetchedGame = game)
+                    dispatchPrimaryLaunchResult(result, channelName, launchMode = null, onLaunch, onLaunchFailed)
                     return@launch
                 }
 
@@ -348,76 +303,73 @@ class GameLaunchDelegate @Inject constructor(
                     else -> null
                 }
 
-                when (val result = launchGameUseCase(gameId, discId, variantFileId = resolvedVariantId, prefetchedGame = game)) {
-                    is LaunchResult.Success -> {
-                        soundManager.play(SoundType.LAUNCH_GAME)
-                        val intent = if (launchMode != null) {
-                            result.intent.apply {
-                                putExtra(LaunchMode.EXTRA_LAUNCH_MODE, launchMode.name)
-                            }
-                        } else {
-                            result.intent
-                        }
-                        onLaunch(intent)
-                    }
-                    is LaunchResult.SelectDisc -> {
-                        _discPickerState.value = DiscPickerState(
-                            gameId = result.gameId,
-                            discs = result.discs,
-                            channelName = channelName,
-                            launchMode = launchMode,
-                            onLaunch = onLaunch
-                        )
-                    }
-                    is LaunchResult.SelectVariant -> {
-                        _variantPickerState.value = VariantPickerState(
-                            gameId = result.gameId,
-                            variants = result.variants,
-                            channelName = channelName,
-                            launchMode = launchMode,
-                            onLaunch = onLaunch
-                        )
-                    }
-                    is LaunchResult.NoEmulator -> {
-                        notificationManager.showError("No emulator installed for this platform")
-                        onLaunchFailed()
-                    }
-                    is LaunchResult.NoRomFile -> {
-                        notificationManager.showError("ROM file not found")
-                        onLaunchFailed()
-                    }
-                    is LaunchResult.NoSteamLauncher -> {
-                        notificationManager.showError("Steam launcher not installed")
-                        onLaunchFailed()
-                    }
-                    is LaunchResult.NoCore -> {
-                        val base = "No core available for ${result.platformSlug}"
-                        val message = result.reason?.let { "$base: $it" } ?: base
-                        notificationManager.showError(message)
-                        onLaunchFailed()
-                    }
-                    is LaunchResult.MissingDiscs -> {
-                        val discText = result.missingDiscNumbers.joinToString(", ")
-                        notificationManager.showError("Missing discs: $discText. View game details to repair.")
-                        onLaunchFailed()
-                    }
-                    is LaunchResult.NoScummVMGameId -> {
-                        notificationManager.showError("Missing .scummvm file for ${result.gameName}")
-                        onLaunchFailed()
-                    }
-                    is LaunchResult.Error -> {
-                        notificationManager.showError(result.message)
-                        onLaunchFailed()
-                    }
-                    is LaunchResult.NoAndroidApp -> {
-                        notificationManager.showError("Android app not installed: ${result.packageName}")
-                        onLaunchFailed()
-                    }
-                }
+                val result = launchGameUseCase(gameId, discId, variantFileId = resolvedVariantId, prefetchedGame = game)
+                dispatchPrimaryLaunchResult(result, channelName, launchMode, onLaunch, onLaunchFailed)
             } finally {
                 _syncOverlayState.value = null
             }
         }
+    }
+
+    private fun dispatchPrimaryLaunchResult(
+        result: LaunchResult,
+        channelName: String?,
+        launchMode: LaunchMode?,
+        onLaunch: (Intent) -> Unit,
+        onLaunchFailed: () -> Unit
+    ) {
+        when (result) {
+            is LaunchResult.Success -> {
+                soundManager.play(SoundType.LAUNCH_GAME)
+                onLaunch(applyLaunchMode(result.intent, launchMode))
+            }
+            is LaunchResult.SelectDisc -> {
+                _discPickerState.value = DiscPickerState(
+                    gameId = result.gameId,
+                    discs = result.discs,
+                    channelName = channelName,
+                    launchMode = launchMode,
+                    onLaunch = onLaunch
+                )
+            }
+            is LaunchResult.SelectVariant -> {
+                _variantPickerState.value = VariantPickerState(
+                    gameId = result.gameId,
+                    variants = result.variants,
+                    channelName = channelName,
+                    launchMode = launchMode,
+                    onLaunch = onLaunch
+                )
+            }
+            else -> dispatchErrorResult(result, onLaunchFailed)
+        }
+    }
+
+    private fun dispatchErrorResult(result: LaunchResult, onLaunchFailed: () -> Unit) {
+        when (result) {
+            is LaunchResult.NoEmulator -> notificationManager.showError("No emulator installed for this platform")
+            is LaunchResult.NoRomFile -> notificationManager.showError("ROM file not found")
+            is LaunchResult.NoSteamLauncher -> notificationManager.showError("Steam launcher not installed")
+            is LaunchResult.NoCore -> {
+                val base = "No core available for ${result.platformSlug}"
+                val message = result.reason?.let { "$base: $it" } ?: base
+                notificationManager.showError(message)
+            }
+            is LaunchResult.MissingDiscs -> {
+                val discText = result.missingDiscNumbers.joinToString(", ")
+                notificationManager.showError("Missing discs: $discText. View game details to repair.")
+            }
+            is LaunchResult.NoScummVMGameId -> notificationManager.showError("Missing .scummvm file for ${result.gameName}")
+            is LaunchResult.NoAndroidApp -> notificationManager.showError("Android app not installed: ${result.packageName}")
+            is LaunchResult.Error -> notificationManager.showError(result.message)
+            else -> { /* Success/SelectDisc/SelectVariant handled elsewhere */ }
+        }
+        onLaunchFailed()
+    }
+
+    private fun applyLaunchMode(intent: Intent, launchMode: LaunchMode?): Intent {
+        if (launchMode == null) return intent
+        return intent.apply { putExtra(LaunchMode.EXTRA_LAUNCH_MODE, launchMode.name) }
     }
 
     private fun forceStopIfVita3K(scope: CoroutineScope, session: ActiveSession) {
@@ -619,21 +571,10 @@ class GameLaunchDelegate @Inject constructor(
             when (result) {
                 is LaunchResult.Success -> {
                     soundManager.play(SoundType.LAUNCH_GAME)
-                    val intent = if (state.launchMode != null) {
-                        result.intent.apply {
-                            putExtra(LaunchMode.EXTRA_LAUNCH_MODE, state.launchMode.name)
-                        }
-                    } else {
-                        result.intent
-                    }
-                    state.onLaunch(intent)
+                    state.onLaunch(applyLaunchMode(result.intent, state.launchMode))
                 }
-                is LaunchResult.Error -> {
-                    notificationManager.showError(result.message)
-                }
-                else -> {
-                    notificationManager.showError("Failed to launch disc")
-                }
+                is LaunchResult.Error -> notificationManager.showError(result.message)
+                else -> notificationManager.showError("Failed to launch disc")
             }
         }
     }
@@ -642,5 +583,62 @@ class GameLaunchDelegate @Inject constructor(
         _discPickerState.value = null
         _onLaunchFailed?.invoke()
         _onLaunchFailed = null
+    }
+
+    fun launchSimple(
+        scope: CoroutineScope,
+        gameId: Long,
+        discId: Long? = null,
+        selectedDiscPath: String? = null,
+        variantFileId: Long? = null,
+        launchMode: LaunchMode? = null,
+        callbacks: LaunchResultCallbacks
+    ) {
+        scope.launch {
+            val result = launchGameUseCase(
+                gameId = gameId,
+                discId = discId,
+                selectedDiscPath = selectedDiscPath,
+                variantFileId = variantFileId
+            )
+            dispatchSimpleResult(result, launchMode, callbacks)
+        }
+    }
+
+    private fun dispatchSimpleResult(
+        result: LaunchResult,
+        launchMode: LaunchMode?,
+        callbacks: LaunchResultCallbacks
+    ) {
+        when (result) {
+            is LaunchResult.Success -> {
+                soundManager.play(SoundType.LAUNCH_GAME)
+                callbacks.onLaunch(applyLaunchMode(result.intent, launchMode))
+            }
+            is LaunchResult.SelectDisc -> {
+                val handler = callbacks.onSelectDisc
+                if (handler != null) handler(result.discs)
+                else dispatchErrorResult(result, callbacks.onLaunchFailed)
+            }
+            is LaunchResult.SelectVariant -> {
+                val handler = callbacks.onSelectVariant
+                if (handler != null) handler(result.variants)
+                else dispatchErrorResult(result, callbacks.onLaunchFailed)
+            }
+            is LaunchResult.NoEmulator -> {
+                val handler = callbacks.onNoEmulator
+                if (handler != null) handler() else dispatchErrorResult(result, callbacks.onLaunchFailed)
+            }
+            is LaunchResult.NoCore -> {
+                val handler = callbacks.onNoCore
+                if (handler != null) handler() else dispatchErrorResult(result, callbacks.onLaunchFailed)
+            }
+            is LaunchResult.MissingDiscs -> {
+                val handler = callbacks.onMissingDiscs
+                if (handler != null) handler(result.missingDiscNumbers)
+                else dispatchErrorResult(result, callbacks.onLaunchFailed)
+            }
+            else -> dispatchErrorResult(result, callbacks.onLaunchFailed)
+        }
     }
 }

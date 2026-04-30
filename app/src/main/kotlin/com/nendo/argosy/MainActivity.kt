@@ -64,6 +64,8 @@ private const val TAG = "MainActivity"
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var gameDao: GameDao
+    @Inject lateinit var gameRepository: com.nendo.argosy.data.repository.GameRepository
+    @Inject lateinit var configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
     @Inject lateinit var platformRepository: PlatformRepository
     @Inject lateinit var collectionRepository: CollectionRepository
     @Inject lateinit var downloadQueueDao: DownloadQueueDao
@@ -247,6 +249,7 @@ class MainActivity : ComponentActivity() {
                 edenContentManager = edenContentManager,
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
+                configureEmulatorUseCase = configureEmulatorUseCase,
                 steamDownloadQueueDao = steamDownloadQueueDao,
                 steamRepository = steamRepository,
                 playSessionTracker = playSessionTracker,

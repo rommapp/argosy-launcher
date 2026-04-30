@@ -27,6 +27,7 @@ class SecondaryHomeStateManager(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val downloadQueueRepository: DownloadQueueRepository,
     private val steamRepository: SteamRepository,
+    private val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper
 ) {
@@ -118,6 +119,7 @@ class SecondaryHomeStateManager(
                 emulatorConfigDao = emulatorConfigDao,
                 downloadQueueRepository = downloadQueueRepository,
                 steamRepository = steamRepository,
+                configureEmulatorUseCase = configureEmulatorUseCase,
                 steamContentManager = steamContentManager,
                 displayAffinityHelper = affinityHelper,
                 context = context
@@ -202,6 +204,7 @@ class SecondaryHomeStateManager(
             emulatorConfigDao = emulatorConfigDao,
             downloadQueueRepository = downloadQueueRepository,
             steamRepository = steamRepository,
+            configureEmulatorUseCase = configureEmulatorUseCase,
             steamContentManager = steamContentManager,
             displayAffinityHelper = affinityHelper,
             context = context

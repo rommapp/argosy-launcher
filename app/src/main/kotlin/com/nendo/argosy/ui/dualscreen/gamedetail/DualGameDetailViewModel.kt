@@ -13,12 +13,11 @@ import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.SteamRepository
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
-import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.download.ZipExtractor
-import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.steam.SteamDownloadState
 import com.nendo.argosy.ui.common.appId
 import com.nendo.argosy.ui.common.isAndroidApp
@@ -54,6 +53,7 @@ class DualGameDetailViewModel(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val downloadQueueRepository: DownloadQueueRepository,
     private val steamRepository: SteamRepository,
+    private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val context: Context
@@ -801,21 +801,6 @@ class DualGameDetailViewModel(
         }
     }
 
-    fun getPlayIntent(gameId: Long): Pair<Intent, android.os.Bundle?> {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("argosy://play/$gameId")
-            setPackage(context.packageName)
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP
-            )
-        }
-        val options =
-            displayAffinityHelper.getActivityOptions(forEmulator = true)
-        return intent to options
-    }
-
     fun getGameDetailIntent(
         gameId: Long
     ): Pair<Intent, android.os.Bundle?> {
@@ -878,21 +863,7 @@ class DualGameDetailViewModel(
         val selected = if (index == 0) null else emulators.getOrNull(index - 1)
         val state = _uiState.value
         viewModelScope.launch {
-            emulatorConfigDao.deleteGameOverride(state.gameId)
-            if (selected != null) {
-                emulatorConfigDao.insert(
-                    EmulatorConfigEntity(
-                        platformId = state.platformId,
-                        gameId = state.gameId,
-                        packageName = selected.def.packageName,
-                        displayName = selected.def.displayName,
-                        coreName = EmulatorRegistry.getDefaultCore(
-                            state.platformSlug
-                        )?.id,
-                        isDefault = false
-                    )
-                )
-            }
+            configureEmulatorUseCase.setForGame(state.gameId, state.platformId, state.platformSlug, selected)
             _uiState.update {
                 it.copy(emulatorName = selected?.def?.displayName)
             }
@@ -912,7 +883,7 @@ class DualGameDetailViewModel(
         val state = _uiState.value
         viewModelScope.launch {
             val coreId = selectedCore?.id
-            emulatorConfigDao.updateCoreNameForGame(state.gameId, coreId)
+            configureEmulatorUseCase.setCoreForGame(state.gameId, coreId)
             _uiState.update {
                 it.copy(
                     selectedCoreName = selectedCore?.displayName,

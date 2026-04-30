@@ -11,7 +11,6 @@ import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.EmulatorResolver
-import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -30,7 +29,6 @@ import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
-import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -84,7 +82,6 @@ class GameDetailViewModel @Inject constructor(
     private val notificationManager: NotificationManager,
     private val gameRepository: GameRepository,
     private val gameNavigationContext: GameNavigationContext,
-    private val launchGameUseCase: LaunchGameUseCase,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val romMRepository: RomMRepository,
     private val soundManager: SoundFeedbackManager,
@@ -349,19 +346,12 @@ class GameDetailViewModel @Inject constructor(
                 loadGame(currentGameId)
             }
             is PickerSelection.Disc -> {
-                val result = launchGameUseCase(currentGameId, selectedDiscPath = selection.discPath)
-                when (result) {
-                    is LaunchResult.Success -> {
-                        soundManager.play(SoundType.LAUNCH_GAME)
-                        val options = displayAffinityHelper.getActivityOptions(
-                            forEmulator = true,
-                            rolesSwapped = sessionStateStore.isRolesSwapped()
-                        )
-                        _launchEvents.emit(LaunchEvent.LaunchIntent(result.intent, options))
-                    }
-                    is LaunchResult.Error -> notificationManager.showError(result.message)
-                    else -> notificationManager.showError("Failed to launch disc")
-                }
+                gameLaunchDelegate.launchSimple(
+                    scope = viewModelScope,
+                    gameId = currentGameId,
+                    selectedDiscPath = selection.discPath,
+                    callbacks = makeLaunchCallbacks()
+                )
             }
             is PickerSelection.UpdateFile -> {
                 val game = _uiState.value.game ?: return
@@ -374,20 +364,12 @@ class GameDetailViewModel @Inject constructor(
                 applyUpdateToEmulator(selection.file)
             }
             is PickerSelection.Variant -> {
-                val result = launchGameUseCase(currentGameId, variantFileId = selection.variantFileId)
-                when (result) {
-                    is LaunchResult.Success -> {
-                        soundManager.play(SoundType.LAUNCH_GAME)
-                        val options = displayAffinityHelper.getActivityOptions(
-                            forEmulator = true,
-                            rolesSwapped = sessionStateStore.isRolesSwapped()
-                        )
-                        _launchEvents.emit(LaunchEvent.LaunchIntent(result.intent, options))
-                    }
-                    is LaunchResult.SelectDisc -> pickerModalDelegate.showDiscPicker(result.discs)
-                    is LaunchResult.Error -> notificationManager.showError(result.message)
-                    else -> {}
-                }
+                gameLaunchDelegate.launchSimple(
+                    scope = viewModelScope,
+                    gameId = currentGameId,
+                    variantFileId = selection.variantFileId,
+                    callbacks = makeLaunchCallbacks()
+                )
             }
         }
     }
@@ -872,30 +854,30 @@ class GameDetailViewModel @Inject constructor(
             }
         }
 
-        val result = launchGameUseCase(currentGameId)
-        when (result) {
-            is LaunchResult.Success -> {
-                val intentWithMode = result.intent.apply {
-                    putExtra(com.nendo.argosy.libretro.LaunchMode.EXTRA_LAUNCH_MODE, launchMode.name)
-                }
-                soundManager.play(SoundType.LAUNCH_GAME)
-                val options = displayAffinityHelper.getActivityOptions(
-                    forEmulator = true, rolesSwapped = sessionStateStore.isRolesSwapped()
-                )
-                _launchEvents.emit(LaunchEvent.LaunchIntent(intentWithMode, options))
-            }
-            is LaunchResult.SelectDisc -> pickerModalDelegate.showDiscPicker(result.discs)
-            is LaunchResult.SelectVariant -> pickerModalDelegate.showVariantPicker(result.variants)
-            is LaunchResult.NoEmulator -> showEmulatorPicker()
-            is LaunchResult.NoCore -> showCorePicker()
-            is LaunchResult.MissingDiscs -> downloadDelegate.showMissingDiscPrompt(result.missingDiscNumbers)
-            is LaunchResult.Error -> notificationManager.showError(result.message)
-            is LaunchResult.NoRomFile -> notificationManager.showError("ROM file not found")
-            is LaunchResult.NoSteamLauncher -> notificationManager.showError("Steam launcher not installed")
-            is LaunchResult.NoAndroidApp -> notificationManager.showError("App not installed: ${result.packageName}")
-            is LaunchResult.NoScummVMGameId -> notificationManager.showError("No ScummVM game ID found")
-        }
+        gameLaunchDelegate.launchSimple(
+            scope = viewModelScope,
+            gameId = currentGameId,
+            launchMode = launchMode,
+            callbacks = makeLaunchCallbacks()
+        )
     }
+
+    private fun makeLaunchCallbacks(): com.nendo.argosy.ui.screens.common.LaunchResultCallbacks =
+        com.nendo.argosy.ui.screens.common.LaunchResultCallbacks(
+            onLaunch = { intent ->
+                viewModelScope.launch {
+                    val options = displayAffinityHelper.getActivityOptions(
+                        forEmulator = true, rolesSwapped = sessionStateStore.isRolesSwapped()
+                    )
+                    _launchEvents.emit(LaunchEvent.LaunchIntent(intent, options))
+                }
+            },
+            onSelectDisc = { discs -> pickerModalDelegate.showDiscPicker(discs) },
+            onSelectVariant = { variants -> pickerModalDelegate.showVariantPicker(variants) },
+            onNoEmulator = { showEmulatorPicker() },
+            onNoCore = { showCorePicker() },
+            onMissingDiscs = { missing -> downloadDelegate.showMissingDiscPrompt(missing) }
+        )
 
     // --- More Options delegate forwarding ---
 

@@ -24,14 +24,14 @@ import kotlinx.coroutines.withContext
 internal fun routeSetBuiltinShader(vm: SettingsViewModel, value: String) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(shader = value)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinShader(value)
+        vm.libretroSettingsRepo.setBuiltinShader(value)
     }
 }
 
 internal fun routeSetBuiltinFramesEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(framesEnabled = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinFramesEnabled(enabled)
+        vm.libretroSettingsRepo.setBuiltinFramesEnabled(enabled)
     }
 }
 
@@ -69,7 +69,7 @@ internal fun routeSetBuiltinArchitecture(vm: SettingsViewModel, value: String) {
     val override = architectureDisplayToAbi(value)
     LibretroBuildbot.abiOverride = override
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setArchitectureOverride(override)
+        vm.libretroSettingsRepo.setArchitectureOverride(override)
         vm.coreManager.migrateAbiIfNeeded()
     }
 }
@@ -89,7 +89,7 @@ internal fun routeSetBuiltinLibretroEnabled(vm: SettingsViewModel, enabled: Bool
         )
     }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinLibretroEnabled(enabled)
+        vm.libretroSettingsRepo.setBuiltinLibretroEnabled(enabled)
         if (!enabled) {
             vm.configureEmulatorUseCase.clearBuiltinSelections()
         }
@@ -100,14 +100,14 @@ internal fun routeSetBuiltinLibretroEnabled(vm: SettingsViewModel, enabled: Bool
 internal fun routeSetBuiltinFilter(vm: SettingsViewModel, value: String) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(filter = value)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinFilter(value)
+        vm.libretroSettingsRepo.setBuiltinFilter(value)
     }
 }
 
 internal fun routeSetBuiltinAspectRatio(vm: SettingsViewModel, value: String) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(aspectRatio = value)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinAspectRatio(value)
+        vm.libretroSettingsRepo.setBuiltinAspectRatio(value)
     }
 }
 
@@ -119,8 +119,8 @@ internal fun routeSetBuiltinSkipDuplicateFrames(vm: SettingsViewModel, enabled: 
         ))
     }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinSkipDuplicateFrames(enabled)
-        if (enabled) vm.preferencesRepository.setBuiltinBlackFrameInsertion(false)
+        vm.libretroSettingsRepo.setBuiltinSkipDuplicateFrames(enabled)
+        if (enabled) vm.libretroSettingsRepo.setBuiltinBlackFrameInsertion(false)
     }
 }
 
@@ -132,8 +132,8 @@ internal fun routeSetBuiltinLowLatencyAudio(vm: SettingsViewModel, enabled: Bool
         ))
     }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinLowLatencyAudio(enabled)
-        if (enabled) vm.preferencesRepository.setBuiltinBlackFrameInsertion(false)
+        vm.libretroSettingsRepo.setBuiltinLowLatencyAudio(enabled)
+        if (enabled) vm.libretroSettingsRepo.setBuiltinBlackFrameInsertion(false)
     }
 }
 
@@ -142,36 +142,36 @@ internal fun routeSetBuiltinVSync(vm: SettingsViewModel, enabled: Boolean) {
         it.copy(builtinVideo = it.builtinVideo.copy(vsync = enabled))
     }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinForceSoftwareTiming(!enabled)
+        vm.libretroSettingsRepo.setBuiltinForceSoftwareTiming(!enabled)
     }
 }
 
 internal fun routeSetBuiltinFastForwardEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(fastForwardEnabled = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinFastForwardEnabled(enabled)
+        vm.libretroSettingsRepo.setBuiltinFastForwardEnabled(enabled)
     }
 }
 
 internal fun routeSetBuiltinRewindEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(rewindEnabled = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinRewindEnabled(enabled)
+        vm.libretroSettingsRepo.setBuiltinRewindEnabled(enabled)
     }
 }
 
 internal fun routeSetBuiltinAutoSaveState(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(autoSaveState = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinAutoSaveState(enabled)
+        vm.libretroSettingsRepo.setBuiltinAutoSaveState(enabled)
     }
 }
 
 internal fun routeSetBuiltinAutoRestoreState(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(autoRestoreState = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinAutoRestoreState(enabled)
-        vm.preferencesRepository.setBuiltinAutoRestoreStateMode(if (enabled) "restore" else "off")
+        vm.libretroSettingsRepo.setBuiltinAutoRestoreState(enabled)
+        vm.libretroSettingsRepo.setBuiltinAutoRestoreStateMode(if (enabled) "restore" else "off")
     }
 }
 
@@ -257,15 +257,15 @@ private fun commitBuiltinPathChange(
             BuiltinPathType.SAVE -> {
                 val defaultPath = vm.context.filesDir.resolve("libretro/saves").absolutePath
                 val custom = newPath != defaultPath
-                if (custom) vm.preferencesRepository.setBuiltinCustomSavePath(newPath)
-                else vm.preferencesRepository.setBuiltinCustomSavePath(null)
+                if (custom) vm.libretroSettingsRepo.setBuiltinCustomSavePath(newPath)
+                else vm.libretroSettingsRepo.setBuiltinCustomSavePath(null)
                 custom
             }
             BuiltinPathType.STATE -> {
                 val defaultPath = vm.context.filesDir.resolve("libretro/states").absolutePath
                 val custom = newPath != defaultPath
-                if (custom) vm.preferencesRepository.setBuiltinCustomStatePath(newPath)
-                else vm.preferencesRepository.setBuiltinCustomStatePath(null)
+                if (custom) vm.libretroSettingsRepo.setBuiltinCustomStatePath(newPath)
+                else vm.libretroSettingsRepo.setBuiltinCustomStatePath(null)
                 custom
             }
         }
@@ -282,40 +282,40 @@ private fun commitBuiltinPathChange(
 
 internal fun routeSetPlatformBuiltinSavePath(vm: SettingsViewModel, platformId: Long, newPath: String) {
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId)
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformId)
             ?: PlatformLibretroSettingsEntity(platformId = platformId)
-        vm.platformLibretroSettingsDao.upsert(current.copy(savePath = newPath))
+        vm.libretroSettingsRepo.upsert(current.copy(savePath = newPath))
     }
 }
 
 internal fun routeResetPlatformBuiltinSavePath(vm: SettingsViewModel, platformId: Long) {
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId) ?: return@launch
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformId) ?: return@launch
         val updated = current.copy(savePath = null)
         if (updated.hasAnyOverrides()) {
-            vm.platformLibretroSettingsDao.upsert(updated)
+            vm.libretroSettingsRepo.upsert(updated)
         } else {
-            vm.platformLibretroSettingsDao.deleteByPlatformId(platformId)
+            vm.libretroSettingsRepo.deleteByPlatformId(platformId)
         }
     }
 }
 
 internal fun routeSetPlatformBuiltinStatePath(vm: SettingsViewModel, platformId: Long, newPath: String) {
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId)
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformId)
             ?: PlatformLibretroSettingsEntity(platformId = platformId)
-        vm.platformLibretroSettingsDao.upsert(current.copy(statePath = newPath))
+        vm.libretroSettingsRepo.upsert(current.copy(statePath = newPath))
     }
 }
 
 internal fun routeResetPlatformBuiltinStatePath(vm: SettingsViewModel, platformId: Long) {
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformId) ?: return@launch
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformId) ?: return@launch
         val updated = current.copy(statePath = null)
         if (updated.hasAnyOverrides()) {
-            vm.platformLibretroSettingsDao.upsert(updated)
+            vm.libretroSettingsRepo.upsert(updated)
         } else {
-            vm.platformLibretroSettingsDao.deleteByPlatformId(platformId)
+            vm.libretroSettingsRepo.deleteByPlatformId(platformId)
         }
     }
 }
@@ -345,42 +345,42 @@ private fun migrateFiles(source: java.io.File, destination: java.io.File) {
 internal fun routeSetBuiltinRumbleEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(rumbleEnabled = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinRumbleEnabled(enabled)
+        vm.libretroSettingsRepo.setBuiltinRumbleEnabled(enabled)
     }
 }
 
 internal fun routeSetBuiltinLimitHotkeysToPlayer1(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(limitHotkeysToPlayer1 = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinLimitHotkeysToPlayer1(enabled)
+        vm.libretroSettingsRepo.setBuiltinLimitHotkeysToPlayer1(enabled)
     }
 }
 
 internal fun routeSetBuiltinFastForwardMode(vm: SettingsViewModel, mode: com.nendo.argosy.data.local.entity.FastForwardMode) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(fastForwardMode = mode)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinFastForwardMode(mode)
+        vm.libretroSettingsRepo.setBuiltinFastForwardMode(mode)
     }
 }
 
 internal fun routeSetBuiltinFastForwardPreservePitch(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(fastForwardPreservePitch = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinFastForwardPreservePitch(enabled)
+        vm.libretroSettingsRepo.setBuiltinFastForwardPreservePitch(enabled)
     }
 }
 
 internal fun routeSetBuiltinAnalogAsDpad(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(analogAsDpad = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinAnalogAsDpad(enabled)
+        vm.libretroSettingsRepo.setBuiltinAnalogAsDpad(enabled)
     }
 }
 
 internal fun routeSetBuiltinDpadAsAnalog(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(dpadAsAnalog = enabled)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinDpadAsAnalog(enabled)
+        vm.libretroSettingsRepo.setBuiltinDpadAsAnalog(enabled)
     }
 }
 
@@ -433,10 +433,10 @@ internal fun routeSetBuiltinBlackFrameInsertion(vm: SettingsViewModel, enabled: 
         ))
     }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinBlackFrameInsertion(enabled)
+        vm.libretroSettingsRepo.setBuiltinBlackFrameInsertion(enabled)
         if (enabled) {
-            vm.preferencesRepository.setBuiltinSkipDuplicateFrames(false)
-            vm.preferencesRepository.setBuiltinLowLatencyAudio(false)
+            vm.libretroSettingsRepo.setBuiltinSkipDuplicateFrames(false)
+            vm.libretroSettingsRepo.setBuiltinLowLatencyAudio(false)
         }
     }
 }
@@ -505,7 +505,7 @@ internal fun routeCycleBuiltinOverscanCrop(vm: SettingsViewModel, direction: Int
 private fun routeSetBuiltinFastForwardSpeed(vm: SettingsViewModel, speed: Int) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(fastForwardSpeed = "${speed}x")) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinFastForwardSpeed(speed)
+        vm.libretroSettingsRepo.setBuiltinFastForwardSpeed(speed)
     }
 }
 
@@ -518,7 +518,7 @@ internal fun routeCycleBuiltinRewindSpeed(vm: SettingsViewModel, direction: Int)
     val next = options[nextIndex]
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(rewindSpeed = "${next}x")) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinRewindSpeed(next)
+        vm.libretroSettingsRepo.setBuiltinRewindSpeed(next)
     }
 }
 
@@ -531,7 +531,7 @@ internal fun routeCycleBuiltinRewindBufferDuration(vm: SettingsViewModel, direct
     val next = options[nextIndex]
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(rewindBufferDuration = "${next}s")) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinRewindBufferDuration(next)
+        vm.libretroSettingsRepo.setBuiltinRewindBufferDuration(next)
     }
 }
 
@@ -546,7 +546,7 @@ private fun routeSetBuiltinRotation(vm: SettingsViewModel, rotation: Int) {
     }
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(rotation = display)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinRotation(rotation)
+        vm.libretroSettingsRepo.setBuiltinRotation(rotation)
     }
 }
 
@@ -554,14 +554,14 @@ private fun routeSetBuiltinOverscanCrop(vm: SettingsViewModel, crop: Int) {
     val display = if (crop == 0) "Off" else "${crop}px"
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(overscanCrop = display)) }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinOverscanCrop(crop)
+        vm.libretroSettingsRepo.setBuiltinOverscanCrop(crop)
     }
 }
 
 internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: LibretroSettingDef, value: String?) {
     val platformContext = vm._uiState.value.builtinVideo.currentPlatformContext ?: return
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformContext.platformId)
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformContext.platformId)
             ?: PlatformLibretroSettingsEntity(platformId = platformContext.platformId)
 
         val updated = when (setting) {
@@ -590,9 +590,9 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
         }
 
         if (updated.hasAnyOverrides()) {
-            vm.platformLibretroSettingsDao.upsert(updated)
+            vm.libretroSettingsRepo.upsert(updated)
         } else {
-            vm.platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            vm.libretroSettingsRepo.deleteByPlatformId(platformContext.platformId)
         }
     }
 }
@@ -600,7 +600,7 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
 internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
     val platformContext = vm._uiState.value.builtinVideo.currentPlatformContext ?: return
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformContext.platformId) ?: return@launch
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformContext.platformId) ?: return@launch
         val updated = current.copy(
             shader = null, filter = null, aspectRatio = null, rotation = null,
             overscanCrop = null, frame = null, blackFrameInsertion = null, fastForwardEnabled = null, fastForwardSpeed = null,
@@ -608,9 +608,9 @@ internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
             skipDuplicateFrames = null, lowLatencyAudio = null, vsync = null
         )
         if (updated.hasAnyOverrides()) {
-            vm.platformLibretroSettingsDao.upsert(updated)
+            vm.libretroSettingsRepo.upsert(updated)
         } else {
-            vm.platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            vm.libretroSettingsRepo.deleteByPlatformId(platformContext.platformId)
         }
     }
 }
@@ -618,7 +618,7 @@ internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
 internal fun routeUpdatePlatformControlSetting(vm: SettingsViewModel, field: String, value: Boolean?) {
     val platformContext = vm._uiState.value.builtinVideo.currentPlatformContext ?: return
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformContext.platformId)
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformContext.platformId)
             ?: PlatformLibretroSettingsEntity(platformId = platformContext.platformId)
         val updated = when (field) {
             "analogAsDpad" -> current.copy(analogAsDpad = value)
@@ -627,9 +627,9 @@ internal fun routeUpdatePlatformControlSetting(vm: SettingsViewModel, field: Str
             else -> return@launch
         }
         if (updated.hasAnyOverrides()) {
-            vm.platformLibretroSettingsDao.upsert(updated)
+            vm.libretroSettingsRepo.upsert(updated)
         } else {
-            vm.platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            vm.libretroSettingsRepo.deleteByPlatformId(platformContext.platformId)
         }
     }
 }
@@ -637,12 +637,12 @@ internal fun routeUpdatePlatformControlSetting(vm: SettingsViewModel, field: Str
 internal fun routeResetAllPlatformControlSettings(vm: SettingsViewModel) {
     val platformContext = vm._uiState.value.builtinVideo.currentPlatformContext ?: return
     vm.viewModelScope.launch {
-        val current = vm.platformLibretroSettingsDao.getByPlatformId(platformContext.platformId) ?: return@launch
+        val current = vm.libretroSettingsRepo.getByPlatformId(platformContext.platformId) ?: return@launch
         val updated = current.copy(analogAsDpad = null, dpadAsAnalog = null, rumbleEnabled = null)
         if (updated.hasAnyOverrides()) {
-            vm.platformLibretroSettingsDao.upsert(updated)
+            vm.libretroSettingsRepo.upsert(updated)
         } else {
-            vm.platformLibretroSettingsDao.deleteByPlatformId(platformContext.platformId)
+            vm.libretroSettingsRepo.deleteByPlatformId(platformContext.platformId)
         }
     }
 }
@@ -677,7 +677,7 @@ internal fun routeLoadCoreManagementState(vm: SettingsViewModel, preserveFocus: 
         val currentState = vm._uiState.value.coreManagement
         val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(vm.context)
         val syncEnabledPlatforms = vm.platformRepository.getSyncEnabledPlatforms()
-        val coreSelections = vm.preferencesRepository.getBuiltinCoreSelections().first()
+        val coreSelections = vm.libretroSettingsRepo.getBuiltinCoreSelections().first()
         val installedCoreIds = vm.getInstalledCoreIds()
         val updatableCoreIds = vm.coreManager.getCoreIdsWithUpdatesAvailable()
 
@@ -787,7 +787,7 @@ internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
     }
 
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinCoreForPlatform(platform.platformSlug, core.coreId)
+        vm.libretroSettingsRepo.setBuiltinCoreForPlatform(platform.platformSlug, core.coreId)
         vm.loadCoreManagementState(preserveFocus = true)
     }
 }
@@ -893,8 +893,8 @@ internal fun routePersistShaderChain(vm: SettingsViewModel, config: ShaderChainC
         ))
     }
     vm.viewModelScope.launch {
-        vm.preferencesRepository.setBuiltinShader(shaderMode)
-        vm.preferencesRepository.setBuiltinShaderChain(json)
+        vm.libretroSettingsRepo.setBuiltinShader(shaderMode)
+        vm.libretroSettingsRepo.setBuiltinShaderChain(json)
     }
 }
 

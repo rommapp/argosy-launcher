@@ -204,7 +204,7 @@ internal fun routeObserveConnectionState(vm: SettingsViewModel) {
 }
 
 internal fun routeObservePlatformLibretroSettings(vm: SettingsViewModel) {
-    vm.platformLibretroSettingsDao.observeAll().onEach { settingsList ->
+    vm.libretroSettingsRepo.observeAll().onEach { settingsList ->
         val settingsMap = settingsList.associateBy { it.platformId }
         vm._uiState.update { current ->
             val platformContext = current.builtinVideo.currentPlatformContext
@@ -483,7 +483,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             .sortedByDescending { it.platform.syncEnabled }
 
         val currentEmulatorState = vm.emulatorDelegate.state.value
-        val archOverride = vm.preferencesRepository.getArchitectureOverride().first()
+        val archOverride = vm.libretroSettingsRepo.getArchitectureOverride().first()
         vm.emulatorDelegate.updateState(EmulatorState(
             platforms = filteredPlatformConfigs,
             installedEmulators = installedEmulators,
@@ -574,7 +574,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             defaultImageCachePath = vm.imageCacheManager.getDefaultCachePath()
         ))
 
-        val builtinSettings = vm.preferencesRepository.getBuiltinEmulatorSettings().first()
+        val builtinSettings = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first()
         val displayManager = vm.context.getSystemService(Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager
         val display = displayManager.getDisplay(android.view.Display.DEFAULT_DISPLAY)
         val refreshRate = display?.supportedModes?.maxOfOrNull { it.refreshRate } ?: 60f

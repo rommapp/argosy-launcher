@@ -11,7 +11,7 @@ import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.local.dao.CoreOptionOverrideDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
-import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
+import com.nendo.argosy.data.repository.LibretroSettingsRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.preferences.GridDensity
@@ -70,7 +70,7 @@ class SettingsViewModel @Inject constructor(
     internal val preferencesRepository: UserPreferencesRepository,
     internal val hapticManager: HapticFeedbackManager,
     internal val platformRepository: PlatformRepository,
-    internal val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
+    internal val libretroSettingsRepo: LibretroSettingsRepository,
     internal val emulatorLaunchArgsDao: com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao,
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val emulatorConfigDao: EmulatorConfigDao,

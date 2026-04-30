@@ -77,7 +77,6 @@ data class VariantPickerState(
 class GameLaunchDelegate @Inject constructor(
     private val application: Application,
     private val gameRepository: GameRepository,
-    private val saveCacheDao: com.nendo.argosy.data.local.dao.SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
     private val launchGameUseCase: LaunchGameUseCase,
@@ -97,7 +96,7 @@ class GameLaunchDelegate @Inject constructor(
 
     private suspend fun isActiveSaveHardcore(gameId: Long): Boolean {
         val activeChannel = gameRepository.getActiveSaveChannel(gameId) ?: return false
-        val save = saveCacheDao.getMostRecentInChannel(gameId, activeChannel)
+        val save = saveCacheManager.getMostRecentInChannel(gameId, activeChannel)
         return save?.isHardcore == true
     }
 

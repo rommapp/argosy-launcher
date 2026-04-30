@@ -61,6 +61,11 @@ class SyncCoordinator @Inject constructor(
             var processed = 0
             var failed = 0
 
+            val promoted = pendingSyncQueueDao.promoteEligibleFailedToPending()
+            if (promoted > 0) {
+                Logger.debug(TAG, "processQueue: Promoted $promoted FAILED rows back to PENDING")
+            }
+
             // Process queued items by priority (lower priority value = higher importance)
             for (priority in listOf(SyncPriority.SAVE_FILE, SyncPriority.SAVE_STATE, SyncPriority.PROPERTY)) {
                 val items = pendingSyncQueueDao.getPendingByPriorityTier(priority)

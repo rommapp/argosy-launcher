@@ -81,14 +81,6 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Save sync disabled in preferences")
             return Result.NotConfigured
         }
-        if (!romMRepository.isConnected()) {
-            Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | RomM not connected, attempting reconnect...")
-            romMRepository.checkConnection()
-        }
-        if (!romMRepository.isConnected()) {
-            Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | RomM still not connected after retry")
-            return Result.NotConfigured
-        }
 
         val game = gameDao.getById(gameId) ?: return Result.Error("Game not found")
         if (game.rommId == null) {
@@ -149,6 +141,16 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             localUpdatedAt = localModified,
             channelName = activeChannel
         )
+
+        if (!romMRepository.isConnected()) {
+            Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | RomM not connected, attempting reconnect...")
+            romMRepository.checkConnection()
+        }
+        if (!romMRepository.isConnected()) {
+            saveSyncRepository.queueUpload(gameId, emulatorId, savePath)
+            Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=QUEUED | Offline at session end, queued for retry on reconnect | path=$savePath")
+            return Result.Queued
+        }
 
         return when (val syncResult = saveSyncRepository.uploadSave(gameId, emulatorId, activeChannel, isHardcore = isHardcore)) {
             is SaveSyncResult.Success -> {

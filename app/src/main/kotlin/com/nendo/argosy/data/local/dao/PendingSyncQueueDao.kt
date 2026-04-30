@@ -68,7 +68,10 @@ interface PendingSyncQueueDao {
 
     @Query("""
         UPDATE pending_sync_queue
-        SET status = 'FAILED', lastError = :error, retryCount = retryCount + 1, updatedAt = :now
+        SET status = CASE WHEN retryCount + 1 >= maxRetries THEN 'FAILED' ELSE 'PENDING' END,
+            lastError = :error,
+            retryCount = retryCount + 1,
+            updatedAt = :now
         WHERE id = :id
     """)
     suspend fun markFailed(id: Long, error: String?, now: Instant = Instant.now())
@@ -79,6 +82,13 @@ interface PendingSyncQueueDao {
         WHERE id = :id AND retryCount < maxRetries
     """)
     suspend fun retryIfEligible(id: Long, now: Instant = Instant.now())
+
+    @Query("""
+        UPDATE pending_sync_queue
+        SET status = 'PENDING', updatedAt = :now
+        WHERE status = 'FAILED' AND retryCount < maxRetries
+    """)
+    suspend fun promoteEligibleFailedToPending(now: Instant = Instant.now()): Int
 
     @Query("DELETE FROM pending_sync_queue WHERE status = 'COMPLETED'")
     suspend fun deleteCompleted()

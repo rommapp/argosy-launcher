@@ -24,6 +24,8 @@ class ResolveConflictUseCase @Inject constructor(
             Resolution.KEEP_LOCAL -> {
                 when (val result = saveSyncRepository.uploadSave(gameId, emulatorId, channelName = channelName)) {
                     is SaveSyncResult.Success -> Result.Success
+                    is SaveSyncResult.NoSaveFound,
+                    is SaveSyncResult.NotConfigured -> Result.Success
                     is SaveSyncResult.Error -> Result.Error(result.message)
                     else -> Result.Error("Unexpected result")
                 }
@@ -31,6 +33,8 @@ class ResolveConflictUseCase @Inject constructor(
             Resolution.KEEP_SERVER -> {
                 when (val result = saveSyncRepository.downloadSave(gameId, emulatorId, channelName = channelName)) {
                     is SaveSyncResult.Success -> Result.Success
+                    is SaveSyncResult.NoSaveFound,
+                    is SaveSyncResult.NotConfigured -> Result.Success
                     is SaveSyncResult.Error -> Result.Error(result.message)
                     else -> Result.Error("Unexpected result")
                 }

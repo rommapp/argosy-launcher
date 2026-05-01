@@ -90,10 +90,11 @@ class SaveUploader @Inject constructor(
 
         val folderSyncEnabled = client.isFolderSaveSyncEnabled()
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
-            if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
+            val switchOk = if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
+            switchOk && fal.exists(path)
         }
         if (syncEntity?.localSavePath != null && cachedPath == null) {
-            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Rejecting invalid cached Switch path=${syncEntity.localSavePath}")
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Cached path no longer valid on disk, re-discovering | stalePath=${syncEntity.localSavePath}")
         }
         var localPath = cachedPath
             ?: savePathResolver.discoverSavePath(

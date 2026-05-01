@@ -44,6 +44,7 @@ class SaveSyncConflictResolverTest {
     private lateinit var saveCacheManager: dagger.Lazy<SaveCacheManager>
     private lateinit var apiClient: dagger.Lazy<SaveSyncApiClient>
     private lateinit var switchSaveHandler: SwitchSaveHandler
+    private lateinit var fal: com.nendo.argosy.data.storage.FileAccessLayer
     private lateinit var resolver: SaveSyncConflictResolver
 
     private lateinit var mockCacheManager: SaveCacheManager
@@ -73,6 +74,8 @@ class SaveSyncConflictResolverTest {
         savePathResolver = mockk(relaxed = true)
         userPreferencesRepository = mockk(relaxed = true)
         switchSaveHandler = mockk(relaxed = true)
+        fal = mockk(relaxed = true)
+        every { fal.exists(any()) } returns true
 
         mockCacheManager = mockk(relaxed = true)
         mockApiClient = mockk(relaxed = true)
@@ -99,7 +102,8 @@ class SaveSyncConflictResolverTest {
             userPreferencesRepository = userPreferencesRepository,
             saveCacheManager = saveCacheManager,
             apiClient = apiClient,
-            switchSaveHandler = switchSaveHandler
+            switchSaveHandler = switchSaveHandler,
+            fal = fal
         )
     }
 

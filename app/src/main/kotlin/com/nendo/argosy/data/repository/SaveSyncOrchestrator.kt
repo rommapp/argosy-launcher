@@ -62,6 +62,7 @@ class SaveSyncOrchestrator @Inject constructor(
         for (game in downloadedGames) {
             val emulatorId = client.resolveEmulatorForGame(game) ?: continue
             val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
+            val coreName = client.resolveCoreForGame(game)
             val folderSyncEnabled = isFolderSaveSyncEnabled()
 
             val savePath = savePathResolver.discoverSavePath(
@@ -70,6 +71,7 @@ class SaveSyncOrchestrator @Inject constructor(
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
                 cachedTitleId = game.titleId,
+                coreName = coreName,
                 emulatorPackage = emulatorPackage,
                 gameId = game.id,
                 isFolderSaveSyncEnabled = folderSyncEnabled
@@ -127,6 +129,11 @@ class SaveSyncOrchestrator @Inject constructor(
                 is SaveSyncResult.Success -> {
                     syncQueueManager.completeOperation(syncEntity.gameId)
                     downloaded++
+                }
+                is SaveSyncResult.NoSaveFound,
+                is SaveSyncResult.NotConfigured -> {
+                    syncQueueManager.completeOperation(syncEntity.gameId)
+                    Logger.debug(TAG, "downloadPendingServerSaves: skipping gameId=${syncEntity.gameId} | result=$result")
                 }
                 is SaveSyncResult.Error -> {
                     syncQueueManager.completeOperation(syncEntity.gameId, result.message)

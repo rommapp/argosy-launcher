@@ -136,7 +136,10 @@ class SaveDownloader @Inject constructor(
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Switch emulator, will discover active profile")
                 }
             } else {
-                val cached = syncEntity.localSavePath
+                val cached = syncEntity.localSavePath?.takeIf { fal.exists(it) }
+                if (syncEntity.localSavePath != null && cached == null) {
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached folder path no longer exists on disk, re-discovering | stalePath=${syncEntity.localSavePath}")
+                }
                 val discovered = if (cached == null) {
                     savePathResolver.discoverSavePath(
                         emulatorId = resolvedEmulatorId,
@@ -158,7 +161,11 @@ class SaveDownloader @Inject constructor(
                 }
             }
         } else {
-            val discovered = syncEntity.localSavePath
+            val cachedFilePath = syncEntity.localSavePath?.takeIf { fal.exists(it) }
+            if (syncEntity.localSavePath != null && cachedFilePath == null) {
+                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached file path no longer exists on disk, re-discovering | stalePath=${syncEntity.localSavePath}")
+            }
+            val discovered = cachedFilePath
                 ?: savePathResolver.discoverSavePath(
                     emulatorId = resolvedEmulatorId,
                     gameTitle = game.title,

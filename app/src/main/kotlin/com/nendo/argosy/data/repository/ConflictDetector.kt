@@ -58,11 +58,14 @@ class ConflictDetector @Inject constructor() {
                 }
         } else {
             val candidates = serverSaves.filter { SaveSyncApiClient.isLatestSaveFileName(it.fileName, romBaseName) }
-            if (isGciBundle && candidates.size > 1) {
+            val pickedByName = if (isGciBundle && candidates.size > 1) {
                 candidates.find { it.fileName.endsWith(".zip", ignoreCase = true) }
                     ?: candidates.firstOrNull()
             } else {
                 candidates.firstOrNull()
+            }
+            pickedByName ?: serverSaves.singleOrNull()?.also { lone ->
+                Logger.warn(TAG, "[SaveSync] No filename match for romBaseName='$romBaseName'; accepting lone server save fileName='${lone.fileName}'")
             }
         }
     }

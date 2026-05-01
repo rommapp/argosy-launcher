@@ -33,7 +33,8 @@ class SaveSyncConflictResolver @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
-    private val switchSaveHandler: SwitchSaveHandler
+    private val switchSaveHandler: SwitchSaveHandler,
+    private val fal: com.nendo.argosy.data.storage.FileAccessLayer
 ) {
     enum class HardcoreResolutionChoice {
         KEEP_HARDCORE,
@@ -107,7 +108,7 @@ class SaveSyncConflictResolver @Inject constructor(
                         SaveSyncApiClient.isLatestSaveFileName(it.fileName, romBaseName) ||
                             (it.slot != null && romBaseName != null && SaveSyncApiClient.equalsNormalized(it.slot, romBaseName))
                     }
-                    if (config?.usesGciFormat == true && candidates.size > 1) {
+                    val pickedByName = if (config?.usesGciFormat == true && candidates.size > 1) {
                         val preferred = candidates.find { it.fileName.endsWith(".zip", ignoreCase = true) }
                             ?: candidates.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
                         if (preferred != null && preferred != candidates.firstOrNull()) {
@@ -116,6 +117,9 @@ class SaveSyncConflictResolver @Inject constructor(
                         preferred
                     } else {
                         candidates.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+                    }
+                    pickedByName ?: matchingSaves.singleOrNull()?.also { lone ->
+                        Logger.warn(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No filename match for romBaseName='$romBaseName'; accepting lone server save fileName='${lone.fileName}'")
                     }
                 }
                 if (serverSave == null) {
@@ -298,10 +302,13 @@ class SaveSyncConflictResolver @Inject constructor(
                 .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
                 ?: matchingSaves.find { it.fileNameNoExt != null && SaveSyncApiClient.equalsNormalized(it.fileNameNoExt, channelName) }
         } else {
-            matchingSaves.filter {
+            val matchedByName = matchingSaves.filter {
                 SaveSyncApiClient.isLatestSaveFileName(it.fileName, romBaseName) ||
                     (it.slot != null && romBaseName != null && SaveSyncApiClient.equalsNormalized(it.slot, romBaseName))
             }.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+            matchedByName ?: matchingSaves.singleOrNull()?.also { lone ->
+                Logger.warn(TAG, "[SaveSync] checkForConflict gameId=$gameId | No filename match for romBaseName='$romBaseName'; accepting lone server save fileName='${lone.fileName}'")
+            }
         }
 
         if (serverSave == null) {
@@ -457,11 +464,16 @@ class SaveSyncConflictResolver @Inject constructor(
         }
 
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
-            if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
+            val switchOk = if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
+            switchOk && fal.exists(path)
         }
         if (cachedPath != null) return cachedPath
+        if (syncEntity?.localSavePath != null) {
+            Logger.debug(TAG, "[SaveSync] findLocalSavePath gameId=$gameId | Cached path stale on disk, re-discovering")
+        }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val coreName = apiClient.get().resolveCoreForGame(game)
         val folderSyncEnabled = isFolderSaveSyncEnabled()
 
         return savePathResolver.discoverSavePath(
@@ -470,6 +482,7 @@ class SaveSyncConflictResolver @Inject constructor(
             platformSlug = game.platformSlug,
             romPath = game.localPath,
             cachedTitleId = game.titleId,
+            coreName = coreName,
             emulatorPackage = emulatorPackage,
             gameId = gameId,
             isFolderSaveSyncEnabled = folderSyncEnabled

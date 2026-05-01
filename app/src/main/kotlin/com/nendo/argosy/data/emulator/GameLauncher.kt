@@ -825,8 +825,34 @@ class GameLauncher @Inject constructor(
             return null
         }
 
-        val coreFileName = "${coreName}_libretro_android.so"
+        // Absolute path into RetroArch's own cores dir, not just the basename.
+        // RetroArch's intent extras path is being read in its own UID context;
+        // it can dlopen this directly without going through whatever runtime
+        // lookup of LIBRETRO=<basename> was crashing on Android 15 strict ROMs.
+        val coreFileName = "$dataDir/cores/${coreName}_libretro_android.so"
         Logger.debug(TAG, "RetroArch core: $coreFileName for platform: ${game.platformSlug}")
+
+        // Grant RetroArch a content URI for the ROM. On Android 11+ scoped
+        // storage, RetroArch reading /storage/<vol>/... raw can fail in the
+        // receiving UID even when both apps technically have storage access.
+        // Mirrors the URI-grant flow other emulators get via the dispatcher;
+        // commandForRetroArch was bespoke and had been skipping it.
+        val romUri: Uri? = try {
+            getFileUri(romFile)
+        } catch (e: Exception) {
+            Logger.warn(TAG, "RetroArch: FileProvider URI unavailable for ${romFile.name}, falling back to path-only", e)
+            null
+        }
+        val grantUris = listOfNotNull(romUri)
+
+        val baseFlags = if (forResume) {
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        } else {
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                Intent.FLAG_ACTIVITY_NO_HISTORY
+        }
+        val grantFlag = if (romUri != null) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0
 
         return EffectiveLaunchCommand(
             action = emulator.launchAction,
@@ -842,13 +868,9 @@ class GameLauncher @Inject constructor(
                 ResolvedExtra.StringExtra("SDCARD", "/storage/emulated/0"),
                 ResolvedExtra.StringExtra("EXTERNAL", externalDir)
             ),
-            intentFlags = if (forResume) {
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            } else {
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                    Intent.FLAG_ACTIVITY_NO_HISTORY
-            }
+            intentFlags = baseFlags or grantFlag,
+            grantReadUriTo = grantUris,
+            clipDataUri = romUri
         )
     }
 

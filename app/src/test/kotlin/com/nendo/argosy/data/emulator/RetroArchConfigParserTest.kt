@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.emulator
 
+import com.nendo.argosy.data.storage.FileAccessLayer
+import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -18,7 +20,9 @@ class RetroArchConfigParserTest {
 
     @Before
     fun setup() {
-        parser = RetroArchConfigParser()
+        // Tests reach the parser only via the File-based parseFile / parseLines
+        // path, so a relaxed FAL mock is enough -- it never gets called.
+        parser = RetroArchConfigParser(mockk<FileAccessLayer>(relaxed = true))
     }
 
     private fun writeCfg(contents: String): File {

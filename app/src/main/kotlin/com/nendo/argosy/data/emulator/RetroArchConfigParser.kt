@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import android.util.Log
+import com.nendo.argosy.data.storage.FileAccessLayer
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,7 +24,9 @@ data class RetroArchStateConfig(
 )
 
 @Singleton
-class RetroArchConfigParser @Inject constructor() {
+class RetroArchConfigParser @Inject constructor(
+    private val fileAccessLayer: FileAccessLayer
+) {
 
     private val configPaths = listOf(
         "/storage/emulated/0/Android/data/com.retroarch/files/retroarch.cfg",
@@ -32,7 +35,7 @@ class RetroArchConfigParser @Inject constructor() {
         "/storage/emulated/0/RetroArch/retroarch.cfg"
     )
 
-    fun findConfigFile(packageName: String): File? {
+    fun findConfigPath(packageName: String): String? {
         val packageSpecificPath = when (packageName) {
             "com.retroarch" -> "/storage/emulated/0/Android/data/com.retroarch/files/retroarch.cfg"
             "com.retroarch.aarch64" -> "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg"
@@ -40,54 +43,76 @@ class RetroArchConfigParser @Inject constructor() {
             else -> null
         }
 
-        if (packageSpecificPath != null) {
-            val file = File(packageSpecificPath)
-            if (file.exists()) return file
+        if (packageSpecificPath != null && fileAccessLayer.exists(packageSpecificPath)) {
+            return packageSpecificPath
         }
 
-        val portableConfig = File("/storage/emulated/0/RetroArch/retroarch.cfg")
-        if (portableConfig.exists()) return portableConfig
+        val portableConfig = "/storage/emulated/0/RetroArch/retroarch.cfg"
+        if (fileAccessLayer.exists(portableConfig)) return portableConfig
 
-        return configPaths
-            .map { File(it) }
-            .firstOrNull { it.exists() }
+        return configPaths.firstOrNull { fileAccessLayer.exists(it) }
     }
 
     fun parse(packageName: String): RetroArchSaveConfig? {
-        val configFile = findConfigFile(packageName)
-        if (configFile == null) {
+        val path = findConfigPath(packageName)
+        if (path == null) {
             Log.d(TAG, "No retroarch.cfg found for $packageName")
             return null
         }
 
-        Log.d(TAG, "Parsing config: ${configFile.absolutePath}")
-        return parseFile(configFile)
+        Log.d(TAG, "Parsing config: $path")
+        val raw = readConfig(path) ?: return null
+        return raw.toSaveConfig()
     }
 
-    internal fun parseFile(file: File): RetroArchSaveConfig {
-        val config = mutableMapOf<String, String>()
-
-        try {
-            file.useLines { lines ->
-                lines.forEach { line ->
-                    val trimmed = line.trim()
-                    if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
-                        val (key, value) = trimmed.split("=", limit = 2)
-                        config[key.trim()] = value.trim().removeSurrounding("\"")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse config file", e)
+    fun parseStateConfig(packageName: String): RetroArchStateConfig? {
+        val path = findConfigPath(packageName)
+        if (path == null) {
+            Log.d(TAG, "No retroarch.cfg found for $packageName")
+            return null
         }
 
-        val savefileDirectory = config["savefile_directory"]?.takeIf {
+        val raw = readConfig(path) ?: return null
+        return raw.toStateConfig()
+    }
+
+    // Reads cfg via the FAL so SAF / alt-access fallbacks cover Android 11+
+    // scoped storage on /Android/data/<other-app>/. Direct java.io.File hits
+    // EACCES on strict ROMs (issue #187).
+    private fun readConfig(path: String): Map<String, String>? {
+        val stream = fileAccessLayer.getInputStream(path)
+        if (stream == null) {
+            Log.w(TAG, "FAL could not open config: $path")
+            return null
+        }
+        return try {
+            stream.bufferedReader().useLines { parseLines(it) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse config file: $path", e)
+            null
+        }
+    }
+
+    private fun parseLines(lines: Sequence<String>): Map<String, String> {
+        val config = mutableMapOf<String, String>()
+        lines.forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
+                val (key, value) = trimmed.split("=", limit = 2)
+                config[key.trim()] = value.trim().removeSurrounding("\"")
+            }
+        }
+        return config
+    }
+
+    private fun Map<String, String>.toSaveConfig(): RetroArchSaveConfig {
+        val savefileDirectory = this["savefile_directory"]?.takeIf {
             it != "default" && it.isNotBlank()
         }
-        val savefilesInContentDir = config["savefiles_in_content_dir"] == "true"
-        val sortByCore = config["sort_savefiles_enable"]?.equals("true", ignoreCase = true) ?: true
-        val sortByContentDir = config["sort_savefiles_by_content_enable"]?.equals("true", ignoreCase = true) ?: false
-        val lastLoadedCore = config["libretro_path"]
+        val savefilesInContentDir = this["savefiles_in_content_dir"] == "true"
+        val sortByCore = this["sort_savefiles_enable"]?.equals("true", ignoreCase = true) ?: true
+        val sortByContentDir = this["sort_savefiles_by_content_enable"]?.equals("true", ignoreCase = true) ?: false
+        val lastLoadedCore = this["libretro_path"]
             ?.takeIf { it.isNotBlank() && it != "default" }
             ?.let { File(it).nameWithoutExtension.removeSuffix("_android").removeSuffix("_libretro") }
 
@@ -99,6 +124,40 @@ class RetroArchConfigParser @Inject constructor() {
             lastLoadedCore = lastLoadedCore
         )
     }
+
+    private fun Map<String, String>.toStateConfig(): RetroArchStateConfig {
+        val savestateDirectory = this["savestate_directory"]?.takeIf {
+            it != "default" && it.isNotBlank()
+        }
+        val savestatesInContentDir = this["savestates_in_content_dir"] == "true"
+        val sortByCore = this["sort_savestates_enable"]?.equals("true", ignoreCase = true) ?: true
+        val sortByContentDir = this["sort_savestates_by_content_enable"]?.equals("true", ignoreCase = true) ?: false
+
+        return RetroArchStateConfig(
+            savestateDirectory = savestateDirectory,
+            savestatesInContentDir = savestatesInContentDir,
+            sortByContentDirectory = sortByContentDir,
+            sortByCore = sortByCore
+        )
+    }
+
+    // Test-only entry points: bypass the FAL and read a real File directly.
+    // Production code reaches here only via [parse]/[parseStateConfig] above.
+    internal fun parseFile(file: File): RetroArchSaveConfig =
+        try {
+            file.useLines { parseLines(it).toSaveConfig() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse config file", e)
+            emptyMap<String, String>().toSaveConfig()
+        }
+
+    internal fun parseStateConfigFromFile(file: File): RetroArchStateConfig =
+        try {
+            file.useLines { parseLines(it).toStateConfig() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse config file", e)
+            emptyMap<String, String>().toStateConfig()
+        }
 
     /**
      * Resolves candidate RetroArch save directories.
@@ -223,48 +282,6 @@ class RetroArchConfigParser @Inject constructor() {
             "Mupen64Plus", "DeSmuME", "melonDS", "Beetle PSX", "PCSX ReARMed",
             "FinalBurn Neo", "MAME", "Stella", "FCEUmm", "Nestopia", "VBA-M",
             "Flycast", "Dolphin", "Citra", "PPSSPP", "Mednafen"
-        )
-    }
-
-    fun parseStateConfig(packageName: String): RetroArchStateConfig? {
-        val configFile = findConfigFile(packageName)
-        if (configFile == null) {
-            Log.d(TAG, "No retroarch.cfg found for $packageName")
-            return null
-        }
-
-        return parseStateConfigFromFile(configFile)
-    }
-
-    internal fun parseStateConfigFromFile(file: File): RetroArchStateConfig {
-        val config = mutableMapOf<String, String>()
-
-        try {
-            file.useLines { lines ->
-                lines.forEach { line ->
-                    val trimmed = line.trim()
-                    if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
-                        val (key, value) = trimmed.split("=", limit = 2)
-                        config[key.trim()] = value.trim().removeSurrounding("\"")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse config file", e)
-        }
-
-        val savestateDirectory = config["savestate_directory"]?.takeIf {
-            it != "default" && it.isNotBlank()
-        }
-        val savestatesInContentDir = config["savestates_in_content_dir"] == "true"
-        val sortByCore = config["sort_savestates_enable"]?.equals("true", ignoreCase = true) ?: true
-        val sortByContentDir = config["sort_savestates_by_content_enable"]?.equals("true", ignoreCase = true) ?: false
-
-        return RetroArchStateConfig(
-            savestateDirectory = savestateDirectory,
-            savestatesInContentDir = savestatesInContentDir,
-            sortByContentDirectory = sortByContentDir,
-            sortByCore = sortByCore
         )
     }
 

@@ -18,6 +18,7 @@ import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
@@ -76,30 +77,7 @@ class ThemeViewModel @Inject constructor(
     }
 
     val themeState: StateFlow<ThemeState> = preferencesRepository.userPreferences
-        .map { prefs ->
-            ThemeState(
-                themeMode = prefs.themeMode,
-                primaryColor = prefs.primaryColor,
-                secondaryColor = prefs.secondaryColor,
-                tertiaryColor = prefs.tertiaryColor,
-                boxArtShape = prefs.boxArtShape,
-                boxArtCornerRadius = prefs.boxArtCornerRadius,
-                boxArtBorderThickness = prefs.boxArtBorderThickness,
-                boxArtBorderStyle = prefs.boxArtBorderStyle,
-                glassBorderTintAlpha = prefs.glassBorderTint.alpha,
-                boxArtGlowStrength = prefs.boxArtGlowStrength,
-                boxArtOuterEffect = prefs.boxArtOuterEffect,
-                boxArtOuterEffectThickness = prefs.boxArtOuterEffectThickness,
-                glowColorMode = prefs.glowColorMode,
-                boxArtInnerEffect = prefs.boxArtInnerEffect,
-                boxArtInnerEffectThickness = prefs.boxArtInnerEffectThickness,
-                gradientPreset = prefs.gradientPreset,
-                systemIconPosition = prefs.systemIconPosition,
-                systemIconPadding = prefs.systemIconPadding,
-                useAccentColorFooter = prefs.useAccentColorFooter,
-                uiScale = prefs.uiScale
-            )
-        }
+        .map { it.toThemeState() }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -124,3 +102,33 @@ class ThemeViewModel @Inject constructor(
         }
     }
 }
+
+/**
+ * Pure mapping from persisted [UserPreferences] to [ThemeState]. Lives here so
+ * the secondary-display Activity (not a Hilt entry point, can't use
+ * hiltViewModel()) can build its own ThemeState flow from
+ * preferencesRepository.userPreferences without instantiating ThemeViewModel
+ * a second time -- doing that would spin up a duplicate ambient-LED observer.
+ */
+fun UserPreferences.toThemeState(): ThemeState = ThemeState(
+    themeMode = themeMode,
+    primaryColor = primaryColor,
+    secondaryColor = secondaryColor,
+    tertiaryColor = tertiaryColor,
+    boxArtShape = boxArtShape,
+    boxArtCornerRadius = boxArtCornerRadius,
+    boxArtBorderThickness = boxArtBorderThickness,
+    boxArtBorderStyle = boxArtBorderStyle,
+    glassBorderTintAlpha = glassBorderTint.alpha,
+    boxArtGlowStrength = boxArtGlowStrength,
+    boxArtOuterEffect = boxArtOuterEffect,
+    boxArtOuterEffectThickness = boxArtOuterEffectThickness,
+    glowColorMode = glowColorMode,
+    boxArtInnerEffect = boxArtInnerEffect,
+    boxArtInnerEffectThickness = boxArtInnerEffectThickness,
+    gradientPreset = gradientPreset,
+    systemIconPosition = systemIconPosition,
+    systemIconPadding = systemIconPadding,
+    useAccentColorFooter = useAccentColorFooter,
+    uiScale = uiScale
+)

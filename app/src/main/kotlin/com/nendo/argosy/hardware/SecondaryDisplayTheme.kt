@@ -2,12 +2,9 @@ package com.nendo.argosy.hardware
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.ui.theme.ProvideArgosyThemeLocals
-import com.nendo.argosy.ui.theme.ThemeViewModel
+import com.nendo.argosy.ui.theme.ThemeState
 import com.nendo.argosy.ui.theme.Typography
 import com.nendo.argosy.ui.theme.argosyColorScheme
 import com.nendo.argosy.ui.theme.rememberArgosyPalette
@@ -18,17 +15,23 @@ import com.nendo.argosy.ui.theme.rememberArgosyPalette
  * [com.nendo.argosy.ui.theme.ALauncherTheme] so the two displays cannot
  * disagree on dark-mode resolution, accent fallbacks, or cover-art style.
  *
- * The host activity broadcasts its primary color (the user-set or default
- * accent) so live accent changes on the primary screen propagate immediately;
- * the override wins over the user-pref color stored in [ThemeViewModel].
+ * [SecondaryHomeActivity] is NOT a Hilt entry point (it builds its
+ * ViewModels manually from DualScreenManager), so this composable can't use
+ * hiltViewModel() the way ALauncherTheme can. The host is responsible for
+ * collecting a ThemeState flow (see UserPreferences.toThemeState) and passing
+ * it in.
+ *
+ * The host activity also broadcasts its primary color (the user-set or
+ * default accent) so live accent changes on the primary screen propagate
+ * immediately; the override wins over the user-pref color stored in
+ * [themeState].
  */
 @Composable
 fun SecondaryHomeTheme(
+    themeState: ThemeState,
     primaryColor: Int? = null,
-    viewModel: ThemeViewModel = hiltViewModel(),
     content: @Composable () -> Unit
 ) {
-    val themeState by viewModel.themeState.collectAsState()
     val palette = rememberArgosyPalette(
         themeState = themeState,
         primaryOverride = primaryColor?.let { Color(it) }

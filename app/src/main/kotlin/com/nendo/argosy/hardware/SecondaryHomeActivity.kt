@@ -12,7 +12,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
+import com.nendo.argosy.ui.theme.ThemeState
+import com.nendo.argosy.ui.theme.toThemeState
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.DualScreenManagerHolder
@@ -60,8 +63,6 @@ class SecondaryHomeActivity :
     private var isHardcore by mutableStateOf(false)
     var homeApps by mutableStateOf<List<String>>(emptyList())
         private set
-    private var primaryColor by mutableStateOf<Int?>(null)
-
     private var companionInGameState by mutableStateOf(CompanionInGameState())
     private var companionSessionTimer: CompanionSessionTimer? = null
 
@@ -135,7 +136,24 @@ class SecondaryHomeActivity :
         }
 
         setContent {
-            SecondaryHomeTheme(primaryColor = primaryColor) {
+            // Collect the same ThemeState the primary display uses so cover-art
+            // style, ui-scale, and other theme locals match across screens.
+            // Activity isn't a Hilt entry point, so we read the prefs flow
+            // directly through DSM rather than instantiating a second
+            // ThemeViewModel (which would also spin up a duplicate
+            // ambient-LED observer).
+            // Keyed on isInitialized: dsm is resolved asynchronously after
+            // setContent runs, so the collector has to (re)start once dsm
+            // is available. Without the key produceState fires once, sees
+            // dsm uninitialized, and never re-runs -- live theme updates
+            // from the primary screen never reach the secondary.
+            val themeState by produceState(initialValue = ThemeState(), isInitialized) {
+                if (!isInitialized) return@produceState
+                dsm.preferencesRepository.userPreferences.collect { prefs ->
+                    value = prefs.toThemeState()
+                }
+            }
+            SecondaryHomeTheme(themeState = themeState) {
                 if (!isInitialized) return@SecondaryHomeTheme
                 androidx.compose.runtime.CompositionLocalProvider(
                     LocalABIconsSwapped provides abIconsSwapped,
@@ -629,7 +647,10 @@ class SecondaryHomeActivity :
         currentChannelName = initial.currentChannelName
         isSaveDirty = initial.isSaveDirty
         homeApps = initial.homeApps
-        primaryColor = initial.primaryColor
+        // primaryColor is now sourced live from the user-prefs flow via
+        // themeState in setContent; the one-shot snapshot from initial state
+        // would freeze the secondary screen's accent at start time and never
+        // reflect Settings changes made on the primary.
         isHardcore = initial.isHardcore
 
         if (initial.isGameActive && initial.activeGameId > 0) {

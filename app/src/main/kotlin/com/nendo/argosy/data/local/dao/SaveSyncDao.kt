@@ -74,7 +74,12 @@ interface SaveSyncDao {
     @Query("SELECT DISTINCT gameId FROM save_sync")
     suspend fun getAllGameIds(): List<Long>
 
-    @Query("UPDATE save_sync SET emulatorId = :newEmulatorId WHERE gameId = :gameId AND emulatorId != :newEmulatorId")
+    // UPDATE OR REPLACE: when rewriting emulatorId would collide with an
+    // existing row on the unique (gameId, emulatorId, channelName) index,
+    // SQLite drops the conflicting row instead of aborting. Without this
+    // the migration crash-loops the app on a game that already has rows
+    // for both the old and the new emulator under the same channel.
+    @Query("UPDATE OR REPLACE save_sync SET emulatorId = :newEmulatorId WHERE gameId = :gameId AND emulatorId != :newEmulatorId")
     suspend fun rekeyEmulatorForGame(gameId: Long, newEmulatorId: String): Int
 
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")

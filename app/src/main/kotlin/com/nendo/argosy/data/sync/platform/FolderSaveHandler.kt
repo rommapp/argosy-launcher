@@ -61,7 +61,12 @@ open class FolderSaveHandler(
         val targetFolder = File(targetPath)
         targetFolder.mkdirs()
 
-        val success = saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+        val success = try {
+            saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+        } catch (e: com.nendo.argosy.data.sync.CorruptZipException) {
+            Logger.error(tag, "extractDownload: Server zip is corrupt | target=$targetPath, ${e.message}")
+            return@withContext ExtractResult(false, null, "Corrupt server zip: ${e.message}", corruptZip = true)
+        }
         if (!success) {
             Logger.error(tag, "extractDownload: Unzip failed | target=$targetPath")
             return@withContext ExtractResult(false, null, "Failed to extract $platformSlug save")

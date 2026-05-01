@@ -39,7 +39,8 @@ class SaveDownloader @Inject constructor(
     private val fal: FileAccessLayer,
     private val switchSaveHandler: SwitchSaveHandler,
     private val gciSaveHandler: GciSaveHandler,
-    private val apiClient: dagger.Lazy<SaveSyncApiClient>
+    private val apiClient: dagger.Lazy<SaveSyncApiClient>,
+    private val saveUploader: dagger.Lazy<SaveUploader>
 ) {
 
     suspend fun downloadSave(
@@ -213,6 +214,21 @@ class SaveDownloader @Inject constructor(
                 return@withContext SaveSyncResult.Error("No download path available")
             }
 
+            // Skip if a previous attempt at this exact server-side timestamp produced
+            // a corrupt zip; resume only when the server copy changes (re-upload).
+            val serverFingerprint = downloadPath.substringAfter("?timestamp=", "")
+                .ifEmpty { serverSave.updatedAt ?: "" }
+            if (serverFingerprint.isNotEmpty()) {
+                val cachedCorrupt = saveSyncDao.getCorruptZipTimestamp(gameId, resolvedEmulatorId, channelName)
+                if (cachedCorrupt == serverFingerprint) {
+                    Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Skipping — server zip known corrupt at this timestamp; re-upload from device to recover | timestamp=$serverFingerprint")
+                    return@withContext SaveSyncResult.Error("Server zip is corrupt; re-upload to recover")
+                } else if (cachedCorrupt != null) {
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server timestamp changed since corrupt-zip mark, retrying | wasCorruptAt=$cachedCorrupt, now=$serverFingerprint")
+                    saveSyncDao.clearCorruptZip(gameId, resolvedEmulatorId, channelName)
+                }
+            }
+
             val downloadStartTime = System.currentTimeMillis()
             Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | HTTP request starting | downloadPath=$downloadPath")
 
@@ -328,6 +344,41 @@ class SaveDownloader @Inject constructor(
                 val result = handler.extractDownload(tempZipFile, saveContext)
                 if (!result.success) {
                     Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Extraction failed | error=${result.error}")
+                    if (result.corruptZip && serverFingerprint.isNotEmpty()) {
+                        saveSyncDao.markCorruptZip(
+                            gameId = gameId,
+                            emulatorId = resolvedEmulatorId,
+                            channelName = channelName,
+                            serverTimestamp = serverFingerprint,
+                            error = result.error ?: "corrupt zip"
+                        )
+                        // Auto-recovery: server zip is corrupt, push the (good) local
+                        // copy over it. Successful upload will produce a new server
+                        // timestamp, so the next sync clears the corrupt mark and
+                        // resumes normal flow. If the upload also fails, we fall
+                        // through with the original error and the skip-cache prevents
+                        // futile retries.
+                        Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server zip corrupt — auto-recovering by uploading local save | timestamp=$serverFingerprint")
+                        val recoveryResult = try {
+                            saveUploader.get().uploadSave(
+                                gameId = gameId,
+                                emulatorId = resolvedEmulatorId,
+                                channelName = channelName,
+                                forceOverwrite = true,
+                                isHardcore = false
+                            )
+                        } catch (e: Exception) {
+                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Auto-recovery upload threw", e)
+                            SaveSyncResult.Error(e.message ?: "auto-recovery threw")
+                        }
+                        if (recoveryResult is SaveSyncResult.Success) {
+                            Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Auto-recovery succeeded — corrupt server zip overwritten with local copy")
+                            saveSyncDao.clearCorruptZip(gameId, resolvedEmulatorId, channelName)
+                            return@withContext recoveryResult
+                        } else {
+                            Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Auto-recovery upload failed | result=$recoveryResult")
+                        }
+                    }
                     return@withContext SaveSyncResult.Error(result.error ?: "Failed to extract save")
                 }
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Extraction complete | target=${result.targetPath}")

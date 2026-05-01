@@ -57,6 +57,30 @@ interface SaveSyncDao {
 
     @Query("""
         UPDATE save_sync
+        SET corruptZipTimestamp = :serverTimestamp,
+            lastSyncError = :error
+        WHERE gameId = :gameId AND emulatorId = :emulatorId
+          AND (:channelName IS NULL OR channelName = :channelName)
+    """)
+    suspend fun markCorruptZip(gameId: Long, emulatorId: String, channelName: String?, serverTimestamp: String, error: String)
+
+    @Query("""
+        SELECT corruptZipTimestamp FROM save_sync
+        WHERE gameId = :gameId AND emulatorId = :emulatorId
+          AND (:channelName IS NULL OR channelName = :channelName)
+        LIMIT 1
+    """)
+    suspend fun getCorruptZipTimestamp(gameId: Long, emulatorId: String, channelName: String?): String?
+
+    @Query("""
+        UPDATE save_sync SET corruptZipTimestamp = NULL
+        WHERE gameId = :gameId AND emulatorId = :emulatorId
+          AND (:channelName IS NULL OR channelName = :channelName)
+    """)
+    suspend fun clearCorruptZip(gameId: Long, emulatorId: String, channelName: String?)
+
+    @Query("""
+        UPDATE save_sync
         SET localSavePath = :path, localUpdatedAt = :updatedAt
         WHERE gameId = :gameId AND emulatorId = :emulatorId
     """)

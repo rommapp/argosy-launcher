@@ -1578,3 +1578,14 @@ object Migration_106_107 : Migration(106, 107) {
         db.execSQL("ALTER TABLE hotkeys ADD COLUMN holdMs INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+/**
+ * Track server-side zip corruption per save_sync row. When a download fails
+ * to inflate, we record the server's file timestamp so subsequent sync
+ * attempts skip the download until the server copy changes (re-upload).
+ */
+object Migration_107_108 : Migration(107, 108) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN corruptZipTimestamp TEXT")
+    }
+}

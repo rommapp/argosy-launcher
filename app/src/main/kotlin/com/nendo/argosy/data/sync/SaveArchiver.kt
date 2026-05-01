@@ -18,8 +18,17 @@ import org.apache.commons.compress.archivers.zip.Zip64Mode
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
+import org.apache.commons.compress.archivers.zip.ZipFile
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * Thrown when the source zip is structurally damaged (deflate stream
+ * broken, central-directory mismatch, etc.). Distinct from generic I/O
+ * failures so callers can mark the affected save_sync row and skip the
+ * download until the server's copy changes.
+ */
+class CorruptZipException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 @Singleton
 class SaveArchiver @Inject constructor(
@@ -286,6 +295,9 @@ class SaveArchiver @Inject constructor(
 
             Logger.debug(TAG, "[SaveSync] ARCHIVE | Unzip via temp complete | target=${targetFolder.name}")
             return true
+        } catch (e: CorruptZipException) {
+            tempDir.deleteRecursively()
+            throw e
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ARCHIVE | unzipViaTemp failed | ${e.message}")
             tempDir.deleteRecursively()
@@ -298,13 +310,16 @@ class SaveArchiver @Inject constructor(
             targetFolder.mkdirs()
             var fileCount = 0
             var totalSize = 0L
-            ZipArchiveInputStream(BufferedInputStream(FileInputStream(sourceZip))).use { zis ->
-                var entry: ZipArchiveEntry?
+            // ZipFile (random-access via central directory) handles data-descriptor
+            // and ZIP64 entries that ZipArchiveInputStream's streaming skip() can't.
+            // Switch save exporters (Eden/yuzu) write data-descriptor zips.
+            ZipFile.builder().setFile(sourceZip).get().use { zf ->
                 val buffer = ByteArray(BUFFER_SIZE)
                 var rootFolder: String? = null
+                val entries = zf.entries.toList()
 
-                while (zis.nextEntry.also { entry = it } != null) {
-                    val entryName = entry!!.name
+                for (entry in entries) {
+                    val entryName = entry.name
 
                     if (rootFolder == null) {
                         rootFolder = entryName.substringBefore('/').takeIf { entryName.contains('/') }
@@ -324,16 +339,18 @@ class SaveArchiver @Inject constructor(
                         return false
                     }
 
-                    if (entry!!.isDirectory) {
+                    if (entry.isDirectory) {
                         entryFile.mkdirs()
                     } else {
                         entryFile.parentFile?.mkdirs()
-                        FileOutputStream(entryFile).use { fos ->
-                            BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
-                                var count: Int
-                                while (zis.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
-                                    bos.write(buffer, 0, count)
-                                    totalSize += count
+                        zf.getInputStream(entry).use { input ->
+                            FileOutputStream(entryFile).use { fos ->
+                                BufferedOutputStream(fos, BUFFER_SIZE).use { bos ->
+                                    var count: Int
+                                    while (input.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
+                                        bos.write(buffer, 0, count)
+                                        totalSize += count
+                                    }
                                 }
                             }
                         }
@@ -343,8 +360,11 @@ class SaveArchiver @Inject constructor(
             }
             Logger.debug(TAG, "[SaveSync] ARCHIVE | Extracted | files=$fileCount, size=${totalSize}bytes")
             true
+        } catch (e: java.util.zip.ZipException) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Corrupt zip — server copy is damaged | zip=${sourceZip.name}, ${e.message}", e)
+            throw CorruptZipException("Source zip is damaged: ${e.message}", e)
         } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.message}")
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.javaClass.simpleName}: ${e.message}", e)
             false
         }
     }
@@ -353,14 +373,8 @@ class SaveArchiver @Inject constructor(
         if (!zipFile.exists() || !zipFile.isFile) return false
 
         return try {
-            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
-                var entry: ZipArchiveEntry?
-                while (zis.nextEntry.also { entry = it } != null) {
-                    if (entry!!.name == JKSV_META_FILE) {
-                        return@use true
-                    }
-                }
-                false
+            ZipFile.builder().setFile(zipFile).get().use { zf ->
+                zf.getEntry(JKSV_META_FILE) != null
             }
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ARCHIVE | isJksvFormat check failed | zip=${zipFile.name}", e)
@@ -372,15 +386,10 @@ class SaveArchiver @Inject constructor(
         if (!zipFile.exists() || !zipFile.isFile) return null
 
         return try {
-            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
-                var entry: ZipArchiveEntry?
-                while (zis.nextEntry.also { entry = it } != null) {
-                    if (entry!!.name == JKSV_META_FILE) {
-                        val metaBytes = zis.readBytes()
-                        return@use parseTitleIdFromMeta(metaBytes)
-                    }
-                }
-                null
+            ZipFile.builder().setFile(zipFile).get().use { zf ->
+                val entry = zf.getEntry(JKSV_META_FILE) ?: return@use null
+                val metaBytes = zf.getInputStream(entry).use { it.readBytes() }
+                parseTitleIdFromMeta(metaBytes)
             }
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ARCHIVE | parseTitleIdFromJksvMeta failed | zip=${zipFile.name}", e)
@@ -504,7 +513,7 @@ class SaveArchiver @Inject constructor(
             }
             true
         } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.message}")
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.javaClass.simpleName}: ${e.message}", e)
             false
         }
     }
@@ -583,7 +592,7 @@ class SaveArchiver @Inject constructor(
             }
             true
         } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.message}")
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.javaClass.simpleName}: ${e.message}", e)
             false
         }
     }

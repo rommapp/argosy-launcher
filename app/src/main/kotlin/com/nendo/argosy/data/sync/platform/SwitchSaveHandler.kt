@@ -79,11 +79,16 @@ class SwitchSaveHandler @Inject constructor(
             targetFolder.mkdirs()
 
             // Detect JKSV format and extract appropriately
-            val success = if (saveArchiver.isJksvFormat(tempFile)) {
-                Logger.debug(TAG, "extractDownload: JKSV format detected, preserving structure")
-                saveArchiver.unzipPreservingStructure(tempFile, targetFolder, JKSV_EXCLUDE_FILES)
-            } else {
-                saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+            val success = try {
+                if (saveArchiver.isJksvFormat(tempFile)) {
+                    Logger.debug(TAG, "extractDownload: JKSV format detected, preserving structure")
+                    saveArchiver.unzipPreservingStructure(tempFile, targetFolder, JKSV_EXCLUDE_FILES)
+                } else {
+                    saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+                }
+            } catch (e: com.nendo.argosy.data.sync.CorruptZipException) {
+                Logger.error(TAG, "extractDownload: Server zip is corrupt | target=$targetPath, ${e.message}")
+                return@withContext ExtractResult(false, null, "Corrupt server zip: ${e.message}", corruptZip = true)
             }
 
             if (!success) {

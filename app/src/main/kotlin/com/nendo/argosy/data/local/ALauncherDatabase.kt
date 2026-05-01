@@ -114,7 +114,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         SteamCompletedDepotEntity::class,
         EmulatorLaunchArgsEntity::class
     ],
-    version = 107,
+    version = 108,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

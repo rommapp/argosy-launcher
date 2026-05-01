@@ -66,5 +66,10 @@ data class PreparedSave(
 data class ExtractResult(
     val success: Boolean,
     val targetPath: String?,
-    val error: String? = null
+    val error: String? = null,
+    /** True when the failure was caused by a corrupt server-side zip
+     * (deflate stream broken, central directory mismatched, etc.).
+     * SaveDownloader uses this to skip future attempts at the same
+     * server timestamp. */
+    val corruptZip: Boolean = false
 )

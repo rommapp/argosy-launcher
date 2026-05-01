@@ -52,7 +52,7 @@ class RestoreCachedSaveUseCase @Inject constructor(
             emulatorId, game.title, game.platformSlug, game.localPath, coreName
         ) ?: return Result.Error("Cannot determine save location")
 
-        if (!saveSyncRepository.clearSaveAtPath(targetPath)) {
+        if (!saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.titleId)) {
             return Result.Error("Failed to clear existing save at target path")
         }
 
@@ -127,6 +127,6 @@ class RestoreCachedSaveUseCase @Inject constructor(
             emulatorPackage = emulatorPackage,
             gameId = gameId
         ) ?: return true
-        return saveSyncRepository.clearSaveAtPath(targetPath)
+        return saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.titleId)
     }
 }

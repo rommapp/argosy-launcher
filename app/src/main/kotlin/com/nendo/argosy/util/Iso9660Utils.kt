@@ -72,3 +72,32 @@ fun iso9660ExtractSerial(
     val match = bootPattern.find(cnfText) ?: return null
     return "${match.groupValues[1]}-${match.groupValues[2]}${match.groupValues[3]}"
 }
+
+private val PSP_DISC_ID_PATTERN = Regex("""^([A-Z]{4})-?(\d{5})$""")
+
+/**
+ * Reads a PSP UMD disc id from `UMD_DATA.BIN` at the ISO9660 root and returns it in the
+ * dashless 9-char form used by save folder names (`ULUS10064`). UMD_DATA.BIN itself encodes
+ * the id with a dash (`ULUS-10064|...`), so we normalize on the way out.
+ */
+fun iso9660ExtractPspSerial(readSector: (Int) -> ByteArray?): String? {
+    val pvd = readSector(16) ?: return null
+
+    if (pvd[0].toInt() != 1 || String(pvd, 1, 5, Charsets.US_ASCII) != "CD001") {
+        return null
+    }
+
+    val rootLba = pvd.readLE32(156 + 2)
+    val rootLen = pvd.readLE32(156 + 10)
+
+    val umdLocation = iso9660FindFile(readSector, rootLba, rootLen, "UMD_DATA.BIN")
+        ?: return null
+
+    val umdData = readSector(umdLocation.lba) ?: return null
+    val umdLen = umdLocation.length.coerceAtMost(SECTOR_SIZE).coerceAtLeast(10)
+    val text = String(umdData, 0, umdLen, Charsets.US_ASCII)
+
+    val candidate = text.substringBefore('|').trim()
+    val match = PSP_DISC_ID_PATTERN.matchEntire(candidate) ?: return null
+    return "${match.groupValues[1]}${match.groupValues[2]}"
+}

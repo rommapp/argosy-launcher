@@ -234,6 +234,12 @@ class SaveSyncRepository @Inject constructor(
     suspend fun clearSaveAtPath(targetPath: String): Boolean =
         apiClient.clearSaveAtPath(targetPath)
 
+    suspend fun clearSavesForTitle(
+        targetPath: String,
+        platformSlug: String,
+        titleId: String?
+    ): Boolean = apiClient.clearSavesForTitle(targetPath, platformSlug, titleId)
+
     suspend fun flushPendingDeviceSync(gameId: Long) =
         apiClient.flushPendingDeviceSync(gameId)
 

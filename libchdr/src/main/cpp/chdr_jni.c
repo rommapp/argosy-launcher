@@ -70,9 +70,10 @@ Java_com_nendo_argosy_libchdr_ChdReader_nativeOpen(JNIEnv *env, jclass clazz, js
     ctx->total_frames = (uint32_t)(header->logicalbytes / ctx->unit_bytes);
 
     // Determine data offset within each unit by probing sector 16 (PVD).
-    // MODE1 tracks: libchdr returns user data at offset 0.
-    // MODE2_RAW tracks: libchdr returns raw 2352-byte sector with sync+header,
-    //   user data at offset 24 (12 sync + 4 header + 8 subheader).
+    // CD CHDs use 2448 unit_bytes regardless of track type; user data position depends on the
+    // mode byte at offset 15 of each 2352-byte raw sector:
+    //   MODE1: [12 sync][3 hdr addr][1 mode=1][2048 data][288 EDC/ECC]      -> offset 16
+    //   MODE2: [12 sync][3 hdr addr][1 mode=2][8 subheader][2048 data][...] -> offset 24
     ctx->data_offset = 0;
     if (ctx->unit_bytes > SECTOR_SIZE) {
         int hi = 16 / ctx->frames_per_hunk;
@@ -81,7 +82,12 @@ Java_com_nendo_argosy_libchdr_ChdReader_nativeOpen(JNIEnv *env, jclass clazz, js
             int fi = 16 % ctx->frames_per_hunk;
             uint8_t *frame = ctx->hunk_buffer + fi * ctx->unit_bytes;
             if (memcmp(frame, CD_SYNC_PATTERN, 12) == 0) {
-                ctx->data_offset = 24;
+                uint8_t mode = frame[15];
+                if (mode == 1) {
+                    ctx->data_offset = 16;
+                } else if (mode == 2) {
+                    ctx->data_offset = 24;
+                }
             }
         }
         if (ctx->data_offset + SECTOR_SIZE > ctx->unit_bytes) {

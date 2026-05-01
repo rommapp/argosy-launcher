@@ -7,6 +7,9 @@ import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,11 +41,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
      */
     private val folderHandlers: Map<String, FolderSaveHandler> = listOf(
         FolderSaveHandler(context, fal, saveArchiver, platformSlug = "vita"),
-        // PSP saves use prefix matching (ULUS10041 matches ULUS10041DATA00).
-        object : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "psp") {
-            override fun folderMatches(folderName: String, titleId: String): Boolean =
-                folderName.startsWith(titleId, ignoreCase = true)
-        },
+        PspFolderHandler(context, fal, saveArchiver),
         FolderSaveHandler(context, fal, saveArchiver, platformSlug = "wii"),
         FolderSaveHandler(context, fal, saveArchiver, platformSlug = "wiiu"),
         N3dsFolderHandler(context, fal, saveArchiver),
@@ -85,6 +84,99 @@ class PlatformSaveHandlerRegistry @Inject constructor(
 
     companion object {
         private val RETROARCH_EMULATOR_IDS = setOf("retroarch", "retroarch_64")
+    }
+}
+
+/**
+ * PSP saves are folders under `PSP/SAVEDATA/` named `<DISC_ID><SAVE_NAME>` where the 9-char
+ * disc id (e.g. `ULUS10064`) is shared across all of a game's profile/system folders. A single
+ * game commonly produces several siblings (`ULUS10064DATA00`, `ULUS10064SETTINGS`, ...), so the
+ * "save unit" spans every prefix-matched folder under the parent.
+ *
+ * Mirrors the GameCube GCI handler's pattern — bundle all matches on upload, delete all matches
+ * on download before extracting back into the parent.
+ */
+private class PspFolderHandler(
+    context: Context,
+    private val fal: FileAccessLayer,
+    private val saveArchiver: SaveArchiver
+) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "psp") {
+
+    private val appContext = context
+
+    companion object {
+        private const val TAG = "PspFolderHandler"
+    }
+
+    override fun folderMatches(folderName: String, titleId: String): Boolean =
+        folderName.startsWith(titleId, ignoreCase = true)
+
+    override suspend fun prepareForUpload(
+        localPath: String,
+        context: SaveContext
+    ): PreparedSave? = withContext(Dispatchers.IO) {
+        val titleId = context.titleId
+        val seed = fal.getTransformedFile(localPath)
+        if (!seed.exists() || !seed.isDirectory) {
+            Logger.debug(TAG, "prepareForUpload: seed folder missing | path=$localPath")
+            return@withContext null
+        }
+
+        val parentPath = seed.parentFile?.absolutePath
+            ?: return@withContext null.also {
+                Logger.debug(TAG, "prepareForUpload: no parent | path=$localPath")
+            }
+
+        val matchedPaths = if (titleId != null) {
+            findAllSaveFoldersByTitleId(parentPath, titleId)
+        } else {
+            listOf(seed.absolutePath)
+        }
+        if (matchedPaths.isEmpty()) {
+            Logger.debug(TAG, "prepareForUpload: no matches | parent=$parentPath, titleId=$titleId")
+            return@withContext null
+        }
+        val matchedFolders = matchedPaths.map { fal.getTransformedFile(it) }
+
+        Logger.debug(TAG, "prepareForUpload: bundling ${matchedFolders.size} folder(s) | titleId=$titleId, names=${matchedFolders.map { it.name }}")
+
+        val outputFile = File(appContext.cacheDir, "${titleId ?: seed.name}.zip")
+        if (!saveArchiver.zipFolders(matchedFolders, outputFile)) {
+            Logger.error(TAG, "prepareForUpload: failed to zip folders | titleId=$titleId")
+            return@withContext null
+        }
+
+        PreparedSave(outputFile, isTemporary = true, matchedPaths)
+    }
+
+    override suspend fun extractDownload(
+        tempFile: File,
+        context: SaveContext
+    ): ExtractResult = withContext(Dispatchers.IO) {
+        val titleId = context.titleId
+            ?: return@withContext ExtractResult(false, null, "No title ID for PSP save")
+
+        val parentPath = context.localSavePath?.let { File(it).parent }
+            ?: resolveBasePath(context.config, null)
+            ?: return@withContext ExtractResult(false, null, "No base path for PSP saves")
+
+        val parentFolder = File(parentPath)
+        parentFolder.mkdirs()
+
+        val existing = findAllSaveFoldersByTitleId(parentPath, titleId)
+        if (existing.isNotEmpty()) {
+            Logger.debug(TAG, "extractDownload: clearing ${existing.size} existing folder(s) | titleId=$titleId")
+            existing.forEach { fal.deleteRecursively(it) }
+        }
+
+        if (!saveArchiver.unzipToFolder(tempFile, parentFolder)) {
+            Logger.error(TAG, "extractDownload: unzip failed | parent=$parentPath")
+            return@withContext ExtractResult(false, null, "Failed to extract PSP save")
+        }
+
+        val restored = findAllSaveFoldersByTitleId(parentPath, titleId)
+        Logger.debug(TAG, "extractDownload: complete | parent=$parentPath, restored=${restored.size}")
+        ExtractResult(true, restored.firstOrNull() ?: parentPath)
     }
 }
 

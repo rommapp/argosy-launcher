@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.libchdr.ChdReader as NativeChdReader
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.iso9660ExtractPspSerial
 import com.nendo.argosy.util.iso9660ExtractSerial
 import java.io.File
 
@@ -27,6 +28,27 @@ object ChdReader {
             extractSerial(file, PSX_BOOT_PATTERN)
         } catch (e: Exception) {
             Logger.warn(TAG, "Failed to extract PSX serial from CHD | file=${file.name}", e)
+            null
+        }
+    }
+
+    fun extractPSPSerial(file: File): String? {
+        return try {
+            val chd = NativeChdReader.open(file.absolutePath) ?: run {
+                Logger.debug(TAG, "Failed to open CHD | file=${file.name}")
+                return null
+            }
+            chd.use { reader ->
+                val serial = iso9660ExtractPspSerial(reader::readSector)
+                if (serial != null) {
+                    Logger.debug(TAG, "Found PSP serial from CHD: $serial")
+                } else {
+                    Logger.debug(TAG, "PSP serial not found in CHD | file=${file.name}")
+                }
+                serial
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "Failed to extract PSP serial from CHD | file=${file.name}", e)
             null
         }
     }

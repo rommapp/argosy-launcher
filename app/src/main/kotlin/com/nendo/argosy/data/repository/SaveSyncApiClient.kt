@@ -301,6 +301,33 @@ class SaveSyncApiClient @Inject constructor(
         true
     }
 
+    /**
+     * Prefix-aware variant of [clearSaveAtPath]. For platforms whose disc id maps to multiple
+     * sibling folders under a parent (PSP), enumerates and deletes every match. Falls back to
+     * single-path delete when the handler doesn't expose a multi-folder layout.
+     */
+    suspend fun clearSavesForTitle(
+        targetPath: String,
+        platformSlug: String,
+        titleId: String?
+    ): Boolean = withContext(Dispatchers.IO) {
+        val handler = saveHandlerRegistry.getFolderHandler(platformSlug)
+        if (handler == null || titleId.isNullOrBlank()) {
+            return@withContext clearSaveAtPath(targetPath)
+        }
+
+        val parentPath = File(targetPath).parent ?: return@withContext clearSaveAtPath(targetPath)
+        val matches = handler.findAllSaveFoldersByTitleId(parentPath, titleId)
+        if (matches.isEmpty()) return@withContext clearSaveAtPath(targetPath)
+
+        Logger.debug(TAG, "clearSavesForTitle: deleting ${matches.size} folder(s) | titleId=$titleId, parent=$parentPath")
+        var allOk = true
+        for (path in matches) {
+            if (!clearSaveAtPath(path)) allOk = false
+        }
+        allOk
+    }
+
     suspend fun discoverSavePath(
         emulatorId: String,
         gameTitle: String,

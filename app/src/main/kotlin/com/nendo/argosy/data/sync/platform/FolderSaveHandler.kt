@@ -94,6 +94,13 @@ open class FolderSaveHandler(
         return null
     }
 
+    override fun findAllSaveFoldersByTitleId(basePath: String, titleId: String): List<String> {
+        if (!fal.exists(basePath) || !fal.isDirectory(basePath)) return emptyList()
+        return fal.listFiles(basePath).orEmpty()
+            .filter { it.isDirectory && folderMatches(it.name, titleId) }
+            .map { it.path }
+    }
+
     override fun constructSavePath(baseDir: String, titleId: String): String? = "$baseDir/$titleId"
 
     override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {

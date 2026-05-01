@@ -83,6 +83,41 @@ class SaveArchiver @Inject constructor(
         }
     }
 
+    /**
+     * Zips multiple folders into one archive, preserving each folder's name as a top-level
+     * entry. Used by platforms whose "save unit" spans several sibling directories (e.g. PSP
+     * profile folders sharing a 9-char disc id prefix).
+     */
+    fun zipFolders(sourceFolders: List<File>, targetZip: File): Boolean {
+        val validFolders = sourceFolders.filter { it.exists() && it.isDirectory }
+        if (validFolders.isEmpty()) {
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | No valid folders to zip")
+            return false
+        }
+
+        val totalSize = validFolders.sumOf { it.walkTopDown().filter { f -> f.isFile }.sumOf { f -> f.length() } }
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Zipping ${validFolders.size} folder(s) | totalSize=${totalSize}bytes")
+
+        return try {
+            targetZip.parentFile?.mkdirs()
+            ZipArchiveOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
+                zos.setUseZip64(Zip64Mode.AsNeeded)
+                for (folder in validFolders) {
+                    zos.putArchiveEntry(ZipArchiveEntry("${folder.name}/"))
+                    zos.closeArchiveEntry()
+                    zipFolderRecursive(folder, folder.name, zos)
+                }
+            }
+            val ratio = if (totalSize > 0) (targetZip.length() * 100 / totalSize) else 100
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Multi-folder zip complete | folders=${validFolders.size}, output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
+            true
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Multi-folder zip failed", e)
+            targetZip.delete()
+            false
+        }
+    }
+
     fun zipFiles(files: List<File>, targetZip: File): Boolean {
         if (files.isEmpty()) {
             Logger.warn(TAG, "[SaveSync] ARCHIVE | No files to zip")

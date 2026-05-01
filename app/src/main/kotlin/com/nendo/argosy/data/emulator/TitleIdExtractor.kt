@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.util.AesXts
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.iso9660ExtractPspSerial
 import com.nendo.argosy.util.iso9660ExtractSerial
 import com.github.luben.zstd.ZstdInputStream
 import java.io.BufferedInputStream
@@ -33,7 +34,7 @@ class TitleIdExtractor @Inject constructor(
         Logger.debug(TAG, "[SaveSync] DETECT | Extracting title ID from ROM | file=${romFile.name}, platform=$platformId")
         val result = when (platformId) {
             "vita", "psvita" -> extractVitaTitleId(romFile)?.let { TitleIdResult(it, false) }
-            "psp" -> extractPSPTitleId(romFile)?.let { TitleIdResult(it, false) }
+            "psp" -> extractPSPSerial(romFile)
             "switch" -> extractSwitchTitleIdWithSource(romFile, emulatorPackage)
             "3ds" -> extract3DSTitleId(romFile)?.let { TitleIdResult(it, true) }
             "wiiu" -> extractWiiUTitleIdWithSource(romFile)
@@ -63,18 +64,59 @@ class TitleIdExtractor @Inject constructor(
     }
 
     fun extractPSPTitleId(romFile: File): String? {
+        return extractPSPSerial(romFile)?.titleId
+    }
+
+    fun extractPSPSerial(romFile: File): TitleIdResult? {
+        when (romFile.extension.lowercase()) {
+            "iso" -> extractPSPSerialFromIso(romFile)?.let {
+                Logger.debug(TAG, "[SaveSync] DETECT | PSP serial from ISO | file=${romFile.name}, serial=$it")
+                return TitleIdResult(it, fromBinary = true)
+            }
+            "chd" -> ChdReader.extractPSPSerial(romFile)?.let {
+                Logger.debug(TAG, "[SaveSync] DETECT | PSP serial from CHD | file=${romFile.name}, serial=$it")
+                return TitleIdResult(it, fromBinary = true)
+            }
+        }
+
         val filename = romFile.nameWithoutExtension
 
         val bracketPattern = Regex("""\[([A-Z]{4}\d{5})\]""")
-        bracketPattern.find(filename)?.let { return it.groupValues[1] }
+        bracketPattern.find(filename)?.let {
+            return TitleIdResult(it.groupValues[1], fromBinary = false)
+        }
 
         val parenPattern = Regex("""\(([A-Z]{4}\d{5})\)""")
-        parenPattern.find(filename)?.let { return it.groupValues[1] }
+        parenPattern.find(filename)?.let {
+            return TitleIdResult(it.groupValues[1], fromBinary = false)
+        }
 
         val prefixPattern = Regex("""^([A-Z]{4}\d{5})""")
-        prefixPattern.find(filename)?.let { return it.groupValues[1] }
+        prefixPattern.find(filename)?.let {
+            return TitleIdResult(it.groupValues[1], fromBinary = false)
+        }
 
         return null
+    }
+
+    private fun extractPSPSerialFromIso(romFile: File): String? {
+        return try {
+            RandomAccessFile(romFile, "r").use { raf ->
+                val sectorSize = 2048
+                val readSector = { lba: Int ->
+                    val offset = lba.toLong() * sectorSize
+                    if (raf.length() < offset + sectorSize) null
+                    else {
+                        raf.seek(offset)
+                        ByteArray(sectorSize).also { raf.readFully(it) }
+                    }
+                }
+                iso9660ExtractPspSerial(readSector)
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[SaveSync] DETECT | Failed to read PSP ISO | file=${romFile.name}", e)
+            null
+        }
     }
 
     fun extractSwitchTitleId(romFile: File, emulatorPackage: String? = null): String? {

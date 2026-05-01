@@ -24,6 +24,14 @@ interface PlatformSaveHandler {
     fun findSaveFolderByTitleId(basePath: String, titleId: String): String? = null
 
     /**
+     * Locate ALL save folders under [basePath] that belong to [titleId]. Default behavior
+     * narrows to whatever [findSaveFolderByTitleId] returns. Platforms whose disc id maps to
+     * many on-disk profile folders (PSP) override this to enumerate every match.
+     */
+    fun findAllSaveFoldersByTitleId(basePath: String, titleId: String): List<String> =
+        listOfNotNull(findSaveFolderByTitleId(basePath, titleId))
+
+    /**
      * Resolve the platform's save root, applying any user override. Returns null when the
      * platform doesn't expose a single base path (the default for non-folder handlers).
      */

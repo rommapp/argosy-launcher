@@ -83,7 +83,7 @@ class RetroAchievementsSessionManager(
             gameTitle = game.title
 
             val verifiedId = verifyRAGameIdUseCase(gameId, forceRehash = true)
-            gameRaId = verifiedId ?: game.effectiveRaId
+            gameRaId = verifiedId ?: game.effectiveRaId ?: game.raId
             Log.d(TAG, "Game loaded: title=${game.title}, resolvedRaId=$gameRaId, raId=${game.raId}, verifiedRaId=${game.verifiedRaId}")
 
             if (gameRaId == null) {

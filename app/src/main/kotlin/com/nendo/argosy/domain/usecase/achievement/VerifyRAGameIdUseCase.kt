@@ -58,16 +58,19 @@ class VerifyRAGameIdUseCase @Inject constructor(
             raRepository.resolveGameId(hash)
         } catch (e: Exception) {
             Logger.warn(TAG, "Network error resolving game ID for hash $hash: ${e.message}")
-            return game.effectiveRaId
+            return game.effectiveRaId ?: game.raId
         }
 
-        gameDao.updateVerifiedRaId(gameId, resolvedId)
-
-        if (resolvedId != null && resolvedId != game.raId) {
-            Logger.info(TAG, "Verified RA ID differs from RomM: verified=$resolvedId, romm=${game.raId} (game $gameId)")
+        if (resolvedId != null) {
+            gameDao.updateVerifiedRaId(gameId, resolvedId)
+            if (resolvedId != game.raId) {
+                Logger.info(TAG, "Verified RA ID differs from RomM: verified=$resolvedId, romm=${game.raId} (game $gameId)")
+            }
+            return resolvedId
         }
 
-        return resolvedId
+        Logger.warn(TAG, "RA hash lookup returned no match for game $gameId (hash=$hash); not persisting verified=null, falling back to romm raId=${game.raId}")
+        return game.raId
     }
 
     private fun resolveHashPath(localPath: String, platformSlug: String): String? {

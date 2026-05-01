@@ -1589,3 +1589,9 @@ object Migration_107_108 : Migration(107, 108) {
         db.execSQL("ALTER TABLE save_sync ADD COLUMN corruptZipTimestamp TEXT")
     }
 }
+
+object Migration_108_109 : Migration(108, 109) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("UPDATE games SET raIdVerified = 0 WHERE verifiedRaId IS NULL AND raIdVerified = 1")
+    }
+}

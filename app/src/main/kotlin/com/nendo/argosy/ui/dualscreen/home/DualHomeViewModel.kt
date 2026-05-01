@@ -170,7 +170,8 @@ class DualHomeViewModel(
     private val preferencesRepository: UserPreferencesRepository? = null,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val repairImageCacheUseCase: RepairImageCacheUseCase? = null,
-    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
+    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -192,7 +193,25 @@ class DualHomeViewModel(
         loadData()
         observeDownloads()
         observePlatformChanges()
+        observeGradientChanges()
     }
+
+    private fun observeGradientChanges() {
+        val delegate = gradientExtractionDelegate ?: return
+        viewModelScope.launch {
+            delegate.gradients.collect { gradients ->
+                _uiState.update { state ->
+                    state.copy(
+                        games = state.games.map { it.applyGradient(gradients) }
+                    )
+                }
+                allLibraryGames = allLibraryGames.map { it.applyGradient(gradients) }
+            }
+        }
+    }
+
+    private fun HomeGameUi.applyGradient(gradients: Map<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>): HomeGameUi =
+        gradients[id]?.let { copy(gradientColors = it) } ?: this
 
     private fun loadData() {
         viewModelScope.launch {
@@ -1245,7 +1264,10 @@ class DualHomeViewModel(
     // --- Private: Entity to UI ---
 
     private suspend fun GameEntity.toUi(): HomeGameUi =
-        toHomeGameUi(downloadStatus = downloadFileStatusRepository)
+        toHomeGameUi(
+            downloadStatus = downloadFileStatusRepository,
+            gradientColors = gradientExtractionDelegate?.getGradient(id)
+        )
 
     // --- Cover Repair ---
 

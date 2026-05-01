@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var steamContentManager: com.nendo.argosy.data.steam.SteamContentManager
     @Inject lateinit var presenceManager: com.nendo.argosy.data.social.PresenceManager
     @Inject lateinit var discordPresenceManager: com.nendo.argosy.data.social.discord.DiscordPresenceManager
+    @Inject lateinit var gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -256,6 +257,7 @@ class MainActivity : ComponentActivity() {
                 steamContentManager = steamContentManager,
                 repairImageCacheUseCase = repairImageCacheUseCase,
                 downloadFileStatusRepository = downloadFileStatusRepository,
+                gradientExtractionDelegate = gradientExtractionDelegate,
                 initialRolesSwapped = initialSwapped
             )
             DualScreenManagerHolder.instance = dualScreenManager

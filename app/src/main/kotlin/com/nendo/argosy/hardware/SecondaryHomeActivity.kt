@@ -96,6 +96,7 @@ class SecondaryHomeActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        installSystemBarsWatchdog()
 
         hideSystemUI()
 
@@ -247,6 +248,7 @@ class SecondaryHomeActivity :
 
     override fun onResume() {
         super.onResume()
+        hideSystemUI()
         if (!::dsm.isInitialized) return
         val currentDsm = DualScreenManagerHolder.instance
         if (currentDsm != null && dsm !== currentDsm) {
@@ -589,7 +591,8 @@ class SecondaryHomeActivity :
             steamContentManager = dsm.steamContentManager,
             preferencesRepository = dsm.preferencesRepository,
             repairImageCacheUseCase = dsm.repairImageCacheUseCase,
-            downloadFileStatusRepository = dsm.downloadFileStatusRepository
+            downloadFileStatusRepository = dsm.downloadFileStatusRepository,
+            gradientExtractionDelegate = dsm.gradientExtractionDelegate
         )
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
@@ -806,6 +809,15 @@ class SecondaryHomeActivity :
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    private fun installSystemBarsWatchdog() {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
+            if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
+                v.post { hideSystemUI() }
+            }
+            insets
+        }
     }
 
 }

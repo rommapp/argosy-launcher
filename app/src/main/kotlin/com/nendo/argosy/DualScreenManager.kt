@@ -95,6 +95,7 @@ class DualScreenManager(
     internal val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     internal val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase? = null,
     internal val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
+    internal val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -455,7 +456,8 @@ class DualScreenManager(
             steamContentManager = steamContentManager,
             preferencesRepository = preferencesRepository,
             repairImageCacheUseCase = repairImageCacheUseCase,
-            downloadFileStatusRepository = downloadFileStatusRepository
+            downloadFileStatusRepository = downloadFileStatusRepository,
+            gradientExtractionDelegate = gradientExtractionDelegate
         )
     }
 

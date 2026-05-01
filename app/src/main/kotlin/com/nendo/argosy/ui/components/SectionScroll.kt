@@ -48,7 +48,7 @@ fun SectionFocusedScroll(
 ) {
     var previousFocusIndex by remember { mutableIntStateOf(focusedIndex) }
 
-    LaunchedEffect(focusedIndex, sections) {
+    LaunchedEffect(focusedIndex) {
         val layoutInfo = listState.layoutInfo
         val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val visibleItems = layoutInfo.visibleItemsInfo

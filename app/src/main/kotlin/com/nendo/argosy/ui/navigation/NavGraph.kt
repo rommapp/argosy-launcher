@@ -23,6 +23,7 @@ import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
 import com.nendo.argosy.ui.screens.launch.LaunchScreen
+import com.nendo.argosy.ui.screens.quaypass.QuayPassPlazaScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.doodle.DoodleScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
@@ -385,6 +386,10 @@ fun NavGraph(
                 initialDoodleGameTitle = doodleGameTitle,
                 initialDoodleGameCoverPath = doodleGameCoverPath
             )
+        }
+
+        composable(Screen.QuayPass.route) {
+            QuayPassPlazaScreen()
         }
     }
 }

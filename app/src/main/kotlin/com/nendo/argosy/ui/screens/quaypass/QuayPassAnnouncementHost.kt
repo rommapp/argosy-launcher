@@ -1,20 +1,26 @@
 package com.nendo.argosy.ui.screens.quaypass
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.components.QuayPassAnnouncementModal
+import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.input.QuayPassAnnouncementInputHandler
 import com.nendo.argosy.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,12 +32,6 @@ class QuayPassAnnouncementViewModel @Inject constructor(
 
     private val sessionDismissed = MutableStateFlow(false)
 
-    /**
-     * v1 PoC: shows on every cold start when social-linked + QuayPass off.
-     * Within a session, dismissing suppresses until next cold start.
-     * `quayPassAnnouncementSeen` pref is written but not read for suppression yet;
-     * flipping to one-time-only is a single condition change here.
-     */
     val shouldShow: StateFlow<Boolean> = combine(
         preferencesRepository.userPreferences,
         sessionDismissed
@@ -54,13 +54,37 @@ fun QuayPassAnnouncementHost(
 ) {
     val show by viewModel.shouldShow.collectAsState()
     if (!show) return
+
+    val inputDispatcher = LocalInputDispatcher.current
+    var focusIndex by remember { mutableStateOf(1) }
+
+    val handler = remember(viewModel) {
+        QuayPassAnnouncementInputHandler(
+            getFocusIndex = { focusIndex },
+            onFocusChange = { focusIndex = it },
+            onLearnMore = {
+                viewModel.dismiss()
+                onNavigate(Screen.QuayPassDetails.route)
+            },
+            onDismiss = { viewModel.dismiss() }
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        focusIndex = 1
+        inputDispatcher.pushModal(handler)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { inputDispatcher.popModal() }
+    }
+
     QuayPassAnnouncementModal(
+        focusedButton = focusIndex,
         onLearnMore = {
             viewModel.dismiss()
             onNavigate(Screen.QuayPassDetails.route)
         },
-        onDismiss = {
-            viewModel.dismiss()
-        }
+        onDismiss = { viewModel.dismiss() }
     )
 }

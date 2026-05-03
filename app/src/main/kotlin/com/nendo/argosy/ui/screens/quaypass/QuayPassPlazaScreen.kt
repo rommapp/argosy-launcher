@@ -22,10 +22,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.navigation.Screen
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,40 +59,88 @@ fun QuayPassPlazaScreen(
 ) {
     val encounters by viewModel.encounters.collectAsState()
     val running by viewModel.isServiceRunning.collectAsState()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val inputDispatcher = LocalInputDispatcher.current
 
     DisposableEffect(Unit) {
         onDispose { viewModel.markAllSeen() }
+    }
+
+    val handler = remember(listState) {
+        object : InputHandler {
+            override fun onUp(): InputResult {
+                scope.launch {
+                    val target = (listState.firstVisibleItemIndex - 1).coerceAtLeast(0)
+                    listState.animateScrollToItem(target)
+                }
+                return InputResult.HANDLED
+            }
+            override fun onDown(): InputResult {
+                scope.launch {
+                    val target = listState.firstVisibleItemIndex + 1
+                    listState.animateScrollToItem(target)
+                }
+                return InputResult.HANDLED
+            }
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, handler) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                inputDispatcher.subscribeView(handler, forRoute = Screen.QuayPass.route)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        inputDispatcher.subscribeView(handler, forRoute = Screen.QuayPass.route)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(
-                text = "Plaza",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = if (running) "Listening for nearby travelers..." else "QuayPass is offline",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-            )
-            Spacer(Modifier.height(16.dp))
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Plaza",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = if (running) "Listening for nearby travelers..." else "QuayPass is offline",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                )
+                Spacer(Modifier.height(16.dp))
 
-            if (encounters.isEmpty()) {
-                EmptyState()
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(encounters, key = { it.credentialFingerprint }) { encounter ->
-                        EncounterCard(encounter)
+                if (encounters.isEmpty()) {
+                    EmptyState()
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(encounters, key = { it.credentialFingerprint }) { encounter ->
+                            EncounterCard(encounter)
+                        }
                     }
                 }
             }
+
+            FooterBar(
+                hints = listOf(
+                    InputButton.B to "Back",
+                    InputButton.DPAD_VERTICAL to "Scroll"
+                )
+            )
         }
     }
 }

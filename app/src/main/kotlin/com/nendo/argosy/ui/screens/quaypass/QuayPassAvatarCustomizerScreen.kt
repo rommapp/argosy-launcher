@@ -2,7 +2,7 @@ package com.nendo.argosy.ui.screens.quaypass
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,22 +25,34 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
+import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.input.QuayPassAvatarCustomizerInputHandler
+import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.quaypass.avatar.AvatarCategory
 import com.nendo.argosy.ui.quaypass.avatar.AvatarPartRequest
 import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarPalette
 import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarRenderer
+import com.nendo.argosy.ui.quaypass.avatar.colorIndexFor
+import com.nendo.argosy.ui.quaypass.avatar.partIndexFor
 
 @Composable
 fun QuayPassAvatarCustomizerScreen(
@@ -49,89 +61,175 @@ fun QuayPassAvatarCustomizerScreen(
     viewModel: QuayPassAvatarCustomizerViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val inputDispatcher = LocalInputDispatcher.current
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is QuayPassAvatarCustomizerViewModel.Event.Saved -> onSaved()
+                is QuayPassAvatarCustomizerViewModel.Event.Cancelled -> onCancel()
                 is QuayPassAvatarCustomizerViewModel.Event.Error -> {}
             }
         }
+    }
+
+    val handler = remember(viewModel) {
+        QuayPassAvatarCustomizerInputHandler(
+            onSectionStep = { viewModel.stepSection(it) },
+            onAdjustWithinSection = { viewModel.adjustWithinSection(it) },
+            onConfirm = { viewModel.confirmFocused() },
+            onBack = { viewModel.cancel() }
+        )
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, handler) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                inputDispatcher.subscribeView(handler, forRoute = Screen.QuayPassAvatarEditor.route)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        inputDispatcher.subscribeView(handler, forRoute = Screen.QuayPassAvatarEditor.route)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Build Your Mii",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Box(
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp),
-                contentAlignment = Alignment.Center
+                    .weight(1f)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                QuayPassAvatarRenderer(avatar = state.avatar, size = 200.dp)
-            }
-
-            CategoryTabRow(
-                selected = state.selectedCategory,
-                onSelect = viewModel::selectCategory
-            )
-
-            PartCarousel(
-                category = state.selectedCategory,
-                selectedIndex = state.avatar.partIndexFor(state.selectedCategory),
-                indices = viewModel.partCatalog.forCategory(state.selectedCategory),
-                avatar = state.avatar,
-                onSelect = { viewModel.selectPartIndex(state.selectedCategory, it) }
-            )
-
-            if (state.selectedCategory.isTintable()) {
                 Text(
-                    text = "Color",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
+                    text = "Build Your Mii",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
-                ColorSwatchRow(
-                    palette = paletteFor(state.selectedCategory),
-                    selected = state.avatar.colorIndexFor(state.selectedCategory),
-                    onSelect = { viewModel.selectColor(state.selectedCategory, it) }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    QuayPassAvatarRenderer(avatar = state.avatar, size = 200.dp)
+                }
+
+                SectionLabel("Part type", focused = state.focusedSection == CustomizerSection.Category)
+                CategoryTabRow(
+                    selected = state.selectedCategory,
+                    isSectionFocused = state.focusedSection == CustomizerSection.Category,
+                    onSelect = viewModel::selectCategory
                 )
+
+                SectionLabel(state.selectedCategory.displayName(), focused = state.focusedSection == CustomizerSection.Parts)
+                PartCarousel(
+                    category = state.selectedCategory,
+                    selectedIndex = state.avatar.partIndexFor(state.selectedCategory),
+                    indices = viewModel.partCatalog.forCategory(state.selectedCategory),
+                    avatar = state.avatar,
+                    isSectionFocused = state.focusedSection == CustomizerSection.Parts,
+                    onSelect = { viewModel.selectPartIndex(state.selectedCategory, it) }
+                )
+
+                if (state.selectedCategory.isTintable()) {
+                    SectionLabel("Color", focused = state.focusedSection == CustomizerSection.Color)
+                    ColorSwatchRow(
+                        palette = paletteFor(state.selectedCategory),
+                        selected = state.avatar.colorIndexFor(state.selectedCategory),
+                        isSectionFocused = state.focusedSection == CustomizerSection.Color,
+                        onSelect = { viewModel.selectColor(state.selectedCategory, it) }
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ActionButton(
+                        label = "Cancel",
+                        isSectionFocused = state.focusedSection == CustomizerSection.Actions,
+                        isFocused = state.actionFocus == 0,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.cancel() }
+                    )
+                    ActionButton(
+                        label = "Save",
+                        isSectionFocused = state.focusedSection == CustomizerSection.Actions,
+                        isFocused = state.actionFocus == 1,
+                        modifier = Modifier.weight(1f),
+                        isPrimary = true,
+                        onClick = viewModel::save
+                    )
+                }
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = onCancel
-                ) { Text("Cancel") }
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = viewModel::save
-                ) { Text("Save") }
-            }
+            FooterBar(
+                hints = listOf(
+                    InputButton.B to "Cancel",
+                    InputButton.DPAD_VERTICAL to "Section",
+                    InputButton.DPAD_HORIZONTAL to "Adjust",
+                    InputButton.A to "Confirm"
+                )
+            )
         }
     }
 }
 
 @Composable
+private fun SectionLabel(text: String, focused: Boolean) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = if (focused) FontWeight.Bold else FontWeight.Medium,
+        color = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun ActionButton(
+    label: String,
+    isSectionFocused: Boolean,
+    isFocused: Boolean,
+    modifier: Modifier = Modifier,
+    isPrimary: Boolean = false,
+    onClick: () -> Unit
+) {
+    val highlight = isSectionFocused && isFocused
+    val container = when {
+        highlight && isPrimary -> MaterialTheme.colorScheme.primary
+        highlight -> MaterialTheme.colorScheme.primaryContainer
+        isPrimary -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+        else -> Color.Transparent
+    }
+    val content = when {
+        highlight && isPrimary -> MaterialTheme.colorScheme.onPrimary
+        highlight -> MaterialTheme.colorScheme.onPrimaryContainer
+        isPrimary -> MaterialTheme.colorScheme.onPrimary
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(48.dp),
+        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+            containerColor = container,
+            contentColor = content
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) { Text(label) }
+}
+
+@Composable
 private fun CategoryTabRow(
     selected: AvatarCategory,
+    isSectionFocused: Boolean,
     onSelect: (AvatarCategory) -> Unit
 ) {
     LazyRow(
@@ -140,21 +238,28 @@ private fun CategoryTabRow(
     ) {
         items(AvatarCategory.entries.toTypedArray()) { category ->
             val isSelected = category == selected
+            val highlight = isSectionFocused && isSelected
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(
-                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant
+                        when {
+                            highlight -> MaterialTheme.colorScheme.primary
+                            isSelected -> MaterialTheme.colorScheme.primaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        }
                     )
-                    .clickable { onSelect(category) }
+                    .clickableNoFocus { onSelect(category) }
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = category.displayName(),
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = when {
+                        highlight -> MaterialTheme.colorScheme.onPrimary
+                        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
         }
@@ -167,6 +272,7 @@ private fun PartCarousel(
     selectedIndex: Int,
     indices: List<Int>,
     avatar: QuayPassAvatar,
+    isSectionFocused: Boolean,
     onSelect: (Int) -> Unit
 ) {
     LazyRow(
@@ -177,6 +283,7 @@ private fun PartCarousel(
             item("none") {
                 PartThumbnail(
                     isSelected = selectedIndex == 0,
+                    isSectionFocused = isSectionFocused,
                     onClick = { onSelect(0) },
                     label = "None"
                 )
@@ -185,6 +292,7 @@ private fun PartCarousel(
         items(indices) { index ->
             PartThumbnail(
                 isSelected = selectedIndex == index,
+                isSectionFocused = isSectionFocused,
                 onClick = { onSelect(index) }
             ) {
                 AsyncImage(
@@ -200,21 +308,27 @@ private fun PartCarousel(
 @Composable
 private fun PartThumbnail(
     isSelected: Boolean,
+    isSectionFocused: Boolean,
     onClick: () -> Unit,
     label: String? = null,
     content: @Composable () -> Unit = {}
 ) {
+    val borderColor = when {
+        isSectionFocused && isSelected -> MaterialTheme.colorScheme.primary
+        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        else -> Color.Transparent
+    }
     Box(
         modifier = Modifier
             .size(72.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(
-                width = 2.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                width = if (isSectionFocused && isSelected) 3.dp else 2.dp,
+                color = borderColor,
                 shape = RoundedCornerShape(12.dp)
             )
-            .clickable(onClick = onClick),
+            .clickableNoFocus(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         if (label != null) {
@@ -233,6 +347,7 @@ private fun PartThumbnail(
 private fun ColorSwatchRow(
     palette: List<Color>,
     selected: Int,
+    isSectionFocused: Boolean,
     onSelect: (Int) -> Unit
 ) {
     LazyRow(
@@ -241,18 +356,26 @@ private fun ColorSwatchRow(
     ) {
         items(palette.size) { i ->
             val isSelected = i == selected
+            val highlight = isSectionFocused && isSelected
             Box(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(palette[i])
                     .border(
-                        width = if (isSelected) 3.dp else 1.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        width = when {
+                            highlight -> 3.dp
+                            isSelected -> 2.dp
+                            else -> 1.dp
+                        },
+                        color = when {
+                            highlight -> MaterialTheme.colorScheme.primary
+                            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        },
                         shape = CircleShape
                     )
-                    .clickable { onSelect(i) }
+                    .clickableNoFocus { onSelect(i) }
             )
         }
     }
@@ -273,12 +396,6 @@ private fun AvatarCategory.displayName(): String = when (this) {
     AvatarCategory.Hat -> "Hat"
 }
 
-private fun AvatarCategory.isTintable(): Boolean = this !in setOf(
-    AvatarCategory.Wrinkles,
-    AvatarCategory.Makeup,
-    AvatarCategory.Nose
-)
-
 private val OPTIONAL_CATEGORIES = setOf(
     AvatarCategory.Wrinkles,
     AvatarCategory.Makeup,
@@ -287,33 +404,6 @@ private val OPTIONAL_CATEGORIES = setOf(
     AvatarCategory.Glasses,
     AvatarCategory.Hat
 )
-
-private fun QuayPassAvatar.partIndexFor(category: AvatarCategory): Int = when (category) {
-    AvatarCategory.Face -> faceShape
-    AvatarCategory.Wrinkles -> wrinkles
-    AvatarCategory.Makeup -> makeup
-    AvatarCategory.Eyes -> eyeType
-    AvatarCategory.Eyebrows -> eyebrowType
-    AvatarCategory.Nose -> noseType
-    AvatarCategory.Mouth -> mouthType
-    AvatarCategory.Mustache -> mustacheType
-    AvatarCategory.Goatee -> goateeType
-    AvatarCategory.Hair -> hairType
-    AvatarCategory.Glasses -> glassesType
-    AvatarCategory.Hat -> hatType
-}
-
-private fun QuayPassAvatar.colorIndexFor(category: AvatarCategory): Int = when (category) {
-    AvatarCategory.Face -> skinColor
-    AvatarCategory.Hair -> hairColor
-    AvatarCategory.Eyes -> eyeColor
-    AvatarCategory.Eyebrows -> eyebrowColor
-    AvatarCategory.Mouth -> mouthColor
-    AvatarCategory.Mustache, AvatarCategory.Goatee -> facialHairColor
-    AvatarCategory.Glasses -> glassesColor
-    AvatarCategory.Hat -> hatColor
-    else -> 0
-}
 
 private fun QuayPassAvatar.toThumbnailRequest(category: AvatarCategory, index: Int): AvatarPartRequest =
     AvatarPartRequest(

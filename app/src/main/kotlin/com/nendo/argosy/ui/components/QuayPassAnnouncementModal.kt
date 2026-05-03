@@ -6,16 +6,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable
 fun QuayPassAnnouncementModal(
+    focusedButton: Int,
     onLearnMore: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -24,8 +28,9 @@ fun QuayPassAnnouncementModal(
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.B to "Close",
-            InputButton.A to "Learn more"
+            InputButton.B to "Maybe later",
+            InputButton.DPAD_HORIZONTAL to "Choose",
+            InputButton.A to "Confirm"
         )
     ) {
         Column(
@@ -50,13 +55,28 @@ fun QuayPassAnnouncementModal(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
-                OutlinedButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = onDismiss
-                ) { Text("Maybe later") }
                 Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = onLearnMore
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (focusedButton == 0) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                        contentColor = if (focusedButton == 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(Dimens.radiusMd)
+                ) { Text("Maybe later") }
+
+                Button(
+                    onClick = onLearnMore,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (focusedButton == 1) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                        contentColor = if (focusedButton == 1) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(Dimens.radiusMd)
                 ) { Text("Learn more") }
             }
         }

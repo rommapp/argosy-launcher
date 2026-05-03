@@ -219,7 +219,8 @@ fun NavGraph(
             SettingsScreen(
                 onBack = navigateToDefault,
                 initialSection = section,
-                initialAction = action
+                initialAction = action,
+                onNavigate = { route -> navController.navigate(route) }
             )
         }
 

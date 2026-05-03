@@ -57,8 +57,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -132,6 +134,11 @@ class SettingsViewModel @Inject constructor(
 
     internal val _requestScreenCapturePermissionEvent = MutableSharedFlow<Unit>()
     val requestScreenCapturePermissionEvent: SharedFlow<Unit> = _requestScreenCapturePermissionEvent.asSharedFlow()
+
+    internal val _navigationEvents = MutableSharedFlow<NavigationEvent>(extraBufferCapacity = 4)
+    val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
+
+    data class NavigationEvent(val route: String)
 
     val imageCacheProgress: StateFlow<ImageCacheProgress> = imageCacheManager.progress
 
@@ -1062,7 +1069,9 @@ class SettingsViewModel @Inject constructor(
                         discordLinked = socialRepository.discordLinked.value,
                         discordUsername = socialRepository.discordUsername.value,
                         discordRichPresenceEnabled = prefs.discordRichPresenceEnabled,
-                        discordPresenceState = discordPresenceManager.state.value
+                        discordPresenceState = discordPresenceManager.state.value,
+                        quayPassEnabled = prefs.quayPassEnabled,
+                        quayPassAvatarConfigured = prefs.quayPassAvatarConfigured
                     )) }
                 }
                 is SocialConnectionState.AwaitingAuth -> {
@@ -1093,6 +1102,17 @@ class SettingsViewModel @Inject constructor(
                 discordPresenceState = presenceState
             )) }
         }.launchIn(viewModelScope)
+
+        preferencesRepository.userPreferences
+            .map { it.quayPassEnabled to it.quayPassAvatarConfigured }
+            .distinctUntilChanged()
+            .onEach { (enabled, configured) ->
+                _uiState.update { it.copy(social = it.social.copy(
+                    quayPassEnabled = enabled,
+                    quayPassAvatarConfigured = configured
+                )) }
+            }
+            .launchIn(viewModelScope)
     }
 
     internal fun handleSocialConfirm(state: SettingsUiState): InputResult {
@@ -1127,6 +1147,19 @@ class SettingsViewModel @Inject constructor(
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.SuppressInGame -> {
                         if (state.social.onlineStatusEnabled) setSocialSuppressNotificationsInGame(!state.social.suppressNotificationsInGame)
                         InputResult.handled(SoundType.TOGGLE)
+                    }
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.QuayPassEnabled -> {
+                        if (state.social.quayPassAvatarConfigured) {
+                            setQuayPassEnabled(!state.social.quayPassEnabled)
+                            InputResult.handled(SoundType.TOGGLE)
+                        } else {
+                            _navigationEvents.tryEmit(NavigationEvent(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route))
+                            InputResult.HANDLED
+                        }
+                    }
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.QuayPassEditAvatar -> {
+                        _navigationEvents.tryEmit(NavigationEvent(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route))
+                        InputResult.HANDLED
                     }
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.Unlink -> {
                         logoutSocial()
@@ -1243,6 +1276,21 @@ class SettingsViewModel @Inject constructor(
                 suppressNotificationsInGame = enabled
             )) }
         }
+    }
+
+    /**
+     * Returns true if QuayPass was enabled. Returns false if the call was a
+     * no-op (e.g. avatar not configured) so the caller can route to the
+     * customizer or surface a message. Disable always succeeds.
+     */
+    fun setQuayPassEnabled(enabled: Boolean): Boolean {
+        if (enabled && !_uiState.value.social.quayPassAvatarConfigured) {
+            return false
+        }
+        viewModelScope.launch {
+            preferencesRepository.setQuayPassEnabled(enabled)
+        }
+        return true
     }
 
     fun setDiscordRichPresence(enabled: Boolean) {

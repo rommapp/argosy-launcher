@@ -95,6 +95,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     initialSection: String? = null,
     initialAction: String? = null,
+    onNavigate: (String) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -204,6 +205,12 @@ fun SettingsScreen(
         viewModel.openUrlEvent.collect { url ->
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             context.startActivity(intent)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvents.collect { event ->
+            onNavigate(event.route)
         }
     }
 
@@ -497,7 +504,7 @@ fun SettingsScreen(
                     SettingsSection.FRAME_PICKER -> FrameSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
-                    SettingsSection.SOCIAL -> SocialSection(uiState, viewModel)
+                    SettingsSection.SOCIAL -> SocialSection(uiState, viewModel, onNavigate)
                 }
             }
 

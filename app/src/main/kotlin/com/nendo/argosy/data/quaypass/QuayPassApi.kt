@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.quaypass
 
 import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Header
@@ -27,28 +28,27 @@ interface QuayPassApi {
     ): Response<CredentialResponse>
 }
 
+@JsonClass(generateAdapter = true)
 data class RegisterClientRequest(
-    @Json(name = "public_key") val publicKey: String,           // base64
-    @Json(name = "public_key_alg") val publicKeyAlg: String,    // "ed25519" | "ec-p256"
-    @Json(name = "apk_signing_cert_hash") val apkSigningCertHash: String,  // hex sha256
-    @Json(name = "fingerprint_hash") val fingerprintHash: String,           // hex sha256
-    @Json(name = "device_token") val deviceToken: String                    // android_id
+    @Json(name = "public_key") val publicKey: String,
+    @Json(name = "public_key_alg") val publicKeyAlg: String,
+    @Json(name = "apk_signing_cert_hash") val apkSigningCertHash: String,
+    @Json(name = "fingerprint_hash") val fingerprintHash: String,
+    @Json(name = "device_token") val deviceToken: String
 )
 
-data class RegisterClientRequestSigned(
-    @Json(name = "previous_public_key") val previousPublicKey: String,      // base64
-    @Json(name = "rotation_signature") val rotationSignature: String        // base64; sig over new pubkey by old key
-)
-
+@JsonClass(generateAdapter = true)
 data class RegisterClientResponse(
     @Json(name = "client_install_id") val clientInstallId: String
 )
 
+@JsonClass(generateAdapter = true)
 data class IssueCredentialRequest(
     @Json(name = "client_install_id") val clientInstallId: String
 )
 
+@JsonClass(generateAdapter = true)
 data class CredentialResponse(
-    @Json(name = "credential") val credential: String,         // base64 of signed bundle
+    @Json(name = "credential") val credential: String,
     @Json(name = "expires_at") val expiresAtEpochSecs: Long
 )

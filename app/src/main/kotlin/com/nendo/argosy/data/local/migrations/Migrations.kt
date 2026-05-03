@@ -1595,3 +1595,37 @@ object Migration_108_109 : Migration(108, 109) {
         db.execSQL("UPDATE games SET raIdVerified = 0 WHERE verifiedRaId IS NULL AND raIdVerified = 1")
     }
 }
+
+object Migration_109_110 : Migration(109, 110) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_encounters (
+                credentialFingerprint TEXT NOT NULL PRIMARY KEY,
+                username TEXT NOT NULL,
+                displayName TEXT,
+                avatarColor TEXT,
+                avatarBlobBase64 TEXT,
+                greeting TEXT,
+                lastGameTitle TEXT,
+                lastGamePlatform TEXT,
+                lastGamePlaytimeMinutes INTEGER,
+                lastGameIgdbId INTEGER,
+                encounteredAt INTEGER NOT NULL,
+                seenByUser INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_quaypass_encounters_encounteredAt ON quaypass_encounters(encounteredAt)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_quaypass_encounters_seenByUser ON quaypass_encounters(seenByUser)")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_daily_stats (
+                date TEXT NOT NULL PRIMARY KEY,
+                encounterCount INTEGER NOT NULL DEFAULT 0,
+                ticketsEarned INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+    }
+}

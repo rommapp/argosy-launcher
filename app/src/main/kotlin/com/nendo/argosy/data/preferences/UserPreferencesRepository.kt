@@ -163,7 +163,12 @@ class UserPreferencesRepository @Inject constructor(
             socialSuppressNotificationsInGame = sync.socialSuppressNotificationsInGame,
             discordRichPresenceEnabled = sync.discordRichPresenceEnabled,
             lastPlaySessionSync = sync.lastPlaySessionSync,
-            lastStateValidation = sync.lastStateValidation
+            lastStateValidation = sync.lastStateValidation,
+            quayPassEnabled = sync.quayPassEnabled,
+            quayPassAvatarBytes = sync.quayPassAvatarBytes,
+            quayPassAvatarConfigured = sync.quayPassAvatarConfigured,
+            quayPassAvatarUpdatedAt = sync.quayPassAvatarUpdatedAt,
+            quayPassAnnouncementSeen = sync.quayPassAnnouncementSeen
         )
     }
 
@@ -265,6 +270,11 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSocialSuppressNotificationsInGame(enabled: Boolean) = syncPrefs.setSocialSuppressNotificationsInGame(enabled)
     suspend fun setDiscordRichPresenceEnabled(enabled: Boolean) = syncPrefs.setDiscordRichPresenceEnabled(enabled)
     suspend fun setLastPlaySessionSyncTime(time: Instant) = syncPrefs.setLastPlaySessionSyncTime(time)
+    suspend fun setQuayPassEnabled(enabled: Boolean) = syncPrefs.setQuayPassEnabled(enabled)
+    suspend fun setQuayPassAvatar(bytesBase64: String, updatedAt: Instant = Instant.now()) =
+        syncPrefs.setQuayPassAvatar(bytesBase64, updatedAt)
+    suspend fun clearQuayPassAvatar() = syncPrefs.clearQuayPassAvatar()
+    suspend fun setQuayPassAnnouncementSeen(seen: Boolean) = syncPrefs.setQuayPassAnnouncementSeen(seen)
 
     // --- Controls delegates ---
 
@@ -603,7 +613,12 @@ data class UserPreferences(
     val lastStateValidation: Instant? = null,
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val lastIntegrityCheckTime: Long? = null,
-    val steamInstallVolume: String? = null
+    val steamInstallVolume: String? = null,
+    val quayPassEnabled: Boolean = false,
+    val quayPassAvatarBytes: String? = null,
+    val quayPassAvatarConfigured: Boolean = false,
+    val quayPassAvatarUpdatedAt: Instant? = null,
+    val quayPassAnnouncementSeen: Boolean = false
 ) {
     val isSocialLinked: Boolean get() = socialSessionToken != null
 }

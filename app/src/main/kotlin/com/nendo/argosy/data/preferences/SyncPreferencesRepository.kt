@@ -46,7 +46,12 @@ data class SyncPreferences(
     val discordRichPresenceEnabled: Boolean = true,
     val socialSuppressNotificationsInGame: Boolean = false,
     val lastPlaySessionSync: Instant? = null,
-    val lastStateValidation: Instant? = null
+    val lastStateValidation: Instant? = null,
+    val quayPassEnabled: Boolean = false,
+    val quayPassAvatarBytes: String? = null,
+    val quayPassAvatarConfigured: Boolean = false,
+    val quayPassAvatarUpdatedAt: Instant? = null,
+    val quayPassAnnouncementSeen: Boolean = false
 )
 
 @Singleton
@@ -96,6 +101,11 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
         val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
+        val QUAYPASS_ENABLED = booleanPreferencesKey("quaypass_enabled")
+        val QUAYPASS_AVATAR_BYTES = stringPreferencesKey("quaypass_avatar_bytes")
+        val QUAYPASS_AVATAR_CONFIGURED = booleanPreferencesKey("quaypass_avatar_configured")
+        val QUAYPASS_AVATAR_UPDATED_AT = stringPreferencesKey("quaypass_avatar_updated_at")
+        val QUAYPASS_ANNOUNCEMENT_SEEN = booleanPreferencesKey("quaypass_announcement_seen")
     }
 
     suspend fun isSaveSyncLocalRekeyDone(): Boolean =
@@ -110,6 +120,30 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setSavePathCachePurged() {
         dataStore.edit { it[Keys.SAVE_PATH_CACHE_PURGED] = true }
+    }
+
+    suspend fun setQuayPassEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.QUAYPASS_ENABLED] = enabled }
+    }
+
+    suspend fun setQuayPassAvatar(bytesBase64: String, updatedAt: Instant = Instant.now()) {
+        dataStore.edit {
+            it[Keys.QUAYPASS_AVATAR_BYTES] = bytesBase64
+            it[Keys.QUAYPASS_AVATAR_CONFIGURED] = true
+            it[Keys.QUAYPASS_AVATAR_UPDATED_AT] = updatedAt.toString()
+        }
+    }
+
+    suspend fun clearQuayPassAvatar() {
+        dataStore.edit {
+            it.remove(Keys.QUAYPASS_AVATAR_BYTES)
+            it[Keys.QUAYPASS_AVATAR_CONFIGURED] = false
+            it.remove(Keys.QUAYPASS_AVATAR_UPDATED_AT)
+        }
+    }
+
+    suspend fun setQuayPassAnnouncementSeen(seen: Boolean) {
+        dataStore.edit { it[Keys.QUAYPASS_ANNOUNCEMENT_SEEN] = seen }
     }
 
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->
@@ -160,7 +194,12 @@ class SyncPreferencesRepository @Inject constructor(
             discordRichPresenceEnabled = prefs[Keys.DISCORD_RICH_PRESENCE_ENABLED] ?: true,
             socialSuppressNotificationsInGame = prefs[Keys.SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME] ?: false,
             lastPlaySessionSync = prefs[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC]?.let { Instant.parse(it) },
-            lastStateValidation = prefs[Keys.LAST_STATE_VALIDATION]?.let { Instant.parse(it) }
+            lastStateValidation = prefs[Keys.LAST_STATE_VALIDATION]?.let { Instant.parse(it) },
+            quayPassEnabled = prefs[Keys.QUAYPASS_ENABLED] ?: false,
+            quayPassAvatarBytes = prefs[Keys.QUAYPASS_AVATAR_BYTES],
+            quayPassAvatarConfigured = prefs[Keys.QUAYPASS_AVATAR_CONFIGURED] ?: false,
+            quayPassAvatarUpdatedAt = prefs[Keys.QUAYPASS_AVATAR_UPDATED_AT]?.let { Instant.parse(it) },
+            quayPassAnnouncementSeen = prefs[Keys.QUAYPASS_ANNOUNCEMENT_SEEN] ?: false
         )
     }
 

@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
+import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatarCodec
+import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarRenderer
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -107,7 +110,8 @@ private fun EmptyState() {
 
 @Composable
 private fun EncounterCard(encounter: QuayPassEncounterEntity) {
-    val accent = avatarColorFor(encounter)
+    val avatar = remember(encounter.avatarBlobBase64) { decodeAvatar(encounter.avatarBlobBase64) }
+    val accent = PALETTE[(avatar?.favoriteColor ?: 0) and 0x0F]
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp)
@@ -116,12 +120,16 @@ private fun EncounterCard(encounter: QuayPassEncounterEntity) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(accent)
-            )
+            if (avatar != null) {
+                QuayPassAvatarRenderer(avatar = avatar, size = 56.dp)
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(accent)
+                )
+            }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
@@ -162,15 +170,10 @@ private fun EncounterCard(encounter: QuayPassEncounterEntity) {
     }
 }
 
-private fun avatarColorFor(encounter: QuayPassEncounterEntity): Color {
-    val avatar = try {
-        encounter.avatarBlobBase64
-            ?.let { android.util.Base64.decode(it, android.util.Base64.NO_WRAP) }
-            ?.let { QuayPassAvatarCodec.decode(it) }
-    } catch (_: Throwable) {
-        null
-    }
-    return PALETTE[(avatar?.favoriteColor ?: 0) and 0x0F]
+private fun decodeAvatar(base64: String?): QuayPassAvatar? = base64?.let {
+    runCatching {
+        QuayPassAvatarCodec.decode(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
+    }.getOrNull()
 }
 
 private val PALETTE = listOf(

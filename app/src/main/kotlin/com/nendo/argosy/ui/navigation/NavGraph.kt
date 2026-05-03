@@ -23,6 +23,7 @@ import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
 import com.nendo.argosy.ui.screens.launch.LaunchScreen
+import com.nendo.argosy.ui.screens.quaypass.QuayPassAvatarCustomizerScreen
 import com.nendo.argosy.ui.screens.quaypass.QuayPassPlazaScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.doodle.DoodleScreen
@@ -390,6 +391,13 @@ fun NavGraph(
 
         composable(Screen.QuayPass.route) {
             QuayPassPlazaScreen()
+        }
+
+        composable(Screen.QuayPassAvatarEditor.route) {
+            QuayPassAvatarCustomizerScreen(
+                onSaved = { navController.popBackStack() },
+                onCancel = { navController.popBackStack() }
+            )
         }
     }
 }

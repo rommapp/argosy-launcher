@@ -94,6 +94,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var quayPassCredentialManager: com.nendo.argosy.data.quaypass.QuayPassCredentialManager
 
+    @Inject
+    lateinit var quayPassAvatarPartCatalog: com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarPartCatalog
+
     private val quayPassForegroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
         override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
             appScope.launch { quayPassCredentialManager.refreshIfNeeded() }
@@ -166,6 +169,8 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             .okHttpClient(okHttpClient)
             .components {
                 add(AppIconFetcher.Factory(packageManager))
+                add(com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarSvgFetcher.Factory(quayPassAvatarPartCatalog))
+                add(coil.decode.SvgDecoder.Factory())
             }
             .crossfade(true)
             .build()

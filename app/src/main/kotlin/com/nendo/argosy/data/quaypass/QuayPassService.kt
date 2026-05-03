@@ -86,16 +86,38 @@ class QuayPassService @Inject constructor(
 
         scope.launch {
             preferencesRepository.userPreferences
-                .map { it.socialSessionToken to (it.socialSessionToken != null) }
+                .map { ServiceTrigger(it.socialSessionToken, it.quayPassEnabled, it.quayPassAvatarConfigured) }
                 .distinctUntilChanged()
-                .collect { (token, isLinked) ->
-                    credentialManager.onSocialLinkChanged(isLinked, token)
-                    shouldBeRunning = isLinked
-                    if (isLinked && !_isRunning.value) tryStart()
-                    else if (!isLinked && _isRunning.value) stop()
+                .collect { trigger ->
+                    val isLinked = trigger.sessionToken != null
+                    credentialManager.onSocialLinkChanged(isLinked, trigger.sessionToken)
+                    shouldBeRunning = isLinked && trigger.quayPassEnabled && trigger.quayPassAvatarConfigured
+                    if (shouldBeRunning && !_isRunning.value) tryStart()
+                    else if (!shouldBeRunning && _isRunning.value) stop()
+                }
+        }
+
+        scope.launch {
+            preferencesRepository.userPreferences
+                .map { ProfileSnapshot(it.socialUsername, it.socialDisplayName, it.quayPassAvatarBytes) }
+                .distinctUntilChanged()
+                .collect {
+                    if (_isRunning.value) refreshOurBytes()
                 }
         }
     }
+
+    private data class ServiceTrigger(
+        val sessionToken: String?,
+        val quayPassEnabled: Boolean,
+        val quayPassAvatarConfigured: Boolean
+    )
+
+    private data class ProfileSnapshot(
+        val socialUsername: String?,
+        val socialDisplayName: String?,
+        val quayPassAvatarBytes: String?
+    )
 
     fun isBleSupported(): Boolean = bluetoothManager?.adapter != null
     fun isBleEnabled(): Boolean = bluetoothManager?.adapter?.isEnabled == true
@@ -159,6 +181,7 @@ class QuayPassService @Inject constructor(
 
     private suspend fun onDiscovered(device: BluetoothDevice) {
         exchangeMutex.withLock {
+            if (!_isRunning.value) return
             val client = gattClient ?: return
             val ourBytes = cachedOurBytes.get() ?: refreshOurBytes() ?: return
             orchestrator.handleClient(device, client, ourBytes)
@@ -168,7 +191,8 @@ class QuayPassService @Inject constructor(
     private suspend fun refreshOurBytes(): ByteArray? {
         val prefs = preferencesRepository.userPreferences.first()
         val username = prefs.socialUsername ?: return null
-        val avatarColor = parseColorIndex(prefs.socialAvatarColor)
+        val avatar = decodeStoredAvatar(prefs.quayPassAvatarBytes)
+            ?: colorOnlyAvatar(parseColorIndex(prefs.socialAvatarColor))
         val profile = OutboundProfile(
             username = username,
             displayName = prefs.socialDisplayName,
@@ -177,11 +201,19 @@ class QuayPassService @Inject constructor(
             lastGamePlatform = cachedLastGame?.platformSlug,
             lastGamePlaytimeMinutes = cachedLastGame?.playTimeMinutes,
             lastGameIgdbId = cachedLastGame?.igdbId,
-            avatar = colorOnlyAvatar(avatarColor)
+            avatar = avatar
         )
         val bytes = orchestrator.buildOurWireBytes(profile)
         cachedOurBytes.set(bytes)
         return bytes
+    }
+
+    private fun decodeStoredAvatar(bytesBase64: String?): com.nendo.argosy.data.quaypass.ble.QuayPassAvatar? {
+        val raw = bytesBase64 ?: return null
+        return runCatching {
+            val bytes = android.util.Base64.decode(raw, android.util.Base64.NO_WRAP)
+            com.nendo.argosy.data.quaypass.ble.QuayPassAvatarCodec.decode(bytes)
+        }.getOrNull()
     }
 
     private fun parseColorIndex(stored: String?): Int =

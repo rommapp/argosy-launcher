@@ -1,0 +1,250 @@
+package com.nendo.argosy.data.quaypass
+
+import android.util.Base64
+import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.squareup.moshi.Moshi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import java.security.Signature
+import java.security.spec.X509EncodedKeySpec
+import java.security.KeyFactory
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/** Manages the QuayPass install registration and server-signed credential. */
+@Singleton
+class QuayPassCredentialManager @Inject constructor(
+    private val keystore: QuayPassKeystore,
+    private val fingerprint: ClientFingerprint,
+    private val userPrefs: UserPreferencesRepository,
+    private val dataStore: DataStore<Preferences>
+) {
+
+    private val moshi = Moshi.Builder().build()
+    private val mutex = Mutex()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val okHttp by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
+                        else HttpLoggingInterceptor.Level.NONE
+                }
+            )
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private val api: QuayPassApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BuildConfig.SOCIAL_API_URL)
+            .client(okHttp)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+            .create(QuayPassApi::class.java)
+    }
+
+    suspend fun isRegistered(): Boolean {
+        val state = dataStore.data.first()
+        return state[Keys.CLIENT_INSTALL_ID] != null
+    }
+
+    /** Returns a non-expired credential, refreshing inline if expired or missing. */
+    suspend fun getValidCredential(): StoredCredential? = mutex.withLock {
+        val state = dataStore.data.first()
+        val installId = state[Keys.CLIENT_INSTALL_ID] ?: return null
+        val cred = state[Keys.CREDENTIAL]
+        val expires = state[Keys.CREDENTIAL_EXPIRES_AT]
+        if (cred != null && expires != null) {
+            val now = Instant.now().epochSecond
+            if (now < expires - REFRESH_THRESHOLD_SECONDS) {
+                return StoredCredential(cred, Instant.ofEpochSecond(expires))
+            }
+        }
+        return doRefresh(installId)
+    }
+
+    suspend fun refreshIfNeeded() {
+        val state = dataStore.data.first()
+        val installId = state[Keys.CLIENT_INSTALL_ID] ?: return
+        val expires = state[Keys.CREDENTIAL_EXPIRES_AT] ?: 0L
+        val now = Instant.now().epochSecond
+        if (now >= expires - REFRESH_THRESHOLD_SECONDS) {
+            mutex.withLock { doRefresh(installId) }
+        }
+    }
+
+    fun onSocialLinkChanged(isLinked: Boolean, sessionToken: String?) {
+        scope.launch {
+            mutex.withLock {
+                if (!isLinked) {
+                    clearLocal()
+                    return@withLock
+                }
+                val token = sessionToken ?: return@withLock
+                val state = dataStore.data.first()
+                val installId = state[Keys.CLIENT_INSTALL_ID] ?: registerNewInstall(token)
+                if (installId != null) {
+                    doRefresh(installId)
+                }
+            }
+        }
+    }
+
+    private suspend fun registerNewInstall(sessionToken: String): String? {
+        val keyInfo = try {
+            keystore.getOrCreateKeyInfo()
+        } catch (t: Throwable) {
+            Log.e(TAG, "Keystore unavailable; cannot register", t)
+            return null
+        }
+
+        val req = RegisterClientRequest(
+            publicKey = Base64.encodeToString(keyInfo.publicKeyEncoded, Base64.NO_WRAP),
+            publicKeyAlg = when (keyInfo.algorithm) {
+                QuayPassKeystore.Algorithm.ED25519 -> "ed25519"
+                QuayPassKeystore.Algorithm.EC_P256 -> "ec-p256"
+            },
+            apkSigningCertHash = fingerprint.apkSigningCertHash,
+            fingerprintHash = fingerprint.fingerprintHash,
+            deviceToken = fingerprint.deviceToken
+        )
+
+        return try {
+            val resp = api.registerClient(bearerHeader(sessionToken), req)
+            if (resp.isSuccessful) {
+                val body = resp.body()
+                val id = body?.clientInstallId
+                if (id != null) {
+                    dataStore.edit { it[Keys.CLIENT_INSTALL_ID] = id }
+                    Log.i(TAG, "Registered QuayPass install: $id")
+                    id
+                } else {
+                    Log.w(TAG, "Register response empty")
+                    null
+                }
+            } else {
+                Log.w(TAG, "Register failed: HTTP ${resp.code()}")
+                null
+            }
+        } catch (t: Throwable) {
+            Log.w(TAG, "Register error", t)
+            null
+        }
+    }
+
+    private suspend fun doRefresh(installId: String): StoredCredential? {
+        val sessionToken = userPrefs.userPreferences.first().socialSessionToken ?: return null
+        val req = IssueCredentialRequest(clientInstallId = installId)
+        return try {
+            val resp = api.refreshCredential(bearerHeader(sessionToken), req)
+            if (resp.isSuccessful) {
+                val body = resp.body() ?: return null
+                if (!verifyServerSignature(body.credential)) {
+                    Log.e(TAG, "Server-issued credential failed signature verification; refusing")
+                    return null
+                }
+                dataStore.edit {
+                    it[Keys.CREDENTIAL] = body.credential
+                    it[Keys.CREDENTIAL_EXPIRES_AT] = body.expiresAtEpochSecs
+                }
+                Log.i(TAG, "Refreshed QuayPass credential, expires ${body.expiresAtEpochSecs}")
+                StoredCredential(body.credential, Instant.ofEpochSecond(body.expiresAtEpochSecs))
+            } else {
+                Log.w(TAG, "Refresh failed: HTTP ${resp.code()}")
+                null
+            }
+        } catch (t: Throwable) {
+            Log.w(TAG, "Refresh error", t)
+            null
+        }
+    }
+
+    private suspend fun clearLocal() {
+        dataStore.edit {
+            it.remove(Keys.CLIENT_INSTALL_ID)
+            it.remove(Keys.CREDENTIAL)
+            it.remove(Keys.CREDENTIAL_EXPIRES_AT)
+        }
+        keystore.clear()
+    }
+
+    private fun verifyServerSignature(credentialBase64: String): Boolean {
+        val pubKeysRaw = BuildConfig.QUAYPASS_SERVER_PUBKEYS
+        if (pubKeysRaw.isBlank()) {
+            Log.w(TAG, "QUAYPASS_SERVER_PUBKEYS is empty; cannot verify credential")
+            return false
+        }
+        val bytes = try {
+            Base64.decode(credentialBase64, Base64.NO_WRAP)
+        } catch (_: Throwable) {
+            return false
+        }
+        if (bytes.size <= ED25519_SIG_LEN) return false
+        val body = bytes.copyOfRange(0, bytes.size - ED25519_SIG_LEN)
+        val sig = bytes.copyOfRange(bytes.size - ED25519_SIG_LEN, bytes.size)
+
+        for (rawPub in pubKeysRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }) {
+            val pubBytes = try {
+                Base64.decode(rawPub, Base64.NO_WRAP)
+            } catch (_: Throwable) {
+                continue
+            }
+            if (verifyEd25519(pubBytes, body, sig)) return true
+        }
+        return false
+    }
+
+    private fun verifyEd25519(pubKeyEncoded: ByteArray, data: ByteArray, sig: ByteArray): Boolean {
+        return try {
+            val keyFactory = KeyFactory.getInstance("Ed25519")
+            val pub = keyFactory.generatePublic(X509EncodedKeySpec(pubKeyEncoded))
+            val verifier = Signature.getInstance("Ed25519")
+            verifier.initVerify(pub)
+            verifier.update(data)
+            verifier.verify(sig)
+        } catch (t: Throwable) {
+            Log.v(TAG, "Ed25519 verify failed for pubkey: ${t.message}")
+            false
+        }
+    }
+
+    private fun bearerHeader(token: String) = "Bearer $token"
+
+    data class StoredCredential(
+        val bytesBase64: String,
+        val expiresAt: Instant
+    )
+
+    private object Keys {
+        val CLIENT_INSTALL_ID = stringPreferencesKey("quaypass_client_install_id")
+        val CREDENTIAL = stringPreferencesKey("quaypass_credential")
+        val CREDENTIAL_EXPIRES_AT = longPreferencesKey("quaypass_credential_expires_at")
+    }
+
+    companion object {
+        private const val TAG = "QuayPassCredentialManager"
+        private const val ED25519_SIG_LEN = 64
+        private const val REFRESH_THRESHOLD_SECONDS = 7L * 24 * 60 * 60 // 7 days
+    }
+}

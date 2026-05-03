@@ -58,6 +58,15 @@ android {
         buildConfigField("String", "DISCORD_APP_ID", "\"${envString("DISCORD_APP_ID")}\"")
         buildConfigField("Boolean", "DISCORD_SDK_ENABLED", envString("DISCORD_SDK_ENABLED", "false"))
         buildConfigField("String", "SOCIAL_API_URL", "\"https://api.argosy.dev/\"")
+        // QuayPass server signing pubkey(s): comma-separated base64 Ed25519
+        // public keys. Multiple values supported for zero-downtime rotation.
+        // Empty in dev/CI when no server keypair has been provisioned;
+        // QuayPassCredentialManager fails closed when empty.
+        buildConfigField(
+            "String",
+            "QUAYPASS_SERVER_PUBKEYS",
+            "\"${envString("QUAYPASS_SERVER_PUBKEYS")}\""
+        )
         buildConfigField("int", "DOLPHIN_SYS_VERSION", "2")
     }
 

@@ -1562,7 +1562,10 @@ fun ArgosyApp(
                     systemVolume = quickSettingsUiState.systemVolume,
                     screenBrightness = quickSettingsUiState.screenBrightness,
                     isDualScreenActive = isDualScreenDevice && companionActive,
-                    isRolesSwapped = isRolesSwapped
+                    isRolesSwapped = isRolesSwapped,
+                    isSocialLinked = quickSettingsUiState.isSocialLinked,
+                    quayPassEnabled = quickSettingsUiState.quayPassEnabled,
+                    quayPassAvatarConfigured = quickSettingsUiState.quayPassAvatarConfigured
                 ),
                 focusedIndex = quickSettingsFocusIndex,
                 onThemeCycle = { viewModel.cycleTheme() },
@@ -1579,6 +1582,7 @@ fun ArgosyApp(
                     (context as? com.nendo.argosy.MainActivity)
                         ?.dualScreenManager?.swapRoles()
                 },
+                onQuayPassToggle = { viewModel.toggleQuayPassFromQuickSettings() },
                 onDismiss = closeQuickSettings,
                 footerHints = quickSettingsFooterHints
             )

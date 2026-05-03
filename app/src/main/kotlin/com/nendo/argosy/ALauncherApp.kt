@@ -87,6 +87,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var steamContentManager: SteamContentManager
 
+    @Inject
+    lateinit var quayPassService: com.nendo.argosy.data.quaypass.QuayPassService
+
     override fun onCreate() {
         super.onCreate()
         UpdateCheckWorker.schedule(this)

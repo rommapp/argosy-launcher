@@ -21,9 +21,6 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import java.security.Signature
-import java.security.spec.X509EncodedKeySpec
-import java.security.KeyFactory
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -189,45 +186,8 @@ class QuayPassCredentialManager @Inject constructor(
         keystore.clear()
     }
 
-    private fun verifyServerSignature(credentialBase64: String): Boolean {
-        val pubKeysRaw = BuildConfig.QUAYPASS_SERVER_PUBKEYS
-        if (pubKeysRaw.isBlank()) {
-            Log.w(TAG, "QUAYPASS_SERVER_PUBKEYS is empty; cannot verify credential")
-            return false
-        }
-        val bytes = try {
-            Base64.decode(credentialBase64, Base64.NO_WRAP)
-        } catch (_: Throwable) {
-            return false
-        }
-        if (bytes.size <= ED25519_SIG_LEN) return false
-        val body = bytes.copyOfRange(0, bytes.size - ED25519_SIG_LEN)
-        val sig = bytes.copyOfRange(bytes.size - ED25519_SIG_LEN, bytes.size)
-
-        for (rawPub in pubKeysRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }) {
-            val pubBytes = try {
-                Base64.decode(rawPub, Base64.NO_WRAP)
-            } catch (_: Throwable) {
-                continue
-            }
-            if (verifyEd25519(pubBytes, body, sig)) return true
-        }
-        return false
-    }
-
-    private fun verifyEd25519(pubKeyEncoded: ByteArray, data: ByteArray, sig: ByteArray): Boolean {
-        return try {
-            val keyFactory = KeyFactory.getInstance("Ed25519")
-            val pub = keyFactory.generatePublic(X509EncodedKeySpec(pubKeyEncoded))
-            val verifier = Signature.getInstance("Ed25519")
-            verifier.initVerify(pub)
-            verifier.update(data)
-            verifier.verify(sig)
-        } catch (t: Throwable) {
-            Log.v(TAG, "Ed25519 verify failed for pubkey: ${t.message}")
-            false
-        }
-    }
+    private fun verifyServerSignature(credentialBase64: String): Boolean =
+        QuayPassCredentialBundle.parseAndVerifyBase64(credentialBase64) != null
 
     private fun bearerHeader(token: String) = "Bearer $token"
 
@@ -244,7 +204,6 @@ class QuayPassCredentialManager @Inject constructor(
 
     companion object {
         private const val TAG = "QuayPassCredentialManager"
-        private const val ED25519_SIG_LEN = 64
         private const val REFRESH_THRESHOLD_SECONDS = 7L * 24 * 60 * 60 // 7 days
     }
 }

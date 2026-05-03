@@ -214,6 +214,9 @@ dependencies {
     implementation(libs.bundles.network)
     ksp(libs.moshi.kotlin)
 
+    // CBOR (QuayPass BLE wire format)
+    implementation(libs.upokecenter.cbor)
+
     // Image loading
     implementation(libs.coil.compose)
 

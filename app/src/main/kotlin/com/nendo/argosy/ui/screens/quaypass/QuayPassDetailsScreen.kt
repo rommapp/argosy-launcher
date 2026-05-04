@@ -8,9 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -31,8 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.nendo.argosy.ui.components.FooterBar
-import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.QuayPassDetailsInputHandler
 import com.nendo.argosy.ui.navigation.Screen
@@ -76,79 +73,61 @@ fun QuayPassDetailsScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "Meet QuayPass",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.SemiBold
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Meet QuayPass",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text = "Pass nearby Argosy travelers and trade Miis, greetings, " +
+                    "and your most recent game. Bluetooth handles the meeting; " +
+                    "your Mii and account live across devices.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            when {
+                !state.avatarConfigured -> StatusLine(
+                    "Build your Mii to enable QuayPass.",
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = "Pass other Argosy travelers when you're nearby. " +
-                        "Share a Mii, a greeting, and the last game you played. " +
-                        "Encounters appear in the Plaza.",
-                    style = MaterialTheme.typography.bodyLarge
+                state.enabled -> StatusLine(
+                    "QuayPass is on. Encounters appear in the Plaza.",
+                    MaterialTheme.colorScheme.primary
                 )
-
-                Spacer(Modifier.height(8.dp))
-                FeatureBullet("Hands-free", "QuayPass works in the background. No notification, no popup, no interaction needed.")
-                FeatureBullet("Private by default", "Your name, greeting, and recent game travel locally over Bluetooth. Nothing is uploaded.")
-                FeatureBullet("Yours to design", "Build a Mii once. It travels with you across devices.")
-
-                Spacer(Modifier.height(24.dp))
-
-                if (!state.avatarConfigured) {
-                    Text(
-                        text = "Step 1: Build your Mii",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "QuayPass requires you to create an avatar before it can be enabled.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else if (state.enabled) {
-                    Text(
-                        text = "QuayPass is on. Find encounters in the Plaza.",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    buttons.forEachIndexed { index, button ->
-                        FocusableButton(
-                            label = button.label,
-                            isFocused = focusIndex == index,
-                            isPrimary = button.isPrimary,
-                            onClick = {
-                                focusIndex = index
-                                button.action()
-                            }
-                        )
-                    }
-                }
+                else -> StatusLine(
+                    "Avatar set. You can enable QuayPass any time.",
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            FooterBar(
-                hints = listOf(
-                    InputButton.B to "Back",
-                    InputButton.DPAD_VERTICAL to "Move",
-                    InputButton.A to "Select"
-                )
-            )
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                buttons.forEachIndexed { index, button ->
+                    FocusableButton(
+                        label = button.label,
+                        isFocused = focusIndex == index,
+                        isPrimary = button.isPrimary,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            focusIndex = index
+                            button.action()
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -180,6 +159,7 @@ private fun FocusableButton(
     label: String,
     isFocused: Boolean,
     isPrimary: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val container = when {
@@ -196,26 +176,18 @@ private fun FocusableButton(
     }
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
+        modifier = modifier.height(48.dp),
         colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content),
         shape = RoundedCornerShape(Dimens.radiusMd)
     ) { Text(label) }
 }
 
 @Composable
-private fun FeatureBullet(title: String, body: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+private fun StatusLine(text: String, color: Color) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
+        color = color
+    )
 }

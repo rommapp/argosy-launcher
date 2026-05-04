@@ -8,13 +8,13 @@ class QuayPassDetailsInputHandler(
     private val onBack: () -> Unit
 ) : InputHandler {
 
-    override fun onUp(): InputResult {
+    override fun onLeft(): InputResult {
         val current = getFocusIndex()
         if (current > 0) onFocusChange(current - 1)
         return InputResult.HANDLED
     }
 
-    override fun onDown(): InputResult {
+    override fun onRight(): InputResult {
         val current = getFocusIndex()
         if (current < getMaxIndex()) onFocusChange(current + 1)
         return InputResult.HANDLED

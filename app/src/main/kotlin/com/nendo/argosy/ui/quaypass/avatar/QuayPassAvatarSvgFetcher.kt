@@ -44,7 +44,7 @@ class QuayPassAvatarSvgFetcher(
 ) : Fetcher {
 
     override suspend fun fetch(): FetchResult? {
-        val path = catalog.assetPathFor(data.category, data.index)
+        val path = catalog.assetPathFor(data.category, data.index) ?: return null
         val raw = runCatching {
             context.assets.open(path).bufferedReader().use { it.readText() }
         }.getOrNull() ?: return null

@@ -22,6 +22,55 @@ enum class AvatarCategory(val prefix: String, val tintable: Boolean) {
     fun isTintable(): Boolean = tintable
 }
 
+/**
+ * Per-category mapping from numeric part index to the original on-disk
+ * filename suffix. Some categories use 2-digit padding (eyes-01.svg) and
+ * others bare integers (hair-0.svg); the catalog records each original
+ * suffix so callers don't have to guess the padding rule.
+ */
+@Singleton
+class QuayPassAvatarPartCatalog @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+
+    @Volatile
+    private var cache: Map<AvatarCategory, Map<Int, String>>? = null
+
+    fun forCategory(category: AvatarCategory): List<Int> =
+        ensureLoaded()[category]?.keys?.sorted().orEmpty()
+
+    fun assetPathFor(category: AvatarCategory, index: Int): String? {
+        val suffix = ensureLoaded()[category]?.get(index) ?: return null
+        return "quaypass/avatar/${category.prefix}-$suffix.svg"
+    }
+
+    private fun ensureLoaded(): Map<AvatarCategory, Map<Int, String>> {
+        cache?.let { return it }
+        synchronized(this) {
+            cache?.let { return it }
+            val all = runCatching { context.assets.list(ASSET_DIR)?.toList() }.getOrNull().orEmpty()
+            val grouped = AvatarCategory.entries.associateWith { category ->
+                buildMap {
+                    for (name in all) {
+                        if (!name.endsWith(".svg")) continue
+                        val base = name.removeSuffix(".svg")
+                        val parts = base.split("-", limit = 2)
+                        if (parts.size != 2 || parts[0] != category.prefix) continue
+                        val n = parts[1].toIntOrNull() ?: continue
+                        put(n, parts[1])
+                    }
+                }
+            }
+            cache = grouped
+            return grouped
+        }
+    }
+
+    companion object {
+        private const val ASSET_DIR = "quaypass/avatar"
+    }
+}
+
 fun com.nendo.argosy.data.quaypass.ble.QuayPassAvatar.partIndexFor(category: AvatarCategory): Int = when (category) {
     AvatarCategory.Face -> faceShape
     AvatarCategory.Wrinkles -> wrinkles
@@ -76,48 +125,5 @@ fun com.nendo.argosy.data.quaypass.ble.QuayPassAvatar.withColor(category: Avatar
         AvatarCategory.Glasses -> copy(glassesColor = c)
         AvatarCategory.Hat -> copy(hatColor = c)
         else -> this
-    }
-}
-
-/** Enumerates available SVG part files per category. Cached after first load. */
-@Singleton
-class QuayPassAvatarPartCatalog @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
-
-    @Volatile
-    private var cache: Map<AvatarCategory, List<Int>>? = null
-
-    fun forCategory(category: AvatarCategory): List<Int> = ensureLoaded()[category].orEmpty()
-
-    fun assetPathFor(category: AvatarCategory, index: Int): String =
-        "quaypass/avatar/${category.prefix}-${formatIndex(category, index)}.svg"
-
-    private fun ensureLoaded(): Map<AvatarCategory, List<Int>> {
-        cache?.let { return it }
-        synchronized(this) {
-            cache?.let { return it }
-            val all = runCatching { context.assets.list(ASSET_DIR)?.toList() }.getOrNull().orEmpty()
-            val grouped = AvatarCategory.entries.associateWith { category ->
-                all.mapNotNull { name ->
-                    if (!name.endsWith(".svg")) return@mapNotNull null
-                    val base = name.removeSuffix(".svg")
-                    val parts = base.split("-", limit = 2)
-                    if (parts.size != 2 || parts[0] != category.prefix) return@mapNotNull null
-                    parts[1].toIntOrNull()
-                }.sorted()
-            }
-            cache = grouped
-            return grouped
-        }
-    }
-
-    private fun formatIndex(category: AvatarCategory, index: Int): String {
-        val sample = forCategory(category).firstOrNull()?.toString().orEmpty()
-        return if (sample.length == 2) "%02d".format(index) else index.toString()
-    }
-
-    companion object {
-        private const val ASSET_DIR = "quaypass/avatar"
     }
 }

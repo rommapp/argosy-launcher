@@ -860,7 +860,7 @@ fun HomeScreen(
             )
         }
 
-        if (uiState.changelogEntry == null) {
+        if (!uiState.isLoading && uiState.changelogEntry == null) {
             com.nendo.argosy.ui.screens.quaypass.QuayPassAnnouncementHost(onNavigate = onNavigateToRoute)
         }
     }

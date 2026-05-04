@@ -141,6 +141,7 @@ object MessageTypes {
     const val LIBRARY_SYNCED = "library_synced"
     const val SYNC_PLAY_SESSIONS = "sync_play_sessions"
     const val PLAY_SESSIONS_SYNCED = "play_sessions_synced"
+    const val SET_QUAYPASS_AVATAR = "set_quaypass_avatar"
     const val GET_FRIEND = "get_friend"
     const val FRIEND_DATA = "friend_data"
     const val SEND_FRIEND_REQ = "send_friend_req"

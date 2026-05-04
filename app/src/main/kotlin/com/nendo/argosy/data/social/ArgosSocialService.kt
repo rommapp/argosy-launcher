@@ -845,6 +845,10 @@ class ArgosSocialService @Inject constructor(
         ))
     }
 
+    fun sendQuayPassAvatar(bytesBase64: String): Boolean {
+        return send(MessageTypes.SET_QUAYPASS_AVATAR, mapOf("avatar" to bytesBase64))
+    }
+
     fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null): Boolean {
         return send(MessageTypes.SET_PRESENCE, mapOf(
             "status" to status.value,

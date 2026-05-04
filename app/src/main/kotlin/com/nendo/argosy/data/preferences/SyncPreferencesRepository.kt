@@ -51,6 +51,7 @@ data class SyncPreferences(
     val quayPassAvatarBytes: String? = null,
     val quayPassAvatarConfigured: Boolean = false,
     val quayPassAvatarUpdatedAt: Instant? = null,
+    val quayPassAvatarSyncPending: Boolean = false,
     val quayPassAnnouncementSeen: Boolean = false
 )
 
@@ -105,6 +106,7 @@ class SyncPreferencesRepository @Inject constructor(
         val QUAYPASS_AVATAR_BYTES = stringPreferencesKey("quaypass_avatar_bytes")
         val QUAYPASS_AVATAR_CONFIGURED = booleanPreferencesKey("quaypass_avatar_configured")
         val QUAYPASS_AVATAR_UPDATED_AT = stringPreferencesKey("quaypass_avatar_updated_at")
+        val QUAYPASS_AVATAR_SYNC_PENDING = booleanPreferencesKey("quaypass_avatar_sync_pending")
         val QUAYPASS_ANNOUNCEMENT_SEEN = booleanPreferencesKey("quaypass_announcement_seen")
     }
 
@@ -131,6 +133,7 @@ class SyncPreferencesRepository @Inject constructor(
             it[Keys.QUAYPASS_AVATAR_BYTES] = bytesBase64
             it[Keys.QUAYPASS_AVATAR_CONFIGURED] = true
             it[Keys.QUAYPASS_AVATAR_UPDATED_AT] = updatedAt.toString()
+            it[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = true
         }
     }
 
@@ -139,7 +142,12 @@ class SyncPreferencesRepository @Inject constructor(
             it.remove(Keys.QUAYPASS_AVATAR_BYTES)
             it[Keys.QUAYPASS_AVATAR_CONFIGURED] = false
             it.remove(Keys.QUAYPASS_AVATAR_UPDATED_AT)
+            it.remove(Keys.QUAYPASS_AVATAR_SYNC_PENDING)
         }
+    }
+
+    suspend fun setQuayPassAvatarSyncPending(pending: Boolean) {
+        dataStore.edit { it[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = pending }
     }
 
     suspend fun setQuayPassAnnouncementSeen(seen: Boolean) {
@@ -199,6 +207,7 @@ class SyncPreferencesRepository @Inject constructor(
             quayPassAvatarBytes = prefs[Keys.QUAYPASS_AVATAR_BYTES],
             quayPassAvatarConfigured = prefs[Keys.QUAYPASS_AVATAR_CONFIGURED] ?: false,
             quayPassAvatarUpdatedAt = prefs[Keys.QUAYPASS_AVATAR_UPDATED_AT]?.let { Instant.parse(it) },
+            quayPassAvatarSyncPending = prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] ?: false,
             quayPassAnnouncementSeen = prefs[Keys.QUAYPASS_ANNOUNCEMENT_SEEN] ?: false
         )
     }

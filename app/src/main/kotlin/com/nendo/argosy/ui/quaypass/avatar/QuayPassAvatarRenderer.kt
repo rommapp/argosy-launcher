@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
@@ -28,7 +29,9 @@ fun QuayPassAvatarRenderer(
         AvatarLayer(AvatarCategory.Goatee, avatar.goateeType, palette)
         AvatarLayer(AvatarCategory.Nose, avatar.noseType.atLeastOne(), palette)
         AvatarLayer(AvatarCategory.Eyes, avatar.eyeType.atLeastOne(), palette)
+        AvatarLayer(AvatarCategory.Eyes, avatar.eyeType.atLeastOne(), palette, mirrored = true)
         AvatarLayer(AvatarCategory.Eyebrows, avatar.eyebrowType.atLeastOne(), palette)
+        AvatarLayer(AvatarCategory.Eyebrows, avatar.eyebrowType.atLeastOne(), palette, mirrored = true)
         AvatarLayer(AvatarCategory.Glasses, avatar.glassesType, palette)
         AvatarLayer(AvatarCategory.Hair, avatar.hairType, palette)
         AvatarLayer(AvatarCategory.Hat, avatar.hatType, palette)
@@ -39,7 +42,8 @@ fun QuayPassAvatarRenderer(
 private fun BoxScope.AvatarLayer(
     category: AvatarCategory,
     index: Int,
-    palette: AvatarPartRequest
+    palette: AvatarPartRequest,
+    mirrored: Boolean = false
 ) {
     if (index <= 0 && category in OPTIONAL_ZERO_CATEGORIES) return
     val context = LocalContext.current
@@ -47,10 +51,11 @@ private fun BoxScope.AvatarLayer(
         .data(palette.copy(category = category, index = index))
         .crossfade(false)
         .build()
+    val mirrorModifier = if (mirrored) Modifier.scale(scaleX = -1f, scaleY = 1f) else Modifier
     AsyncImage(
         model = request,
         contentDescription = null,
-        modifier = Modifier.matchParentSize()
+        modifier = Modifier.matchParentSize().then(mirrorModifier)
     )
 }
 

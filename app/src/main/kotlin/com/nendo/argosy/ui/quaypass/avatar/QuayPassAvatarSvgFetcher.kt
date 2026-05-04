@@ -68,11 +68,20 @@ class QuayPassAvatarSvgFetcher(
         s = s.replace(TOKEN_EYE_FILL, "#${data.eye.toAvatarHex()}")
         s = s.replace(TOKEN_EYEBROW_FILL, "#${data.eyebrow.toAvatarHex()}")
         s = s.replace(TOKEN_MOUTH_FILL, "#${data.mouth.toAvatarHex()}")
+        s = s.replace(TOKEN_MOUTH_SHADOW, "#${data.mouth.darker().toAvatarHex()}")
         s = s.replace(TOKEN_FACIAL_HAIR_FILL, "#${data.facialHair.toAvatarHex()}")
         s = s.replace(TOKEN_GLASSES_FILL, "#${data.glasses.toAvatarHex()}")
         s = s.replace(TOKEN_HAT_FILL, "#${data.hat.toAvatarHex()}")
         return s
     }
+
+    private fun androidx.compose.ui.graphics.Color.darker(factor: Float = 0.55f): androidx.compose.ui.graphics.Color =
+        androidx.compose.ui.graphics.Color(
+            red = red * factor,
+            green = green * factor,
+            blue = blue * factor,
+            alpha = alpha
+        )
 
     class Factory(
         private val catalog: QuayPassAvatarPartCatalog
@@ -93,6 +102,7 @@ class QuayPassAvatarSvgFetcher(
         private const val TOKEN_EYE_FILL = "{{eye-fill}}"
         private const val TOKEN_EYEBROW_FILL = "{{eyebrow-fill}}"
         private const val TOKEN_MOUTH_FILL = "{{mouth-fill}}"
+        private const val TOKEN_MOUTH_SHADOW = "{{mouth-shadow}}"
         private const val TOKEN_FACIAL_HAIR_FILL = "{{facial-hair-fill}}"
         private const val TOKEN_GLASSES_FILL = "{{glasses-fill}}"
         private const val TOKEN_HAT_FILL = "{{hat-fill}}"

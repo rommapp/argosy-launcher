@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
 
 @Composable
@@ -40,8 +42,13 @@ private fun BoxScope.AvatarLayer(
     palette: AvatarPartRequest
 ) {
     if (index <= 0 && category in OPTIONAL_ZERO_CATEGORIES) return
+    val context = LocalContext.current
+    val request = ImageRequest.Builder(context)
+        .data(palette.copy(category = category, index = index))
+        .crossfade(false)
+        .build()
     AsyncImage(
-        model = palette.copy(category = category, index = index),
+        model = request,
         contentDescription = null,
         modifier = Modifier.matchParentSize()
     )

@@ -179,7 +179,7 @@ enum class CustomizerSection { Category, Parts, Color, Actions }
 
 data class CustomizerState(
     val avatar: QuayPassAvatar = QuayPassAvatar(),
-    val selectedCategory: AvatarCategory = AvatarCategory.Hair,
+    val selectedCategory: AvatarCategory = AvatarCategory.Face,
     val focusedSection: CustomizerSection = CustomizerSection.Category,
     val actionFocus: Int = 1
 )

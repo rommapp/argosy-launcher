@@ -5,7 +5,8 @@ import com.nendo.argosy.ui.screens.settings.SettingsSection
 data class ChangelogEntry(
     val version: String,
     val highlights: List<String>,
-    val requiredActions: List<RequiredAction> = emptyList()
+    val requiredActions: List<RequiredAction> = emptyList(),
+    val requiresActiveSteamAccount: Boolean = false
 )
 
 sealed class RequiredAction(
@@ -16,4 +17,5 @@ sealed class RequiredAction(
     data object ReloginRomM : RequiredAction("Re-login to RomM", SettingsSection.SERVER, "rommConfig")
     data object ResyncLibrary : RequiredAction("Resync Library", SettingsSection.SERVER, "syncLibrary")
     data object ClearCache : RequiredAction("Clear Cache", SettingsSection.STORAGE)
+    data object SetSteamInstallPath : RequiredAction("Set Steam Install Path", SettingsSection.STORAGE)
 }

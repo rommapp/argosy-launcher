@@ -565,6 +565,10 @@ class SettingsViewModel @Inject constructor(
     fun setAddGameAppId(appId: String) = steamDelegate.setAddGameAppId(appId)
     fun confirmAddSteamGame() = steamDelegate.confirmAddSteamGame(context, viewModelScope)
     fun cycleSteamInstallVolume(direction: Int = 1) = steamDelegate.cycleSteamInstallVolume(viewModelScope, direction)
+    fun openSteamInstallPathPicker() =
+        storageDelegate.openPlatformFolderPicker(viewModelScope, com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
+    fun resetSteamInstallPath() =
+        storageDelegate.resetPlatformToGlobal(viewModelScope, com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
 
     // Legacy Steam methods (used by GameDataSection/routers)
     fun scanSteamLauncher(packageName: String) = steamDelegate.scanSteamLauncher(context, viewModelScope, packageName)

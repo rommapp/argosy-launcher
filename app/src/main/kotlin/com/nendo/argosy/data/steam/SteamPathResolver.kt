@@ -5,6 +5,8 @@ import android.os.Environment
 import android.os.StatFs
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.AndroidDataAccessor
 import com.nendo.argosy.data.storage.StorageVolumeDetector
@@ -31,6 +33,7 @@ data class SteamInstallVolume(
 class SteamPathResolver @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
+    private val platformDao: PlatformDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val androidDataAccessor: AndroidDataAccessor,
     private val storageVolumeDetector: StorageVolumeDetector,
@@ -62,18 +65,15 @@ class SteamPathResolver @Inject constructor(
     }
 
     suspend fun getInstallDirByName(dirName: String): File {
-        val configuredBase = getConfiguredInstallBase()
-        if (configuredBase != null) {
-            return File("$configuredBase/Steam/steamapps/common/$dirName")
+        val steamBase = getResolvedSteamBase()
+        if (steamBase != null) {
+            return File("$steamBase/$dirName")
         }
         val gnBasePath = findGnStoragePath()
         if (gnBasePath != null) {
             return File("$gnBasePath/Steam/steamapps/common/$dirName")
         }
-        val prefs = preferencesRepository.userPreferences.first()
-        val basePath = prefs.romStoragePath
-            ?: externalFilesDir()
-            ?: internalFilesDir()
+        val basePath = externalFilesDir() ?: internalFilesDir()
         return File(basePath, "$STEAM_PLATFORM_DIR/$dirName")
     }
 
@@ -82,22 +82,16 @@ class SteamPathResolver @Inject constructor(
     }
 
     suspend fun getInstallDir(appId: Long): File {
-        val configuredBase = getConfiguredInstallBase()
-        if (configuredBase != null) {
-            val gameName = gameDao.getBySteamAppId(appId)?.title
-            if (gameName != null) {
-                val sanitized = sanitizeGameName(gameName)
-                return File("$configuredBase/Steam/steamapps/common/$sanitized")
-            }
+        val steamBase = getResolvedSteamBase()
+        if (steamBase != null) {
+            val game = gameDao.getBySteamAppId(appId)
+            val leaf = preferredLeafName(game) ?: appId.toString()
+            return File("$steamBase/$leaf")
         }
         val gnPath = findGnInstallPath(appId)
         if (gnPath != null) return gnPath
 
-        val prefs = preferencesRepository.userPreferences.first()
-        val basePath = prefs.romStoragePath
-            ?: externalFilesDir()
-            ?: internalFilesDir()
-
+        val basePath = externalFilesDir() ?: internalFilesDir()
         return File(basePath, "$STEAM_PLATFORM_DIR/$appId")
     }
 
@@ -107,6 +101,21 @@ class SteamPathResolver @Inject constructor(
             ?: externalFilesDir()
             ?: internalFilesDir()
         return File(basePath, STEAM_PLATFORM_DIR)
+    }
+
+    suspend fun getResolvedSteamBase(): String? {
+        val steam = platformDao.getById(LocalPlatformIds.STEAM)
+        steam?.customRomPath?.takeIf { it.isNotBlank() }?.let { return it }
+        val romsRoot = preferencesRepository.userPreferences.first().romStoragePath
+        if (romsRoot.isNullOrBlank()) return null
+        val slug = steam?.slug ?: STEAM_PLATFORM_DIR
+        return "$romsRoot/$slug"
+    }
+
+    private fun preferredLeafName(game: com.nendo.argosy.data.local.entity.GameEntity?): String? {
+        if (game == null) return null
+        game.steamInstallDir?.takeIf { it.isNotBlank() }?.let { return sanitizeGameName(it) }
+        return game.title.takeIf { it.isNotBlank() }?.let { sanitizeGameName(it) }
     }
 
     suspend fun isGameInstalled(appId: Long): Boolean {
@@ -234,15 +243,6 @@ class SteamPathResolver @Inject constructor(
                 target = target
             )
         }
-    }
-
-    private suspend fun getConfiguredInstallBase(): String? {
-        val target = getConfiguredTarget()
-        val base = resolveBaseForTarget(target)
-        if (base == null) {
-            Log.w(TAG, "Configured target $target has no resolvable package root; will fall back to auto-detect")
-        }
-        return base
     }
 
     private suspend fun findGnInstallPath(appId: Long): File? {

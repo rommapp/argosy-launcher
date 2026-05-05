@@ -505,8 +505,11 @@ fun ActionPreference(
     isDangerous: Boolean = false,
     isEnabled: Boolean = true,
     trailingText: String? = null,
+    trailingButtonLabel: String? = null,
     badge: String? = null,
     spinIcon: Boolean = false,
+    showResetButton: Boolean = false,
+    onReset: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -557,6 +560,52 @@ fun ActionPreference(
                 color = if (isEnabled) preferenceSecondaryColor(isFocused)
                         else preferenceSecondaryColor(isFocused).copy(alpha = 0.5f)
             )
+        }
+        if (trailingButtonLabel != null) {
+            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+            val btnContainer = if (isFocused) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+            val btnContent = if (isFocused) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.onPrimary
+            }
+            Box(
+                modifier = Modifier
+                    .heightIn(min = Dimens.iconMd)
+                    .clip(RoundedCornerShape(Dimens.radiusMd))
+                    .background(btnContainer)
+                    .clickableNoFocus(onClick = { if (isEnabled) onClick() })
+                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = trailingButtonLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = btnContent
+                )
+            }
+        }
+        if (showResetButton && onReset != null) {
+            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+            Box(
+                modifier = Modifier
+                    .size(Dimens.iconMd)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                    .clickableNoFocus(onClick = onReset),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Reset to default",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
         }
         if (trailingText != null || badge != null) {
             Spacer(modifier = Modifier.width(Dimens.spacingMd))

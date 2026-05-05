@@ -682,6 +682,11 @@ data class SteamSettingsState(
     val availableVolumes: List<com.nendo.argosy.data.steam.SteamInstallVolume> = emptyList(),
     val installedGamesByVolume: Map<String, Int> = emptyMap(),
 
+    // Steam install path (resolved from Steam platform's customRomPath, or default <romsRoot>/steam)
+    val steamInstallPath: String? = null,
+    // True when the Steam platform row has a non-null customRomPath (user-overridden)
+    val steamInstallPathIsCustom: Boolean = false,
+
     // Steam connection
     val connectionState: com.nendo.argosy.data.steam.SteamConnectionState =
         com.nendo.argosy.data.steam.SteamConnectionState.DISCONNECTED,

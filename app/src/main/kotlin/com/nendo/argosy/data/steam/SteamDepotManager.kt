@@ -9,6 +9,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSProductInf
 import `in`.dragonbra.javasteam.steam.handlers.steamcontent.SteamContent
 import `in`.dragonbra.javasteam.steam.steamclient.SteamClient
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager
+import `in`.dragonbra.javasteam.enums.EDepotFileFlag
 import `in`.dragonbra.javasteam.types.KeyValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -132,7 +133,8 @@ class SteamDepotManager @Inject constructor() {
     data class DepotSizeResult(
         val totalSize: Long,
         val accessibleDepotIds: List<Int>,
-        val depotSizes: Map<Int, Long> = emptyMap()
+        val depotSizes: Map<Int, Long> = emptyMap(),
+        val fileSizes: Map<Pair<Int, String>, Long> = emptyMap()
     )
 
     suspend fun fetchDepotSizes(appId: Int, depots: List<DepotInfo>): DepotSizeResult = withContext(Dispatchers.IO) {
@@ -165,8 +167,16 @@ class SteamDepotManager @Inject constructor() {
                         ).await()
 
                         val size = manifest.totalUncompressedSize
-                        Log.d(TAG, "Depot ${depot.depotId}: ${size / 1024 / 1024}MB")
-                        depot.depotId to size
+                        val fileEntries = manifest.files
+                            ?.filter {
+                                !it.fileName.isNullOrBlank() &&
+                                    it.flags?.contains(EDepotFileFlag.Directory) != true &&
+                                    it.flags?.contains(EDepotFileFlag.Symlink) != true
+                            }
+                            ?.associate { (depot.depotId to it.fileName.replace('\\', '/')) to it.totalSize }
+                            ?: emptyMap()
+                        Log.d(TAG, "Depot ${depot.depotId}: ${size / 1024 / 1024}MB, ${fileEntries.size} files indexed")
+                        Triple(depot.depotId, size, fileEntries)
                     } catch (e: Exception) {
                         Log.w(TAG, "Depot ${depot.depotId} size fetch failed: ${e.message}")
                         null
@@ -176,12 +186,15 @@ class SteamDepotManager @Inject constructor() {
         }
 
         val completed = results.mapNotNull { it.await() }
-        val depotSizes = completed.toMap()
+        val depotSizes = completed.associate { it.first to it.second }
+        val fileSizes = completed.fold(mutableMapOf<Pair<Int, String>, Long>()) { acc, (_, _, files) ->
+            acc.apply { putAll(files) }
+        }
         val totalSize = completed.sumOf { it.second }
         val accessible = completed.map { it.first }
 
-        Log.d(TAG, "Total: ${totalSize / 1024 / 1024}MB (${accessible.size}/${depots.size} depots)")
-        DepotSizeResult(totalSize, accessible, depotSizes)
+        Log.d(TAG, "Total: ${totalSize / 1024 / 1024}MB (${accessible.size}/${depots.size} depots), ${fileSizes.size} files indexed")
+        DepotSizeResult(totalSize, accessible, depotSizes, fileSizes)
     }
 
     suspend fun fetchAppInfo(appId: Int): KeyValue {

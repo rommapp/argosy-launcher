@@ -50,7 +50,7 @@ class SteamDownloadPromptController @Inject constructor(
     }
 
     private val maxFocusIndex: Int
-        get() = _markOptions.value.size  // 0 = Install to SD, 1..N = mark options
+        get() = _markOptions.value.size  // 0 = Download via Argosy, 1..N = mark options
 
     fun moveFocus(delta: Int) {
         _focusIndex.value = (_focusIndex.value + delta).coerceIn(0, maxFocusIndex)

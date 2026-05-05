@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
@@ -225,23 +226,16 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isFocused = isFocused(item)
                 )
 
-                SteamItem.InstallPath -> {
-                    val volumeLabel = installVolumeLabel(
-                        steam.steamInstallVolume,
-                        steam.availableVolumes
-                    )
-                    val subtitle = installVolumeSubtitle(
-                        steam.steamInstallVolume,
-                        steam.availableVolumes
-                    )
-                    CyclePreference(
-                        title = "Install Path",
-                        value = volumeLabel,
-                        subtitle = subtitle,
-                        isFocused = isFocused(item),
-                        onClick = { viewModel.cycleSteamInstallVolume() }
-                    )
-                }
+                SteamItem.InstallPath -> ActionPreference(
+                    icon = Icons.Default.Folder,
+                    title = if (steam.steamInstallPathIsCustom) "Install Path (custom)" else "Install Path",
+                    subtitle = formatPath(steam.steamInstallPath),
+                    trailingButtonLabel = "Change",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.openSteamInstallPathPicker() },
+                    showResetButton = steam.steamInstallPathIsCustom,
+                    onReset = { viewModel.resetSteamInstallPath() }
+                )
 
                 SteamItem.InstallTriage -> {
                     val summary = steam.installedGamesByVolume.entries.joinToString(", ") { (label, count) ->

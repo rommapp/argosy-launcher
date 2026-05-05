@@ -628,7 +628,7 @@ private fun StatRow(
     }
 }
 
-private fun formatPath(path: String?): String {
+internal fun formatPath(path: String?): String {
     if (path == null) return "Not configured"
     val maxLen = 40
     return if (path.length > maxLen) "...${path.takeLast(maxLen)}" else path

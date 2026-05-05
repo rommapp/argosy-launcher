@@ -811,6 +811,7 @@ class SteamContentManager @Inject constructor(
                 }
 
                 val depotSizes = sizeResult.depotSizes
+                val expectedFileSizes = sizeResult.fileSizes
                 val baselineBytes = progressTracker.loadPersistedBytes(installDir.absolutePath)
                 // Track cumulative uncompressed bytes per depot (concurrent-safe).
                 // Total progress = baselineBytes + sum of all per-depot bytes.
@@ -925,6 +926,23 @@ class SteamContentManager @Inject constructor(
                         } else {
                             fileName
                         }
+
+                        // Verify the on-disk file matches manifest size before recording.
+                        // DepotDownloader's callback can fire before the OS has flushed the
+                        // last writes; if we record then crash, resume would skip a partial
+                        // file. Drop unverifiable events; DepotDownloader will re-emit on retry.
+                        val expectedSize = expectedFileSizes[depotId to relativeName]
+                        if (expectedSize != null) {
+                            val onDiskFile = File(fileName)
+                            val actual = onDiskFile.length()
+                            if (!onDiskFile.exists() || actual != expectedSize) {
+                                Log.w(TAG, "Skipping completion record: $relativeName depot=$depotId expected=$expectedSize on-disk=$actual exists=${onDiskFile.exists()}")
+                                return
+                            }
+                        } else {
+                            Log.v(TAG, "No manifest size indexed for depot=$depotId file=$relativeName; recording without size verification")
+                        }
+
                         downloadTracker.onFileCompleted(appId, depotId, manifestId, relativeName)
                     }
 
@@ -1366,50 +1384,65 @@ class SteamContentManager @Inject constructor(
             }
         }
 
-        val gnBasePaths = pathResolver.findAllGnStoragePaths()
-        if (gnBasePaths.isNotEmpty()) {
-            val steamGames = gameDao.getAllWithSteamAppId()
-            for (gnBasePath in gnBasePaths) {
-                val commonPath = "$gnBasePath/Steam/steamapps/common"
-                if (!fileAccessLayer.exists(commonPath)) continue
-                val entries = fileAccessLayer.listFilesUnion(commonPath)
-                val gameDirs = entries.filter { it.isDirectory }
-                Log.d(TAG, "Scanning $commonPath via FAL union: ${gameDirs.size} dirs")
+        val steamGames = gameDao.getAllWithSteamAppId()
 
-                for (gameDir in gameDirs) {
-                    val dirName = gameDir.name
-                    val gameDirPath = gameDir.path
-                    val match = steamGames.find { game ->
-                        if (game.steamInstallDir == dirName) return@find true
-                        if (pathResolver.sanitizeGameName(game.title) == dirName) return@find true
-                        val appId = game.steamAppId ?: return@find false
-                        val queueEntry = steamDownloadQueueDao.getByAppId(appId)
-                        queueEntry?.installDir == dirName
-                    }
-                    if (match != null && match.localPath == null) {
-                        gameDao.update(match.copy(localPath = gameDirPath, source = GameSource.STEAM))
-                        match.steamAppId?.let { appId ->
-                            steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.COMPLETED.name)
-                            steamDownloadQueueDao.updateInstallPath(appId, gameDirPath)
-                        }
-                        Log.d(TAG, "Discovered GN game: ${match.title} at $gameDirPath")
-                        discovered++
-                    } else if (match == null) {
-                        Log.d(TAG, "No DB match for GN dir '$dirName' at $gnBasePath")
-                    }
-                    val markerPath = "$gameDirPath/.download_complete"
-                    if (!fileAccessLayer.exists(markerPath)) {
-                        if (!fileAccessLayer.writeBytes(markerPath, ByteArray(0))) {
-                            Log.w(TAG, "Could not write completion marker at $gameDirPath")
-                        }
-                    }
-                }
-            }
+        val resolvedBase = pathResolver.getResolvedSteamBase()
+        if (resolvedBase != null) {
+            discovered += scanSteamBaseByInstallDir(resolvedBase, steamGames, writeMarkers = false)
+        }
+
+        val gnBasePaths = pathResolver.findAllGnStoragePaths()
+        for (gnBasePath in gnBasePaths) {
+            val commonPath = "$gnBasePath/Steam/steamapps/common"
+            discovered += scanSteamBaseByInstallDir(commonPath, steamGames, writeMarkers = true)
         }
 
         Log.d(TAG, "Steam discovery complete: $discovered games recovered")
         reclaimStrandedInstalls()
         discovered
+    }
+
+    private suspend fun scanSteamBaseByInstallDir(
+        scanRoot: String,
+        steamGames: List<com.nendo.argosy.data.local.entity.GameEntity>,
+        writeMarkers: Boolean
+    ): Int {
+        if (!fileAccessLayer.exists(scanRoot)) return 0
+        val gameDirs = fileAccessLayer.listFilesUnion(scanRoot).filter { it.isDirectory }
+        Log.d(TAG, "Scanning $scanRoot via FAL union: ${gameDirs.size} dirs")
+
+        var discovered = 0
+        for (gameDir in gameDirs) {
+            val dirName = gameDir.name
+            val gameDirPath = gameDir.path
+            val match = steamGames.find { game ->
+                if (game.steamInstallDir == dirName) return@find true
+                if (pathResolver.sanitizeGameName(game.title) == dirName) return@find true
+                val appId = game.steamAppId ?: return@find false
+                val queueEntry = steamDownloadQueueDao.getByAppId(appId)
+                queueEntry?.installDir == dirName
+            }
+            if (match != null && match.localPath == null) {
+                gameDao.update(match.copy(localPath = gameDirPath, source = GameSource.STEAM))
+                match.steamAppId?.let { appId ->
+                    steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.COMPLETED.name)
+                    steamDownloadQueueDao.updateInstallPath(appId, gameDirPath)
+                }
+                Log.d(TAG, "Discovered Steam game: ${match.title} at $gameDirPath")
+                discovered++
+            } else if (match == null) {
+                Log.d(TAG, "No DB match for Steam dir '$dirName' at $scanRoot")
+            }
+            if (writeMarkers) {
+                val markerPath = "$gameDirPath/.download_complete"
+                if (!fileAccessLayer.exists(markerPath)) {
+                    if (!fileAccessLayer.writeBytes(markerPath, ByteArray(0))) {
+                        Log.w(TAG, "Could not write completion marker at $gameDirPath")
+                    }
+                }
+            }
+        }
+        return discovered
     }
 
     suspend fun getIncompleteDownloads(): List<IncompleteDownload> = withContext(Dispatchers.IO) {

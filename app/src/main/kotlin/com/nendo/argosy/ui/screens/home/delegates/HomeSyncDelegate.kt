@@ -86,6 +86,9 @@ class HomeSyncDelegate @Inject constructor(
                 if (entry.requiresActiveSteamAccount && steamAuthManager.getActiveAccount() == null) {
                     return
                 }
+                // Mark seen at show-time so the modal is one-shot — re-resumes, re-launches,
+                // and the user backgrounding the app mid-modal don't queue it up again.
+                preferencesRepository.setLastSeenVersion(currentVersion)
                 _state.value = _state.value.copy(changelogEntry = entry)
             } else {
                 preferencesRepository.setLastSeenVersion(currentVersion)

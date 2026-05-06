@@ -60,12 +60,7 @@ class LaunchWithSyncUseCase @Inject constructor(
             return@flow
         }
 
-        if (!SavePathRegistry.canSyncWithSettings(
-                emulatorId,
-                prefs.saveSyncEnabled,
-                prefs.experimentalFolderSaveSync
-            )
-        ) {
+        if (!SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)) {
             emit(SyncState.Skipped)
             return@flow
         }
@@ -149,12 +144,7 @@ class LaunchWithSyncUseCase @Inject constructor(
             return@flow
         }
 
-        if (!SavePathRegistry.canSyncWithSettings(
-                emulatorId,
-                prefs.saveSyncEnabled,
-                prefs.experimentalFolderSaveSync
-            )
-        ) {
+        if (!SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)) {
             emit(SyncProgress.Skipped)
             return@flow
         }

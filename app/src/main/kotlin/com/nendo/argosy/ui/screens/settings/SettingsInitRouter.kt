@@ -577,7 +577,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             totalPlatforms = platforms.count { it.gameCount > 0 },
             totalGames = platforms.sumOf { it.gameCount },
             saveSyncEnabled = prefs.saveSyncEnabled,
-            experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
             saveCacheLimit = prefs.saveCacheLimit,
             pendingUploadsCount = vm.saveCacheDao.countNeedingRemoteSync(),
             imageCachePath = prefs.imageCachePath,

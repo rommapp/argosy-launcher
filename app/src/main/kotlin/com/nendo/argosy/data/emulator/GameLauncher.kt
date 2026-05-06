@@ -686,10 +686,20 @@ class GameLauncher @Inject constructor(
     private fun parseBindingFormat(name: String): RomBindingFormat? =
         runCatching { RomBindingFormat.valueOf(name) }.getOrNull()
 
+    private val primaryRootSlash: String by lazy { "${StoragePathUtils.primaryExternalRoot}/" }
+
     private fun isPathOpaqueToOtherApps(path: String): Boolean {
         if (!path.startsWith("/storage/")) return false
-        val tail = path.removePrefix("/storage/")
-        return !(tail.startsWith("emulated/0/") || tail.startsWith("self/primary/"))
+        val canonical = StoragePathUtils.canonicalize(path)
+        if (canonical.startsWith(primaryRootSlash)) {
+            // Primary external is readable to other apps EXCEPT cross-app /Android/data/<pkg>
+            // and /Android/obb/<pkg>, which scoped storage seals off on Android 11+.
+            val rel = canonical.removePrefix(primaryRootSlash)
+            return rel.startsWith("Android/data/") || rel.startsWith("Android/obb/")
+        }
+        // Any other mount under /storage/ (SD card UUID, USB OTG, secondary users) is opaque
+        // to other apps via raw paths.
+        return true
     }
 
     private fun rewriteBindings(
@@ -705,7 +715,7 @@ class GameLauncher @Inject constructor(
         val needsContentUri = isPathOpaqueToOtherApps(absolutePath)
         fun upgradeIfOpaque(b: RomBindingFormat?): RomBindingFormat? =
             if (b == RomBindingFormat.ABSOLUTE_PATH && needsContentUri) {
-                Logger.warn(TAG, "ROM at $absolutePath is on a secondary external mount; upgrading ABSOLUTE_PATH → FILE_PROVIDER")
+                Logger.warn(TAG, "ROM at $absolutePath is opaque to other apps; upgrading ABSOLUTE_PATH → FILE_PROVIDER")
                 RomBindingFormat.FILE_PROVIDER
             } else b
 
@@ -832,7 +842,8 @@ class GameLauncher @Inject constructor(
     ): EffectiveLaunchCommand? {
         val retroArchPackage = emulator.packageName
         val dataDir = "/data/data/$retroArchPackage"
-        val externalDir = "/storage/emulated/0/Android/data/$retroArchPackage/files"
+        val primaryRoot = StoragePathUtils.primaryExternalRoot
+        val externalDir = "$primaryRoot/Android/data/$retroArchPackage/files"
         val configPath = "$externalDir/retroarch.cfg"
 
         Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}")
@@ -878,7 +889,7 @@ class GameLauncher @Inject constructor(
                 ResolvedExtra.StringExtra("CONFIGFILE", configPath),
                 ResolvedExtra.StringExtra("IME", "com.android.inputmethod.latin/.LatinIME"),
                 ResolvedExtra.StringExtra("DATADIR", dataDir),
-                ResolvedExtra.StringExtra("SDCARD", "/storage/emulated/0"),
+                ResolvedExtra.StringExtra("SDCARD", primaryRoot),
                 ResolvedExtra.StringExtra("EXTERNAL", externalDir)
             ),
             intentFlags = baseFlags or grantFlag,

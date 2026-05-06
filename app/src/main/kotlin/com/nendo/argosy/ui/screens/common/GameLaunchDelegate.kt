@@ -194,8 +194,7 @@ class GameLaunchDelegate @Inject constructor(
                 val prefs = preferencesRepository.preferences.first()
                 val canSync = emulatorId != null && SavePathRegistry.canSyncWithSettings(
                     emulatorId,
-                    prefs.saveSyncEnabled,
-                    prefs.experimentalFolderSaveSync
+                    prefs.saveSyncEnabled
                 )
                 android.util.Log.d("GameLaunchDelegate", "launchGame: emulatorPackage=$emulatorPackage, emulatorId=$emulatorId, canSync=$canSync")
 
@@ -442,8 +441,7 @@ class GameLaunchDelegate @Inject constructor(
                 val prefs = preferencesRepository.preferences.first()
                 if (!SavePathRegistry.canSyncWithSettings(
                         emulatorId,
-                        prefs.saveSyncEnabled,
-                        prefs.experimentalFolderSaveSync
+                        prefs.saveSyncEnabled
                     )
                 ) {
                     playSessionTracker.endSession()

@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.data.storage.StoragePathUtils
 
 private const val BUILTIN_EMULATOR_ID = "argosy.builtin.libretro"
 
@@ -153,12 +154,15 @@ object BiosPathRegistry {
         )
     )
 
-    private val emulatorBiosPaths: Map<String, BiosPathConfig> = mapOf(
+    private val primaryRoot: String get() = StoragePathUtils.primaryExternalRoot
+
+    private val emulatorBiosPaths: Map<String, BiosPathConfig> by lazy {
+        mapOf(
         "retroarch" to BiosPathConfig(
             emulatorId = "retroarch",
             defaultPaths = listOf(
-                "/storage/emulated/0/RetroArch/system",
-                "/storage/emulated/0/Android/data/com.retroarch/files/system"
+                "$primaryRoot/RetroArch/system",
+                "$primaryRoot/Android/data/com.retroarch/files/system"
             ),
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
@@ -168,8 +172,8 @@ object BiosPathRegistry {
         "retroarch_64" to BiosPathConfig(
             emulatorId = "retroarch_64",
             defaultPaths = listOf(
-                "/storage/emulated/0/RetroArch/system",
-                "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/system"
+                "$primaryRoot/RetroArch/system",
+                "$primaryRoot/Android/data/com.retroarch.aarch64/files/system"
             ),
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
@@ -179,67 +183,67 @@ object BiosPathRegistry {
         "duckstation" to BiosPathConfig(
             emulatorId = "duckstation",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.github.stenzek.duckstation/files/bios"
+                "$primaryRoot/Android/data/com.github.stenzek.duckstation/files/bios"
             ),
             supportedPlatforms = setOf("psx")
         ),
         "melonds" to BiosPathConfig(
             emulatorId = "melonds",
             defaultPaths = listOf(
-                "/storage/emulated/0/melonDS/bios",
-                "/storage/emulated/0/Android/data/me.magnum.melonds/files/bios"
+                "$primaryRoot/melonDS/bios",
+                "$primaryRoot/Android/data/me.magnum.melonds/files/bios"
             ),
             supportedPlatforms = setOf("nds")
         ),
         "melondualds" to BiosPathConfig(
             emulatorId = "melondualds",
             defaultPaths = listOf(
-                "/storage/emulated/0/melonDS/bios",
-                "/storage/emulated/0/Android/data/me.magnum.melondualds/files/bios"
+                "$primaryRoot/melonDS/bios",
+                "$primaryRoot/Android/data/me.magnum.melondualds/files/bios"
             ),
             supportedPlatforms = setOf("nds")
         ),
         "flycast" to BiosPathConfig(
             emulatorId = "flycast",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.flycast.emulator/files/data",
-                "/storage/emulated/0/Flycast/data"
+                "$primaryRoot/Android/data/com.flycast.emulator/files/data",
+                "$primaryRoot/Flycast/data"
             ),
             supportedPlatforms = setOf("dreamcast", "dc", "arcade")
         ),
         "redream" to BiosPathConfig(
             emulatorId = "redream",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/io.recompiled.redream/files"
+                "$primaryRoot/Android/data/io.recompiled.redream/files"
             ),
             supportedPlatforms = setOf("dreamcast", "dc")
         ),
         "saturn_emu" to BiosPathConfig(
             emulatorId = "saturn_emu",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.explusalpha.SaturnEmu/files"
+                "$primaryRoot/Android/data/com.explusalpha.SaturnEmu/files"
             ),
             supportedPlatforms = setOf("saturn")
         ),
         "pizza_boy_gba" to BiosPathConfig(
             emulatorId = "pizza_boy_gba",
             defaultPaths = listOf(
-                "/storage/emulated/0/PizzaBoyGBA",
-                "/storage/emulated/0/Android/data/it.dbtecno.pizzaboygba/files"
+                "$primaryRoot/PizzaBoyGBA",
+                "$primaryRoot/Android/data/it.dbtecno.pizzaboygba/files"
             ),
             supportedPlatforms = setOf("gba")
         ),
         "nethersx2" to BiosPathConfig(
             emulatorId = "nethersx2",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/bios"
+                "$primaryRoot/Android/data/xyz.aethersx2.android/files/bios"
             ),
             supportedPlatforms = setOf("ps2")
         ),
         "eden" to BiosPathConfig(
             emulatorId = "eden",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/dev.eden.eden_emulator/files"
+                "$primaryRoot/Android/data/dev.eden.eden_emulator/files"
             ),
             supportedPlatforms = setOf("switch")
         ),
@@ -251,7 +255,8 @@ object BiosPathRegistry {
                 "gba", "tgcd", "lynx", "3do", "intellivision"
             )
         )
-    )
+        )
+    }
 
     private val platformsWithBios: Set<String> = platformBiosFiles.keys
 
@@ -304,6 +309,6 @@ object BiosPathRegistry {
     )
 
     fun getEdenDataPath(packageName: String): String {
-        return "/storage/emulated/0/Android/data/$packageName/files"
+        return "$primaryRoot/Android/data/$packageName/files"
     }
 }

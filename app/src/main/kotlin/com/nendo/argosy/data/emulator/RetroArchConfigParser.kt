@@ -1,7 +1,8 @@
 package com.nendo.argosy.data.emulator
 
-import android.util.Log
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.storage.StoragePathUtils
+import com.nendo.argosy.util.Logger
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,18 +29,21 @@ class RetroArchConfigParser @Inject constructor(
     private val fileAccessLayer: FileAccessLayer
 ) {
 
-    private val configPaths = listOf(
-        "/storage/emulated/0/Android/data/com.retroarch/files/retroarch.cfg",
-        "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg",
-        "/storage/emulated/0/Android/data/com.retroarch.ra32/files/retroarch.cfg",
-        "/storage/emulated/0/RetroArch/retroarch.cfg"
-    )
+    private val primaryRoot: String get() = StoragePathUtils.primaryExternalRoot
+
+    private val configPaths: List<String>
+        get() = listOf(
+            "$primaryRoot/Android/data/com.retroarch/files/retroarch.cfg",
+            "$primaryRoot/Android/data/com.retroarch.aarch64/files/retroarch.cfg",
+            "$primaryRoot/Android/data/com.retroarch.ra32/files/retroarch.cfg",
+            "$primaryRoot/RetroArch/retroarch.cfg"
+        )
 
     fun findConfigPath(packageName: String): String? {
         val packageSpecificPath = when (packageName) {
-            "com.retroarch" -> "/storage/emulated/0/Android/data/com.retroarch/files/retroarch.cfg"
-            "com.retroarch.aarch64" -> "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg"
-            "com.retroarch.ra32" -> "/storage/emulated/0/Android/data/com.retroarch.ra32/files/retroarch.cfg"
+            "com.retroarch" -> "$primaryRoot/Android/data/com.retroarch/files/retroarch.cfg"
+            "com.retroarch.aarch64" -> "$primaryRoot/Android/data/com.retroarch.aarch64/files/retroarch.cfg"
+            "com.retroarch.ra32" -> "$primaryRoot/Android/data/com.retroarch.ra32/files/retroarch.cfg"
             else -> null
         }
 
@@ -47,7 +51,7 @@ class RetroArchConfigParser @Inject constructor(
             return packageSpecificPath
         }
 
-        val portableConfig = "/storage/emulated/0/RetroArch/retroarch.cfg"
+        val portableConfig = "$primaryRoot/RetroArch/retroarch.cfg"
         if (fileAccessLayer.exists(portableConfig)) return portableConfig
 
         return configPaths.firstOrNull { fileAccessLayer.exists(it) }
@@ -56,11 +60,11 @@ class RetroArchConfigParser @Inject constructor(
     fun parse(packageName: String): RetroArchSaveConfig? {
         val path = findConfigPath(packageName)
         if (path == null) {
-            Log.d(TAG, "No retroarch.cfg found for $packageName")
+            Logger.debug(TAG, "No retroarch.cfg found for $packageName")
             return null
         }
 
-        Log.d(TAG, "Parsing config: $path")
+        Logger.debug(TAG, "Parsing config: $path")
         val raw = readConfig(path) ?: return null
         return raw.toSaveConfig()
     }
@@ -68,7 +72,7 @@ class RetroArchConfigParser @Inject constructor(
     fun parseStateConfig(packageName: String): RetroArchStateConfig? {
         val path = findConfigPath(packageName)
         if (path == null) {
-            Log.d(TAG, "No retroarch.cfg found for $packageName")
+            Logger.debug(TAG, "No retroarch.cfg found for $packageName")
             return null
         }
 
@@ -82,13 +86,13 @@ class RetroArchConfigParser @Inject constructor(
     private fun readConfig(path: String): Map<String, String>? {
         val stream = fileAccessLayer.getInputStream(path)
         if (stream == null) {
-            Log.w(TAG, "FAL could not open config: $path")
+            Logger.warn(TAG, "FAL could not open config: $path")
             return null
         }
         return try {
             stream.bufferedReader().useLines { parseLines(it) }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse config file: $path", e)
+            Logger.error(TAG, "Failed to parse config file: $path", e)
             null
         }
     }
@@ -147,7 +151,7 @@ class RetroArchConfigParser @Inject constructor(
         try {
             file.useLines { parseLines(it).toSaveConfig() }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse config file", e)
+            Logger.error(TAG, "Failed to parse config file", e)
             emptyMap<String, String>().toSaveConfig()
         }
 
@@ -155,7 +159,7 @@ class RetroArchConfigParser @Inject constructor(
         try {
             file.useLines { parseLines(it).toStateConfig() }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse config file", e)
+            Logger.error(TAG, "Failed to parse config file", e)
             emptyMap<String, String>().toStateConfig()
         }
 
@@ -201,17 +205,18 @@ class RetroArchConfigParser @Inject constructor(
             for (base in getBasePathAlternatives(contentDirectory)) {
                 paths.add(buildSortedPath(base, contentDirName, coreName, sortByContentDir, sortByCore))
             }
-            Log.d(TAG, "resolveSavePaths: content-dir ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
+            Logger.debug(TAG, "resolveSavePaths: content-dir ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
             return paths
         }
 
         val baseDir = basePathOverride
             ?: config?.savefileDirectory
-            ?: "/storage/emulated/0/RetroArch/saves"
+            ?: "$primaryRoot/RetroArch/saves"
 
         val baseDirs = getBasePathAlternatives(baseDir)
 
         val saveDir = coreName?.let { EmulatorRegistry.getRetroArchSaveDirName(it) }
+            ?: discoverSingleCoreFolder(baseDirs)
 
         if (config == null && saveDir != null) {
             for (base in baseDirs) {
@@ -220,13 +225,13 @@ class RetroArchConfigParser @Inject constructor(
 
                 if (coreDir.exists() && coreDir.isDirectory) {
                     paths.add(coreDir.absolutePath)
-                    Log.d(TAG, "resolveSavePaths: config missing, found core folder $saveDir")
+                    Logger.debug(TAG, "resolveSavePaths: config missing, found core folder $saveDir")
                 } else if (baseDirFile.exists() && hasCoreFolders(baseDirFile)) {
                     paths.add(coreDir.absolutePath)
-                    Log.d(TAG, "resolveSavePaths: config missing, base has core folders, using $saveDir")
+                    Logger.debug(TAG, "resolveSavePaths: config missing, base has core folders, using $saveDir")
                 } else {
                     paths.add(base)
-                    Log.d(TAG, "resolveSavePaths: config missing, no core folders found, using flat")
+                    Logger.debug(TAG, "resolveSavePaths: config missing, no core folders found, using flat")
                 }
             }
             return paths
@@ -236,7 +241,7 @@ class RetroArchConfigParser @Inject constructor(
             paths.add(buildSortedPath(base, contentDirName, saveDir, sortByContentDir, sortByCore))
         }
 
-        Log.d(TAG, "resolveSavePaths: ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
+        Logger.debug(TAG, "resolveSavePaths: ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
         return paths
     }
 
@@ -258,12 +263,13 @@ class RetroArchConfigParser @Inject constructor(
 
     private fun getBasePathAlternatives(path: String): List<String> {
         val alternatives = mutableListOf(path)
+        val primaryWithSlash = "$primaryRoot/"
         when {
-            path.contains("/storage/emulated/0/") -> {
-                alternatives.add(path.replace("/storage/emulated/0/", "/Internal/"))
+            path.contains(primaryWithSlash) -> {
+                alternatives.add(path.replace(primaryWithSlash, "/Internal/"))
             }
             path.contains("/Internal/") -> {
-                alternatives.add(path.replace("/Internal/", "/storage/emulated/0/"))
+                alternatives.add(path.replace("/Internal/", primaryWithSlash))
             }
         }
         return alternatives
@@ -274,6 +280,25 @@ class RetroArchConfigParser @Inject constructor(
         return subdirs.any { dir ->
             KNOWN_CORE_NAMES.any { core -> dir.name.equals(core, ignoreCase = true) }
         }
+    }
+
+    // When the caller can't supply a core id but RA is configured to sort saves into core
+    // subdirectories, scan the base dir for a single matching core folder and use it. If
+    // there's exactly one, that's the unambiguous answer; if zero or many, return null and
+    // let the caller fall back to the flat base.
+    private fun discoverSingleCoreFolder(baseDirs: List<String>): String? {
+        for (base in baseDirs) {
+            val dir = File(base)
+            if (!dir.exists() || !dir.isDirectory) continue
+            val coreSubdirs = dir.listFiles()?.filter { f ->
+                f.isDirectory && KNOWN_CORE_NAMES.any { it.equals(f.name, ignoreCase = true) }
+            } ?: continue
+            if (coreSubdirs.size == 1) {
+                Logger.debug(TAG, "discoverSingleCoreFolder: inferring '${coreSubdirs[0].name}' from $base")
+                return coreSubdirs[0].name
+            }
+        }
+        return null
     }
 
     companion object {
@@ -325,13 +350,13 @@ class RetroArchConfigParser @Inject constructor(
             for (base in getBasePathAlternatives(contentDirectory)) {
                 paths.add(buildSortedPath(base, contentDirName, coreName, sortByContentDir, sortByCore))
             }
-            Log.d(TAG, "resolveStatePaths: content-dir ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
+            Logger.debug(TAG, "resolveStatePaths: content-dir ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
             return paths
         }
 
         val baseDir = basePathOverride
             ?: config?.savestateDirectory
-            ?: "/storage/emulated/0/RetroArch/states"
+            ?: "$primaryRoot/RetroArch/states"
 
         val baseDirs = getBasePathAlternatives(baseDir)
 
@@ -342,23 +367,24 @@ class RetroArchConfigParser @Inject constructor(
 
                 if (coreDir.exists() && coreDir.isDirectory) {
                     paths.add(coreDir.absolutePath)
-                    Log.d(TAG, "resolveStatePaths: config missing, found core folder $coreName")
+                    Logger.debug(TAG, "resolveStatePaths: config missing, found core folder $coreName")
                 } else if (statesDir.exists() && hasCoreFolders(statesDir)) {
                     paths.add(coreDir.absolutePath)
-                    Log.d(TAG, "resolveStatePaths: config missing, base has core folders, using $coreName")
+                    Logger.debug(TAG, "resolveStatePaths: config missing, base has core folders, using $coreName")
                 } else {
                     paths.add(base)
-                    Log.d(TAG, "resolveStatePaths: config missing, no core folders found, using flat")
+                    Logger.debug(TAG, "resolveStatePaths: config missing, no core folders found, using flat")
                 }
             }
             return paths
         }
 
+        val effectiveCoreName = coreName ?: discoverSingleCoreFolder(baseDirs)
         for (base in baseDirs) {
-            paths.add(buildSortedPath(base, contentDirName, coreName, sortByContentDir, sortByCore))
+            paths.add(buildSortedPath(base, contentDirName, effectiveCoreName, sortByContentDir, sortByCore))
         }
 
-        Log.d(TAG, "resolveStatePaths: ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
+        Logger.debug(TAG, "resolveStatePaths: ${paths.first()} (sortByContentDir=$sortByContentDir, sortByCore=$sortByCore)")
         return paths
     }
 }

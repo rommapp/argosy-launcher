@@ -55,7 +55,7 @@ object SavePathRegistry {
         "m64pro_fzx_plus" to SavePathConfig(
             emulatorId = "m64pro_fzx_plus",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.m64.fx.plus.emulate/files/GameData"
+                "{extStorage}/Android/data/com.m64.fx.plus.emulate/files/GameData"
             ),
             saveExtensions = listOf("sra", "eep", "fla", "mpk"),
             usesGameIdSubfolder = true
@@ -536,13 +536,10 @@ object SavePathRegistry {
 
     fun canSyncWithSettings(
         emulatorId: String,
-        saveSyncEnabled: Boolean,
-        experimentalFolderSaveSync: Boolean
+        saveSyncEnabled: Boolean
     ): Boolean {
         if (!saveSyncEnabled) return false
-        val config = getConfig(emulatorId) ?: return false
-        if (config.usesFolderBasedSaves && !experimentalFolderSaveSync) return false
-        return true
+        return getConfig(emulatorId) != null
     }
 
     fun getRetroArchCore(platformId: String): String? {

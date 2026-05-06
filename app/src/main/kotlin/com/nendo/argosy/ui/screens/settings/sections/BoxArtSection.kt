@@ -405,9 +405,7 @@ fun BoxArtSection(
                 systemIconPaddingDp = display.systemIconPadding.dp.dp
             )
 
-            val previewGradientColors = if (showGradientSection && extractionResult != null) {
-                Pair(extractionResult.primary, extractionResult.secondary)
-            } else null
+            val previewGradientColors = extractionResult?.let { Pair(it.primary, it.secondary) }
 
             val previewGame = uiState.previewGame?.let { game ->
                 HomeGameUi(

@@ -27,7 +27,6 @@ data class SyncPreferences(
     val syncFilters: SyncFilterPreferences = SyncFilterPreferences(),
     val syncScreenshotsEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,
-    val experimentalFolderSaveSync: Boolean = false,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val saveWatcherEnabled: Boolean = false,
@@ -73,7 +72,6 @@ class SyncPreferencesRepository @Inject constructor(
         val SYNC_FILTER_DELETE_ORPHANS = booleanPreferencesKey("sync_filter_delete_orphans")
         val SYNC_SCREENSHOTS_ENABLED = booleanPreferencesKey("sync_screenshots_enabled")
         val SAVE_SYNC_ENABLED = booleanPreferencesKey("save_sync_enabled")
-        val EXPERIMENTAL_FOLDER_SAVE_SYNC = booleanPreferencesKey("experimental_folder_save_sync")
         val STATE_CACHE_ENABLED = booleanPreferencesKey("state_cache_enabled")
         val SAVE_CACHE_LIMIT = intPreferencesKey("save_cache_limit")
         val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
@@ -141,7 +139,6 @@ class SyncPreferencesRepository @Inject constructor(
             ),
             syncScreenshotsEnabled = prefs[Keys.SYNC_SCREENSHOTS_ENABLED] ?: false,
             saveSyncEnabled = prefs[Keys.SAVE_SYNC_ENABLED] ?: false,
-            experimentalFolderSaveSync = prefs[Keys.EXPERIMENTAL_FOLDER_SAVE_SYNC] ?: false,
             stateCacheEnabled = prefs[Keys.STATE_CACHE_ENABLED] ?: true,
             saveCacheLimit = prefs[Keys.SAVE_CACHE_LIMIT] ?: 10,
             saveWatcherEnabled = prefs[Keys.SAVE_WATCHER_ENABLED] ?: false,
@@ -275,16 +272,7 @@ class SyncPreferencesRepository @Inject constructor(
     }
 
     suspend fun setSaveSyncEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[Keys.SAVE_SYNC_ENABLED] = enabled
-            if (enabled) {
-                prefs[Keys.EXPERIMENTAL_FOLDER_SAVE_SYNC] = true
-            }
-        }
-    }
-
-    suspend fun setExperimentalFolderSaveSync(enabled: Boolean) {
-        dataStore.edit { it[Keys.EXPERIMENTAL_FOLDER_SAVE_SYNC] = enabled }
+        dataStore.edit { it[Keys.SAVE_SYNC_ENABLED] = enabled }
     }
 
     suspend fun setStateCacheEnabled(enabled: Boolean) {

@@ -164,6 +164,15 @@ object LibretroCoreRegistry {
             requiresBios = listOf("scph5501.bin")
         ),
 
+        // Sony PlayStation 2 (built-in is a fallback; standalone NetherSX2 / PSX2 are preferred)
+        CoreInfo(
+            coreId = "play",
+            fileName = "play_libretro_android.so",
+            displayName = "Play!",
+            platforms = setOf("ps2"),
+            estimatedSizeBytes = 2_000_000L
+        ),
+
         // Sega Saturn
         CoreInfo(
             coreId = "mednafen_saturn",
@@ -479,6 +488,16 @@ object LibretroCoreRegistry {
             displayName = "Neko Project II Kai",
             platforms = setOf("pc9800", "pc98", "nec-pc-9801"),
             estimatedSizeBytes = 2_000_000L,
+            isDefault = true
+        ),
+
+        // PICO-8 (fantasy console)
+        CoreInfo(
+            coreId = "retro8",
+            fileName = "retro8_libretro_android.so",
+            displayName = "Retro-8",
+            platforms = setOf("pico8"),
+            estimatedSizeBytes = 500_000L,
             isDefault = true
         ),
     )

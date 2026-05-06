@@ -87,7 +87,6 @@ class UserPreferencesRepository @Inject constructor(
             soundConfigs = controls.soundConfigs,
             betaUpdatesEnabled = app.betaUpdatesEnabled,
             saveSyncEnabled = sync.saveSyncEnabled,
-            experimentalFolderSaveSync = sync.experimentalFolderSaveSync,
             stateCacheEnabled = sync.stateCacheEnabled,
             saveCacheLimit = sync.saveCacheLimit,
             fileLoggingEnabled = app.fileLoggingEnabled,
@@ -240,7 +239,6 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSyncFilterDeleteOrphans(delete: Boolean) = syncPrefs.setSyncFilterDeleteOrphans(delete)
     suspend fun setSyncScreenshotsEnabled(enabled: Boolean) = syncPrefs.setSyncScreenshotsEnabled(enabled)
     suspend fun setSaveSyncEnabled(enabled: Boolean) = syncPrefs.setSaveSyncEnabled(enabled)
-    suspend fun setExperimentalFolderSaveSync(enabled: Boolean) = syncPrefs.setExperimentalFolderSaveSync(enabled)
     suspend fun setSaveCacheLimit(limit: Int) = syncPrefs.setSaveCacheLimit(limit)
     suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) = syncPrefs.setSaveDebugLoggingEnabled(enabled)
     suspend fun setImageCachePath(path: String?) = syncPrefs.setImageCachePath(path)
@@ -521,7 +519,6 @@ data class UserPreferences(
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,
-    val experimentalFolderSaveSync: Boolean = false,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val backgroundBlur: Int = 0,

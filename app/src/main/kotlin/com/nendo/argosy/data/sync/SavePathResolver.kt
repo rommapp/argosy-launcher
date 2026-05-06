@@ -45,8 +45,7 @@ class SavePathResolver @Inject constructor(
         cachedTitleId: String? = null,
         coreName: String? = null,
         emulatorPackage: String? = null,
-        gameId: Long? = null,
-        isFolderSaveSyncEnabled: Boolean = false
+        gameId: Long? = null
     ): String? = withContext(Dispatchers.IO) {
         if (emulatorId == "default" || emulatorId.isBlank()) {
             Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid emulatorId='$emulatorId' | game=$gameTitle, platform=$platformSlug")
@@ -66,9 +65,6 @@ class SavePathResolver @Inject constructor(
 
         if (userConfig?.isUserOverride == true && !isRetroArch) {
             if (config.usesFolderBasedSaves && romPath != null) {
-                if (!isFolderSaveSyncEnabled) {
-                    return@withContext null
-                }
                 return@withContext discoverFolderSavePath(
                     config = config,
                     platformSlug = platformSlug,
@@ -77,8 +73,7 @@ class SavePathResolver @Inject constructor(
                     emulatorPackage = emulatorPackage,
                     gameId = gameId,
                     gameTitle = gameTitle,
-                    basePathOverride = userConfig.savePathPattern,
-                    isFolderSaveSyncEnabled = isFolderSaveSyncEnabled
+                    basePathOverride = userConfig.savePathPattern
                 )
             }
             if (config.usesGciFormat && romPath != null) {
@@ -96,9 +91,6 @@ class SavePathResolver @Inject constructor(
         }
 
         if (config.usesFolderBasedSaves && romPath != null) {
-            if (!isFolderSaveSyncEnabled) {
-                return@withContext null
-            }
             return@withContext discoverFolderSavePath(
                 config = config,
                 platformSlug = platformSlug,
@@ -106,8 +98,7 @@ class SavePathResolver @Inject constructor(
                 cachedTitleId = cachedTitleId,
                 emulatorPackage = emulatorPackage,
                 gameId = gameId,
-                gameTitle = gameTitle,
-                isFolderSaveSyncEnabled = isFolderSaveSyncEnabled
+                gameTitle = gameTitle
             )
         }
 
@@ -176,8 +167,7 @@ class SavePathResolver @Inject constructor(
         gameId: Long? = null,
         gameTitle: String? = null,
         basePathOverride: String? = null,
-        allowCacheRefresh: Boolean = true,
-        isFolderSaveSyncEnabled: Boolean = false
+        allowCacheRefresh: Boolean = true
     ): String? {
         val romFile = File(romPath)
         val resolvedPaths = if (basePathOverride != null) {

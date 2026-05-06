@@ -128,8 +128,12 @@
 
         <service
             android:name=".data.sync.SyncForegroundService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
+            android:foregroundServiceType="specialUse|dataSync"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="save_sync" />
+        </service>
 
         <service
             android:name=".data.steam.SteamService"
@@ -156,13 +160,21 @@
 
         <service
             android:name=".hardware.RecoveryDisplayService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
+            android:foregroundServiceType="specialUse|dataSync"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="companion_display_recovery" />
+        </service>
 
         <service
             android:name=".hardware.CompanionGuardService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
+            android:foregroundServiceType="specialUse|dataSync"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="companion_display_guard" />
+        </service>
 
         <activity
             android:name=".hardware.SecondaryHomeActivity"

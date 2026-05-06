@@ -88,7 +88,6 @@ class SaveUploader @Inject constructor(
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
         val preferredCore = client.resolveCoreForGame(game)
 
-        val folderSyncEnabled = client.isFolderSaveSyncEnabled()
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
             val switchOk = if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
             switchOk && fal.exists(path)
@@ -105,8 +104,7 @@ class SaveUploader @Inject constructor(
                 cachedTitleId = game.titleId,
                 coreName = preferredCore,
                 emulatorPackage = emulatorPackage,
-                gameId = gameId,
-                isFolderSaveSyncEnabled = folderSyncEnabled
+                gameId = gameId
             )
 
         if (localPath == null && (game.titleId != null || titleDbRepository.getCachedCandidates(gameId).isNotEmpty())) {
@@ -120,8 +118,7 @@ class SaveUploader @Inject constructor(
                 cachedTitleId = null,
                 coreName = preferredCore,
                 emulatorPackage = emulatorPackage,
-                gameId = gameId,
-                isFolderSaveSyncEnabled = folderSyncEnabled
+                gameId = gameId
             )
         }
 
@@ -139,11 +136,6 @@ class SaveUploader @Inject constructor(
         val isDirectory = fal.isDirectory(localPath)
         val isFolderBased = config?.usesFolderBasedSaves == true && isDirectory
         val isGciBundle = config?.usesGciFormat == true
-
-        if (isFolderBased && !client.isFolderSaveSyncEnabled()) {
-            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Folder save sync disabled, skipping")
-            return@withContext SaveSyncResult.NotConfigured
-        }
 
         val localModified = if (isDirectory) {
             Instant.ofEpochMilli(savePathResolver.findNewestFileTime(localPath))

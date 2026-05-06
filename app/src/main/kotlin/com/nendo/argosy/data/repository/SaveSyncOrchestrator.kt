@@ -63,7 +63,6 @@ class SaveSyncOrchestrator @Inject constructor(
             val emulatorId = client.resolveEmulatorForGame(game) ?: continue
             val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
             val coreName = client.resolveCoreForGame(game)
-            val folderSyncEnabled = isFolderSaveSyncEnabled()
 
             val savePath = savePathResolver.discoverSavePath(
                 emulatorId = emulatorId,
@@ -73,8 +72,7 @@ class SaveSyncOrchestrator @Inject constructor(
                 cachedTitleId = game.titleId,
                 coreName = coreName,
                 emulatorPackage = emulatorPackage,
-                gameId = game.id,
-                isFolderSaveSyncEnabled = folderSyncEnabled
+                gameId = game.id
             ) ?: continue
 
             val localFile = File(savePath)
@@ -189,11 +187,6 @@ class SaveSyncOrchestrator @Inject constructor(
                 Logger.error(TAG, "syncSavesForNewDownload: failed '${serverSave.fileName}': ${result.message}")
             }
         }
-    }
-
-    private suspend fun isFolderSaveSyncEnabled(): Boolean {
-        val prefs = userPreferencesRepository.preferences.first()
-        return prefs.saveSyncEnabled && prefs.experimentalFolderSaveSync
     }
 
     companion object {

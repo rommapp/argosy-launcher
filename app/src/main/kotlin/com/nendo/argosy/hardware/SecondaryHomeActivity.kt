@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.doOnAttach
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -98,7 +99,11 @@ class SecondaryHomeActivity :
         super.onCreate(savedInstanceState)
         installSystemBarsWatchdog()
 
-        hideSystemUI()
+        // On cold boot the WindowInsetsController is not fully wired before decor attach,
+        // so an immediate hideSystemUI() can be a no-op and the navbar stays visible until
+        // the first focus-change event. Defer the first hide until attach guarantees the
+        // controller is live.
+        window.decorView.doOnAttach { hideSystemUI() }
 
         if (!SessionStateStore(applicationContext).isDualScreenEnabled()) {
             android.util.Log.d("SecondaryHome", "dualScreenEnabled=false, finishing")
@@ -812,12 +817,19 @@ class SecondaryHomeActivity :
     }
 
     private fun installSystemBarsWatchdog() {
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
             if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
-                v.post { hideSystemUI() }
+                // Call hide() inline so it lands within the same insets dispatch — posting
+                // delays the request until the next UI tick, by which point the controller
+                // may again think the bars belong on screen.
+                WindowInsetsControllerCompat(window, window.decorView)
+                    .hide(WindowInsetsCompat.Type.systemBars())
             }
             insets
         }
+        // Force a synchronous insets pass so the listener fires immediately after install
+        // rather than waiting for the next layout-driven dispatch.
+        androidx.core.view.ViewCompat.requestApplyInsets(window.decorView)
     }
 
 }

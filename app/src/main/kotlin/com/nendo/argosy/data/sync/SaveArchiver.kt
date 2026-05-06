@@ -306,6 +306,8 @@ class SaveArchiver @Inject constructor(
     }
 
     private fun unzipDirect(sourceZip: File, targetFolder: File): Boolean {
+        var rootFolderForLogging: String? = null
+        var firstEntryForLogging: String? = null
         return try {
             targetFolder.mkdirs()
             var fileCount = 0
@@ -320,9 +322,11 @@ class SaveArchiver @Inject constructor(
 
                 for (entry in entries) {
                     val entryName = entry.name
+                    if (firstEntryForLogging == null) firstEntryForLogging = entryName
 
                     if (rootFolder == null) {
                         rootFolder = entryName.substringBefore('/').takeIf { entryName.contains('/') }
+                        if (rootFolder != null) rootFolderForLogging = rootFolder
                     }
 
                     val relativePath = if (rootFolder != null && entryName.startsWith("$rootFolder/")) {
@@ -335,7 +339,7 @@ class SaveArchiver @Inject constructor(
 
                     val entryFile = File(targetFolder, relativePath)
                     if (!entryFile.canonicalPath.startsWith(targetFolder.canonicalPath)) {
-                        Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName")
+                        Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName, target=${targetFolder.absolutePath}")
                         return false
                     }
 
@@ -358,13 +362,21 @@ class SaveArchiver @Inject constructor(
                     }
                 }
             }
-            Logger.debug(TAG, "[SaveSync] ARCHIVE | Extracted | files=$fileCount, size=${totalSize}bytes")
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Extracted | files=$fileCount, size=${totalSize}bytes, target=${targetFolder.absolutePath}, root=$rootFolderForLogging")
             true
         } catch (e: java.util.zip.ZipException) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Corrupt zip — server copy is damaged | zip=${sourceZip.name}, ${e.message}", e)
+            Logger.error(
+                TAG,
+                "[SaveSync] ARCHIVE | Corrupt zip — server copy is damaged | zip=${sourceZip.name}, target=${targetFolder.absolutePath}, ${e.message}",
+                e
+            )
             throw CorruptZipException("Source zip is damaged: ${e.message}", e)
         } catch (e: Exception) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Extract failed | ${e.javaClass.simpleName}: ${e.message}", e)
+            Logger.error(
+                TAG,
+                "[SaveSync] ARCHIVE | Extract failed | ${e.javaClass.simpleName}: ${e.message} | zip=${sourceZip.name}, target=${targetFolder.absolutePath}, root=$rootFolderForLogging, firstEntry=$firstEntryForLogging",
+                e
+            )
             false
         }
     }

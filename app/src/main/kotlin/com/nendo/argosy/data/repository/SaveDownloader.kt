@@ -121,12 +121,6 @@ class SaveDownloader @Inject constructor(
         val isSwitchEmulator = resolvedEmulatorId in SaveSyncApiClient.SWITCH_EMULATOR_IDS
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Save info | fileName=${serverSave.fileName}, isFolderBased=$isFolderBased, isGciFormat=$isGciFormat, isSwitchEmulator=$isSwitchEmulator")
 
-        val folderSyncEnabled = client.isFolderSaveSyncEnabled()
-        if (isFolderBased && !folderSyncEnabled) {
-            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Folder save sync disabled, skipping")
-            return@withContext SaveSyncResult.NotConfigured
-        }
-
         val preDownloadTargetPath = if (isGciFormat) {
             null.also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI format, will download to temp and detect bundle vs single")
@@ -150,8 +144,7 @@ class SaveDownloader @Inject constructor(
                         cachedTitleId = game.titleId,
                         coreName = preferredCore,
                         emulatorPackage = emulatorPackage,
-                        gameId = gameId,
-                        isFolderSaveSyncEnabled = folderSyncEnabled
+                        gameId = gameId
                     )
                 } else null
                 val constructed = if (cached == null && discovered == null) {
@@ -175,8 +168,7 @@ class SaveDownloader @Inject constructor(
                     cachedTitleId = game.titleId,
                     coreName = preferredCore,
                     emulatorPackage = emulatorPackage,
-                    gameId = gameId,
-                    isFolderSaveSyncEnabled = folderSyncEnabled
+                    gameId = gameId
                 )
 
             val retried = if (discovered == null && (game.titleId != null || titleDbRepository.getCachedCandidates(gameId).isNotEmpty())) {
@@ -190,8 +182,7 @@ class SaveDownloader @Inject constructor(
                     cachedTitleId = null,
                     coreName = preferredCore,
                     emulatorPackage = emulatorPackage,
-                    gameId = gameId,
-                    isFolderSaveSyncEnabled = folderSyncEnabled
+                    gameId = gameId
                 )
             } else discovered
 

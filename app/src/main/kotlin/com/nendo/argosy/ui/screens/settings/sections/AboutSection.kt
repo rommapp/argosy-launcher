@@ -303,9 +303,10 @@ private fun VersionInfoRow(
 }
 
 private fun formatLoggingPath(rawPath: String): String {
+    val primaryRoot = com.nendo.argosy.data.storage.StoragePathUtils.primaryExternalRoot
     return when {
-        rawPath.startsWith("/storage/emulated/0") ->
-            rawPath.replace("/storage/emulated/0", "Internal")
+        rawPath.startsWith(primaryRoot) ->
+            rawPath.replaceFirst(primaryRoot, "Internal")
         rawPath.startsWith("/storage/") -> {
             val parts = rawPath.removePrefix("/storage/").split("/", limit = 2)
             if (parts.size == 2) "SD Card/${parts[1]}" else rawPath

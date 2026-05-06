@@ -338,21 +338,42 @@ private class Ps2FolderHandler(
         return null
     }
 
-    override fun constructSavePath(baseDir: String, titleId: String): String {
+    override fun constructSavePath(baseDir: String, titleId: String): String? {
         val folderCards = fal.listFiles(baseDir)?.filter {
             it.isDirectory && it.name.endsWith(".ps2", ignoreCase = true)
         } ?: emptyList()
 
-        val cardDir = folderCards.firstOrNull()?.path ?: "$baseDir/Shared.ps2"
+        val cardDir = when (folderCards.size) {
+            0 -> "$baseDir/Shared.ps2"
+            1 -> folderCards[0].path
+            else -> {
+                Logger.warn(
+                    TAG,
+                    "constructSavePath: $baseDir contains ${folderCards.size} folder memcards " +
+                        "(${folderCards.map { it.name }}). Cannot pick a target — set a preferred " +
+                        "memcard for PS2 save sync, or remove the unused cards."
+                )
+                return null
+            }
+        }
         return "$cardDir/${toFolderName(titleId)}"
     }
 
+    /**
+     * Normalizes a PS2 disc serial into the on-disk folder form NetherSX2 / PCSX2 use
+     * (`BA` + 4-letter region prefix + `-` + 5-digit serial, e.g. `BASLUS-21050`). Accepts
+     * inputs with or without a leading BA prefix and with `-`/`_` separators stripped.
+     */
     private fun toFolderName(serial: String): String {
-        val stripped = serial.replace("-", "")
-        return if (stripped.startsWith(BA_PREFIX, ignoreCase = true)) {
-            stripped
+        val cleaned = serial.replace("-", "").replace("_", "")
+        val withoutBa = if (cleaned.startsWith(BA_PREFIX, ignoreCase = true)) {
+            cleaned.substring(BA_PREFIX.length)
+        } else cleaned
+        val match = Regex("^([A-Za-z]{4})(\\d+)$").find(withoutBa)
+        return if (match != null) {
+            "$BA_PREFIX${match.groupValues[1].uppercase()}-${match.groupValues[2]}"
         } else {
-            "$BA_PREFIX$stripped"
+            "$BA_PREFIX$withoutBa"
         }
     }
 

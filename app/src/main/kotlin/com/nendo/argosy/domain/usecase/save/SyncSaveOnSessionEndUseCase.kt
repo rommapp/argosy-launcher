@@ -59,11 +59,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         val packageToResolve = emulatorConfig?.packageName ?: emulatorPackage
         val emulatorId = emulatorResolver.resolveEmulatorId(packageToResolve) ?: return false
 
-        return SavePathRegistry.canSyncWithSettings(
-            emulatorId,
-            prefs.saveSyncEnabled,
-            prefs.experimentalFolderSaveSync
-        )
+        return SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)
     }
 
     suspend operator fun invoke(

@@ -474,7 +474,6 @@ class SaveSyncConflictResolver @Inject constructor(
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
         val coreName = apiClient.get().resolveCoreForGame(game)
-        val folderSyncEnabled = isFolderSaveSyncEnabled()
 
         return savePathResolver.discoverSavePath(
             emulatorId = resolvedEmulatorId,
@@ -484,14 +483,8 @@ class SaveSyncConflictResolver @Inject constructor(
             cachedTitleId = game.titleId,
             coreName = coreName,
             emulatorPackage = emulatorPackage,
-            gameId = gameId,
-            isFolderSaveSyncEnabled = folderSyncEnabled
+            gameId = gameId
         )
-    }
-
-    private suspend fun isFolderSaveSyncEnabled(): Boolean {
-        val prefs = userPreferencesRepository.preferences.first()
-        return prefs.saveSyncEnabled && prefs.experimentalFolderSaveSync
     }
 
     companion object {

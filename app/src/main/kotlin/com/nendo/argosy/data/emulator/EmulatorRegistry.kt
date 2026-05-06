@@ -676,6 +676,14 @@ object EmulatorRegistry {
             releaseSource = ReleaseSource.GitHub("PCSX2/pcsx2")
         ),
         EmulatorDef(
+            id = "psx2",
+            packageName = "com.izzy2lost.psx2",
+            displayName = "PSX2",
+            supportedPlatforms = setOf("ps2"),
+            downloadUrl = "https://github.com/izzy2lost/PSX2/releases",
+            releaseSource = ReleaseSource.GitHub("izzy2lost/PSX2")
+        ),
+        EmulatorDef(
             id = "ppsspp",
             packageName = "org.ppsspp.ppsspp",
             displayName = "PPSSPP",
@@ -909,7 +917,7 @@ object EmulatorRegistry {
 
     fun getRecommendedEmulators(): Map<String, List<String>> = mapOf(
         "psx" to listOf("builtin", "duckstation", "retroarch", "retroarch_64"),
-        "ps2" to listOf("nethersx2", "armsx2", "pcsx2"),
+        "ps2" to listOf("nethersx2", "armsx2", "psx2", "pcsx2"),
         "psp" to listOf("builtin", "ppsspp_gold", "ppsspp", "retroarch", "retroarch_64"),
         "vita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64"),
@@ -1400,6 +1408,13 @@ object EmulatorRegistry {
                 activityClass = "kr.co.iefriends.pcsx2.activities.MainActivity"
             ),
             downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
+        ),
+        EmulatorFamily(
+            baseId = "psx2",
+            displayNamePrefix = "PSX2",
+            packagePatterns = listOf("com.izzy2lost.*"),
+            supportedPlatforms = setOf("ps2"),
+            downloadUrl = "https://github.com/izzy2lost/PSX2/releases"
         ),
         EmulatorFamily(
             baseId = "duckstation",

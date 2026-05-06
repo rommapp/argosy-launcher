@@ -4,7 +4,9 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.hardware.display.DisplayManager
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -81,10 +83,22 @@ class CompanionGuardService : Service() {
             .setContentIntent(createContentIntent())
             .build()
 
-        startForeground(
-            SecondaryDisplayNotificationChannel.NOTIFICATION_ID + 1,
-            notification
-        )
+        val notificationId = SecondaryDisplayNotificationChannel.NOTIFICATION_ID + 1
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                notificationId,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                notificationId,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        } else {
+            startForeground(notificationId, notification)
+        }
     }
 
     private fun createContentIntent(): PendingIntent {

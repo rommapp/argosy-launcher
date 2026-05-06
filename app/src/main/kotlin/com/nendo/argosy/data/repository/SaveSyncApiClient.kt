@@ -68,11 +68,6 @@ class SaveSyncApiClient @Inject constructor(
         emulatorId: String
     ): PlatformSaveHandler = saveHandlerRegistry.getHandler(config, platformSlug, emulatorId)
 
-    internal suspend fun isFolderSaveSyncEnabled(): Boolean {
-        val prefs = userPreferencesRepository.preferences.first()
-        return prefs.saveSyncEnabled && prefs.experimentalFolderSaveSync
-    }
-
     internal suspend fun resolveEmulatorForGame(game: GameEntity): String? {
         val gameConfig = emulatorConfigDao.getByGameId(game.id)
         if (gameConfig?.packageName != null) {
@@ -345,8 +340,7 @@ class SaveSyncApiClient @Inject constructor(
         cachedTitleId = cachedTitleId,
         coreName = coreName,
         emulatorPackage = emulatorPackage,
-        gameId = gameId,
-        isFolderSaveSyncEnabled = isFolderSaveSyncEnabled()
+        gameId = gameId
     )
 
     suspend fun constructSavePath(

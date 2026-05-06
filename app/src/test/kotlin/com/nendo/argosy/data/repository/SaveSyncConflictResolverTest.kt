@@ -287,7 +287,7 @@ class SaveSyncConflictResolverTest {
             localSavePath = "/nonexistent.srm"
         )
         coEvery { savePathResolver.discoverSavePath(
-            any(), any(), any(), any(), any(), any(), any(), any(), any()
+            any(), any(), any(), any(), any(), any(), any(), any()
         ) } returns null
 
         val result = resolver.checkForConflict(1L, "retroarch", null)

@@ -11,12 +11,13 @@ object StoragePathUtils {
      * Absolute path to the current user's primary external storage root, e.g.
      * `/storage/emulated/0` for the primary user, `/storage/emulated/10` for a secondary user
      * or work profile. The trailing slash is omitted; callers that need it should append.
-     * Avoid hardcoding `/storage/emulated/0/` — this resolves dynamically.
+     * Avoid hardcoding `/storage/emulated/0/` — this resolves dynamically. Falls back to
+     * the canonical primary-user path if Environment isn't available (pure-JVM unit tests).
      */
-    @Suppress("DEPRECATION")
-    val primaryExternalRoot: String by lazy {
-        Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
-    }
+    val primaryExternalRoot: String
+        @Suppress("DEPRECATION")
+        get() = Environment.getExternalStorageDirectory()?.absolutePath?.trimEnd('/')
+            ?: "/storage/emulated/0"
 
     /**
      * Resolves any input path through the symlink layer (e.g. `/storage/self/primary/...`,

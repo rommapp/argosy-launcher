@@ -37,6 +37,16 @@ fun Modifier.clickableNoFocus(onClick: () -> Unit, onLongClick: () -> Unit): Mod
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+fun Modifier.doubleTapNoFocus(onDoubleClick: () -> Unit): Modifier = composed {
+    combinedClickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null,
+        onClick = {},
+        onDoubleClick = onDoubleClick
+    )
+}
+
 fun Modifier.touchOnly(onClick: () -> Unit): Modifier = pointerInput(Unit) {
     detectTapGestures(onTap = { onClick() })
 }

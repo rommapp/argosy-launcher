@@ -29,10 +29,12 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,7 +78,7 @@ internal sealed class SteamItem(
     val visibleWhen: (SteamLayoutState) -> Boolean = { true }
 ) {
     val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer -> false
+        is Header, is SectionSpacer, is InstallPathNote -> false
         else -> true
     }
 
@@ -91,6 +93,8 @@ internal sealed class SteamItem(
     data object GnStorageWarning : SteamItem("gnStorageWarning", "setup",
         visibleWhen = { it.gnInstalled && !it.gnConfigured })
     data object InstallPath : SteamItem("installPath", "setup",
+        visibleWhen = { it.gnConfigured })
+    data object InstallPathNote : SteamItem("installPathNote", "setup",
         visibleWhen = { it.gnConfigured })
     data object InstallTriage : SteamItem("installTriage", "setup",
         visibleWhen = { it.gnConfigured && it.hasInstalledGames })
@@ -110,7 +114,7 @@ internal sealed class SteamItem(
         private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
 
         val ALL: List<SteamItem> = listOf(
-            SetupHeader, GnStatus, GnInstall, GnStorageWarning, InstallPath, InstallTriage,
+            SetupHeader, GnStatus, GnInstall, GnStorageWarning, InstallPath, InstallPathNote, InstallTriage,
             AccountSpacer, AccountHeader, AccountInfo,
             LibrarySpacer, LibraryHeader, SyncLibrary, AddManual,
             DangerSpacer, DangerHeader, Disconnect, ResetLibrary
@@ -236,6 +240,37 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     showResetButton = steam.steamInstallPathIsCustom,
                     onReset = { viewModel.resetSteamInstallPath() }
                 )
+
+                SteamItem.InstallPathNote -> {
+                    val noteShape = RoundedCornerShape(Dimens.radiusMd)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(noteShape)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                noteShape
+                            )
+                            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .size(Dimens.iconSm)
+                                .padding(top = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                        Text(
+                            text = "GameNative no longer scans parent folders, so each download must be added manually in GameNative after it finishes. The old auto-discovery relied on a wine-prefix bug that's since been fixed. No ETA on alternative solutions, currently.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
 
                 SteamItem.InstallTriage -> {
                     val summary = steam.installedGamesByVolume.entries.joinToString(", ") { (label, count) ->

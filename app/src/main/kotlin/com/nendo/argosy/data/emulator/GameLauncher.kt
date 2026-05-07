@@ -424,6 +424,11 @@ class GameLauncher @Inject constructor(
         val selectedCoreId = resolveBuiltinCoreId(game)
         var corePath = libretroCoreMgr.getCorePathForPlatform(game.platformSlug, selectedCoreId)
         if (corePath == null) {
+            if (!com.nendo.argosy.util.NetworkUtils.isOnline(context)) {
+                lastCoreDownloadError = "Built-in core for ${game.platformSlug} isn't installed yet. Connect to a network so Argosy can download it, then try again."
+                Logger.error(TAG, "[BuiltIn] Core missing for ${game.platformSlug} (selected=$selectedCoreId) and device is offline; aborting launch")
+                return null
+            }
             Logger.info(TAG, "[BuiltIn] Core not downloaded for ${game.platformSlug} (selected=$selectedCoreId), attempting download...")
             val downloadResult = libretroCoreMgr.downloadCoreForPlatform(game.platformSlug, selectedCoreId)
             corePath = downloadResult.getOrElse { err ->

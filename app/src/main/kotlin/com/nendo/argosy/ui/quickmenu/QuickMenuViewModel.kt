@@ -216,6 +216,10 @@ class QuickMenuViewModel @Inject constructor(
     fun selectRecentSearch(index: Int) {
         val state = _uiState.value
         val query = state.recentSearches.getOrNull(index) ?: return
+        selectRecentSearch(query)
+    }
+
+    fun selectRecentSearch(query: String) {
         _uiState.update { it.copy(searchQuery = query, focusedContentIndex = 0) }
         performSearch(query)
     }

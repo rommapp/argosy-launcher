@@ -230,7 +230,7 @@ class SavePathResolver @Inject constructor(
         allowCacheRefresh: Boolean = true
     ): String? {
         val romFile = romPath?.let { File(it) }
-        val resolvedPaths = if (basePathOverride != null) {
+        val baseList = if (basePathOverride != null) {
             val effectivePath = if (platformSlug == "switch") {
                 switchSaveHandler.resolveBasePath(
                     SavePathRegistry.getConfig(config.emulatorId)!!,
@@ -244,12 +244,12 @@ class SavePathResolver @Inject constructor(
             }
             listOf(effectivePath)
         } else {
-            val basePaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots())
-            if (selectedMemcardPath != null && platformSlug == "ps2") {
-                listOf(selectedMemcardPath) + basePaths.filterNot { it == selectedMemcardPath }
-            } else {
-                basePaths
-            }
+            SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots())
+        }
+        val resolvedPaths = if (selectedMemcardPath != null && platformSlug == "ps2") {
+            listOf(selectedMemcardPath) + baseList.filterNot { it == selectedMemcardPath }
+        } else {
+            baseList
         }
         val triedTitleIds = mutableSetOf<String>()
         val isSwitchPlatform = platformSlug == "switch"

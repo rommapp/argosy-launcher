@@ -403,6 +403,216 @@ object SaveDebugLogger {
         log(event, gameId, gameName, channel, details)
     }
 
+    fun logDiscoverPath(
+        gameId: Long,
+        emulatorId: String,
+        emulatorPackage: String?,
+        platformSlug: String,
+        romPath: String?,
+        cachedTitleId: String?,
+        selectedMemcardPath: String?,
+        savePathOverride: String?,
+        resultPath: String?,
+        decision: String
+    ) {
+        log(
+            event = "DISCOVER_PATH",
+            gameId = gameId,
+            gameName = null,
+            channel = null,
+            details = buildString {
+                append("emu=$emulatorId(pkg=$emulatorPackage), platform=$platformSlug")
+                append(", rom=${romPath?.let { File(it).name } ?: "null"}")
+                append(", titleId=$cachedTitleId")
+                if (selectedMemcardPath != null) append(", selectedCard=${File(selectedMemcardPath).name}")
+                if (savePathOverride != null) append(", override=${File(savePathOverride).name}")
+                append(", decision=$decision")
+                append(", result=${resultPath ?: "null"}")
+            }
+        )
+    }
+
+    fun logRestoreVerify(
+        gameId: Long,
+        cacheId: Long,
+        targetPath: String,
+        expectedHash: String?,
+        actualHash: String?,
+        match: Boolean
+    ) {
+        log(
+            event = if (match) "RESTORE_VERIFY_OK" else "RESTORE_VERIFY_MISMATCH",
+            gameId = gameId,
+            gameName = null,
+            channel = null,
+            details = buildString {
+                append("cacheId=$cacheId")
+                append(", target=${File(targetPath).name}")
+                append(", expected=${expectedHash?.take(12) ?: "null"}")
+                append(", actual=${actualHash?.take(12) ?: "null"}")
+            }
+        )
+    }
+
+    fun logUploadHash(
+        gameId: Long,
+        channel: String?,
+        sourcePath: String,
+        diskHash: String?,
+        expectedCacheId: Long?,
+        expectedCacheHash: String?
+    ) {
+        val match = diskHash != null && expectedCacheHash != null && diskHash == expectedCacheHash
+        log(
+            event = if (expectedCacheId != null && !match) "UPLOAD_HASH_MISMATCH" else "UPLOAD_HASH",
+            gameId = gameId,
+            gameName = null,
+            channel = channel,
+            details = buildString {
+                append("source=${File(sourcePath).name}")
+                append(", diskHash=${diskHash?.take(12) ?: "null"}")
+                append(", expectedCacheId=$expectedCacheId")
+                append(", expectedHash=${expectedCacheHash?.take(12) ?: "null"}")
+            }
+        )
+    }
+
+    fun logLinkCache(
+        gameId: Long,
+        channel: String?,
+        cacheId: Long?,
+        rommSaveId: Long?,
+        serverTimestamp: Instant?,
+        method: String
+    ) {
+        log(
+            event = "LINK_CACHE",
+            gameId = gameId,
+            gameName = null,
+            channel = channel,
+            details = buildString {
+                append("cacheId=$cacheId, rommSaveId=$rommSaveId")
+                append(", serverTime=${serverTimestamp?.let { formatInstant(it) } ?: "null"}")
+                append(", via=$method")
+            }
+        )
+    }
+
+    fun logLiveCacheObserve(
+        gameId: Long,
+        eventType: Int,
+        path: String?
+    ) {
+        log(
+            event = "LIVE_OBSERVE",
+            gameId = gameId,
+            gameName = null,
+            channel = null,
+            details = "evt=$eventType, path=$path"
+        )
+    }
+
+    fun logLiveCacheFire(gameId: Long, savePath: String?) {
+        log(
+            event = "LIVE_CACHE_FIRE",
+            gameId = gameId,
+            gameName = null,
+            channel = null,
+            details = "savePath=${savePath?.let { File(it).name } ?: "null"}"
+        )
+    }
+
+    fun logSessionSyncSkip(gameId: Long, reason: String) {
+        log(
+            event = "SESSION_SYNC_SKIP",
+            gameId = gameId,
+            gameName = null,
+            channel = null,
+            details = reason
+        )
+    }
+
+    fun logUnifiedBuilt(
+        gameId: Long,
+        totalLocal: Int,
+        totalServer: Int,
+        mergedBoth: Int,
+        localOnly: Int,
+        serverOnly: Int,
+        unmatchedServerByClaimedSlot: Int
+    ) {
+        log(
+            event = "UNIFIED_BUILT",
+            gameId = gameId,
+            gameName = null,
+            channel = null,
+            details = buildString {
+                append("local=$totalLocal, server=$totalServer")
+                append(" -> both=$mergedBoth, localOnly=$localOnly, serverOnly=$serverOnly")
+                if (unmatchedServerByClaimedSlot > 0) {
+                    append(", droppedServer(slotClaimed)=$unmatchedServerByClaimedSlot")
+                }
+            }
+        )
+    }
+
+    fun logEmulatorResolved(
+        gameId: Long,
+        emulatorId: String?,
+        emulatorPackage: String?,
+        source: String
+    ) {
+        log(
+            event = "EMULATOR_RESOLVED",
+            gameId = gameId,
+            gameName = null,
+            channel = null,
+            details = "emu=$emulatorId, pkg=$emulatorPackage, source=$source"
+        )
+    }
+
+    fun logChannelLatestPick(
+        gameId: Long,
+        channel: String?,
+        pickedCacheId: Long?,
+        candidateCount: Int,
+        candidateIds: List<Long>
+    ) {
+        log(
+            event = "CHANNEL_LATEST_PICK",
+            gameId = gameId,
+            gameName = null,
+            channel = channel,
+            details = buildString {
+                append("picked=$pickedCacheId of $candidateCount")
+                if (candidateIds.size > 1) append(", candidates=${candidateIds.take(5)}")
+            }
+        )
+    }
+
+    fun logRestoreEntryPicked(
+        gameId: Long,
+        channel: String?,
+        localCacheId: Long?,
+        serverSaveId: Long?,
+        entryTimestamp: Instant?,
+        source: String,
+        isLatest: Boolean
+    ) {
+        log(
+            event = "RESTORE_ENTRY_PICKED",
+            gameId = gameId,
+            gameName = null,
+            channel = channel,
+            details = buildString {
+                append("source=$source")
+                append(", cacheId=$localCacheId, rommSaveId=$serverSaveId")
+                append(", entryTime=${entryTimestamp?.let { formatInstant(it) } ?: "null"}")
+                append(", isLatest=$isLatest")
+            }
+        )
+    }
+
     private fun log(
         event: String,
         gameId: Long?,

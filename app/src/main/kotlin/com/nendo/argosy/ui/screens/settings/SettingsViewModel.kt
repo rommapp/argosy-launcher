@@ -524,6 +524,28 @@ class SettingsViewModel @Inject constructor(
     fun moveSavePathModalButtonFocus(delta: Int) = emulatorDelegate.moveSavePathModalButtonFocus(delta)
 
     fun confirmSavePathModalSelection() = routeConfirmSavePathModalSelection(this)
+
+    fun openMemcardPicker(config: PlatformEmulatorConfig) {
+        val emulatorId = config.effectiveEmulatorId ?: return
+        emulatorDelegate.showMemcardPicker(
+            scope = viewModelScope,
+            emulatorId = emulatorId,
+            emulatorName = config.effectiveEmulatorName ?: emulatorId,
+            emulatorPackage = config.effectiveEmulatorPackage,
+            platformName = config.platform.name
+        )
+    }
+    fun dismissMemcardPicker() = emulatorDelegate.dismissMemcardPicker()
+    fun moveMemcardPickerFocus(delta: Int) = emulatorDelegate.moveMemcardPickerFocus(delta)
+    fun confirmMemcardSelection(cardPath: String) =
+        emulatorDelegate.confirmMemcardSelection(viewModelScope, cardPath) { loadSettings() }
+    fun handleMemcardPickerItemTap(index: Int) {
+        val info = uiState.value.emulators.memcardPickerInfo ?: return
+        val card = info.cards.getOrNull(index) ?: return
+        confirmMemcardSelection(card.path)
+    }
+    fun resetMemcardSelection(emulatorId: String) =
+        emulatorDelegate.clearMemcardSelection(viewModelScope, emulatorId) { loadSettings() }
     fun forceCheckEmulatorUpdates() = routeForceCheckEmulatorUpdates(this)
     fun triggerEmulatorUpdate(emulatorId: String) = emulatorDelegate.triggerUpdateForEmulator(emulatorId, viewModelScope)
     fun selectUpdateModalVariant() = emulatorDelegate.selectUpdateModalVariant()

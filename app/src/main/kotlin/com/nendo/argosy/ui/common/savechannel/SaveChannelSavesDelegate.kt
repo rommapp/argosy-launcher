@@ -133,6 +133,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = slot.channelName
         val activeChannel = state.activeChannel
         val activeSaveTimestamp = state.activeSaveTimestamp
+        val activeSaveCacheId = state.activeSaveCacheId
         val isActiveChannel = channelName == activeChannel
 
         val filtered = holder.rawEntries
@@ -140,10 +141,10 @@ class SaveChannelSavesDelegate @Inject constructor(
             .sortedByDescending { it.timestamp }
 
         val history = filtered.mapIndexed { i, entry ->
-            val isApplied = isActiveChannel && if (activeSaveTimestamp != null) {
-                entry.timestamp.toEpochMilli() == activeSaveTimestamp
-            } else {
-                i == 0
+            val isApplied = isActiveChannel && when {
+                activeSaveCacheId != null -> entry.localCacheId == activeSaveCacheId
+                activeSaveTimestamp != null -> entry.timestamp.toEpochMilli() == activeSaveTimestamp
+                else -> i == 0
             }
             SaveHistoryItem(
                 cacheId = entry.localCacheId ?: -1,
@@ -291,7 +292,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             gameRepository.updateActiveSaveChannel(currentGameId, channelName)
             gameRepository.updateActiveSaveTimestamp(currentGameId, null)
             _state.update {
-                it.copy(activeChannel = channelName, activeSaveTimestamp = null)
+                it.copy(activeChannel = channelName, activeSaveTimestamp = null, activeSaveCacheId = null)
             }
             onSaveStatusChanged(
                 SaveStatusEvent(channelName = channelName, timestamp = null)
@@ -308,9 +309,15 @@ class SaveChannelSavesDelegate @Inject constructor(
                 )
             }
 
-            val entry = holder.rawEntries
-                .filter { it.channelName == channelName }
-                .maxByOrNull { it.timestamp }
+            val candidates = holder.rawEntries.filter { it.channelName == channelName }
+            val entry = candidates.maxByOrNull { it.timestamp }
+            com.nendo.argosy.util.SaveDebugLogger.logChannelLatestPick(
+                gameId = currentGameId,
+                channel = channelName,
+                pickedCacheId = entry?.localCacheId,
+                candidateCount = candidates.size,
+                candidateIds = candidates.mapNotNull { it.localCacheId }
+            )
 
             if (entry != null) {
                 val entryTimestamp = entry.timestamp.toEpochMilli()
@@ -326,7 +333,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                         )
                         val label = channelName ?: "Auto Save"
                         notificationManager.showSuccess("Using save slot: $label")
-                        _state.update { it.copy(isVisible = false) }
+                        _state.update { it.copy(isVisible = false, activeSaveCacheId = entry.localCacheId) }
                         onRestored()
                     }
                     is RestoreCachedSaveUseCase.Result.Error -> {
@@ -388,6 +395,15 @@ class SaveChannelSavesDelegate @Inject constructor(
         val isRestoringLatest = entry.isLatest
 
         scope.launch {
+            com.nendo.argosy.util.SaveDebugLogger.logRestoreEntryPicked(
+                gameId = currentGameId,
+                channel = targetChannel,
+                localCacheId = entry.localCacheId,
+                serverSaveId = entry.serverSaveId,
+                entryTimestamp = entry.timestamp,
+                source = entry.source.name,
+                isLatest = entry.isLatest
+            )
             val game = gameRepository.getById(currentGameId)
 
             if (emulatorPackage != null && state.supportsStates) {
@@ -419,18 +435,18 @@ class SaveChannelSavesDelegate @Inject constructor(
                 }
             }
 
-            val newTimestamp = if (isRestoringLatest) null else targetTimestamp
-            gameRepository.updateActiveSaveTimestamp(currentGameId, newTimestamp)
+            gameRepository.updateActiveSaveTimestamp(currentGameId, targetTimestamp)
             _state.update {
                 it.copy(
                     showRestoreConfirmation = false,
                     isVisible = false,
                     activeChannel = targetChannel,
-                    activeSaveTimestamp = newTimestamp
+                    activeSaveTimestamp = targetTimestamp,
+                    activeSaveCacheId = entry.localCacheId
                 )
             }
             onSaveStatusChanged(
-                SaveStatusEvent(channelName = targetChannel, timestamp = newTimestamp)
+                SaveStatusEvent(channelName = targetChannel, timestamp = targetTimestamp)
             )
 
             titleIdDownloadObserver.extractTitleIdForGame(currentGameId)
@@ -572,7 +588,8 @@ class SaveChannelSavesDelegate @Inject constructor(
                     renameEntry = null,
                     renameText = "",
                     activeChannel = name,
-                    activeSaveTimestamp = null
+                    activeSaveTimestamp = null,
+                    activeSaveCacheId = null
                 )
             }
             refreshEntries()
@@ -698,7 +715,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 gameRepository.updateActiveSaveChannel(currentGameId, null)
                 gameRepository.updateActiveSaveTimestamp(currentGameId, null)
                 _state.update {
-                    it.copy(activeChannel = null, activeSaveTimestamp = null)
+                    it.copy(activeChannel = null, activeSaveTimestamp = null, activeSaveCacheId = null)
                 }
                 onSaveStatusChanged(
                     SaveStatusEvent(channelName = null, timestamp = null)

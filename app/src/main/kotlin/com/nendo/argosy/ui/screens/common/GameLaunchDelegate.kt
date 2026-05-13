@@ -84,6 +84,16 @@ data class VariantPickerState(
     val onLaunch: (Intent) -> Unit
 )
 
+data class MemcardPickerState(
+    val gameId: Long,
+    val emulatorId: String,
+    val platformName: String,
+    val cards: List<com.nendo.argosy.data.sync.platform.MemcardInfo>,
+    val channelName: String? = null,
+    val launchMode: LaunchMode? = null,
+    val onLaunch: (Intent) -> Unit
+)
+
 class GameLaunchDelegate @Inject constructor(
     private val application: Application,
     private val gameRepository: GameRepository,
@@ -98,7 +108,8 @@ class GameLaunchDelegate @Inject constructor(
     private val savePathValidator: SavePathValidator,
     private val saveSyncRepository: SaveSyncRepository,
     private val saveCacheManager: SaveCacheManager,
-    private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver
+    private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver,
+    private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -118,6 +129,9 @@ class GameLaunchDelegate @Inject constructor(
 
     private val _variantPickerState = MutableStateFlow<VariantPickerState?>(null)
     val variantPickerState: StateFlow<VariantPickerState?> = _variantPickerState.asStateFlow()
+
+    private val _memcardPickerState = MutableStateFlow<MemcardPickerState?>(null)
+    val memcardPickerState: StateFlow<MemcardPickerState?> = _memcardPickerState.asStateFlow()
 
     val isSyncing: Boolean get() = _syncOverlayState.value != null
 
@@ -355,6 +369,17 @@ class GameLaunchDelegate @Inject constructor(
                 _variantPickerState.value = VariantPickerState(
                     gameId = result.gameId,
                     variants = result.variants,
+                    channelName = channelName,
+                    launchMode = launchMode,
+                    onLaunch = onLaunch
+                )
+            }
+            is LaunchResult.SelectMemcard -> {
+                _memcardPickerState.value = MemcardPickerState(
+                    gameId = result.gameId,
+                    emulatorId = result.emulatorId,
+                    platformName = result.platformName,
+                    cards = result.cards,
                     channelName = channelName,
                     launchMode = launchMode,
                     onLaunch = onLaunch
@@ -603,6 +628,33 @@ class GameLaunchDelegate @Inject constructor(
         _onLaunchFailed = null
     }
 
+    fun selectMemcard(scope: CoroutineScope, cardPath: String) {
+        val state = _memcardPickerState.value ?: return
+        _memcardPickerState.value = null
+        _onLaunchFailed = null
+
+        scope.launch {
+            emulatorSaveConfigRepository.setMemcardPath(state.emulatorId, cardPath)
+            val result = launchGameUseCase(
+                gameId = state.gameId
+            )
+            when (result) {
+                is LaunchResult.Success -> {
+                    soundManager.play(SoundType.LAUNCH_GAME)
+                    state.onLaunch(applyLaunchMode(result.intent, state.launchMode))
+                }
+                is LaunchResult.Error -> notificationManager.showError(result.message)
+                else -> notificationManager.showError("Failed to launch")
+            }
+        }
+    }
+
+    fun dismissMemcardPicker() {
+        _memcardPickerState.value = null
+        _onLaunchFailed?.invoke()
+        _onLaunchFailed = null
+    }
+
     fun launchSimple(
         scope: CoroutineScope,
         gameId: Long,
@@ -651,6 +703,16 @@ class GameLaunchDelegate @Inject constructor(
                 val handler = callbacks.onSelectVariant
                 if (handler != null) handler(result.variants)
                 else dispatchErrorResult(result, callbacks.onLaunchFailed)
+            }
+            is LaunchResult.SelectMemcard -> {
+                _memcardPickerState.value = MemcardPickerState(
+                    gameId = result.gameId,
+                    emulatorId = result.emulatorId,
+                    platformName = result.platformName,
+                    cards = result.cards,
+                    launchMode = launchMode,
+                    onLaunch = callbacks.onLaunch
+                )
             }
             is LaunchResult.NoEmulator -> {
                 val handler = callbacks.onNoEmulator

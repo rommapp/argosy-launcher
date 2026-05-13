@@ -138,6 +138,8 @@ data class HomeUiState(
     val syncOverlayState: SyncOverlayState? = null,
     val discPickerState: DiscPickerState? = null,
     val discPickerFocusIndex: Int = 0,
+    val memcardPickerState: com.nendo.argosy.ui.screens.common.MemcardPickerState? = null,
+    val memcardPickerFocusIndex: Int = 0,
     val changelogEntry: com.nendo.argosy.domain.model.ChangelogEntry? = null,
     val isVideoPreviewActive: Boolean = false,
     val videoPreviewId: String? = null,

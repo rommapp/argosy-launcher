@@ -369,7 +369,9 @@ class DownloadsViewModel @Inject constructor(
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult = if (moveFocus(-1)) InputResult.HANDLED else InputResult.UNHANDLED
         override fun onDown(): InputResult = if (moveFocus(1)) InputResult.HANDLED else InputResult.UNHANDLED
-        override fun onLeft(): InputResult = InputResult.UNHANDLED
+        override fun onLeft(): InputResult =
+            if (_uiState.value.showFailedActionDialog) InputResult.HANDLED
+            else InputResult.UNHANDLED
         override fun onRight(): InputResult = InputResult.UNHANDLED
         override fun onConfirm(): InputResult {
             val state = _uiState.value

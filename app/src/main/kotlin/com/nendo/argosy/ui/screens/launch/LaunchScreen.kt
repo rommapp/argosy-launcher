@@ -21,8 +21,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.components.DiscPickerModal
+import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
+import com.nendo.argosy.ui.input.MemcardPickerInputHandler
 import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -42,6 +44,7 @@ fun LaunchScreen(
 
     val syncOverlayState by viewModel.syncOverlayState.collectAsState()
     val discPickerState by viewModel.discPickerState.collectAsState()
+    val memcardPickerState by viewModel.memcardPickerState.collectAsState()
     val launchIntent by viewModel.launchIntent.collectAsState()
     val launchOptions by viewModel.launchOptions.collectAsState()
     val gameTitle by viewModel.gameTitle.collectAsState()
@@ -51,6 +54,7 @@ fun LaunchScreen(
     val backgroundColor = if (isDarkTheme) Color.Black else Color.White
 
     var discPickerFocusIndex by remember { mutableIntStateOf(0) }
+    var memcardPickerFocusIndex by remember { mutableIntStateOf(0) }
     var hardcoreConflictFocusIndex by remember { mutableIntStateOf(0) }
     var localModifiedFocusIndex by remember { mutableIntStateOf(0) }
 
@@ -126,6 +130,7 @@ fun LaunchScreen(
     val isHardcoreConflict = syncProgress is SyncProgress.HardcoreConflict
     val isLocalModified = syncProgress is SyncProgress.LocalModified
     val showDiscPicker = discPickerState != null
+    val showMemcardPicker = memcardPickerState != null
 
     val hardcoreConflictInputHandler = remember(syncOverlayState) {
         HardcoreConflictInputHandler(
@@ -153,6 +158,16 @@ fun LaunchScreen(
             onFocusChange = { discPickerFocusIndex = it },
             onSelect = { filePath -> viewModel.selectDisc(filePath) },
             onDismiss = { viewModel.dismissDiscPicker() }
+        )
+    }
+
+    val memcardPickerInputHandler = remember(memcardPickerState) {
+        MemcardPickerInputHandler(
+            getCards = { memcardPickerState?.cards ?: emptyList() },
+            getFocusIndex = { memcardPickerFocusIndex },
+            onFocusChange = { memcardPickerFocusIndex = it },
+            onSelect = { cardPath -> viewModel.selectMemcard(cardPath) },
+            onDismiss = { viewModel.dismissMemcardPicker() }
         )
     }
 
@@ -201,6 +216,21 @@ fun LaunchScreen(
         }
     }
 
+    LaunchedEffect(showMemcardPicker) {
+        if (showMemcardPicker) {
+            memcardPickerFocusIndex = 0
+            inputDispatcher.pushModal(memcardPickerInputHandler)
+        }
+    }
+
+    DisposableEffect(showMemcardPicker) {
+        onDispose {
+            if (showMemcardPicker) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -228,6 +258,16 @@ fun LaunchScreen(
                 focusIndex = discPickerFocusIndex,
                 onSelectDisc = { viewModel.selectDisc(it) },
                 onDismiss = { viewModel.dismissDiscPicker() }
+            )
+        }
+
+        memcardPickerState?.let { state ->
+            MemcardPickerModal(
+                cards = state.cards,
+                focusIndex = memcardPickerFocusIndex,
+                selectedCardPath = null,
+                onSelectCard = { viewModel.selectMemcard(it) },
+                onDismiss = { viewModel.dismissMemcardPicker() }
             )
         }
     }

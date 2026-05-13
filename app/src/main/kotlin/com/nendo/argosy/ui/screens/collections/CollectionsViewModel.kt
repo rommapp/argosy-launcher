@@ -359,6 +359,14 @@ class CollectionsViewModel @Inject constructor(
             return InputResult.HANDLED
         }
 
+        override fun onLeft(): InputResult {
+            val state = uiState.value
+            if (state.showCreateDialog || state.showDeleteDialog || state.showOptionsModal) {
+                return InputResult.HANDLED
+            }
+            return InputResult.UNHANDLED
+        }
+
         override fun onConfirm(): InputResult {
             val state = uiState.value
             if (state.showCreateDialog || state.showDeleteDialog) {

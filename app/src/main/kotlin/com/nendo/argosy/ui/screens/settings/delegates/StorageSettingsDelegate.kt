@@ -270,7 +270,9 @@ class StorageSettingsDelegate @Inject constructor(
                     effectiveSavePath = info?.effectiveSavePath,
                     isUserSavePathOverride = info?.isUserSavePathOverride ?: false,
                     effectiveStatePath = info?.effectiveStatePath,
-                    isUserStatePathOverride = info?.isUserStatePathOverride ?: false
+                    isUserStatePathOverride = info?.isUserStatePathOverride ?: false,
+                    folderMemcardCount = info?.folderMemcardCount ?: -1,
+                    selectedMemcardPath = info?.selectedMemcardPath
                 )
             }
 
@@ -586,7 +588,9 @@ class StorageSettingsDelegate @Inject constructor(
         val effectiveSavePath: String? = null,
         val isUserSavePathOverride: Boolean = false,
         val effectiveStatePath: String? = null,
-        val isUserStatePathOverride: Boolean = false
+        val isUserStatePathOverride: Boolean = false,
+        val folderMemcardCount: Int = -1,
+        val selectedMemcardPath: String? = null
     )
 
     fun updatePlatformEmulatorInfo(platformInfoMap: Map<Long, PlatformEmulatorInfo>) {

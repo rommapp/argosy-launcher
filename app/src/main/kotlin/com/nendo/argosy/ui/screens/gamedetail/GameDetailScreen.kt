@@ -76,6 +76,7 @@ import com.nendo.argosy.ui.screens.gamedetail.components.menuLayout
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
 import com.nendo.argosy.ui.components.DiscPickerModal
+import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.CorePickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.EmulatorPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.ExtractionFailedModal
@@ -314,6 +315,32 @@ fun GameDetailScreen(
     DisposableEffect(isLocalModified) {
         onDispose {
             if (isLocalModified) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
+
+    val memcardPickerInputHandler = remember(viewModel) {
+        com.nendo.argosy.ui.input.MemcardPickerInputHandler(
+            getCards = { uiState.memcardPickerState?.cards ?: emptyList() },
+            getFocusIndex = { uiState.memcardPickerFocusIndex },
+            onFocusChange = { viewModel.setMemcardPickerFocusIndex(it) },
+            onSelect = { viewModel.selectMemcard(it) },
+            onDismiss = { viewModel.dismissMemcardPicker() }
+        )
+    }
+
+    val showMemcardPicker = uiState.memcardPickerState != null
+    LaunchedEffect(showMemcardPicker) {
+        if (showMemcardPicker) {
+            viewModel.setMemcardPickerFocusIndex(0)
+            inputDispatcher.pushModal(memcardPickerInputHandler)
+        }
+    }
+
+    DisposableEffect(showMemcardPicker) {
+        onDispose {
+            if (showMemcardPicker) {
                 inputDispatcher.popModal()
             }
         }
@@ -836,6 +863,16 @@ private fun GameDetailModals(
             focusIndex = pickerState.discPickerFocusIndex,
             onSelectDisc = viewModel.pickerModalDelegate::selectDisc,
             onDismiss = viewModel.pickerModalDelegate::dismissDiscPicker
+        )
+    }
+
+    uiState.memcardPickerState?.let { pickerState ->
+        MemcardPickerModal(
+            cards = pickerState.cards,
+            focusIndex = uiState.memcardPickerFocusIndex,
+            selectedCardPath = null,
+            onSelectCard = viewModel::selectMemcard,
+            onDismiss = viewModel::dismissMemcardPicker
         )
     }
 

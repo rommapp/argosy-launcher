@@ -566,6 +566,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
     val state = vm._uiState.value
     return when {
         state.emulators.showSavePathModal -> { vm.dismissSavePathModal(); true }
+        state.emulators.showMemcardPicker -> { vm.dismissMemcardPicker(); true }
         state.storage.platformSettingsModalId != null -> { vm.closePlatformSettingsModal(); true }
         state.steam.showAddGameDialog -> { vm.dismissAddSteamGameDialog(); true }
         state.sounds.showSoundPicker -> { vm.dismissSoundPicker(); true }
@@ -665,6 +666,9 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
 internal fun routeMoveFocus(vm: SettingsViewModel, delta: Int) {
     if (vm._uiState.value.emulators.showSavePathModal) {
         vm.emulatorDelegate.moveSavePathModalFocus(delta); return
+    }
+    if (vm._uiState.value.emulators.showMemcardPicker) {
+        vm.emulatorDelegate.moveMemcardPickerFocus(delta); return
     }
     if (vm._uiState.value.storage.platformSettingsModalId != null) {
         vm.storageDelegate.movePlatformSettingsFocus(delta); return
@@ -777,6 +781,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)
         // RetroArch owns its own save/state paths via retroarch.cfg; rows are read-only for RA.
         PlatformDetailItem.SavePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchSavePathPicker(config.platform.id)
+        PlatformDetailItem.MemoryCard -> vm.openMemcardPicker(config)
         PlatformDetailItem.StatePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchStatePathPicker(config.platform.id)
         PlatformDetailItem.SyncToggle -> {
             val currentSync = state.storage.platformConfigs

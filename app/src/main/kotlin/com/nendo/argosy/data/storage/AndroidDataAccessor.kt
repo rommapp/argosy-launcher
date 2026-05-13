@@ -45,7 +45,7 @@ class AndroidDataAccessor @Inject constructor(
             }
 
             var anySupported = false
-            for (root in getAllStorageRoots()) {
+            for (root in getAllStorageRootsForAltAccess()) {
                 val supported = setupAndVerifyAltAccess(root, hasStoragePermission)
                 if (supported) anySupported = true
             }
@@ -57,7 +57,22 @@ class AndroidDataAccessor @Inject constructor(
         }
     }
 
-    private fun getAllStorageRoots(): List<String> {
+    fun getAllStorageRoots(): List<String> {
+        val roots = mutableListOf(Environment.getExternalStorageDirectory().absolutePath)
+        try {
+            File("/storage").listFiles()?.forEach { vol ->
+                if (vol.isDirectory && vol.name != "emulated" && vol.name != "self") {
+                    val path = vol.absolutePath
+                    if (path !in roots && vol.canRead()) roots.add(path)
+                }
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[AltAccess] Failed to enumerate storage volumes: ${e.message}")
+        }
+        return roots
+    }
+
+    fun getAllStorageRootsForAltAccess(): List<String> {
         val roots = mutableListOf(Environment.getExternalStorageDirectory().absolutePath)
         try {
             File("/storage").listFiles()?.forEach { vol ->

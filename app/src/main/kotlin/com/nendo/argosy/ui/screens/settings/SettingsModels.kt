@@ -285,7 +285,10 @@ data class EmulatorState(
     val showLaunchArgsModal: Boolean = false,
     val launchArgsModalState: LaunchArgsModalState? = null,
     val showAppPickerModal: Boolean = false,
-    val appPickerModalState: AppPickerModalState? = null
+    val appPickerModalState: AppPickerModalState? = null,
+    val showMemcardPicker: Boolean = false,
+    val memcardPickerInfo: MemcardPickerInfo? = null,
+    val memcardPickerFocusIndex: Int = 0
 ) {
     val assignedUpdatesAvailable: Int
         get() = platforms.count { config ->
@@ -535,6 +538,14 @@ data class SavePathModalInfo(
     val isUserOverride: Boolean
 )
 
+data class MemcardPickerInfo(
+    val emulatorId: String,
+    val emulatorName: String,
+    val platformName: String,
+    val cards: List<com.nendo.argosy.data.sync.platform.MemcardInfo>,
+    val selectedCardPath: String?
+)
+
 data class PlatformStorageConfig(
     val platformId: Long,
     val platformName: String,
@@ -553,7 +564,9 @@ data class PlatformStorageConfig(
     val effectiveStatePath: String? = null,
     val customStatePath: String? = null,
     val isUserStatePathOverride: Boolean = false,
-    val supportsStatePath: Boolean = false
+    val supportsStatePath: Boolean = false,
+    val folderMemcardCount: Int = -1,
+    val selectedMemcardPath: String? = null
 )
 
 data class StorageState(

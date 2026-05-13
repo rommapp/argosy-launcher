@@ -307,13 +307,25 @@ class SaveSyncApiClient @Inject constructor(
         titleId: String?
     ): Boolean = withContext(Dispatchers.IO) {
         val handler = saveHandlerRegistry.getFolderHandler(platformSlug)
-        if (handler == null || titleId.isNullOrBlank()) {
+        if (handler == null) {
             return@withContext clearSaveAtPath(targetPath)
         }
+        if (titleId.isNullOrBlank()) {
+            Logger.warn(TAG, "clearSavesForTitle: refusing to clear $targetPath -- folder-based platform=$platformSlug requires a titleId to scope the delete")
+            return@withContext false
+        }
 
-        val parentPath = File(targetPath).parent ?: return@withContext clearSaveAtPath(targetPath)
-        val matches = handler.findAllSaveFoldersByTitleId(parentPath, titleId)
-        if (matches.isEmpty()) return@withContext clearSaveAtPath(targetPath)
+        val matchesAtTarget = handler.findAllSaveFoldersByTitleId(targetPath, titleId)
+        val (parentPath, matches) = if (matchesAtTarget.isNotEmpty()) {
+            targetPath to matchesAtTarget
+        } else {
+            val p = File(targetPath).parent ?: return@withContext true
+            p to handler.findAllSaveFoldersByTitleId(p, titleId)
+        }
+        if (matches.isEmpty()) {
+            Logger.debug(TAG, "clearSavesForTitle: no prefix matches for titleId=$titleId at parent=$parentPath, nothing to clear")
+            return@withContext true
+        }
 
         Logger.debug(TAG, "clearSavesForTitle: deleting ${matches.size} folder(s) | titleId=$titleId, parent=$parentPath")
         var allOk = true
@@ -348,8 +360,9 @@ class SaveSyncApiClient @Inject constructor(
         gameTitle: String,
         platformSlug: String,
         romPath: String?,
-        coreName: String? = null
-    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
+        coreName: String? = null,
+        cachedTitleId: String? = null
+    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName, cachedTitleId)
 
     internal suspend fun <T> withRetry(
         maxAttempts: Int = 3,

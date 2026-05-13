@@ -4,10 +4,12 @@ import android.content.Context
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.util.SaveDebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +30,8 @@ class SaveCacheManager @Inject constructor(
     private val gameDao: GameDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val saveArchiver: SaveArchiver,
-    private val fal: FileAccessLayer
+    private val fal: FileAccessLayer,
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
 ) {
     private val TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
         .withZone(ZoneId.systemDefault())
@@ -40,7 +43,7 @@ class SaveCacheManager @Inject constructor(
 
     sealed class CacheResult {
         data class Created(val timestamp: Long, val cacheId: Long = 0) : CacheResult()
-        data object Duplicate : CacheResult()
+        data class Duplicate(val cacheId: Long, val contentHash: String) : CacheResult()
         data object Failed : CacheResult()
 
         val success: Boolean get() = this != Failed
@@ -71,10 +74,25 @@ class SaveCacheManager @Inject constructor(
 
         try {
             val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
-                val folderHash = saveArchiver.calculateFolderAsZipHash(saveFile)
+                val game = gameDao.getById(gameId)
+                val folders = resolveFoldersToCache(saveFile, savePath, game)
+                if (folders.isEmpty()) {
+                    Log.w(TAG, "No save folders matched for game $gameId at $savePath -- skipping cache to avoid zipping unrelated saves")
+                    return@withContext CacheResult.Failed
+                }
+                val folderHash = if (folders.size == 1) {
+                    saveArchiver.calculateFolderAsZipHash(folders[0])
+                } else {
+                    saveArchiver.calculateFoldersAsZipHash(folders)
+                }
                 tempFile = File(context.cacheDir, "temp_save_${System.currentTimeMillis()}.zip")
-                if (!saveArchiver.zipFolder(saveFile, tempFile)) {
-                    Log.e(TAG, "Failed to zip save folder")
+                val zipped = if (folders.size == 1) {
+                    saveArchiver.zipFolder(folders[0], tempFile)
+                } else {
+                    saveArchiver.zipFolders(folders, tempFile)
+                }
+                if (!zipped) {
+                    Log.e(TAG, "Failed to zip save folder(s)")
                     return@withContext CacheResult.Failed
                 }
                 folderHash to tempFile
@@ -94,7 +112,7 @@ class SaveCacheManager @Inject constructor(
                         contentHash = contentHash
                     )
                     tempFile?.delete()
-                    return@withContext CacheResult.Duplicate
+                    return@withContext CacheResult.Duplicate(existingWithHash.id, contentHash)
                 }
             }
 
@@ -304,7 +322,7 @@ class SaveCacheManager @Inject constructor(
             if (existingWithHash != null) {
                 Log.d(TAG, "Rollback skipped - identical save already cached (hash=$contentHash)")
                 tempFile?.delete()
-                return@withContext CacheResult.Duplicate
+                return@withContext CacheResult.Duplicate(existingWithHash.id, contentHash)
             }
 
             val now = Instant.now()
@@ -369,7 +387,13 @@ class SaveCacheManager @Inject constructor(
             if (entity.cachePath.endsWith(".zip")) {
                 fal.mkdirs(targetPath)
                 val targetFile = fal.getTransformedFile(targetPath)
-                saveArchiver.unzipSingleFolder(cacheFile, targetFile)
+                val game = gameDao.getById(entity.gameId)
+                val preserveRoots = game?.platformSlug == "psp"
+                if (preserveRoots) {
+                    saveArchiver.unzipToFolder(cacheFile, targetFile)
+                } else {
+                    saveArchiver.unzipSingleFolder(cacheFile, targetFile)
+                }
             } else {
                 val parentPath = targetPath.substringBeforeLast('/')
                 if (parentPath.isNotEmpty() && parentPath != targetPath) {
@@ -392,6 +416,26 @@ class SaveCacheManager @Inject constructor(
                 cacheId = cacheId,
                 targetPath = targetPath
             )
+
+            try {
+                val game = gameDao.getById(entity.gameId)
+                val actualHash = computeRestoredHash(game, targetPath)
+                val match = actualHash != null && actualHash == entity.contentHash
+                SaveDebugLogger.logRestoreVerify(
+                    gameId = entity.gameId,
+                    cacheId = cacheId,
+                    targetPath = targetPath,
+                    expectedHash = entity.contentHash,
+                    actualHash = actualHash,
+                    match = match
+                )
+                if (!match) {
+                    Log.w(TAG, "Restore hash mismatch for cache $cacheId: expected=${entity.contentHash}, actual=$actualHash, target=$targetPath")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Restore verify failed for cache $cacheId: ${e.message}")
+            }
+
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to restore save from cache", e)
@@ -487,6 +531,72 @@ class SaveCacheManager @Inject constructor(
 
     fun getCachesForGame(gameId: Long): Flow<List<SaveCacheEntity>> =
         saveCacheDao.observeByGame(gameId)
+
+    private fun resolveFoldersToCache(saveFile: File, savePath: String, game: GameEntity?): List<File> {
+        val titleId = game?.titleId
+        val handler = game?.platformSlug?.let { saveHandlerRegistry.getFolderHandler(it) }
+        if (game?.platformSlug != "psp" || titleId == null || handler == null) {
+            return listOf(saveFile)
+        }
+        return handler.findAllSaveFoldersByTitleId(savePath, titleId)
+            .map { fal.getTransformedFile(it) }
+            .filter { it.exists() && it.isDirectory }
+    }
+
+    private suspend fun computeRestoredHash(game: GameEntity?, targetPath: String): String? {
+        val titleId = game?.titleId
+        val handler = game?.platformSlug?.let { saveHandlerRegistry.getFolderHandler(it) }
+        if (game?.platformSlug == "psp" && titleId != null && handler != null) {
+            val matched = handler.findAllSaveFoldersByTitleId(targetPath, titleId)
+                .map { fal.getTransformedFile(it) }
+                .filter { it.exists() && it.isDirectory }
+            if (matched.isEmpty()) return null
+            return if (matched.size == 1) {
+                saveArchiver.calculateFolderAsZipHash(matched[0])
+            } else {
+                saveArchiver.calculateFoldersAsZipHash(matched)
+            }
+        }
+        return calculateLocalSaveHash(targetPath)
+    }
+
+    suspend fun dedupeIdenticalCaches(gameId: Long): Int = withContext(Dispatchers.IO) {
+        val all = saveCacheDao.getByGame(gameId)
+            .filter { !it.contentHash.isNullOrBlank() }
+        val groups = all.groupBy { Triple(it.contentHash, it.channelName, it.isHardcore) }
+        var deleted = 0
+        for ((_, dupes) in groups) {
+            if (dupes.size <= 1) continue
+            val keeper = dupes.maxWithOrNull(
+                compareBy(
+                    { if (it.isLocked) 1 else 0 },
+                    { if (it.rommSaveId != null) 1 else 0 },
+                    { it.cachedAt },
+                    { it.id }
+                )
+            ) ?: continue
+            for (entry in dupes) {
+                if (entry.id == keeper.id) continue
+                val cacheFile = File(cacheBaseDir, entry.cachePath)
+                val parentDir = cacheFile.parentFile
+                cacheFile.delete()
+                if (parentDir?.listFiles()?.isEmpty() == true) parentDir.delete()
+                saveCacheDao.deleteById(entry.id)
+                deleted++
+                SaveDebugLogger.logCacheDeleted(
+                    gameId = gameId,
+                    gameName = null,
+                    channel = entry.channelName,
+                    cacheId = entry.id,
+                    reason = "dedupe (kept id=${keeper.id}, hash=${entry.contentHash?.take(12)})"
+                )
+            }
+        }
+        if (deleted > 0) {
+            Log.d(TAG, "Deduped $deleted identical caches for game $gameId")
+        }
+        deleted
+    }
 
     suspend fun getCachesForGameOnce(gameId: Long): List<SaveCacheEntity> =
         saveCacheDao.getByGame(gameId)

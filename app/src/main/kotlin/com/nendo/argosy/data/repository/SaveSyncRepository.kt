@@ -97,8 +97,9 @@ class SaveSyncRepository @Inject constructor(
         gameTitle: String,
         platformSlug: String,
         romPath: String?,
-        coreName: String? = null
-    ): String? = apiClient.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
+        coreName: String? = null,
+        cachedTitleId: String? = null
+    ): String? = apiClient.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName, cachedTitleId)
 
     suspend fun resolveCoreForGame(gameId: Long): String? =
         apiClient.resolveCoreForGame(gameId)

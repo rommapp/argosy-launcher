@@ -46,6 +46,8 @@ import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import javax.inject.Inject
 
@@ -78,6 +80,7 @@ class GameSessionService : Service() {
     private var isOverlayVisible = false
     private var isWaitingForDirectory = false
     private var lastMidGameCacheId: Long = -1
+    private val midGameCacheMutex = Mutex()
     private var wasEmulatorInForeground = true
     private var emulatorDisplayId: Int = android.view.Display.DEFAULT_DISPLAY
 
@@ -133,7 +136,16 @@ class GameSessionService : Service() {
                 currentGameTitle = gameTitle
                 currentGameId = gameId
                 currentEmulatorId = emulatorId
-                currentEmulatorPackage = emulatorPackage
+                // Built-in libretro runs in-process (LibretroActivity inside Argosy), so the
+                // foreground monitor must compare against this app's real package name. The
+                // synthetic argosy.builtin.libretro id never matches currentForegroundPackage,
+                // which would mis-flag every built-in session as backgrounded after the poll
+                // delay and trip the fail-to-menu timer mid-game.
+                currentEmulatorPackage = if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+                    packageName
+                } else {
+                    emulatorPackage
+                }
                 currentSavePath = savePath
                 currentChannelName = channelName
                 currentIsHardcore = isHardcore
@@ -344,6 +356,13 @@ class GameSessionService : Service() {
 
                     handler.post {
                         Logger.debug(TAG, "Save change detected: $path in ${dir.name} (event=$event)")
+                        if (currentGameId != -1L) {
+                            com.nendo.argosy.util.SaveDebugLogger.logLiveCacheObserve(
+                                gameId = currentGameId,
+                                eventType = event,
+                                path = "${dir.name}/$path"
+                            )
+                        }
                         onSaveDetected()
                     }
                 }
@@ -376,6 +395,7 @@ class GameSessionService : Service() {
             Logger.warn(TAG, "Cannot cache save - missing context: gameId=$gameId, emulatorId=$emulatorId, savePath=$savePath")
             return
         }
+        com.nendo.argosy.util.SaveDebugLogger.logLiveCacheFire(gameId = gameId, savePath = savePath)
 
         updateNotification(currentGameTitle, NotificationState.SAVE_DETECTED)
         showOverlayBriefly()
@@ -384,37 +404,39 @@ class GameSessionService : Service() {
         broadcastSaveStateChanged(isDirty = true)
 
         serviceScope.launch {
-            try {
-                if (lastMidGameCacheId > 0) {
-                    saveCacheManager.deleteCachedSave(lastMidGameCacheId)
-                    lastMidGameCacheId = -1
-                }
+            midGameCacheMutex.withLock {
+                try {
+                    if (lastMidGameCacheId > 0) {
+                        saveCacheManager.deleteCachedSave(lastMidGameCacheId)
+                        lastMidGameCacheId = -1
+                    }
 
-                val result = saveCacheManager.cacheCurrentSave(
-                    gameId = gameId,
-                    emulatorId = emulatorId,
-                    savePath = savePath,
-                    channelName = currentChannelName,
-                    isLocked = false,
-                    isHardcore = currentIsHardcore,
-                    skipDuplicateCheck = true,
-                    needsRemoteSync = true
-                )
-                when (result) {
-                    is SaveCacheManager.CacheResult.Created -> {
-                        lastMidGameCacheId = result.cacheId
-                        Logger.info(TAG, "Live cache created for gameId=$gameId (cacheId=${result.cacheId}), updating activeSaveTimestamp to ${result.timestamp}")
-                        gameDao.updateActiveSaveTimestamp(gameId, result.timestamp)
+                    val result = saveCacheManager.cacheCurrentSave(
+                        gameId = gameId,
+                        emulatorId = emulatorId,
+                        savePath = savePath,
+                        channelName = currentChannelName,
+                        isLocked = false,
+                        isHardcore = currentIsHardcore,
+                        skipDuplicateCheck = true,
+                        needsRemoteSync = true
+                    )
+                    when (result) {
+                        is SaveCacheManager.CacheResult.Created -> {
+                            lastMidGameCacheId = result.cacheId
+                            Logger.info(TAG, "Live cache created for gameId=$gameId (cacheId=${result.cacheId}), updating activeSaveTimestamp to ${result.timestamp}")
+                            gameDao.updateActiveSaveTimestamp(gameId, result.timestamp)
+                        }
+                        is SaveCacheManager.CacheResult.Duplicate -> {
+                            Logger.debug(TAG, "Live cache skipped (duplicate) for gameId=$gameId")
+                        }
+                        is SaveCacheManager.CacheResult.Failed -> {
+                            Logger.warn(TAG, "Live cache failed for gameId=$gameId")
+                        }
                     }
-                    is SaveCacheManager.CacheResult.Duplicate -> {
-                        Logger.debug(TAG, "Live cache skipped (duplicate) for gameId=$gameId")
-                    }
-                    is SaveCacheManager.CacheResult.Failed -> {
-                        Logger.warn(TAG, "Live cache failed for gameId=$gameId")
-                    }
+                } catch (e: Exception) {
+                    Logger.error(TAG, "Live cache error for gameId=$gameId", e)
                 }
-            } catch (e: Exception) {
-                Logger.error(TAG, "Live cache error for gameId=$gameId", e)
             }
         }
 
@@ -736,7 +758,7 @@ class GameSessionService : Service() {
         private const val MAX_WAKELOCK_DURATION_MS = 4 * 60 * 60 * 1000L // 4 hours max
         private const val RESET_DELAY_MS = 3000L
         private const val POLL_INTERVAL_MS = 2000L
-        private const val STARTUP_COOLDOWN_MS = 45000L
+        private const val STARTUP_COOLDOWN_MS = 20000L
         private const val CACHE_DEBOUNCE_MS = 250L
         private const val EMULATOR_MONITOR_INITIAL_DELAY_MS = 5_000L
         private const val EMULATOR_POLL_INTERVAL_MS = 5_000L

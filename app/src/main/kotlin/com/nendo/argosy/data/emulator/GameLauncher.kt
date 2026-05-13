@@ -48,6 +48,12 @@ sealed class LaunchResult {
     data class Success(val intent: Intent, val discId: Long? = null, val alreadyLaunched: Boolean = false) : LaunchResult()
     data class SelectDisc(val gameId: Long, val discs: List<DiscOption>) : LaunchResult()
     data class SelectVariant(val gameId: Long, val variants: List<VariantOption>) : LaunchResult()
+    data class SelectMemcard(
+        val gameId: Long,
+        val emulatorId: String,
+        val platformName: String,
+        val cards: List<com.nendo.argosy.data.sync.platform.MemcardInfo>
+    ) : LaunchResult()
     data class NoEmulator(val platformSlug: String) : LaunchResult()
     data class NoRomFile(val gamePath: String?) : LaunchResult()
     data class NoSteamLauncher(val launcherPackage: String) : LaunchResult()
@@ -75,7 +81,9 @@ class GameLauncher @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val coreOptionResolver: CoreOptionResolver,
     private val coreSystemDataManager: CoreSystemDataManager,
-    private val gameFileDao: GameFileDao
+    private val gameFileDao: GameFileDao,
+    private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
+    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -163,6 +171,8 @@ class GameLauncher @Inject constructor(
             }
 
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName} (${emulator.packageName})")
+
+        ps2MemcardGate(gameId, game, emulator)?.let { return it }
 
         if (emulator.id == "eden" && ZipExtractor.isNswPlatform(game.platformSlug)) {
             migrateToExtcontent(game)
@@ -424,6 +434,11 @@ class GameLauncher @Inject constructor(
         val selectedCoreId = resolveBuiltinCoreId(game)
         var corePath = libretroCoreMgr.getCorePathForPlatform(game.platformSlug, selectedCoreId)
         if (corePath == null) {
+            if (!com.nendo.argosy.util.NetworkUtils.isOnline(context)) {
+                lastCoreDownloadError = "Built-in core for ${game.platformSlug} isn't installed yet. Connect to a network so Argosy can download it, then try again."
+                Logger.error(TAG, "[BuiltIn] Core missing for ${game.platformSlug} (selected=$selectedCoreId) and device is offline; aborting launch")
+                return null
+            }
             Logger.info(TAG, "[BuiltIn] Core not downloaded for ${game.platformSlug} (selected=$selectedCoreId), attempting download...")
             val downloadResult = libretroCoreMgr.downloadCoreForPlatform(game.platformSlug, selectedCoreId)
             corePath = downloadResult.getOrElse { err ->
@@ -470,6 +485,27 @@ class GameLauncher @Inject constructor(
             effectiveStatePath?.let { putExtra(LibretroActivity.EXTRA_STATES_DIR, it) }
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+    }
+
+    private suspend fun ps2MemcardGate(gameId: Long, game: GameEntity, emulator: EmulatorDef): LaunchResult? {
+        if (game.platformSlug != "ps2") return null
+        val emulatorId = emulator.id
+        val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
+        if (userConfig?.selectedMemcardPath != null) return null
+        val basePathOverride = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
+        val cards = saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
+            emulatorId = emulatorId,
+            emulatorPackage = emulator.packageName,
+            basePathOverride = basePathOverride
+        )
+        if (cards.size <= 1) return null
+        Logger.info(TAG, "[Launch] PS2 memcard gate triggered | gameId=$gameId, cards=${cards.size}")
+        return LaunchResult.SelectMemcard(
+            gameId = gameId,
+            emulatorId = emulatorId,
+            platformName = game.platformSlug,
+            cards = cards
+        )
     }
 
     private suspend fun resolveEmulator(game: GameEntity): EmulatorDef? {

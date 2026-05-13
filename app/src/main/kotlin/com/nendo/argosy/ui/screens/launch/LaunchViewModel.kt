@@ -36,6 +36,8 @@ class LaunchViewModel @Inject constructor(
 
     val syncOverlayState: StateFlow<SyncOverlayState?> = gameLaunchDelegate.syncOverlayState
     val discPickerState: StateFlow<DiscPickerState?> = gameLaunchDelegate.discPickerState
+    val memcardPickerState: StateFlow<com.nendo.argosy.ui.screens.common.MemcardPickerState?> =
+        gameLaunchDelegate.memcardPickerState
 
     private val _gameTitle = MutableStateFlow("")
     val gameTitle: StateFlow<String> = _gameTitle.asStateFlow()
@@ -114,6 +116,14 @@ class LaunchViewModel @Inject constructor(
 
     fun dismissDiscPicker() {
         gameLaunchDelegate.dismissDiscPicker()
+    }
+
+    fun selectMemcard(cardPath: String) {
+        gameLaunchDelegate.selectMemcard(viewModelScope, cardPath)
+    }
+
+    fun dismissMemcardPicker() {
+        gameLaunchDelegate.dismissMemcardPicker()
     }
 
     fun clearLaunchIntent() {

@@ -84,10 +84,12 @@ import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.DiscPickerModal
+import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
+import com.nendo.argosy.ui.input.MemcardPickerInputHandler
 import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -269,7 +271,7 @@ fun LibraryScreen(
     val isTransitioningToGame by argosyViewModel.isTransitioningToGame.collectAsState()
     val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
 
-    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null || uiState.discPickerState != null
+    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null || uiState.discPickerState != null || uiState.memcardPickerState != null
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -571,6 +573,42 @@ fun LibraryScreen(
         DisposableEffect(uiState.discPickerState) {
             onDispose {
                 if (uiState.discPickerState != null) {
+                    inputDispatcher.popModal()
+                }
+            }
+        }
+
+        uiState.memcardPickerState?.let { pickerState ->
+            MemcardPickerModal(
+                cards = pickerState.cards,
+                focusIndex = uiState.memcardPickerFocusIndex,
+                selectedCardPath = null,
+                onSelectCard = viewModel::selectMemcard,
+                onDismiss = viewModel::dismissMemcardPicker
+            )
+        }
+
+        val memcardPickerInputHandler = remember(viewModel) {
+            MemcardPickerInputHandler(
+                getCards = { uiState.memcardPickerState?.cards ?: emptyList() },
+                getFocusIndex = { uiState.memcardPickerFocusIndex },
+                onFocusChange = { viewModel.setMemcardPickerFocusIndex(it) },
+                onSelect = { viewModel.selectMemcard(it) },
+                onDismiss = { viewModel.dismissMemcardPicker() }
+            )
+        }
+
+        val showMemcardPicker = uiState.memcardPickerState != null
+        LaunchedEffect(showMemcardPicker) {
+            if (showMemcardPicker) {
+                viewModel.setMemcardPickerFocusIndex(0)
+                inputDispatcher.pushModal(memcardPickerInputHandler)
+            }
+        }
+
+        DisposableEffect(showMemcardPicker) {
+            onDispose {
+                if (showMemcardPicker) {
                     inputDispatcher.popModal()
                 }
             }

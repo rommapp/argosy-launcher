@@ -267,6 +267,11 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(discPickerState = pickerState) }
             }
         }
+        viewModelScope.launch {
+            gameLaunchDelegate.memcardPickerState.collect { pickerState ->
+                _uiState.update { it.copy(memcardPickerState = pickerState) }
+            }
+        }
     }
 
     private fun observeCollectionModal() {
@@ -639,6 +644,10 @@ class HomeViewModel @Inject constructor(
     fun selectDisc(discPath: String) = gameLaunchDelegate.selectDisc(viewModelScope, discPath)
     fun dismissDiscPicker() = gameLaunchDelegate.dismissDiscPicker()
     fun setDiscPickerFocusIndex(index: Int) { _uiState.update { it.copy(discPickerFocusIndex = index) } }
+
+    fun selectMemcard(cardPath: String) = gameLaunchDelegate.selectMemcard(viewModelScope, cardPath)
+    fun dismissMemcardPicker() = gameLaunchDelegate.dismissMemcardPicker()
+    fun setMemcardPickerFocusIndex(index: Int) { _uiState.update { it.copy(memcardPickerFocusIndex = index) } }
 
     // --- Public API: Sync & Changelog ---
 

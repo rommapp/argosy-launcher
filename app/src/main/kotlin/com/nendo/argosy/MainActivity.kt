@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.doOnAttach
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -210,7 +211,11 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
-        hideSystemUI()
+        installSystemBarsWatchdog()
+        // Defer the first hide until decor attach so the WindowInsetsController is wired.
+        // An immediate call from onCreate races against initial layout on cold start and
+        // routinely no-ops, leaving the system bars on screen until first focus change.
+        window.decorView.doOnAttach { hideSystemUI() }
 
         discordPresenceManager.init(this)
 
@@ -620,5 +625,20 @@ class MainActivity : ComponentActivity() {
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    private fun installSystemBarsWatchdog() {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
+            if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
+                // Hide inline rather than via View.post — posting delays the request to the
+                // next UI tick, which is enough for the bars to stay drawn between insets
+                // dispatch and the post running.
+                WindowInsetsControllerCompat(window, window.decorView)
+                    .hide(WindowInsetsCompat.Type.systemBars())
+            }
+            insets
+        }
+        // Force a synchronous insets pass so the listener fires immediately after install.
+        androidx.core.view.ViewCompat.requestApplyInsets(window.decorView)
     }
 }

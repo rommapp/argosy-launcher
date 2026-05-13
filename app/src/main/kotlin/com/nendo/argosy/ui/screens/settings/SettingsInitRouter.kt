@@ -560,13 +560,31 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 else -> com.nendo.argosy.data.emulator.StatePathRegistry.getConfig(emulatorIdForStateCheck) != null
             }
 
+            val saveConfigForMemcard = if (config.platform.slug == "ps2") {
+                val effectiveSaveConfigIdMc = emulatorId?.let { id ->
+                    val pkg = config.effectiveEmulatorPackage
+                    pkg?.let { SavePathRegistry.getConfigByPackage(it) }?.emulatorId
+                        ?: SavePathRegistry.getConfig(id)?.emulatorId
+                }
+                effectiveSaveConfigIdMc?.let { vm.emulatorDelegate.getEmulatorSaveConfig(it) }
+            } else null
+
+            val folderMemcardCount = if (config.platform.slug == "ps2" && emulatorId != null) {
+                vm.emulatorDelegate.listPs2FolderMemcardsForEmulator(
+                    emulatorId = emulatorId,
+                    emulatorPackage = config.effectiveEmulatorPackage
+                ).size
+            } else -1
+
             platformEmulatorInfoMap[config.platform.id] = StorageSettingsDelegate.PlatformEmulatorInfo(
                 supportsStatePath = supportsStatePath,
                 emulatorId = emulatorId,
                 effectiveSavePath = config.effectiveSavePath,
                 isUserSavePathOverride = config.isUserSavePathOverride,
                 effectiveStatePath = statePath,
-                isUserStatePathOverride = isUserStatePathOverride
+                isUserStatePathOverride = isUserStatePathOverride,
+                folderMemcardCount = folderMemcardCount,
+                selectedMemcardPath = saveConfigForMemcard?.selectedMemcardPath
             )
         }
         vm.storageDelegate.setPendingEmulatorInfo(platformEmulatorInfoMap)

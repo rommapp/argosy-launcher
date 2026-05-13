@@ -73,3 +73,10 @@ data class ExtractResult(
      * server timestamp. */
     val corruptZip: Boolean = false
 )
+
+data class MemcardInfo(
+    val name: String,
+    val path: String,
+    val gameFolderCount: Int,
+    val lastModified: Long
+)

@@ -779,8 +779,6 @@ class PlaySessionTracker @Inject constructor(
     }
 
     private suspend fun syncAndCacheSave(session: ActiveSession): SaveCacheManager.CacheResult? {
-        // Clear mid-game dirty flags before caching/uploading to prevent
-        // SyncCoordinator from racing to upload stale mid-game entries
         saveCacheDao.clearAllDirtyFlags(session.gameId)
 
         val cacheResult = cacheCurrentSave(session)
@@ -801,7 +799,12 @@ class PlaySessionTracker @Inject constructor(
 
         if (result is SyncSaveOnSessionEndUseCase.Result.Uploaded) {
             val activeChannel = if (session.isHardcore) null else session.channelName
-            linkCacheToServer(session.gameId, activeChannel, result)
+            val uploadedCacheId = when (cacheResult) {
+                is SaveCacheManager.CacheResult.Created -> cacheResult.cacheId
+                is SaveCacheManager.CacheResult.Duplicate -> cacheResult.cacheId
+                else -> null
+            }
+            linkCacheToServer(session.gameId, activeChannel, result, uploadedCacheId)
         }
 
         handleSaveSyncResult(session, game, result)
@@ -811,15 +814,29 @@ class PlaySessionTracker @Inject constructor(
     private suspend fun linkCacheToServer(
         gameId: Long,
         channelName: String?,
-        uploadResult: SyncSaveOnSessionEndUseCase.Result.Uploaded
+        uploadResult: SyncSaveOnSessionEndUseCase.Result.Uploaded,
+        uploadedCacheId: Long?
     ) {
         val rommSaveId = uploadResult.rommSaveId ?: return
 
-        val cacheEntry = if (channelName != null) {
-            saveCacheDao.getMostRecentInChannel(gameId, channelName)
-        } else {
-            saveCacheDao.getMostRecent(gameId)
-        } ?: return
+        val cacheEntry = uploadedCacheId?.let { saveCacheDao.getById(it) }
+            ?: run {
+                Logger.warn(TAG, "[SaveSync] SESSION gameId=$gameId | linkCacheToServer: no uploadedCacheId, skipping metadata link to avoid clobbering an unrelated cache")
+                com.nendo.argosy.util.SaveDebugLogger.logLinkCache(
+                    gameId = gameId,
+                    channel = channelName,
+                    cacheId = null,
+                    rommSaveId = rommSaveId,
+                    serverTimestamp = uploadResult.serverTimestamp,
+                    method = "skipped:noUploadedCacheId"
+                )
+                if (channelName != null) {
+                    saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = -1)
+                } else {
+                    saveCacheDao.clearAllDirtyFlags(gameId)
+                }
+                return
+            }
 
         saveCacheDao.updateRommSaveId(cacheEntry.id, rommSaveId)
 
@@ -828,6 +845,15 @@ class PlaySessionTracker @Inject constructor(
             saveCacheDao.updateCachedAt(cacheEntry.id, serverTimestamp)
             gameDao.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
         }
+
+        com.nendo.argosy.util.SaveDebugLogger.logLinkCache(
+            gameId = gameId,
+            channel = channelName,
+            cacheId = cacheEntry.id,
+            rommSaveId = rommSaveId,
+            serverTimestamp = serverTimestamp,
+            method = "byUploadedCacheId"
+        )
 
         if (channelName != null) {
             saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = -1)

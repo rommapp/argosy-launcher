@@ -24,6 +24,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         interceptAppPickerModal(state, method)?.let { return it }
         interceptLaunchArgsModal(state, method)?.let { return it }
         interceptSavePathModal(state, method)?.let { return it }
+        interceptMemcardPicker(state, method)?.let { return it }
         interceptPlatformSettingsModal(state, method)?.let { return it }
         interceptSoundPicker(state, method)?.let { return it }
         interceptRegionPicker(state, method)?.let { return it }
@@ -129,6 +130,22 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
             InputMethod.RIGHT -> { viewModel.moveSavePathModalButtonFocus(-1); InputResult.HANDLED }
             InputMethod.CONFIRM -> { viewModel.confirmSavePathModalSelection(); InputResult.HANDLED }
             InputMethod.BACK -> { viewModel.dismissSavePathModal(); InputResult.HANDLED }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptMemcardPicker(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (!state.emulators.showMemcardPicker) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveMemcardPickerFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveMemcardPickerFocus(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> {
+                val info = state.emulators.memcardPickerInfo
+                val card = info?.cards?.getOrNull(state.emulators.memcardPickerFocusIndex)
+                if (card != null) viewModel.confirmMemcardSelection(card.path)
+                InputResult.HANDLED
+            }
+            InputMethod.BACK -> { viewModel.dismissMemcardPicker(); InputResult.HANDLED }
             else -> InputResult.HANDLED
         }
     }

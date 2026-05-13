@@ -21,6 +21,7 @@ data class SaveChannelState(
     val focusIndex: Int = 0,
     val activeChannel: String? = null,
     val activeSaveTimestamp: Long? = null,
+    val activeSaveCacheId: Long? = null,
     val savePath: String? = null,
     val emulatorId: String? = null,
     val emulatorPackage: String? = null,

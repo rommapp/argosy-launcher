@@ -190,6 +190,8 @@ data class LibraryUiState(
     val syncOverlayState: SyncOverlayState? = null,
     val discPickerState: DiscPickerState? = null,
     val discPickerFocusIndex: Int = 0,
+    val memcardPickerState: com.nendo.argosy.ui.screens.common.MemcardPickerState? = null,
+    val memcardPickerFocusIndex: Int = 0,
     val isTouchMode: Boolean = false,
     val hasSelectedGame: Boolean = false,
     val screenWidthDp: Int = 0,
@@ -380,6 +382,11 @@ class LibraryViewModel @Inject constructor(
                 _uiState.update { it.copy(discPickerState = pickerState) }
             }
         }
+        viewModelScope.launch {
+            gameLaunchDelegate.memcardPickerState.collect { pickerState ->
+                _uiState.update { it.copy(memcardPickerState = pickerState) }
+            }
+        }
     }
 
     private fun observeCollectionModal() {
@@ -424,6 +431,18 @@ class LibraryViewModel @Inject constructor(
 
     fun setDiscPickerFocusIndex(index: Int) {
         _uiState.update { it.copy(discPickerFocusIndex = index) }
+    }
+
+    fun selectMemcard(cardPath: String) {
+        gameLaunchDelegate.selectMemcard(viewModelScope, cardPath)
+    }
+
+    fun dismissMemcardPicker() {
+        gameLaunchDelegate.dismissMemcardPicker()
+    }
+
+    fun setMemcardPickerFocusIndex(index: Int) {
+        _uiState.update { it.copy(memcardPickerFocusIndex = index) }
     }
 
     private fun observeGridDensity() {

@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
@@ -26,6 +27,7 @@ class SaveSyncConflictResolver @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
     private val saveCacheDao: SaveCacheDao,
     private val emulatorConfigDao: EmulatorConfigDao,
+    private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorResolver: EmulatorResolver,
     private val gameDao: GameDao,
     private val saveArchiver: SaveArchiver,
@@ -34,7 +36,9 @@ class SaveSyncConflictResolver @Inject constructor(
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
     private val switchSaveHandler: SwitchSaveHandler,
-    private val fal: com.nendo.argosy.data.storage.FileAccessLayer
+    private val fal: com.nendo.argosy.data.storage.FileAccessLayer,
+    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context
 ) {
     enum class HardcoreResolutionChoice {
         KEEP_HARDCORE,
@@ -56,6 +60,8 @@ class SaveSyncConflictResolver @Inject constructor(
 
     suspend fun preLaunchSync(gameId: Long, rommId: Long, emulatorId: String): PreLaunchSyncResult =
         withContext(Dispatchers.IO) {
+            crossEmulatorMigrateIfNeeded(gameId, emulatorId)
+
             val client = apiClient.get()
             val activeChannel = gameDao.getActiveSaveChannel(gameId)
             Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId rommId=$rommId emulator=$emulatorId channel=$activeChannel | Checking server saves")
@@ -168,12 +174,18 @@ class SaveSyncConflictResolver @Inject constructor(
                         val localHash = saveCacheManager.get().calculateLocalSaveHash(validatedPath)
                         Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Hash compare | local=$localHash, cached=$cachedHash")
                         if (localHash != null && localHash != cachedHash) {
-                            Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_MODIFIED | Local save differs from cached, prompting user")
-                            return@withContext PreLaunchSyncResult.LocalModified(
-                                localSavePath = validatedPath,
-                                serverTimestamp = serverTime,
-                                channelName = selectedChannel
-                            )
+                            val knownMatch = saveCacheManager.get().getByGameAndHash(gameId, localHash)
+                            if (knownMatch != null) {
+                                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Local hash didn't match cachedSave id=${cachedSave?.id}, but matches known cache id=${knownMatch.id} -- treating as known state, advancing activeSaveTimestamp")
+                                gameDao.updateActiveSaveTimestamp(gameId, knownMatch.cachedAt.toEpochMilli())
+                            } else {
+                                Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Decision=LOCAL_MODIFIED | Local save differs from cached AND from every known cache, prompting user")
+                                return@withContext PreLaunchSyncResult.LocalModified(
+                                    localSavePath = validatedPath,
+                                    serverTimestamp = serverTime,
+                                    channelName = selectedChannel
+                                )
+                            }
                         }
                     } else {
                         val localHash = saveCacheManager.get().calculateLocalSaveHash(validatedPath)
@@ -485,6 +497,82 @@ class SaveSyncConflictResolver @Inject constructor(
             emulatorPackage = emulatorPackage,
             gameId = gameId
         )
+    }
+
+    private suspend fun crossEmulatorMigrateIfNeeded(gameId: Long, currentEmulatorId: String) {
+        val game = gameDao.getById(gameId) ?: return
+
+        val latestCache = saveCacheDao.getByGame(gameId)
+            .filter { !it.contentHash.isNullOrBlank() }
+            .maxByOrNull { it.cachedAt }
+            ?: return
+
+        if (latestCache.emulatorId == currentEmulatorId) return
+
+        val targetPath = resolveTargetPathForEmulator(gameId, game, currentEmulatorId) ?: run {
+            Logger.warn(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Cross-emulator sync skipped | could not resolve save path for emulator=$currentEmulatorId")
+            return
+        }
+
+        val existingHash = saveCacheManager.get().calculateLocalSaveHash(targetPath)
+        if (existingHash != null && existingHash == latestCache.contentHash) return
+
+        if (existingHash != null) {
+            val existingMtime = savePathResolver.findNewestFileTime(targetPath).takeIf { it > 0 }
+                ?: java.io.File(targetPath).lastModified()
+            if (latestCache.cachedAt.toEpochMilli() <= existingMtime) return
+        }
+
+        Logger.info(
+            TAG,
+            "[SaveSync] PRE_LAUNCH gameId=$gameId | Cross-emulator sync | " +
+                "from=${latestCache.emulatorId} to=$currentEmulatorId, cacheId=${latestCache.id}, " +
+                "target=$targetPath, diskExists=${existingHash != null}, cacheNewer=true"
+        )
+        com.nendo.argosy.util.SaveDebugLogger.logCustom(
+            event = "CROSS_EMULATOR_SYNC",
+            gameId = gameId,
+            gameName = game.title,
+            channel = latestCache.channelName,
+            details = "from=${latestCache.emulatorId} to=$currentEmulatorId, cacheId=${latestCache.id}, target=${java.io.File(targetPath).name}, diskExists=${existingHash != null}"
+        )
+        saveCacheManager.get().restoreSave(latestCache.id, targetPath)
+    }
+
+    private suspend fun resolveTargetPathForEmulator(
+        gameId: Long,
+        game: com.nendo.argosy.data.local.entity.GameEntity,
+        currentEmulatorId: String
+    ): String? {
+        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+        val coreName = apiClient.get().resolveCoreForGame(game)
+
+        val discovered = savePathResolver.discoverSavePath(
+            emulatorId = currentEmulatorId,
+            gameTitle = game.title,
+            platformSlug = game.platformSlug,
+            romPath = game.localPath,
+            cachedTitleId = game.titleId,
+            coreName = coreName,
+            emulatorPackage = emulatorPackage,
+            gameId = gameId
+        )
+        if (discovered != null) return discovered
+
+        val userOverride = emulatorSaveConfigDao.getByEmulator(currentEmulatorId)
+            ?.takeIf { it.isUserOverride }
+            ?.savePathPattern
+            ?.takeIf { it.isNotBlank() }
+        if (userOverride != null) return userOverride
+
+        val config = SavePathRegistry.getConfigForPlatform(currentEmulatorId, game.platformSlug)
+            ?: SavePathRegistry.getConfig(currentEmulatorId)
+            ?: return null
+        val candidates = SavePathRegistry.resolvePathWithPackage(
+            config, emulatorPackage, appContext.filesDir.absolutePath, fal.externalStorageRoots()
+        )
+        return candidates.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
+            ?: candidates.firstOrNull()
     }
 
     companion object {

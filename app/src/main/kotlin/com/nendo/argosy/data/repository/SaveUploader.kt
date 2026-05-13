@@ -5,6 +5,7 @@ import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
@@ -31,6 +32,7 @@ import javax.inject.Singleton
 class SaveUploader @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveSyncDao: SaveSyncDao,
+    private val saveCacheDao: SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val gameDao: GameDao,
     private val titleDbRepository: TitleDbRepository,
@@ -197,6 +199,19 @@ class SaveUploader @Inject constructor(
             }
 
             val contentHash = saveArchiver.calculateContentHash(uploadFile)
+
+            run {
+                val matchingCache = saveCacheDao.getByGameAndHash(gameId, contentHash)
+                SaveDebugLogger.logUploadHash(
+                    gameId = gameId,
+                    channel = channelName,
+                    sourcePath = localPath,
+                    diskHash = contentHash,
+                    expectedCacheId = matchingCache?.id,
+                    expectedCacheHash = matchingCache?.contentHash
+                )
+            }
+
             if (syncEntity?.lastUploadedHash == contentHash) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 if (prepared.isTemporary) fileToUpload.delete()

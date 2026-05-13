@@ -808,6 +808,15 @@ fun ArgosyApp(
                                 openDrawer()
                             }
                         }
+                        GamepadEvent.Left -> {
+                            if (!input.isRepeat &&
+                                !isDrawerOpen &&
+                                !isQuickSettingsOpen &&
+                                !quickMenuState.isVisible
+                            ) {
+                                openDrawer()
+                            }
+                        }
                         GamepadEvent.LeftStickClick -> {
                             if (quickMenuState.isVisible) {
                                 closeQuickMenu()

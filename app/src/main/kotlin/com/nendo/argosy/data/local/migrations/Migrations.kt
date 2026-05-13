@@ -1595,3 +1595,9 @@ object Migration_108_109 : Migration(108, 109) {
         db.execSQL("UPDATE games SET raIdVerified = 0 WHERE verifiedRaId IS NULL AND raIdVerified = 1")
     }
 }
+
+object Migration_109_110 : Migration(109, 110) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE emulator_save_config ADD COLUMN selectedMemcardPath TEXT")
+    }
+}

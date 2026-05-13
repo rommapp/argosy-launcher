@@ -570,12 +570,23 @@ class AppsViewModel @Inject constructor(
 
         override fun onLeft(): InputResult {
             val state = _uiState.value
-            when {
-                state.showContextMenu -> return InputResult.UNHANDLED
-                state.isReorderMode -> moveAppInReorderMode(FocusDirection.LEFT)
-                else -> moveFocus(FocusDirection.LEFT)
+            return when {
+                state.showContextMenu -> InputResult.HANDLED
+                state.isReorderMode -> {
+                    moveAppInReorderMode(FocusDirection.LEFT)
+                    InputResult.HANDLED
+                }
+                state.apps.isEmpty() -> InputResult.UNHANDLED
+                else -> {
+                    val cols = state.columnsCount.coerceAtLeast(1)
+                    if (state.focusedIndex % cols == 0) {
+                        InputResult.UNHANDLED
+                    } else {
+                        moveFocus(FocusDirection.LEFT)
+                        InputResult.HANDLED
+                    }
+                }
             }
-            return InputResult.HANDLED
         }
 
         override fun onRight(): InputResult {

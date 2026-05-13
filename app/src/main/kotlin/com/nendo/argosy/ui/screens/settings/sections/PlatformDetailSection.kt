@@ -75,6 +75,7 @@ internal sealed class PlatformDetailItem(
 
     data object RomPath : PlatformDetailItem("rom_path", "sync")
     data object SavePath : PlatformDetailItem("save_path", "sync", { it.showSavePath })
+    data object MemoryCard : PlatformDetailItem("memory_card", "sync", { it.isPs2 && it.showSavePath })
     data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath })
 
     data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
@@ -98,7 +99,7 @@ internal sealed class PlatformDetailItem(
             InfoItem("info_bios_status", "bios", { it.hasBios }), BiosDownload, BiosInstall, BiosCopy,
             Header("header_sync", "sync", "Storage & Sync"),
             SyncToggle, SyncNow, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
-            RomPath, SavePath, StatePath,
+            RomPath, SavePath, MemoryCard, StatePath,
             RemoveFiles
         )
     }
@@ -120,7 +121,8 @@ internal data class PlatformDetailVisibility(
     val hasBios: Boolean = false,
     val biosMissing: Boolean = false,
     val biosDownloaded: Boolean = false,
-    val canDistribute: Boolean = false
+    val canDistribute: Boolean = false,
+    val isPs2: Boolean = false
 ) {
     companion object {
         fun from(
@@ -142,7 +144,8 @@ internal data class PlatformDetailVisibility(
             biosMissing = detail.biosDownloaded < detail.biosTotal,
             biosDownloaded = detail.biosDownloaded > 0,
             canDistribute = com.nendo.argosy.data.emulator.BiosPathRegistry
-                .getEmulatorsForPlatform(config.platform.slug).isNotEmpty()
+                .getEmulatorsForPlatform(config.platform.slug).isNotEmpty(),
+            isPs2 = config.platform.slug == "ps2"
         )
     }
 }
@@ -220,7 +223,7 @@ fun PlatformDetailSection(
         uiState.focusedIndex == layout.focusIndexOf(item, visibility)
 
     val modalBlur by animateDpAsState(
-        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null || emulators.showLaunchArgsModal || emulators.showAppPickerModal) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null || emulators.showLaunchArgsModal || emulators.showAppPickerModal || emulators.showMemcardPicker) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "platformDetailBlur"
     )
@@ -439,6 +442,36 @@ fun PlatformDetailSection(
                         )
                     }
                 }
+                PlatformDetailItem.MemoryCard -> {
+                    val cardCount = storageConfig?.folderMemcardCount ?: -1
+                    val selected = storageConfig?.selectedMemcardPath
+                    val selectedName = selected?.let { java.io.File(it).name }
+                    val emulatorName = config.effectiveEmulatorName ?: "this emulator"
+                    val isOverridingSavePath = storageConfig?.isUserSavePathOverride == true
+                    val (value, subtitle) = when {
+                        isOverridingSavePath ->
+                            "Using save-path override" to "Memory card pinned via custom save path"
+                        cardCount <= 0 ->
+                            "None found" to "No folder memory cards found -- convert one in $emulatorName to enable save sync"
+                        selected != null ->
+                            (selectedName ?: selected) to "(custom)"
+                        cardCount == 1 ->
+                            "Auto" to null
+                        else ->
+                            "Not selected" to "Multiple memory cards detected -- select one to enable save sync"
+                    }
+                    CyclePreference(
+                        title = "Memory Card",
+                        value = value,
+                        subtitle = subtitle,
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.openMemcardPicker(config) },
+                        showResetButton = selected != null && !isOverridingSavePath,
+                        onReset = {
+                            config.effectiveEmulatorId?.let { viewModel.resetMemcardSelection(it) }
+                        }
+                    )
+                }
                 PlatformDetailItem.StatePath -> {
                     if (config.effectiveEmulatorIsRetroArch) {
                         InfoPreference(
@@ -606,6 +639,16 @@ fun PlatformDetailSection(
                 },
                 onConfirm = { viewModel.confirmAppPickerSelection() },
                 onDismiss = { viewModel.closeAppPickerModal() }
+            )
+        }
+
+        if (emulators.showMemcardPicker && emulators.memcardPickerInfo != null) {
+            com.nendo.argosy.ui.components.MemcardPickerModal(
+                cards = emulators.memcardPickerInfo.cards,
+                focusIndex = emulators.memcardPickerFocusIndex,
+                selectedCardPath = emulators.memcardPickerInfo.selectedCardPath,
+                onSelectCard = { path -> viewModel.confirmMemcardSelection(path) },
+                onDismiss = { viewModel.dismissMemcardPicker() }
             )
         }
     }

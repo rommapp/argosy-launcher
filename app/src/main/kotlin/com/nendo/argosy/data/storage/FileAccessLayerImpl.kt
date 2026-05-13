@@ -308,6 +308,8 @@ class FileAccessLayerImpl @Inject constructor(
         return androidDataAccessor.isRestrictedAndroidPath(path)
     }
 
+    override fun externalStorageRoots(): List<String> = androidDataAccessor.getAllStorageRoots()
+
     override fun normalizeForDisplay(path: String): String {
         return androidDataAccessor.normalizePathForDisplay(path)
     }

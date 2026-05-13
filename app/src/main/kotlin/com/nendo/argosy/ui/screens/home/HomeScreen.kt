@@ -117,6 +117,7 @@ import com.nendo.argosy.ui.components.GameCardWithNewBadge
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
 import com.nendo.argosy.ui.components.DiscPickerModal
+import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.components.YouTubeVideoPlayer
@@ -257,7 +258,7 @@ fun HomeScreen(
     val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
 
     val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null || uiState.memcardPickerState != null) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
@@ -294,6 +295,16 @@ fun HomeScreen(
             onFocusChange = { viewModel.setDiscPickerFocusIndex(it) },
             onSelect = { viewModel.selectDisc(it) },
             onDismiss = { viewModel.dismissDiscPicker() }
+        )
+    }
+
+    val memcardPickerInputHandler = remember(viewModel) {
+        com.nendo.argosy.ui.input.MemcardPickerInputHandler(
+            getCards = { uiState.memcardPickerState?.cards ?: emptyList() },
+            getFocusIndex = { uiState.memcardPickerFocusIndex },
+            onFocusChange = { viewModel.setMemcardPickerFocusIndex(it) },
+            onSelect = { viewModel.selectMemcard(it) },
+            onDismiss = { viewModel.dismissMemcardPicker() }
         )
     }
 
@@ -367,6 +378,22 @@ fun HomeScreen(
     DisposableEffect(uiState.discPickerState) {
         onDispose {
             if (uiState.discPickerState != null) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
+
+    val showMemcardPicker = uiState.memcardPickerState != null
+    LaunchedEffect(showMemcardPicker) {
+        if (showMemcardPicker) {
+            viewModel.setMemcardPickerFocusIndex(0)
+            inputDispatcher.pushModal(memcardPickerInputHandler)
+        }
+    }
+
+    DisposableEffect(showMemcardPicker) {
+        onDispose {
+            if (showMemcardPicker) {
                 inputDispatcher.popModal()
             }
         }
@@ -846,6 +873,16 @@ fun HomeScreen(
                 focusIndex = uiState.discPickerFocusIndex,
                 onSelectDisc = viewModel::selectDisc,
                 onDismiss = viewModel::dismissDiscPicker
+            )
+        }
+
+        uiState.memcardPickerState?.let { pickerState ->
+            MemcardPickerModal(
+                cards = pickerState.cards,
+                focusIndex = uiState.memcardPickerFocusIndex,
+                selectedCardPath = null,
+                onSelectCard = viewModel::selectMemcard,
+                onDismiss = viewModel::dismissMemcardPicker
             )
         }
 

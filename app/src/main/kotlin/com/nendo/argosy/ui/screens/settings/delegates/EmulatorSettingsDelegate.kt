@@ -22,12 +22,14 @@ import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.ui.screens.settings.EmulatorUpdateModal
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.ui.screens.settings.LaunchArgsModalState
 import com.nendo.argosy.ui.screens.settings.launchArgsModalRows
 import com.nendo.argosy.ui.screens.settings.UpdateModalState
 import com.nendo.argosy.ui.screens.settings.EmulatorPickerInfo
 import com.nendo.argosy.ui.screens.settings.EmulatorState
 import com.nendo.argosy.ui.screens.settings.EmulatorUpdateInfo
+import com.nendo.argosy.ui.screens.settings.MemcardPickerInfo
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.SavePathModalInfo
 import com.nendo.argosy.ui.screens.settings.VariantOption
@@ -60,7 +62,8 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val coreVersionRepository: CoreVersionRepository,
     private val emulatorUpdateManager: EmulatorUpdateManager,
     private val emulatorDownloadManager: EmulatorDownloadManager,
-    private val emulatorUpdateRepository: EmulatorUpdateRepository
+    private val emulatorUpdateRepository: EmulatorUpdateRepository,
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
 ) {
     companion object {
         private const val TAG = "EmulatorSettingsDelegate"
@@ -846,6 +849,92 @@ class EmulatorSettingsDelegate @Inject constructor(
 
     suspend fun getUpdatesForPlatform(platformSlug: String): List<EmulatorUpdateEntity> {
         return emulatorUpdateManager.getUpdatesForPlatform(platformSlug)
+    }
+
+    suspend fun listPs2FolderMemcardsForEmulator(
+        emulatorId: String,
+        emulatorPackage: String?
+    ): List<com.nendo.argosy.data.sync.platform.MemcardInfo> {
+        val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
+        val basePathOverride = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
+        return saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
+            emulatorId = emulatorId,
+            emulatorPackage = emulatorPackage,
+            basePathOverride = basePathOverride
+        )
+    }
+
+    fun showMemcardPicker(
+        scope: CoroutineScope,
+        emulatorId: String,
+        emulatorName: String,
+        emulatorPackage: String?,
+        platformName: String
+    ) {
+        scope.launch {
+            val cards = listPs2FolderMemcardsForEmulator(emulatorId, emulatorPackage)
+            val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
+            val selectedPath = userConfig?.selectedMemcardPath
+            val initialFocus = cards.indexOfFirst { it.path == selectedPath }.coerceAtLeast(0)
+            _state.update {
+                it.copy(
+                    showMemcardPicker = true,
+                    memcardPickerInfo = MemcardPickerInfo(
+                        emulatorId = emulatorId,
+                        emulatorName = emulatorName,
+                        platformName = platformName,
+                        cards = cards,
+                        selectedCardPath = selectedPath
+                    ),
+                    memcardPickerFocusIndex = initialFocus
+                )
+            }
+            soundManager.play(SoundType.OPEN_MODAL)
+        }
+    }
+
+    fun dismissMemcardPicker() {
+        _state.update {
+            it.copy(
+                showMemcardPicker = false,
+                memcardPickerInfo = null,
+                memcardPickerFocusIndex = 0
+            )
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveMemcardPickerFocus(delta: Int) {
+        _state.update { state ->
+            val info = state.memcardPickerInfo ?: return@update state
+            val maxIndex = (info.cards.size - 1).coerceAtLeast(0)
+            val newIndex = (state.memcardPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            state.copy(memcardPickerFocusIndex = newIndex)
+        }
+    }
+
+    fun confirmMemcardSelection(
+        scope: CoroutineScope,
+        cardPath: String,
+        onLoadSettings: suspend () -> Unit
+    ) {
+        scope.launch {
+            val emulatorId = _state.value.memcardPickerInfo?.emulatorId ?: return@launch
+            emulatorSaveConfigRepository.setMemcardPath(emulatorId, cardPath)
+            dismissMemcardPicker()
+            onLoadSettings()
+        }
+    }
+
+    fun clearMemcardSelection(
+        scope: CoroutineScope,
+        emulatorId: String,
+        onLoadSettings: suspend () -> Unit
+    ) {
+        scope.launch {
+            emulatorSaveConfigRepository.clearMemcardPath(emulatorId)
+            onLoadSettings()
+        }
     }
 }
 

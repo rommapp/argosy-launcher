@@ -57,6 +57,9 @@ interface SaveCacheDao {
     @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId")
     suspend fun countByGame(gameId: Long): Int
 
+    @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId AND cachedAt >= :sinceMillis")
+    suspend fun countByGameSince(gameId: Long, sinceMillis: Long): Int
+
     @Insert
     suspend fun insert(entity: SaveCacheEntity): Long
 

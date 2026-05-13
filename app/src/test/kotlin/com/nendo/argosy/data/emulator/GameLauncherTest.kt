@@ -54,6 +54,8 @@ class GameLauncherTest {
     private lateinit var coreOptionResolver: CoreOptionResolver
     private lateinit var coreSystemDataManager: CoreSystemDataManager
     private lateinit var gameFileDao: GameFileDao
+    private lateinit var emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
+    private lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 
     private lateinit var launcher: GameLauncher
 
@@ -81,6 +83,8 @@ class GameLauncherTest {
         coreOptionResolver = mockk(relaxed = true)
         coreSystemDataManager = mockk(relaxed = true)
         gameFileDao = mockk(relaxed = true)
+        emulatorSaveConfigRepository = mockk(relaxed = true)
+        saveHandlerRegistry = mockk(relaxed = true)
 
         every { userPreferencesRepository.userPreferences } returns flowOf(UserPreferences())
         every { userPreferencesRepository.getBuiltinCoreSelections() } returns flowOf(emptyMap())
@@ -104,7 +108,9 @@ class GameLauncherTest {
             userPreferencesRepository = userPreferencesRepository,
             coreOptionResolver = coreOptionResolver,
             coreSystemDataManager = coreSystemDataManager,
-            gameFileDao = gameFileDao
+            gameFileDao = gameFileDao,
+            emulatorSaveConfigRepository = emulatorSaveConfigRepository,
+            saveHandlerRegistry = saveHandlerRegistry
         )
     }
 

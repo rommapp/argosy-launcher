@@ -183,6 +183,11 @@ class GameDetailViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            gameLaunchDelegate.memcardPickerState.collect { pickerState ->
+                _uiState.update { it.copy(memcardPickerState = pickerState) }
+            }
+        }
+        viewModelScope.launch {
             collectionModalDelegate.state.collect { modalState ->
                 _uiState.update {
                     it.copy(
@@ -1181,6 +1186,12 @@ class GameDetailViewModel @Inject constructor(
         }
     }
     fun dismissDiscPicker() = pickerModalDelegate.dismissDiscPicker()
+
+    fun selectMemcard(cardPath: String) = gameLaunchDelegate.selectMemcard(viewModelScope, cardPath)
+    fun dismissMemcardPicker() = gameLaunchDelegate.dismissMemcardPicker()
+    fun setMemcardPickerFocusIndex(index: Int) {
+        _uiState.update { it.copy(memcardPickerFocusIndex = index) }
+    }
     fun navigateDiscPicker(direction: Int) = pickerModalDelegate.moveDiscPickerFocus(direction)
     fun selectFocusedDisc() = pickerModalDelegate.confirmDiscSelection()
 

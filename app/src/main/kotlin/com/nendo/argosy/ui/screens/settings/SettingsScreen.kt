@@ -978,7 +978,7 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
 private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackState) {
     if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker ||
         uiState.emulators.updateModal != null || uiState.emulators.showLaunchArgsModal ||
-        uiState.emulators.showAppPickerModal) {
+        uiState.emulators.showAppPickerModal || uiState.emulators.showMemcardPicker) {
         return
     }
     if (shaderStack.showShaderPicker) {

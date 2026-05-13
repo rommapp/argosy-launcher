@@ -190,6 +190,8 @@ data class GameDetailUiState(
     val syncState: SyncState = SyncState.Idle,
     val isSyncing: Boolean = false,
     val syncOverlayState: SyncOverlayState? = null,
+    val memcardPickerState: com.nendo.argosy.ui.screens.common.MemcardPickerState? = null,
+    val memcardPickerFocusIndex: Int = 0,
     val hardcoreConflictFocusIndex: Int = 0,
     val saveChannel: SaveChannelState = SaveChannelState(),
     val saveStatusInfo: SaveStatusInfo? = null,

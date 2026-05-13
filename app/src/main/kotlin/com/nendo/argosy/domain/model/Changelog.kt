@@ -7,7 +7,7 @@ object Changelog {
             highlights = listOf(
                 "Steam games now install to your ROMs folder, not GameNative's private storage",
                 "GameNative 0.9.1+ requires you to point its Custom Games Folders at the new path",
-                "Pick the Steam install path in Storage settings, then add that folder in GameNative",
+                "Pick the Steam install path in Steam settings, then add that folder in GameNative",
                 "Existing GameNative installs continue to work; new downloads use the new path"
             ),
             requiredActions = listOf(RequiredAction.SetSteamInstallPath),

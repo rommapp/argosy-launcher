@@ -666,7 +666,7 @@ class SocialViewModel @Inject constructor(
         }
 
         override fun onLeft(): InputResult {
-            if (anyModalShowing()) return InputResult.UNHANDLED
+            if (anyModalShowing()) return InputResult.HANDLED
             return if (switchTab(-1)) InputResult.HANDLED else InputResult.UNHANDLED
         }
 

@@ -317,17 +317,16 @@ class SaveArchiver @Inject constructor(
             // Switch save exporters (Eden/yuzu) write data-descriptor zips.
             ZipFile.builder().setFile(sourceZip).get().use { zf ->
                 val buffer = ByteArray(BUFFER_SIZE)
-                var rootFolder: String? = null
                 val entries = zf.entries.toList()
+                val firstSegments = entries
+                    .mapNotNull { it.name.substringBefore('/').takeIf { seg -> it.name.contains('/') && seg.isNotEmpty() } }
+                    .toSet()
+                val rootFolder = firstSegments.singleOrNull()
+                if (rootFolder != null) rootFolderForLogging = rootFolder
 
                 for (entry in entries) {
                     val entryName = entry.name
                     if (firstEntryForLogging == null) firstEntryForLogging = entryName
-
-                    if (rootFolder == null) {
-                        rootFolder = entryName.substringBefore('/').takeIf { entryName.contains('/') }
-                        if (rootFolder != null) rootFolderForLogging = rootFolder
-                    }
 
                     val relativePath = if (rootFolder != null && entryName.startsWith("$rootFolder/")) {
                         entryName.removePrefix("$rootFolder/")
@@ -688,6 +687,23 @@ class SaveArchiver @Inject constructor(
         entries.sortBy { it.first }
         val combined = entries
             .joinToString("\n") { "${it.first}:${it.second}" }
+        val finalMd = MessageDigest.getInstance("MD5")
+        finalMd.update(combined.toByteArray(Charsets.UTF_8))
+        return finalMd.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    fun calculateFoldersAsZipHash(folders: List<File>): String {
+        val entries = mutableListOf<Pair<String, String>>()
+        for (folder in folders) {
+            folder.walkTopDown()
+                .filter { it.isFile }
+                .forEach { file ->
+                    val entryName = "${folder.name}/${file.relativeTo(folder).path}"
+                    entries.add(entryName to calculateFileHash(file))
+                }
+        }
+        entries.sortBy { it.first }
+        val combined = entries.joinToString("\n") { "${it.first}:${it.second}" }
         val finalMd = MessageDigest.getInstance("MD5")
         finalMd.update(combined.toByteArray(Charsets.UTF_8))
         return finalMd.digest().joinToString("") { "%02x".format(it) }

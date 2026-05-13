@@ -338,7 +338,7 @@ object SavePathRegistry {
         "ppsspp" to SavePathConfig(
             emulatorId = "ppsspp",
             defaultPaths = listOf(
-                "{extStorage}/PSP/SAVEDATA",
+                "{anyStorage}/PSP/SAVEDATA",
                 "{extStorage}/Android/data/org.ppsspp.ppsspp/files/PSP/SAVEDATA"
             ),
             saveExtensions = listOf("*"),
@@ -347,7 +347,7 @@ object SavePathRegistry {
         "ppsspp_gold" to SavePathConfig(
             emulatorId = "ppsspp_gold",
             defaultPaths = listOf(
-                "{extStorage}/PSP/SAVEDATA",
+                "{anyStorage}/PSP/SAVEDATA",
                 "{extStorage}/Android/data/org.ppsspp.ppssppgold/files/PSP/SAVEDATA"
             ),
             saveExtensions = listOf("*"),
@@ -471,6 +471,15 @@ object SavePathRegistry {
             defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}"),
             saveExtensions = listOf("srm"),
             usesInternalStorage = true
+        ),
+
+        "${BUILTIN_EMULATOR_ID}_psp" to SavePathConfig(
+            emulatorId = BUILTIN_EMULATOR_ID,
+            defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}/PSP/SAVEDATA"),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            usesInternalStorage = true,
+            supported = true
         )
     )
 
@@ -562,25 +571,31 @@ object SavePathRegistry {
         path: String,
         packageName: String? = null,
         core: String? = null,
-        filesDir: String? = null
-    ): String {
-        var result = path.replace("{extStorage}", getExternalStoragePath())
-        if (packageName != null) {
-            result = result.replace("{package}", packageName)
+        filesDir: String? = null,
+        externalStorageRoots: List<String>? = null
+    ): List<String> {
+        val results = when {
+            path.contains("{anyStorage}") -> {
+                val roots = externalStorageRoots?.takeIf { it.isNotEmpty() } ?: listOf(getExternalStoragePath())
+                roots.map { path.replace("{anyStorage}", it) }.distinct()
+            }
+            path.contains("{extStorage}") -> listOf(path.replace("{extStorage}", getExternalStoragePath()))
+            else -> listOf(path)
         }
-        if (core != null) {
-            result = result.replace("{core}", core)
+        return results.map { p ->
+            var r = p
+            if (packageName != null) r = r.replace("{package}", packageName)
+            if (core != null) r = r.replace("{core}", core)
+            if (filesDir != null) r = r.replace("{filesDir}", filesDir)
+            r
         }
-        if (filesDir != null) {
-            result = result.replace("{filesDir}", filesDir)
-        }
-        return result
     }
 
     fun resolvePath(
         config: SavePathConfig,
         platformId: String,
-        filesDir: String? = null
+        filesDir: String? = null,
+        externalStorageRoots: List<String>? = null
     ): List<String> {
         val canonical = PlatformDefinitions.getCanonicalSlug(platformId)
         val core = if (config.usesCore) {
@@ -589,13 +604,13 @@ object SavePathRegistry {
             null
         }
 
-        val paths = config.defaultPaths.map { path ->
-            expandPath(path, core = core, filesDir = filesDir)
+        val paths = config.defaultPaths.flatMap { path ->
+            expandPath(path, core = core, filesDir = filesDir, externalStorageRoots = externalStorageRoots)
         }
 
         if (core != null) {
-            val withoutCore = config.defaultPaths.map { path ->
-                expandPath(path.replace("/{core}", "").replace("{core}", ""), filesDir = filesDir)
+            val withoutCore = config.defaultPaths.flatMap { path ->
+                expandPath(path.replace("/{core}", "").replace("{core}", ""), filesDir = filesDir, externalStorageRoots = externalStorageRoots)
             }
             return paths + withoutCore
         }
@@ -605,14 +620,16 @@ object SavePathRegistry {
 
     fun resolvePathWithPackage(
         config: SavePathConfig,
-        emulatorPackage: String?
+        emulatorPackage: String?,
+        filesDir: String? = null,
+        externalStorageRoots: List<String>? = null
     ): List<String> {
         val packageName = if (config.usesPackageTemplate) {
             emulatorPackage ?: EmulatorRegistry.getById(config.emulatorId)?.packageName
         } else null
 
-        return config.defaultPaths.map { path ->
-            expandPath(path, packageName = packageName)
+        return config.defaultPaths.flatMap { path ->
+            expandPath(path, packageName = packageName, filesDir = filesDir, externalStorageRoots = externalStorageRoots)
         }
     }
 }

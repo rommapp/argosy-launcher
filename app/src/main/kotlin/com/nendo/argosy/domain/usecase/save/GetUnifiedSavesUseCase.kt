@@ -22,6 +22,7 @@ class GetUnifiedSavesUseCase @Inject constructor(
     private val gameDao: GameDao
 ) {
     suspend operator fun invoke(gameId: Long): List<UnifiedSaveEntry> {
+        saveCacheManager.dedupeIdenticalCaches(gameId)
         val localCaches = saveCacheManager.getCachesForGameOnce(gameId)
         val game = gameDao.getById(gameId)
         val rommId = game?.rommId
@@ -34,10 +35,26 @@ class GetUnifiedSavesUseCase @Inject constructor(
         }
 
         val entries = mergeEntries(localCaches, serverSaves, romBaseName)
-        return sortEntries(entries)
+        val sorted = sortEntries(entries)
+
+        val both = entries.count { it.source == UnifiedSaveEntry.Source.BOTH }
+        val localOnly = entries.count { it.source == UnifiedSaveEntry.Source.LOCAL }
+        val serverOnly = entries.count { it.source == UnifiedSaveEntry.Source.SERVER }
+        val droppedServerByClaimedSlot = (serverSaves.size - (both + serverOnly)).coerceAtLeast(0)
+        com.nendo.argosy.util.SaveDebugLogger.logUnifiedBuilt(
+            gameId = gameId,
+            totalLocal = localCaches.size,
+            totalServer = serverSaves.size,
+            mergedBoth = both,
+            localOnly = localOnly,
+            serverOnly = serverOnly,
+            unmatchedServerByClaimedSlot = droppedServerByClaimedSlot
+        )
+        return sorted
     }
 
     suspend fun localOnly(gameId: Long): List<UnifiedSaveEntry> {
+        saveCacheManager.dedupeIdenticalCaches(gameId)
         val localCaches = saveCacheManager.getCachesForGameOnce(gameId)
         val romBaseName = gameDao.getById(gameId)?.localPath?.let {
             File(it).nameWithoutExtension

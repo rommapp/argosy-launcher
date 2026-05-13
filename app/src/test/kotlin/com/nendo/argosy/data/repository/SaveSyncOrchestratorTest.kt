@@ -201,13 +201,7 @@ class SaveSyncOrchestratorTest {
     }
 
     @Test
-    fun `downloadPendingServerSaves NeedsHardcoreResolution does not surface as Download failed`() = runTest {
-        // Regression for hardcore-trailer mismatch on batch sync. Server returns the save fine,
-        // but the local save has the RA hardcore trailer and the server copy doesn't, so the
-        // downloader returns NeedsHardcoreResolution. Pre-fix the orchestrator's else branch
-        // marked the operation FAILED with "Download failed", which surfaced an inaccurate
-        // download error to the user. Now we expect the operation to complete without an error
-        // so the in-launch hardcore dialog can resolve it.
+    fun `downloadPendingServerSaves NeedsHardcoreResolution parks row and drops from queue`() = runTest {
         val entity = makeSyncEntity(id = 1L, gameId = 1L)
         coEvery { saveSyncDao.getPendingDownloads() } returns listOf(entity)
         coEvery { mockApiClient.downloadSave(any(), any(), any()) } returns
@@ -224,9 +218,9 @@ class SaveSyncOrchestratorTest {
         val result = orchestrator.downloadPendingServerSaves()
 
         assertEquals(0, result)
-        val op = syncQueueManager.state.value.operations.first { it.gameId == 1L }
-        assertEquals(com.nendo.argosy.data.sync.SyncStatus.COMPLETED, op.status)
-        assertEquals(null, op.error)
+        assertEquals(emptyList<com.nendo.argosy.data.sync.SyncOperation>(),
+            syncQueueManager.state.value.operations.filter { it.gameId == 1L })
+        coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION }) }
     }
 
     // --- helpers ---

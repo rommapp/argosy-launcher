@@ -99,6 +99,18 @@ class SyncQueueManager @Inject constructor() {
         }
     }
 
+    fun removeOperation(gameId: Long) {
+        _state.update { state ->
+            val updatedOps = state.operations.filterNot { it.gameId == gameId }
+            val current = updatedOps.find { it.status == SyncStatus.IN_PROGRESS }
+            state.copy(
+                operations = updatedOps,
+                currentOperation = current,
+                isActive = updatedOps.any { it.status != SyncStatus.COMPLETED && it.status != SyncStatus.FAILED }
+            )
+        }
+    }
+
     fun clearCompletedOperations() {
         _state.update { state ->
             val remaining = state.operations.filter {

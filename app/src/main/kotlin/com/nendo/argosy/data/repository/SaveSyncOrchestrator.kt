@@ -134,10 +134,9 @@ class SaveSyncOrchestrator @Inject constructor(
                     Logger.debug(TAG, "downloadPendingServerSaves: skipping gameId=${syncEntity.gameId} | result=$result")
                 }
                 is SaveSyncResult.NeedsHardcoreResolution -> {
-                    // Download succeeded, but local-hardcore vs server-no-trailer is a user choice.
-                    // Don't surface as a download failure — defer to the in-launch hardcore dialog.
-                    syncQueueManager.completeOperation(syncEntity.gameId)
-                    Logger.info(TAG, "downloadPendingServerSaves: gameId=${syncEntity.gameId} needs hardcore resolution; deferring to next game launch")
+                    saveSyncDao.upsert(syncEntity.copy(syncStatus = SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION))
+                    syncQueueManager.removeOperation(syncEntity.gameId)
+                    Logger.info(TAG, "downloadPendingServerSaves: gameId=${syncEntity.gameId} needs hardcore resolution; parked row as ${SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION} and dropped from bulk queue")
                 }
                 is SaveSyncResult.Error -> {
                     syncQueueManager.completeOperation(syncEntity.gameId, result.message)

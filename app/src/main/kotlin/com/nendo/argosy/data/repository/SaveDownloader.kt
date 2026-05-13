@@ -79,6 +79,11 @@ class SaveDownloader @Inject constructor(
             Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game not found in database")
             return@withContext SaveSyncResult.Error("Game not found")
         }
+        if (game.rommId != null && syncEntity.rommId != game.rommId) {
+            Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Stale save_sync row: row.rommId=${syncEntity.rommId} but game.rommId=${game.rommId} (id likely reassigned by rescan); deleting row")
+            saveSyncDao.deleteById(syncEntity.id)
+            return@withContext SaveSyncResult.NoSaveFound
+        }
         if (game.localPath == null) {
             Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game has no local ROM, skipping save sync")
             return@withContext SaveSyncResult.NoSaveFound

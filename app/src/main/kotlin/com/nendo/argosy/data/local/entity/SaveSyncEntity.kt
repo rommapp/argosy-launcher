@@ -39,5 +39,6 @@ data class SaveSyncEntity(
         const val STATUS_SERVER_NEWER = "SERVER_NEWER"
         const val STATUS_CONFLICT = "CONFLICT"
         const val STATUS_PENDING_UPLOAD = "PENDING_UPLOAD"
+        const val STATUS_NEEDS_HARDCORE_RESOLUTION = "NEEDS_HARDCORE_RESOLUTION"
     }
 }

@@ -58,7 +58,8 @@ fun QuickMenuContent(
     isFocused: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onGameSelect: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    onRecentSearchSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val contentAlpha = if (isFocused) 1f else 0.7f
 
@@ -79,7 +80,8 @@ fun QuickMenuContent(
                 isInputFocused = isFocused && uiState.searchInputFocused,
                 isListFocused = isFocused && !uiState.searchInputFocused,
                 onQueryChange = onSearchQueryChange,
-                onGameSelect = onGameSelect
+                onGameSelect = onGameSelect,
+                onRecentSearchSelect = onRecentSearchSelect
             )
             QuickMenuOrb.RANDOM -> RandomContent(
                 game = uiState.randomGame,
@@ -128,6 +130,7 @@ private fun SearchContent(
     isListFocused: Boolean,
     onQueryChange: (String) -> Unit,
     onGameSelect: (Long) -> Unit,
+    onRecentSearchSelect: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val inputShape = RoundedCornerShape(Dimens.radiusLg)
@@ -185,7 +188,8 @@ private fun SearchContent(
                 RecentSearchesList(
                     searches = recentSearches,
                     focusedIndex = focusedIndex,
-                    isFocused = isListFocused
+                    isFocused = isListFocused,
+                    onRecentSearchSelect = onRecentSearchSelect,
                 )
             } else {
                 EmptyState(message = "Type at least 2 characters to search")
@@ -394,7 +398,8 @@ private fun RecentSearchesList(
     searches: List<String>,
     focusedIndex: Int,
     isFocused: Boolean,
-    modifier: Modifier = Modifier
+    onRecentSearchSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
 
@@ -426,7 +431,8 @@ private fun RecentSearchesList(
             itemsIndexed(searches, key = { index, _ -> index }) { index, query ->
                 RecentSearchRow(
                     query = query,
-                    isFocused = isFocused && index == focusedIndex
+                    isFocused = isFocused && index == focusedIndex,
+                    onRecentSearchSelect = onRecentSearchSelect
                 )
             }
         }
@@ -437,7 +443,8 @@ private fun RecentSearchesList(
 private fun RecentSearchRow(
     query: String,
     isFocused: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRecentSearchSelect: (String) -> Unit
 ) {
     val shape = RoundedCornerShape(Dimens.radiusMd)
     val borderModifier = if (isFocused) {
@@ -453,7 +460,8 @@ private fun RecentSearchRow(
                 else MaterialTheme.colorScheme.surface,
                 shape
             )
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+            .clickableNoFocus(onClick = { onRecentSearchSelect(query) }),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {

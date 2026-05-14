@@ -121,8 +121,12 @@ fun QuickMenuOverlay(
                     isFocused = uiState.contentFocused,
                     onSearchQueryChange = viewModel::updateSearchQuery,
                     onGameSelect = { gameId ->
+                        viewModel.saveSearchQuery()
                         viewModel.hide()
                         onGameSelect(gameId)
+                    },
+                    onRecentSearchSelect = { query ->
+                        viewModel.selectRecentSearch(query)
                     },
                     modifier = Modifier
                         .fillMaxWidth()

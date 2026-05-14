@@ -879,7 +879,8 @@ fun ArgosyApp(
         LocalGamepadInputHandler provides viewModel.gamepadInputHandler,
         LocalABIconsSwapped provides uiState.abIconsSwapped,
         LocalXYIconsSwapped provides uiState.xyIconsSwapped,
-        LocalSwapStartSelect provides uiState.swapStartSelect
+        LocalSwapStartSelect provides uiState.swapStartSelect,
+        com.nendo.argosy.ui.common.LocalImageCacheManager provides viewModel.imageCacheManager
     ) {
         if (uiState.isLoading) {
             AppSplashScreen(status = uiState.startupStatus)

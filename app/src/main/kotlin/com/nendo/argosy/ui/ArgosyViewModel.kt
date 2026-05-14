@@ -150,6 +150,7 @@ class ArgosyViewModel @Inject constructor(
     val gamepadInputHandler: GamepadInputHandler,
     val hapticManager: HapticFeedbackManager,
     val soundManager: SoundFeedbackManager,
+    val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     val notificationManager: NotificationManager,
     downloadNotificationObserver: DownloadNotificationObserver,
     syncNotificationObserver: SyncNotificationObserver,

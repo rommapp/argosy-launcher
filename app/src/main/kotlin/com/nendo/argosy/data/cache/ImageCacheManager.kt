@@ -905,6 +905,14 @@ class ImageCacheManager @Inject constructor(
 
     private suspend fun processCoverRequest(request: ImageCacheRequest) {
         val isGameIdRequest = request.gameId != null
+        val currentDbPath = if (isGameIdRequest) {
+            gameDao.getById(request.gameId!!)?.coverPath
+        } else {
+            gameDao.getByRommId(request.id)?.coverPath
+        }
+        if (currentDbPath != null && currentDbPath.startsWith("/") && File(currentDbPath).exists()) {
+            return
+        }
         val prefix = if (isGameIdRequest) "cover_g${request.gameId}" else "cover_${request.id}"
         val fileName = "${prefix}_${request.url.md5Hash()}.jpg"
         val slug = if (isGameIdRequest) resolveGamePlatformSlug(request.gameId!!)

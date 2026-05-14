@@ -110,7 +110,10 @@ fun GameCard(
     val themeConfig = LocalLauncherTheme.current
     val boxArtStyle = LocalBoxArtStyle.current
     val isDarkTheme = isSystemInDarkTheme()
-    val effectiveCoverPath = coverPathOverride ?: game.coverPath
+    val effectiveCoverPath = com.nendo.argosy.ui.common.rememberResolvedCoverPath(
+        gameId = game.id,
+        source = coverPathOverride ?: game.coverPath
+    ).orEmpty()
     val coverGradientColors = game.gradientColors
 
     val glowColorMode = boxArtStyle.glowColorMode
@@ -273,7 +276,7 @@ fun GameCard(
         val oneDpPx = with(density) { 1.dp.toPx() }
         val useGlassBorder = isFocused && boxArtStyle.borderStyle == BoxArtBorderStyle.GLASS
         val useGradientBorder = isFocused && boxArtStyle.borderStyle == BoxArtBorderStyle.GRADIENT
-        val isStub = effectiveCoverPath == null
+        val isStub = effectiveCoverPath.isEmpty()
 
         val gradientColors = game.gradientColors
         val hasGradientColors = gradientColors != null
@@ -315,7 +318,7 @@ fun GameCard(
             label = "shine"
         ) ?: remember { mutableStateOf(0f) }
 
-        if (effectiveCoverPath != null) {
+        if (effectiveCoverPath.isNotEmpty()) {
             val imageData = rememberFileImageModel(effectiveCoverPath)
 
             if (downloadIndicator.isActive && imageData != null) {

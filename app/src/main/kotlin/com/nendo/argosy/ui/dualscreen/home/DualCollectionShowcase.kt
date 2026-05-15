@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import java.io.File
 
 data class DualCollectionShowcaseState(
@@ -89,6 +90,8 @@ fun DualCollectionShowcase(
             Spacer(modifier = Modifier.weight(1f))
 
             if (state.coverPaths.isNotEmpty()) {
+                val showcaseWidth = 200.dp
+                val showcaseHeight = showcaseWidth / LocalBoxArtStyle.current.aspectRatio
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -98,7 +101,7 @@ fun DualCollectionShowcase(
                     ShowcaseCoverCollage(
                         coverPaths = state.coverPaths,
                         modifier = Modifier
-                            .size(200.dp)
+                            .size(width = showcaseWidth, height = showcaseHeight)
                     )
                 }
             }

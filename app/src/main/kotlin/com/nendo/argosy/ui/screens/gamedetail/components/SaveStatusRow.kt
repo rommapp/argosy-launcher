@@ -117,7 +117,7 @@ fun SaveStatusRow(
     }
 }
 
-private val SaveSyncStatus.icon: ImageVector
+internal val SaveSyncStatus.icon: ImageVector
     get() = when (this) {
         SaveSyncStatus.SYNCED -> Icons.Default.Check
         SaveSyncStatus.LOCAL_NEWER -> Icons.Default.CloudUpload

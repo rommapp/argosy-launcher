@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -53,7 +54,8 @@ data class MenuLayoutState(
     val hasDescription: Boolean = false,
     val hasScreenshots: Boolean = false,
     val hasAchievements: Boolean = false,
-    val hasSocialAccount: Boolean = false
+    val hasSocialAccount: Boolean = false,
+    val hasSaveSync: Boolean = false
 )
 
 sealed class MenuItem(
@@ -61,6 +63,7 @@ sealed class MenuItem(
     val visibleWhen: (MenuLayoutState) -> Boolean = { true }
 ) {
     data object Play : MenuItem("play")
+    data object Saves : MenuItem("saves", visibleWhen = { it.hasSaveSync })
     data object Favorite : MenuItem("favorite")
     data object Privacy : MenuItem("privacy", visibleWhen = { it.hasSocialAccount })
     data object Options : MenuItem("options")
@@ -70,7 +73,7 @@ sealed class MenuItem(
     data object Achievements : MenuItem("achievements", visibleWhen = { it.hasAchievements })
 
     companion object {
-        val ALL = listOf(Play, Favorite, Privacy, Options, Details, Description, Screenshots, Achievements)
+        val ALL = listOf(Play, Saves, Favorite, Privacy, Options, Details, Description, Screenshots, Achievements)
     }
 }
 
@@ -89,6 +92,7 @@ data class GameDetailMenuState(
     val downloadProgress: Float = 0f,
     val isFavorite: Boolean = false,
     val saveStatus: SaveStatusInfo? = null,
+    val isSyncingSaves: Boolean = false,
     val downloadSizeBytes: Long? = null,
     val isPrivate: Boolean = false
 )
@@ -124,8 +128,17 @@ fun GameDetailMenu(
                         isExtracting = displayState.isExtracting,
                         downloadProgress = displayState.downloadProgress,
                         isFocused = isFocused,
-                        saveStatus = displayState.saveStatus,
                         downloadSizeBytes = displayState.downloadSizeBytes,
+                        isCompact = isCompact,
+                        onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                    )
+                }
+
+                MenuItem.Saves -> {
+                    SavesMenuItem(
+                        status = displayState.saveStatus,
+                        isSyncing = displayState.isSyncingSaves,
+                        isFocused = isFocused,
                         isCompact = isCompact,
                         onClick = { onFocusChange(focusIndex); onItemClick(item) }
                     )
@@ -214,7 +227,6 @@ private fun PlayMenuItem(
     isExtracting: Boolean,
     downloadProgress: Float,
     isFocused: Boolean,
-    saveStatus: SaveStatusInfo?,
     downloadSizeBytes: Long?,
     isCompact: Boolean,
     onClick: () -> Unit
@@ -335,12 +347,71 @@ private fun PlayMenuItem(
             }
         }
 
-        if (saveStatus != null && isDownloaded && !isCompact) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            SaveStatusRow(
-                status = saveStatus,
-                modifier = Modifier.padding(start = Dimens.spacingSm)
+    }
+}
+
+@Composable
+private fun SavesMenuItem(
+    status: SaveStatusInfo?,
+    isSyncing: Boolean,
+    isFocused: Boolean,
+    isCompact: Boolean,
+    onClick: () -> Unit
+) {
+    val effectiveStatus = status?.status ?: SaveSyncStatus.NO_SAVE
+    val needsAttention = effectiveStatus == SaveSyncStatus.LOCAL_NEWER ||
+        effectiveStatus == SaveSyncStatus.LOCAL_ONLY ||
+        effectiveStatus == SaveSyncStatus.PENDING_UPLOAD
+    val icon = if (isSyncing) Icons.Default.Sync else effectiveStatus.icon
+
+    val iconTint = when {
+        isSyncing || needsAttention -> MaterialTheme.colorScheme.secondary
+        isFocused -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val textColor = when {
+        needsAttention -> MaterialTheme.colorScheme.secondary
+        isFocused -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val textStyle = if (isFocused || needsAttention) {
+        MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+    } else {
+        MaterialTheme.typography.bodyMedium
+    }
+    val label = if (isSyncing) "Syncing..." else "Saves"
+
+    MenuItemWithLeftBorder(
+        isFocused = isFocused,
+        isEnabled = !isSyncing,
+        isCompact = isCompact,
+        onClick = onClick
+    ) {
+        if (isCompact) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconTint,
+                modifier = Modifier.size(Dimens.iconSm)
             )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = label,
+                    style = textStyle,
+                    color = textColor,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = iconTint,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+            }
         }
     }
 }

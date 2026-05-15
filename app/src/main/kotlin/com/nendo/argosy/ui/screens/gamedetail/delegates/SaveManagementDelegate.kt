@@ -4,13 +4,16 @@ import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.repository.ForceSyncResult
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.ui.common.savechannel.SaveChannelDelegate
 import com.nendo.argosy.ui.common.savechannel.SaveTab
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
@@ -24,6 +27,7 @@ class SaveManagementDelegate @Inject constructor(
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorResolver: EmulatorResolver,
     private val saveCacheManager: SaveCacheManager,
+    private val saveSyncRepository: SaveSyncRepository,
     private val notificationManager: NotificationManager,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
     val saveChannelDelegate: SaveChannelDelegate
@@ -175,6 +179,42 @@ class SaveManagementDelegate @Inject constructor(
                 syncToServer = syncToServer,
                 onSaveStatusChanged = onSaveStatusChanged
             )
+        }
+    }
+
+    fun syncCurrentChannel(
+        scope: CoroutineScope,
+        gameId: Long,
+        platformId: Long,
+        platformSlug: String,
+        channelName: String?,
+        onLoadingChange: (Boolean) -> Unit,
+        onSyncStatusChanged: (SaveStatusEvent) -> Unit
+    ) {
+        scope.launch {
+            onLoadingChange(true)
+            try {
+                val emulatorId = emulatorResolver.getEmulatorIdForGame(gameId, platformId, platformSlug)
+                if (emulatorId == null) {
+                    notificationManager.showError("Cannot determine emulator")
+                    return@launch
+                }
+                when (val result = saveSyncRepository.forceSyncChannel(gameId, emulatorId, channelName)) {
+                    ForceSyncResult.AlreadyInSync -> notificationManager.showSuccess("Saves are up to date")
+                    is ForceSyncResult.Uploaded -> {
+                        notificationManager.showSuccess("Local save uploaded")
+                        onSyncStatusChanged(SaveStatusEvent(channelName = channelName, timestamp = null))
+                    }
+                    is ForceSyncResult.Downloaded -> {
+                        notificationManager.showSuccess("Server save downloaded")
+                        onSyncStatusChanged(SaveStatusEvent(channelName = channelName, timestamp = null))
+                    }
+                    ForceSyncResult.SkippedByUser -> notificationManager.showSuccess("Sync skipped")
+                    is ForceSyncResult.Error -> notificationManager.showError(result.message)
+                }
+            } finally {
+                onLoadingChange(false)
+            }
         }
     }
 

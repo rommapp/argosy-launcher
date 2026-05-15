@@ -4,9 +4,13 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.sync.ConflictInfo
+import com.nendo.argosy.data.sync.ConflictResolution
+import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.data.sync.SyncQueueState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.Instant
 import javax.inject.Inject
@@ -46,6 +50,31 @@ sealed class PreLaunchSyncResult {
     ) : PreLaunchSyncResult()
 }
 
+sealed class SyncAnalysis {
+    data object NoConnection : SyncAnalysis()
+    data object NoServerSave : SyncAnalysis()
+    data object NoLocalSave : SyncAnalysis()
+    data object InSync : SyncAnalysis()
+    data class LocalNewer(
+        val localSavePath: String,
+        val channelName: String?
+    ) : SyncAnalysis()
+    data class ServerNewer(
+        val serverSaveId: Long,
+        val serverTimestamp: Instant,
+        val channelName: String?
+    ) : SyncAnalysis()
+    data class Conflict(val info: ConflictInfo) : SyncAnalysis()
+}
+
+sealed class ForceSyncResult {
+    data object AlreadyInSync : ForceSyncResult()
+    data class Uploaded(val rommSaveId: Long?) : ForceSyncResult()
+    data class Downloaded(val channelName: String?) : ForceSyncResult()
+    data object SkippedByUser : ForceSyncResult()
+    data class Error(val message: String) : ForceSyncResult()
+}
+
 enum class HardcoreResolutionChoice {
     KEEP_HARDCORE,
     DOWNGRADE_TO_CASUAL,
@@ -58,7 +87,8 @@ class SaveSyncRepository @Inject constructor(
     private val conflictResolver: SaveSyncConflictResolver,
     private val orchestrator: SaveSyncOrchestrator,
     private val entityManager: SaveSyncEntityManager,
-    private val stateCacheManager: StateCacheManager
+    private val stateCacheManager: StateCacheManager,
+    private val syncQueueManager: SyncQueueManager
 ) {
     val syncQueueState: StateFlow<SyncQueueState> = entityManager.syncQueueState
 
@@ -223,6 +253,67 @@ class SaveSyncRepository @Inject constructor(
         emulatorId: String,
         channelName: String?
     ): ConflictInfo? = conflictResolver.checkForConflict(gameId, emulatorId, channelName)
+
+    suspend fun analyzeChannel(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?
+    ): SyncAnalysis = conflictResolver.analyzeChannel(gameId, emulatorId, channelName)
+
+    suspend fun forceSyncChannel(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?
+    ): ForceSyncResult = withContext(Dispatchers.IO) {
+        when (val analysis = conflictResolver.analyzeChannel(gameId, emulatorId, channelName)) {
+            SyncAnalysis.NoConnection -> ForceSyncResult.Error("Not connected to RomM")
+            SyncAnalysis.NoLocalSave,
+            SyncAnalysis.NoServerSave -> ForceSyncResult.Error("Nothing to sync")
+            SyncAnalysis.InSync -> ForceSyncResult.AlreadyInSync
+            is SyncAnalysis.LocalNewer -> uploadAndMap(gameId, emulatorId, channelName, forceOverwrite = true)
+            is SyncAnalysis.ServerNewer -> downloadAndMap(gameId, emulatorId, analysis.channelName)
+            is SyncAnalysis.Conflict -> resolveConflictAndApply(analysis.info, emulatorId)
+        }
+    }
+
+    private suspend fun uploadAndMap(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?,
+        forceOverwrite: Boolean
+    ): ForceSyncResult = when (val result = apiClient.uploadSave(gameId, emulatorId, channelName, forceOverwrite)) {
+        is SaveSyncResult.Success -> ForceSyncResult.Uploaded(result.rommSaveId)
+        is SaveSyncResult.Conflict -> ForceSyncResult.Error("Server changed during sync — try again")
+        is SaveSyncResult.Error -> ForceSyncResult.Error(result.message)
+        is SaveSyncResult.NeedsHardcoreResolution -> ForceSyncResult.Error("Hardcore save requires resolution")
+        SaveSyncResult.NoSaveFound -> ForceSyncResult.Error("No local save to upload")
+        SaveSyncResult.NotConfigured -> ForceSyncResult.Error("Save sync not configured")
+    }
+
+    private suspend fun downloadAndMap(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?
+    ): ForceSyncResult = when (val result = apiClient.downloadSave(gameId, emulatorId, channelName)) {
+        is SaveSyncResult.Success -> ForceSyncResult.Downloaded(channelName)
+        is SaveSyncResult.NeedsHardcoreResolution -> ForceSyncResult.Error("Hardcore save requires resolution")
+        is SaveSyncResult.Error -> ForceSyncResult.Error(result.message)
+        is SaveSyncResult.Conflict -> ForceSyncResult.Error("Conflict during download")
+        SaveSyncResult.NoSaveFound -> ForceSyncResult.Error("Nothing to download")
+        SaveSyncResult.NotConfigured -> ForceSyncResult.Error("Save sync not configured")
+    }
+
+    private suspend fun resolveConflictAndApply(
+        info: ConflictInfo,
+        emulatorId: String
+    ): ForceSyncResult {
+        syncQueueManager.addConflict(info)
+        return when (syncQueueManager.awaitResolution(info.gameId)) {
+            ConflictResolution.KEEP_LOCAL -> uploadAndMap(info.gameId, emulatorId, info.channelName, forceOverwrite = true)
+            ConflictResolution.KEEP_SERVER -> downloadAndMap(info.gameId, emulatorId, info.channelName)
+            ConflictResolution.SKIP -> ForceSyncResult.SkippedByUser
+        }
+    }
 
     suspend fun resolveHardcoreConflict(
         resolution: SaveSyncResult.NeedsHardcoreResolution,

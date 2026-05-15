@@ -173,6 +173,14 @@ fun GameDetailScreen(
     val hasDescription by remember { derivedStateOf { uiState.game?.description?.isNotEmpty() == true } }
     val hasScreenshots by remember { derivedStateOf { uiState.game?.screenshots?.isNotEmpty() == true } }
     val hasAchievements by remember { derivedStateOf { uiState.game?.achievements?.isNotEmpty() == true } }
+    val hasSaveSync by remember {
+        derivedStateOf {
+            val s = uiState.saveStatusInfo?.status
+            s != null &&
+                s != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE &&
+                s != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NOT_CONFIGURED
+        }
+    }
     val screenshotCount by remember { derivedStateOf { uiState.game?.screenshots?.size ?: 0 } }
     val achievementColumnCount by remember { derivedStateOf { uiState.game?.achievements?.chunked(3)?.size ?: 0 } }
 
@@ -198,7 +206,8 @@ fun GameDetailScreen(
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
                     hasAchievements = hasAchievements,
-                    hasSocialAccount = uiState.hasSocialAccount
+                    hasSocialAccount = uiState.hasSocialAccount,
+                    hasSaveSync = hasSaveSync
                 )
                 when (menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState)) {
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
@@ -219,7 +228,8 @@ fun GameDetailScreen(
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
                     hasAchievements = hasAchievements,
-                    hasSocialAccount = uiState.hasSocialAccount
+                    hasSocialAccount = uiState.hasSocialAccount,
+                    hasSaveSync = hasSaveSync
                 )
                 when (menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState)) {
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
@@ -242,7 +252,8 @@ fun GameDetailScreen(
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
                     hasAchievements = hasAchievements,
-                    hasSocialAccount = uiState.hasSocialAccount
+                    hasSocialAccount = uiState.hasSocialAccount,
+                    hasSaveSync = hasSaveSync
                 )
                 menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState) == MenuItem.Screenshots
             }
@@ -422,11 +433,17 @@ private fun GameDetailContent(
     val headerScrollThreshold = 200
     val isHeaderCollapsed = scrollState.value > headerScrollThreshold
 
+    val contentHasSaveSync = uiState.saveStatusInfo?.status?.let {
+        it != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE &&
+            it != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NOT_CONFIGURED
+    } ?: false
+
     val menuLayoutState = MenuLayoutState(
         hasDescription = !game.description.isNullOrBlank(),
         hasScreenshots = game.screenshots.isNotEmpty(),
         hasAchievements = game.achievements.isNotEmpty(),
-        hasSocialAccount = uiState.hasSocialAccount
+        hasSocialAccount = uiState.hasSocialAccount,
+        hasSaveSync = contentHasSaveSync
     )
 
     val menuDisplayState = GameDetailMenuState(
@@ -441,6 +458,7 @@ private fun GameDetailContent(
         downloadProgress = uiState.downloadProgress,
         isFavorite = game.isFavorite,
         saveStatus = uiState.saveStatusInfo,
+        isSyncingSaves = uiState.isSyncingSaves,
         downloadSizeBytes = uiState.downloadSizeBytes,
         isPrivate = uiState.isPrivate
     )
@@ -568,6 +586,7 @@ private fun GameDetailContent(
                             onItemClick = { item ->
                                 when (item) {
                                     MenuItem.Play -> viewModel.primaryAction()
+                                    MenuItem.Saves -> viewModel.syncSavesNow()
                                     MenuItem.Favorite -> viewModel.toggleFavorite()
                                     MenuItem.Privacy -> viewModel.togglePrivacy()
                                     MenuItem.Options -> viewModel.toggleMoreOptions()
@@ -698,6 +717,7 @@ private fun GameDetailContent(
                                 uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
                                 else -> "Play"
                             })
+                            MenuItem.Saves -> add(InputButton.A to if (uiState.isSyncingSaves) "Syncing..." else "Sync")
                             MenuItem.Favorite -> add(InputButton.A to if (game.isFavorite) "Unfavorite" else "Favorite")
                             MenuItem.Privacy -> add(InputButton.A to if (uiState.isPrivate) "Make Public" else "Make Private")
                             MenuItem.Options -> add(InputButton.A to "Options")

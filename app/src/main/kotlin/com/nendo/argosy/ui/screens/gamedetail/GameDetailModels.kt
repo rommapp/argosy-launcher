@@ -196,6 +196,7 @@ data class GameDetailUiState(
     val saveChannel: SaveChannelState = SaveChannelState(),
     val syncScreenshotsEnabled: Boolean = false,
     val saveStatusInfo: SaveStatusInfo? = null,
+    val isSyncingSaves: Boolean = false,
     val showPermissionModal: Boolean = false,
     val permissionModalType: PermissionModalType = PermissionModalType.STORAGE,
     val focusedScreenshotIndex: Int = 0,

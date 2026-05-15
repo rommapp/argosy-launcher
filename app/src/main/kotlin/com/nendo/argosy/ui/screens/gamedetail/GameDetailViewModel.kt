@@ -1118,6 +1118,20 @@ class GameDetailViewModel @Inject constructor(
         saveManagement.confirmMigrateChannel(viewModelScope, currentGameId, game.platformId, game.platformSlug, ::handleSaveStatusChanged)
     }
 
+    fun syncSavesNow() {
+        if (_uiState.value.isSyncingSaves) return
+        val game = _uiState.value.game ?: return
+        saveManagement.syncCurrentChannel(
+            scope = viewModelScope,
+            gameId = currentGameId,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug,
+            channelName = _uiState.value.saveChannel.activeChannel,
+            onLoadingChange = { syncing -> _uiState.update { it.copy(isSyncingSaves = syncing) } },
+            onSyncStatusChanged = ::handleSaveStatusChanged
+        )
+    }
+
     fun dismissDeleteLegacyConfirmation() = saveManagement.saveChannelDelegate.dismissDeleteLegacyConfirmation()
 
     fun confirmDeleteLegacyChannel() = saveManagement.saveChannelDelegate.confirmDeleteLegacyChannel(viewModelScope)
@@ -1334,12 +1348,18 @@ class GameDetailViewModel @Inject constructor(
     // --- Menu ---
 
     private fun menuLayoutState(): MenuLayoutState {
-        val game = _uiState.value.game
+        val state = _uiState.value
+        val game = state.game
+        val saveStatus = state.saveStatusInfo?.status
+        val hasSaveSync = saveStatus != null &&
+            saveStatus != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE &&
+            saveStatus != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NOT_CONFIGURED
         return MenuLayoutState(
             hasDescription = !game?.description.isNullOrBlank(),
             hasScreenshots = game?.screenshots?.isNotEmpty() == true,
             hasAchievements = game?.achievements?.isNotEmpty() == true,
-            hasSocialAccount = _uiState.value.hasSocialAccount
+            hasSocialAccount = state.hasSocialAccount,
+            hasSaveSync = hasSaveSync
         )
     }
 
@@ -1362,6 +1382,7 @@ class GameDetailViewModel @Inject constructor(
         val state = menuLayoutState()
         when (menuLayout.itemAtFocusIndex(_uiState.value.menuFocusIndex, state)) {
             MenuItem.Play -> primaryAction()
+            MenuItem.Saves -> syncSavesNow()
             MenuItem.Favorite -> toggleFavorite()
             MenuItem.Privacy -> togglePrivacy()
             MenuItem.Options -> toggleMoreOptions()

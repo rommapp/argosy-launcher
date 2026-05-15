@@ -79,35 +79,18 @@ class SaveSyncConflictResolver @Inject constructor(
                 } else {
                     SavePathRegistry.getConfigIncludingUnsupported(emulatorId)
                 }
-                val serverSave = if (activeChannel != null) {
-                    val channelSave = matchingSaves
-                        .filter { it.slot != null && SaveSyncApiClient.equalsNormalized(it.slot, activeChannel) }
-                        .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
-                        ?: matchingSaves.find { it.fileNameNoExt != null && SaveSyncApiClient.equalsNormalized(it.fileNameNoExt, activeChannel) }
-                    if (channelSave != null) {
-                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Using active channel save | channel=$activeChannel, slot=${channelSave.slot}")
-                        channelSave
+                val serverSave = selectServerSaveForChannel(
+                    matchingSaves = matchingSaves,
+                    channelName = activeChannel,
+                    romBaseName = romBaseName,
+                    preferGciZipBundle = config?.usesGciFormat == true,
+                    gameIdForLogging = gameId
+                )
+                if (activeChannel != null) {
+                    if (serverSave != null) {
+                        Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Using active channel save | channel=$activeChannel, slot=${serverSave.slot}")
                     } else {
                         Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Active channel '$activeChannel' not found on server, no fallback")
-                        null
-                    }
-                } else {
-                    val candidates = matchingSaves.filter {
-                        SaveSyncApiClient.isLatestSaveFileName(it.fileName, romBaseName) ||
-                            (it.slot != null && romBaseName != null && SaveSyncApiClient.equalsNormalized(it.slot, romBaseName))
-                    }
-                    val pickedByName = if (config?.usesGciFormat == true && candidates.size > 1) {
-                        val preferred = candidates.find { it.fileName.endsWith(".zip", ignoreCase = true) }
-                            ?: candidates.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
-                        if (preferred != null && preferred != candidates.firstOrNull()) {
-                            Logger.debug(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | GCI format: preferring ZIP bundle over single file")
-                        }
-                        preferred
-                    } else {
-                        candidates.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
-                    }
-                    pickedByName ?: matchingSaves.singleOrNull()?.also { lone ->
-                        Logger.warn(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No filename match for romBaseName='$romBaseName'; accepting lone server save fileName='${lone.fileName}'")
                     }
                 }
                 if (serverSave == null) {
@@ -261,107 +244,9 @@ class SaveSyncConflictResolver @Inject constructor(
         gameId: Long,
         emulatorId: String,
         channelName: String?
-    ): ConflictInfo? = withContext(Dispatchers.IO) {
-        val client = apiClient.get()
-        client.getApi() ?: return@withContext null
-
-        val game = gameDao.getById(gameId) ?: return@withContext null
-        val rommId = game.rommId ?: return@withContext null
-
-        val localPath = findLocalSavePath(gameId, emulatorId, channelName)
-        if (localPath == null) {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | No local save path found")
-            return@withContext null
-        }
-        val localFile = File(localPath)
-        if (!localFile.exists()) {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Local file does not exist")
-            return@withContext null
-        }
-        val localModified = Instant.ofEpochMilli(localFile.lastModified())
-
-        val serverSaves = try {
-            client.checkSavesForGame(gameId, rommId)
-                .filterNot { SaveSyncApiClient.isStateShapedSave(it) }
-        } catch (e: Exception) {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Failed to check server saves: ${e.message}")
-            return@withContext null
-        }
-
-        val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
-        val matchingSaves = serverSaves.filter { it.emulator == emulatorId || it.emulator == null }
-        val serverSave = if (channelName != null) {
-            matchingSaves
-                .filter { it.slot != null && SaveSyncApiClient.equalsNormalized(it.slot, channelName) }
-                .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
-                ?: matchingSaves.find { it.fileNameNoExt != null && SaveSyncApiClient.equalsNormalized(it.fileNameNoExt, channelName) }
-        } else {
-            val matchedByName = matchingSaves.filter {
-                SaveSyncApiClient.isLatestSaveFileName(it.fileName, romBaseName) ||
-                    (it.slot != null && romBaseName != null && SaveSyncApiClient.equalsNormalized(it.slot, romBaseName))
-            }.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
-            matchedByName ?: matchingSaves.singleOrNull()?.also { lone ->
-                Logger.warn(TAG, "[SaveSync] checkForConflict gameId=$gameId | No filename match for romBaseName='$romBaseName'; accepting lone server save fileName='${lone.fileName}'")
-            }
-        }
-
-        if (serverSave == null) {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | No matching server save")
-            return@withContext null
-        }
-
-        val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
-
-        val syncEntity = if (channelName != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
-        } else {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
-        }
-
-        val localHash = saveCacheManager.get().calculateLocalSaveHash(localPath)
-        val hashMatchesLastUpload = syncEntity?.lastUploadedHash != null
-            && localHash != null
-            && localHash == syncEntity.lastUploadedHash
-
-        if (hashMatchesLastUpload) {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Local hash matches last upload, no real conflict")
-            return@withContext null
-        }
-
-        val isHashConflict = syncEntity?.lastUploadedHash != null
-            && localHash != null
-            && localHash != syncEntity.lastUploadedHash
-
-        val deviceId = client.getDeviceId()
-        val deviceSyncEntry = deviceId?.let { devId ->
-            serverSave.deviceSyncs?.find { it.deviceId == devId }
-        }
-        val isServerNewer = if (deviceSyncEntry != null) {
-            !deviceSyncEntry.isCurrent
-        } else {
-            serverTime.isAfter(localModified)
-        }
-
-        val uploaderDeviceName = serverSave.deviceSyncs
-            ?.filter { it.deviceId != deviceId }
-            ?.maxByOrNull { it.lastSyncedAt ?: "" }
-            ?.deviceName
-
-        if (isServerNewer || isHashConflict) {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | Conflict detected: serverNewer=$isServerNewer (is_current=${deviceSyncEntry?.isCurrent}), hash=$isHashConflict")
-            ConflictInfo(
-                gameId = gameId,
-                gameName = game.title,
-                channelName = channelName,
-                localTimestamp = localModified,
-                serverTimestamp = serverTime,
-                isHashConflict = isHashConflict,
-                serverDeviceName = uploaderDeviceName
-            )
-        } else {
-            Logger.debug(TAG, "[SaveSync] checkForConflict gameId=$gameId | No conflict")
-            null
-        }
+    ): ConflictInfo? = when (val analysis = analyzeChannel(gameId, emulatorId, channelName)) {
+        is SyncAnalysis.Conflict -> analysis.info
+        else -> null
     }
 
     suspend fun resolveHardcoreConflict(
@@ -555,6 +440,147 @@ class SaveSyncConflictResolver @Inject constructor(
         )
         return candidates.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
             ?: candidates.firstOrNull()
+    }
+
+    private fun selectServerSaveForChannel(
+        matchingSaves: List<com.nendo.argosy.data.remote.romm.RomMSave>,
+        channelName: String?,
+        romBaseName: String?,
+        preferGciZipBundle: Boolean = false,
+        gameIdForLogging: Long? = null
+    ): com.nendo.argosy.data.remote.romm.RomMSave? {
+        if (channelName != null) {
+            return matchingSaves
+                .filter { it.slot != null && SaveSyncApiClient.equalsNormalized(it.slot, channelName) }
+                .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+                ?: matchingSaves.find {
+                    it.fileNameNoExt != null && SaveSyncApiClient.equalsNormalized(it.fileNameNoExt, channelName)
+                }
+        }
+
+        val candidates = matchingSaves.filter {
+            SaveSyncApiClient.isLatestSaveFileName(it.fileName, romBaseName) ||
+                (it.slot != null && romBaseName != null && SaveSyncApiClient.equalsNormalized(it.slot, romBaseName))
+        }
+        val picked = if (preferGciZipBundle && candidates.size > 1) {
+            candidates.find { it.fileName.endsWith(".zip", ignoreCase = true) }
+                ?: candidates.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+        } else {
+            candidates.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+        }
+        if (picked != null) return picked
+
+        val lone = matchingSaves.singleOrNull()
+        if (lone != null) {
+            Logger.warn(
+                TAG,
+                "[SaveSync] selectServerSave gameId=${gameIdForLogging ?: -1} | " +
+                    "No filename match for romBaseName='$romBaseName'; accepting lone server save fileName='${lone.fileName}'"
+            )
+        }
+        return lone
+    }
+
+    suspend fun analyzeChannel(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?
+    ): SyncAnalysis = withContext(Dispatchers.IO) {
+        val client = apiClient.get()
+        if (client.getApi() == null) {
+            return@withContext SyncAnalysis.NoConnection
+        }
+
+        val game = gameDao.getById(gameId) ?: return@withContext SyncAnalysis.NoLocalSave
+        val rommId = game.rommId ?: return@withContext SyncAnalysis.NoConnection
+
+        val localPath = findLocalSavePath(gameId, emulatorId, channelName)
+        val localFile = localPath?.let { File(it) }?.takeIf { it.exists() }
+
+        val serverSaves = try {
+            client.checkSavesForGame(gameId, rommId)
+                .filterNot { SaveSyncApiClient.isStateShapedSave(it) }
+        } catch (e: Exception) {
+            Logger.debug(TAG, "[SaveSync] analyzeChannel gameId=$gameId | server check failed: ${e.message}")
+            return@withContext SyncAnalysis.NoConnection
+        }
+
+        val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+        val matchingSaves = serverSaves.filter { it.emulator == emulatorId || it.emulator == null }
+        val serverSave = selectServerSaveForChannel(
+            matchingSaves = matchingSaves,
+            channelName = channelName,
+            romBaseName = romBaseName,
+            gameIdForLogging = gameId
+        )
+
+        if (serverSave == null) {
+            return@withContext if (localPath != null && localFile != null) {
+                SyncAnalysis.LocalNewer(localPath, channelName)
+            } else {
+                SyncAnalysis.NoServerSave
+            }
+        }
+
+        val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
+        if (localFile == null) {
+            return@withContext SyncAnalysis.ServerNewer(
+                serverSaveId = serverSave.id,
+                serverTimestamp = serverTime,
+                channelName = channelName
+            )
+        }
+
+        val localModified = Instant.ofEpochMilli(localFile.lastModified())
+
+        val syncEntity = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+        }
+
+        val localHash = saveCacheManager.get().calculateLocalSaveHash(localPath)
+        val hashMatchesLastUpload = syncEntity?.lastUploadedHash != null
+            && localHash != null
+            && localHash == syncEntity.lastUploadedHash
+
+        if (hashMatchesLastUpload) {
+            return@withContext SyncAnalysis.InSync
+        }
+
+        val isHashConflict = syncEntity?.lastUploadedHash != null
+            && localHash != null
+            && localHash != syncEntity.lastUploadedHash
+
+        val deviceId = client.getDeviceId()
+        val deviceSyncEntry = deviceId?.let { devId ->
+            serverSave.deviceSyncs?.find { it.deviceId == devId }
+        }
+        val isServerNewer = if (deviceSyncEntry != null) {
+            !deviceSyncEntry.isCurrent
+        } else {
+            serverTime.isAfter(localModified)
+        }
+
+        val uploaderDeviceName = serverSave.deviceSyncs
+            ?.filter { it.deviceId != deviceId }
+            ?.maxByOrNull { it.lastSyncedAt ?: "" }
+            ?.deviceName
+
+        when {
+            isServerNewer || isHashConflict -> SyncAnalysis.Conflict(
+                ConflictInfo(
+                    gameId = gameId,
+                    gameName = game.title,
+                    channelName = channelName,
+                    localTimestamp = localModified,
+                    serverTimestamp = serverTime,
+                    isHashConflict = isHashConflict,
+                    serverDeviceName = uploaderDeviceName
+                )
+            )
+            else -> SyncAnalysis.LocalNewer(localPath, channelName)
+        }
     }
 
     companion object {

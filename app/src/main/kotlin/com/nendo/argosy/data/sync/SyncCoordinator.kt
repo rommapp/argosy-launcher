@@ -68,34 +68,42 @@ class SyncCoordinator @Inject constructor(
             var processed = 0
             var failed = 0
 
+            val saveSyncEnabled = syncPreferencesRepository.preferences.first().saveSyncEnabled
+
             val promoted = pendingSyncQueueDao.promoteEligibleFailedToPending()
             if (promoted > 0) {
                 Logger.debug(TAG, "processQueue: Promoted $promoted FAILED rows back to PENDING")
             }
 
-            // Rekey runs every cycle, not once: server saves can arrive any
-            // time carrying RomM-side emulator labels (libretro core names like
-            // mGBA, gpSP, prosystem) that don't match the user's local emulator.
-            // UPDATE OR REPLACE makes this idempotent -- a no-op when no rows
-            // need migration. The "once" flag was missing this drift case.
-            val rewritten = saveSyncRepository.get().rekeySaveSyncToLocalEmulators()
-            if (rewritten > 0) {
-                Logger.info(TAG, "processQueue: Save-sync rekey migration complete | rowsRewritten=$rewritten")
+            if (saveSyncEnabled) {
+                // Rekey runs every cycle, not once: server saves can arrive any
+                // time carrying RomM-side emulator labels (libretro core names like
+                // mGBA, gpSP, prosystem) that don't match the user's local emulator.
+                // UPDATE OR REPLACE makes this idempotent -- a no-op when no rows
+                // need migration. The "once" flag was missing this drift case.
+                val rewritten = saveSyncRepository.get().rekeySaveSyncToLocalEmulators()
+                if (rewritten > 0) {
+                    Logger.info(TAG, "processQueue: Save-sync rekey migration complete | rowsRewritten=$rewritten")
+                }
+
+                if (!syncPreferencesRepository.isSavePathCachePurged()) {
+                    emulatorSaveConfigDao.clearAutoDetected()
+                    Logger.info(TAG, "processQueue: Purged auto-detected save-path cache (no longer used)")
+                    syncPreferencesRepository.setSavePathCachePurged()
+                }
+
+                val deduped = saveSyncDao.deleteDuplicateRows()
+                if (deduped > 0) {
+                    Logger.info(TAG, "processQueue: Deduped $deduped redundant save_sync rows")
+                }
             }
 
-            if (!syncPreferencesRepository.isSavePathCachePurged()) {
-                emulatorSaveConfigDao.clearAutoDetected()
-                Logger.info(TAG, "processQueue: Purged auto-detected save-path cache (no longer used)")
-                syncPreferencesRepository.setSavePathCachePurged()
+            val priorities = if (saveSyncEnabled) {
+                listOf(SyncPriority.SAVE_FILE, SyncPriority.SAVE_STATE, SyncPriority.PROPERTY)
+            } else {
+                listOf(SyncPriority.PROPERTY)
             }
-
-            val deduped = saveSyncDao.deleteDuplicateRows()
-            if (deduped > 0) {
-                Logger.info(TAG, "processQueue: Deduped $deduped redundant save_sync rows")
-            }
-
-            // Process queued items by priority (lower priority value = higher importance)
-            for (priority in listOf(SyncPriority.SAVE_FILE, SyncPriority.SAVE_STATE, SyncPriority.PROPERTY)) {
+            for (priority in priorities) {
                 val items = pendingSyncQueueDao.getPendingByPriorityTier(priority)
                 if (items.isNotEmpty()) Logger.debug(TAG, "processQueue: Processing ${items.size} items at priority $priority")
 
@@ -116,17 +124,16 @@ class SyncCoordinator @Inject constructor(
                 }
             }
 
-            // Process dirty save_cache entries (saves marked for remote sync)
-            val dirtySaves = processDirtySaveCaches()
-            processed += dirtySaves
+            if (saveSyncEnabled) {
+                val dirtySaves = processDirtySaveCaches()
+                processed += dirtySaves
 
-            // Drain pending server-side downloads marked on save_sync rows
-            val downloaded = saveSyncRepository.get().downloadPendingServerSaves()
-            processed += downloaded
+                val downloaded = saveSyncRepository.get().downloadPendingServerSaves()
+                processed += downloaded
 
-            // Validate save states (weekly)
-            val validated = validateSaveStates()
-            processed += validated
+                val validated = validateSaveStates()
+                processed += validated
+            }
 
             Logger.info(TAG, "processQueue: Completed | processed=$processed, failed=$failed")
             ProcessResult.Completed(processed, failed)

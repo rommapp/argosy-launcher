@@ -562,6 +562,7 @@ class MainActivity : ComponentActivity() {
             val prefs = preferencesRepository.preferences.first()
             displayAffinityHelper.dualScreenEnabled = prefs.dualScreenEnabled
             sessionStateStore.setDualScreenEnabled(prefs.dualScreenEnabled)
+            sessionStateStore.setSaveSyncEnabled(prefs.saveSyncEnabled)
             dualScreenManager.setDualScreenDevice(displayAffinityHelper.hasSecondaryDisplay)
             imageCacheManager.setCustomCachePath(prefs.imageCachePath)
 

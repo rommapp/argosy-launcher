@@ -61,6 +61,7 @@ data class DualGameDetailUiState(
     val isPlayable: Boolean = false,
     val userDifficulty: Int = 0,
     val currentTab: DualGameDetailTab = DualGameDetailTab.OPTIONS,
+    val availableTabs: List<DualGameDetailTab> = DualGameDetailTab.entries,
     val isFavorite: Boolean = false,
     val isLoading: Boolean = true,
     val achievementCount: Int = 0,

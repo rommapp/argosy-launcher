@@ -1490,6 +1490,7 @@ class DualScreenManager(
     }
 
     private fun broadcastUnifiedSaves(gameId: Long) {
+        if (!sessionStateStore.isSaveSyncEnabled()) return
         scope.launch(Dispatchers.Default) {
             try {
                 val game = gameDao.getById(gameId)
@@ -1625,6 +1626,7 @@ class DualScreenManager(
             steamContentManager = steamContentManager,
             displayAffinityHelper = displayAffinityHelper,
             downloadFileStatusRepository = downloadFileStatusRepository,
+            sessionStateStore = sessionStateStore,
             context = appContext
         )
         vm.loadGame(gameId)

@@ -73,6 +73,8 @@ class MainActivityPreferencesObserver(
                     onDualScreenChanged(displayAffinityHelper.hasSecondaryDisplay)
                 }
                 previousDualScreenEnabled = prefs.dualScreenEnabled
+
+                sessionStateStore.setSaveSyncEnabled(prefs.saveSyncEnabled)
             }
         }
     }

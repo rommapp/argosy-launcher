@@ -123,6 +123,7 @@ fun DualGameDetailLowerScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             TabHeader(
                 currentTab = state.currentTab,
+                availableTabs = state.availableTabs,
                 onTabChanged = onTabChanged
             )
 
@@ -191,6 +192,7 @@ fun DualGameDetailLowerScreen(
 @Composable
 private fun TabHeader(
     currentTab: DualGameDetailTab,
+    availableTabs: List<DualGameDetailTab>,
     onTabChanged: (DualGameDetailTab) -> Unit
 ) {
     Row(
@@ -200,7 +202,7 @@ private fun TabHeader(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        DualGameDetailTab.entries.forEach { tab ->
+        availableTabs.forEach { tab ->
             val isSelected = tab == currentTab
             Box(
                 modifier = Modifier

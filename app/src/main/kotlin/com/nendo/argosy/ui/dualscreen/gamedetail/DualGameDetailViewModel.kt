@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
+import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.DownloadQueueRepository
 import com.nendo.argosy.data.repository.GameRepository
@@ -57,6 +58,7 @@ class DualGameDetailViewModel(
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
+    private val sessionStateStore: SessionStateStore,
     private val context: Context
 ) : ViewModel() {
 
@@ -353,6 +355,9 @@ class DualGameDetailViewModel(
                 userDifficulty = game.userDifficulty,
                 screenshots = screenshots,
                 currentTab = DualGameDetailTab.OPTIONS,
+                availableTabs = DualGameDetailTab.entries.filterNot {
+                    it == DualGameDetailTab.SAVES && !sessionStateStore.isSaveSyncEnabled()
+                },
                 isFavorite = game.isFavorite,
                 isLoading = false,
                 achievementCount = game.achievementCount,
@@ -712,23 +717,26 @@ class DualGameDetailViewModel(
     }
 
     fun setTab(tab: DualGameDetailTab) {
+        if (tab !in _uiState.value.availableTabs) return
         _uiState.update { it.copy(currentTab = tab) }
         resetSelectionForTab(tab)
     }
 
     fun nextTab() {
-        val entries = DualGameDetailTab.entries
+        val entries = _uiState.value.availableTabs
         val current = _uiState.value.currentTab
-        val next = entries[(current.ordinal + 1) % entries.size]
+        val currentIdx = entries.indexOf(current).coerceAtLeast(0)
+        val next = entries[(currentIdx + 1) % entries.size]
         setTab(next)
     }
 
     fun previousTab() {
-        val entries = DualGameDetailTab.entries
+        val entries = _uiState.value.availableTabs
         val current = _uiState.value.currentTab
+        val currentIdx = entries.indexOf(current).coerceAtLeast(0)
         val prev = entries[
-            if (current.ordinal == 0) entries.size - 1
-            else current.ordinal - 1
+            if (currentIdx == 0) entries.size - 1
+            else currentIdx - 1
         ]
         setTab(prev)
     }

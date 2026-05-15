@@ -124,6 +124,7 @@ class SecondaryHomeStateManager(
                 steamContentManager = steamContentManager,
                 displayAffinityHelper = affinityHelper,
                 downloadFileStatusRepository = downloadFileStatusRepository,
+                sessionStateStore = sessionStateStore,
                 context = context
             )
             vm.loadGame(savedDetailGameId)
@@ -210,6 +211,7 @@ class SecondaryHomeStateManager(
             steamContentManager = steamContentManager,
             displayAffinityHelper = affinityHelper,
             downloadFileStatusRepository = downloadFileStatusRepository,
+            sessionStateStore = sessionStateStore,
             context = context
         )
     }

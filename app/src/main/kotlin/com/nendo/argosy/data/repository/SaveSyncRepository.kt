@@ -195,8 +195,9 @@ class SaveSyncRepository @Inject constructor(
         gameId: Long,
         emulatorId: String,
         channelName: String? = null,
-        skipBackup: Boolean = false
-    ): SaveSyncResult = apiClient.downloadSave(gameId, emulatorId, channelName, skipBackup)
+        skipBackup: Boolean = false,
+        knownServerSaveId: Long? = null
+    ): SaveSyncResult = apiClient.downloadSave(gameId, emulatorId, channelName, skipBackup, knownServerSaveId)
 
     suspend fun downloadSaveById(
         serverSaveId: Long,
@@ -271,7 +272,7 @@ class SaveSyncRepository @Inject constructor(
             SyncAnalysis.NoServerSave -> ForceSyncResult.Error("Nothing to sync")
             SyncAnalysis.InSync -> ForceSyncResult.AlreadyInSync
             is SyncAnalysis.LocalNewer -> uploadAndMap(gameId, emulatorId, channelName, forceOverwrite = true)
-            is SyncAnalysis.ServerNewer -> downloadAndMap(gameId, emulatorId, analysis.channelName)
+            is SyncAnalysis.ServerNewer -> downloadAndMap(gameId, emulatorId, analysis.channelName, analysis.serverSaveId)
             is SyncAnalysis.Conflict -> resolveConflictAndApply(analysis.info, emulatorId)
         }
     }
@@ -293,8 +294,9 @@ class SaveSyncRepository @Inject constructor(
     private suspend fun downloadAndMap(
         gameId: Long,
         emulatorId: String,
-        channelName: String?
-    ): ForceSyncResult = when (val result = apiClient.downloadSave(gameId, emulatorId, channelName)) {
+        channelName: String?,
+        knownServerSaveId: Long? = null
+    ): ForceSyncResult = when (val result = apiClient.downloadSave(gameId, emulatorId, channelName, knownServerSaveId = knownServerSaveId)) {
         is SaveSyncResult.Success -> ForceSyncResult.Downloaded(channelName)
         is SaveSyncResult.NeedsHardcoreResolution -> ForceSyncResult.Error("Hardcore save requires resolution")
         is SaveSyncResult.Error -> ForceSyncResult.Error(result.message)

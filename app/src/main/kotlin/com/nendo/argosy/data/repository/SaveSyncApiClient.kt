@@ -260,8 +260,9 @@ class SaveSyncApiClient @Inject constructor(
         gameId: Long,
         emulatorId: String,
         channelName: String? = null,
-        skipBackup: Boolean = false
-    ): SaveSyncResult = saveDownloader.get().downloadSave(gameId, emulatorId, channelName, skipBackup)
+        skipBackup: Boolean = false,
+        knownServerSaveId: Long? = null
+    ): SaveSyncResult = saveDownloader.get().downloadSave(gameId, emulatorId, channelName, skipBackup, knownServerSaveId)
 
     suspend fun downloadSaveById(
         serverSaveId: Long,

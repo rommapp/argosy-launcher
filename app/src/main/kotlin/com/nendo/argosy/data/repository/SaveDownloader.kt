@@ -47,7 +47,8 @@ class SaveDownloader @Inject constructor(
         gameId: Long,
         emulatorId: String,
         channelName: String? = null,
-        skipBackup: Boolean = false
+        skipBackup: Boolean = false,
+        knownServerSaveId: Long? = null
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId emulator=$emulatorId channel=$channelName | Starting download")
         val client = apiClient.get()
@@ -58,10 +59,23 @@ class SaveDownloader @Inject constructor(
         }
         val deviceId = client.getDeviceId()
 
-        val syncEntity = if (channelName != null) {
+        val syncEntity = (if (channelName != null) {
             saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
         } else {
             saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+        }) ?: knownServerSaveId?.let { serverId ->
+            val g = gameDao.getById(gameId)
+            if (g != null) {
+                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No sync entity in DB; synthesizing from knownServerSaveId=$serverId")
+                SaveSyncEntity(
+                    gameId = gameId,
+                    rommId = g.rommId ?: 0,
+                    emulatorId = emulatorId,
+                    channelName = channelName,
+                    rommSaveId = serverId,
+                    syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
+                )
+            } else null
         }
         if (syncEntity == null) {
             Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No sync entity found in database")

@@ -376,7 +376,8 @@ class SyncCoordinator @Inject constructor(
                         localTimestamp = cache.cachedAt,
                         serverTimestamp = result.serverTimestamp,
                         isHashConflict = false,
-                        serverDeviceName = result.serverDeviceName
+                        serverDeviceName = result.serverDeviceName,
+                        serverSaveId = result.serverSaveId
                     ))
                     Logger.warn(TAG, "processDirtySaveCaches: Conflict for channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} | cleared dirty flag, awaiting resolution")
                 }

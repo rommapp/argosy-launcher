@@ -576,7 +576,8 @@ class SaveSyncConflictResolver @Inject constructor(
                     localTimestamp = localModified,
                     serverTimestamp = serverTime,
                     isHashConflict = isHashConflict,
-                    serverDeviceName = uploaderDeviceName
+                    serverDeviceName = uploaderDeviceName,
+                    serverSaveId = serverSave.id
                 )
             )
             else -> SyncAnalysis.LocalNewer(localPath, channelName)

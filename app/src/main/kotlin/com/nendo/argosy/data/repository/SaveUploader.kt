@@ -252,7 +252,8 @@ class SaveUploader @Inject constructor(
                     gameId,
                     conflictDecision.localTimestamp,
                     conflictDecision.serverTimestamp,
-                    conflictDecision.serverDeviceName
+                    conflictDecision.serverDeviceName,
+                    latestServerSave?.id
                 )
             }
 
@@ -303,7 +304,8 @@ class SaveUploader @Inject constructor(
                     gameId,
                     conflictLocalTime,
                     serverTime,
-                    conflictDetector.extractUploaderDeviceName(latestServerSave, deviceId)
+                    conflictDetector.extractUploaderDeviceName(latestServerSave, deviceId),
+                    latestServerSave?.id
                 )
             }
 
@@ -411,7 +413,8 @@ class SaveUploader @Inject constructor(
                     gameId,
                     preSyncTime,
                     serverTime,
-                    conflictDetector.extractUploaderDeviceName(latestForSlot, deviceId)
+                    conflictDetector.extractUploaderDeviceName(latestForSlot, deviceId),
+                    latestForSlot?.id
                 )
             }
         }
@@ -458,7 +461,8 @@ class SaveUploader @Inject constructor(
                     gameId,
                     conflictLocalTime,
                     serverTime,
-                    conflictDetector.extractUploaderDeviceName(conflictSlotSave, deviceId)
+                    conflictDetector.extractUploaderDeviceName(conflictSlotSave, deviceId),
+                    conflictSlotSave?.id
                 )
             }
 

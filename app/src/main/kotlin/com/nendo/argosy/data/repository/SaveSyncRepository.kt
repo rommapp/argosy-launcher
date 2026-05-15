@@ -22,7 +22,8 @@ sealed class SaveSyncResult {
         val gameId: Long,
         val localTimestamp: Instant,
         val serverTimestamp: Instant,
-        val serverDeviceName: String? = null
+        val serverDeviceName: String? = null,
+        val serverSaveId: Long? = null
     ) : SaveSyncResult()
     data class NeedsHardcoreResolution(
         val tempFilePath: String,
@@ -312,7 +313,7 @@ class SaveSyncRepository @Inject constructor(
         syncQueueManager.addConflict(info)
         return when (syncQueueManager.awaitResolution(info.gameId)) {
             ConflictResolution.KEEP_LOCAL -> uploadAndMap(info.gameId, emulatorId, info.channelName, forceOverwrite = true)
-            ConflictResolution.KEEP_SERVER -> downloadAndMap(info.gameId, emulatorId, info.channelName)
+            ConflictResolution.KEEP_SERVER -> downloadAndMap(info.gameId, emulatorId, info.channelName, info.serverSaveId)
             ConflictResolution.SKIP -> ForceSyncResult.SkippedByUser
         }
     }

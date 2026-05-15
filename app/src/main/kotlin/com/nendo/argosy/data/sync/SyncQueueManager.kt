@@ -20,7 +20,8 @@ data class ConflictInfo(
     val localTimestamp: Instant,
     val serverTimestamp: Instant,
     val isHashConflict: Boolean,
-    val serverDeviceName: String? = null
+    val serverDeviceName: String? = null,
+    val serverSaveId: Long? = null
 )
 
 data class SyncOperation(

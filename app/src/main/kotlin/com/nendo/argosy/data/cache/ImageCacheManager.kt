@@ -959,7 +959,7 @@ class ImageCacheManager @Inject constructor(
 
     private suspend fun updateGameCover(rommId: Long, localPath: String) {
         val game = gameDao.getByRommId(rommId) ?: return
-        if (game.coverPath?.startsWith("/") == true) return
+        if (game.coverPath?.startsWith("/") == true && File(game.coverPath).exists()) return
         gameDao.updateCoverPath(game.id, localPath)
         _localCoverWritten.tryEmit(game.id to localPath)
     }
@@ -972,8 +972,12 @@ class ImageCacheManager @Inject constructor(
             Log.d(TAG, "Resuming cache for ${uncached.size} games with uncached covers")
             uncached.forEach { game ->
                 val url = game.coverPath ?: return@forEach
-                val rommId = game.rommId ?: return@forEach
-                queueCoverCache(url, rommId, game.title)
+                val rommId = game.rommId
+                if (rommId != null) {
+                    queueCoverCache(url, rommId, game.title)
+                } else {
+                    queueCoverCacheByGameId(url, game.id)
+                }
             }
         }
     }
@@ -1330,7 +1334,9 @@ class ImageCacheManager @Inject constructor(
             }
         }
 
-        val orphanDirs = listOf("image_cache")
+        migrateLegacyIgdbCovers()
+
+        val orphanDirs = listOf("image_cache", "steam")
         withContext(Dispatchers.IO) {
             for (name in orphanDirs) {
                 val dir = File(context.cacheDir, name)
@@ -1349,6 +1355,29 @@ class ImageCacheManager @Inject constructor(
 
         Log.i(TAG, "Cache validation complete: $deleted files deleted, $cleared paths cleared")
         return CacheValidationResult(deleted, cleared)
+    }
+
+    private suspend fun migrateLegacyIgdbCovers() {
+        val legacyDir = File(context.cacheDir, "steam")
+        if (!legacyDir.exists() || !legacyDir.isDirectory) return
+
+        withContext(Dispatchers.IO) {
+            legacyDir.listFiles()?.forEach { file ->
+                val name = file.name
+                if (!name.startsWith("cover_") || !name.endsWith(".jpg")) return@forEach
+                val steamAppId = name.removePrefix("cover_").removeSuffix(".jpg").toLongOrNull()
+                    ?: return@forEach
+                val game = gameDao.getBySteamAppId(steamAppId) ?: return@forEach
+                if (game.coverPath != file.absolutePath) return@forEach
+
+                val hash = "legacy-igdb-$steamAppId".md5Hash()
+                val newFile = File(platformDir(game.platformSlug, "covers"), "cover_g${game.id}_$hash.jpg")
+                if (file.renameTo(newFile)) {
+                    gameDao.updateCoverPath(game.id, newFile.absolutePath)
+                    Log.i(TAG, "Migrated legacy IGDB cover for gameId=${game.id}")
+                }
+            }
+        }
     }
 
     fun needsFlatToShardedMigration(): Boolean {

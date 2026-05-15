@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.Log
+import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -58,7 +59,8 @@ class SocialRepository @Inject constructor(
     private val playSessionTracker: PlaySessionTracker,
     private val achievementUpdateBus: AchievementUpdateBus,
     private val socialSyncCoordinator: Lazy<SocialSyncCoordinator>,
-    private val syncPreferencesRepository: SyncPreferencesRepository
+    private val syncPreferencesRepository: SyncPreferencesRepository,
+    private val imageCacheManager: ImageCacheManager
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var hasCompletedInitialSync = false
@@ -548,33 +550,12 @@ class SocialRepository @Inject constructor(
                 || game.coverPath.startsWith("https://steamcdn-a.akamaihd.net/")
             Log.d(TAG, "IGDB resolve: needsCover=$needsCover for ${game.title}")
             if (needsCover) {
-                val coverPath = downloadIgdbCover(message.coverImageId, message.steamAppId)
-                Log.d(TAG, "IGDB resolve: downloaded cover -> $coverPath")
-                if (coverPath != null) {
-                    gameDao.updateCoverPath(game.id, coverPath)
-                    Log.d(TAG, "IGDB resolve: updated coverPath for gameId=${game.id}")
-                }
+                val igdbUrl = "https://images.igdb.com/igdb/image/upload/t_cover_big/${message.coverImageId}.jpg"
+                gameDao.updateCoverPath(game.id, igdbUrl)
+                imageCacheManager.queueCoverCacheByGameId(igdbUrl, game.id)
             }
         } else {
             Log.d(TAG, "IGDB resolve: no coverImageId from server for ${game.title}")
-        }
-    }
-
-    private fun downloadIgdbCover(coverImageId: String, steamAppId: Long): String? {
-        return try {
-            val url = "https://images.igdb.com/igdb/image/upload/t_cover_big/$coverImageId.jpg"
-            val cacheDir = File(context.cacheDir, "steam")
-            if (!cacheDir.exists()) cacheDir.mkdirs()
-            val file = File(cacheDir, "cover_$steamAppId.jpg")
-            java.net.URL(url).openStream().use { input ->
-                file.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            file.absolutePath
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to download IGDB cover for Steam app $steamAppId", e)
-            null
         }
     }
 

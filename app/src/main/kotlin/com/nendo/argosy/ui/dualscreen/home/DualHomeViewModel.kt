@@ -683,7 +683,7 @@ class DualHomeViewModel(
             activeFilters = DualActiveFilters(),
             libraryPlatformLabel = "All"
         )}
-        loadLibraryGames(onLoaded)
+        loadLibraryGames(onLoaded = onLoaded)
     }
 
     fun enterLibraryGridForPlatform(platformId: Long, onLoaded: (() -> Unit)? = null) {
@@ -695,7 +695,7 @@ class DualHomeViewModel(
             activeFilters = DualActiveFilters(platformId = platformId),
             libraryPlatformLabel = platformName
         )}
-        loadLibraryGamesForPlatform(platformId, onLoaded)
+        loadLibraryGamesForPlatform(platformId, onLoaded = onLoaded)
     }
 
     fun toggleLibraryGrid(onLoaded: (() -> Unit)? = null) {
@@ -730,9 +730,9 @@ class DualHomeViewModel(
         )}
 
         if (nextPlatformId != null) {
-            loadLibraryGamesForPlatform(nextPlatformId, onLoaded)
+            loadLibraryGamesForPlatform(nextPlatformId, onLoaded = onLoaded)
         } else {
-            loadLibraryGames(onLoaded)
+            loadLibraryGames(onLoaded = onLoaded)
         }
     }
 

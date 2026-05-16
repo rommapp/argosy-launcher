@@ -6,6 +6,8 @@ import com.nendo.argosy.data.sync.SyncOperation
 import com.nendo.argosy.data.sync.SyncQueueState
 import com.nendo.argosy.data.sync.SyncStatus
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -15,6 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val SUCCESS_COOLDOWN: Duration = Duration.ofHours(1)
+private const val BATCH_WINDOW_MS = 3_000L
 
 @Singleton
 class SyncNotificationObserver @Inject constructor(
@@ -26,7 +29,12 @@ class SyncNotificationObserver @Inject constructor(
 
     private val lastSuccessAt = mutableMapOf<Long, Instant>()
 
+    private var observerScope: CoroutineScope? = null
+    private val pendingSuccesses = mutableListOf<SyncOperation>()
+    private var batchFlushJob: Job? = null
+
     fun observe(scope: CoroutineScope) {
+        observerScope = scope
         scope.launch {
             saveSyncRepository.syncQueueState
                 .map { it.toNotificationState() }
@@ -56,7 +64,7 @@ class SyncNotificationObserver @Inject constructor(
             val currOp = current.operations.find { it.gameId == gameId }
 
             if (prevOp?.status != currOp?.status && currOp != null) {
-                showTransientNotification(currOp)
+                handleStatusTransition(currOp)
             }
         }
 
@@ -65,49 +73,80 @@ class SyncNotificationObserver @Inject constructor(
         }
     }
 
-    private fun showTransientNotification(operation: SyncOperation) {
-        if (isInitialLoad && operation.status != SyncStatus.COMPLETED && operation.status != SyncStatus.FAILED) {
+    private fun handleStatusTransition(operation: SyncOperation) {
+        when (operation.status) {
+            SyncStatus.PENDING, SyncStatus.IN_PROGRESS, SyncStatus.CONFLICT_PENDING -> return
+            SyncStatus.COMPLETED -> {
+                if (isInitialLoad) return
+                val now = Instant.now()
+                val last = lastSuccessAt[operation.gameId]
+                if (last != null && Duration.between(last, now) < SUCCESS_COOLDOWN) return
+                lastSuccessAt[operation.gameId] = now
+                enqueueSuccess(operation)
+            }
+            SyncStatus.FAILED -> showFailureNotification(operation)
+        }
+    }
+
+    private fun enqueueSuccess(operation: SyncOperation) {
+        val scope = observerScope ?: return
+        pendingSuccesses.removeAll { it.gameId == operation.gameId }
+        pendingSuccesses.add(operation)
+        batchFlushJob?.cancel()
+        batchFlushJob = scope.launch {
+            delay(BATCH_WINDOW_MS)
+            flushPendingSuccesses()
+        }
+    }
+
+    private fun flushPendingSuccesses() {
+        val batch = pendingSuccesses.toList()
+        pendingSuccesses.clear()
+        batchFlushJob = null
+        if (batch.isEmpty()) return
+
+        if (batch.size == 1) {
+            val op = batch.first()
+            val subtitle = op.channelName?.let { "${op.gameName} ($it)" } ?: op.gameName
+            notificationManager.show(
+                title = "Save Synced",
+                subtitle = subtitle,
+                type = NotificationType.SUCCESS,
+                imagePath = op.coverPath,
+                duration = NotificationDuration.MEDIUM,
+                key = "sync-${op.gameId}",
+                immediate = true
+            )
             return
         }
 
-        val (title, type, immediate) = when (operation.status) {
-            SyncStatus.PENDING -> return
-            SyncStatus.IN_PROGRESS -> return
-            SyncStatus.COMPLETED -> {
-                val now = Instant.now()
-                val last = lastSuccessAt[operation.gameId]
-                if (last != null && Duration.between(last, now) < SUCCESS_COOLDOWN) {
-                    return
-                }
-                lastSuccessAt[operation.gameId] = now
-                Triple("Save Synced", NotificationType.SUCCESS, true)
-            }
-            SyncStatus.FAILED -> when (operation.direction) {
-                SyncDirection.UPLOAD -> Triple("Upload Failed", NotificationType.ERROR, true)
-                SyncDirection.DOWNLOAD -> Triple("Download Failed", NotificationType.ERROR, true)
-            }
-            SyncStatus.CONFLICT_PENDING -> return
-        }
+        val titles = batch.take(3).joinToString(", ") { it.gameName }
+        val subtitle = if (batch.size > 3) "$titles, +${batch.size - 3} more" else titles
+        notificationManager.show(
+            title = "${batch.size} saves synced",
+            subtitle = subtitle,
+            type = NotificationType.SUCCESS,
+            duration = NotificationDuration.MEDIUM,
+            key = "sync-batch",
+            immediate = true
+        )
+    }
 
-        val gameLine = if (operation.channelName != null) {
-            "${operation.gameName} (${operation.channelName})"
-        } else {
-            operation.gameName
+    private fun showFailureNotification(operation: SyncOperation) {
+        val title = when (operation.direction) {
+            SyncDirection.UPLOAD -> "Upload Failed"
+            SyncDirection.DOWNLOAD -> "Download Failed"
         }
-        val subtitle = if (operation.status == SyncStatus.FAILED && operation.error != null) {
-            "$gameLine: ${operation.error}"
-        } else {
-            gameLine
-        }
-
+        val gameLine = operation.channelName?.let { "${operation.gameName} ($it)" } ?: operation.gameName
+        val subtitle = operation.error?.let { "$gameLine: $it" } ?: gameLine
         notificationManager.show(
             title = title,
             subtitle = subtitle,
-            type = type,
+            type = NotificationType.ERROR,
             imagePath = operation.coverPath,
-            duration = if (immediate) NotificationDuration.MEDIUM else NotificationDuration.SHORT,
+            duration = NotificationDuration.MEDIUM,
             key = "sync-${operation.gameId}",
-            immediate = immediate
+            immediate = true
         )
     }
 

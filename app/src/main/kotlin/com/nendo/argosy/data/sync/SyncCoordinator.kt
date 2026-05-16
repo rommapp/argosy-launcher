@@ -386,7 +386,23 @@ class SyncCoordinator @Inject constructor(
             is SaveSyncResult.NoSaveFound,
             is SaveSyncResult.NotConfigured -> syncQueueManager.removeOperation(item.gameId)
             is SaveSyncResult.Error -> syncQueueManager.completeOperation(item.gameId, result.message)
-            is SaveSyncResult.Conflict -> syncQueueManager.completeOperation(item.gameId, "Server has newer save")
+            is SaveSyncResult.Conflict -> {
+                pendingConflictDao.upsert(
+                    PendingConflictEntity(
+                        gameId = item.gameId,
+                        rommSaveId = result.serverSaveId,
+                        fileName = payload.channelName ?: game.title,
+                        slot = payload.channelName,
+                        emulator = payload.emulatorId,
+                        localUpdatedAt = result.localTimestamp,
+                        serverUpdatedAt = result.serverTimestamp,
+                        localHash = null,
+                        serverHash = null,
+                        reason = result.serverDeviceName?.let { "Server has newer save from $it" } ?: "Server has newer save"
+                    )
+                )
+                syncQueueManager.removeOperation(item.gameId)
+            }
             else -> syncQueueManager.removeOperation(item.gameId)
         }
 

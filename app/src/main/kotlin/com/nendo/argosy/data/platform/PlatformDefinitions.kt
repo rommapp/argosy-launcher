@@ -560,7 +560,15 @@ object PlatformDefinitions {
 
     fun getCanonicalSlug(slug: String): String {
         val lower = slug.lowercase()
-        return slugAliases[lower] ?: lower
+        slugAliases[lower]?.let { return it }
+        if (platformMap.containsKey(lower)) return lower
+        val sep = lower.indexOfFirst { it == '-' || it == '_' }
+        if (sep > 0) {
+            val prefix = lower.substring(0, sep)
+            slugAliases[prefix]?.let { return it }
+            if (platformMap.containsKey(prefix)) return prefix
+        }
+        return lower
     }
 
     fun getSlugsForCanonical(slug: String): Set<String> {
@@ -572,17 +580,29 @@ object PlatformDefinitions {
     fun getAliasDisplayName(slug: String): Pair<String, String>? =
         aliasDisplayNames[slug.lowercase()]
 
+    fun deriveDisplayName(slug: String?): Pair<String, String>? {
+        if (slug.isNullOrBlank()) return null
+        val lower = slug.lowercase()
+        val sep = lower.indexOfFirst { it == '-' || it == '_' }
+        if (sep <= 0 || sep >= lower.length - 1) return null
+        val prefix = lower.substring(0, sep)
+        val canonical = slugAliases[prefix] ?: prefix
+        val parentDef = platformMap[canonical] ?: return null
+        val suffix = lower.substring(sep + 1)
+            .split('-', '_')
+            .filter { it.isNotEmpty() }
+            .joinToString(" ") { it.replaceFirstChar { c -> c.titlecase() } }
+        if (suffix.isEmpty()) return null
+        val combined = "${parentDef.shortName} $suffix"
+        return combined to combined
+    }
+
     private val aliasDisplayNames: Map<String, Pair<String, String>> = mapOf(
         "mame" to ("MAME" to "MAME"),
         "fbneo" to ("FB Neo" to "FBNeo"),
         "fba" to ("FB Alpha" to "FBA"),
         "naomi2" to ("NAOMI 2" to "NAOMI 2"),
-        "hikaru" to ("Hikaru" to "Hikaru"),
-        "psp-minis" to ("PSP Minis" to "PSP Minis"),
-        "psp_minis" to ("PSP Minis" to "PSP Minis"),
-        "pspminis" to ("PSP Minis" to "PSP Minis"),
-        "playstation-portable-minis" to ("PSP Minis" to "PSP Minis"),
-        "playstation_portable_minis" to ("PSP Minis" to "PSP Minis")
+        "hikaru" to ("Hikaru" to "Hikaru")
     )
 
     fun getPlatformsForExtension(extension: String): List<PlatformDef> =

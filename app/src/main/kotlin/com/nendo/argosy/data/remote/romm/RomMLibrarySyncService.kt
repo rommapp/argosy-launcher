@@ -293,9 +293,11 @@ class RomMLibrarySyncService @Inject constructor(
         val platformDef = PlatformDefinitions.getBySlug(remote.slug)
 
         val logoUrl = remote.logoUrl?.let { apiClient.buildMediaUrl(it) }
-        val aliasNames = PlatformDefinitions.getAliasDisplayName(remote.slug)
-        val normalizedName = remote.displayName ?: aliasNames?.first ?: remote.name
-        val resolvedShortName = aliasNames?.second ?: platformDef?.shortName ?: normalizedName
+        val derivedNames = PlatformDefinitions.getAliasDisplayName(remote.slug)
+            ?: PlatformDefinitions.deriveDisplayName(remote.slug)
+            ?: PlatformDefinitions.deriveDisplayName(remote.fsSlug)
+        val normalizedName = remote.displayName ?: derivedNames?.first ?: remote.name
+        val resolvedShortName = derivedNames?.second ?: platformDef?.shortName ?: normalizedName
         val entity = PlatformEntity(
             id = platformId,
             slug = remote.slug,

@@ -8,16 +8,11 @@ import javax.inject.Singleton
 @Singleton
 class SaveSyncStrategySelector @Inject constructor(
     private val legacy: Lazy<LegacySaveSyncStrategy>,
+    private val negotiator: Lazy<NegotiatorSaveSyncStrategy>,
     private val connectionManager: RomMConnectionManager,
 ) {
-    @Volatile
-    internal var negotiatorProvider: (() -> SaveSyncStrategy)? = null
-
     fun current(): SaveSyncStrategy {
         val caps = connectionManager.getCapabilities()
-        if (caps.supportsSyncNegotiate) {
-            negotiatorProvider?.invoke()?.let { return it }
-        }
-        return legacy.get()
+        return if (caps.supportsSyncNegotiate) negotiator.get() else legacy.get()
     }
 }

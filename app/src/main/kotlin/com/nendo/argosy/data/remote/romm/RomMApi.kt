@@ -275,4 +275,26 @@ interface RomMApi {
     suspend fun ingestPlaySessions(
         @Body body: RomMPlaySessionIngestPayload
     ): Response<RomMPlaySessionIngestResponse>
+
+    @POST("api/sync/negotiate")
+    suspend fun negotiateSync(
+        @Body body: RomMSyncNegotiatePayload
+    ): Response<RomMSyncNegotiateResponse>
+
+    @POST("api/sync/sessions/{id}/complete")
+    suspend fun completeSyncSession(
+        @Path("id") sessionId: Long,
+        @Body body: RomMSyncCompletePayload
+    ): Response<RomMSyncCompleteResponse>
+
+    @GET("api/sync/sessions")
+    suspend fun listSyncSessions(
+        @Query("device_id") deviceId: String? = null,
+        @Query("limit") limit: Int = 50
+    ): Response<List<RomMSyncSession>>
+
+    @GET("api/sync/sessions/{id}")
+    suspend fun getSyncSession(
+        @Path("id") sessionId: Long
+    ): Response<RomMSyncSession>
 }

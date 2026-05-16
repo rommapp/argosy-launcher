@@ -56,6 +56,7 @@ class SyncCoordinator @Inject constructor(
 ) {
     companion object {
         private const val TAG = "SyncCoordinator"
+        private val NEGOTIATE_COOLDOWN: Duration = Duration.ofMinutes(5)
     }
 
     private val mutex = Mutex()
@@ -65,6 +66,9 @@ class SyncCoordinator @Inject constructor(
         data class Completed(val processed: Int, val failed: Int) : ProcessResult()
     }
 
+    @Volatile
+    private var lastNegotiateAt: Instant? = null
+
     suspend fun reconcileAll(): ReconcileSummary = withContext(Dispatchers.IO) {
         val queueResult = processQueue()
 
@@ -73,6 +77,14 @@ class SyncCoordinator @Inject constructor(
         if (caps?.supportsSyncNegotiate != true) {
             return@withContext ReconcileSummary(queueResult, planConflicts = 0, planApplied = 0)
         }
+
+        val now = Instant.now()
+        val last = lastNegotiateAt
+        if (last != null && Duration.between(last, now) < NEGOTIATE_COOLDOWN) {
+            Logger.debug(TAG, "reconcileAll: negotiate cooldown active (last=$last), skipping")
+            return@withContext ReconcileSummary(queueResult, planConflicts = 0, planApplied = 0)
+        }
+        lastNegotiateAt = now
 
         val inventory = buildInventory()
         val plan = strategySelector.current().planReconcile(inventory)
@@ -91,6 +103,13 @@ class SyncCoordinator @Inject constructor(
             val path = row.localSavePath ?: return@mapNotNull null
             val file = File(path)
             if (!file.exists()) return@mapNotNull null
+
+            val lastSynced = row.lastSyncedAt
+            if (lastSynced != null) {
+                val mtime = Instant.ofEpochMilli(file.lastModified())
+                if (!mtime.isAfter(lastSynced)) return@mapNotNull null
+            }
+
             LocalSaveState(
                 romId = row.rommId,
                 fileName = file.name,

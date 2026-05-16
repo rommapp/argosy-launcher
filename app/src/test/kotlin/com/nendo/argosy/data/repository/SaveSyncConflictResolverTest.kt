@@ -795,8 +795,6 @@ class SaveSyncConflictResolverTest {
         coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns entityWithRealPath
     }
 
-    // --- serverSaveId threading regression tests for #205 ---
-
     @Test
     fun `ServerIsNewer result carries the server save id`() = runTest {
         val syncEntity = makeSyncEntity(lastUploadedHash = "abc")

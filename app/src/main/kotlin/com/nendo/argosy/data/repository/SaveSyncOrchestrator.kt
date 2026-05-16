@@ -104,11 +104,22 @@ class SaveSyncOrchestrator @Inject constructor(
             return@withContext 0
         }
 
-        for (syncEntity in pendingDownloads) {
-            val game = gameDao.getById(syncEntity.gameId) ?: continue
+        val actionable = pendingDownloads.mapNotNull { entity ->
+            val game = gameDao.getById(entity.gameId) ?: return@mapNotNull null
+            if (game.localPath == null) {
+                Logger.debug(TAG, "downloadPendingServerSaves: skipping non-installed gameId=${entity.gameId} silently")
+                return@mapNotNull null
+            }
+            entity to game
+        }
+        if (actionable.isEmpty()) {
+            return@withContext 0
+        }
+
+        for ((entity, game) in actionable) {
             syncQueueManager.addOperation(
                 SyncOperation(
-                    gameId = syncEntity.gameId,
+                    gameId = entity.gameId,
                     gameName = game.title,
                     coverPath = game.coverPath,
                     direction = SyncDirection.DOWNLOAD,
@@ -120,7 +131,7 @@ class SaveSyncOrchestrator @Inject constructor(
         var downloaded = 0
         val client = apiClient.get()
 
-        for (syncEntity in pendingDownloads) {
+        for ((syncEntity, _) in actionable) {
             syncQueueManager.updateOperation(syncEntity.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
 
             when (val result = client.downloadSave(syncEntity.gameId, "default", syncEntity.channelName, knownServerSaveId = syncEntity.rommSaveId)) {
@@ -130,7 +141,7 @@ class SaveSyncOrchestrator @Inject constructor(
                 }
                 is SaveSyncResult.NoSaveFound,
                 is SaveSyncResult.NotConfigured -> {
-                    syncQueueManager.completeOperation(syncEntity.gameId)
+                    syncQueueManager.removeOperation(syncEntity.gameId)
                     Logger.debug(TAG, "downloadPendingServerSaves: skipping gameId=${syncEntity.gameId} | result=$result")
                 }
                 is SaveSyncResult.NeedsHardcoreResolution -> {

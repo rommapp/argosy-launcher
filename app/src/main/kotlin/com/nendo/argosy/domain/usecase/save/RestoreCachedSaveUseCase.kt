@@ -85,9 +85,6 @@ class RestoreCachedSaveUseCase @Inject constructor(
         val targetChannel = entry.channelName
         gameDao.updateActiveSaveChannel(gameId, targetChannel)
 
-        // Mark save_sync SYNCED so subsequent reconciles don't re-download or
-        // re-surface this save as a conflict. Without this, the row stayed at
-        // STATUS_SERVER_NEWER and the next launch would try to download again.
         if (game.rommId != null) {
             val contentHash = saveCacheManager.calculateLocalSaveHash(targetPath)
             saveSyncRepository.markRestored(

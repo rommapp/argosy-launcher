@@ -9,8 +9,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private val SUCCESS_COOLDOWN: Duration = Duration.ofHours(1)
 
 @Singleton
 class SyncNotificationObserver @Inject constructor(
@@ -19,6 +23,8 @@ class SyncNotificationObserver @Inject constructor(
 ) {
     private var previousState: SyncQueueState? = null
     private var isInitialLoad = true
+
+    private val lastSuccessAt = mutableMapOf<Long, Instant>()
 
     fun observe(scope: CoroutineScope) {
         scope.launch {
@@ -67,7 +73,15 @@ class SyncNotificationObserver @Inject constructor(
         val (title, type, immediate) = when (operation.status) {
             SyncStatus.PENDING -> return
             SyncStatus.IN_PROGRESS -> return
-            SyncStatus.COMPLETED -> Triple("Save Synced", NotificationType.SUCCESS, true)
+            SyncStatus.COMPLETED -> {
+                val now = Instant.now()
+                val last = lastSuccessAt[operation.gameId]
+                if (last != null && Duration.between(last, now) < SUCCESS_COOLDOWN) {
+                    return
+                }
+                lastSuccessAt[operation.gameId] = now
+                Triple("Save Synced", NotificationType.SUCCESS, true)
+            }
             SyncStatus.FAILED -> when (operation.direction) {
                 SyncDirection.UPLOAD -> Triple("Upload Failed", NotificationType.ERROR, true)
                 SyncDirection.DOWNLOAD -> Triple("Download Failed", NotificationType.ERROR, true)

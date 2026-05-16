@@ -2,13 +2,12 @@ package com.nendo.argosy.domain.usecase.collection
 
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.domain.model.PinnedCollection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
-
-private const val FETCH_BATCH_SIZE = 100
 
 class GetGamesForPinnedCollectionUseCase @Inject constructor(
     private val collectionDao: CollectionDao,
@@ -18,8 +17,7 @@ class GetGamesForPinnedCollectionUseCase @Inject constructor(
         return when (pinned) {
             is PinnedCollection.Regular -> {
                 collectionDao.observeGameIdsInCollection(pinned.collectionId).map { ids ->
-                    val games = fetchByIds(ids)
-                    val byId = games.associateBy { it.id }
+                    val byId = gameDao.getByIdsChunked(ids).associateBy { it.id }
                     ids.mapNotNull { byId[it] }
                 }
             }
@@ -34,14 +32,9 @@ class GetGamesForPinnedCollectionUseCase @Inject constructor(
                             it.trim().equals(pinned.categoryName, ignoreCase = true)
                         } == true
                     }.map { it.id }
-                    fetchByIds(matchingIds).sortedBy { it.sortTitle }
+                    gameDao.getByIdsChunked(matchingIds).sortedBy { it.sortTitle }
                 }
             }
         }
-    }
-
-    private suspend fun fetchByIds(ids: List<Long>): List<GameEntity> {
-        if (ids.isEmpty()) return emptyList()
-        return ids.chunked(FETCH_BATCH_SIZE).flatMap { gameDao.getByIds(it) }
     }
 }

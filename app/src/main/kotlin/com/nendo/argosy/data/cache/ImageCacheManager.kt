@@ -507,30 +507,30 @@ class ImageCacheManager @Inject constructor(
     }
 
     private suspend fun updateDatabasePaths(oldBasePath: String, newBasePath: String) {
-        val games = gameDao.getAllGames()
+        val infos = gameDao.getAllImageCacheInfo()
         var updated = 0
 
-        games.forEach { game ->
+        infos.forEach { info ->
             var changed = false
-            var newCoverPath = game.coverPath
-            var newBackgroundPath = game.backgroundPath
-            var newCachedScreenshotPaths = game.cachedScreenshotPaths
+            var newCoverPath = info.coverPath
+            var newBackgroundPath = info.backgroundPath
+            var newCachedScreenshotPaths = info.cachedScreenshotPaths
 
-            if (game.coverPath?.startsWith(oldBasePath) == true) {
-                newCoverPath = game.coverPath.replace(oldBasePath, newBasePath)
+            if (info.coverPath?.startsWith(oldBasePath) == true) {
+                newCoverPath = info.coverPath.replace(oldBasePath, newBasePath)
                 changed = true
             }
-            if (game.backgroundPath?.startsWith(oldBasePath) == true) {
-                newBackgroundPath = game.backgroundPath.replace(oldBasePath, newBasePath)
+            if (info.backgroundPath?.startsWith(oldBasePath) == true) {
+                newBackgroundPath = info.backgroundPath.replace(oldBasePath, newBasePath)
                 changed = true
             }
-            if (game.cachedScreenshotPaths?.contains(oldBasePath) == true) {
-                newCachedScreenshotPaths = game.cachedScreenshotPaths.replace(oldBasePath, newBasePath)
+            if (info.cachedScreenshotPaths?.contains(oldBasePath) == true) {
+                newCachedScreenshotPaths = info.cachedScreenshotPaths.replace(oldBasePath, newBasePath)
                 changed = true
             }
 
             if (changed) {
-                gameDao.updateImagePaths(game.id, newCoverPath, newBackgroundPath, newCachedScreenshotPaths)
+                gameDao.updateImagePaths(info.id, newCoverPath, newBackgroundPath, newCachedScreenshotPaths)
                 updated++
             }
         }
@@ -1292,29 +1292,29 @@ class ImageCacheManager @Inject constructor(
             }
         }
 
-        val games = gameDao.getAllGames()
-        val totalGames = games.size
+        val infos = gameDao.getAllImageCacheInfo()
+        val totalGames = infos.size
         onProgress?.invoke("Validating $totalGames game paths...", 0, totalGames)
 
-        games.forEachIndexed { index, game ->
-            if (game.coverPath?.startsWith("/") == true && !File(game.coverPath).exists()) {
-                gameDao.clearCoverPath(game.id)
+        infos.forEachIndexed { index, info ->
+            if (info.coverPath?.startsWith("/") == true && !File(info.coverPath).exists()) {
+                gameDao.clearCoverPath(info.id)
                 cleared++
             }
-            if (game.backgroundPath?.startsWith("/") == true && !File(game.backgroundPath).exists()) {
-                gameDao.clearBackgroundPath(game.id)
+            if (info.backgroundPath?.startsWith("/") == true && !File(info.backgroundPath).exists()) {
+                gameDao.clearBackgroundPath(info.id)
                 cleared++
             }
-            if (game.cachedScreenshotPaths != null) {
-                val paths = game.cachedScreenshotPaths.split(",")
+            if (info.cachedScreenshotPaths != null) {
+                val paths = info.cachedScreenshotPaths.split(",")
                 val validPaths = paths.filter { path ->
                     !path.startsWith("/") || File(path).exists()
                 }
                 if (validPaths.size != paths.size) {
                     if (validPaths.isEmpty()) {
-                        gameDao.clearCachedScreenshotPaths(game.id)
+                        gameDao.clearCachedScreenshotPaths(info.id)
                     } else {
-                        gameDao.updateCachedScreenshotPaths(game.id, validPaths.joinToString(","))
+                        gameDao.updateCachedScreenshotPaths(info.id, validPaths.joinToString(","))
                     }
                     cleared += paths.size - validPaths.size
                 }
@@ -1499,30 +1499,30 @@ class ImageCacheManager @Inject constructor(
         val cachePath = cacheDir.absolutePath
         var updated = 0
 
-        gameDao.getAllGames().forEach { game ->
+        gameDao.getAllImageCacheInfo().forEach { info ->
             var changed = false
-            var newCoverPath = game.coverPath
-            var newBackgroundPath = game.backgroundPath
-            var newCachedScreenshotPaths = game.cachedScreenshotPaths
+            var newCoverPath = info.coverPath
+            var newBackgroundPath = info.backgroundPath
+            var newCachedScreenshotPaths = info.cachedScreenshotPaths
 
-            if (game.coverPath?.startsWith(cachePath) == true && !File(game.coverPath).exists()) {
-                val fileName = File(game.coverPath).name
+            if (info.coverPath?.startsWith(cachePath) == true && !File(info.coverPath).exists()) {
+                val fileName = File(info.coverPath).name
                 val dest = resolveShardedDestination(fileName)
                 if (dest != null && dest.exists()) {
                     newCoverPath = dest.absolutePath
                     changed = true
                 }
             }
-            if (game.backgroundPath?.startsWith(cachePath) == true && !File(game.backgroundPath).exists()) {
-                val fileName = File(game.backgroundPath).name
+            if (info.backgroundPath?.startsWith(cachePath) == true && !File(info.backgroundPath).exists()) {
+                val fileName = File(info.backgroundPath).name
                 val dest = resolveShardedDestination(fileName)
                 if (dest != null && dest.exists()) {
                     newBackgroundPath = dest.absolutePath
                     changed = true
                 }
             }
-            if (game.cachedScreenshotPaths?.contains(cachePath) == true) {
-                val paths = game.cachedScreenshotPaths.split(",")
+            if (info.cachedScreenshotPaths?.contains(cachePath) == true) {
+                val paths = info.cachedScreenshotPaths.split(",")
                 val newPaths = paths.map { path ->
                     if (path.startsWith(cachePath) && !File(path).exists()) {
                         val fileName = File(path).name
@@ -1537,7 +1537,7 @@ class ImageCacheManager @Inject constructor(
             }
 
             if (changed) {
-                gameDao.updateImagePaths(game.id, newCoverPath, newBackgroundPath, newCachedScreenshotPaths)
+                gameDao.updateImagePaths(info.id, newCoverPath, newBackgroundPath, newCachedScreenshotPaths)
                 updated++
             }
         }
@@ -1554,9 +1554,9 @@ class ImageCacheManager @Inject constructor(
         }
 
         achievementDao.getWithUncachedBadges()
-        val allGames = gameDao.getAllGames()
-        allGames.forEach { game ->
-            val achievements = achievementDao.getByGameId(game.id)
+        val allGameIds = gameDao.getAllGameIds()
+        allGameIds.forEach { gameId ->
+            val achievements = achievementDao.getByGameId(gameId)
             achievements.forEach { achievement ->
                 var badgeChanged = false
                 var newBadgePath = achievement.cachedBadgeUrl

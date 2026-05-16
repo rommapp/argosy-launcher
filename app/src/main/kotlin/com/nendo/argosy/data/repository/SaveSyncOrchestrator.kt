@@ -2,6 +2,7 @@ package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
@@ -55,7 +56,7 @@ class SaveSyncOrchestrator @Inject constructor(
     }
 
     suspend fun scanAndQueueLocalChanges(): Int = withContext(Dispatchers.IO) {
-        val downloadedGames = gameDao.getGamesWithLocalPath().filter { it.rommId != null }
+        val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
         var queued = 0
         val client = apiClient.get()
 

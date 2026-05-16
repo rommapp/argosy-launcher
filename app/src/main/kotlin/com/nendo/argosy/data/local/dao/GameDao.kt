@@ -328,6 +328,18 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE localPath IS NOT NULL")
     suspend fun getGamesWithLocalPath(): List<GameEntity>
 
+    @Query("SELECT id FROM games WHERE localPath IS NOT NULL")
+    suspend fun getGamesWithLocalPathIds(): List<Long>
+
+    @Query("SELECT id FROM games WHERE localPath IS NOT NULL AND rommId IS NOT NULL")
+    suspend fun getDownloadedRommGameIds(): List<Long>
+
+    @Query("SELECT id FROM games")
+    suspend fun getAllGameIds(): List<Long>
+
+    @Query("SELECT id, coverPath, backgroundPath, cachedScreenshotPaths FROM games")
+    suspend fun getAllImageCacheInfo(): List<GameImageCacheInfo>
+
     @Query("SELECT * FROM games WHERE rommId IS NOT NULL AND localPath IS NULL")
     suspend fun getGamesWithRommIdButNoPath(): List<GameEntity>
 
@@ -736,3 +748,17 @@ data class GameStorageInfo(
     val platformId: Long,
     val localPath: String?
 )
+
+data class GameImageCacheInfo(
+    val id: Long,
+    val coverPath: String?,
+    val backgroundPath: String?,
+    val cachedScreenshotPaths: String?
+)
+
+private const val ID_FETCH_BATCH_SIZE = 100
+
+suspend fun GameDao.getByIdsChunked(ids: List<Long>): List<GameEntity> {
+    if (ids.isEmpty()) return emptyList()
+    return ids.chunked(ID_FETCH_BATCH_SIZE).flatMap { getByIds(it) }
+}

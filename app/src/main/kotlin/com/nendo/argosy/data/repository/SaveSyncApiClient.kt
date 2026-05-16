@@ -6,6 +6,7 @@ import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMApi
@@ -183,8 +184,7 @@ class SaveSyncApiClient @Inject constructor(
         val serverSaves = response.body() ?: return@withContext emptyList()
         val updatedEntities = mutableListOf<SaveSyncEntity>()
 
-        val downloadedGames = gameDao.getGamesWithLocalPath()
-            .filter { it.rommId != null }
+        val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
 
         for (serverSave in serverSaves) {
             if (isStateShapedSave(serverSave)) continue
@@ -228,7 +228,7 @@ class SaveSyncApiClient @Inject constructor(
 
     suspend fun checkForAllServerUpdates(): List<SaveSyncEntity> = withContext(Dispatchers.IO) {
         if (api == null) return@withContext emptyList()
-        val downloadedGames = gameDao.getGamesWithLocalPath().filter { it.rommId != null }
+        val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
         val platformIds = downloadedGames.map { it.platformId }.distinct()
 
         val allUpdates = mutableListOf<SaveSyncEntity>()

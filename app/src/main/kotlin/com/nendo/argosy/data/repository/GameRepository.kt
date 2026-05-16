@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SearchCandidate
+import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.model.GameSource
@@ -30,7 +31,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "GameRepository"
-private const val GAME_FETCH_BATCH_SIZE = 100
 
 data class PlatformStats(
     val platformId: Long,
@@ -269,14 +269,14 @@ class GameRepository @Inject constructor(
         }
 
         val startTime = System.currentTimeMillis()
-        val gamesWithPaths = gameDao.getGamesWithLocalPath()
+        val gamesWithPaths = gameDao.getGamesWithLocalPathInfo()
         var invalidated = 0
-        for (game in gamesWithPaths) {
-            val path = game.localPath ?: continue
-            if (!isGamePathValid(path, game.platformSlug)) {
-                gameDao.clearLocalPath(game.id)
+        for (info in gamesWithPaths) {
+            val path = info.localPath ?: continue
+            if (!isGamePathValid(path, info.platformSlug)) {
+                gameDao.clearLocalPath(info.id)
                 invalidated++
-                Log.d(TAG, "Invalidated: ${game.title} (path no longer valid: $path)")
+                Log.d(TAG, "Invalidated game ${info.id}: path no longer valid ($path)")
             }
         }
         val elapsed = System.currentTimeMillis() - startTime
@@ -384,9 +384,8 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun getDownloadedGamesSize(): Long = withContext(Dispatchers.IO) {
-        val gamesWithPaths = gameDao.getGamesWithLocalPath()
-        gamesWithPaths.sumOf { game ->
-            game.localPath?.let { path ->
+        gameDao.getGamesWithLocalPathInfo().sumOf { info ->
+            info.localPath?.let { path ->
                 val file = File(path)
                 if (file.exists()) file.length() else 0L
             } ?: 0L
@@ -394,7 +393,7 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun getDownloadedGamesCount(): Int = withContext(Dispatchers.IO) {
-        gameDao.getGamesWithLocalPath().size
+        gameDao.getGamesWithLocalPathIds().size
     }
 
     suspend fun getAvailableStorageBytes(): Long = withContext(Dispatchers.IO) {
@@ -408,16 +407,19 @@ class GameRepository @Inject constructor(
         }
     }
 
-    suspend fun getGamesWithLocalPaths() = withContext(Dispatchers.IO) {
-        gameDao.getGamesWithLocalPath()
+    suspend fun getGamesWithLocalPaths(): List<GameEntity> = withContext(Dispatchers.IO) {
+        gameDao.getByIdsChunked(gameDao.getGamesWithLocalPathIds())
     }
 
     suspend fun getGamesWithLocalPathInfo() = withContext(Dispatchers.IO) {
         gameDao.getGamesWithLocalPathInfo()
     }
 
-    suspend fun getGamesWithLocalPathsForPlatform(platformId: Long) = withContext(Dispatchers.IO) {
-        gameDao.getGamesWithLocalPath().filter { it.platformId == platformId }
+    suspend fun getGamesWithLocalPathsForPlatform(platformId: Long): List<GameEntity> = withContext(Dispatchers.IO) {
+        val ids = gameDao.getGamesWithLocalPathInfo()
+            .filter { it.platformId == platformId }
+            .map { it.id }
+        gameDao.getByIdsChunked(ids)
     }
 
     suspend fun getDownloadDirForPlatform(platformSlug: String): File = withContext(Dispatchers.IO) {
@@ -623,9 +625,7 @@ class GameRepository @Inject constructor(
 
     private suspend fun hydrateByIds(ids: List<Long>): List<GameEntity> {
         if (ids.isEmpty()) return emptyList()
-        val byId = ids.chunked(GAME_FETCH_BATCH_SIZE)
-            .flatMap { gameDao.getByIds(it) }
-            .associateBy { it.id }
+        val byId = gameDao.getByIdsChunked(ids).associateBy { it.id }
         return ids.mapNotNull { byId[it] }
     }
 

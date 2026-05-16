@@ -17,7 +17,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 sealed class SaveSyncResult {
-    data class Success(val rommSaveId: Long? = null, val serverTimestamp: Instant? = null) : SaveSyncResult()
+    data class Success(
+        val rommSaveId: Long? = null,
+        val serverTimestamp: Instant? = null,
+        val noOp: Boolean = false
+    ) : SaveSyncResult()
     data class Conflict(
         val gameId: Long,
         val localTimestamp: Instant,

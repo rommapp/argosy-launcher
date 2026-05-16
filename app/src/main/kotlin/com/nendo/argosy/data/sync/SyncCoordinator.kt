@@ -376,12 +376,18 @@ class SyncCoordinator @Inject constructor(
         )
 
         when (result) {
-            is SaveSyncResult.Success -> syncQueueManager.completeOperation(item.gameId)
+            is SaveSyncResult.Success -> {
+                if (result.noOp) {
+                    syncQueueManager.removeOperation(item.gameId)
+                } else {
+                    syncQueueManager.completeOperation(item.gameId)
+                }
+            }
             is SaveSyncResult.NoSaveFound,
-            is SaveSyncResult.NotConfigured -> syncQueueManager.completeOperation(item.gameId)
+            is SaveSyncResult.NotConfigured -> syncQueueManager.removeOperation(item.gameId)
             is SaveSyncResult.Error -> syncQueueManager.completeOperation(item.gameId, result.message)
             is SaveSyncResult.Conflict -> syncQueueManager.completeOperation(item.gameId, "Server has newer save")
-            else -> syncQueueManager.completeOperation(item.gameId, "Skipped")
+            else -> syncQueueManager.removeOperation(item.gameId)
         }
 
         return result is SaveSyncResult.Success
@@ -558,9 +564,13 @@ class SyncCoordinator @Inject constructor(
                             gameDao.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
                         }
                     }
-                    syncQueueManager.completeOperation(cache.gameId)
-                    synced++
-                    Logger.debug(TAG, "processDirtySaveCaches: Synced channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} rommSaveId=${result.rommSaveId}")
+                    if (result.noOp) {
+                        syncQueueManager.removeOperation(cache.gameId)
+                    } else {
+                        syncQueueManager.completeOperation(cache.gameId)
+                        synced++
+                    }
+                    Logger.debug(TAG, "processDirtySaveCaches: Synced channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} rommSaveId=${result.rommSaveId} noOp=${result.noOp}")
                 }
                 is SaveSyncResult.Conflict -> {
                     saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName, excludeId = -1)
@@ -583,11 +593,11 @@ class SyncCoordinator @Inject constructor(
                 }
                 is SaveSyncResult.NoSaveFound,
                 is SaveSyncResult.NotConfigured -> {
-                    syncQueueManager.completeOperation(cache.gameId)
+                    syncQueueManager.removeOperation(cache.gameId)
                     Logger.debug(TAG, "processDirtySaveCaches: Skipped channel cache id=${cache.id} | result=$result")
                 }
                 else -> {
-                    syncQueueManager.completeOperation(cache.gameId, "Skipped")
+                    syncQueueManager.removeOperation(cache.gameId)
                     Logger.debug(TAG, "processDirtySaveCaches: Skipped channel cache id=${cache.id} | result=$result")
                 }
             }
@@ -659,9 +669,13 @@ class SyncCoordinator @Inject constructor(
                             gameDao.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
                         }
                     }
-                    syncQueueManager.completeOperation(cache.gameId)
-                    synced++
-                    Logger.debug(TAG, "processDirtySaveCaches: Synced gameId=${cache.gameId}")
+                    if (result.noOp) {
+                        syncQueueManager.removeOperation(cache.gameId)
+                    } else {
+                        syncQueueManager.completeOperation(cache.gameId)
+                        synced++
+                    }
+                    Logger.debug(TAG, "processDirtySaveCaches: Synced gameId=${cache.gameId} noOp=${result.noOp}")
                 }
                 is SaveSyncResult.Error -> {
                     saveCacheDao.markSyncError(cache.id, result.message)
@@ -674,7 +688,7 @@ class SyncCoordinator @Inject constructor(
                 }
                 is SaveSyncResult.NoSaveFound,
                 is SaveSyncResult.NotConfigured -> {
-                    syncQueueManager.completeOperation(cache.gameId)
+                    syncQueueManager.removeOperation(cache.gameId)
                     Logger.debug(TAG, "processDirtySaveCaches: Skipped gameId=${cache.gameId} | result=$result")
                 }
                 else -> {

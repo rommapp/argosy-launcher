@@ -216,7 +216,14 @@ class SaveUploader @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 if (prepared.isTemporary) fileToUpload.delete()
                 tempTrailerFile?.delete()
-                return@withContext SaveSyncResult.Success()
+                val localMtime = localPath?.let { File(it).takeIf { f -> f.exists() }?.lastModified()?.let(Instant::ofEpochMilli) }
+                saveSyncDao.upsert(
+                    syncEntity.copy(
+                        localUpdatedAt = localMtime ?: syncEntity.localUpdatedAt,
+                        lastSyncedAt = Instant.now()
+                    )
+                )
+                return@withContext SaveSyncResult.Success(noOp = true)
             }
 
             val romFile = game.localPath?.let { File(it) }

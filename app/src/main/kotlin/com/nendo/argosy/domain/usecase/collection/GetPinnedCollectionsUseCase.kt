@@ -54,16 +54,13 @@ class GetPinnedCollectionsUseCase @Inject constructor(
     }
 
     private suspend fun countGamesInCategory(type: CategoryType, name: String): Int {
-        val games = gameDao.getAllGames()
-        return games.count { game ->
-            when (type) {
-                CategoryType.GENRE -> {
-                    game.genre?.split(",")?.any { it.trim().equals(name, ignoreCase = true) } == true
-                }
-                CategoryType.GAME_MODE -> {
-                    game.gameModes?.split(",")?.any { it.trim().equals(name, ignoreCase = true) } == true
-                }
+        val infos = gameDao.getAllCategoryInfo()
+        return infos.count { info ->
+            val field = when (type) {
+                CategoryType.GENRE -> info.genre
+                CategoryType.GAME_MODE -> info.gameModes
             }
+            field?.split(",")?.any { it.trim().equals(name, ignoreCase = true) } == true
         }
     }
 }

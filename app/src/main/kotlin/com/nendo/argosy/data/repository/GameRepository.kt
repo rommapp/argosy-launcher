@@ -411,6 +411,10 @@ class GameRepository @Inject constructor(
         gameDao.getGamesWithLocalPath()
     }
 
+    suspend fun getGamesWithLocalPathInfo() = withContext(Dispatchers.IO) {
+        gameDao.getGamesWithLocalPathInfo()
+    }
+
     suspend fun getGamesWithLocalPathsForPlatform(platformId: Long) = withContext(Dispatchers.IO) {
         gameDao.getGamesWithLocalPath().filter { it.platformId == platformId }
     }
@@ -430,15 +434,16 @@ class GameRepository @Inject constructor(
 
     suspend fun getPlatformBreakdowns(): List<PlatformStats> = withContext(Dispatchers.IO) {
         val platforms = platformDao.observeAllPlatforms().first()
-        val allGames = gameDao.observeAll().first()
+        val storageInfo = gameDao.getAllStorageInfo()
+        val byPlatform = storageInfo.groupBy { it.platformId }
 
         platforms.mapNotNull { platform ->
-            val platformGames = allGames.filter { game -> game.platformId == platform.id }
+            val platformGames = byPlatform[platform.id] ?: return@mapNotNull null
             if (platformGames.isEmpty()) return@mapNotNull null
 
-            val downloadedGames = platformGames.filter { game -> game.localPath != null }
-            val downloadedSize = downloadedGames.sumOf { game ->
-                game.localPath?.let { path ->
+            val downloadedGames = platformGames.filter { it.localPath != null }
+            val downloadedSize = downloadedGames.sumOf { info ->
+                info.localPath?.let { path ->
                     val file = File(path)
                     if (file.exists()) file.length() else 0L
                 } ?: 0L

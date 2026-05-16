@@ -79,6 +79,9 @@ interface CollectionDao {
     @Query("SELECT gameId FROM collection_games WHERE collectionId = :collectionId")
     suspend fun getGameIdsInCollection(collectionId: Long): List<Long>
 
+    @Query("SELECT gameId FROM collection_games WHERE collectionId = :collectionId ORDER BY addedAt DESC")
+    fun observeGameIdsInCollection(collectionId: Long): Flow<List<Long>>
+
     @Query("DELETE FROM collection_games WHERE collectionId = :collectionId")
     suspend fun clearCollectionGames(collectionId: Long)
 

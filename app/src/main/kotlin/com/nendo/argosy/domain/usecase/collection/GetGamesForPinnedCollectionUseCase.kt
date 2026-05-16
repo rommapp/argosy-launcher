@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+private const val FETCH_BATCH_SIZE = 100
+
 class GetGamesForPinnedCollectionUseCase @Inject constructor(
     private val collectionDao: CollectionDao,
     private val gameDao: GameDao
@@ -15,26 +17,31 @@ class GetGamesForPinnedCollectionUseCase @Inject constructor(
     operator fun invoke(pinned: PinnedCollection): Flow<List<GameEntity>> {
         return when (pinned) {
             is PinnedCollection.Regular -> {
-                collectionDao.observeGamesInCollection(pinned.collectionId)
+                collectionDao.observeGameIdsInCollection(pinned.collectionId).map { ids ->
+                    val games = fetchByIds(ids)
+                    val byId = games.associateBy { it.id }
+                    ids.mapNotNull { byId[it] }
+                }
             }
             is PinnedCollection.Virtual -> {
-                gameDao.observeAll().map { games ->
-                    games.filter { game ->
-                        when (pinned.type) {
-                            CategoryType.GENRE -> {
-                                game.genre?.split(",")?.any {
-                                    it.trim().equals(pinned.categoryName, ignoreCase = true)
-                                } == true
-                            }
-                            CategoryType.GAME_MODE -> {
-                                game.gameModes?.split(",")?.any {
-                                    it.trim().equals(pinned.categoryName, ignoreCase = true)
-                                } == true
-                            }
+                gameDao.observeAllCategoryInfo().map { items ->
+                    val matchingIds = items.filter { info ->
+                        val field = when (pinned.type) {
+                            CategoryType.GENRE -> info.genre
+                            CategoryType.GAME_MODE -> info.gameModes
                         }
-                    }.sortedBy { it.sortTitle }
+                        field?.split(",")?.any {
+                            it.trim().equals(pinned.categoryName, ignoreCase = true)
+                        } == true
+                    }.map { it.id }
+                    fetchByIds(matchingIds).sortedBy { it.sortTitle }
                 }
             }
         }
+    }
+
+    private suspend fun fetchByIds(ids: List<Long>): List<GameEntity> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.chunked(FETCH_BATCH_SIZE).flatMap { gameDao.getByIds(it) }
     }
 }

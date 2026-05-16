@@ -130,6 +130,18 @@ interface GameDao {
     """)
     suspend fun getSyncEnabledGamesForCategories(): List<GameCategoryInfo>
 
+    @Query("SELECT id, genre, gameModes FROM games WHERE isHidden = 0")
+    fun observeAllCategoryInfo(): Flow<List<GameCategoryInfo>>
+
+    @Query("SELECT id, genre, gameModes FROM games WHERE isHidden = 0")
+    suspend fun getAllCategoryInfo(): List<GameCategoryInfo>
+
+    @Query("SELECT id, platformId, platformSlug, source, localPath FROM games WHERE localPath IS NOT NULL")
+    suspend fun getGamesWithLocalPathInfo(): List<GameLocalPathInfo>
+
+    @Query("SELECT id, platformId, localPath FROM games WHERE isHidden = 0")
+    suspend fun getAllStorageInfo(): List<GameStorageInfo>
+
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE platformId = :platformId ORDER BY sortTitle ASC")
     fun observeByPlatformListIncludingHidden(platformId: Long): Flow<List<GameListItem>>
 
@@ -700,4 +712,18 @@ data class SearchCandidate(
 data class GradientExtractionCandidate(
     val id: Long,
     val coverPath: String?
+)
+
+data class GameLocalPathInfo(
+    val id: Long,
+    val platformId: Long,
+    val platformSlug: String,
+    val source: GameSource,
+    val localPath: String?
+)
+
+data class GameStorageInfo(
+    val id: Long,
+    val platformId: Long,
+    val localPath: String?
 )

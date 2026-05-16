@@ -594,16 +594,16 @@ class HomeLibraryDelegate @Inject constructor(
 
     private fun validateInstalledGamesInBackground(scope: CoroutineScope) {
         scope.launch(Dispatchers.IO) {
-            val gamesWithPaths = gameRepository.getGamesWithLocalPaths()
-            val staleGames = gamesWithPaths.filter { game ->
-                game.source != GameSource.STEAM &&
-                game.source != GameSource.ANDROID_APP &&
-                game.localPath != null &&
-                !downloadFileStatusRepository.pathExists(game.localPath)
+            val gamesWithPaths = gameRepository.getGamesWithLocalPathInfo()
+            val staleIds = gamesWithPaths.mapNotNull { info ->
+                val path = info.localPath ?: return@mapNotNull null
+                if (info.source == GameSource.STEAM || info.source == GameSource.ANDROID_APP) return@mapNotNull null
+                if (downloadFileStatusRepository.pathExists(path)) return@mapNotNull null
+                info.id
             }
-            if (staleGames.isEmpty()) return@launch
-            staleGames.forEach { game ->
-                gameRepository.validateAndDiscoverGame(game.id)
+            if (staleIds.isEmpty()) return@launch
+            staleIds.forEach { id ->
+                gameRepository.validateAndDiscoverGame(id)
             }
         }
     }

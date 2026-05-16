@@ -209,7 +209,7 @@ object BiosPathRegistry {
                 "$primaryRoot/Android/data/com.flycast.emulator/files/data",
                 "$primaryRoot/Flycast/data"
             ),
-            supportedPlatforms = setOf("dreamcast", "dc", "arcade")
+            supportedPlatforms = setOf("dreamcast", "naomi", "atomiswave")
         ),
         "redream" to BiosPathConfig(
             emulatorId = "redream",

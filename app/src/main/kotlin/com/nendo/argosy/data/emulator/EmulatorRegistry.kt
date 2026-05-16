@@ -743,7 +743,7 @@ object EmulatorRegistry {
             id = "flycast",
             packageName = "com.flycast.emulator",
             displayName = "Flycast",
-            supportedPlatforms = setOf("dreamcast", "arcade"),
+            supportedPlatforms = setOf("dreamcast", "naomi", "atomiswave"),
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.flycast.emulator.MainActivity"
             ),

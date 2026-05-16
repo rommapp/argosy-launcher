@@ -15,6 +15,7 @@ import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialSyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.social.uploader.RomMPlaySessionUploader
 import com.nendo.argosy.data.sync.SocialSyncCoordinator
 import com.nendo.argosy.core.event.AchievementUpdateBus
 import androidx.lifecycle.Lifecycle
@@ -60,7 +61,8 @@ class SocialRepository @Inject constructor(
     private val achievementUpdateBus: AchievementUpdateBus,
     private val socialSyncCoordinator: Lazy<SocialSyncCoordinator>,
     private val syncPreferencesRepository: SyncPreferencesRepository,
-    private val imageCacheManager: ImageCacheManager
+    private val imageCacheManager: ImageCacheManager,
+    private val rommPlaySessionUploader: RomMPlaySessionUploader
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var hasCompletedInitialSync = false
@@ -756,6 +758,19 @@ class SocialRepository @Inject constructor(
 
             if (socialService.isConnected()) {
                 scope.launch { socialSyncCoordinator.get().processQueue() }
+            }
+        }
+
+        if (rommPlaySessionUploader.canUpload) {
+            scope.launch {
+                when (val result = rommPlaySessionUploader.upload(sessions)) {
+                    is RomMPlaySessionUploader.UploadResult.Success ->
+                        Log.d(TAG, "RomM play session ingest: ${result.ingested} accepted")
+                    is RomMPlaySessionUploader.UploadResult.Skipped ->
+                        Log.d(TAG, "RomM play session ingest skipped: ${result.reason}")
+                    is RomMPlaySessionUploader.UploadResult.Error ->
+                        Log.w(TAG, "RomM play session ingest failed: ${result.message}")
+                }
             }
         }
 

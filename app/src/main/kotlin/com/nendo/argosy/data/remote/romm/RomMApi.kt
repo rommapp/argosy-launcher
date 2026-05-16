@@ -270,4 +270,9 @@ interface RomMApi {
         @Path("id") firmwareId: Long,
         @Path("fileName", encoded = true) fileName: String
     ): Response<ResponseBody>
+
+    @POST("api/play-sessions")
+    suspend fun ingestPlaySessions(
+        @Body body: RomMPlaySessionIngestPayload
+    ): Response<RomMPlaySessionIngestResponse>
 }

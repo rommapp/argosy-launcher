@@ -619,9 +619,17 @@ class SaveDownloader @Inject constructor(
         var tempZipFile: File? = null
 
         try {
-            val downloadPath = serverSave.downloadPath ?: return@withContext false
-
-            val response = api.downloadRaw(downloadPath)
+            val response = try {
+                val dlPath = serverSave.downloadPath
+                when {
+                    dlPath != null -> api.downloadRaw(dlPath)
+                    deviceId != null -> api.downloadSaveContentWithDevice(serverSaveId, serverSave.fileName, deviceId)
+                    else -> api.downloadSaveContent(serverSaveId, serverSave.fileName)
+                }
+            } catch (e: Exception) {
+                Logger.error(TAG, "downloadSaveById: content download failed", e)
+                return@withContext false
+            }
             if (!response.isSuccessful) {
                 Logger.error(TAG, "downloadSaveById failed: ${response.code()}")
                 return@withContext false

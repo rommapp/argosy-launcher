@@ -39,7 +39,11 @@ class ConflictAutoResolver @Inject constructor(
             }
         }
 
-        val syncRow = gameId?.let { saveSyncDao.getByGameAndEmulator(it, operation.emulator ?: "") }
+        val syncRow = gameId?.let { gid ->
+            operation.emulator?.takeIf { it.isNotBlank() }?.let { emu ->
+                saveSyncDao.getByGameAndEmulator(gid, emu)
+            }
+        }
         val lastUploadedHash = syncRow?.lastUploadedHash
 
         if (lastUploadedHash != null && clientHash != null) {

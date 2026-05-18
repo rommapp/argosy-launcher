@@ -109,6 +109,9 @@ interface SaveSyncDao {
     @Query("UPDATE OR REPLACE save_sync SET emulatorId = :newEmulatorId WHERE gameId = :gameId AND emulatorId != :newEmulatorId")
     suspend fun rekeyEmulatorForGame(gameId: Long, newEmulatorId: String): Int
 
+    @Query("SELECT * FROM save_sync WHERE emulatorId = 'default' OR emulatorId = ''")
+    suspend fun getStaleDefaultEmulatorRows(): List<SaveSyncEntity>
+
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
 
@@ -120,4 +123,27 @@ interface SaveSyncDao {
 
     @Query("SELECT COUNT(*) FROM save_sync WHERE localSavePath IS NOT NULL")
     suspend fun countWithPaths(): Int
+
+    @Query("SELECT * FROM save_sync ORDER BY lastSyncedAt DESC, gameId ASC")
+    fun observeAll(): Flow<List<SaveSyncEntity>>
+
+    @Query("UPDATE save_sync SET lastSyncDeviceId = :deviceId, lastSyncDeviceName = :deviceName WHERE id = :id")
+    suspend fun updateDeviceTag(id: Long, deviceId: String?, deviceName: String?)
+
+    @Query("""
+        SELECT lastSyncDeviceId AS deviceId,
+               lastSyncDeviceName AS deviceName,
+               COUNT(*) AS saveCount,
+               MAX(lastSyncedAt) AS latestSyncAt
+        FROM save_sync
+        GROUP BY lastSyncDeviceId
+    """)
+    fun observeSaveCountsByDevice(): Flow<List<SaveCountByDevice>>
 }
+
+data class SaveCountByDevice(
+    val deviceId: String?,
+    val deviceName: String?,
+    val saveCount: Int,
+    val latestSyncAt: java.time.Instant?
+)

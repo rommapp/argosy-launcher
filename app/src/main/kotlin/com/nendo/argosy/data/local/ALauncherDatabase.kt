@@ -117,7 +117,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         EmulatorLaunchArgsEntity::class,
         PendingConflictEntity::class
     ],
-    version = 111,
+    version = 113,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -94,6 +94,14 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
         val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
+        val LAST_NEGOTIATE_AT = stringPreferencesKey("last_negotiate_at")
+    }
+
+    suspend fun getLastNegotiateAt(): Instant? =
+        dataStore.data.map { it[Keys.LAST_NEGOTIATE_AT]?.let(Instant::parse) }.first()
+
+    suspend fun setLastNegotiateAt(time: Instant) {
+        dataStore.edit { it[Keys.LAST_NEGOTIATE_AT] = time.toString() }
     }
 
     suspend fun isSaveSyncLocalRekeyDone(): Boolean =

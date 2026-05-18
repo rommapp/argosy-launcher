@@ -31,7 +31,9 @@ data class SaveSyncEntity(
     /** Server file timestamp at the moment we detected a corrupt download.
      * Subsequent sync attempts skip the download while the server's
      * timestamp matches; cleared automatically when it changes. */
-    val corruptZipTimestamp: String? = null
+    val corruptZipTimestamp: String? = null,
+    val lastSyncDeviceId: String? = null,
+    val lastSyncDeviceName: String? = null
 ) {
     companion object {
         const val STATUS_SYNCED = "SYNCED"

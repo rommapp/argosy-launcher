@@ -1,6 +1,5 @@
 package com.nendo.argosy.data.sync
 
-import com.nendo.argosy.core.notification.NotificationAction
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationType
@@ -9,9 +8,6 @@ import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,9 +22,6 @@ class SyncConflictNotifier @Inject constructor(
     private val notificationManager: NotificationManager
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    private val _reviewRequested = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val reviewRequested: SharedFlow<Unit> = _reviewRequested.asSharedFlow()
 
     @Volatile
     private var lastCount: Int = 0
@@ -55,15 +48,11 @@ class SyncConflictNotifier @Inject constructor(
                 Logger.info(TAG, "Conflict count rose $previous -> $count; surfacing notification")
                 notificationManager.show(
                     title = if (count == 1) "1 save needs your attention" else "$count saves need your attention",
-                    subtitle = "Tap Review to resolve. Local saves are unchanged.",
+                    subtitle = "Open Save Sync to resolve. Local saves are unchanged.",
                     type = NotificationType.WARNING,
                     duration = NotificationDuration.LONG,
                     key = NOTIFICATION_KEY,
-                    immediate = false,
-                    action = NotificationAction(
-                        label = "Review",
-                        onClick = { _reviewRequested.tryEmit(Unit) }
-                    )
+                    immediate = false
                 )
             }
         }

@@ -69,7 +69,7 @@ class SaveSyncApiClient @Inject constructor(
         emulatorId: String
     ): PlatformSaveHandler = saveHandlerRegistry.getHandler(config, platformSlug, emulatorId)
 
-    internal suspend fun resolveEmulatorForGame(game: GameEntity): String? {
+    suspend fun resolveEmulatorForGame(game: GameEntity): String? {
         val gameConfig = emulatorConfigDao.getByGameId(game.id)
         if (gameConfig?.packageName != null) {
             val resolved = emulatorResolver.resolveEmulatorId(gameConfig.packageName)
@@ -203,6 +203,9 @@ class SaveSyncApiClient @Inject constructor(
             val serverTime = parseTimestamp(serverSave.updatedAt)
 
             if (existing == null || serverTime.isAfter(existing.serverUpdatedAt)) {
+                val uploaderDeviceSync = serverSave.deviceSyncs
+                    ?.filter { !it.isCurrent }
+                    ?.maxByOrNull { it.lastSyncedAt ?: "" }
                 val entity = SaveSyncEntity(
                     id = existing?.id ?: 0,
                     gameId = game.id,
@@ -214,7 +217,10 @@ class SaveSyncApiClient @Inject constructor(
                     localUpdatedAt = existing?.localUpdatedAt,
                     serverUpdatedAt = serverTime,
                     lastSyncedAt = existing?.lastSyncedAt,
-                    syncStatus = conflictDetector.determineSyncStatus(existing?.localUpdatedAt, serverTime)
+                    syncStatus = conflictDetector.determineSyncStatus(existing?.localUpdatedAt, serverTime),
+                    lastUploadedHash = existing?.lastUploadedHash,
+                    lastSyncDeviceId = uploaderDeviceSync?.deviceId ?: existing?.lastSyncDeviceId,
+                    lastSyncDeviceName = uploaderDeviceSync?.deviceName ?: existing?.lastSyncDeviceName
                 )
                 saveSyncDao.upsert(entity)
                 if (entity.syncStatus == SaveSyncEntity.STATUS_SERVER_NEWER) {
@@ -243,8 +249,9 @@ class SaveSyncApiClient @Inject constructor(
         emulatorId: String,
         channelName: String? = null,
         forceOverwrite: Boolean = false,
-        isHardcore: Boolean = false
-    ): SaveSyncResult = saveUploader.get().uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore)
+        isHardcore: Boolean = false,
+        bypassSkipCheck: Boolean = false
+    ): SaveSyncResult = saveUploader.get().uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore, bypassSkipCheck)
 
     suspend fun uploadCacheEntry(
         gameId: Long,
@@ -431,6 +438,18 @@ class SaveSyncApiClient @Inject constructor(
         internal const val DEFAULT_SAVE_NAME = "argosy-latest"
         internal const val MIN_VALID_SAVE_SIZE_BYTES = 100L
         internal const val AUTOCLEANUP_LIMIT = 10
+
+        fun computeUploadFileName(localSavePath: String?, channelName: String?, romBaseName: String?): String {
+            val baseName = channelName ?: romBaseName ?: DEFAULT_SAVE_NAME
+            val ext = localSavePath?.let { java.io.File(it) }?.let { file ->
+                when {
+                    file.isDirectory -> "zip"
+                    file.extension.equals("gci", ignoreCase = true) -> "zip"
+                    else -> file.extension
+                }
+            } ?: "zip"
+            return if (ext.isNotEmpty()) "$baseName.$ext" else baseName
+        }
         internal val TIMESTAMP_ONLY_PATTERN = Regex("""^\d{4}-\d{2}-\d{2}[_-]\d{2}[_-]\d{2}[_-]\d{2}$""")
         internal val ROMM_TIMESTAMP_TAG = Regex("""^\[\d{4}-\d{2}-\d{2}[ _]\d{2}-\d{2}-\d{2}(-\d+)?\]$""")
         internal val SWITCH_EMULATOR_IDS = setOf(

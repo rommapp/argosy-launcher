@@ -32,6 +32,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
@@ -44,6 +45,7 @@ class SyncCoordinatorApplyPlanTest {
     private lateinit var conflictAutoResolver: ConflictAutoResolver
     private lateinit var strategySelector: SaveSyncStrategySelector
     private lateinit var fakeStrategy: SaveSyncStrategy
+    private lateinit var mockSaveSyncRepository: SaveSyncRepository
 
     private lateinit var coordinator: SyncCoordinator
 
@@ -80,8 +82,10 @@ class SyncCoordinatorApplyPlanTest {
         val syncPrefs: SyncPreferencesRepository = mockk(relaxed = true) {
             every { preferences } returns MutableStateFlow(SyncPreferences(saveSyncEnabled = true))
             coEvery { isSavePathCachePurged() } returns true
+            coEvery { getLastNegotiateAt() } returns null
         }
 
+        mockSaveSyncRepository = mockk(relaxed = true)
         coordinator = SyncCoordinator(
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = mockk(relaxed = true),
@@ -89,7 +93,7 @@ class SyncCoordinatorApplyPlanTest {
             emulatorSaveConfigDao = mockk(relaxed = true),
             gameDao = gameDao,
             romMRepository = dagger.Lazy { romM },
-            saveSyncRepository = dagger.Lazy { mockk<SaveSyncRepository>(relaxed = true) },
+            saveSyncRepository = dagger.Lazy { mockSaveSyncRepository },
             saveCacheManager = dagger.Lazy { mockk<SaveCacheManager>(relaxed = true) },
             stateCacheManager = dagger.Lazy { mockk<StateCacheManager>(relaxed = true) },
             syncQueueManager = SyncQueueManager(),
@@ -267,5 +271,112 @@ class SyncCoordinatorApplyPlanTest {
         coVerify(exactly = 1) { pendingSyncQueueDao.insert(match { it.gameId == 11L }) }
         coVerify(exactly = 1) { saveSyncDao.upsert(match { it.gameId == 22L && it.rommSaveId == 222L }) }
         coVerify(exactly = 1) { pendingConflictDao.upsert(match { it.gameId == 33L && it.rommSaveId == 333L }) }
+    }
+
+    // --- completeSession contract (post-Phase-4: fires from processQueue on drain, NOT reconcileAll) ---
+
+    @Test
+    fun `reconcileAll does not call completeSession after applyPlan`() = runTest {
+        coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
+
+        runWith(listOf(
+            op(ReconcileAction.UPLOAD),
+            op(ReconcileAction.DOWNLOAD, saveId = 77L),
+            op(ReconcileAction.CONFLICT, saveId = 88L)
+        ))
+
+        coVerify(exactly = 0) { fakeStrategy.completeSession(any(), any(), any()) }
+    }
+
+    @Test
+    fun `reconcileAll stamps plan sessionId on queued upload rows`() = runTest {
+        coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
+
+        runWith(listOf(op(ReconcileAction.UPLOAD)))
+
+        coVerify { pendingSyncQueueDao.insert(match { it.sessionId == 1L && it.syncType == SyncType.SAVE_FILE }) }
+    }
+
+    // --- conflict entity hash propagation ---
+
+    @Test
+    fun `conflict entity carries localHash from save_sync row and serverHash from plan op`() = runTest {
+        coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
+        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba") } returns SaveSyncEntity(
+            gameId = game.id,
+            rommId = 100L,
+            emulatorId = "mgba",
+            syncStatus = SaveSyncEntity.STATUS_SYNCED,
+            lastUploadedHash = "local-anchor"
+        )
+        val captured = slot<PendingConflictEntity>()
+        coEvery { pendingConflictDao.upsert(capture(captured)) } returns 1L
+
+        runWith(listOf(op(ReconcileAction.CONFLICT, saveId = 555L)))
+
+        assertEquals("local-anchor", captured.captured.localHash)
+        assertEquals("srv-hash", captured.captured.serverHash)
+    }
+
+    @Test
+    fun `conflict entity has null localHash when no save_sync row exists yet`() = runTest {
+        coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
+        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba") } returns null
+        val captured = slot<PendingConflictEntity>()
+        coEvery { pendingConflictDao.upsert(capture(captured)) } returns 1L
+
+        runWith(listOf(op(ReconcileAction.CONFLICT, saveId = 555L)))
+
+        assertEquals(null, captured.captured.localHash)
+        assertEquals("srv-hash", captured.captured.serverHash)
+    }
+
+    // --- canonicalizeStaleEmulatorIds ---
+
+    @Test
+    fun `canonicalizeStaleEmulatorIds rekeyes default emulatorId rows to canonical id`() = runTest {
+        val staleEntity = SaveSyncEntity(
+            gameId = game.id,
+            rommId = 100L,
+            emulatorId = "default",
+            syncStatus = SaveSyncEntity.STATUS_SYNCED
+        )
+        coEvery { saveSyncDao.getStaleDefaultEmulatorRows() } returns listOf(staleEntity)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { mockSaveSyncRepository.resolveEmulatorForGame(game) } returns "mgba"
+        coEvery { fakeStrategy.planReconcile(any()) } returns ReconcilePlan(sessionId = null, operations = emptyList())
+
+        coordinator.reconcileAll()
+
+        coVerify { saveSyncDao.rekeyEmulatorForGame(game.id, "mgba") }
+    }
+
+    @Test
+    fun `canonicalizeStaleEmulatorIds skips game when canonical emulator cannot be resolved`() = runTest {
+        val staleEntity = SaveSyncEntity(
+            gameId = game.id,
+            rommId = 100L,
+            emulatorId = "default",
+            syncStatus = SaveSyncEntity.STATUS_SYNCED
+        )
+        coEvery { saveSyncDao.getStaleDefaultEmulatorRows() } returns listOf(staleEntity)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { mockSaveSyncRepository.resolveEmulatorForGame(game) } returns null
+        coEvery { fakeStrategy.planReconcile(any()) } returns ReconcilePlan(sessionId = null, operations = emptyList())
+
+        coordinator.reconcileAll()
+
+        coVerify(exactly = 0) { saveSyncDao.rekeyEmulatorForGame(any(), any()) }
+    }
+
+    @Test
+    fun `canonicalizeStaleEmulatorIds is no-op when no stale rows exist`() = runTest {
+        coEvery { saveSyncDao.getStaleDefaultEmulatorRows() } returns emptyList()
+        coEvery { fakeStrategy.planReconcile(any()) } returns ReconcilePlan(sessionId = null, operations = emptyList())
+
+        coordinator.reconcileAll()
+
+        coVerify(exactly = 0) { saveSyncDao.rekeyEmulatorForGame(any(), any()) }
+        coVerify(exactly = 0) { gameDao.getById(any()) }
     }
 }

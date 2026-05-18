@@ -1631,3 +1631,17 @@ object Migration_110_111 : Migration(110, 111) {
         )
     }
 }
+
+object Migration_111_112 : Migration(111, 112) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN lastSyncDeviceId TEXT")
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN lastSyncDeviceName TEXT")
+    }
+}
+
+object Migration_112_113 : Migration(112, 113) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pending_sync_queue ADD COLUMN sessionId INTEGER")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_sync_queue_sessionId ON pending_sync_queue(sessionId)")
+    }
+}

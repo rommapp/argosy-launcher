@@ -37,7 +37,6 @@ class NotificationManager @Inject constructor() {
         type: NotificationType = NotificationType.INFO,
         imagePath: String? = null,
         duration: NotificationDuration = NotificationDuration.SHORT,
-        action: NotificationAction? = null,
         key: String? = null,
         immediate: Boolean = false,
         accentColor: Int? = null
@@ -49,7 +48,6 @@ class NotificationManager @Inject constructor() {
             subtitle = subtitle,
             imagePath = imagePath,
             duration = duration,
-            action = action,
             immediate = immediate,
             accentColor = accentColor
         )

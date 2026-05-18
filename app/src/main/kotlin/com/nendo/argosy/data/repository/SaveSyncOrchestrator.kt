@@ -135,7 +135,7 @@ class SaveSyncOrchestrator @Inject constructor(
         for ((syncEntity, _) in actionable) {
             syncQueueManager.updateOperation(syncEntity.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
 
-            when (val result = client.downloadSave(syncEntity.gameId, "default", syncEntity.channelName, knownServerSaveId = syncEntity.rommSaveId)) {
+            when (val result = client.downloadSave(syncEntity.gameId, syncEntity.emulatorId, syncEntity.channelName, knownServerSaveId = syncEntity.rommSaveId)) {
                 is SaveSyncResult.Success -> {
                     syncQueueManager.completeOperation(syncEntity.gameId)
                     downloaded++
@@ -173,14 +173,21 @@ class SaveSyncOrchestrator @Inject constructor(
         val game = gameDao.getById(gameId) ?: return@withContext
         val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
 
+        val canonicalEmulatorId = if (emulatorId.isBlank() || emulatorId == "default") {
+            client.resolveEmulatorForGame(game) ?: run {
+                Logger.warn(TAG, "syncSavesForNewDownload: cannot resolve canonical emulator for gameId=$gameId; skipping")
+                return@withContext
+            }
+        } else emulatorId
+
         for (serverSave in serverSaves) {
             val channelName = SaveSyncApiClient.parseServerChannelNameForSync(serverSave.fileName, romBaseName)
             val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
 
             val existing = if (channelName != null) {
-                saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+                saveSyncDao.getByGameEmulatorAndChannel(gameId, canonicalEmulatorId, channelName)
             } else {
-                saveSyncDao.getByGameEmulatorAndNullChannel(gameId, emulatorId)
+                saveSyncDao.getByGameEmulatorAndNullChannel(gameId, canonicalEmulatorId)
             }
 
             saveSyncDao.upsert(
@@ -188,18 +195,21 @@ class SaveSyncOrchestrator @Inject constructor(
                     id = existing?.id ?: 0,
                     gameId = gameId,
                     rommId = rommId,
-                    emulatorId = emulatorId,
+                    emulatorId = canonicalEmulatorId,
                     channelName = channelName,
                     rommSaveId = serverSave.id,
                     localSavePath = existing?.localSavePath,
                     localUpdatedAt = existing?.localUpdatedAt,
                     serverUpdatedAt = serverTime,
                     lastSyncedAt = existing?.lastSyncedAt,
-                    syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
+                    syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
+                    lastUploadedHash = existing?.lastUploadedHash,
+                    lastSyncDeviceId = existing?.lastSyncDeviceId,
+                    lastSyncDeviceName = existing?.lastSyncDeviceName
                 )
             )
 
-            val result = client.downloadSave(gameId, emulatorId, channelName, skipBackup = true, knownServerSaveId = serverSave.id)
+            val result = client.downloadSave(gameId, canonicalEmulatorId, channelName, skipBackup = true, knownServerSaveId = serverSave.id)
             if (result is SaveSyncResult.Error) {
                 Logger.error(TAG, "syncSavesForNewDownload: failed '${serverSave.fileName}': ${result.message}")
             }

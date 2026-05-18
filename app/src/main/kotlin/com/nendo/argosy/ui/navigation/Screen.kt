@@ -22,6 +22,7 @@ sealed class Screen(val route: String) {
         fun createRoute(type: String, category: String) = "virtual/$type/${java.net.URLEncoder.encode(category, "UTF-8")}"
     }
     data object Downloads : Screen("downloads")
+    data object SaveSync : Screen("save_sync")
     data object Apps : Screen("apps")
     data object Settings : Screen("settings?section={section}&action={action}") {
         fun createRoute(section: String? = null, action: String? = null): String {
@@ -64,6 +65,7 @@ sealed class Screen(val route: String) {
         const val ROUTE_LAUNCH = "launch"
         const val ROUTE_SETTINGS = "settings"
         const val ROUTE_DOWNLOADS = "downloads"
+        const val ROUTE_SAVE_SYNC = "save_sync"
         const val ROUTE_APPS = "apps"
         const val ROUTE_SEARCH = "search"
         const val ROUTE_MANAGE_PINS = "manage_pins"

@@ -232,7 +232,10 @@ class SaveSyncConflictResolver @Inject constructor(
                         localUpdatedAt = existing?.localUpdatedAt,
                         serverUpdatedAt = serverTime,
                         lastSyncedAt = existing?.lastSyncedAt,
-                        syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
+                        syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
+                        lastUploadedHash = existing?.lastUploadedHash,
+                        lastSyncDeviceId = existing?.lastSyncDeviceId,
+                        lastSyncDeviceName = existing?.lastSyncDeviceName
                     )
                 )
 

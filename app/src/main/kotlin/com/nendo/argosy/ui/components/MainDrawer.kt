@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FeaturedPlayList
 import androidx.compose.material.icons.filled.Groups
@@ -99,6 +100,7 @@ fun MainDrawer(
                         currentRoute = currentRoute,
                         focusedIndex = drawerState.navFocusIndex,
                         downloadCount = drawerState.downloadCount,
+                        saveSyncAttentionCount = drawerState.saveSyncAttentionCount,
                         emulatorUpdatesAvailable = drawerState.emulatorUpdatesAvailable,
                         onNavigate = onNavigate,
                         modifier = Modifier.weight(1f)
@@ -210,6 +212,7 @@ private fun NavigationContent(
     currentRoute: String?,
     focusedIndex: Int,
     downloadCount: Int,
+    saveSyncAttentionCount: Int,
     emulatorUpdatesAvailable: Int,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -235,9 +238,11 @@ private fun NavigationContent(
                     )
                 }
 
-                val badge = if (item.route == Screen.Downloads.route && downloadCount > 0) {
-                    downloadCount
-                } else null
+                val badge = when {
+                    item.route == Screen.Downloads.route && downloadCount > 0 -> downloadCount
+                    item.route == Screen.SaveSync.route && saveSyncAttentionCount > 0 -> saveSyncAttentionCount
+                    else -> null
+                }
 
                 DrawerMenuItem(
                     item = item,
@@ -616,6 +621,7 @@ private fun getIconForRoute(route: String): ImageVector = when (route) {
     Screen.Social.route -> Icons.Default.Groups
     Screen.Library.route -> Icons.Default.VideoLibrary
     Screen.Downloads.route -> Icons.Default.Download
+    Screen.SaveSync.route -> Icons.Default.CloudSync
     Screen.Apps.route -> Icons.Default.Apps
     Screen.Settings.route -> Icons.Default.Settings
     else -> Icons.Default.Apps

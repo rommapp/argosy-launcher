@@ -187,6 +187,16 @@ fun NavGraph(
             )
         }
 
+        composable(Screen.SaveSync.route) {
+            com.nendo.argosy.ui.screens.savesync.SaveSyncScreen(
+                onBack = navigateToDefault,
+                onDrawerToggle = onDrawerToggle,
+                onNavigateToGame = { gameId ->
+                    navController.navigate(Screen.GameDetail.createRoute(gameId))
+                }
+            )
+        }
+
         composable(
             route = Screen.Apps.route,
             deepLinks = listOf(navDeepLink { uriPattern = "argosy://apps" })

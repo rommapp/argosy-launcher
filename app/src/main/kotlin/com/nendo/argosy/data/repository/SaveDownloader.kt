@@ -59,23 +59,42 @@ class SaveDownloader @Inject constructor(
         }
         val deviceId = client.getDeviceId()
 
-        val syncEntity = (if (channelName != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        val game = gameDao.getById(gameId)
+        if (game == null) {
+            Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game not found in database")
+            return@withContext SaveSyncResult.Error("Game not found")
+        }
+        if (game.localPath == null) {
+            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game has no local ROM, skipping save sync")
+            return@withContext SaveSyncResult.NoSaveFound
+        }
+
+        val resolvedEmulatorId = if (emulatorId.isBlank() || emulatorId == "default") {
+            client.resolveEmulatorForGame(game) ?: run {
+                Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot resolve emulator from config")
+                return@withContext SaveSyncResult.Error("Cannot determine emulator")
+            }
         } else {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+            emulatorId
+        }
+        if (resolvedEmulatorId != emulatorId) {
+            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Canonical emulator=$resolvedEmulatorId (original=$emulatorId)")
+        }
+
+        val syncEntity = (if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, resolvedEmulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
         }) ?: knownServerSaveId?.let { serverId ->
-            val g = gameDao.getById(gameId)
-            if (g != null) {
-                Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No sync entity in DB; synthesizing from knownServerSaveId=$serverId")
-                SaveSyncEntity(
-                    gameId = gameId,
-                    rommId = g.rommId ?: 0,
-                    emulatorId = emulatorId,
-                    channelName = channelName,
-                    rommSaveId = serverId,
-                    syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
-                )
-            } else null
+            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No sync entity in DB; synthesizing from knownServerSaveId=$serverId")
+            SaveSyncEntity(
+                gameId = gameId,
+                rommId = game.rommId ?: 0,
+                emulatorId = resolvedEmulatorId,
+                channelName = channelName,
+                rommSaveId = serverId,
+                syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
+            )
         }
         if (syncEntity == null) {
             Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No sync entity found in database")
@@ -87,31 +106,11 @@ class SaveDownloader @Inject constructor(
             Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No server save ID in sync entity")
             return@withContext SaveSyncResult.Error("No server save ID")
         }
-
-        val game = gameDao.getById(gameId)
-        if (game == null) {
-            Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game not found in database")
-            return@withContext SaveSyncResult.Error("Game not found")
-        }
         if (game.rommId != null && syncEntity.rommId != game.rommId) {
             Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Stale save_sync row: row.rommId=${syncEntity.rommId} but game.rommId=${game.rommId} (id likely reassigned by rescan); deleting row")
             saveSyncDao.deleteById(syncEntity.id)
             return@withContext SaveSyncResult.NoSaveFound
         }
-        if (game.localPath == null) {
-            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Game has no local ROM, skipping save sync")
-            return@withContext SaveSyncResult.NoSaveFound
-        }
-
-        val resolvedEmulatorId = if (emulatorId == "default" || emulatorId.isBlank()) {
-            client.resolveEmulatorForGame(game) ?: run {
-                Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cannot resolve emulator from config")
-                return@withContext SaveSyncResult.Error("Cannot determine emulator")
-            }
-        } else {
-            emulatorId
-        }
-        Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Using emulator=$resolvedEmulatorId (original=$emulatorId)")
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
         val preferredCore = client.resolveCoreForGame(game)
@@ -251,7 +250,16 @@ class SaveDownloader @Inject constructor(
 
             val response = try {
                 client.withRetry(tag = "[SaveSync] DOWNLOAD gameId=$gameId") {
-                    api.downloadRaw(downloadPath)
+                    if (deviceId != null) {
+                        api.downloadSaveContentWithDevice(
+                            saveId = saveId,
+                            fileName = serverSave.fileName,
+                            deviceId = deviceId,
+                            optimistic = false
+                        )
+                    } else {
+                        api.downloadRaw(downloadPath)
+                    }
                 }
             } catch (e: IOException) {
                 Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | HTTP failed after retries", e)
@@ -513,16 +521,25 @@ class SaveDownloader @Inject constructor(
 
             val downloadedHash = saveCacheManager.get().calculateLocalSaveHash(targetPath)
             val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
+            File(targetPath).setLastModified(serverTimestamp.toEpochMilli())
+            val uploaderDeviceSync = serverSave.deviceSyncs
+                ?.filter { !it.isCurrent }
+                ?.maxByOrNull { it.lastSyncedAt ?: "" }
             saveSyncDao.upsert(
                 syncEntity.copy(
                     localSavePath = targetPath,
-                    localUpdatedAt = Instant.now(),
+                    localUpdatedAt = serverTimestamp,
                     lastSyncedAt = Instant.now(),
                     serverUpdatedAt = serverTimestamp,
-                    lastUploadedHash = downloadedHash ?: syncEntity.lastUploadedHash,
-                    syncStatus = SaveSyncEntity.STATUS_SYNCED
+                    lastUploadedHash = serverSave.contentHash,
+                    syncStatus = SaveSyncEntity.STATUS_SYNCED,
+                    lastSyncDeviceId = uploaderDeviceSync?.deviceId ?: syncEntity.lastSyncDeviceId,
+                    lastSyncDeviceName = uploaderDeviceSync?.deviceName ?: syncEntity.lastSyncDeviceName
                 )
             )
+
+            Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | wrote lastUploadedHash=${serverSave.contentHash} serverUpdatedAt=$serverTimestamp")
+            confirmDeviceSynced(serverSave.id)
 
             if (isSwitchEmulator && game.titleId == null) {
                 val extractedTitleId = File(targetPath).name

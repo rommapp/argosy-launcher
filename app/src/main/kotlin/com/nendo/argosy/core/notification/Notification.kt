@@ -15,11 +15,6 @@ enum class NotificationDuration(val ms: Long) {
     LONG(6000)
 }
 
-data class NotificationAction(
-    val label: String,
-    val onClick: () -> Unit
-)
-
 data class NotificationProgress(
     val current: Int,
     val total: Int
@@ -36,7 +31,6 @@ data class Notification(
     val subtitle: String? = null,
     val imagePath: String? = null,
     val duration: NotificationDuration = NotificationDuration.SHORT,
-    val action: NotificationAction? = null,
     val immediate: Boolean = false,
     val progress: NotificationProgress? = null,
     val accentColor: Int? = null

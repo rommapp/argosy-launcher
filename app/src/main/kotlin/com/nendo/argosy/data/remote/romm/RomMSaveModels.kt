@@ -20,7 +20,8 @@ data class RomMSave(
     @Json(name = "created_at") val createdAt: String? = null,
     @Json(name = "slot") val slot: String? = null,
     @Json(name = "device_syncs") val deviceSyncs: List<RomMDeviceSync>? = null,
-    @Json(name = "screenshot") val screenshot: RomMScreenshot? = null
+    @Json(name = "screenshot") val screenshot: RomMScreenshot? = null,
+    @Json(name = "content_hash") val contentHash: String? = null
 )
 
 @JsonClass(generateAdapter = true)

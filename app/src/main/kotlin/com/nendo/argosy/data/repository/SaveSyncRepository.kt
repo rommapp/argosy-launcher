@@ -27,7 +27,9 @@ sealed class SaveSyncResult {
         val localTimestamp: Instant,
         val serverTimestamp: Instant,
         val serverDeviceName: String? = null,
-        val serverSaveId: Long? = null
+        val serverSaveId: Long? = null,
+        val localContentHash: String? = null,
+        val serverContentHash: String? = null
     ) : SaveSyncResult()
     data class NeedsHardcoreResolution(
         val tempFilePath: String,
@@ -110,6 +112,9 @@ class SaveSyncRepository @Inject constructor(
 
     fun getDeviceId(): String? = apiClient.getDeviceId()
 
+    suspend fun resolveEmulatorForGame(game: com.nendo.argosy.data.local.entity.GameEntity): String? =
+        apiClient.resolveEmulatorForGame(game)
+
     fun setSessionOnOlderSave(gameId: Long, isOlder: Boolean) =
         apiClient.setSessionOnOlderSave(gameId, isOlder)
 
@@ -188,8 +193,9 @@ class SaveSyncRepository @Inject constructor(
         emulatorId: String,
         channelName: String? = null,
         forceOverwrite: Boolean = false,
-        isHardcore: Boolean = false
-    ): SaveSyncResult = apiClient.uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore)
+        isHardcore: Boolean = false,
+        bypassSkipCheck: Boolean = false
+    ): SaveSyncResult = apiClient.uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore, bypassSkipCheck)
 
     suspend fun uploadCacheEntry(
         gameId: Long,

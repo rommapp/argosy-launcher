@@ -59,6 +59,18 @@ class RomMRepository @Inject constructor(
 
     suspend fun checkConnection(retryCount: Int = 2) = connectionManager.checkConnection(retryCount)
 
+    fun getCurrentDeviceId(): String? = connectionManager.getDeviceId()
+
+    suspend fun getRegisteredDevices(): List<RomMDevice> {
+        val api = connectionManager.getApi() ?: return emptyList()
+        return try {
+            val response = api.getDevices()
+            if (response.isSuccessful) response.body().orEmpty() else emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     // --- API Client ---
 
     fun buildMediaUrlPublic(path: String): String = apiClient.buildMediaUrl(path)

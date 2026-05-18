@@ -218,14 +218,17 @@ class SaveDownloader @Inject constructor(
 
         try {
             val downloadPath = serverSave.downloadPath
-            if (downloadPath == null) {
+            val caps = client.getCapabilities()
+            // Only RomM 4.9+ supports the optimistic=false fence; older servers use the raw asset URL.
+            val useDeviceEndpoint = caps.supportsDeviceSyncMode && deviceId != null
+            if (!useDeviceEndpoint && downloadPath == null) {
                 Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No download path in server save response")
                 return@withContext SaveSyncResult.Error("No download path available")
             }
 
             // Skip if a previous attempt at this exact server-side timestamp produced
             // a corrupt zip; resume only when the server copy changes (re-upload).
-            val serverFingerprint = downloadPath.substringAfter("?timestamp=", "")
+            val serverFingerprint = (downloadPath?.substringAfter("?timestamp=", "") ?: "")
                 .ifEmpty { serverSave.updatedAt ?: "" }
             if (serverFingerprint.isNotEmpty()) {
                 val cachedCorrupt = saveSyncDao.getCorruptZipTimestamp(gameId, resolvedEmulatorId, channelName)
@@ -250,15 +253,15 @@ class SaveDownloader @Inject constructor(
 
             val response = try {
                 client.withRetry(tag = "[SaveSync] DOWNLOAD gameId=$gameId") {
-                    if (deviceId != null) {
+                    if (useDeviceEndpoint) {
                         api.downloadSaveContentWithDevice(
                             saveId = saveId,
                             fileName = serverSave.fileName,
-                            deviceId = deviceId,
+                            deviceId = deviceId!!,
                             optimistic = false
                         )
                     } else {
-                        api.downloadRaw(downloadPath)
+                        api.downloadRaw(downloadPath!!)
                     }
                 }
             } catch (e: IOException) {
@@ -267,6 +270,12 @@ class SaveDownloader @Inject constructor(
             }
             val contentLength = response.headers()["Content-Length"]?.toLongOrNull() ?: -1
             if (!response.isSuccessful) {
+                // 404 content = orphan (metadata exists, file missing); drop row like the getSave 404 path.
+                if (response.code() == 404) {
+                    Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Content missing (HTTP 404), dropping orphan tracking row | saveId=$saveId, syncEntityId=${syncEntity.id}")
+                    saveSyncDao.deleteById(syncEntity.id)
+                    return@withContext SaveSyncResult.NoSaveFound
+                }
                 Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | HTTP failed | status=${response.code()}, message=${response.message()}")
                 return@withContext SaveSyncResult.Error("Download failed: ${response.code()}")
             }

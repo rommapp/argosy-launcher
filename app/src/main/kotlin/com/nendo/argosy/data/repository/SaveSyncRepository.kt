@@ -2,6 +2,7 @@ package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMApi
+import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.data.sync.ConflictResolution
@@ -111,6 +112,10 @@ class SaveSyncRepository @Inject constructor(
     fun setDeviceId(id: String?) = apiClient.setDeviceId(id)
 
     fun getDeviceId(): String? = apiClient.getDeviceId()
+
+    fun setCapabilities(caps: RomMCapabilities) = apiClient.setCapabilities(caps)
+
+    fun getCapabilities(): RomMCapabilities = apiClient.getCapabilities()
 
     suspend fun resolveEmulatorForGame(game: com.nendo.argosy.data.local.entity.GameEntity): String? =
         apiClient.resolveEmulatorForGame(game)

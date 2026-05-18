@@ -108,6 +108,7 @@ class RomMConnectionManager @Inject constructor(
                     val version = body?.version ?: "unknown"
                     val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled)
                     _connectionState.value = ConnectionState.Connected(version, capabilities)
+                    saveSyncRepository.get().setCapabilities(capabilities)
                     Logger.info(TAG, "connect: success at $normalizedUrl, version=$version, capabilities=$capabilities")
                     if (token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
                         registerDeviceIfNeeded()
@@ -211,6 +212,7 @@ class RomMConnectionManager @Inject constructor(
     fun disconnect() {
         api = null
         biosRepository.setApi(null)
+        saveSyncRepository.get().setCapabilities(RomMCapabilities.NONE)
         accessToken = null
         baseUrl = ""
         cachedDeviceId = null
@@ -232,6 +234,7 @@ class RomMConnectionManager @Inject constructor(
                 val version = body?.version ?: "unknown"
                 val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled)
                 _connectionState.value = ConnectionState.Connected(version, capabilities)
+                saveSyncRepository.get().setCapabilities(capabilities)
                 Logger.info(TAG, "checkConnection: connected, version=$version")
             } else {
                 Logger.info(TAG, "checkConnection: heartbeat failed with ${response.code()}, reinitializing")

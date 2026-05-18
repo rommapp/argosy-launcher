@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMApi
+import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.storage.FileAccessLayer
@@ -50,6 +51,7 @@ class SaveSyncApiClient @Inject constructor(
 ) {
     private var api: RomMApi? = null
     private var deviceId: String? = null
+    private var capabilities: RomMCapabilities = RomMCapabilities.NONE
 
     fun setApi(api: RomMApi?) {
         this.api = api
@@ -62,6 +64,12 @@ class SaveSyncApiClient @Inject constructor(
     }
 
     fun getDeviceId(): String? = deviceId
+
+    fun setCapabilities(caps: RomMCapabilities) {
+        capabilities = caps
+    }
+
+    fun getCapabilities(): RomMCapabilities = capabilities
 
     internal fun getHandler(
         config: SavePathConfig?,

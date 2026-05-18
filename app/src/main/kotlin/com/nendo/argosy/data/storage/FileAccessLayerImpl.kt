@@ -235,7 +235,7 @@ class FileAccessLayerImpl @Inject constructor(
 
         return try {
             val file = File(path)
-            file.parentFile?.mkdirs()
+            if (!ensureParentDirectory(file)) return false
             file.writeBytes(data)
             true
         } catch (e: Exception) {
@@ -275,7 +275,7 @@ class FileAccessLayerImpl @Inject constructor(
 
         return try {
             val file = File(path)
-            file.parentFile?.mkdirs()
+            if (!ensureParentDirectory(file)) return null
             file.outputStream()
         } catch (e: Exception) {
             Logger.error(TAG, "getOutputStream: direct open failed | path=$path", e)
@@ -289,7 +289,7 @@ class FileAccessLayerImpl @Inject constructor(
         }
         return try {
             val destFile = File(dest)
-            destFile.parentFile?.mkdirs()
+            if (!ensureParentDirectory(destFile)) return false
             File(source).copyTo(destFile, overwrite = true)
             true
         } catch (e: Exception) {
@@ -304,7 +304,7 @@ class FileAccessLayerImpl @Inject constructor(
         }
         return try {
             val destFile = File(dest)
-            destFile.parentFile?.mkdirs()
+            if (!ensureParentDirectory(destFile)) return false
             File(source).copyRecursively(destFile, overwrite = true)
         } catch (e: Exception) {
             Logger.error(TAG, "copyDirectory: direct copy failed | source=$source, dest=$dest", e)
@@ -335,6 +335,30 @@ class FileAccessLayerImpl @Inject constructor(
 
     private fun extractVolumeAndPath(path: String): Pair<String, String>? {
         return StoragePathUtils.extractVolumeAndPath(path)
+    }
+
+    private fun ensureParentDirectory(file: File): Boolean {
+        val parent = file.parentFile ?: return true
+        if (parent.isDirectory) return true
+
+        val privateRoot = context.filesDir.absolutePath
+        var cursor: File? = parent
+        while (cursor != null && !cursor.isDirectory) {
+            if (cursor.exists()) {
+                if (cursor.absolutePath.startsWith("$privateRoot/")) {
+                    Logger.warn(TAG, "ensureParentDirectory: removing non-directory in private dir to unblock mkdirs | path=${cursor.absolutePath}")
+                    if (!cursor.delete()) {
+                        Logger.error(TAG, "ensureParentDirectory: delete failed | path=${cursor.absolutePath}")
+                        return false
+                    }
+                } else {
+                    Logger.error(TAG, "ensureParentDirectory: non-directory blocks path outside private dir | path=${cursor.absolutePath}")
+                    return false
+                }
+            }
+            cursor = cursor.parentFile
+        }
+        return parent.mkdirs() || parent.isDirectory
     }
 
     private fun File.toFileInfo(): FileInfo = FileInfo(

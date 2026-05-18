@@ -220,10 +220,16 @@ class FileAccessLayerImpl @Inject constructor(
         }
 
         if (isRestrictedPath(path)) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
-            managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)?.use { stream ->
-                stream.write(data)
-                return true
+            extractVolumeAndPath(path)?.let { (volumeId, relativePath) ->
+                managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)?.let { stream ->
+                    return try {
+                        stream.use { it.write(data) }
+                        true
+                    } catch (e: Exception) {
+                        Logger.error(TAG, "writeBytes: managed-storage write failed | path=$path", e)
+                        false
+                    }
+                }
             }
         }
 
@@ -233,6 +239,7 @@ class FileAccessLayerImpl @Inject constructor(
             file.writeBytes(data)
             true
         } catch (e: Exception) {
+            Logger.error(TAG, "writeBytes: direct write failed | path=$path", e)
             false
         }
     }
@@ -260,9 +267,10 @@ class FileAccessLayerImpl @Inject constructor(
         }
 
         if (isRestrictedPath(path)) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
-            val stream = managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)
-            if (stream != null) return stream
+            extractVolumeAndPath(path)?.let { (volumeId, relativePath) ->
+                val stream = managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)
+                if (stream != null) return stream
+            }
         }
 
         return try {
@@ -270,6 +278,7 @@ class FileAccessLayerImpl @Inject constructor(
             file.parentFile?.mkdirs()
             file.outputStream()
         } catch (e: Exception) {
+            Logger.error(TAG, "getOutputStream: direct open failed | path=$path", e)
             null
         }
     }
@@ -279,9 +288,12 @@ class FileAccessLayerImpl @Inject constructor(
             return androidDataAccessor.copyFile(source, dest)
         }
         return try {
-            File(source).copyTo(File(dest), overwrite = true)
+            val destFile = File(dest)
+            destFile.parentFile?.mkdirs()
+            File(source).copyTo(destFile, overwrite = true)
             true
         } catch (e: Exception) {
+            Logger.error(TAG, "copyFile: direct copy failed | source=$source, dest=$dest", e)
             false
         }
     }
@@ -291,8 +303,11 @@ class FileAccessLayerImpl @Inject constructor(
             return androidDataAccessor.copyDirectory(source, dest)
         }
         return try {
-            File(source).copyRecursively(File(dest), overwrite = true)
+            val destFile = File(dest)
+            destFile.parentFile?.mkdirs()
+            File(source).copyRecursively(destFile, overwrite = true)
         } catch (e: Exception) {
+            Logger.error(TAG, "copyDirectory: direct copy failed | source=$source, dest=$dest", e)
             false
         }
     }

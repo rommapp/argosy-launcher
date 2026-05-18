@@ -346,13 +346,13 @@ class FileAccessLayerImpl @Inject constructor(
         while (cursor != null && !cursor.isDirectory) {
             if (cursor.exists()) {
                 if (cursor.absolutePath.startsWith("$privateRoot/")) {
-                    Logger.warn(TAG, "ensureParentDirectory: removing non-directory in private dir to unblock mkdirs | path=${cursor.absolutePath}")
+                    Logger.warn(TAG, "ensureParentDirectory: cleaning stale non-directory in app private dir to unblock mkdirs | blocker=${cursor.absolutePath}, target=${file.absolutePath}")
                     if (!cursor.delete()) {
-                        Logger.error(TAG, "ensureParentDirectory: delete failed | path=${cursor.absolutePath}")
+                        Logger.error(TAG, "ensureParentDirectory: delete failed | blocker=${cursor.absolutePath}")
                         return false
                     }
                 } else {
-                    Logger.error(TAG, "ensureParentDirectory: non-directory blocks path outside private dir | path=${cursor.absolutePath}")
+                    Logger.error(TAG, "ensureParentDirectory: invalid write: path component is not a directory and lives outside the app's private dir (refusing to auto-delete) | blocker=${cursor.absolutePath}, target=${file.absolutePath}")
                     return false
                 }
             }

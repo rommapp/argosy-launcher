@@ -18,10 +18,8 @@ sealed class InputSource {
                 MotionEvent.AXIS_RZ -> "RS"
                 MotionEvent.AXIS_HAT_X -> "D-Pad"
                 MotionEvent.AXIS_HAT_Y -> "D-Pad"
-                MotionEvent.AXIS_LTRIGGER -> return "LT"
-                MotionEvent.AXIS_RTRIGGER -> return "RT"
-                MotionEvent.AXIS_BRAKE -> return "LT (Brake)"
-                MotionEvent.AXIS_GAS -> return "RT (Gas)"
+                MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE -> return "LT"
+                MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS -> return "RT"
                 else -> "Axis $axis"
             }
 

@@ -100,6 +100,7 @@ class SettingsViewModel @Inject constructor(
     val raDelegate: RASettingsDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
+    val driversDelegate: com.nendo.argosy.ui.screens.settings.delegates.DriversSettingsDelegate,
     internal val androidGameScanner: AndroidGameScanner,
     internal val modalResetSignal: ModalResetSignal,
     internal val gradientColorExtractor: GradientColorExtractor,
@@ -198,6 +199,11 @@ class SettingsViewModel @Inject constructor(
 
     fun checkStoragePermission() = storageDelegate.checkAllFilesAccess()
     fun requestStoragePermission() = storageDelegate.requestAllFilesAccess(viewModelScope)
+
+    fun reloadDrivers(force: Boolean = false) = driversDelegate.loadDrivers(viewModelScope, force)
+    fun downloadDriverArtifact(artifact: com.nendo.argosy.ui.screens.settings.DriverArtifactUi) =
+        driversDelegate.downloadArtifact(viewModelScope, artifact)
+    fun downloadFocusedDriverArtifact() = driversDelegate.downloadFocusedArtifact(viewModelScope)
 
     fun showEmulatorPicker(config: PlatformEmulatorConfig) = routeShowEmulatorPicker(this, config)
 

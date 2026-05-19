@@ -58,6 +58,7 @@ import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.delegates.BuiltinNavigationTarget
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
+import com.nendo.argosy.ui.screens.settings.sections.DriversSection
 import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
@@ -422,6 +423,7 @@ fun SettingsScreen(
                         SettingsSection.SHADER_STACK -> "SHADER CHAIN"
                         SettingsSection.FRAME_PICKER -> "SELECT FRAME"
                         SettingsSection.PERMISSIONS -> "PERMISSIONS"
+                        SettingsSection.DRIVERS -> "GPU DRIVERS"
                         SettingsSection.ABOUT -> "ABOUT"
                         SettingsSection.SOCIAL -> "SOCIAL"
                     },
@@ -496,6 +498,7 @@ fun SettingsScreen(
                     SettingsSection.SHADER_STACK -> ShaderStackSection(viewModel.shaderChainManager)
                     SettingsSection.FRAME_PICKER -> FrameSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
+                    SettingsSection.DRIVERS -> DriversSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                     SettingsSection.SOCIAL -> SocialSection(uiState, viewModel)
                 }

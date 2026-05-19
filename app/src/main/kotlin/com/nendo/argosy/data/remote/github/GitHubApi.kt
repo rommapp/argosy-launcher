@@ -47,7 +47,8 @@ data class GitHubRelease(
     @Json(name = "draft") val draft: Boolean,
     @Json(name = "html_url") val htmlUrl: String,
     @Json(name = "target_commitish") val targetCommitish: String?,
-    @Json(name = "assets") val assets: List<GitHubAsset>
+    @Json(name = "assets") val assets: List<GitHubAsset>,
+    @Json(name = "published_at") val publishedAt: String? = null
 )
 
 @JsonClass(generateAdapter = true)

@@ -103,6 +103,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Platforms -> vm.navigateToSection(SettingsSection.PLATFORMS)
                 MainSettingsItem.BuiltinEmulator -> vm.navigateToSection(SettingsSection.BUILTIN_EMULATOR)
                 MainSettingsItem.Bios -> vm.navigateToSection(SettingsSection.BIOS)
+                MainSettingsItem.Drivers -> vm.navigateToSection(SettingsSection.DRIVERS)
                 MainSettingsItem.Permissions -> vm.navigateToSection(SettingsSection.PERMISSIONS)
                 MainSettingsItem.About -> vm.navigateToSection(SettingsSection.ABOUT)
                 MainSettingsItem.Social -> vm.navigateToSection(SettingsSection.SOCIAL)
@@ -185,6 +186,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.PLATFORM_DETAIL -> routePlatformDetailConfirm(vm, state)
         SettingsSection.BIOS -> routeBiosConfirm(vm, state)
         SettingsSection.PERMISSIONS -> routePermissionsConfirm(vm, state)
+        SettingsSection.DRIVERS -> InputResult.HANDLED
         SettingsSection.ABOUT -> routeAboutConfirm(vm, state)
         SettingsSection.BUILTIN_VIDEO -> InputResult.HANDLED
         SettingsSection.BUILTIN_CONTROLS -> InputResult.HANDLED
@@ -750,6 +752,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.FRAME_PICKER -> com.nendo.argosy.ui.screens.settings.sections.framePickerMaxFocusIndex(vm.getFrameRegistry())
     SettingsSection.BIOS -> biosMaxFocusIndex(state.bios.platformGroups, state.bios.expandedPlatformIndex)
     SettingsSection.PERMISSIONS -> permissionsMaxFocusIndex(state.permissions)
+    SettingsSection.DRIVERS -> (state.drivers.groups.size - 1).coerceAtLeast(0)
     SettingsSection.ABOUT -> aboutMaxFocusIndex(state.fileLoggingPath != null)
     SettingsSection.SOCIAL -> com.nendo.argosy.ui.screens.settings.sections.socialMaxFocusIndex(state.social)
 }

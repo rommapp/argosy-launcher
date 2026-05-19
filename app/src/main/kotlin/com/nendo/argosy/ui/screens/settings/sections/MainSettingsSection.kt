@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.CloudQueue
@@ -57,6 +58,7 @@ internal sealed class MainSettingsItem(
     data object Platforms : MainSettingsItem("platforms", Icons.Default.Gamepad, "Platforms")
     data object BuiltinEmulator : MainSettingsItem("builtin_emulator", Icons.Default.Build, "Built-in Emulator")
     data object Bios : MainSettingsItem("bios", Icons.Default.Memory, "BIOS Files")
+    data object Drivers : MainSettingsItem("drivers", Icons.Default.DeveloperBoard, "GPU Drivers")
     data object Steam : MainSettingsItem("steam", Icons.Default.CloudQueue, "Steam")
     data object Social : MainSettingsItem("social", Icons.Default.Group, "Social")
     data object Permissions : MainSettingsItem("permissions", Icons.Default.Security, "Permissions")
@@ -65,7 +67,7 @@ internal sealed class MainSettingsItem(
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
             DeviceSettings, Platforms, BuiltinEmulator, Storage, Interface, Controls,
-            GameData, Bios, RetroAchievements, Steam, Social, Permissions, About
+            GameData, Bios, Drivers, RetroAchievements, Steam, Social, Permissions, About
         )
     }
 }
@@ -122,6 +124,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         MainSettingsItem.Platforms -> "${uiState.emulators.platforms.size} platforms"
         MainSettingsItem.BuiltinEmulator -> if (uiState.emulators.builtinLibretroEnabled) "Enabled" else "Disabled"
         MainSettingsItem.Bios -> uiState.bios.summaryText
+        MainSettingsItem.Drivers -> uiState.drivers.summary
         MainSettingsItem.Steam -> if (uiState.steam.username != null) {
             uiState.steam.username
         } else {
@@ -151,6 +154,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Platforms -> viewModel.navigateToSection(SettingsSection.PLATFORMS)
             MainSettingsItem.BuiltinEmulator -> viewModel.navigateToSection(SettingsSection.BUILTIN_EMULATOR)
             MainSettingsItem.Bios -> viewModel.navigateToSection(SettingsSection.BIOS)
+            MainSettingsItem.Drivers -> viewModel.navigateToSection(SettingsSection.DRIVERS)
             MainSettingsItem.Steam -> viewModel.navigateToSection(SettingsSection.STEAM_SETTINGS)
             MainSettingsItem.Social -> viewModel.navigateToSection(SettingsSection.SOCIAL)
             MainSettingsItem.Permissions -> viewModel.navigateToSection(SettingsSection.PERMISSIONS)

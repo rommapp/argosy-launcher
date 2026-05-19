@@ -71,6 +71,7 @@ enum class SettingsSection {
     PLATFORM_DETAIL,
     SOCIAL,
     PERMISSIONS,
+    DRIVERS,
     ABOUT
 }
 
@@ -868,6 +869,57 @@ data class BiosState(
     }
 }
 
+data class DriverGroupUi(
+    val name: String,
+    val repoPath: String,
+    val sort: Int,
+    val useTagName: Boolean,
+    val releases: List<DriverReleaseUi>,
+    val error: String? = null,
+    val expanded: Boolean = false
+)
+
+data class DriverReleaseUi(
+    val title: String,
+    val tagName: String,
+    val body: String,
+    val prerelease: Boolean,
+    val isLatestStable: Boolean,
+    val artifacts: List<DriverArtifactUi>
+)
+
+data class DriverArtifactUi(
+    val name: String,
+    val downloadUrl: String,
+    val size: Long
+)
+
+data class DriversState(
+    val groups: List<DriverGroupUi> = emptyList(),
+    val isLoading: Boolean = false,
+    val gpuModel: String? = null,
+    val recommendedDriver: String = "Unsupported",
+    val activeDownload: DriverDownloadState? = null,
+    val downloadedFiles: List<String> = emptyList(),
+    val expandedGroupIndex: Int = -1,
+    val releaseFocusIndex: Int = 0,
+    val groupActionIndex: Int = 0
+) {
+    val summary: String get() = when {
+        isLoading && groups.isEmpty() -> "Checking drivers..."
+        gpuModel.isNullOrBlank() -> "GPU not detected"
+        else -> "Adreno drivers for ${gpuModel.orEmpty()}"
+    }
+}
+
+data class DriverDownloadState(
+    val artifactName: String,
+    val downloaded: Long,
+    val total: Long,
+    val isComplete: Boolean = false,
+    val error: String? = null
+)
+
 enum class SocialAuthStatus {
     NOT_LINKED,
     AWAITING_AUTH,
@@ -918,6 +970,7 @@ data class SettingsUiState(
     val retroAchievements: RASettingsState = RASettingsState(),
     val android: AndroidSettingsState = AndroidSettingsState(),
     val bios: BiosState = BiosState(),
+    val drivers: DriversState = DriversState(),
     val social: SocialState = SocialState(),
     val permissions: PermissionsState = PermissionsState(),
     val launchFolderPicker: Boolean = false,

@@ -143,6 +143,10 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
     vm.biosDelegate.state.onEach { bios ->
         vm._uiState.update { it.copy(bios = bios) }
     }.launchIn(vm.viewModelScope)
+
+    vm.driversDelegate.state.onEach { drivers ->
+        vm._uiState.update { it.copy(drivers = drivers) }
+    }.launchIn(vm.viewModelScope)
 }
 
 internal fun routeObserveDelegateEvents(vm: SettingsViewModel) {

@@ -116,6 +116,7 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class LibretroActivity : ComponentActivity() {
+    @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var playSessionTracker: PlaySessionTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var inputConfigRepository: InputConfigRepository
@@ -1407,6 +1408,11 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        val device = event.device
+        triggerAxisKeyEmitter.emit(event) { axis ->
+            device != null && inputMapper.hasAnalogMappingForAxis(device, axis)
+        }.forEach { dispatchKeyEvent(it) }
+
         if (isAnyMenuOpen) {
             if (gamepadInputBridge.handleMotionEvent(event)) return true
             return super.onGenericMotionEvent(event)

@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var downloadQueueDao: DownloadQueueDao
     @Inject lateinit var downloadQueueRepository: com.nendo.argosy.data.repository.DownloadQueueRepository
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
+    @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var imageCacheManager: ImageCacheManager
     @Inject lateinit var romMRepository: RomMRepository
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
@@ -440,6 +441,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        triggerAxisKeyEmitter.emit(event).forEach { dispatchKeyEvent(it) }
+
         if (!dualScreenManager.claimInput(event)) return true
         if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused) {
             val emulatorDispatcher = dualScreenManager.emulatorMotionDispatcher

@@ -27,7 +27,6 @@ import com.nendo.argosy.data.model.Section
 import com.nendo.argosy.data.model.SortOption
 import com.nendo.argosy.data.model.SortableProps
 import com.nendo.argosy.data.model.computeGenericSections
-import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
@@ -230,9 +229,7 @@ class DualHomeViewModel(
     private fun observePlatformChanges() {
         viewModelScope.launch {
             platformRepository.observePlatformsWithGames().collect { platforms ->
-                val filtered = platforms
-                    .filter { it.id != LocalPlatformIds.ANDROID }
-                val newPlatformSections = filtered.map { platform ->
+                val newPlatformSections = platforms.map { platform ->
                     DualHomeSection.Platform(
                         id = platform.id,
                         slug = platform.slug,
@@ -406,7 +403,6 @@ class DualHomeViewModel(
         }
 
         val platforms = platformRepository.getPlatformsWithGames()
-            .filter { it.id != LocalPlatformIds.ANDROID }
         platforms.forEach { platform ->
             sections.add(
                 DualHomeSection.Platform(

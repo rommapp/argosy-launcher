@@ -667,6 +667,8 @@ class SettingsViewModel @Inject constructor(
     fun cycleGlowColorMode(direction: Int = 1) = displayDelegate.cycleGlowColorMode(viewModelScope, direction)
     fun cycleSystemIconPosition(direction: Int = 1) = displayDelegate.cycleSystemIconPosition(viewModelScope, direction)
     fun cycleSystemIconPadding(direction: Int = 1) = displayDelegate.cycleSystemIconPadding(viewModelScope, direction)
+    fun cyclePlatformIndicatorStyle(direction: Int = 1) = displayDelegate.cyclePlatformIndicatorStyle(viewModelScope, direction)
+    fun cyclePlatformIndicatorContent(direction: Int = 1) = displayDelegate.cyclePlatformIndicatorContent(viewModelScope, direction)
     fun cycleBoxArtInnerEffect(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffect(viewModelScope, direction)
     fun cycleBoxArtInnerEffectThickness(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffectThickness(viewModelScope, direction)
     fun cycleDefaultView() = displayDelegate.cycleDefaultView(viewModelScope)

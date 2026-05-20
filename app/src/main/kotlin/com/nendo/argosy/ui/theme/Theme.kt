@@ -22,6 +22,8 @@ import com.nendo.argosy.data.preferences.BoxArtGlowStrength
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.GlowColorMode
+import com.nendo.argosy.data.preferences.PlatformIndicatorContent
+import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.FooterStyleConfig
@@ -200,7 +202,9 @@ data class BoxArtStyleConfig(
     val innerEffect: BoxArtInnerEffect = BoxArtInnerEffect.SHADOW,
     val innerEffectThicknessPx: Float = 4f,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
-    val systemIconPaddingDp: Dp = 8.dp
+    val systemIconPaddingDp: Dp = 8.dp,
+    val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
+    val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME
 )
 
 val LocalBoxArtStyle = staticCompositionLocalOf { BoxArtStyleConfig() }
@@ -303,7 +307,9 @@ fun ProvideArgosyThemeLocals(
         innerEffect = themeState.boxArtInnerEffect,
         innerEffectThicknessPx = themeState.boxArtInnerEffectThickness.px,
         systemIconPosition = themeState.systemIconPosition,
-        systemIconPaddingDp = themeState.systemIconPadding.dp.dp
+        systemIconPaddingDp = themeState.systemIconPadding.dp.dp,
+        platformIndicatorStyle = themeState.platformIndicatorStyle,
+        platformIndicatorContent = themeState.platformIndicatorContent
     )
 
     val footerStyle = FooterStyleConfig(

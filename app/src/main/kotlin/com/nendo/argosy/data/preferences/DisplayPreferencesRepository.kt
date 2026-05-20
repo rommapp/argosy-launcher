@@ -41,6 +41,8 @@ data class DisplayPreferences(
     val gradientAdvancedMode: Boolean = false,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
     val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
+    val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val defaultView: DefaultView = DefaultView.HOME,
     val videoWallpaperEnabled: Boolean = false,
     val videoWallpaperDelaySeconds: Int = 3,
@@ -96,6 +98,8 @@ class DisplayPreferencesRepository @Inject constructor(
         val GRADIENT_ADVANCED_MODE = booleanPreferencesKey("gradient_advanced_mode")
         val SYSTEM_ICON_POSITION = stringPreferencesKey("system_icon_position")
         val SYSTEM_ICON_PADDING = stringPreferencesKey("system_icon_padding")
+        val PLATFORM_INDICATOR_STYLE = stringPreferencesKey("platform_indicator_style")
+        val PLATFORM_INDICATOR_CONTENT = stringPreferencesKey("platform_indicator_content")
         val DEFAULT_VIEW = stringPreferencesKey("default_view")
         val VIDEO_WALLPAPER_ENABLED = booleanPreferencesKey("video_wallpaper_enabled")
         val VIDEO_WALLPAPER_DELAY_SECONDS = intPreferencesKey("video_wallpaper_delay_seconds")
@@ -148,6 +152,8 @@ class DisplayPreferencesRepository @Inject constructor(
             gradientAdvancedMode = prefs[Keys.GRADIENT_ADVANCED_MODE] ?: false,
             systemIconPosition = SystemIconPosition.fromString(prefs[Keys.SYSTEM_ICON_POSITION]),
             systemIconPadding = SystemIconPadding.fromString(prefs[Keys.SYSTEM_ICON_PADDING]),
+            platformIndicatorStyle = PlatformIndicatorStyle.fromString(prefs[Keys.PLATFORM_INDICATOR_STYLE]),
+            platformIndicatorContent = PlatformIndicatorContent.fromString(prefs[Keys.PLATFORM_INDICATOR_CONTENT]),
             defaultView = DefaultView.fromString(prefs[Keys.DEFAULT_VIEW]),
             videoWallpaperEnabled = prefs[Keys.VIDEO_WALLPAPER_ENABLED] ?: false,
             videoWallpaperDelaySeconds = prefs[Keys.VIDEO_WALLPAPER_DELAY_SECONDS] ?: 3,
@@ -284,6 +290,14 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setSystemIconPadding(padding: SystemIconPadding) {
         dataStore.edit { it[Keys.SYSTEM_ICON_PADDING] = padding.name }
+    }
+
+    suspend fun setPlatformIndicatorStyle(style: PlatformIndicatorStyle) {
+        dataStore.edit { it[Keys.PLATFORM_INDICATOR_STYLE] = style.name }
+    }
+
+    suspend fun setPlatformIndicatorContent(content: PlatformIndicatorContent) {
+        dataStore.edit { it[Keys.PLATFORM_INDICATOR_CONTENT] = content.name }
     }
 
     suspend fun setDefaultView(view: DefaultView) {

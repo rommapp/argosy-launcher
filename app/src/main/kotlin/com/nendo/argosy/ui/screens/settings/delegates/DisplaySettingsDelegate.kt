@@ -365,6 +365,22 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun cyclePlatformIndicatorStyle(scope: CoroutineScope, direction: Int = 1) {
+        val next = cycleEnum(_state.value.platformIndicatorStyle, direction)
+        scope.launch {
+            preferencesRepository.setPlatformIndicatorStyle(next)
+            _state.update { it.copy(platformIndicatorStyle = next) }
+        }
+    }
+
+    fun cyclePlatformIndicatorContent(scope: CoroutineScope, direction: Int = 1) {
+        val next = cycleEnum(_state.value.platformIndicatorContent, direction)
+        scope.launch {
+            preferencesRepository.setPlatformIndicatorContent(next)
+            _state.update { it.copy(platformIndicatorContent = next) }
+        }
+    }
+
     fun cycleBoxArtInnerEffect(scope: CoroutineScope, direction: Int = 1) {
         val next = cycleEnum(_state.value.boxArtInnerEffect, direction)
         scope.launch {

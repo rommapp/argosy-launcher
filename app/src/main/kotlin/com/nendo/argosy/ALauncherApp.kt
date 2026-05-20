@@ -151,6 +151,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             .okHttpClient(okHttpClient)
             .components {
                 add(AppIconFetcher.Factory(packageManager))
+                add(coil.decode.SvgDecoder.Factory())
             }
             .crossfade(true)
             .build()

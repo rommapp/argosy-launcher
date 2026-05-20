@@ -79,6 +79,7 @@ moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", ve
 
 # Image loading
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+coil-svg = { group = "io.coil-kt", name = "coil-svg", version.ref = "coil" }
 
 # CameraX
 camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }

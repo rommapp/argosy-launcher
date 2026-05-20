@@ -380,6 +380,8 @@ private fun routeBoxArtConfirm(vm: SettingsViewModel, state: SettingsUiState): I
         BoxArtItem.HueDistance -> vm.cycleGradientHueDistance(1)
         BoxArtItem.SaturationBoost -> vm.cycleGradientSaturationBump(1)
         BoxArtItem.BrightnessClamp -> vm.cycleGradientValueClamp(1)
+        BoxArtItem.IndicatorStyle -> vm.cyclePlatformIndicatorStyle()
+        BoxArtItem.IndicatorContent -> vm.cyclePlatformIndicatorContent()
         BoxArtItem.IconPos -> vm.cycleSystemIconPosition()
         BoxArtItem.IconPad -> vm.cycleSystemIconPadding()
         BoxArtItem.OuterEffect -> vm.cycleBoxArtOuterEffect()

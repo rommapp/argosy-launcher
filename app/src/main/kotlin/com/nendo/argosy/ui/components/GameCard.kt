@@ -304,7 +304,12 @@ fun GameCard(
         val innerEffect = boxArtStyle.innerEffect
         val innerEffectWidth = boxArtStyle.innerEffectThicknessPx
 
-        val effectiveBadgePosition = if (showPlatformBadge && boxArtStyle.systemIconPosition != SystemIconPosition.OFF) {
+        val spineActive = showPlatformBadge &&
+            boxArtStyle.systemIconPosition != SystemIconPosition.OFF &&
+            boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.SPINE
+        val effectiveBadgePosition = if (showPlatformBadge &&
+            boxArtStyle.systemIconPosition != SystemIconPosition.OFF &&
+            boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.TAB) {
             boxArtStyle.systemIconPosition
         } else {
             SystemIconPosition.OFF
@@ -334,27 +339,40 @@ fun GameCard(
             label = "shine"
         ) ?: remember { mutableStateOf(0f) }
 
-        if (effectiveCoverPath.isNotEmpty()) {
-            CoverContent(
-                game = game,
-                effectiveCoverPath = effectiveCoverPath,
-                downloadIndicator = downloadIndicator,
-                saturationColorFilter = saturationColorFilter,
-                useGlassBorder = useGlassBorder,
-                glassBorderTintAlpha = boxArtStyle.glassBorderTintAlpha,
-                hasGradientColors = hasGradientColors,
-                gradientColors = gradientColors,
-                borderColor = borderColor,
-                geometry = geometry,
-                sweepOffset = sweepOffset,
-                onCoverLoaded = onCoverLoaded,
-                onCoverLoadFailed = onCoverLoadFailed
-            )
+        val coverBody: @Composable () -> Unit = {
+            if (effectiveCoverPath.isNotEmpty()) {
+                CoverContent(
+                    game = game,
+                    effectiveCoverPath = effectiveCoverPath,
+                    downloadIndicator = downloadIndicator,
+                    saturationColorFilter = saturationColorFilter,
+                    useGlassBorder = useGlassBorder,
+                    glassBorderTintAlpha = boxArtStyle.glassBorderTintAlpha,
+                    hasGradientColors = hasGradientColors,
+                    gradientColors = gradientColors,
+                    borderColor = borderColor,
+                    geometry = geometry,
+                    sweepOffset = sweepOffset,
+                    onCoverLoaded = onCoverLoaded,
+                    onCoverLoadFailed = onCoverLoadFailed
+                )
+            } else {
+                StubCover(
+                    gameTitle = game.title,
+                    useSolidStub = boxArtStyle.borderStyle == BoxArtBorderStyle.SOLID
+                )
+            }
+        }
+
+        if (spineActive) {
+            PlatformSpinePlacement(
+                platformDisplayName = game.platformSlug,
+                platformSlug = game.platformSlug,
+                isFocused = isFocused,
+                modifier = Modifier.fillMaxSize()
+            ) { _ -> coverBody() }
         } else {
-            StubCover(
-                gameTitle = game.title,
-                useSolidStub = boxArtStyle.borderStyle == BoxArtBorderStyle.SOLID
-            )
+            coverBody()
         }
 
         if (gradientBorderProgress > 0f && gradientColors != null) {
@@ -367,15 +385,19 @@ fun GameCard(
             )
         }
 
-        if (showPlatformBadge && boxArtStyle.systemIconPosition != SystemIconPosition.OFF) {
+        if (showPlatformBadge && boxArtStyle.systemIconPosition != SystemIconPosition.OFF &&
+            boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.TAB) {
             val badgeAlignment = when (boxArtStyle.systemIconPosition) {
                 SystemIconPosition.TOP_LEFT -> Alignment.TopStart
                 SystemIconPosition.TOP_RIGHT -> Alignment.TopEnd
+                SystemIconPosition.BOTTOM_LEFT -> Alignment.BottomStart
+                SystemIconPosition.BOTTOM_RIGHT -> Alignment.BottomEnd
                 else -> Alignment.TopStart
             }
 
             PlatformBadge(
                 platformDisplayName = game.platformSlug,
+                platformSlug = game.platformSlug,
                 cardWidthDp = maxWidth,
                 isFocused = isFocused,
                 modifier = Modifier.align(badgeAlignment)

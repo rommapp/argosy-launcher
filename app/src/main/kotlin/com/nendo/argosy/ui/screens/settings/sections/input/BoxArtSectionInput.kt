@@ -51,6 +51,8 @@ internal class BoxArtSectionInput(
             BoxArtItem.HueDistance -> viewModel.cycleGradientHueDistance(direction)
             BoxArtItem.SaturationBoost -> viewModel.cycleGradientSaturationBump(direction)
             BoxArtItem.BrightnessClamp -> viewModel.cycleGradientValueClamp(direction)
+            BoxArtItem.IndicatorStyle -> viewModel.cyclePlatformIndicatorStyle(direction)
+            BoxArtItem.IndicatorContent -> viewModel.cyclePlatformIndicatorContent(direction)
             BoxArtItem.IconPos -> viewModel.cycleSystemIconPosition(direction)
             BoxArtItem.IconPad -> viewModel.cycleSystemIconPadding(direction)
             BoxArtItem.OuterEffect -> viewModel.cycleBoxArtOuterEffect(direction)

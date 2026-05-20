@@ -109,6 +109,8 @@ class UserPreferencesRepository @Inject constructor(
             gradientAdvancedMode = display.gradientAdvancedMode,
             systemIconPosition = display.systemIconPosition,
             systemIconPadding = display.systemIconPadding,
+            platformIndicatorStyle = display.platformIndicatorStyle,
+            platformIndicatorContent = display.platformIndicatorContent,
             defaultView = display.defaultView,
             recommendedGameIds = app.recommendedGameIds,
             lastRecommendationGeneration = app.lastRecommendationGeneration,
@@ -196,6 +198,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setGradientAdvancedMode(enabled: Boolean) = displayPrefs.setGradientAdvancedMode(enabled)
     suspend fun setSystemIconPosition(position: SystemIconPosition) = displayPrefs.setSystemIconPosition(position)
     suspend fun setSystemIconPadding(padding: SystemIconPadding) = displayPrefs.setSystemIconPadding(padding)
+    suspend fun setPlatformIndicatorStyle(style: PlatformIndicatorStyle) = displayPrefs.setPlatformIndicatorStyle(style)
+    suspend fun setPlatformIndicatorContent(content: PlatformIndicatorContent) = displayPrefs.setPlatformIndicatorContent(content)
     suspend fun setDefaultView(view: DefaultView) = displayPrefs.setDefaultView(view)
     suspend fun setVideoWallpaperEnabled(enabled: Boolean) = displayPrefs.setVideoWallpaperEnabled(enabled)
     suspend fun setVideoWallpaperDelaySeconds(seconds: Int) = displayPrefs.setVideoWallpaperDelaySeconds(seconds)
@@ -547,6 +551,8 @@ data class UserPreferences(
     val gradientAdvancedMode: Boolean = false,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
     val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
+    val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val defaultView: DefaultView = DefaultView.HOME,
     val recommendedGameIds: List<Long> = emptyList(),
     val lastRecommendationGeneration: Instant? = null,
@@ -676,11 +682,29 @@ enum class BoxArtGlowStrength(val alpha: Float, val isShadow: Boolean = false) {
 }
 
 enum class SystemIconPosition {
-    OFF, TOP_LEFT, TOP_RIGHT;
+    OFF, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT;
 
     companion object {
         fun fromString(value: String?): SystemIconPosition =
             entries.find { it.name == value } ?: TOP_LEFT
+    }
+}
+
+enum class PlatformIndicatorStyle {
+    TAB, SPINE;
+
+    companion object {
+        fun fromString(value: String?): PlatformIndicatorStyle =
+            entries.find { it.name == value } ?: TAB
+    }
+}
+
+enum class PlatformIndicatorContent {
+    NAME, ICON;
+
+    companion object {
+        fun fromString(value: String?): PlatformIndicatorContent =
+            entries.find { it.name == value } ?: NAME
     }
 }
 

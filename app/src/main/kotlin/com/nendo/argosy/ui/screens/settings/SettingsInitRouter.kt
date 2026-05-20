@@ -406,6 +406,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             gradientAdvancedMode = prefs.gradientAdvancedMode,
             systemIconPosition = prefs.systemIconPosition,
             systemIconPadding = prefs.systemIconPadding,
+            platformIndicatorStyle = prefs.platformIndicatorStyle,
+            platformIndicatorContent = prefs.platformIndicatorContent,
             defaultView = prefs.defaultView,
             videoWallpaperEnabled = prefs.videoWallpaperEnabled,
             videoWallpaperDelaySeconds = prefs.videoWallpaperDelaySeconds,

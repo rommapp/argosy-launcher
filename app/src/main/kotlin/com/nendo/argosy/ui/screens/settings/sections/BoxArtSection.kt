@@ -27,6 +27,8 @@ import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.GlowColorMode
+import com.nendo.argosy.data.preferences.PlatformIndicatorContent
+import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.components.CyclePreference
@@ -71,6 +73,18 @@ internal sealed class BoxArtItem(
         key = "gradientAdvanced",
         section = "styling",
         visibleWhen = { it.boxArtBorderStyle == BoxArtBorderStyle.GRADIENT }
+    )
+
+    data object IndicatorStyle : BoxArtItem(
+        key = "indicatorStyle",
+        section = "icon",
+        visibleWhen = { it.systemIconPosition != SystemIconPosition.OFF }
+    )
+
+    data object IndicatorContent : BoxArtItem(
+        key = "indicatorContent",
+        section = "icon",
+        visibleWhen = { it.systemIconPosition != SystemIconPosition.OFF }
     )
 
     data object IconPos : BoxArtItem("iconPos", "icon")
@@ -171,7 +185,7 @@ internal sealed class BoxArtItem(
             SampleGrid, SampleRadius, MinSaturation, MinBrightness,
             HueDistance, SaturationBoost, BrightnessClamp,
             IconHeader,
-            IconPos, IconPad,
+            IndicatorStyle, IndicatorContent, IconPos, IconPad,
             OuterHeader,
             OuterEffect, OuterThickness, GlowIntensity, GlowColor,
             InnerHeader,
@@ -283,8 +297,23 @@ fun BoxArtSection(
                         onClick = { viewModel.toggleGradientAdvancedMode() }
                     )
 
+                    BoxArtItem.IndicatorStyle -> CyclePreference(
+                        title = "Style",
+                        value = display.platformIndicatorStyle.displayName(),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cyclePlatformIndicatorStyle() }
+                    )
+                    BoxArtItem.IndicatorContent -> CyclePreference(
+                        title = "Display",
+                        value = display.platformIndicatorContent.displayName(),
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.cyclePlatformIndicatorContent() }
+                    )
                     BoxArtItem.IconPos -> CyclePreference(
-                        title = "Position",
+                        title = when (display.platformIndicatorStyle) {
+                            PlatformIndicatorStyle.SPINE -> "Spine Corner"
+                            PlatformIndicatorStyle.TAB -> "Tab Corner"
+                        },
                         value = display.systemIconPosition.displayName(),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleSystemIconPosition() }
@@ -402,7 +431,9 @@ fun BoxArtSection(
                 innerEffect = display.boxArtInnerEffect,
                 innerEffectThicknessPx = display.boxArtInnerEffectThickness.px,
                 systemIconPosition = display.systemIconPosition,
-                systemIconPaddingDp = display.systemIconPadding.dp.dp
+                systemIconPaddingDp = display.systemIconPadding.dp.dp,
+                platformIndicatorStyle = display.platformIndicatorStyle,
+                platformIndicatorContent = display.platformIndicatorContent
             )
 
             val previewGradientColors = extractionResult?.let { Pair(it.primary, it.secondary) }
@@ -513,12 +544,24 @@ private fun SystemIconPosition.displayName(): String = when (this) {
     SystemIconPosition.OFF -> "Off"
     SystemIconPosition.TOP_LEFT -> "Top-Left"
     SystemIconPosition.TOP_RIGHT -> "Top-Right"
+    SystemIconPosition.BOTTOM_LEFT -> "Bottom-Left"
+    SystemIconPosition.BOTTOM_RIGHT -> "Bottom-Right"
 }
 
 private fun SystemIconPadding.displayName(): String = when (this) {
     SystemIconPadding.SMALL -> "Small"
     SystemIconPadding.MEDIUM -> "Medium"
     SystemIconPadding.LARGE -> "Large"
+}
+
+private fun PlatformIndicatorStyle.displayName(): String = when (this) {
+    PlatformIndicatorStyle.TAB -> "Tab"
+    PlatformIndicatorStyle.SPINE -> "Spine"
+}
+
+private fun PlatformIndicatorContent.displayName(): String = when (this) {
+    PlatformIndicatorContent.NAME -> "Name"
+    PlatformIndicatorContent.ICON -> "Icon"
 }
 
 private fun BoxArtOuterEffect.displayName(): String = when (this) {

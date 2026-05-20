@@ -348,7 +348,7 @@ fun PlatformSpinePlacement(
     val bottomAnchored = boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_LEFT ||
         boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_RIGHT
     val outerR = boxArtStyle.cornerRadiusDp
-    val spineThickness = SPINE_THICKNESS_DP
+    val spineThickness = SPINE_THICKNESS_DP + boxArtStyle.systemIconPaddingDp
     val coverShape = RoundedCornerShape(outerR)
 
     val margin = if (isFocused) boxArtStyle.borderThicknessDp else 0.dp

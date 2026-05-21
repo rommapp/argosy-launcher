@@ -101,10 +101,17 @@ class SyncCoordinator @Inject constructor(
         val rows = saveSyncDao.getAllWithLocalPath()
         var skippedNoGame = 0
         var skippedNoRom = 0
+        var skippedStateShaped = 0
         val result = rows.mapNotNull { row ->
             val path = row.localSavePath ?: return@mapNotNull null
             val file = File(path)
             if (!file.exists()) return@mapNotNull null
+
+            val channel = row.channelName
+            if (channel != null && Regex("""^state_""", RegexOption.IGNORE_CASE).containsMatchIn(channel)) {
+                skippedStateShaped++
+                return@mapNotNull null
+            }
 
             val game = gameDao.getById(row.gameId) ?: run { skippedNoGame++; return@mapNotNull null }
             if (game.localPath == null) { skippedNoRom++; return@mapNotNull null }
@@ -129,7 +136,7 @@ class SyncCoordinator @Inject constructor(
             )
         }
         val nullHashCount = result.count { it.contentHash == null }
-        Logger.debug(TAG, "buildInventory: rows=${result.size} nullHash=$nullHashCount skippedNoGame=$skippedNoGame skippedNoRom=$skippedNoRom")
+        Logger.debug(TAG, "buildInventory: rows=${result.size} nullHash=$nullHashCount skippedNoGame=$skippedNoGame skippedNoRom=$skippedNoRom skippedStateShaped=$skippedStateShaped")
         return result
     }
 
@@ -137,9 +144,15 @@ class SyncCoordinator @Inject constructor(
         var conflicts = 0
         var applied = 0
         var skippedNullSlot = 0
+        var skippedStateShaped = 0
+        val stateSlotPattern = Regex("""^state_""", RegexOption.IGNORE_CASE)
         for (op in plan.operations) {
             if (op.slot == null) {
                 skippedNullSlot++
+                continue
+            }
+            if (stateSlotPattern.containsMatchIn(op.slot)) {
+                skippedStateShaped++
                 continue
             }
             when (op.action) {
@@ -206,6 +219,9 @@ class SyncCoordinator @Inject constructor(
         }
         if (skippedNullSlot > 0) {
             Logger.info(TAG, "applyPlan: skipped $skippedNullSlot operations with null slot (legacy archived saves)")
+        }
+        if (skippedStateShaped > 0) {
+            Logger.info(TAG, "applyPlan: skipped $skippedStateShaped operations with state-shaped slot (legacy state-in-save rows)")
         }
         return conflicts to applied
     }
@@ -460,6 +476,11 @@ class SyncCoordinator @Inject constructor(
             return true
         }
         val payload = payloadCodec.decodeSaveFile(item.payloadJson) ?: return false
+        val channel = payload.channelName
+        if (channel != null && Regex("""^state_""", RegexOption.IGNORE_CASE).containsMatchIn(channel)) {
+            Logger.debug(TAG, "processSaveFile: dropping queue item for state-shaped channel gameId=${item.gameId} channel=$channel")
+            return true
+        }
 
         syncQueueManager.addOperation(
             SyncOperation(
@@ -476,7 +497,7 @@ class SyncCoordinator @Inject constructor(
             gameId = item.gameId,
             emulatorId = payload.emulatorId,
             channelName = payload.channelName,
-            forceOverwrite = false,
+            forceOverwrite = payload.source == QueueSource.NEGOTIATE,
             bypassSkipCheck = payload.source == QueueSource.NEGOTIATE
         )
 

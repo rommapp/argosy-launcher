@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.SaveFilePayload
 import com.nendo.argosy.data.sync.SyncPayloadCodec
@@ -34,6 +35,7 @@ class SaveSyncOrchestrator @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val savePathResolver: SavePathResolver,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     private val syncQueueManager: SyncQueueManager,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
     private val payloadCodec: SyncPayloadCodec
@@ -285,6 +287,7 @@ class SaveSyncOrchestrator @Inject constructor(
             }
         }
         val downloaded = downloadPendingServerSaves()
+        syncPreferencesRepository.setLastNegotiateAt(Instant.now())
         Logger.info(TAG, "forceSaveCheck: inspected=$inspected queued=$queued downloaded=$downloaded")
         ForceSaveCheckResult(inspected = inspected, queued = queued, message = null, downloaded = downloaded)
     }

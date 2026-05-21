@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMSave
@@ -33,6 +34,7 @@ class SaveSyncOrchestratorTest {
     private lateinit var emulatorResolver: EmulatorResolver
     private lateinit var savePathResolver: SavePathResolver
     private lateinit var userPreferencesRepository: UserPreferencesRepository
+    private lateinit var syncPreferencesRepository: SyncPreferencesRepository
     private lateinit var syncQueueManager: SyncQueueManager
     private lateinit var mockApiClient: SaveSyncApiClient
     private lateinit var apiClient: dagger.Lazy<SaveSyncApiClient>
@@ -58,6 +60,7 @@ class SaveSyncOrchestratorTest {
         emulatorResolver = mockk(relaxed = true)
         savePathResolver = mockk(relaxed = true)
         userPreferencesRepository = mockk(relaxed = true)
+        syncPreferencesRepository = mockk(relaxed = true)
         syncQueueManager = SyncQueueManager()
         mockApiClient = mockk(relaxed = true)
         apiClient = dagger.Lazy { mockApiClient }
@@ -74,6 +77,7 @@ class SaveSyncOrchestratorTest {
             emulatorResolver = emulatorResolver,
             savePathResolver = savePathResolver,
             userPreferencesRepository = userPreferencesRepository,
+            syncPreferencesRepository = syncPreferencesRepository,
             syncQueueManager = syncQueueManager,
             apiClient = apiClient,
             payloadCodec = com.nendo.argosy.data.sync.SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())

@@ -74,6 +74,16 @@ class SaveCacheManager @Inject constructor(
         val saveFile = fal.getTransformedFile(savePath)
         var tempFile: File? = null
 
+        if (!skipDuplicateCheck && !fal.isDirectory(savePath) && precomputedContentHash == null) {
+            val fileMtime = Instant.ofEpochMilli(saveFile.lastModified())
+            val unchanged = saveCacheDao.findUnchangedSinceMtime(gameId, saveFile.length(), fileMtime)
+            val cachedHash = unchanged?.contentHash
+            if (unchanged != null && !cachedHash.isNullOrBlank()) {
+                Log.d(TAG, "Cache untouched since ${unchanged.cachedAt} for game $gameId (hash=$cachedHash), skipping rehash")
+                return@withContext CacheResult.Duplicate(unchanged.id, cachedHash)
+            }
+        }
+
         try {
             val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
                 val game = gameDao.getById(gameId)

@@ -122,7 +122,7 @@ class SyncCoordinatorApplyPlanTest {
         action: ReconcileAction,
         romId: Long = 100L,
         saveId: Long? = 42L,
-        slot: String? = null,
+        slot: String? = "autosave",
         emulator: String? = "mgba"
     ) = ReconcileOperation(
         action = action,
@@ -302,10 +302,11 @@ class SyncCoordinatorApplyPlanTest {
     @Test
     fun `conflict entity carries localHash from save_sync row and serverHash from plan op`() = runTest {
         coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
-        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba") } returns SaveSyncEntity(
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(game.id, "mgba", "autosave") } returns SaveSyncEntity(
             gameId = game.id,
             rommId = 100L,
             emulatorId = "mgba",
+            channelName = "autosave",
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
             lastUploadedHash = "local-anchor"
         )
@@ -321,7 +322,7 @@ class SyncCoordinatorApplyPlanTest {
     @Test
     fun `conflict entity has null localHash when no save_sync row exists yet`() = runTest {
         coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
-        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba") } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(game.id, "mgba", "autosave") } returns null
         val captured = slot<PendingConflictEntity>()
         coEvery { pendingConflictDao.upsert(capture(captured)) } returns 1L
 

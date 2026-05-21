@@ -12,6 +12,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.ConflictResolution
 import com.nendo.argosy.data.sync.ConflictResolutionService
 import com.nendo.argosy.data.sync.SyncDirection
@@ -54,6 +55,7 @@ class SaveSyncViewModelTest {
     private lateinit var preferencesRepository: UserPreferencesRepository
     private lateinit var romMRepository: RomMRepository
     private lateinit var conflictResolutionService: ConflictResolutionService
+    private lateinit var saveSyncRepository: SaveSyncRepository
 
     @Before
     fun setup() {
@@ -66,6 +68,7 @@ class SaveSyncViewModelTest {
         preferencesRepository = mockk(relaxed = true)
         romMRepository = mockk(relaxed = true)
         conflictResolutionService = mockk(relaxed = true)
+        saveSyncRepository = mockk(relaxed = true)
 
         every { saveSyncDao.observeAll() } returns flowOf(emptyList())
         every { saveSyncDao.observeSaveCountsByDevice() } returns flowOf(emptyList())
@@ -299,7 +302,8 @@ class SaveSyncViewModelTest {
         gameDao = gameDao,
         preferencesRepository = preferencesRepository,
         romMRepository = romMRepository,
-        conflictResolutionService = conflictResolutionService
+        conflictResolutionService = conflictResolutionService,
+        saveSyncRepository = saveSyncRepository
     )
 
     private fun makeGame(id: Long, title: String): GameEntity = GameEntity(

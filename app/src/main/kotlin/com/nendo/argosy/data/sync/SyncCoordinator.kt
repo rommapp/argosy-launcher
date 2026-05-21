@@ -160,21 +160,31 @@ class SyncCoordinator @Inject constructor(
                     when (val res = conflictAutoResolver.classify(op, clientHash)) {
                         is ConflictAutoResolver.Resolution.AsIs -> {
                             if (game != null) {
-                                pendingConflictDao.upsert(
-                                    PendingConflictEntity(
-                                        gameId = game.id,
-                                        rommSaveId = op.saveId,
-                                        fileName = op.fileName,
-                                        slot = op.slot,
-                                        emulator = op.emulator,
-                                        localUpdatedAt = localTime,
-                                        serverUpdatedAt = op.serverUpdatedAt?.let { parseInstantOrNull(it) },
-                                        localHash = clientHash,
-                                        serverHash = op.serverContentHash,
-                                        reason = op.reason
+                                val opServerTime = op.serverUpdatedAt?.let { parseInstantOrNull(it) }
+                                val existing = pendingConflictDao.findByGameAndSave(game.id, op.saveId)
+                                val previouslyDismissedUnchanged = existing != null &&
+                                    existing.dismissed &&
+                                    existing.serverUpdatedAt == opServerTime &&
+                                    existing.serverHash == op.serverContentHash
+                                if (previouslyDismissedUnchanged) {
+                                    Logger.debug(TAG, "applyPlan: skipping CONFLICT for romId=${op.romId} saveId=${op.saveId} (previously dismissed, server unchanged)")
+                                } else {
+                                    pendingConflictDao.upsert(
+                                        PendingConflictEntity(
+                                            gameId = game.id,
+                                            rommSaveId = op.saveId,
+                                            fileName = op.fileName,
+                                            slot = op.slot,
+                                            emulator = op.emulator,
+                                            localUpdatedAt = localTime,
+                                            serverUpdatedAt = opServerTime,
+                                            localHash = clientHash,
+                                            serverHash = op.serverContentHash,
+                                            reason = op.reason
+                                        )
                                     )
-                                )
-                                conflicts++
+                                    conflicts++
+                                }
                             }
                         }
                         is ConflictAutoResolver.Resolution.KeepLocal -> {

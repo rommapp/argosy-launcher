@@ -73,6 +73,10 @@ class GetUnifiedSavesUseCase @Inject constructor(
         val claimedSlots = mutableSetOf<String>()
         val serverSaveById = serverSaves.associateBy { it.id }
 
+        val slottedChannels = serverSaves
+            .mapNotNull { it.slot?.takeIf { s -> s.isNotBlank() } }
+            .toSet()
+
         // Find the most recent cache for each channel (only these should match server saves by name)
         val mostRecentByChannel = localCaches
             .filter { it.channelName != null }
@@ -160,8 +164,14 @@ class GetUnifiedSavesUseCase @Inject constructor(
 
             val timestamp = parseServerTimestamp(serverSave.updatedAt) ?: Instant.now()
             val isLatest = isLatestSlot(serverSave.slot, serverSave.fileName, romBaseName)
-            val serverChannelName = if (isLatest) null
-                else serverSave.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(serverSave.fileName, romBaseName)
+            val derivedChannelName = serverSave.slot
+                ?: SaveSyncApiClient.parseServerChannelNameForSync(serverSave.fileName, romBaseName)
+
+            if (serverSave.slot == null && derivedChannelName != null && derivedChannelName in slottedChannels) {
+                continue
+            }
+
+            val serverChannelName = if (isLatest) null else derivedChannelName
             val isLocked = serverChannelName != null
             val deviceSyncCurrent = saveSyncRepository.getDeviceId()?.let { devId ->
                 serverSave.deviceSyncs?.find { it.deviceId == devId }?.isCurrent
@@ -178,6 +188,7 @@ class GetUnifiedSavesUseCase @Inject constructor(
                     serverFileName = serverSave.fileName,
                     isLatest = isLatest,
                     isLocked = isLocked,
+                    isUserCreatedSlot = serverSave.slot != null,
                     isCurrent = deviceSyncCurrent ?: false
                 )
             )

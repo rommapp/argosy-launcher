@@ -219,6 +219,14 @@ class SaveUploader @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 if (prepared.isTemporary) fileToUpload.delete()
                 tempTrailerFile?.delete()
+                syncEntity.rommSaveId?.let { knownId ->
+                    saveCacheDao.getByGameAndHash(gameId, contentHash)?.let { cache ->
+                        if (cache.rommSaveId != knownId) {
+                            saveCacheDao.updateRommSaveId(cache.id, knownId)
+                            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Self-healed orphan cache row | cacheId=${cache.id}, rommSaveId=$knownId")
+                        }
+                    }
+                }
                 val localMtime = localPath?.let { File(it).takeIf { f -> f.exists() }?.lastModified()?.let(Instant::ofEpochMilli) }
                 saveSyncDao.upsert(
                     syncEntity.copy(
@@ -298,10 +306,14 @@ class SaveUploader @Inject constructor(
             val requestBody = uploadFile.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
+            val slotForUpload = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
+            val isAutosaveSlot = channelName == null
+            val autocleanupEnabled = isAutosaveSlot
+            val autocleanupLimit = if (isAutosaveSlot) SaveSyncApiClient.AUTOCLEANUP_LIMIT else null
             val response = if (deviceId != null) {
-                api.uploadSaveWithDevice(rommId, resolvedEmulatorId, deviceId, overwrite = forceOverwrite, slot = null, autocleanup = false, autocleanupLimit = null, saveFile = filePart)
+                api.uploadSaveWithDevice(rommId, resolvedEmulatorId, deviceId, overwrite = forceOverwrite, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, saveFile = filePart)
             } else {
-                api.uploadSave(rommId, resolvedEmulatorId, slot = null, autocleanup = false, autocleanupLimit = null, filePart)
+                api.uploadSave(rommId, resolvedEmulatorId, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, filePart)
             }
 
             if (response.code() == 409) {
@@ -347,6 +359,13 @@ class SaveUploader @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | wrote lastUploadedHash=${serverSave.contentHash ?: contentHash} serverHash=${serverSave.contentHash} localHash=$contentHash")
                 if (serverSave.contentHash != null && serverSave.contentHash != contentHash) {
                     Logger.warn(TAG, "[SaveSync] HASH-MISMATCH gameId=$gameId | localHash=$contentHash serverHash=${serverSave.contentHash} file=${uploadFile.name} size=${uploadFile.length()} — client zip-hash algorithm has drifted from server _compute_zip_hash")
+                }
+
+                saveCacheDao.getByGameAndHash(gameId, contentHash)?.let { cache ->
+                    if (cache.rommSaveId != serverSave.id) {
+                        saveCacheDao.updateRommSaveId(cache.id, serverSave.id)
+                        Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Paired cache row | cacheId=${cache.id}, rommSaveId=${serverSave.id}")
+                    }
                 }
 
                 SaveDebugLogger.logSyncUploadCompleted(

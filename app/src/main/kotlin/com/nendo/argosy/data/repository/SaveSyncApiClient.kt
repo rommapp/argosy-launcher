@@ -444,6 +444,7 @@ class SaveSyncApiClient @Inject constructor(
     companion object {
         private const val TAG = "SaveSyncApiClient"
         internal const val DEFAULT_SAVE_NAME = "argosy-latest"
+        internal const val AUTOSAVE_SLOT_NAME = "autosave"
         internal const val MIN_VALID_SAVE_SIZE_BYTES = 100L
         internal const val AUTOCLEANUP_LIMIT = 10
 
@@ -516,6 +517,7 @@ class SaveSyncApiClient @Inject constructor(
         internal fun isLatestSaveFileName(fileName: String, romBaseName: String?): Boolean {
             val baseName = File(fileName).nameWithoutExtension
             if (baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true)) return true
+            if (baseName.equals(AUTOSAVE_SLOT_NAME, ignoreCase = true)) return true
             if (romBaseName == null) return false
             if (equalsNormalized(baseName, romBaseName)) return true
             if (startsWithNormalized(baseName, romBaseName)) {

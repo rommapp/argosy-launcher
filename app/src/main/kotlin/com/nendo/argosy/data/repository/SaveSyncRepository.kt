@@ -251,6 +251,8 @@ class SaveSyncRepository @Inject constructor(
 
     suspend fun downloadPendingServerSaves(): Int = orchestrator.downloadPendingServerSaves()
 
+    suspend fun forceSaveCheck(): SaveSyncOrchestrator.ForceSaveCheckResult = orchestrator.forceSaveCheck()
+
     suspend fun updateSyncEntity(
         gameId: Long,
         emulatorId: String,

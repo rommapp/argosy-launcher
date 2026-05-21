@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Language
@@ -94,6 +95,7 @@ fun SaveSyncScreen(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    val forceCheck by viewModel.forceCheckStatus.collectAsState()
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
@@ -186,6 +188,16 @@ fun SaveSyncScreen(
                     )
                 }
             }
+
+            if (uiState.deviceCard.isConnected) {
+                item {
+                    ForceSaveCheckCard(
+                        state = forceCheck,
+                        onClick = { viewModel.forceSaveCheck() },
+                        onDismiss = { viewModel.dismissForceCheckStatus() }
+                    )
+                }
+            }
         }
 
         FooterBar(
@@ -218,6 +230,9 @@ private fun buildFooterHints(state: SaveSyncUiState): List<Pair<InputButton, Str
         }
         is GameSaveRow -> if (!focused.hasConflict) add(InputButton.A to "Open game")
         else -> Unit
+    }
+    if (state.deviceCard.isConnected) {
+        add(InputButton.Y to "Scan RomM")
     }
     add(InputButton.B to "Back")
 }
@@ -837,5 +852,59 @@ private fun Pill(text: String, color: androidx.compose.ui.graphics.Color) {
             fontWeight = FontWeight.Bold,
             color = color
         )
+    }
+}
+
+@Composable
+private fun ForceSaveCheckCard(
+    state: ForceSaveCheckUiState,
+    onClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val running = state is ForceSaveCheckUiState.Running
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickableNoFocus(enabled = !running) { if (state is ForceSaveCheckUiState.Complete || state is ForceSaveCheckUiState.Failed) onDismiss() else onClick() },
+        shape = RoundedCornerShape(Dimens.radiusLg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(Dimens.spacingLg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Scan RomM for missing saves",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(Dimens.spacingXs))
+                val subtitle = when (state) {
+                    ForceSaveCheckUiState.Idle ->
+                        "Walks local games and pulls the latest save in each channel from RomM."
+                    ForceSaveCheckUiState.Running -> "Scanning..."
+                    is ForceSaveCheckUiState.Complete -> when {
+                        state.message != null -> state.message
+                        state.queued == 0 -> "Up to date - inspected ${state.inspected} games, nothing new."
+                        else -> "Queued ${state.queued} save(s) from ${state.inspected} games; ${state.downloaded} downloaded."
+                    }
+                    is ForceSaveCheckUiState.Failed -> "Failed: ${state.message}"
+                }
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }

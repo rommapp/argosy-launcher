@@ -449,7 +449,11 @@ class SaveSyncApiClient @Inject constructor(
         internal const val AUTOCLEANUP_LIMIT = 10
 
         fun computeUploadFileName(localSavePath: String?, channelName: String?, romBaseName: String?): String {
-            val baseName = channelName ?: romBaseName ?: DEFAULT_SAVE_NAME
+            val baseName = when {
+                channelName == null || channelName.equals(AUTOSAVE_SLOT_NAME, ignoreCase = true) ->
+                    romBaseName ?: DEFAULT_SAVE_NAME
+                else -> channelName
+            }
             val ext = localSavePath?.let { java.io.File(it) }?.let { file ->
                 when {
                     file.isDirectory -> "zip"

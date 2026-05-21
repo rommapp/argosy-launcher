@@ -16,6 +16,7 @@ import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMDevice
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveSyncApiClient
+import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.ConflictResolution
 import com.nendo.argosy.data.sync.ConflictResolutionService
 import com.nendo.argosy.data.sync.SyncDirection
@@ -47,8 +48,12 @@ class SaveSyncViewModel @Inject constructor(
     private val gameDao: GameDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
-    private val conflictResolutionService: ConflictResolutionService
+    private val conflictResolutionService: ConflictResolutionService,
+    private val saveSyncRepository: SaveSyncRepository
 ) : ViewModel() {
+
+    private val _forceCheckStatus = MutableStateFlow<ForceSaveCheckUiState>(ForceSaveCheckUiState.Idle)
+    val forceCheckStatus: StateFlow<ForceSaveCheckUiState> = _forceCheckStatus
 
     private val _focusedRowKey = MutableStateFlow<String?>(null)
     private val _attentionAction = MutableStateFlow(AttentionAction.SKIP)
@@ -270,6 +275,10 @@ class SaveSyncViewModel @Inject constructor(
             }
             return InputResult.HANDLED
         }
+        override fun onSecondaryAction(): InputResult {
+            forceSaveCheck()
+            return InputResult.HANDLED
+        }
     }
 
     fun moveFocus(delta: Int) {
@@ -282,6 +291,29 @@ class SaveSyncViewModel @Inject constructor(
 
     fun setAttentionAction(action: AttentionAction) {
         _attentionAction.value = action
+    }
+
+    fun forceSaveCheck() {
+        if (_forceCheckStatus.value is ForceSaveCheckUiState.Running) return
+        _forceCheckStatus.value = ForceSaveCheckUiState.Running
+        viewModelScope.launch {
+            val result = runCatching { saveSyncRepository.forceSaveCheck() }
+            _forceCheckStatus.value = result.fold(
+                onSuccess = { r ->
+                    ForceSaveCheckUiState.Complete(
+                        inspected = r.inspected,
+                        queued = r.queued,
+                        downloaded = r.downloaded,
+                        message = r.message
+                    )
+                },
+                onFailure = { ForceSaveCheckUiState.Failed(it.message ?: "Save check failed") }
+            )
+        }
+    }
+
+    fun dismissForceCheckStatus() {
+        _forceCheckStatus.value = ForceSaveCheckUiState.Idle
     }
 
     private fun resolveFocusKey(focusedKey: String?, rows: List<SaveSyncRow>): String? {

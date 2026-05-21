@@ -5,6 +5,18 @@ import java.time.Instant
 
 enum class AttentionAction { KEEP_LOCAL, KEEP_SERVER, SKIP }
 
+sealed class ForceSaveCheckUiState {
+    data object Idle : ForceSaveCheckUiState()
+    data object Running : ForceSaveCheckUiState()
+    data class Complete(
+        val inspected: Int,
+        val queued: Int,
+        val downloaded: Int,
+        val message: String?
+    ) : ForceSaveCheckUiState()
+    data class Failed(val message: String) : ForceSaveCheckUiState()
+}
+
 data class SaveSyncUiState(
     val deviceCard: ThisDeviceCard = ThisDeviceCard(),
     val otherDevices: List<DeviceSummary> = emptyList(),

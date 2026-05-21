@@ -216,6 +216,86 @@ class SaveSyncOrchestrator @Inject constructor(
         }
     }
 
+    suspend fun forceSaveCheck(): ForceSaveCheckResult = withContext(Dispatchers.IO) {
+        val prefs = userPreferencesRepository.preferences.first()
+        if (!prefs.saveSyncEnabled) return@withContext ForceSaveCheckResult(0, 0, "Save sync disabled")
+
+        val client = apiClient.get()
+        val downloadedIds = gameDao.getDownloadedRommGameIds()
+        val downloadedGames = gameDao.getByIdsChunked(downloadedIds)
+        var inspected = 0
+        var queued = 0
+
+        for (game in downloadedGames) {
+            val rommId = game.rommId ?: continue
+            val emulatorId = client.resolveEmulatorForGame(game) ?: continue
+            val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+            val serverSaves = client.checkSavesForGame(game.id, rommId)
+            if (serverSaves.isEmpty()) continue
+            inspected++
+
+            val firstTimeForGame = saveSyncDao.getByGame(game.id).isEmpty()
+
+            val latestPerChannel = serverSaves
+                .filter { !SaveSyncApiClient.isStateShapedSave(it) }
+                .groupBy { save ->
+                    save.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(save.fileName, romBaseName)
+                }
+                .mapValues { (_, saves) ->
+                    saves.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+                }
+                .values
+                .filterNotNull()
+
+            for (latest in latestPerChannel) {
+                val channelName = latest.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(latest.fileName, romBaseName)
+                val existing = if (channelName != null) {
+                    saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName)
+                } else {
+                    saveSyncDao.getByGameEmulatorAndNullChannel(game.id, emulatorId)
+                }
+                val serverTime = SaveSyncApiClient.parseTimestamp(latest.updatedAt)
+                if (existing != null && existing.rommSaveId == latest.id && existing.serverUpdatedAt == serverTime) continue
+
+                val isActiveChannel = channelName == null ||
+                    channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true) ||
+                    channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)
+                val shouldDownload = firstTimeForGame || isActiveChannel
+                val status = if (shouldDownload) SaveSyncEntity.STATUS_SERVER_NEWER else SaveSyncEntity.STATUS_SYNCED
+
+                saveSyncDao.upsert(
+                    SaveSyncEntity(
+                        id = existing?.id ?: 0,
+                        gameId = game.id,
+                        rommId = rommId,
+                        emulatorId = emulatorId,
+                        channelName = channelName,
+                        rommSaveId = latest.id,
+                        localSavePath = existing?.localSavePath,
+                        localUpdatedAt = existing?.localUpdatedAt,
+                        serverUpdatedAt = serverTime,
+                        lastSyncedAt = existing?.lastSyncedAt,
+                        syncStatus = status,
+                        lastUploadedHash = existing?.lastUploadedHash,
+                        lastSyncDeviceId = existing?.lastSyncDeviceId,
+                        lastSyncDeviceName = existing?.lastSyncDeviceName
+                    )
+                )
+                if (shouldDownload) queued++
+            }
+        }
+        val downloaded = downloadPendingServerSaves()
+        Logger.info(TAG, "forceSaveCheck: inspected=$inspected queued=$queued downloaded=$downloaded")
+        ForceSaveCheckResult(inspected = inspected, queued = queued, message = null, downloaded = downloaded)
+    }
+
+    data class ForceSaveCheckResult(
+        val inspected: Int,
+        val queued: Int,
+        val message: String?,
+        val downloaded: Int = 0
+    )
+
     companion object {
         private const val TAG = "SaveSyncOrchestrator"
     }

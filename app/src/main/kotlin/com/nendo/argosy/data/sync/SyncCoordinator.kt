@@ -121,7 +121,7 @@ class SyncCoordinator @Inject constructor(
             LocalSaveState(
                 romId = row.rommId,
                 fileName = serverFileName,
-                slot = row.channelName,
+                slot = row.channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
                 emulator = row.emulatorId,
                 contentHash = row.lastUploadedHash,
                 updatedAt = reportedTime.toString(),
@@ -136,7 +136,12 @@ class SyncCoordinator @Inject constructor(
     private suspend fun applyPlan(plan: ReconcilePlan): Pair<Int, Int> {
         var conflicts = 0
         var applied = 0
+        var skippedNullSlot = 0
         for (op in plan.operations) {
+            if (op.slot == null) {
+                skippedNullSlot++
+                continue
+            }
             when (op.action) {
                 ReconcileAction.NO_OP -> Unit
                 ReconcileAction.UPLOAD -> {
@@ -198,6 +203,9 @@ class SyncCoordinator @Inject constructor(
                     }
                 }
             }
+        }
+        if (skippedNullSlot > 0) {
+            Logger.info(TAG, "applyPlan: skipped $skippedNullSlot operations with null slot (legacy archived saves)")
         }
         return conflicts to applied
     }

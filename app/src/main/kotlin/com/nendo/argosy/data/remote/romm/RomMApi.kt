@@ -183,10 +183,9 @@ interface RomMApi {
     ): Response<List<Long>>
 
     @Streaming
-    @GET("api/saves/{id}/content/{fileName}")
+    @GET("api/saves/{id}/content")
     suspend fun downloadSaveContent(
-        @Path("id") saveId: Long,
-        @Path("fileName", encoded = true) fileName: String
+        @Path("id") saveId: Long
     ): Response<ResponseBody>
 
     // Device endpoints (RomM 4.7.0+)
@@ -232,10 +231,9 @@ interface RomMApi {
     ): Response<RomMSave>
 
     @Streaming
-    @GET("api/saves/{id}/content/{fileName}")
+    @GET("api/saves/{id}/content")
     suspend fun downloadSaveContentWithDevice(
         @Path("id") saveId: Long,
-        @Path("fileName", encoded = true) fileName: String,
         @Query("device_id") deviceId: String,
         @Query("optimistic") optimistic: Boolean = true
     ): Response<ResponseBody>

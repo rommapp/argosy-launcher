@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.sync
 
+import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingConflictDao
 import com.nendo.argosy.data.local.entity.PendingConflictEntity
 import com.nendo.argosy.data.repository.SaveSyncRepository
@@ -21,7 +22,8 @@ sealed class ConflictResolutionOutcome {
 @Singleton
 class ConflictResolutionService @Inject constructor(
     private val pendingConflictDao: PendingConflictDao,
-    private val saveSyncRepository: SaveSyncRepository
+    private val saveSyncRepository: SaveSyncRepository,
+    private val gameDao: GameDao
 ) {
     suspend fun resolve(
         conflict: PendingConflictEntity,
@@ -34,8 +36,8 @@ class ConflictResolutionService @Inject constructor(
                 ConflictResolutionOutcome.Dismissed
             }
             ConflictResolution.KEEP_LOCAL -> {
-                val emulatorId = conflict.emulator
-                    ?: return@withContext ConflictResolutionOutcome.Failed("Missing emulator for conflict ${conflict.id}")
+                val emulatorId = resolveEmulator(conflict)
+                    ?: return@withContext ConflictResolutionOutcome.Failed("Cannot resolve emulator for conflict ${conflict.id}")
                 pendingConflictDao.dismiss(conflict.id)
                 val result = saveSyncRepository.uploadSave(
                     gameId = conflict.gameId,
@@ -43,12 +45,12 @@ class ConflictResolutionService @Inject constructor(
                     channelName = conflict.slot,
                     forceOverwrite = true
                 )
-                Logger.info(TAG, "[Resolve] KEEP_LOCAL gameId=${conflict.gameId} channel=${conflict.slot} -> $result")
+                Logger.info(TAG, "[Resolve] KEEP_LOCAL gameId=${conflict.gameId} channel=${conflict.slot} emulator=$emulatorId -> $result")
                 ConflictResolutionOutcome.Resolved(result)
             }
             ConflictResolution.KEEP_SERVER -> {
-                val emulatorId = conflict.emulator
-                    ?: return@withContext ConflictResolutionOutcome.Failed("Missing emulator for conflict ${conflict.id}")
+                val emulatorId = resolveEmulator(conflict)
+                    ?: return@withContext ConflictResolutionOutcome.Failed("Cannot resolve emulator for conflict ${conflict.id}")
                 pendingConflictDao.dismiss(conflict.id)
                 val result = saveSyncRepository.downloadSave(
                     gameId = conflict.gameId,
@@ -56,9 +58,15 @@ class ConflictResolutionService @Inject constructor(
                     channelName = conflict.slot,
                     knownServerSaveId = conflict.rommSaveId
                 )
-                Logger.info(TAG, "[Resolve] KEEP_SERVER gameId=${conflict.gameId} channel=${conflict.slot} -> $result")
+                Logger.info(TAG, "[Resolve] KEEP_SERVER gameId=${conflict.gameId} channel=${conflict.slot} emulator=$emulatorId -> $result")
                 ConflictResolutionOutcome.Resolved(result)
             }
         }
+    }
+
+    private suspend fun resolveEmulator(conflict: PendingConflictEntity): String? {
+        conflict.emulator?.let { return it }
+        val game = gameDao.getById(conflict.gameId) ?: return null
+        return saveSyncRepository.resolveEmulatorForGame(game)
     }
 }

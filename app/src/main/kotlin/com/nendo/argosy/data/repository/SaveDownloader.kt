@@ -214,6 +214,44 @@ class SaveDownloader @Inject constructor(
             return@withContext SaveSyncResult.NoSaveFound
         }
 
+        if (preDownloadTargetPath != null && serverSave.contentHash != null) {
+            val cachedMatch = saveCacheManager.get().findCachedByHash(gameId, serverSave.contentHash)
+            if (cachedMatch != null) {
+                Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cache hit (hash=${serverSave.contentHash}), restoring from cacheId=${cachedMatch.id} instead of fetching content")
+                val existingTarget = File(preDownloadTargetPath)
+                if (existingTarget.exists() && !skipBackup) {
+                    try {
+                        saveCacheManager.get().cacheCurrentSave(gameId, resolvedEmulatorId, preDownloadTargetPath)
+                    } catch (e: Exception) {
+                        Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Backup failed before cache-hit restore", e)
+                        return@withContext SaveSyncResult.Error("Failed to backup existing save before restore")
+                    }
+                }
+                val restored = saveCacheManager.get().restoreSave(cachedMatch.id, preDownloadTargetPath)
+                if (!restored) {
+                    Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | restoreSave failed, falling through to network download")
+                } else {
+                    val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
+                    val currentDeviceSync = serverSave.deviceSyncs?.firstOrNull { it.isCurrent }
+                    saveSyncDao.upsert(
+                        syncEntity.copy(
+                            rommSaveId = serverSave.id,
+                            localSavePath = preDownloadTargetPath,
+                            localUpdatedAt = serverTimestamp,
+                            serverUpdatedAt = serverTimestamp,
+                            lastSyncedAt = Instant.now(),
+                            syncStatus = SaveSyncEntity.STATUS_SYNCED,
+                            lastUploadedHash = serverSave.contentHash,
+                            lastSyncDeviceId = currentDeviceSync?.deviceId ?: deviceId ?: syncEntity.lastSyncDeviceId,
+                            lastSyncDeviceName = currentDeviceSync?.deviceName ?: syncEntity.lastSyncDeviceName
+                        )
+                    )
+                    Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Complete (cache-hit) | path=$preDownloadTargetPath")
+                    return@withContext SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTimestamp)
+                }
+            }
+        }
+
         var tempZipFile: File? = null
 
         try {
@@ -256,7 +294,6 @@ class SaveDownloader @Inject constructor(
                     if (useDeviceEndpoint) {
                         api.downloadSaveContentWithDevice(
                             saveId = saveId,
-                            fileName = serverSave.fileName,
                             deviceId = deviceId!!,
                             optimistic = false
                         )
@@ -575,7 +612,8 @@ class SaveDownloader @Inject constructor(
                     emulatorId = resolvedEmulatorId,
                     savePath = targetPath,
                     channelName = cacheChannelName,
-                    isLocked = cacheIsLocked
+                    isLocked = cacheIsLocked,
+                    precomputedContentHash = serverSave.contentHash
                 )
                 if (cacheResult is SaveCacheManager.CacheResult.Created) {
                     gameDao.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
@@ -649,8 +687,8 @@ class SaveDownloader @Inject constructor(
                 val dlPath = serverSave.downloadPath
                 when {
                     dlPath != null -> api.downloadRaw(dlPath)
-                    deviceId != null -> api.downloadSaveContentWithDevice(serverSaveId, serverSave.fileName, deviceId)
-                    else -> api.downloadSaveContent(serverSaveId, serverSave.fileName)
+                    deviceId != null -> api.downloadSaveContentWithDevice(serverSaveId, deviceId)
+                    else -> api.downloadSaveContent(serverSaveId)
                 }
             } catch (e: Exception) {
                 Logger.error(TAG, "downloadSaveById: content download failed", e)
@@ -795,11 +833,9 @@ class SaveDownloader @Inject constructor(
             if (dlPath != null) {
                 api.downloadRaw(dlPath)
             } else if (useDeviceId != null) {
-                api.downloadSaveContentWithDevice(
-                    serverSaveId, serverSave.fileName, useDeviceId
-                )
+                api.downloadSaveContentWithDevice(serverSaveId, useDeviceId)
             } else {
-                api.downloadSaveContent(serverSaveId, serverSave.fileName)
+                api.downloadSaveContent(serverSaveId)
             }
         } catch (e: Exception) {
             Logger.error(TAG, "downloadSaveAsChannel: download failed", e)
@@ -869,11 +905,9 @@ class SaveDownloader @Inject constructor(
             if (dlPath != null) {
                 api.downloadRaw(dlPath)
             } else if (deviceId != null) {
-                api.downloadSaveContentWithDevice(
-                    serverSaveId, serverSave.fileName, deviceId
-                )
+                api.downloadSaveContentWithDevice(serverSaveId, deviceId)
             } else {
-                api.downloadSaveContent(serverSaveId, serverSave.fileName)
+                api.downloadSaveContent(serverSaveId)
             }
         } catch (e: Exception) {
             Logger.error(TAG, "downloadAndCacheSave: download failed", e)

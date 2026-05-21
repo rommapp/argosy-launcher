@@ -63,7 +63,8 @@ class SaveCacheManager @Inject constructor(
         isHardcore: Boolean = false,
         slotName: String? = null,
         skipDuplicateCheck: Boolean = false,
-        needsRemoteSync: Boolean = false
+        needsRemoteSync: Boolean = false,
+        precomputedContentHash: String? = null
     ): CacheResult = withContext(Dispatchers.IO) {
         if (!fal.exists(savePath)) {
             Log.w(TAG, "Save file does not exist: $savePath")
@@ -81,11 +82,6 @@ class SaveCacheManager @Inject constructor(
                     Log.w(TAG, "No save folders matched for game $gameId at $savePath -- skipping cache to avoid zipping unrelated saves")
                     return@withContext CacheResult.Failed
                 }
-                val folderHash = if (folders.size == 1) {
-                    saveArchiver.calculateFolderAsZipHash(folders[0])
-                } else {
-                    saveArchiver.calculateFoldersAsZipHash(folders)
-                }
                 tempFile = File(context.cacheDir, "temp_save_${System.currentTimeMillis()}.zip")
                 val zipped = if (folders.size == 1) {
                     saveArchiver.zipFolder(folders[0], tempFile)
@@ -96,9 +92,15 @@ class SaveCacheManager @Inject constructor(
                     Log.e(TAG, "Failed to zip save folder(s)")
                     return@withContext CacheResult.Failed
                 }
+                val folderHash = precomputedContentHash ?: if (folders.size == 1) {
+                    saveArchiver.calculateFolderAsZipHash(folders[0])
+                } else {
+                    saveArchiver.calculateFoldersAsZipHash(folders)
+                }
                 folderHash to tempFile
             } else {
-                saveArchiver.calculateFileHash(saveFile) to saveFile
+                val fileHash = precomputedContentHash ?: saveArchiver.calculateFileHash(saveFile)
+                fileHash to saveFile
             }
 
             // Check for duplicate save by hash (skip for new games to allow fresh start saves)
@@ -370,6 +372,9 @@ class SaveCacheManager @Inject constructor(
             CacheResult.Failed
         }
     }
+
+    suspend fun findCachedByHash(gameId: Long, contentHash: String): com.nendo.argosy.data.local.entity.SaveCacheEntity? =
+        withContext(Dispatchers.IO) { saveCacheDao.getByGameAndHash(gameId, contentHash) }
 
     suspend fun restoreSave(cacheId: Long, targetPath: String): Boolean = withContext(Dispatchers.IO) {
         val entity = saveCacheDao.getById(cacheId)

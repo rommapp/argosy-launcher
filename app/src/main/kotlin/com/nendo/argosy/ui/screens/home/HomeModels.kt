@@ -240,7 +240,9 @@ data class HomeUiState(
         HomeRow.Favorites -> "Favs"
         HomeRow.Android -> "Android"
         HomeRow.Steam -> "Steam"
-        is HomeRow.Platform -> platforms.getOrNull(row.index)?.shortName ?: "?"
+        is HomeRow.Platform -> platforms.getOrNull(row.index)?.let { p ->
+            p.name.takeIf { it.length <= 9 } ?: p.shortName
+        } ?: "?"
         is HomeRow.PinnedRegular -> row.name.take(6)
         is HomeRow.PinnedVirtual -> row.name.take(6)
     }

@@ -53,6 +53,14 @@ class LaunchViewModel @Inject constructor(
         get() = savedStateHandle["emulatorLaunchTime"] ?: 0L
         set(value) { savedStateHandle["emulatorLaunchTime"] = value }
 
+    private var wasBackgroundedSinceLaunch: Boolean
+        get() = savedStateHandle["wasBackgroundedSinceLaunch"] ?: false
+        set(value) { savedStateHandle["wasBackgroundedSinceLaunch"] = value }
+
+    fun markBackgrounded() {
+        if (hasLaunchedEmulator) wasBackgroundedSinceLaunch = true
+    }
+
     private val _launchOptions = MutableStateFlow<Bundle?>(null)
     val launchOptions: StateFlow<Bundle?> = _launchOptions.asStateFlow()
 
@@ -97,10 +105,10 @@ class LaunchViewModel @Inject constructor(
         }
     }
 
-    fun handleSessionEnd(onComplete: () -> Unit) {
+    fun handleSessionEnd(onComplete: () -> Unit, force: Boolean = false) {
         if (!hasLaunchedEmulator) return
-        val timeSinceLaunch = System.currentTimeMillis() - emulatorLaunchTime
-        if (timeSinceLaunch < 3_000L) return
+        // Gate on the activity actually pausing; LifecycleRegistry replays ON_RESUME on first observer attach.
+        if (!force && !wasBackgroundedSinceLaunch) return
         gameLaunchDelegate.handleSessionEnd(
             scope = viewModelScope,
             onSyncComplete = {

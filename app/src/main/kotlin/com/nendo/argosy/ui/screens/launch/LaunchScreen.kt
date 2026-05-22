@@ -89,10 +89,10 @@ fun LaunchScreen(
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.handleSessionEnd {
-                    // Session complete callback - isSessionEnded will trigger navigation
-                }
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> viewModel.markBackgrounded()
+                Lifecycle.Event.ON_RESUME -> viewModel.handleSessionEnd(onComplete = {})
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -122,7 +122,7 @@ fun LaunchScreen(
         if (hasActiveSession) return@LaunchedEffect
         if (syncOverlayState == null && discPickerState == null && launchIntent == null && !isSessionEnded) {
             android.util.Log.w("LaunchScreen", "Watchdog fired -- forcing session end after timeout")
-            viewModel.handleSessionEnd {}
+            viewModel.handleSessionEnd(onComplete = {}, force = true)
         }
     }
 

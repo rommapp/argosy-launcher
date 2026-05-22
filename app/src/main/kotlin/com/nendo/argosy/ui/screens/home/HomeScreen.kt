@@ -18,8 +18,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import kotlin.math.abs
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
@@ -589,31 +589,38 @@ fun HomeScreen(
                 }
             }
 
-        val edgeThreshold = with(LocalDensity.current) { 80.dp.toPx() }
+        val edgeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
 
-        val swipeGestureModifier = Modifier.pointerInput(Unit) {
-            var totalDragX = 0f
-            var totalDragY = 0f
-            var startX = 0f
-            detectDragGestures(
-                onDragStart = { offset ->
-                    totalDragX = 0f
-                    totalDragY = 0f
-                    startX = offset.x
-                },
-                onDragEnd = {
-                    when {
-                        startX < edgeThreshold && totalDragX > swipeThreshold -> currentOnDrawerToggle()
-                        totalDragY < -swipeThreshold && abs(totalDragY) > abs(totalDragX) -> viewModel.nextRow()
-                        totalDragY > swipeThreshold && abs(totalDragY) > abs(totalDragX) -> viewModel.previousRow()
-                    }
-                },
-                onDrag = { _, dragAmount ->
-                    totalDragX += dragAmount.x
-                    totalDragY += dragAmount.y
-                }
-            )
-        }
+        val swipeGestureModifier = Modifier
+            .pointerInput(Unit) {
+                var totalDragY = 0f
+                detectVerticalDragGestures(
+                    onDragStart = { totalDragY = 0f },
+                    onDragEnd = {
+                        when {
+                            totalDragY < -swipeThreshold -> viewModel.nextRow()
+                            totalDragY > swipeThreshold -> viewModel.previousRow()
+                        }
+                    },
+                    onVerticalDrag = { _, dragAmount -> totalDragY += dragAmount }
+                )
+            }
+            .pointerInput(Unit) {
+                var totalDragX = 0f
+                var startX = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        totalDragX = 0f
+                        startX = offset.x
+                    },
+                    onDragEnd = {
+                        if (startX < edgeThresholdPx && totalDragX > swipeThreshold) {
+                            currentOnDrawerToggle()
+                        }
+                    },
+                    onHorizontalDrag = { _, dragAmount -> totalDragX += dragAmount }
+                )
+            }
 
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
@@ -624,7 +631,10 @@ fun HomeScreen(
         val focusScale = 1.8f
         val railHeight = cardHeight * focusScale + 16.dp
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .then(swipeGestureModifier)
+        ) {
             Box(modifier = Modifier.align(Alignment.TopCenter)) {
                 HomeHeader(
                     uiState = uiState,
@@ -633,12 +643,6 @@ fun HomeScreen(
                     headerOffset = videoModeHeaderOffset
                 )
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(swipeGestureModifier)
-            )
 
             Column(
                 modifier = Modifier

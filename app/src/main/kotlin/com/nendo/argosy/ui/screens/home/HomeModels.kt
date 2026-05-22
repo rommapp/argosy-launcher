@@ -4,6 +4,7 @@ import android.content.Intent
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.screens.common.DiscPickerState
@@ -241,7 +242,13 @@ data class HomeUiState(
         HomeRow.Android -> "Android"
         HomeRow.Steam -> "Steam"
         is HomeRow.Platform -> platforms.getOrNull(row.index)?.let { p ->
-            p.name.takeIf { it.length <= 9 } ?: p.shortName
+            // Strip manufacturer prefix when result lands in 4..9 chars; else raw name if short; else acronym.
+            val normalized = PlatformDefinitions.normalizeDisplayName(p.name)
+            when {
+                normalized.length in 4..9 -> normalized
+                p.name.length <= 9        -> p.name
+                else                       -> p.shortName
+            }
         } ?: "?"
         is HomeRow.PinnedRegular -> row.name.take(6)
         is HomeRow.PinnedVirtual -> row.name.take(6)

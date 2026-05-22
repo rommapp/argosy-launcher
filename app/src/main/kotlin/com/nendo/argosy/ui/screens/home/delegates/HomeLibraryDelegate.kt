@@ -142,6 +142,7 @@ class HomeLibraryDelegate @Inject constructor(
         var favorites = gameRepository.getFavorites()
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
         val steamGames = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+            .let { if (installedOnly) it.filter { g -> g.localPath != null } else it }
 
         val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
         var recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
@@ -362,6 +363,7 @@ class HomeLibraryDelegate @Inject constructor(
     }
 
     suspend fun loadPlatforms() {
+        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
         val allPlatforms = platformRepository.getPlatformsWithGames()
         val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
         cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
@@ -369,6 +371,7 @@ class HomeLibraryDelegate @Inject constructor(
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
         val androidGameUis = androidGames.map { it.toUi() }
         val steamGames = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+            .let { if (installedOnly) it.filter { g -> g.localPath != null } else it }
         val steamGameUis = steamGames.map { it.toUi() }
         _state.update {
             it.copy(
@@ -480,7 +483,9 @@ class HomeLibraryDelegate @Inject constructor(
                 RefreshResult(gameUis.map { it.id }, isEmpty = gameUis.isEmpty())
             }
             HomeRow.Steam -> {
+                val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
                 val games = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+                    .let { if (installedOnly) it.filter { g -> g.localPath != null } else it }
                 val gameUis = games.map { it.toUi() }
                 _state.update { it.copy(steamGames = gameUis) }
                 RefreshResult(gameUis.map { it.id }, isEmpty = gameUis.isEmpty())

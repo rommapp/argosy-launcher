@@ -73,6 +73,14 @@ interface RomMApi {
         @Header("Range") range: String? = null
     ): Response<ResponseBody>
 
+    @Streaming
+    @GET("api/roms/{fileId}/files/content/{fileName}")
+    suspend fun downloadRomFile(
+        @Path("fileId") fileId: Long,
+        @Path("fileName", encoded = true) fileName: String,
+        @Header("Range") range: String? = null
+    ): Response<ResponseBody>
+
     @PUT("api/roms/{id}/props")
     suspend fun updateRomUserProps(
         @Path("id") romId: Long,

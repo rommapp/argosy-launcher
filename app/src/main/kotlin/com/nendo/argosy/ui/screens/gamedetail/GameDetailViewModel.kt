@@ -364,7 +364,7 @@ class GameDetailViewModel @Inject constructor(
                 val game = _uiState.value.game ?: return
                 downloadDelegate.downloadUpdateFile(
                     viewModelScope, currentGameId, selection.file,
-                    game.title, game.platformSlug, game.coverPath
+                    game.title, game.platformSlug, game.coverPath, game.rommFileName
                 )
             }
             is PickerSelection.ApplyUpdate -> {
@@ -760,7 +760,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun downloadUpdateFile(file: UpdateFileUi) {
         val game = _uiState.value.game ?: return
-        downloadDelegate.downloadUpdateFile(viewModelScope, currentGameId, file, game.title, game.platformSlug, game.coverPath)
+        downloadDelegate.downloadUpdateFile(viewModelScope, currentGameId, file, game.title, game.platformSlug, game.coverPath, game.rommFileName)
     }
 
     fun dismissExtractionPrompt() = downloadDelegate.dismissExtractionPrompt()
@@ -1207,7 +1207,8 @@ class GameDetailViewModel @Inject constructor(
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 coverPath = game.coverPath,
-                expectedSizeBytes = file.fileSize
+                expectedSizeBytes = file.fileSize,
+                gameFolderName = game.rommFileName
             )
             notificationManager.showSuccess("Downloading ${file.fileName}")
         }

@@ -1652,3 +1652,9 @@ object Migration_113_114 : Migration(113, 114) {
         db.execSQL("UPDATE games SET saveId = titleId WHERE titleId IS NOT NULL")
     }
 }
+
+object Migration_114_115 : Migration(114, 115) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE download_queue ADD COLUMN gameFolderName TEXT")
+    }
+}

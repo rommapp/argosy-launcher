@@ -18,6 +18,16 @@ data class GameWithMissingCount(
     val totalSize: Long
 )
 
+data class MissingGameFile(
+    val fileId: Long,
+    val gameId: Long,
+    val fileName: String,
+    val category: String,
+    val gameTitle: String,
+    val rommFileName: String?,
+    val platformSlug: String
+)
+
 @Dao
 interface GameFileDao {
 
@@ -58,6 +68,21 @@ interface GameFileDao {
 
     @Query("SELECT COUNT(*) FROM game_files WHERE localPath IS NULL")
     suspend fun getTotalMissingCount(): Int
+
+    @Query("""
+        SELECT
+            gf.id AS fileId,
+            gf.gameId AS gameId,
+            gf.fileName AS fileName,
+            gf.category AS category,
+            g.title AS gameTitle,
+            g.rommFileName AS rommFileName,
+            g.platformSlug AS platformSlug
+        FROM game_files gf
+        INNER JOIN games g ON gf.gameId = g.id
+        WHERE gf.localPath IS NULL
+    """)
+    suspend fun getMissingFilesWithGameInfo(): List<MissingGameFile>
 
     @Query("SELECT COUNT(*) FROM game_files WHERE gameId = :gameId AND localPath IS NOT NULL")
     suspend fun getDownloadedCount(gameId: Long): Int

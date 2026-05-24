@@ -775,7 +775,8 @@ class DualScreenManager(
                             gameId = gameId, gameFileId = fileId, rommFileId = rommFileId,
                             fileName = gameFile.fileName, category = gameFile.category,
                             gameTitle = game.title, platformSlug = game.platformSlug,
-                            coverPath = game.coverPath, expectedSizeBytes = gameFile.fileSize
+                            coverPath = game.coverPath, expectedSizeBytes = gameFile.fileSize,
+                            gameFolderName = game.rommFileName
                         )
                     }
                 }

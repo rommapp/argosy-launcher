@@ -83,6 +83,12 @@ class RomMRepository @Inject constructor(
         rangeHeader: String? = null
     ): RomMResult<DownloadResponse> = apiClient.downloadRom(romId, fileName, rangeHeader)
 
+    suspend fun downloadRomFile(
+        fileId: Long,
+        fileName: String,
+        rangeHeader: String? = null
+    ): RomMResult<DownloadResponse> = apiClient.downloadRomFile(fileId, fileName, rangeHeader)
+
     suspend fun getCurrentUser(): RomMResult<RomMUser> = apiClient.getCurrentUser()
 
     suspend fun getLibrarySummary(): RomMResult<Pair<Int, Int>> = apiClient.getLibrarySummary()

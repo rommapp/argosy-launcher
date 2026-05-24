@@ -60,6 +60,7 @@ data class DownloadProgress(
     val fileCategory: String? = null,
     val fileName: String,
     val gameTitle: String,
+    val gameFolderName: String? = null,
     val platformSlug: String,
     val coverPath: String?,
     val bytesDownloaded: Long,
@@ -487,14 +488,16 @@ class DownloadManager @Inject constructor(
         gameTitle: String,
         platformSlug: String,
         coverPath: String?,
-        expectedSizeBytes: Long = 0
+        expectedSizeBytes: Long = 0,
+        gameFolderName: String? = null
     ) {
         val currentState = _state.value
         if (currentState.activeDownloads.any { it.gameFileId == gameFileId }) return
         if (currentState.queue.any { it.gameFileId == gameFileId }) return
 
+        val folderName = gameFolderName ?: gameTitle
         val platformDir = getDownloadDir(platformSlug)
-        val gameFolder = getGameFolder(platformSlug, gameTitle)
+        val gameFolder = getGameFolder(platformSlug, folderName)
         val useExtcontent = ZipExtractor.isNswPlatform(platformSlug) &&
             isEdenEmulator(gameId, platformSlug)
         val categoryFolder = File(gameFolder, if (useExtcontent) "extcontent" else category)
@@ -508,6 +511,7 @@ class DownloadManager @Inject constructor(
             fileCategory = category,
             fileName = fileName,
             gameTitle = gameTitle,
+            gameFolderName = gameFolderName,
             platformSlug = platformSlug,
             coverPath = coverPath,
             bytesDownloaded = 0,
@@ -528,6 +532,7 @@ class DownloadManager @Inject constructor(
             fileCategory = category,
             fileName = fileName,
             gameTitle = gameTitle,
+            gameFolderName = gameFolderName,
             platformSlug = platformSlug,
             coverPath = coverPath,
             bytesDownloaded = 0,
@@ -674,7 +679,7 @@ class DownloadManager @Inject constructor(
 
                 // Game file downloads (DLC/updates) go to category subfolders
                 val downloadDir = if (progress.isGameFileDownload && progress.fileCategory != null) {
-                    val gameFolder = getGameFolder(progress.platformSlug, progress.gameTitle)
+                    val gameFolder = getGameFolder(progress.platformSlug, progress.gameFolderName ?: progress.gameTitle)
                     val useExtcontent = ZipExtractor.isNswPlatform(progress.platformSlug) &&
                         isEdenEmulator(progress.gameId, progress.platformSlug)
                     File(gameFolder, if (useExtcontent) "extcontent" else progress.fileCategory)
@@ -710,7 +715,12 @@ class DownloadManager @Inject constructor(
 
                 val rangeHeader = if (existingBytes > 0) "bytes=$existingBytes-" else null
 
-                when (val result = romMRepository.downloadRom(progress.rommId, progress.fileName, rangeHeader)) {
+                val downloadCall = if (progress.isGameFileDownload) {
+                    romMRepository.downloadRomFile(progress.rommId, progress.fileName, rangeHeader)
+                } else {
+                    romMRepository.downloadRom(progress.rommId, progress.fileName, rangeHeader)
+                }
+                when (val result = downloadCall) {
                     is RomMResult.Success -> {
                         val response = result.data
                         val body = response.body
@@ -1239,7 +1249,8 @@ class DownloadManager @Inject constructor(
                     gameTitle = item.gameTitle,
                     platformSlug = item.platformSlug,
                     coverPath = item.coverPath,
-                    expectedSizeBytes = item.totalBytes
+                    expectedSizeBytes = item.totalBytes,
+                    gameFolderName = item.gameFolderName
                 )
                 else -> enqueueDownload(
                     gameId = item.gameId,
@@ -1386,6 +1397,7 @@ class DownloadManager @Inject constructor(
             fileCategory = fileCategory,
             fileName = fileName,
             gameTitle = gameTitle,
+            gameFolderName = gameFolderName,
             platformSlug = platformSlug,
             coverPath = coverPath,
             bytesDownloaded = bytesDownloaded,

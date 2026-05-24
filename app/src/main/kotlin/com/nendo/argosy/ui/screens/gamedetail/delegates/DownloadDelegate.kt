@@ -266,7 +266,8 @@ class DownloadDelegate @Inject constructor(
         file: UpdateFileUi,
         gameTitle: String,
         platformSlug: String,
-        coverPath: String?
+        coverPath: String?,
+        gameFolderName: String? = null
     ) {
         val gameFileId = file.gameFileId ?: return
         val rommFileId = file.rommFileId ?: return
@@ -281,7 +282,8 @@ class DownloadDelegate @Inject constructor(
                 gameTitle = gameTitle,
                 platformSlug = platformSlug,
                 coverPath = coverPath,
-                expectedSizeBytes = file.sizeBytes
+                expectedSizeBytes = file.sizeBytes,
+                gameFolderName = gameFolderName
             )
             notificationManager.showSuccess("Download queued: ${file.fileName}")
         }

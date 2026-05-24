@@ -307,6 +307,45 @@ class GameRepository @Inject constructor(
         repaired
     }
 
+    suspend fun repairVariantFilePointers(): Int = withContext(Dispatchers.IO) {
+        if (!isStorageReady()) {
+            Log.w(TAG, "repairVariantFilePointers: storage not ready, skipping")
+            return@withContext 0
+        }
+
+        val startTime = System.currentTimeMillis()
+        val missing = gameFileDao.getMissingFilesWithGameInfo()
+        if (missing.isEmpty()) return@withContext 0
+
+        var repaired = 0
+        for (entry in missing) {
+            val platformDir = getDownloadDir(entry.platformSlug)
+            val folderCandidates = buildList {
+                entry.rommFileName?.takeIf { it.isNotBlank() }?.let { add(it) }
+                add(entry.gameTitle)
+            }.distinct()
+            val categoryCandidates = listOf(entry.category, entry.category.lowercase(), "extcontent")
+                .distinct()
+
+            val found = folderCandidates.firstNotNullOfOrNull { folderName ->
+                val gameFolder = File(platformDir, folderName)
+                if (!gameFolder.isDirectory) return@firstNotNullOfOrNull null
+                categoryCandidates.firstNotNullOfOrNull { category ->
+                    val categoryFolder = File(gameFolder, category)
+                    val candidate = File(categoryFolder, entry.fileName)
+                    candidate.takeIf { it.isFile }
+                }
+            } ?: continue
+
+            gameFileDao.updateLocalPath(entry.fileId, found.absolutePath, Instant.now())
+            repaired++
+            Log.i(TAG, "Repaired variant pointer for file ${entry.fileId} (${entry.fileName}) -> ${found.absolutePath}")
+        }
+        val elapsed = System.currentTimeMillis() - startTime
+        if (repaired > 0) Log.i(TAG, "Repaired $repaired variant file pointers in ${elapsed}ms")
+        repaired
+    }
+
     suspend fun recoverDownloadPaths(): Int = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         val gamesWithoutPath = gameDao.getGamesWithRommIdButNoPath()

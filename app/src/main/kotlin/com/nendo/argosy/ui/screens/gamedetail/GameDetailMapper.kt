@@ -75,7 +75,8 @@ fun GameEntity.toGameDetailUi(
         isHidden = isHidden,
         titleId = titleId,
         igdbId = igdbId,
-        steamAppId = steamAppId
+        steamAppId = steamAppId,
+        rommFileName = rommFileName
     )
 }
 

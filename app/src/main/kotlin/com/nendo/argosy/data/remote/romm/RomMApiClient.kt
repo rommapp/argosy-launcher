@@ -69,28 +69,45 @@ class RomMApiClient @Inject constructor(
         val currentApi = api ?: return RomMResult.Error("Not connected")
         return try {
             val response = currentApi.downloadRom(romId, fileName, rangeHeader)
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null) {
-                    val isPartial = response.code() == 206
-                    RomMResult.Success(DownloadResponse(body, isPartial))
-                } else {
-                    RomMResult.Error("Empty response body")
-                }
-            } else {
-                val code = response.code()
-                val message = when (code) {
-                    400 -> "Bad request - try resyncing (HTTP 400)"
-                    401, 403 -> "Authentication failed (HTTP $code)"
-                    404 -> "ROM not found on server - try resyncing"
-                    500, 502, 503 -> "Server error (HTTP $code)"
-                    else -> "Download failed (HTTP $code)"
-                }
-                RomMResult.Error(message, code)
-            }
+            interpretDownloadResponse(response, "ROM")
         } catch (e: Exception) {
             RomMResult.Error(e.message ?: "Download failed")
         }
+    }
+
+    suspend fun downloadRomFile(
+        fileId: Long,
+        fileName: String,
+        rangeHeader: String? = null
+    ): RomMResult<DownloadResponse> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.downloadRomFile(fileId, fileName, rangeHeader)
+            interpretDownloadResponse(response, "File")
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Download failed")
+        }
+    }
+
+    private fun interpretDownloadResponse(
+        response: retrofit2.Response<okhttp3.ResponseBody>,
+        kind: String
+    ): RomMResult<DownloadResponse> {
+        if (response.isSuccessful) {
+            val body = response.body()
+                ?: return RomMResult.Error("Empty response body")
+            val isPartial = response.code() == 206
+            return RomMResult.Success(DownloadResponse(body, isPartial))
+        }
+        val code = response.code()
+        val message = when (code) {
+            400 -> "Bad request - try resyncing (HTTP 400)"
+            401, 403 -> "Authentication failed (HTTP $code)"
+            404 -> "$kind not found on server - try resyncing"
+            500, 502, 503 -> "Server error (HTTP $code)"
+            else -> "Download failed (HTTP $code)"
+        }
+        return RomMResult.Error(message, code)
     }
 
     suspend fun getCurrentUser(): RomMResult<RomMUser> {

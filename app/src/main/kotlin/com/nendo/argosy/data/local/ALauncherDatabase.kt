@@ -115,9 +115,10 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         SteamCompletedFileEntity::class,
         SteamCompletedDepotEntity::class,
         EmulatorLaunchArgsEntity::class,
-        PendingConflictEntity::class
+        PendingConflictEntity::class,
+        com.nendo.argosy.data.local.entity.TouchLayoutOverrideEntity::class
     ],
-    version = 115,
+    version = 116,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -157,5 +158,6 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun steamDownloadQueueDao(): SteamDownloadQueueDao
     abstract fun steamDownloadTrackingDao(): SteamDownloadTrackingDao
     abstract fun pendingConflictDao(): PendingConflictDao
+    abstract fun touchLayoutOverrideDao(): com.nendo.argosy.data.local.dao.TouchLayoutOverrideDao
 
 }

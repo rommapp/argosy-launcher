@@ -119,6 +119,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var playSessionTracker: PlaySessionTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
+    @Inject lateinit var touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository
     @Inject lateinit var inputConfigRepository: InputConfigRepository
     @Inject lateinit var cheatDao: CheatDao
     @Inject lateinit var gameDao: GameDao
@@ -209,6 +210,7 @@ class LibretroActivity : ComponentActivity() {
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
     private var inputDeviceListener: android.hardware.input.InputManager.InputDeviceListener? = null
     private var splitColumn: android.widget.LinearLayout? = null
+    private var touchEditMode by mutableStateOf(false)
 
     private val isAnyMenuOpen: Boolean
         get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible ||
@@ -676,7 +678,10 @@ class LibretroActivity : ComponentActivity() {
                     orientation = currentOrientationState,
                     isGamepadConnected = isGamepadConnectedState,
                     settings = touchSettingsState,
-                    rotationKey = currentRotationState
+                    rotationKey = currentRotationState,
+                    editMode = touchEditMode,
+                    repository = touchLayoutRepository,
+                    onExitEdit = { exitTouchEditMode() }
                 )
                 if (menuVisible) {
                     val quality = if (netplay.inSession && netplay.role != null) {
@@ -705,7 +710,8 @@ class LibretroActivity : ComponentActivity() {
                         isInNetplaySession = netplay.inSession,
                         netplayRole = netplay.role,
                         netplaySessionIsReserved = netplay.sessionIsReserved,
-                        netplayQuality = quality
+                        netplayQuality = quality,
+                        touchControlsVisible = touchSettingsState.showTouchControlsWhenNoGamepad && !isGamepadConnectedState
                     )
                 }
                 if (netplay.modePickerVisible) {
@@ -1135,6 +1141,9 @@ class LibretroActivity : ComponentActivity() {
                 menuVisible = false
                 cheatsMenuVisible = true
             }
+            InGameMenuAction.CustomizeTouchControls -> {
+                enterTouchEditMode()
+            }
             InGameMenuAction.Quit -> {
                 performAutoSaveState()
                 finish()
@@ -1436,6 +1445,24 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    fun enterTouchEditMode() {
+        menuVisible = false
+        settingsVisible = false
+        if (!netplay.inSession) {
+            retroView.pauseEmulation()
+            retroView.suppressAutoResume = true
+        }
+        touchEditMode = true
+    }
+
+    private fun exitTouchEditMode() {
+        touchEditMode = false
+        if (!netplay.inSession) {
+            retroView.suppressAutoResume = false
+            retroView.resumeEmulation()
+        }
+    }
+
     private fun enterImmersiveMode() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -1543,12 +1570,25 @@ class LibretroActivity : ComponentActivity() {
                 // guest session SRAM is ephemeral and must not touch the persistent file
                 saveStateManager.saveSram(retroView)
             }
+            captureTouchBackdrop()
             if (isFinishing) {
                 retroView.destroyNative()
             }
             retroView.onPause()
         }
         super.onPause()
+    }
+
+    private fun captureTouchBackdrop() {
+        if (platformSlug.isBlank()) return
+        try {
+            val bmp = retroView.captureRawFrame()
+            if (bmp != null) {
+                com.nendo.argosy.libretro.touch.TouchBackdropCache.save(this, platformSlug, bmp)
+                bmp.recycle()
+            }
+        } catch (_: Exception) {
+        }
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {

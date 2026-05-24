@@ -41,6 +41,7 @@ sealed class InGameMenuAction {
     data object InviteFriend : InGameMenuAction()
     data object ClearReservation : InGameMenuAction()
     data object CloseNetplaySession : InGameMenuAction()
+    data object CustomizeTouchControls : InGameMenuAction()
 }
 
 enum class NetplayMenuRole { Host, Guest }
@@ -81,7 +82,8 @@ fun InGameMenu(
     isInNetplaySession: Boolean = false,
     netplayRole: NetplayMenuRole? = null,
     netplaySessionIsReserved: Boolean = false,
-    netplayQuality: NetplayQualityInfo? = null
+    netplayQuality: NetplayQualityInfo? = null,
+    touchControlsVisible: Boolean = false
 ): InputHandler {
     val menuItems = remember(
         cheatsAvailable,
@@ -90,7 +92,8 @@ fun InGameMenu(
         netplaySupported,
         isInNetplaySession,
         netplayRole,
-        netplaySessionIsReserved
+        netplaySessionIsReserved,
+        touchControlsVisible
     ) {
         buildList {
             add("Resume" to InGameMenuAction.Resume)
@@ -117,6 +120,9 @@ fun InGameMenu(
                 }
             }
             add("Settings" to InGameMenuAction.Settings)
+            if (touchControlsVisible) {
+                add("Customize Touch Controls" to InGameMenuAction.CustomizeTouchControls)
+            }
             add("Quit Game" to InGameMenuAction.Quit)
         }
     }

@@ -71,6 +71,7 @@ class SettingsViewModel @Inject constructor(
     internal val hapticManager: HapticFeedbackManager,
     internal val platformRepository: PlatformRepository,
     internal val libretroSettingsRepo: LibretroSettingsRepository,
+    internal val touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository,
     internal val launchArgsRepo: com.nendo.argosy.data.repository.LaunchArgsRepository,
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val emulatorConfigRepo: EmulatorConfigRepository,
@@ -406,6 +407,8 @@ class SettingsViewModel @Inject constructor(
     fun setTouchMirror180(enabled: Boolean) = routeSetTouchMirror180(this, enabled)
     fun setTouchColouredFaceButtons(enabled: Boolean) = routeSetTouchColouredFaceButtons(this, enabled)
     fun setTouchGenesis6Button(enabled: Boolean) = routeSetTouchGenesis6Button(this, enabled)
+    fun showTouchLayoutEditor() = routeShowTouchLayoutEditor(this)
+    fun hideTouchLayoutEditor() = routeHideTouchLayoutEditor(this)
     fun getConnectedControllers() = inputConfigRepository.getConnectedControllers()
 
     suspend fun getControllerMapping(

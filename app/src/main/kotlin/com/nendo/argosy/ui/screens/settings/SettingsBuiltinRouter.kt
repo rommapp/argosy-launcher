@@ -472,6 +472,14 @@ internal fun routeSetTouchGenesis6Button(vm: SettingsViewModel, enabled: Boolean
     vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsGenesis6Button(enabled) }
 }
 
+internal fun routeShowTouchLayoutEditor(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showTouchLayoutEditorModal = true)) }
+}
+
+internal fun routeHideTouchLayoutEditor(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showTouchLayoutEditorModal = false)) }
+}
+
 internal fun routeShowHotkeysModal(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showHotkeysModal = true)) }
 }

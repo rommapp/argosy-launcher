@@ -1658,3 +1658,20 @@ object Migration_114_115 : Migration(114, 115) {
         db.execSQL("ALTER TABLE download_queue ADD COLUMN gameFolderName TEXT")
     }
 }
+
+object Migration_115_116 : Migration(115, 116) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS touch_layout_overrides (
+                platformSlug TEXT NOT NULL,
+                orientation TEXT NOT NULL,
+                schemaVersion INTEGER NOT NULL,
+                layoutJson TEXT NOT NULL,
+                updatedAt INTEGER NOT NULL,
+                PRIMARY KEY (platformSlug, orientation)
+            )
+            """.trimIndent()
+        )
+    }
+}

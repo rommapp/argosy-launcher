@@ -172,6 +172,10 @@ object DatabaseModule {
         database.pendingConflictDao()
 
     @Provides
+    fun provideTouchLayoutOverrideDao(database: ALauncherDatabase): com.nendo.argosy.data.local.dao.TouchLayoutOverrideDao =
+        database.touchLayoutOverrideDao()
+
+    @Provides
     fun provideSocialGameCacheDao(database: ALauncherDatabase): SocialGameCacheDao =
         database.socialGameCacheDao()
 

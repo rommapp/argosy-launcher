@@ -472,7 +472,8 @@ data class BuiltinControlsState(
     val touchLockOrientation: Boolean = false,
     val touchMirror180: Boolean = false,
     val touchColouredFaceButtons: Boolean = false,
-    val touchGenesis6Button: Boolean = false
+    val touchGenesis6Button: Boolean = false,
+    val showTouchLayoutEditorModal: Boolean = false
 )
 
 enum class CoreChipStatus {

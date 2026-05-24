@@ -68,6 +68,7 @@ internal sealed class BuiltinControlsItem(
     data object TouchMirror180 : BuiltinControlsItem("touchMirror180", "touchControls", { it.touchEnabled })
     data object TouchColouredFaceButtons : BuiltinControlsItem("touchColouredFaceButtons", "touchControls", { it.touchEnabled })
     data object TouchGenesis6Button : BuiltinControlsItem("touchGenesis6Button", "touchControls")
+    data object TouchCustomizeLayouts : BuiltinControlsItem("touchCustomizeLayouts", "touchControls", { it.touchEnabled })
 
     companion object {
         private val ControllersHeader = Header("controllersHeader", "controllers", "Controllers")
@@ -100,7 +101,8 @@ internal sealed class BuiltinControlsItem(
             TouchLockOrientation,
             TouchMirror180,
             TouchColouredFaceButtons,
-            TouchGenesis6Button
+            TouchGenesis6Button,
+            TouchCustomizeLayouts
         )
     }
 }
@@ -388,6 +390,14 @@ fun BuiltinControlsSection(
                     onToggle = { viewModel.setTouchGenesis6Button(it) }
                 )
 
+                BuiltinControlsItem.TouchCustomizeLayouts -> NavigationPreference(
+                    icon = Icons.Default.Gamepad,
+                    title = "Customize layouts…",
+                    subtitle = "Drag and resize touch controls per platform",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.showTouchLayoutEditor() }
+                )
+
                 else -> {}
             }
         }
@@ -424,6 +434,13 @@ fun BuiltinControlsSection(
                 onClearHotkey = { action -> viewModel.clearHotkey(action) },
                 onSetHoldMs = { action, holdMs -> viewModel.setHotkeyHoldMs(action, holdMs) },
                 onDismiss = { viewModel.hideHotkeysModal() }
+            )
+        }
+
+        if (controlsState.showTouchLayoutEditorModal) {
+            com.nendo.argosy.ui.screens.touchlayout.TouchLayoutEditorModal(
+                repository = viewModel.touchLayoutRepository,
+                onDismiss = { viewModel.hideTouchLayoutEditor() }
             )
         }
     }

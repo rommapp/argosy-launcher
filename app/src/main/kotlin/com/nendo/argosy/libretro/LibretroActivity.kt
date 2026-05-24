@@ -211,6 +211,8 @@ class LibretroActivity : ComponentActivity() {
     private var inputDeviceListener: android.hardware.input.InputManager.InputDeviceListener? = null
     private var splitColumn: android.widget.LinearLayout? = null
     private var touchEditMode by mutableStateOf(false)
+    private var baselineRotation: Int = 0
+    private var orientationEventListener: android.view.OrientationEventListener? = null
 
     private val isAnyMenuOpen: Boolean
         get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible ||
@@ -223,8 +225,10 @@ class LibretroActivity : ComponentActivity() {
         enterImmersiveMode()
         currentOrientationState = resources.configuration.orientation
         currentRotationState = windowManager.defaultDisplay.rotation
+        baselineRotation = currentRotationState
         isGamepadConnectedState = com.nendo.argosy.core.input.ControllerDetector.isAnyGamepadConnected()
         registerGamepadDetection()
+        registerOrientationListener()
 
         com.nendo.argosy.DualScreenManagerHolder.instance?.let { dsm ->
             dsm.emulatorKeyDispatcher = { event -> dispatchKeyEvent(event) }
@@ -679,6 +683,7 @@ class LibretroActivity : ComponentActivity() {
                     isGamepadConnected = isGamepadConnectedState,
                     settings = touchSettingsState,
                     rotationKey = currentRotationState,
+                    baselineRotation = baselineRotation,
                     editMode = touchEditMode,
                     repository = touchLayoutRepository,
                     onExitEdit = { exitTouchEditMode() }
@@ -1621,9 +1626,29 @@ class LibretroActivity : ComponentActivity() {
         inputDeviceListener = null
     }
 
+    private fun registerOrientationListener() {
+        val listener = object : android.view.OrientationEventListener(this) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return
+                val rot = windowManager.defaultDisplay.rotation
+                if (rot != currentRotationState) currentRotationState = rot
+            }
+        }
+        if (listener.canDetectOrientation()) {
+            listener.enable()
+            orientationEventListener = listener
+        }
+    }
+
+    private fun unregisterOrientationListener() {
+        orientationEventListener?.disable()
+        orientationEventListener = null
+    }
+
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
         unregisterGamepadDetection()
+        unregisterOrientationListener()
         audioController.abandonAudioFocus()
         com.nendo.argosy.DualScreenManagerHolder.instance?.let { dsm ->
             dsm.emulatorKeyDispatcher = null

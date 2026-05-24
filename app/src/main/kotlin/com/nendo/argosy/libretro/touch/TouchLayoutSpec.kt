@@ -20,10 +20,10 @@ enum class FaceShape {
 
 enum class ShoulderShape { None, TopPair, FourCorners, TopPairPlusZ }
 
-enum class AnalogConfig { None, LeftOnly, LeftAndRight, LeftAndCCluster }
+enum class AnalogConfig { None, LeftOnly, LeftAndRight }
 
 enum class GroupId {
-    DPAD, LEFT_ANALOG, FACE, SHOULDERS, SYSTEM, RIGHT_ANALOG, C_CLUSTER
+    DPAD, LEFT_ANALOG, FACE, SHOULDERS, SYSTEM, RIGHT_ANALOG
 }
 
 data class TouchSlot(

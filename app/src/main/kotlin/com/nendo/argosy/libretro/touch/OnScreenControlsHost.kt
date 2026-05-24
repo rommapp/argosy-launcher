@@ -23,6 +23,7 @@ fun OnScreenControlsHost(
     isGamepadConnected: Boolean,
     settings: BuiltinEmulatorSettings,
     rotationKey: Int,
+    baselineRotation: Int = 0,
     editMode: Boolean = false,
     repository: TouchLayoutRepository? = null,
     onExitEdit: (() -> Unit)? = null,
@@ -54,12 +55,13 @@ fun OnScreenControlsHost(
         settings.touchControlsSwapHanded,
         settings.touchControlsSizeScale,
         settings.touchControlsMirror180,
-        rotationKey
+        rotationKey,
+        baselineRotation
     ) {
         baseResolved
             .applyHandedness(settings.touchControlsSwapHanded)
             .applySizeScale(settings.touchControlsSizeScale)
-            .applyMirror180(settings.touchControlsMirror180, rotationKey)
+            .applyMirror180(settings.touchControlsMirror180, rotationKey, baselineRotation)
     }
     val opacity = if (orientation == Configuration.ORIENTATION_PORTRAIT) {
         settings.touchControlsOpacityPortrait

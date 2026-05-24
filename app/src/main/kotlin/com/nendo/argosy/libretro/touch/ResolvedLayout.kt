@@ -24,8 +24,7 @@ object LayoutDefaults {
         when (spec.analog) {
             AnalogConfig.None -> placements[GroupId.DPAD] = GroupPlacement(0.10f, 0.78f)
             AnalogConfig.LeftOnly,
-            AnalogConfig.LeftAndRight,
-            AnalogConfig.LeftAndCCluster -> {
+            AnalogConfig.LeftAndRight -> {
                 placements[GroupId.LEFT_ANALOG] = GroupPlacement(0.10f, 0.78f)
                 if (spec.dpad != DpadStyle.None && spec.dpad != DpadStyle.AnalogOnly) {
                     placements[GroupId.DPAD] = GroupPlacement(0.22f, 0.78f, scale = 0.7f)
@@ -40,9 +39,6 @@ object LayoutDefaults {
         if (spec.analog == AnalogConfig.LeftAndRight) {
             placements[GroupId.RIGHT_ANALOG] = GroupPlacement(0.78f, 0.45f)
         }
-        if (spec.analog == AnalogConfig.LeftAndCCluster) {
-            placements[GroupId.C_CLUSTER] = GroupPlacement(0.85f, 0.45f)
-        }
         return ResolvedLayout(placements)
     }
 
@@ -51,8 +47,7 @@ object LayoutDefaults {
         when (spec.analog) {
             AnalogConfig.None -> placements[GroupId.DPAD] = GroupPlacement(0.22f, 0.62f)
             AnalogConfig.LeftOnly,
-            AnalogConfig.LeftAndRight,
-            AnalogConfig.LeftAndCCluster -> {
+            AnalogConfig.LeftAndRight -> {
                 placements[GroupId.LEFT_ANALOG] = GroupPlacement(0.22f, 0.62f)
                 if (spec.dpad != DpadStyle.None && spec.dpad != DpadStyle.AnalogOnly) {
                     placements[GroupId.DPAD] = GroupPlacement(0.22f, 0.32f, scale = 0.7f)
@@ -66,9 +61,6 @@ object LayoutDefaults {
         placements[GroupId.SYSTEM] = GroupPlacement(0.5f, 0.92f)
         if (spec.analog == AnalogConfig.LeftAndRight) {
             placements[GroupId.RIGHT_ANALOG] = GroupPlacement(0.78f, 0.32f)
-        }
-        if (spec.analog == AnalogConfig.LeftAndCCluster) {
-            placements[GroupId.C_CLUSTER] = GroupPlacement(0.82f, 0.32f)
         }
         return ResolvedLayout(placements)
     }
@@ -84,9 +76,9 @@ fun ResolvedLayout.applySizeScale(scale: Float): ResolvedLayout {
     return ResolvedLayout(placements.mapValues { (_, p) -> p.copy(scale = p.scale * scale) })
 }
 
-fun ResolvedLayout.applyMirror180(mirror: Boolean, rotation: Int): ResolvedLayout {
+fun ResolvedLayout.applyMirror180(mirror: Boolean, rotation: Int, baseline: Int = 0): ResolvedLayout {
     if (!mirror) return this
-    val flipped = rotation == 1 || rotation == 2
+    val flipped = ((rotation - baseline) % 4 + 4) % 4 == 2
     if (!flipped) return this
     return ResolvedLayout(placements.mapValues { (_, p) -> p.copy(anchorX = 1f - p.anchorX) })
 }

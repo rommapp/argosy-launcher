@@ -187,7 +187,7 @@ object TouchLayoutRegistry {
     private fun n64(): TouchLayoutSpec = TouchLayoutSpec(
         mappingPlatform = MappingPlatforms.N64,
         dpad = DpadStyle.EightWay,
-        face = FaceShape.NbuttonCluster,
+        face = FaceShape.HorizontalPair,
         faceSlots = listOf(
             slot(RetroButton.B, "A"),
             slot(RetroButton.Y, "B")
@@ -199,7 +199,8 @@ object TouchLayoutRegistry {
             slot(RetroButton.L2, "Z")
         ),
         system = listOf(slot(RetroButton.START, "Start")),
-        analog = AnalogConfig.LeftAndCCluster
+        analog = AnalogConfig.LeftAndRight,
+        notes = "Right analog stick maps to C-buttons natively in libretro Mupen64Plus"
     )
 
     private fun arcade6(): TouchLayoutSpec = TouchLayoutSpec(

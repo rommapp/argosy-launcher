@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.touchlayout
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -66,6 +67,8 @@ fun TouchLayoutEditorModal(
     }
 
     val backdrop = remember(platformSlug) { TouchBackdropCache.load(context, platformSlug) }
+
+    BackHandler(enabled = true) { onDismiss() }
 
     Box(
         modifier = Modifier

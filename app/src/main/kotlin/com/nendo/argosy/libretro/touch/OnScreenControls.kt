@@ -10,8 +10,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,7 +68,12 @@ fun OnScreenControls(
         { if (haptic) vibrateClick(vibrator) }
     }
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize().alpha(opacity)) {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .alpha(opacity)
+    ) {
         val areaW = maxWidth
         val areaH = maxHeight
 
@@ -111,17 +119,6 @@ fun OnScreenControls(
                 areaW = areaW,
                 areaH = areaH,
                 sizeScale = sizeScale
-            )
-        }
-
-        resolved.get(GroupId.C_CLUSTER)?.let { placement ->
-            CCluster(
-                retroView = retroView,
-                placement = placement,
-                areaW = areaW,
-                areaH = areaH,
-                sizeScale = sizeScale,
-                fireHaptic = fireHaptic
             )
         }
 
@@ -450,42 +447,6 @@ private fun SystemBar(
 }
 
 @Composable
-private fun CCluster(
-    retroView: GLRetroView,
-    placement: GroupPlacement,
-    areaW: Dp,
-    areaH: Dp,
-    sizeScale: Float,
-    fireHaptic: () -> Unit
-) {
-    val btnSize = 40.dp * sizeScale * placement.scale
-    val gap = 8.dp * sizeScale * placement.scale
-    val groupW = btnSize * 3 + gap * 2
-    val originX = areaW * placement.anchorX - groupW / 2
-    val originY = areaH * placement.anchorY - groupW / 2
-
-    val cTint = Color(0xFFE6B423)
-    data class CBtn(val label: String, val key: Int, val dx: Int, val dy: Int)
-    val buttons = listOf(
-        CBtn("▲", KeyEvent.KEYCODE_BUTTON_THUMBL, 1, 0),
-        CBtn("▼", KeyEvent.KEYCODE_BUTTON_Y, 1, 2),
-        CBtn("◀", KeyEvent.KEYCODE_BUTTON_X, 0, 1),
-        CBtn("▶", KeyEvent.KEYCODE_BUTTON_THUMBR, 2, 1)
-    )
-    buttons.forEach { c ->
-        ButtonChip(
-            label = c.label,
-            tint = cTint,
-            sizeDp = btnSize,
-            offsetX = originX + (btnSize + gap) * c.dx,
-            offsetY = originY + (btnSize + gap) * c.dy,
-            onPress = { fireHaptic(); retroView.sendKeyEvent(KeyEvent.ACTION_DOWN, c.key) },
-            onRelease = { retroView.sendKeyEvent(KeyEvent.ACTION_UP, c.key) }
-        )
-    }
-}
-
-@Composable
 private fun ButtonChip(
     label: String,
     tint: Color?,
@@ -501,19 +462,30 @@ private fun ButtonChip(
     val bg = tint ?: Color(0xCC1A1A1A)
     val border = Color(0xFFE6E6E6)
     val measurer = rememberTextMeasurer()
+    val minTap = 48.dp
+    val drawW = widthDp
+    val drawH = sizeDp
+    val hitW = if (drawW < minTap) minTap else drawW
+    val hitH = if (drawH < minTap) minTap else drawH
+    val hitOffX = offsetX - (hitW - drawW) / 2
+    val hitOffY = offsetY - (hitH - drawH) / 2
+    val drawInsetX = with(density) { ((hitW - drawW) / 2).toPx() }
+    val drawInsetY = with(density) { ((hitH - drawH) / 2).toPx() }
+    val drawWPx = with(density) { drawW.toPx() }
+    val drawHPx = with(density) { drawH.toPx() }
 
     Box(
         modifier = Modifier
             .offset {
                 IntOffset(
-                    density.run { offsetX.roundToPx() },
-                    density.run { offsetY.roundToPx() }
+                    density.run { hitOffX.roundToPx() },
+                    density.run { hitOffY.roundToPx() }
                 )
             }
-            .size(width = widthDp, height = sizeDp)
+            .size(width = hitW, height = hitH)
             .drawBehind {
-                val r = kotlin.math.min(size.width, size.height) / 2f
-                val center = Offset(size.width / 2f, size.height / 2f)
+                val r = kotlin.math.min(drawWPx, drawHPx) / 2f
+                val center = Offset(drawInsetX + drawWPx / 2f, drawInsetY + drawHPx / 2f)
                 drawCircle(
                     color = if (pressed) bg.copy(alpha = 1f) else bg,
                     radius = r,

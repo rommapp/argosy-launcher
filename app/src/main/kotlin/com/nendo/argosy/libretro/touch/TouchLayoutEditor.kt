@@ -54,14 +54,12 @@ fun TouchLayoutEditor(
             when (spec.analog) {
                 AnalogConfig.None -> Unit
                 AnalogConfig.LeftOnly,
-                AnalogConfig.LeftAndRight,
-                AnalogConfig.LeftAndCCluster -> add(GroupId.LEFT_ANALOG)
+                AnalogConfig.LeftAndRight -> add(GroupId.LEFT_ANALOG)
             }
             add(GroupId.FACE)
             if (spec.shoulders != ShoulderShape.None) add(GroupId.SHOULDERS)
             add(GroupId.SYSTEM)
             if (spec.analog == AnalogConfig.LeftAndRight) add(GroupId.RIGHT_ANALOG)
-            if (spec.analog == AnalogConfig.LeftAndCCluster) add(GroupId.C_CLUSTER)
         }
     }
 

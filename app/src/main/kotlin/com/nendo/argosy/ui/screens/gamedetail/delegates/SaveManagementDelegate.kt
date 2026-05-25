@@ -101,7 +101,7 @@ class SaveManagementDelegate @Inject constructor(
                 return@launch
             }
             val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
-            val savePath = computeEffectiveSavePath(emulatorId, game.platformSlug)
+            val savePath = computeEffectiveSavePath(emulatorId, game.platformSlug, emulatorPackage)
             saveChannelDelegate.show(
                 scope = scope,
                 gameId = gameId,
@@ -113,7 +113,11 @@ class SaveManagementDelegate @Inject constructor(
         }
     }
 
-    private suspend fun computeEffectiveSavePath(emulatorId: String, platformSlug: String): String? {
+    private suspend fun computeEffectiveSavePath(
+        emulatorId: String,
+        platformSlug: String,
+        emulatorPackage: String?
+    ): String? {
         if (com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(emulatorId)) {
             val coreName = SavePathRegistry.getRetroArchCore(platformSlug)
             val req = com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
@@ -132,8 +136,7 @@ class SaveManagementDelegate @Inject constructor(
             return userConfig.savePathPattern
         }
         val config = SavePathRegistry.getConfig(emulatorId) ?: return null
-        val paths = SavePathRegistry.resolvePath(config, platformSlug)
-        return paths.firstOrNull()
+        return SavePathRegistry.resolvePathWithPackage(config, emulatorPackage).firstOrNull()
     }
 
     fun confirmSaveCacheSelection(

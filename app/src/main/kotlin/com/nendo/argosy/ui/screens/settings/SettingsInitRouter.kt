@@ -338,7 +338,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     }
                 }
                 isUserSavePathOverride -> userSaveConfig?.savePathPattern
-                else -> savePathConfig.defaultPaths.firstOrNull()
+                else -> SavePathRegistry.resolvePathWithPackage(savePathConfig, emulatorPackage).firstOrNull()
             }
 
             val extensionOptions = EmulatorRegistry.getExtensionOptionsForPlatform(platform.slug)

@@ -198,9 +198,9 @@ class PlaySessionTracker @Inject constructor(
         val orphaned = preferencesRepository.getPersistedSession() ?: return
         Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Detected orphaned session from ${orphaned.startTime}")
 
-        // Log the orphaned play session before attempting save recovery.
-        // Recover emulator foreground time from UsageStats since per-process tracking was lost.
-        val endTime = Instant.now()
+        // Prefer the last observed heartbeat over wall-clock now: it bounds session
+        // duration to actual activity instead of attributing post-kill idle time to play.
+        val endTime = orphaned.lastObservedActiveAt ?: Instant.now()
         val sessionDuration = Duration.between(orphaned.startTime, endTime)
         if (sessionDuration.seconds >= MIN_PLAY_SECONDS_FOR_COMPLETION) {
             try {
@@ -300,14 +300,7 @@ class PlaySessionTracker @Inject constructor(
 
                 // Sync to RomM after caching
                 if (cacheResult !is SaveCacheManager.CacheResult.Duplicate) {
-                    val syncResult = syncSaveOnSessionEndUseCase.get()(
-                        orphaned.gameId,
-                        orphaned.emulatorPackage,
-                        orphaned.startTime.toEpochMilli(),
-                        orphaned.coreName,
-                        orphaned.isHardcore,
-                        channelName = orphaned.channelName
-                    )
+                    val syncResult = syncSaveOnSessionEndUseCase.get()(orphaned)
                     when (syncResult) {
                         is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
                             Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Synced to RomM")
@@ -345,7 +338,7 @@ class PlaySessionTracker @Inject constructor(
 
     private suspend fun recoverOrphanedPlaySession(stopService: Boolean): Boolean {
         val orphaned = preferencesRepository.getPersistedSession() ?: return false
-        val endTime = Instant.now()
+        val endTime = orphaned.lastObservedActiveAt ?: Instant.now()
         val sessionDuration = Duration.between(orphaned.startTime, endTime)
 
         if (sessionDuration.seconds < MIN_PLAY_SECONDS_FOR_COMPLETION) {

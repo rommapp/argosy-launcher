@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.Preferences
 import com.nendo.argosy.data.preferences.dataStore
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileAccessLayerImpl
+import com.nendo.argosy.data.sync.SaveSyncQueuer
+import com.nendo.argosy.data.sync.SaveSyncQueuerImpl
 import com.nendo.argosy.hardware.LEDController
 import com.nendo.argosy.hardware.OdinLEDController
 import com.squareup.moshi.Moshi
@@ -24,6 +26,10 @@ abstract class AppModule {
     @Binds
     @Singleton
     abstract fun bindFileAccessLayer(impl: FileAccessLayerImpl): FileAccessLayer
+
+    @Binds
+    @Singleton
+    abstract fun bindSaveSyncQueuer(impl: SaveSyncQueuerImpl): SaveSyncQueuer
 
     companion object {
 

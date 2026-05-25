@@ -6,7 +6,6 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -368,27 +367,7 @@ class UserPreferencesRepository @Inject constructor(
 
     // --- Session delegates ---
 
-    data class PersistedSession(
-        val gameId: Long,
-        val emulatorPackage: String,
-        val startTime: Instant,
-        val coreName: String?,
-        val isHardcore: Boolean,
-        val channelName: String? = null
-    )
-
-    val activeSessionFlow: Flow<PersistedSession?> = sessionPrefs.activeSessionFlow.map { session ->
-        session?.let {
-            PersistedSession(
-                gameId = it.gameId,
-                emulatorPackage = it.emulatorPackage,
-                startTime = it.startTime,
-                coreName = it.coreName,
-                isHardcore = it.isHardcore,
-                channelName = it.channelName
-            )
-        }
-    }
+    val activeSessionFlow: Flow<PersistedSession?> = sessionPrefs.activeSessionFlow
 
     suspend fun persistActiveSession(
         gameId: Long,
@@ -401,17 +380,9 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun clearActiveSession() = sessionPrefs.clearActiveSession()
 
-    suspend fun getPersistedSession(): PersistedSession? {
-        val session = sessionPrefs.getPersistedSession() ?: return null
-        return PersistedSession(
-            gameId = session.gameId,
-            emulatorPackage = session.emulatorPackage,
-            startTime = session.startTime,
-            coreName = session.coreName,
-            isHardcore = session.isHardcore,
-            channelName = session.channelName
-        )
-    }
+    suspend fun getPersistedSession(): PersistedSession? = sessionPrefs.getPersistedSession()
+
+    suspend fun recordSessionActivity(observedAt: Instant) = sessionPrefs.recordSessionActivity(observedAt)
 }
 
 data class BuiltinEmulatorSettings(

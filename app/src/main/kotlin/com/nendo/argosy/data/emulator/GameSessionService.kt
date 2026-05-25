@@ -33,7 +33,9 @@ import com.nendo.argosy.MainActivity
 import com.nendo.argosy.R
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.SessionStateStore
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.sync.SaveSyncQueuer
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.PermissionHelper
@@ -54,6 +56,8 @@ class GameSessionService : Service() {
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var permissionHelper: PermissionHelper
     @Inject lateinit var playSessionTracker: PlaySessionTracker
+    @Inject lateinit var preferencesRepository: UserPreferencesRepository
+    @Inject lateinit var saveSyncQueuer: SaveSyncQueuer
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.IO, "GameSessionService")
     private val handler = Handler(Looper.getMainLooper())
@@ -432,6 +436,18 @@ class GameSessionService : Service() {
                 } catch (e: Exception) {
                     Logger.error(TAG, "Live cache error for gameId=$gameId", e)
                 }
+            }
+        }
+
+        serviceScope.launch {
+            try {
+                val now = java.time.Instant.now()
+                preferencesRepository.recordSessionActivity(now)
+                val session = preferencesRepository.getPersistedSession() ?: return@launch
+                if (session.gameId != gameId) return@launch
+                saveSyncQueuer.ensureQueuedForActiveSession(session)
+            } catch (e: Exception) {
+                Logger.warn(TAG, "Queue-on-first-notice failed for gameId=$gameId", e)
             }
         }
 

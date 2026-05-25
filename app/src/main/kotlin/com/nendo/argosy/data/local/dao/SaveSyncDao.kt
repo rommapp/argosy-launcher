@@ -37,6 +37,15 @@ interface SaveSyncDao {
     @Query("SELECT * FROM save_sync WHERE syncStatus IN (:statuses)")
     suspend fun getByStatuses(vararg statuses: String): List<SaveSyncEntity>
 
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE gameId = :gameId
+          AND syncStatus = :status
+          AND IFNULL(channelName, '') = IFNULL(:channelName, '')
+        LIMIT 1
+    """)
+    suspend fun getByGameStatusAndChannel(gameId: Long, status: String, channelName: String?): SaveSyncEntity?
+
     @Query("SELECT * FROM save_sync WHERE syncStatus = 'SERVER_NEWER' OR syncStatus = 'CONFLICT'")
     suspend fun getPendingDownloads(): List<SaveSyncEntity>
 

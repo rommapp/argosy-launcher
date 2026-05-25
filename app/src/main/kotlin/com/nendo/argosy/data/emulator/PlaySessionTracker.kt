@@ -198,9 +198,10 @@ class PlaySessionTracker @Inject constructor(
         val orphaned = preferencesRepository.getPersistedSession() ?: return
         Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Detected orphaned session from ${orphaned.startTime}")
 
-        // Prefer the last observed heartbeat over wall-clock now: it bounds session
-        // duration to actual activity instead of attributing post-kill idle time to play.
-        val endTime = orphaned.lastObservedActiveAt ?: Instant.now()
+        // endTime is the upper bound of the UsageStats query; resolveActivePlayTime
+        // trims it back to actual emulator foreground time. Narrowing this would drop
+        // play that happened after the in-app monitor died.
+        val endTime = Instant.now()
         val sessionDuration = Duration.between(orphaned.startTime, endTime)
         if (sessionDuration.seconds >= MIN_PLAY_SECONDS_FOR_COMPLETION) {
             try {
@@ -338,7 +339,7 @@ class PlaySessionTracker @Inject constructor(
 
     private suspend fun recoverOrphanedPlaySession(stopService: Boolean): Boolean {
         val orphaned = preferencesRepository.getPersistedSession() ?: return false
-        val endTime = orphaned.lastObservedActiveAt ?: Instant.now()
+        val endTime = Instant.now()
         val sessionDuration = Duration.between(orphaned.startTime, endTime)
 
         if (sessionDuration.seconds < MIN_PLAY_SECONDS_FOR_COMPLETION) {

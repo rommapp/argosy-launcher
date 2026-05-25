@@ -381,8 +381,6 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun clearActiveSession() = sessionPrefs.clearActiveSession()
 
     suspend fun getPersistedSession(): PersistedSession? = sessionPrefs.getPersistedSession()
-
-    suspend fun recordSessionActivity(observedAt: Instant) = sessionPrefs.recordSessionActivity(observedAt)
 }
 
 data class BuiltinEmulatorSettings(

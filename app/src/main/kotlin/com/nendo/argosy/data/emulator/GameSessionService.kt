@@ -441,8 +441,6 @@ class GameSessionService : Service() {
 
         serviceScope.launch {
             try {
-                val now = java.time.Instant.now()
-                preferencesRepository.recordSessionActivity(now)
                 val session = preferencesRepository.getPersistedSession() ?: return@launch
                 if (session.gameId != gameId) return@launch
                 saveSyncQueuer.ensureQueuedForActiveSession(session)

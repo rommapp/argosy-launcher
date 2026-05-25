@@ -584,7 +584,7 @@ class MainActivity : ComponentActivity() {
             imageCacheManager.resumePendingLogoCache()
             imageCacheManager.resumePendingBadgeCache()
 
-            if (prefs.ambientLedEnabled) {
+            if (prefs.ambientLedEnabled && prefs.ambientLedScreenEnabled) {
                 if (screenCaptureManager.hasPermission.value && !screenCaptureManager.isCapturing.value) {
                     screenCaptureManager.startCapture()
                 } else if (!screenCaptureManager.hasPermission.value && !screenCapturePromptedThisSession) {

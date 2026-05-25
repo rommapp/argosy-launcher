@@ -472,11 +472,6 @@ internal fun routeSetTouchGenesis6Button(vm: SettingsViewModel, enabled: Boolean
     vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsGenesis6Button(enabled) }
 }
 
-internal fun routeSetTouchPortraitSplit(vm: SettingsViewModel, enabled: Boolean) {
-    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchPortraitSplit = enabled)) }
-    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsPortraitSplit(enabled) }
-}
-
 internal fun routeShowTouchLayoutEditor(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showTouchLayoutEditorModal = true)) }
 }

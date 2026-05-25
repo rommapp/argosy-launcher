@@ -407,7 +407,6 @@ class SettingsViewModel @Inject constructor(
     fun setTouchMirror180(enabled: Boolean) = routeSetTouchMirror180(this, enabled)
     fun setTouchColouredFaceButtons(enabled: Boolean) = routeSetTouchColouredFaceButtons(this, enabled)
     fun setTouchGenesis6Button(enabled: Boolean) = routeSetTouchGenesis6Button(this, enabled)
-    fun setTouchPortraitSplit(enabled: Boolean) = routeSetTouchPortraitSplit(this, enabled)
     fun showTouchLayoutEditor() = routeShowTouchLayoutEditor(this)
     fun hideTouchLayoutEditor() = routeHideTouchLayoutEditor(this)
     fun getConnectedControllers() = inputConfigRepository.getConnectedControllers()

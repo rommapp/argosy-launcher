@@ -142,22 +142,28 @@ fun TouchLayoutEditorModal(
         Box(modifier = Modifier.fillMaxSize().padding(top = 96.dp)) {
             val layout = currentLayout
             if (layout != null) {
-                TouchLayoutEditor(
-                    spec = spec,
-                    initial = layout,
-                    onSave = { saved ->
+                val editorState = com.nendo.argosy.libretro.touch.rememberTouchEditorState(layout)
+                com.nendo.argosy.libretro.touch.TouchLayoutEditor(
+                    state = editorState,
+                    spec = spec
+                )
+                com.nendo.argosy.libretro.touch.TouchEditorToolbar(
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    onSave = {
                         scope.launch {
+                            val saved = editorState.snapshot()
                             repository.save(platformSlug, orientation, saved)
                             currentLayout = saved
                         }
                     },
-                    onCancel = onDismiss,
                     onReset = {
+                        editorState.clearOverrides()
                         scope.launch {
                             repository.reset(platformSlug, orientation)
                             currentLayout = LayoutDefaults.forOrientation(spec, orientation)
                         }
-                    }
+                    },
+                    onCancel = onDismiss
                 )
             }
         }

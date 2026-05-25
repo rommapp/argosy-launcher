@@ -473,7 +473,6 @@ data class BuiltinControlsState(
     val touchMirror180: Boolean = false,
     val touchColouredFaceButtons: Boolean = false,
     val touchGenesis6Button: Boolean = false,
-    val touchPortraitSplit: Boolean = true,
     val showTouchLayoutEditorModal: Boolean = false
 )
 

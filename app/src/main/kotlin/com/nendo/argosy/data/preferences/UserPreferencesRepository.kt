@@ -361,7 +361,6 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setTouchControlsAllowLongPressEdit(enabled: Boolean) = builtinPrefs.setTouchControlsAllowLongPressEdit(enabled)
     suspend fun setTouchControlsColouredFaceButtons(enabled: Boolean) = builtinPrefs.setTouchControlsColouredFaceButtons(enabled)
     suspend fun setTouchControlsGenesis6Button(enabled: Boolean) = builtinPrefs.setTouchControlsGenesis6Button(enabled)
-    suspend fun setTouchControlsPortraitSplit(enabled: Boolean) = builtinPrefs.setTouchControlsPortraitSplit(enabled)
     fun getArchitectureOverride(): Flow<String?> = builtinPrefs.getArchitectureOverride()
     fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = builtinPrefs.getBuiltinEmulatorSettings()
     fun getBuiltinCoreSelections(): Flow<Map<String, String>> = builtinPrefs.getBuiltinCoreSelections()
@@ -456,8 +455,7 @@ data class BuiltinEmulatorSettings(
     val touchControlsMirror180: Boolean = false,
     val touchControlsAllowLongPressEdit: Boolean = false,
     val touchControlsColouredFaceButtons: Boolean = false,
-    val touchControlsGenesis6Button: Boolean = false,
-    val touchControlsPortraitSplit: Boolean = true
+    val touchControlsGenesis6Button: Boolean = false
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {

@@ -662,8 +662,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     touchLockOrientation = builtinSettings.touchControlsLockOrientation,
                     touchMirror180 = builtinSettings.touchControlsMirror180,
                     touchColouredFaceButtons = builtinSettings.touchControlsColouredFaceButtons,
-                    touchGenesis6Button = builtinSettings.touchControlsGenesis6Button,
-                    touchPortraitSplit = builtinSettings.touchControlsPortraitSplit
+                    touchGenesis6Button = builtinSettings.touchControlsGenesis6Button
                 )
             )
         }

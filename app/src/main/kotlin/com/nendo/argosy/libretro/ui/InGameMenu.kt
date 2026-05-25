@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -121,7 +125,7 @@ fun InGameMenu(
             }
             add("Settings" to InGameMenuAction.Settings)
             if (touchControlsVisible) {
-                add("Customize Touch Controls" to InGameMenuAction.CustomizeTouchControls)
+                add("Touch Controls" to InGameMenuAction.CustomizeTouchControls)
             }
             add("Quit Game" to InGameMenuAction.Quit)
         }
@@ -171,17 +175,21 @@ fun InGameMenu(
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {
+        val maxHeightDp = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
         Surface(
             modifier = Modifier
                 .widthIn(max = 300.dp)
-                .padding(32.dp)
+                .heightIn(max = maxHeightDp)
+                .padding(16.dp)
                 .focusProperties { canFocus = false },
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             tonalElevation = 8.dp
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {

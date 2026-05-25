@@ -27,7 +27,7 @@ object TouchLayoutRegistry {
             "tg16", "pce", "turbografx16", "pcengine", "tgcd", "supergrafx", "pcfx" -> pcEngine()
             "saturn" -> saturn()
             "vb", "virtualboy" -> snes()
-            "psx", "ps1", "playstation" -> psxLike(false, colouredPsx)
+            "psx", "ps1", "playstation" -> psxLike(true, colouredPsx)
             "ps2" -> psxLike(true, colouredPsx)
             "psp" -> psxLike(false, false, shoulderPair = true)
             "vita" -> psxLike(true, false, shoulderPair = true)

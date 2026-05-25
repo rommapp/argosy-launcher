@@ -61,7 +61,6 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val TOUCH_ALLOW_LONG_PRESS_EDIT = booleanPreferencesKey("builtin_touch_allow_long_press_edit")
         val TOUCH_COLOURED_FACE_BUTTONS = booleanPreferencesKey("builtin_touch_coloured_face_buttons")
         val TOUCH_GENESIS_6_BUTTON = booleanPreferencesKey("builtin_touch_genesis_6_button")
-        val TOUCH_PORTRAIT_SPLIT = booleanPreferencesKey("builtin_touch_portrait_split")
     }
 
     fun isBuiltinLibretroEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
@@ -110,8 +109,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             touchControlsMirror180 = prefs[Keys.TOUCH_MIRROR_180] ?: false,
             touchControlsAllowLongPressEdit = prefs[Keys.TOUCH_ALLOW_LONG_PRESS_EDIT] ?: false,
             touchControlsColouredFaceButtons = prefs[Keys.TOUCH_COLOURED_FACE_BUTTONS] ?: false,
-            touchControlsGenesis6Button = prefs[Keys.TOUCH_GENESIS_6_BUTTON] ?: false,
-            touchControlsPortraitSplit = prefs[Keys.TOUCH_PORTRAIT_SPLIT] ?: true
+            touchControlsGenesis6Button = prefs[Keys.TOUCH_GENESIS_6_BUTTON] ?: false
         )
     }
 
@@ -319,10 +317,6 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setTouchControlsGenesis6Button(enabled: Boolean) {
         dataStore.edit { it[Keys.TOUCH_GENESIS_6_BUTTON] = enabled }
-    }
-
-    suspend fun setTouchControlsPortraitSplit(enabled: Boolean) {
-        dataStore.edit { it[Keys.TOUCH_PORTRAIT_SPLIT] = enabled }
     }
 
     fun getArchitectureOverride(): Flow<String?> = dataStore.data.map { prefs ->

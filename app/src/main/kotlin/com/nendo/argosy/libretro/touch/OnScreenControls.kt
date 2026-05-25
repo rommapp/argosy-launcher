@@ -61,6 +61,7 @@ fun OnScreenControls(
     opacity: Float,
     sizeScale: Float,
     haptic: Boolean,
+    onKey: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -78,19 +79,20 @@ fun OnScreenControls(
         val areaW = maxWidth
         val areaH = maxHeight
 
-        resolved.get(GroupId.SHOULDERS)?.let { placement ->
+        resolved.get(GroupId.SHOULDERS)?.takeIf { !it.disabled }?.let { placement ->
             ShoulderBar(
-                retroView = retroView,
                 spec = spec,
                 placement = placement,
+                overrides = resolved.buttonOverrides,
                 areaW = areaW,
                 areaH = areaH,
                 sizeScale = sizeScale,
-                fireHaptic = fireHaptic
+                fireHaptic = fireHaptic,
+                onKey = onKey
             )
         }
 
-        resolved.get(GroupId.LEFT_ANALOG)?.let { placement ->
+        resolved.get(GroupId.LEFT_ANALOG)?.takeIf { !it.disabled }?.let { placement ->
             AnalogStick(
                 retroView = retroView,
                 placement = placement,
@@ -101,7 +103,7 @@ fun OnScreenControls(
             )
         }
 
-        resolved.get(GroupId.DPAD)?.let { placement ->
+        resolved.get(GroupId.DPAD)?.takeIf { !it.disabled }?.let { placement ->
             DpadCross(
                 retroView = retroView,
                 placement = placement,
@@ -113,7 +115,7 @@ fun OnScreenControls(
             )
         }
 
-        resolved.get(GroupId.RIGHT_ANALOG)?.let { placement ->
+        resolved.get(GroupId.RIGHT_ANALOG)?.takeIf { !it.disabled }?.let { placement ->
             AnalogStick(
                 retroView = retroView,
                 placement = placement,
@@ -124,27 +126,29 @@ fun OnScreenControls(
             )
         }
 
-        resolved.get(GroupId.FACE)?.let { placement ->
+        resolved.get(GroupId.FACE)?.takeIf { !it.disabled }?.let { placement ->
             FaceCluster(
-                retroView = retroView,
                 spec = spec,
                 placement = placement,
+                overrides = resolved.buttonOverrides,
                 areaW = areaW,
                 areaH = areaH,
                 sizeScale = sizeScale,
-                fireHaptic = fireHaptic
+                fireHaptic = fireHaptic,
+                onKey = onKey
             )
         }
 
-        resolved.get(GroupId.SYSTEM)?.let { placement ->
+        resolved.get(GroupId.SYSTEM)?.takeIf { !it.disabled }?.let { placement ->
             SystemBar(
-                retroView = retroView,
                 spec = spec,
                 placement = placement,
+                overrides = resolved.buttonOverrides,
                 areaW = areaW,
                 areaH = areaH,
                 sizeScale = sizeScale,
-                fireHaptic = fireHaptic
+                fireHaptic = fireHaptic,
+                onKey = onKey
             )
         }
     }
@@ -161,16 +165,21 @@ private fun DpadCross(
     asAnalog: Boolean = false
 ) {
     val density = LocalDensity.current
-    val baseSize = 140.dp * placement.scale * sizeScale
-    val offsetX = areaW * placement.anchorX - baseSize / 2
-    val offsetY = areaH * placement.anchorY - baseSize / 2
+    val baseSize = 120.dp * placement.scale * sizeScale
+    val edge = 8.dp
+    val offsetX = (areaW * placement.anchorX - baseSize / 2)
+        .coerceIn(edge, (areaW - baseSize - edge).coerceAtLeast(edge))
+    val offsetY = (areaH * placement.anchorY - baseSize / 2)
+        .coerceIn(edge, (areaH - baseSize - edge).coerceAtLeast(edge))
     val motionSource = if (asAnalog) GLRetroView.MOTION_SOURCE_ANALOG_LEFT else GLRetroView.MOTION_SOURCE_DPAD
+    var dxState by remember { mutableStateOf(0) }
+    var dyState by remember { mutableStateOf(0) }
 
     Box(
         modifier = Modifier
             .offset { IntOffset(density.run { offsetX.roundToPx() }, density.run { offsetY.roundToPx() }) }
             .size(baseSize)
-            .drawBehind { drawDpad(size) }
+            .drawBehind { drawDpad(size, dxState, dyState) }
             .pointerInput(motionSource) {
                 awaitPointerEventScope {
                     var lastX = 0
@@ -189,11 +198,15 @@ private fun DpadCross(
                                 retroView.sendMotionEvent(motionSource, dx.toFloat(), dy.toFloat())
                                 lastX = dx
                                 lastY = dy
+                                dxState = dx
+                                dyState = dy
                             }
                         } else if (lastX != 0 || lastY != 0) {
                             retroView.sendMotionEvent(motionSource, 0f, 0f)
                             lastX = 0
                             lastY = 0
+                            dxState = 0
+                            dyState = 0
                         }
                     }
                 }
@@ -201,31 +214,78 @@ private fun DpadCross(
     )
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawDpad(size: Size) {
-    val arm = size.width * 0.32f
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawDpad(
+    size: Size,
+    pressedDx: Int = 0,
+    pressedDy: Int = 0
+) {
     val center = Offset(size.width / 2f, size.height / 2f)
-    val color = Color(0xFFE6E6E6)
-    val ringColor = Color(0xCC000000)
-    drawRect(
-        color = ringColor,
-        topLeft = Offset(center.x - arm, center.y - arm / 2),
-        size = Size(arm * 2, arm),
+    val arm = size.width * 0.35f
+    val armLen = arm * 1.4f
+    val face = Color(0xFFE6E6E6)
+    val border = Color(0xFF1A1A1A)
+    val pressTint = Color(0xFF7AA8FF)
+    val corner = androidx.compose.ui.geometry.CornerRadius(arm * 0.20f, arm * 0.20f)
+
+    val horizTopLeft = Offset(center.x - armLen, center.y - arm / 2f)
+    val horizSize = Size(armLen * 2f, arm)
+    val vertTopLeft = Offset(center.x - arm / 2f, center.y - armLen)
+    val vertSize = Size(arm, armLen * 2f)
+
+    drawRoundRect(color = border, topLeft = horizTopLeft, size = horizSize, cornerRadius = corner)
+    drawRoundRect(color = border, topLeft = vertTopLeft, size = vertSize, cornerRadius = corner)
+
+    val innerInset = 3f
+    drawRoundRect(
+        color = face,
+        topLeft = Offset(horizTopLeft.x + innerInset, horizTopLeft.y + innerInset),
+        size = Size(horizSize.width - innerInset * 2, horizSize.height - innerInset * 2),
+        cornerRadius = corner
     )
-    drawRect(
-        color = ringColor,
-        topLeft = Offset(center.x - arm / 2, center.y - arm),
-        size = Size(arm, arm * 2),
+    drawRoundRect(
+        color = face,
+        topLeft = Offset(vertTopLeft.x + innerInset, vertTopLeft.y + innerInset),
+        size = Size(vertSize.width - innerInset * 2, vertSize.height - innerInset * 2),
+        cornerRadius = corner
     )
-    drawRect(
-        color = color,
-        topLeft = Offset(center.x - arm + 6, center.y - arm / 2 + 6),
-        size = Size(arm * 2 - 12, arm - 12),
-    )
-    drawRect(
-        color = color,
-        topLeft = Offset(center.x - arm / 2 + 6, center.y - arm + 6),
-        size = Size(arm - 12, arm * 2 - 12),
-    )
+
+    if (pressedDx != 0 || pressedDy != 0) {
+        val hCorner = androidx.compose.ui.geometry.CornerRadius(arm * 0.15f, arm * 0.15f)
+        val m = arm * 0.14f
+        val pillLong = armLen - m * 2f
+        val pillShort = arm - m * 2f
+        when {
+            pressedDy < 0 -> drawRoundRect(
+                color = pressTint,
+                topLeft = Offset(center.x - arm / 2f + m, center.y - armLen + m),
+                size = Size(pillShort, pillLong),
+                cornerRadius = hCorner
+            )
+            pressedDy > 0 -> drawRoundRect(
+                color = pressTint,
+                topLeft = Offset(center.x - arm / 2f + m, center.y + m),
+                size = Size(pillShort, pillLong),
+                cornerRadius = hCorner
+            )
+        }
+        when {
+            pressedDx < 0 -> drawRoundRect(
+                color = pressTint,
+                topLeft = Offset(center.x - armLen + m, center.y - arm / 2f + m),
+                size = Size(pillLong, pillShort),
+                cornerRadius = hCorner
+            )
+            pressedDx > 0 -> drawRoundRect(
+                color = pressTint,
+                topLeft = Offset(center.x + m, center.y - arm / 2f + m),
+                size = Size(pillLong, pillShort),
+                cornerRadius = hCorner
+            )
+        }
+    }
+
+    val centerDotR = arm * 0.18f
+    drawCircle(color = border, radius = centerDotR, center = center)
 }
 
 @Composable
@@ -239,8 +299,11 @@ private fun AnalogStick(
 ) {
     val density = LocalDensity.current
     val baseSize = 130.dp * placement.scale * sizeScale
-    val offsetX = areaW * placement.anchorX - baseSize / 2
-    val offsetY = areaH * placement.anchorY - baseSize / 2
+    val edge = 8.dp
+    val offsetX = (areaW * placement.anchorX - baseSize / 2)
+        .coerceIn(edge, (areaW - baseSize - edge).coerceAtLeast(edge))
+    val offsetY = (areaH * placement.anchorY - baseSize / 2)
+        .coerceIn(edge, (areaH - baseSize - edge).coerceAtLeast(edge))
     var thumbPos by remember { mutableStateOf(Offset.Zero) }
 
     Box(
@@ -284,40 +347,32 @@ private fun AnalogStick(
 
 @Composable
 private fun FaceCluster(
-    retroView: GLRetroView,
     spec: TouchLayoutSpec,
     placement: GroupPlacement,
+    overrides: Map<String, GroupPlacement>,
     areaW: Dp,
     areaH: Dp,
     sizeScale: Float,
-    fireHaptic: () -> Unit
+    fireHaptic: () -> Unit,
+    onKey: (Int, Int) -> Unit
 ) {
-    val btnSize = 60.dp * sizeScale * placement.scale
-    val gap = 14.dp * sizeScale * placement.scale
-
-    val positions = computeFacePositions(spec.face, spec.faceSlots.size, btnSize, gap)
-    val maxX: Float = positions.fold(0f) { acc, p -> kotlin.math.max(acc, p.x + btnSize.value) }
-    val maxY: Float = positions.fold(0f) { acc, p -> kotlin.math.max(acc, p.y + btnSize.value) }
-    val groupW = maxX.dp
-    val groupH = maxY.dp
-    val originX = areaW * placement.anchorX - groupW / 2
-    val originY = areaH * placement.anchorY - groupH / 2
-
-    val buttons = spec.faceSlots.zip(positions).mapIndexed { i, (slot, pos) ->
+    val slots = layoutFaceSlots(spec, placement, overrides, areaW, areaH, sizeScale)
+    val buttons = spec.faceSlots.zip(slots).mapNotNull { (slot, lay) ->
+        if (overrides[lay.key]?.disabled == true) return@mapNotNull null
         ClusterButton(
-            key = "face_$i",
+            key = lay.key,
             label = slot.label,
             tint = slot.tint,
-            offsetX = originX + pos.x.dp,
-            offsetY = originY + pos.y.dp,
-            widthDp = btnSize,
-            heightDp = btnSize,
+            offsetX = lay.offsetX,
+            offsetY = lay.offsetY,
+            widthDp = lay.widthDp,
+            heightDp = lay.heightDp,
             onPress = {
                 fireHaptic()
-                retroView.sendKeyEvent(KeyEvent.ACTION_DOWN, slot.androidKeyCode)
+                onKey(KeyEvent.ACTION_DOWN, slot.androidKeyCode)
             },
             onRelease = {
-                retroView.sendKeyEvent(KeyEvent.ACTION_UP, slot.androidKeyCode)
+                onKey(KeyEvent.ACTION_UP, slot.androidKeyCode)
             }
         )
     }
@@ -326,50 +381,31 @@ private fun FaceCluster(
 
 @Composable
 private fun ShoulderBar(
-    retroView: GLRetroView,
     spec: TouchLayoutSpec,
     placement: GroupPlacement,
+    overrides: Map<String, GroupPlacement>,
     areaW: Dp,
     areaH: Dp,
     sizeScale: Float,
-    fireHaptic: () -> Unit
+    fireHaptic: () -> Unit,
+    onKey: (Int, Int) -> Unit
 ) {
-    val btnSize = 56.dp * sizeScale * placement.scale
-    val gap = 12.dp * sizeScale * placement.scale
-    val padding = 24.dp
-    val centerY = areaH * placement.anchorY
-
-    fun cb(idx: Int, x: Dp, y: Dp, tint: Color? = null): ClusterButton? {
-        val slot = spec.shoulderSlots.getOrNull(idx) ?: return null
-        return ClusterButton(
-            key = "shoulder_$idx",
+    val slots = layoutShoulderSlots(spec, placement, overrides, areaW, areaH, sizeScale)
+    val buttons = spec.shoulderSlots.zip(slots).mapNotNull { (slot, lay) ->
+        if (overrides[lay.key]?.disabled == true) return@mapNotNull null
+        val tint = if (spec.shoulders == ShoulderShape.TopPairPlusZ && lay.key == "shoulder_2") {
+            Color(0xFF6F4FCD)
+        } else null
+        ClusterButton(
+            key = lay.key,
             label = slot.label,
             tint = tint,
-            offsetX = x,
-            offsetY = y,
-            widthDp = btnSize,
-            heightDp = btnSize,
-            onPress = { fireHaptic(); retroView.sendKeyEvent(KeyEvent.ACTION_DOWN, slot.androidKeyCode) },
-            onRelease = { retroView.sendKeyEvent(KeyEvent.ACTION_UP, slot.androidKeyCode) }
-        )
-    }
-
-    val buttons: List<ClusterButton> = when (spec.shoulders) {
-        ShoulderShape.None -> emptyList()
-        ShoulderShape.TopPair -> listOfNotNull(
-            cb(0, padding, centerY - btnSize / 2),
-            cb(1, areaW - padding - btnSize, centerY - btnSize / 2)
-        )
-        ShoulderShape.FourCorners -> listOfNotNull(
-            cb(0, padding, centerY - btnSize - gap / 2),
-            cb(1, padding, centerY + gap / 2),
-            cb(2, areaW - padding - btnSize, centerY - btnSize - gap / 2),
-            cb(3, areaW - padding - btnSize, centerY + gap / 2)
-        )
-        ShoulderShape.TopPairPlusZ -> listOfNotNull(
-            cb(0, padding, centerY - btnSize / 2),
-            cb(1, areaW - padding - btnSize, centerY - btnSize / 2),
-            cb(2, areaW - padding - btnSize, centerY + btnSize / 2 + gap, tint = Color(0xFF6F4FCD))
+            offsetX = lay.offsetX,
+            offsetY = lay.offsetY,
+            widthDp = lay.widthDp,
+            heightDp = lay.heightDp,
+            onPress = { fireHaptic(); onKey(KeyEvent.ACTION_DOWN, slot.androidKeyCode) },
+            onRelease = { onKey(KeyEvent.ACTION_UP, slot.androidKeyCode) }
         )
     }
     ClusterDispatcher(buttons)
@@ -377,33 +413,29 @@ private fun ShoulderBar(
 
 @Composable
 private fun SystemBar(
-    retroView: GLRetroView,
     spec: TouchLayoutSpec,
     placement: GroupPlacement,
+    overrides: Map<String, GroupPlacement>,
     areaW: Dp,
     areaH: Dp,
     sizeScale: Float,
-    fireHaptic: () -> Unit
+    fireHaptic: () -> Unit,
+    onKey: (Int, Int) -> Unit
 ) {
     if (spec.system.isEmpty()) return
-    val btnW = 64.dp * sizeScale * placement.scale
-    val btnH = 28.dp * sizeScale * placement.scale
-    val gap = 12.dp * sizeScale * placement.scale
-    val groupW = btnW * spec.system.size + gap * (spec.system.size - 1)
-    val originX = areaW * placement.anchorX - groupW / 2
-    val originY = areaH * placement.anchorY - btnH / 2
-
-    val buttons = spec.system.mapIndexed { i, slot ->
+    val slots = layoutSystemSlots(spec, placement, overrides, areaW, areaH, sizeScale)
+    val buttons = spec.system.zip(slots).mapNotNull { (slot, lay) ->
+        if (overrides[lay.key]?.disabled == true) return@mapNotNull null
         ClusterButton(
-            key = "system_$i",
+            key = lay.key,
             label = slot.label,
             tint = null,
-            offsetX = originX + (btnW + gap) * i,
-            offsetY = originY,
-            widthDp = btnW,
-            heightDp = btnH,
-            onPress = { fireHaptic(); retroView.sendKeyEvent(KeyEvent.ACTION_DOWN, slot.androidKeyCode) },
-            onRelease = { retroView.sendKeyEvent(KeyEvent.ACTION_UP, slot.androidKeyCode) }
+            offsetX = lay.offsetX,
+            offsetY = lay.offsetY,
+            widthDp = lay.widthDp,
+            heightDp = lay.heightDp,
+            onPress = { fireHaptic(); onKey(KeyEvent.ACTION_DOWN, slot.androidKeyCode) },
+            onRelease = { onKey(KeyEvent.ACTION_UP, slot.androidKeyCode) }
         )
     }
     ClusterDispatcher(buttons)
@@ -429,19 +461,27 @@ private fun ClusterDispatcher(
     val density = LocalDensity.current
     val pressedKeys = remember { mutableStateMapOf<Any, Unit>() }
 
-    val zones = buttons.map { b ->
-        val minTap = 48.dp
+    val minTap = 48.dp
+    val padded = buttons.map { b ->
         val drawW = b.widthDp
         val drawH = b.heightDp
         val hitW = if (drawW < minTap) minTap else drawW
         val hitH = if (drawH < minTap) minTap else drawH
         val hitOffX = b.offsetX - (hitW - drawW) / 2
         val hitOffY = b.offsetY - (hitH - drawH) / 2
-        val l = with(density) { hitOffX.toPx() }
-        val t = with(density) { hitOffY.toPx() }
-        val r = l + with(density) { hitW.toPx() }
-        val btm = t + with(density) { hitH.toPx() }
-        b to Rect(l, t, r, btm)
+        Quad(b, hitOffX, hitOffY, hitW, hitH)
+    }
+    val minX = padded.minOf { it.x.value }.dp
+    val minY = padded.minOf { it.y.value }.dp
+    val maxX = padded.maxOf { (it.x + it.w).value }.dp
+    val maxY = padded.maxOf { (it.y + it.h).value }.dp
+
+    val zones = padded.map { q ->
+        val l = with(density) { (q.x - minX).toPx() }
+        val t = with(density) { (q.y - minY).toPx() }
+        val r = l + with(density) { q.w.toPx() }
+        val btm = t + with(density) { q.h.toPx() }
+        q.button to Rect(l, t, r, btm)
     }
 
     buttons.forEach { b ->
@@ -458,7 +498,8 @@ private fun ClusterDispatcher(
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .offset { IntOffset(density.run { minX.roundToPx() }, density.run { minY.roundToPx() }) }
+            .size(maxX - minX, maxY - minY)
             .pointerInput(zones) {
                 val ownership = mutableMapOf<PointerId, ClusterButton>()
                 awaitPointerEventScope {
@@ -499,6 +540,8 @@ private fun ClusterDispatcher(
     )
 }
 
+private data class Quad(val button: ClusterButton, val x: Dp, val y: Dp, val w: Dp, val h: Dp)
+
 @Composable
 private fun ButtonChipVisual(
     label: String,
@@ -511,10 +554,12 @@ private fun ButtonChipVisual(
 ) {
     val density = LocalDensity.current
     val bg = tint ?: Color(0xCC1A1A1A)
+    val pressedBg = (tint ?: Color(0xFF3A6FC8)).copy(alpha = 0.95f)
     val border = Color(0xFFE6E6E6)
     val measurer = rememberTextMeasurer()
     val drawWPx = with(density) { widthDp.toPx() }
     val drawHPx = with(density) { sizeDp.toPx() }
+    val isPill = drawWPx > drawHPx * 1.3f
     Box(
         modifier = Modifier
             .offset { IntOffset(
@@ -523,27 +568,53 @@ private fun ButtonChipVisual(
             ) }
             .size(width = widthDp, height = sizeDp)
             .drawBehind {
-                val r = kotlin.math.min(drawWPx, drawHPx) / 2f
                 val center = Offset(drawWPx / 2f, drawHPx / 2f)
-                drawCircle(
-                    color = if (pressed) bg.copy(alpha = 1f) else bg,
-                    radius = r,
-                    center = center
-                )
-                drawCircle(
-                    color = border,
-                    radius = r - 3f,
-                    center = center,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
-                )
-                val layout = measurer.measure(
+                val fillColor = if (pressed) pressedBg else bg
+                if (isPill) {
+                    val corner = androidx.compose.ui.geometry.CornerRadius(drawHPx / 2f, drawHPx / 2f)
+                    drawRoundRect(color = fillColor, size = Size(drawWPx, drawHPx), cornerRadius = corner)
+                    drawRoundRect(
+                        color = border,
+                        topLeft = Offset(1.5f, 1.5f),
+                        size = Size(drawWPx - 3f, drawHPx - 3f),
+                        cornerRadius = corner,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
+                    )
+                } else {
+                    val r = kotlin.math.min(drawWPx, drawHPx) / 2f
+                    drawCircle(color = fillColor, radius = r, center = center)
+                    drawCircle(
+                        color = border,
+                        radius = r - 1.5f,
+                        center = center,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
+                    )
+                }
+                val maxTextW = drawWPx - 12f
+                val maxTextH = drawHPx - 8f
+                var fontSp = if (isPill) (drawHPx / density.density) * 0.55f
+                             else (drawHPx / density.density) * 0.42f
+                var layout = measurer.measure(
                     text = label,
                     style = TextStyle(
                         color = border,
-                        fontSize = 18.sp,
+                        fontSize = fontSp.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
+                var guard = 0
+                while ((layout.size.width > maxTextW || layout.size.height > maxTextH) && fontSp > 7f && guard < 10) {
+                    fontSp *= 0.85f
+                    layout = measurer.measure(
+                        text = label,
+                        style = TextStyle(
+                            color = border,
+                            fontSize = fontSp.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    guard++
+                }
                 drawText(
                     textLayoutResult = layout,
                     topLeft = Offset(
@@ -581,6 +652,136 @@ private fun computeFacePositions(shape: FaceShape, count: Int, btnSize: Dp, gap:
 }
 
 private data class DpOffset(val x: Float, val y: Float)
+
+internal data class SlotLayout(
+    val key: String,
+    val offsetX: Dp,
+    val offsetY: Dp,
+    val widthDp: Dp,
+    val heightDp: Dp
+)
+
+internal fun layoutFaceSlots(
+    spec: TouchLayoutSpec,
+    placement: GroupPlacement,
+    overrides: Map<String, GroupPlacement>,
+    areaW: Dp,
+    areaH: Dp,
+    sizeScale: Float
+): List<SlotLayout> {
+    val btnSize = 50.dp * sizeScale * placement.scale
+    val gap = 6.dp * sizeScale * placement.scale
+    val positions = computeFacePositions(spec.face, spec.faceSlots.size, btnSize, gap)
+    val maxX: Float = positions.fold(0f) { acc, p -> kotlin.math.max(acc, p.x + btnSize.value) }
+    val maxY: Float = positions.fold(0f) { acc, p -> kotlin.math.max(acc, p.y + btnSize.value) }
+    val groupW = maxX.dp
+    val groupH = maxY.dp
+    val edge = 8.dp
+    val originX = (areaW * placement.anchorX - groupW / 2)
+        .coerceIn(edge, (areaW - groupW - edge).coerceAtLeast(edge))
+    val originY = (areaH * placement.anchorY - groupH / 2)
+        .coerceIn(edge, (areaH - groupH - edge).coerceAtLeast(edge))
+    return spec.faceSlots.mapIndexed { i, _ ->
+        val key = "face_$i"
+        val override = overrides[key]
+        if (override != null) {
+            val w = btnSize * override.scale
+            val h = btnSize * override.scale
+            val ox = (areaW * override.anchorX - w / 2)
+                .coerceIn(edge, (areaW - w - edge).coerceAtLeast(edge))
+            val oy = (areaH * override.anchorY - h / 2)
+                .coerceIn(edge, (areaH - h - edge).coerceAtLeast(edge))
+            SlotLayout(key, ox, oy, w, h)
+        } else {
+            val pos = positions[i]
+            SlotLayout(key, originX + pos.x.dp, originY + pos.y.dp, btnSize, btnSize)
+        }
+    }
+}
+
+internal fun layoutShoulderSlots(
+    spec: TouchLayoutSpec,
+    placement: GroupPlacement,
+    overrides: Map<String, GroupPlacement>,
+    areaW: Dp,
+    areaH: Dp,
+    sizeScale: Float
+): List<SlotLayout> {
+    val btnSize = 48.dp * sizeScale * placement.scale
+    val gap = 8.dp * sizeScale * placement.scale
+    val padding = 24.dp
+    val centerY = areaH * placement.anchorY
+    val edge = 8.dp
+    val rawPositions: List<Pair<Dp, Dp>> = when (spec.shoulders) {
+        ShoulderShape.None -> emptyList()
+        ShoulderShape.TopPair -> listOf(
+            padding to centerY - btnSize / 2,
+            areaW - padding - btnSize to centerY - btnSize / 2
+        )
+        ShoulderShape.FourCorners -> listOf(
+            padding + btnSize + gap to centerY - btnSize / 2,
+            padding to centerY - btnSize / 2,
+            areaW - padding - btnSize - btnSize - gap to centerY - btnSize / 2,
+            areaW - padding - btnSize to centerY - btnSize / 2
+        )
+        ShoulderShape.TopPairPlusZ -> listOf(
+            padding to centerY - btnSize / 2,
+            areaW - padding - btnSize to centerY - btnSize / 2,
+            areaW - padding - btnSize to centerY + btnSize / 2 + gap
+        )
+    }
+    return spec.shoulderSlots.mapIndexedNotNull { i, _ ->
+        val key = "shoulder_$i"
+        val raw = rawPositions.getOrNull(i) ?: return@mapIndexedNotNull null
+        val override = overrides[key]
+        if (override != null) {
+            val w = btnSize * override.scale
+            val h = btnSize * override.scale
+            val ox = (areaW * override.anchorX - w / 2)
+                .coerceIn(edge, (areaW - w - edge).coerceAtLeast(edge))
+            val oy = (areaH * override.anchorY - h / 2)
+                .coerceIn(edge, (areaH - h - edge).coerceAtLeast(edge))
+            SlotLayout(key, ox, oy, w, h)
+        } else {
+            SlotLayout(key, raw.first, raw.second, btnSize, btnSize)
+        }
+    }
+}
+
+internal fun layoutSystemSlots(
+    spec: TouchLayoutSpec,
+    placement: GroupPlacement,
+    overrides: Map<String, GroupPlacement>,
+    areaW: Dp,
+    areaH: Dp,
+    sizeScale: Float
+): List<SlotLayout> {
+    if (spec.system.isEmpty()) return emptyList()
+    val btnW = 58.dp * sizeScale * placement.scale
+    val btnH = 26.dp * sizeScale * placement.scale
+    val gap = 10.dp * sizeScale * placement.scale
+    val groupW = btnW * spec.system.size + gap * (spec.system.size - 1)
+    val edge = 8.dp
+    val originX = (areaW * placement.anchorX - groupW / 2)
+        .coerceIn(edge, (areaW - groupW - edge).coerceAtLeast(edge))
+    val originY = (areaH * placement.anchorY - btnH / 2)
+        .coerceIn(edge, (areaH - btnH - edge).coerceAtLeast(edge))
+    return spec.system.mapIndexed { i, _ ->
+        val key = "system_$i"
+        val override = overrides[key]
+        if (override != null) {
+            val w = btnW * override.scale
+            val h = btnH * override.scale
+            val ox = (areaW * override.anchorX - w / 2)
+                .coerceIn(edge, (areaW - w - edge).coerceAtLeast(edge))
+            val oy = (areaH * override.anchorY - h / 2)
+                .coerceIn(edge, (areaH - h - edge).coerceAtLeast(edge))
+            SlotLayout(key, ox, oy, w, h)
+        } else {
+            SlotLayout(key, originX + (btnW + gap) * i, originY, btnW, btnH)
+        }
+    }
+}
 
 private fun findVibrator(context: Context): Vibrator? {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

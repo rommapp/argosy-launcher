@@ -1,6 +1,11 @@
 package com.nendo.argosy.libretro.touch
 
 import android.content.res.Configuration
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,8 +13,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.data.repository.TouchLayoutRepository
 import com.swordfish.libretrodroid.GLRetroView
@@ -27,6 +33,7 @@ fun OnScreenControlsHost(
     editMode: Boolean = false,
     repository: TouchLayoutRepository? = null,
     onExitEdit: (() -> Unit)? = null,
+    onKey: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     if (!editMode) {
@@ -42,9 +49,10 @@ fun OnScreenControlsHost(
         )
     }
 
+    var reloadKey by remember { mutableStateOf(0) }
     val overrideState by produceState<ResolvedLayout?>(
         initialValue = null,
-        platformSlug, orientation, spec, repository
+        platformSlug, orientation, spec, repository, reloadKey
     ) {
         value = repository?.load(spec, platformSlug, orientation)
     }
@@ -69,36 +77,78 @@ fun OnScreenControlsHost(
         settings.touchControlsOpacityLandscape
     }
 
-    if (editMode && repository != null && onExitEdit != null) {
-        val scope = androidx.compose.runtime.rememberCoroutineScope()
-        TouchLayoutEditor(
-            spec = spec,
-            initial = baseResolved,
-            onSave = { layout ->
-                scope.launch {
-                    repository.save(platformSlug, orientation, layout)
-                    onExitEdit()
+    val bottomHalfOnly = orientation == Configuration.ORIENTATION_PORTRAIT &&
+        !isGamepadConnected
+
+    val areaModifier: @Composable (Modifier) -> Modifier = { base ->
+        if (bottomHalfOnly) {
+            base.fillMaxWidth().fillMaxHeight(0.5f)
+        } else {
+            base.fillMaxSize()
+        }
+    }
+    val alignment = if (bottomHalfOnly) Alignment.BottomCenter else Alignment.Center
+
+    Box(modifier = modifier.fillMaxSize()) {
+        val inner = areaModifier(Modifier.align(alignment))
+        if (editMode && repository != null && onExitEdit != null) {
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+            val editorState = rememberTouchEditorState(baseResolved)
+            TouchLayoutEditor(
+                state = editorState,
+                spec = spec,
+                sizeScale = settings.touchControlsSizeScale,
+                modifier = inner
+            )
+            val toolbarContainer: @Composable (@Composable () -> Unit) -> Unit = { content ->
+                if (bottomHalfOnly) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.5f)
+                            .align(Alignment.TopCenter),
+                        contentAlignment = Alignment.Center
+                    ) { content() }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .align(Alignment.Center),
+                        contentAlignment = Alignment.Center
+                    ) { content() }
                 }
-            },
-            onCancel = onExitEdit,
-            onReset = {
-                scope.launch {
-                    repository.reset(platformSlug, orientation)
-                    onExitEdit()
-                }
-            },
-            onTest = onExitEdit,
-            modifier = modifier
-        )
-    } else {
-        OnScreenControls(
-            retroView = retroView,
-            spec = spec,
-            resolved = resolved,
-            opacity = opacity,
-            sizeScale = settings.touchControlsSizeScale,
-            haptic = settings.touchControlsHaptic,
-            modifier = modifier
-        )
+            }
+            toolbarContainer {
+            TouchEditorToolbar(
+                onSave = {
+                    scope.launch {
+                        repository.save(platformSlug, orientation, editorState.snapshot())
+                        reloadKey++
+                        onExitEdit()
+                    }
+                },
+                onReset = {
+                    editorState.clearOverrides()
+                    scope.launch {
+                        repository.reset(platformSlug, orientation)
+                        reloadKey++
+                        onExitEdit()
+                    }
+                },
+                onCancel = onExitEdit
+            )
+            }
+        } else {
+            OnScreenControls(
+                retroView = retroView,
+                spec = spec,
+                resolved = resolved,
+                opacity = opacity,
+                sizeScale = settings.touchControlsSizeScale,
+                haptic = settings.touchControlsHaptic,
+                onKey = onKey,
+                modifier = inner
+            )
+        }
     }
 }

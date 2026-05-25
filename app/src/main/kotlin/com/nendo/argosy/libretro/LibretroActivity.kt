@@ -291,7 +291,6 @@ class LibretroActivity : ComponentActivity() {
         }
         touchSettingsState = globalSettings
         var lastLockOrientation = globalSettings.touchControlsLockOrientation
-        var lastSplit = globalSettings.touchControlsPortraitSplit
         var lastShow = globalSettings.showTouchControlsWhenNoGamepad
         lifecycleScope.launch {
             preferencesRepository.getBuiltinEmulatorSettings().collect {
@@ -300,9 +299,7 @@ class LibretroActivity : ComponentActivity() {
                     lastLockOrientation = it.touchControlsLockOrientation
                     applyOrientationLock(it.touchControlsLockOrientation)
                 }
-                if (it.touchControlsPortraitSplit != lastSplit ||
-                    it.showTouchControlsWhenNoGamepad != lastShow) {
-                    lastSplit = it.touchControlsPortraitSplit
+                if (it.showTouchControlsWhenNoGamepad != lastShow) {
                     lastShow = it.showTouchControlsWhenNoGamepad
                     splitColumn?.let { col -> applyPortraitSplit(col) }
                 }
@@ -662,9 +659,7 @@ class LibretroActivity : ComponentActivity() {
     private fun applyPortraitSplit(column: android.widget.LinearLayout) {
         val portrait = currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT
         val overlayWouldShow = touchSettingsState.showTouchControlsWhenNoGamepad && !isGamepadConnectedState
-        val splitWanted = portrait &&
-            overlayWouldShow &&
-            touchSettingsState.touchControlsPortraitSplit
+        val splitWanted = portrait && overlayWouldShow
         val retroParams = retroView.layoutParams as android.widget.LinearLayout.LayoutParams
         val spacer = column.getChildAt(1)
         val spacerParams = spacer.layoutParams as android.widget.LinearLayout.LayoutParams
@@ -695,7 +690,8 @@ class LibretroActivity : ComponentActivity() {
                     baselineRotation = baselineRotation,
                     editMode = touchEditMode,
                     repository = touchLayoutRepository,
-                    onExitEdit = { exitTouchEditMode() }
+                    onExitEdit = { exitTouchEditMode() },
+                    onKey = { action, kc -> dispatchTouchKey(action, kc) }
                 )
                 if (menuVisible) {
                     val quality = if (netplay.inSession && netplay.role != null) {
@@ -1014,7 +1010,6 @@ class LibretroActivity : ComponentActivity() {
                 touchSizeScale = touchSettingsState.touchControlsSizeScale,
                 touchHaptic = touchSettingsState.touchControlsHaptic,
                 touchLockOrientation = touchSettingsState.touchControlsLockOrientation,
-                touchPortraitSplit = touchSettingsState.touchControlsPortraitSplit,
                 touchGenesis6Button = touchSettingsState.touchControlsGenesis6Button
             ),
             onControlsAction = ::handleControlsAction,
@@ -1441,9 +1436,6 @@ class LibretroActivity : ComponentActivity() {
             is InGameControlsAction.SetTouchLockOrientation -> {
                 lifecycleScope.launch { preferencesRepository.setTouchControlsLockOrientation(action.enabled) }
             }
-            is InGameControlsAction.SetTouchPortraitSplit -> {
-                lifecycleScope.launch { preferencesRepository.setTouchControlsPortraitSplit(action.enabled) }
-            }
             is InGameControlsAction.SetTouchGenesis6Button -> {
                 lifecycleScope.launch { preferencesRepository.setTouchControlsGenesis6Button(action.enabled) }
             }
@@ -1470,10 +1462,8 @@ class LibretroActivity : ComponentActivity() {
     fun enterTouchEditMode() {
         menuVisible = false
         settingsVisible = false
-        if (!netplay.inSession) {
-            retroView.pauseEmulation()
-            retroView.suppressAutoResume = true
-        }
+        retroView.pauseEmulation()
+        retroView.suppressAutoResume = true
         touchEditMode = true
     }
 
@@ -1516,6 +1506,18 @@ class LibretroActivity : ComponentActivity() {
             if (menuInputHandler.mapKeyToEvent(event.keyCode) != null) return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    fun dispatchTouchKey(action: Int, keyCode: Int) {
+        if (isAnyMenuOpen) return
+        val event = KeyEvent(action, keyCode)
+        if (action == KeyEvent.ACTION_DOWN) {
+            if (hotkeyDispatcher.onKeyDown(keyCode, null)) return
+            retroView.onKeyDown(keyCode, event)
+        } else {
+            hotkeyDispatcher.onKeyUp(keyCode)
+            retroView.onKeyUp(keyCode, event)
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {

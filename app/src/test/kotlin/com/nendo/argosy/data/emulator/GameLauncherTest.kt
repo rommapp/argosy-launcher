@@ -278,6 +278,50 @@ class GameLauncherTest {
         coVerify(exactly = 0) { emulatorDetector.getByPackage(retroarch.packageName) }
     }
 
+    @Test
+    fun `fileUriString extras use absolute path for m3u files`() = runTest {
+        val m3uPath = romFile("m3u")
+        val game = createGame(localPath = m3uPath, platformSlug = "psx")
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = duckstation.packageName,
+            displayName = duckstation.displayName
+        )
+        stubDetectorWith(installedEmulator(duckstation))
+        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
+
+        val result = launcher.launch(1L)
+        assertTrue(result is LaunchResult.Success)
+        val intent = (result as LaunchResult.Success).intent
+        assertEquals(m3uPath, intent.getStringExtra("bootPath"))
+    }
+
+    @Test
+    fun `fileUriString extras use content uri string for non m3u files`() = runTest {
+        val cuePath = romFile("cue")
+        val game = createGame(localPath = cuePath, platformSlug = "psx")
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = duckstation.packageName,
+            displayName = duckstation.displayName
+        )
+        stubDetectorWith(installedEmulator(duckstation))
+        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
+
+        val result = launcher.launch(1L)
+        assertTrue(result is LaunchResult.Success)
+        val intent = (result as LaunchResult.Success).intent
+        assertEquals("content://test/file", intent.getStringExtra("bootPath"))
+    }
+
     // -----------------------------------------------------------------------
     // Emulator resolution: platform default
     // -----------------------------------------------------------------------

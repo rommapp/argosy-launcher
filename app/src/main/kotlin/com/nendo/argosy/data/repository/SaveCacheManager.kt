@@ -400,7 +400,7 @@ class SaveCacheManager @Inject constructor(
         }
 
         try {
-            if (entity.cachePath.endsWith(".zip")) {
+            val writeOk = if (entity.cachePath.endsWith(".zip")) {
                 fal.mkdirs(targetPath)
                 val targetFile = fal.getTransformedFile(targetPath)
                 val game = gameDao.getById(entity.gameId)
@@ -421,6 +421,18 @@ class SaveCacheManager @Inject constructor(
                 } else {
                     fal.copyFile(cacheFile.absolutePath, targetPath)
                 }
+            }
+
+            if (!writeOk) {
+                Log.e(TAG, "Failed to materialize cache $cacheId at $targetPath (write returned false)")
+                SaveDebugLogger.logError(
+                    operation = "restoreSave",
+                    gameId = entity.gameId,
+                    gameName = null,
+                    channel = entity.channelName,
+                    error = IllegalStateException("write returned false for $targetPath")
+                )
+                return@withContext false
             }
 
             Log.d(TAG, "Restored save from cache $cacheId to $targetPath")

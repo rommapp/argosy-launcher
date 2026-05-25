@@ -26,6 +26,7 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -60,6 +61,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val TAG = "MainActivity"
+internal fun shouldInitializeScreenCapture(prefs: UserPreferences): Boolean =
+    prefs.ambientLedEnabled && prefs.ambientLedScreenEnabled
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -584,7 +587,7 @@ class MainActivity : ComponentActivity() {
             imageCacheManager.resumePendingLogoCache()
             imageCacheManager.resumePendingBadgeCache()
 
-            if (prefs.ambientLedEnabled) {
+            if (shouldInitializeScreenCapture(prefs)) {
                 if (screenCaptureManager.hasPermission.value && !screenCaptureManager.isCapturing.value) {
                     screenCaptureManager.startCapture()
                 } else if (!screenCaptureManager.hasPermission.value && !screenCapturePromptedThisSession) {

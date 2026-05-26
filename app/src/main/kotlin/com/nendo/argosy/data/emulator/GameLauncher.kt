@@ -38,6 +38,16 @@ import javax.inject.Singleton
 private const val TAG = "GameLauncher"
 private const val EXTRA_ALREADY_LAUNCHED = "argosy.already_launched"
 
+internal fun resolveFileUriStringArgument(romFile: File, fileUriProvider: () -> String): String {
+    return if (romFile.extension.equals("m3u", ignoreCase = true)) {
+        // Playlist files (.m3u) often rely on relative sibling paths.
+        // Passing content:// as a string can prevent emulators from resolving those entries.
+        romFile.absolutePath
+    } else {
+        fileUriProvider()
+    }
+}
+
 data class DiscOption(
     val fileName: String,
     val filePath: String,
@@ -1076,16 +1086,10 @@ class GameLauncher @Inject constructor(
                     resolvedExtras += ResolvedExtra.UriExtra(key, uri)
                 }
                 is ExtraValue.FileUriString -> {
-                    val useAbsolutePathForM3u = romFile.extension.equals("m3u", ignoreCase = true)
-                    if (useAbsolutePathForM3u) {
-                        // Playlist files (.m3u) often rely on relative sibling paths.
-                        // Passing content:// as a string can prevent emulators from resolving those entries.
-                        resolvedExtras += ResolvedExtra.StringExtra(key, romFile.absolutePath)
-                    } else {
-                        val uri = getFileUri(romFile)
-                        fileUri = uri
-                        resolvedExtras += ResolvedExtra.StringExtra(key, uri.toString())
+                    val value = resolveFileUriStringArgument(romFile) {
+                        getFileUri(romFile).also { fileUri = it }.toString()
                     }
+                    resolvedExtras += ResolvedExtra.StringExtra(key, value)
                 }
                 is ExtraValue.Platform -> resolvedExtras += ResolvedExtra.StringExtra(key, platformSlug)
                 is ExtraValue.Literal -> resolvedExtras += ResolvedExtra.StringExtra(key, extraValue.value)

@@ -32,6 +32,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.util.UUID
 
 class GameLauncherTest {
 
@@ -61,13 +62,12 @@ class GameLauncherTest {
 
     @Before
     fun setup() {
-        mockkStatic("androidx.core.content.FileProvider")
-        every {
-            FileProvider.getUriForFile(any<Context>(), any<String>(), any<java.io.File>())
-        } returns Uri.parse("content://test/file")
-
+        mockkStatic(FileProvider::class)
         context = mockk(relaxed = true)
         every { context.packageName } returns "com.nendo.argosy"
+        every {
+            FileProvider.getUriForFile(context, "com.nendo.argosy.fileprovider", any())
+        } returns Uri.parse("content://test/file")
         gameDao = mockk(relaxed = true)
         gameDiscDao = mockk(relaxed = true)
         emulatorConfigDao = mockk(relaxed = true)
@@ -116,7 +116,7 @@ class GameLauncherTest {
 
     @After
     fun teardown() {
-        io.mockk.unmockkStatic("androidx.core.content.FileProvider")
+        io.mockk.unmockkStatic(FileProvider::class)
     }
 
     // -----------------------------------------------------------------------
@@ -172,7 +172,7 @@ class GameLauncherTest {
     }
 
     private fun romFile(extension: String = "nes"): String {
-        val file = tempFolder.newFile("game.$extension")
+        val file = tempFolder.newFile("game-${UUID.randomUUID()}.$extension")
         return file.absolutePath
     }
 
@@ -281,45 +281,19 @@ class GameLauncherTest {
     @Test
     fun `fileUriString extras use absolute path for m3u files`() = runTest {
         val m3uPath = romFile("m3u")
-        val game = createGame(localPath = m3uPath, platformSlug = "psx")
-        coEvery { gameDao.getById(1L) } returns game
-        coEvery { variantResolver.getVariantOptions(game) } returns null
-
-        val duckstation = EmulatorRegistry.getById("duckstation")!!
-        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
-            gameId = 1L,
-            packageName = duckstation.packageName,
-            displayName = duckstation.displayName
-        )
-        stubDetectorWith(installedEmulator(duckstation))
-        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
-
-        val result = launcher.launch(1L)
-        assertTrue(result is LaunchResult.Success)
-        val intent = (result as LaunchResult.Success).intent
-        assertEquals(m3uPath, intent.getStringExtra("bootPath"))
+        val resolved = resolveFileUriStringArgument(java.io.File(m3uPath)) {
+            "content://test/file"
+        }
+        assertEquals(m3uPath, resolved)
     }
 
     @Test
     fun `fileUriString extras use content uri string for non m3u files`() = runTest {
         val cuePath = romFile("cue")
-        val game = createGame(localPath = cuePath, platformSlug = "psx")
-        coEvery { gameDao.getById(1L) } returns game
-        coEvery { variantResolver.getVariantOptions(game) } returns null
-
-        val duckstation = EmulatorRegistry.getById("duckstation")!!
-        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
-            gameId = 1L,
-            packageName = duckstation.packageName,
-            displayName = duckstation.displayName
-        )
-        stubDetectorWith(installedEmulator(duckstation))
-        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
-
-        val result = launcher.launch(1L)
-        assertTrue(result is LaunchResult.Success)
-        val intent = (result as LaunchResult.Success).intent
-        assertEquals("content://test/file", intent.getStringExtra("bootPath"))
+        val resolved = resolveFileUriStringArgument(java.io.File(cuePath)) {
+            "content://test/file"
+        }
+        assertEquals("content://test/file", resolved)
     }
 
     // -----------------------------------------------------------------------

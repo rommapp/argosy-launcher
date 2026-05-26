@@ -11,9 +11,12 @@ import com.nendo.argosy.data.sync.SyncQueueState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -193,6 +196,8 @@ class SaveSyncRepository @Inject constructor(
         return saves.filter { it.slot?.startsWith("state_") != true }
     }
 
+    private val uploadMutexes = ConcurrentHashMap<Pair<Long, String?>, Mutex>()
+
     suspend fun uploadSave(
         gameId: Long,
         emulatorId: String,
@@ -200,7 +205,9 @@ class SaveSyncRepository @Inject constructor(
         forceOverwrite: Boolean = false,
         isHardcore: Boolean = false,
         bypassSkipCheck: Boolean = false
-    ): SaveSyncResult = apiClient.uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore, bypassSkipCheck)
+    ): SaveSyncResult = uploadMutexes.computeIfAbsent(gameId to channelName) { Mutex() }.withLock {
+        apiClient.uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore, bypassSkipCheck)
+    }
 
     suspend fun uploadCacheEntry(
         gameId: Long,

@@ -11,11 +11,8 @@ import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 class SyncSaveOnSessionEndUseCase @Inject constructor(
@@ -83,7 +80,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         coreName: String? = null,
         isHardcore: Boolean = false,
         channelName: String? = null
-    ): Result = mutexFor(gameId, channelName).withLock {
+    ): Result {
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session end sync starting | emulatorPackage=$emulatorPackage, core=$coreName, sessionStart=$sessionStartTime, hardcore=$isHardcore")
 
         val prefs = preferencesRepository.userPreferences.first()
@@ -200,9 +197,4 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             }
         }
     }
-
-    private fun mutexFor(gameId: Long, channelName: String?): Mutex =
-        mutexes.computeIfAbsent(gameId to channelName) { Mutex() }
-
-    private val mutexes = ConcurrentHashMap<Pair<Long, String?>, Mutex>()
 }

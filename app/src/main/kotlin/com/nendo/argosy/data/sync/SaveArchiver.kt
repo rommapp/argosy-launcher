@@ -691,13 +691,7 @@ class SaveArchiver @Inject constructor(
             .joinToString("") { "%02x".format(it) }
     }
 
-    /**
-     * Computes what the server would produce via `compute_zip_hash()` if this
-     * folder were zipped via [zipFolder]. Avoids creating a temp ZIP. Enumerates
-     * via [FileAccessLayer.listFilesUnion] so the file set matches what
-     * [zipFolderRecursive] would write -- direct File.walk can return a partial
-     * view on restricted Android/data paths.
-     */
+    /** Equivalent to [zipFolder] + [calculateZipHash] without writing a temp zip. */
     fun calculateFolderAsZipHash(folder: File): String {
         val entries = mutableListOf<Pair<String, String>>()
         collectUnionFileHashes(folder.absolutePath, folder.name, entries)

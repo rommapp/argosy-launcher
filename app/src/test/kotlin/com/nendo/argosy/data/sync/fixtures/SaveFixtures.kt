@@ -2,23 +2,14 @@ package com.nendo.argosy.data.sync.fixtures
 
 import java.io.File
 
-/**
- * Programmatic save-fixture builders. Each builder generates the canonical on-disk layout
- * for a single save *shape*, not a specific platform. Multiple emulators may share a shape
- * (Switch + variants share [switchTitleFolder]); different cores of the same platform may
- * write different shapes (libretro PS2 cores vs standalone PCSX2 — open question, see
- * task #19). Add a new shape only when an actual on-device sample doesn't fit an existing
- * one.
- */
+/** Programmatic save-fixture builders keyed by save *shape*, not platform. */
 object SaveFixtures {
 
-    /** Single .srm-style file with arbitrary bytes. RetroArch-shaped. */
     fun singleFile(dir: File, name: String = "game.srm", bytes: ByteArray = byteArrayOf(1, 2, 3, 4)): File {
         dir.mkdirs()
         return File(dir, name).apply { writeBytes(bytes) }
     }
 
-    /** Flat folder containing N files. 3DS sdmc-style. */
     fun flatFolder(dir: File, fileCount: Int = 3): File {
         dir.mkdirs()
         repeat(fileCount) { i ->
@@ -27,10 +18,7 @@ object SaveFixtures {
         return dir
     }
 
-    /**
-     * Switch titleId folder as Argosy-native zips would extract it. The folder name is
-     * the titleId; contents are the per-game save files Eden/yuzu write inside.
-     */
+    /** Switch titleId folder as Argosy-native zips would extract it. */
     fun switchTitleFolder(parent: File, titleId: String = "01007EF00011E000"): File {
         val folder = File(parent, titleId).apply { mkdirs() }
         File(folder, "progress.sav").writeBytes(ByteArray(2048) { it.toByte() })
@@ -41,17 +29,14 @@ object SaveFixtures {
         return folder
     }
 
-    /**
-     * JKSV-style Switch save: titleId folder containing a .nx_save_meta.bin sentinel
-     * alongside the save files. Meta layout matches what SaveArchiver.parseTitleIdFromMeta
-     * reads: 4-byte "JKSV" magic, 1 byte padding, 8 little-endian bytes of titleId.
-     */
+    /** JKSV-format Switch save folder, with the .nx_save_meta.bin sentinel. */
     fun switchJksvFolder(parent: File, titleId: String = "01007EF00011E000"): File {
         val folder = switchTitleFolder(parent, titleId)
         File(folder, ".nx_save_meta.bin").writeBytes(jksvMetaBytes(titleId))
         return folder
     }
 
+    /** Bytes layout: 4 "JKSV" + 1 pad + 8 LE titleId; matches SaveArchiver.parseTitleIdFromMeta. */
     fun jksvMetaBytes(titleId: String): ByteArray {
         require(titleId.length == 16) { "titleId must be 16 hex chars" }
         val titleIdLong = titleId.toULong(radix = 16).toLong()
@@ -63,10 +48,7 @@ object SaveFixtures {
         return bytes
     }
 
-    /**
-     * PSP-style sibling folders sharing a 9-char disc-id prefix. Returns the parent
-     * folder; each child is one "save unit" (DATA00, SETTINGS, etc.).
-     */
+    /** PSP-style sibling folders sharing a 9-char disc-id prefix. */
     fun pspPrefixedSiblings(parent: File, discId: String = "ULUS10064", suffixes: List<String> = listOf("DATA00", "SETTINGS", "SYSTEM")): File {
         parent.mkdirs()
         suffixes.forEach { suffix ->
@@ -76,7 +58,7 @@ object SaveFixtures {
         return parent
     }
 
-    /** Returns all files (not directories) under [root], sorted, as relative paths. */
+    /** Sorted list of (relative-path, bytes) for every file under [root]. */
     fun fileTree(root: File): List<Pair<String, ByteArray>> =
         root.walkTopDown()
             .filter { it.isFile }
@@ -84,13 +66,7 @@ object SaveFixtures {
             .sortedBy { it.first }
             .toList()
 
-    /**
-     * Minimal valid GameCube ISO ROM image. Only the header bytes that
-     * GameCubeHeaderParser.parseRomHeader inspects are populated:
-     * - 0x00..0x03: 4-byte game id
-     * - 0x04..0x05: 2-byte maker code
-     * - 0x20..0x5F: null-terminated game name (64 bytes)
-     */
+    /** Minimal GameCube ISO ROM with only the header bytes parseRomHeader reads. */
     fun gameCubeRom(file: File, gameId: String = "GZLE", makerCode: String = "01", name: String = "Zelda"): File {
         require(gameId.length == 4) { "gameId must be 4 chars" }
         require(makerCode.length == 2) { "makerCode must be 2 chars" }
@@ -103,13 +79,7 @@ object SaveFixtures {
         return file
     }
 
-    /**
-     * Minimal valid GCI save image. Parser reads:
-     * - 0x00..0x03: 4-byte game id
-     * - 0x04..0x05: 2-byte maker code
-     * - 0x08..0x27: 32-byte null-terminated internal filename
-     * The remainder is opaque payload bytes.
-     */
+    /** Minimal GCI save with only the header bytes parseGciHeader reads. */
     fun gciSave(
         file: File,
         gameId: String = "GZLE",

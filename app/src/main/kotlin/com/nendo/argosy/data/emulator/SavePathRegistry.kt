@@ -84,9 +84,6 @@ object SavePathRegistry {
             usesGciFormat = true,
             supported = true
         ),
-        // RetroArch libretro cores that bypass the SAVE_RAM api -- keyed by (emulator, platform)
-        // so getConfigForPlatform resolves them and they route to the matching folder/GCI handler
-        // instead of the generic .srm path. See PlatformSaveHandlerRegistry.getHandler.
         "retroarch_ngc" to SavePathConfig(
             emulatorId = "retroarch_ngc",
             defaultPaths = listOf(

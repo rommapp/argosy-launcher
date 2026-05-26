@@ -6,12 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import java.io.File
 
-/**
- * Builds a [FileAccessLayer] mockk that delegates every storage operation to the real
- * filesystem. Use in unit tests that need round-trip I/O without standing up the real
- * Android storage stack. Restricted-path routing is short-circuited; tests work in their
- * own temp directory.
- */
+/** A [FileAccessLayer] mock that delegates every op to real File I/O on a temp dir. */
 fun realFsFal(): FileAccessLayer = mockk<FileAccessLayer>(relaxed = true).also { fal ->
     every { fal.exists(any()) } answers { File(firstArg<String>()).exists() }
     every { fal.isDirectory(any()) } answers { File(firstArg<String>()).isDirectory }

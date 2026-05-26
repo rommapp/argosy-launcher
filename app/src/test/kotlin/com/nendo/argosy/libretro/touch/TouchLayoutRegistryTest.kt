@@ -28,12 +28,12 @@ class TouchLayoutRegistryTest {
     }
 
     @Test
-    fun `psx uses diamond + four corners shoulders + left analog`() {
+    fun `psx uses diamond + four corners shoulders + dual analog`() {
         val spec = TouchLayoutRegistry.forPlatform("psx")
         assertEquals(FaceShape.Diamond4, spec.face)
         assertEquals(ShoulderShape.FourCorners, spec.shoulders)
         assertEquals(4, spec.shoulderSlots.size)
-        assertEquals(AnalogConfig.LeftOnly, spec.analog)
+        assertEquals(AnalogConfig.LeftAndRight, spec.analog)
     }
 
     @Test

@@ -72,4 +72,50 @@ object SaveFixtures {
             .map { it.relativeTo(root).path to it.readBytes() }
             .sortedBy { it.first }
             .toList()
+
+    /**
+     * Minimal valid GameCube ISO ROM image. Only the header bytes that
+     * GameCubeHeaderParser.parseRomHeader inspects are populated:
+     * - 0x00..0x03: 4-byte game id
+     * - 0x04..0x05: 2-byte maker code
+     * - 0x20..0x5F: null-terminated game name (64 bytes)
+     */
+    fun gameCubeRom(file: File, gameId: String = "GZLE", makerCode: String = "01", name: String = "Zelda"): File {
+        require(gameId.length == 4) { "gameId must be 4 chars" }
+        require(makerCode.length == 2) { "makerCode must be 2 chars" }
+        val bytes = ByteArray(0x100)
+        gameId.toByteArray(Charsets.US_ASCII).copyInto(bytes, 0)
+        makerCode.toByteArray(Charsets.US_ASCII).copyInto(bytes, 4)
+        name.toByteArray(Charsets.US_ASCII).copyInto(bytes, 0x20)
+        file.parentFile?.mkdirs()
+        file.writeBytes(bytes)
+        return file
+    }
+
+    /**
+     * Minimal valid GCI save image. Parser reads:
+     * - 0x00..0x03: 4-byte game id
+     * - 0x04..0x05: 2-byte maker code
+     * - 0x08..0x27: 32-byte null-terminated internal filename
+     * The remainder is opaque payload bytes.
+     */
+    fun gciSave(
+        file: File,
+        gameId: String = "GZLE",
+        makerCode: String = "01",
+        internalFilename: String = "ZELDA_SAVE",
+        payload: ByteArray = ByteArray(2048) { (it % 251).toByte() },
+    ): File {
+        require(gameId.length == 4) { "gameId must be 4 chars" }
+        require(makerCode.length == 2) { "makerCode must be 2 chars" }
+        require(internalFilename.length <= 32) { "internalFilename must fit in 32 bytes" }
+        val bytes = ByteArray(0x40 + payload.size)
+        gameId.toByteArray(Charsets.US_ASCII).copyInto(bytes, 0)
+        makerCode.toByteArray(Charsets.US_ASCII).copyInto(bytes, 4)
+        internalFilename.toByteArray(Charsets.US_ASCII).copyInto(bytes, 0x08)
+        payload.copyInto(bytes, 0x40)
+        file.parentFile?.mkdirs()
+        file.writeBytes(bytes)
+        return file
+    }
 }

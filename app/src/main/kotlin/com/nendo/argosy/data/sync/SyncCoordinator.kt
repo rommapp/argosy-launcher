@@ -436,16 +436,23 @@ class SyncCoordinator @Inject constructor(
             if (active > 0) continue
             val completed = pendingSyncQueueDao.countCompletedBySession(sid)
             val failed = pendingSyncQueueDao.countFailedBySession(sid)
-            val result = strategySelector.current().completeSession(
+            val outcome = strategySelector.current().completeSession(
                 sessionId = sid,
                 operationsCompleted = completed,
                 operationsFailed = failed
             )
-            if (result.isSuccess) {
-                pendingSyncQueueDao.deleteBySession(sid)
-                Logger.info(TAG, "finalizeDrainedSessions: session $sid finalized | completed=$completed failed=$failed")
-            } else {
-                Logger.warn(TAG, "finalizeDrainedSessions: session $sid completeSession failed; rows retained for retry next pass")
+            when (outcome) {
+                com.nendo.argosy.data.sync.strategy.CompleteOutcome.ACCEPTED -> {
+                    pendingSyncQueueDao.deleteBySession(sid)
+                    Logger.info(TAG, "finalizeDrainedSessions: session $sid finalized | completed=$completed failed=$failed")
+                }
+                com.nendo.argosy.data.sync.strategy.CompleteOutcome.ALREADY_FINALIZED -> {
+                    pendingSyncQueueDao.deleteBySession(sid)
+                    Logger.info(TAG, "finalizeDrainedSessions: session $sid drained (server reported terminal); rows deleted")
+                }
+                com.nendo.argosy.data.sync.strategy.CompleteOutcome.RETRY_LATER -> {
+                    Logger.warn(TAG, "finalizeDrainedSessions: session $sid completeSession transient failure; rows retained for retry next pass")
+                }
             }
         }
     }
@@ -879,8 +886,8 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun canonicalEmulatorId(raw: String?, game: GameEntity): String? {
-        if (!raw.isNullOrBlank() && raw != "default") return raw
         return saveSyncRepository.get().resolveEmulatorForGame(game)
+            ?: raw?.takeUnless { it.isBlank() || it == "default" }
     }
 
     private suspend fun canonicalizeStaleEmulatorIds() {

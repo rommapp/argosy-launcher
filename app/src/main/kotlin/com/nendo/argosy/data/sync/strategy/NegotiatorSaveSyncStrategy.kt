@@ -67,8 +67,8 @@ class NegotiatorSaveSyncStrategy @Inject constructor(
         sessionId: Long,
         operationsCompleted: Int,
         operationsFailed: Int
-    ): Result<Unit> {
-        val api = connectionManager.getApi() ?: return Result.success(Unit)
+    ): CompleteOutcome {
+        val api = connectionManager.getApi() ?: return CompleteOutcome.RETRY_LATER
         return try {
             val response = api.completeSyncSession(
                 sessionId,
@@ -77,15 +77,28 @@ class NegotiatorSaveSyncStrategy @Inject constructor(
                     operationsFailed = operationsFailed
                 )
             )
-            if (response.isSuccessful) {
-                Logger.info(TAG, "completeSession: $sessionId done | ok=$operationsCompleted fail=$operationsFailed")
-                Result.success(Unit)
-            } else {
-                Result.failure(IllegalStateException("Complete returned ${response.code()}"))
+            val code = response.code()
+            when {
+                response.isSuccessful -> {
+                    Logger.info(TAG, "completeSession: $sessionId done | ok=$operationsCompleted fail=$operationsFailed")
+                    CompleteOutcome.ACCEPTED
+                }
+                code == 404 || code == 410 || code == 409 -> {
+                    Logger.info(TAG, "completeSession: $sessionId already finalized server-side (HTTP $code), dropping local rows")
+                    CompleteOutcome.ALREADY_FINALIZED
+                }
+                code in 400..499 -> {
+                    Logger.error(TAG, "completeSession: $sessionId rejected with HTTP $code; dropping local rows to avoid zombie")
+                    CompleteOutcome.ALREADY_FINALIZED
+                }
+                else -> {
+                    Logger.warn(TAG, "completeSession: $sessionId server error HTTP $code, will retry")
+                    CompleteOutcome.RETRY_LATER
+                }
             }
         } catch (e: Exception) {
             Logger.error(TAG, "completeSession: $sessionId failed", e)
-            Result.failure(e)
+            CompleteOutcome.RETRY_LATER
         }
     }
 

@@ -86,6 +86,7 @@ class SyncCoordinatorApplyPlanTest {
         }
 
         mockSaveSyncRepository = mockk(relaxed = true)
+        coEvery { mockSaveSyncRepository.resolveEmulatorForGame(any()) } returns "mgba"
         coordinator = SyncCoordinator(
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = mockk(relaxed = true),

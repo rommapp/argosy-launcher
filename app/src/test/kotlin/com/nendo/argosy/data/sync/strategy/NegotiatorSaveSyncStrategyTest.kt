@@ -130,7 +130,7 @@ class NegotiatorSaveSyncStrategyTest {
 
         val result = strategy.completeSession(5L, operationsCompleted = 3, operationsFailed = 1)
 
-        assertEquals(true, result.isSuccess)
+        assertEquals(com.nendo.argosy.data.sync.strategy.CompleteOutcome.ACCEPTED, result)
         coVerify { api.completeSyncSession(5L, match { it.operationsCompleted == 3 && it.operationsFailed == 1 }) }
     }
 }

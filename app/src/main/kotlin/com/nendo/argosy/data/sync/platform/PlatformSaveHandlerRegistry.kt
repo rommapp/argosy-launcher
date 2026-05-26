@@ -63,10 +63,14 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         platformSlug: String,
         emulatorId: String
     ): PlatformSaveHandler {
-        if (emulatorId in RETROARCH_EMULATOR_IDS) return retroArchSaveHandler
+        // Config-driven format wins before the RetroArch shortcut so libretro cores that bypass SAVE_RAM (ppsspp/citra/dolphin) route to folder/GCI handlers instead of .srm.
         if (config?.usesGciFormat == true) return gciSaveHandler
-
         val canonical = canonicalSlug(platformSlug)
+        if (config?.usesFolderBasedSaves == true) {
+            if (canonical == "switch") return switchSaveHandler
+            folderHandlers[canonical]?.let { return it }
+        }
+        if (emulatorId in RETROARCH_EMULATOR_IDS) return retroArchSaveHandler
         if (canonical == "switch") return switchSaveHandler
         return folderHandlers[canonical] ?: defaultSaveHandler
     }

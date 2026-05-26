@@ -84,17 +84,64 @@ object SavePathRegistry {
             usesGciFormat = true,
             supported = true
         ),
-        // RetroArch dolphin-emu core uses GCI folder structure
-        "retroarch_dolphin" to SavePathConfig(
-            emulatorId = "retroarch_dolphin",
+        // RetroArch libretro cores that bypass the SAVE_RAM api -- keyed by (emulator, platform)
+        // so getConfigForPlatform resolves them and they route to the matching folder/GCI handler
+        // instead of the generic .srm path. See PlatformSaveHandlerRegistry.getHandler.
+        "retroarch_ngc" to SavePathConfig(
+            emulatorId = "retroarch_ngc",
             defaultPaths = listOf(
                 "{extStorage}/RetroArch/saves/dolphin-emu/User/GC",
-                "{extStorage}/Android/data/com.retroarch/files/saves/dolphin-emu/User/GC",
+                "{extStorage}/Android/data/com.retroarch/files/saves/dolphin-emu/User/GC"
+            ),
+            saveExtensions = listOf("gci"),
+            usesGciFormat = true,
+        ),
+        "retroarch_64_ngc" to SavePathConfig(
+            emulatorId = "retroarch_64_ngc",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/dolphin-emu/User/GC",
                 "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/dolphin-emu/User/GC"
             ),
             saveExtensions = listOf("gci"),
             usesGciFormat = true,
-            supported = true
+        ),
+
+        "retroarch_psp" to SavePathConfig(
+            emulatorId = "retroarch_psp",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/PPSSPP/PSP/SAVEDATA",
+                "{extStorage}/Android/data/com.retroarch/files/saves/PPSSPP/PSP/SAVEDATA"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
+        "retroarch_64_psp" to SavePathConfig(
+            emulatorId = "retroarch_64_psp",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/PPSSPP/PSP/SAVEDATA",
+                "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/PPSSPP/PSP/SAVEDATA"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
+
+        "retroarch_3ds" to SavePathConfig(
+            emulatorId = "retroarch_3ds",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/Citra/sdmc/Nintendo 3DS",
+                "{extStorage}/Android/data/com.retroarch/files/saves/Citra/sdmc/Nintendo 3DS"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
+        "retroarch_64_3ds" to SavePathConfig(
+            emulatorId = "retroarch_64_3ds",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/Citra/sdmc/Nintendo 3DS",
+                "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/Citra/sdmc/Nintendo 3DS"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
         ),
 
         // Wii - NAND folder-based saves (game ID as hex)

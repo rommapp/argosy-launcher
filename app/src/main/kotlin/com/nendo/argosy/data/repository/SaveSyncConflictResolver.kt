@@ -409,7 +409,14 @@ class SaveSyncConflictResolver @Inject constructor(
             channel = latestCache.channelName,
             details = "from=${latestCache.emulatorId} to=$currentEmulatorId, cacheId=${latestCache.id}, target=${java.io.File(targetPath).name}, diskExists=${existingHash != null}"
         )
-        saveCacheManager.get().restoreSave(latestCache.id, targetPath)
+        val restored = saveCacheManager.get().restoreSave(latestCache.id, targetPath)
+        if (!restored) {
+            Logger.warn(
+                TAG,
+                "[SaveSync] PRE_LAUNCH gameId=$gameId | Cross-emulator restore FAILED | " +
+                    "cacheId=${latestCache.id}, target=$targetPath"
+            )
+        }
     }
 
     private suspend fun resolveTargetPathForEmulator(

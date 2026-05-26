@@ -23,6 +23,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -65,9 +66,13 @@ class GameLauncherTest {
         mockkStatic(FileProvider::class)
         context = mockk(relaxed = true)
         every { context.packageName } returns "com.nendo.argosy"
+        val testUri = mockk<Uri>(relaxed = true)
+        every { testUri.toString() } returns "content://test/file"
+        every { testUri.scheme } returns "content"
+        every { testUri.authority } returns "com.nendo.argosy.fileprovider"
         every {
             FileProvider.getUriForFile(context, "com.nendo.argosy.fileprovider", any())
-        } returns Uri.parse("content://test/file")
+        } returns testUri
         gameDao = mockk(relaxed = true)
         gameDiscDao = mockk(relaxed = true)
         emulatorConfigDao = mockk(relaxed = true)
@@ -281,19 +286,47 @@ class GameLauncherTest {
     @Test
     fun `fileUriString extras use absolute path for m3u files`() = runTest {
         val m3uPath = romFile("m3u")
-        val resolved = resolveFileUriStringArgument(java.io.File(m3uPath)) {
-            "content://test/file"
+        val game = createGame(localPath = m3uPath, platformSlug = "psx")
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = duckstation.packageName,
+            displayName = duckstation.displayName
+        )
+        stubDetectorWith(installedEmulator(duckstation))
+        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
+
+        launcher.launch(1L)
+
+        verify(exactly = 0) {
+            FileProvider.getUriForFile(any(), any(), match { it.extension.equals("m3u", ignoreCase = true) })
         }
-        assertEquals(m3uPath, resolved)
     }
 
     @Test
     fun `fileUriString extras use content uri string for non m3u files`() = runTest {
         val cuePath = romFile("cue")
-        val resolved = resolveFileUriStringArgument(java.io.File(cuePath)) {
-            "content://test/file"
+        val game = createGame(localPath = cuePath, platformSlug = "psx")
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = duckstation.packageName,
+            displayName = duckstation.displayName
+        )
+        stubDetectorWith(installedEmulator(duckstation))
+        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
+
+        launcher.launch(1L)
+
+        verify(exactly = 1) {
+            FileProvider.getUriForFile(any(), any(), match { it.extension.equals("cue", ignoreCase = true) })
         }
-        assertEquals("content://test/file", resolved)
     }
 
     // -----------------------------------------------------------------------

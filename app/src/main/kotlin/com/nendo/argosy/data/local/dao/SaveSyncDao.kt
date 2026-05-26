@@ -142,7 +142,7 @@ interface SaveSyncDao {
     @Query("""
         SELECT lastSyncDeviceId AS deviceId,
                lastSyncDeviceName AS deviceName,
-               COUNT(*) AS saveCount,
+               COUNT(DISTINCT gameId) AS saveCount,
                MAX(lastSyncedAt) AS latestSyncAt
         FROM save_sync
         GROUP BY lastSyncDeviceId

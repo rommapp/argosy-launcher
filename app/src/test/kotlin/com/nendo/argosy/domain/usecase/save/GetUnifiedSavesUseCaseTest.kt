@@ -80,8 +80,8 @@ class GetUnifiedSavesUseCaseTest {
     }
 
     @Test
-    fun `server-only named save gets isLocked true`() = runTest {
-        val serverSave = createServerSave(id = 1, fileName = "checkpoint.srm")
+    fun `server-only slotted save gets isLocked true`() = runTest {
+        val serverSave = createServerSave(id = 1, fileName = "checkpoint.srm", slot = "checkpoint")
         setupMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
 
         val entries = useCase(gameId)
@@ -95,8 +95,8 @@ class GetUnifiedSavesUseCaseTest {
     }
 
     @Test
-    fun `server-only latest save gets isLocked false`() = runTest {
-        val serverSave = createServerSave(id = 1, fileName = "argosy-latest.srm")
+    fun `server-only argosy-latest slot gets isLocked false`() = runTest {
+        val serverSave = createServerSave(id = 1, fileName = "argosy-latest.srm", slot = "argosy-latest")
         setupMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
 
         val entries = useCase(gameId)
@@ -110,8 +110,8 @@ class GetUnifiedSavesUseCaseTest {
     }
 
     @Test
-    fun `server save with rom base name gets isLocked false`() = runTest {
-        val serverSave = createServerSave(id = 1, fileName = "$romBaseName.srm")
+    fun `server save with rom base name slot is latest`() = runTest {
+        val serverSave = createServerSave(id = 1, fileName = "$romBaseName.srm", slot = "argosy-latest")
         setupMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
 
         val entries = useCase(gameId)
@@ -120,6 +120,21 @@ class GetUnifiedSavesUseCaseTest {
         assertFalse(entries[0].isLocked)
         assertNull(entries[0].channelName)
         assertTrue(entries[0].isLatest)
+    }
+
+    @Test
+    fun `null-slot named server save lands in Archived bucket`() = runTest {
+        val serverSave = createServerSave(id = 1, fileName = "checkpoint.srm")
+        setupMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
+
+        val collapsed = useCase(gameId, expandHistory = false)
+        val expanded = useCase(gameId, expandHistory = true)
+
+        assertTrue(collapsed.isEmpty())
+        assertEquals(1, expanded.size)
+        assertTrue(expanded[0].isArchival)
+        assertFalse(expanded[0].isLatest)
+        assertNull(expanded[0].channelName)
     }
 
     @Test
@@ -174,7 +189,7 @@ class GetUnifiedSavesUseCaseTest {
     fun `timeline contains all entries regardless of lock status`() = runTest {
         val lockedCache = createLocalCache(id = 1, note = "checkpoint", isLocked = true)
         val unlockedCache = createLocalCache(id = 2, note = null, isLocked = false)
-        val serverOnly = createServerSave(id = 10, fileName = "quicksave.srm")
+        val serverOnly = createServerSave(id = 10, fileName = "quicksave.srm", slot = "quicksave")
         setupMocks(
             localCaches = listOf(lockedCache, unlockedCache),
             serverSaves = listOf(serverOnly)
@@ -193,7 +208,7 @@ class GetUnifiedSavesUseCaseTest {
     fun `multiple distinct channels each appear in slots`() = runTest {
         val checkpoint = createLocalCache(id = 1, note = "checkpoint", isLocked = true)
         val quicksave = createLocalCache(id = 2, note = "quicksave", isLocked = true)
-        val backup = createServerSave(id = 10, fileName = "backup.srm")
+        val backup = createServerSave(id = 10, fileName = "backup.srm", slot = "backup")
         setupMocks(
             localCaches = listOf(checkpoint, quicksave),
             serverSaves = listOf(backup)
@@ -313,11 +328,15 @@ class GetUnifiedSavesUseCaseTest {
     fun `entries sorted with latest first then dated then channels`() = runTest {
         val latestCache = createLocalCache(
             id = 1,
-            note = null,
+            note = "autosave",
             isLocked = false,
             cachedAt = Instant.parse("2024-01-01T14:00:00Z")
         )
-        val latestServer = createServerSave(id = 10, fileName = "argosy-latest.srm")
+        val latestServer = createServerSave(
+            id = 10,
+            fileName = "argosy-latest.srm",
+            slot = "autosave"
+        )
         val channelCache = createLocalCache(
             id = 2,
             note = "beta",
@@ -345,15 +364,14 @@ class GetUnifiedSavesUseCaseTest {
     }
 
     @Test
-    fun `timestamp-only server saves are not treated as channels`() = runTest {
+    fun `timestamp-only server save becomes archival`() = runTest {
         val timestampSave = createServerSave(id = 1, fileName = "2024-01-15_14-30-00.srm")
         setupMocks(localCaches = emptyList(), serverSaves = listOf(timestampSave))
 
-        val entries = useCase(gameId)
-        val slots = entries.filter { it.isLocked }
+        val entries = useCase(gameId, expandHistory = true)
 
         assertEquals(1, entries.size)
-        assertEquals(0, slots.size)
+        assertTrue(entries[0].isArchival)
         assertNull(entries[0].channelName)
         assertFalse(entries[0].isLocked)
     }
@@ -419,8 +437,12 @@ class GetUnifiedSavesUseCaseTest {
     }
 
     @Test
-    fun `server save with accented filename treated as latest not channel`() = runTest {
-        val serverSave = createAccentServerSave(id = 1, fileName = "Pok\u00e9mon Violet.srm")
+    fun `server save with accented filename and autosave slot is latest`() = runTest {
+        val serverSave = createAccentServerSave(
+            id = 1,
+            fileName = "Pok\u00e9mon Violet.srm",
+            slot = "argosy-latest"
+        )
         setupAccentMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
 
         val entries = useCase(accentGameId)
@@ -462,8 +484,16 @@ class GetUnifiedSavesUseCaseTest {
 
     @Test
     fun `mixed accented latest and plain channel saves correctly categorized`() = runTest {
-        val latestSave = createAccentServerSave(id = 1, fileName = "Pok\u00e9mon Violet.srm")
-        val channelSave = createAccentServerSave(id = 2, fileName = "checkpoint.srm")
+        val latestSave = createAccentServerSave(
+            id = 1,
+            fileName = "Pok\u00e9mon Violet.srm",
+            slot = "argosy-latest"
+        )
+        val channelSave = createAccentServerSave(
+            id = 2,
+            fileName = "checkpoint.srm",
+            slot = "checkpoint"
+        )
         setupAccentMocks(localCaches = emptyList(), serverSaves = listOf(latestSave, channelSave))
 
         val entries = useCase(accentGameId)
@@ -478,17 +508,18 @@ class GetUnifiedSavesUseCaseTest {
     }
 
     @Test
-    fun `accented filename with RomM timestamp tag treated as latest`() = runTest {
+    fun `accented filename with RomM timestamp tag and no slot is archival`() = runTest {
         val serverSave = createAccentServerSave(
             id = 1,
             fileName = "Pok\u00e9mon Violet [2024-01-15 12-00-00].srm"
         )
         setupAccentMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
 
-        val entries = useCase(accentGameId)
+        val entries = useCase(accentGameId, expandHistory = true)
 
         assertEquals(1, entries.size)
-        assertTrue(entries[0].isLatest)
+        assertTrue(entries[0].isArchival)
+        assertFalse(entries[0].isLatest)
         assertNull(entries[0].channelName)
     }
 
@@ -497,7 +528,7 @@ class GetUnifiedSavesUseCaseTest {
     @Test
     fun `server-only save with device is_current true shows isCurrent`() = runTest {
         coEvery { saveSyncRepository.getDeviceId() } returns "device-1"
-        val serverSave = createServerSave(id = 1, fileName = "checkpoint.srm").copy(
+        val serverSave = createServerSave(id = 1, fileName = "checkpoint.srm", slot = "checkpoint").copy(
             deviceSyncs = listOf(RomMDeviceSync(deviceId = "device-1", isCurrent = true))
         )
         setupMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
@@ -511,7 +542,7 @@ class GetUnifiedSavesUseCaseTest {
     @Test
     fun `server-only save with device is_current false shows not current`() = runTest {
         coEvery { saveSyncRepository.getDeviceId() } returns "device-1"
-        val serverSave = createServerSave(id = 1, fileName = "checkpoint.srm").copy(
+        val serverSave = createServerSave(id = 1, fileName = "checkpoint.srm", slot = "checkpoint").copy(
             deviceSyncs = listOf(RomMDeviceSync(deviceId = "device-1", isCurrent = false))
         )
         setupMocks(localCaches = emptyList(), serverSaves = listOf(serverSave))
@@ -570,6 +601,60 @@ class GetUnifiedSavesUseCaseTest {
         assertEquals(10L, bothEntries[0].serverSaveId)
     }
 
+    // --- expandHistory tests ---
+
+    @Test
+    fun `expandHistory true surfaces every null-slot save as archival`() = runTest {
+        val archivalSaves = (0 until 7).map { i ->
+            createServerSave(
+                id = (100 + i).toLong(),
+                fileName = "$romBaseName [2026-05-${10 + i} 12-00-00].srm",
+                updatedAt = "2026-05-${10 + i}T12:00:00Z"
+            )
+        }
+        setupMocks(localCaches = emptyList(), serverSaves = archivalSaves)
+
+        val entries = useCase(gameId, expandHistory = true)
+
+        assertEquals(7, entries.size)
+        assertTrue(entries.all { it.isArchival })
+        assertTrue(entries.none { it.isLatest })
+        assertTrue(entries.all { it.channelName == null })
+        assertEquals(archivalSaves.map { it.id }.toSet(), entries.mapNotNull { it.serverSaveId }.toSet())
+    }
+
+    @Test
+    fun `expandHistory false drops null-slot archival saves entirely`() = runTest {
+        val archivalSaves = (0 until 3).map { i ->
+            createServerSave(
+                id = (100 + i).toLong(),
+                fileName = "$romBaseName [2026-05-${10 + i} 12-00-00].srm",
+                updatedAt = "2026-05-${10 + i}T12:00:00Z"
+            )
+        }
+        setupMocks(localCaches = emptyList(), serverSaves = archivalSaves)
+
+        val entries = useCase(gameId, expandHistory = false)
+
+        assertTrue(entries.isEmpty())
+    }
+
+    @Test
+    fun `expandHistory true preserves null-slot save shadowed by slotted version`() = runTest {
+        val legacy = createServerSave(id = 1, fileName = "checkpoint.srm")
+        val slotted = createServerSave(id = 2, fileName = "checkpoint.srm").copy(slot = "checkpoint")
+        setupMocks(localCaches = emptyList(), serverSaves = listOf(legacy, slotted))
+
+        val expanded = useCase(gameId, expandHistory = true)
+
+        assertEquals(2, expanded.size)
+        val archival = expanded.single { it.isArchival }
+        val slot = expanded.single { !it.isArchival }
+        assertEquals(1L, archival.serverSaveId)
+        assertEquals(2L, slot.serverSaveId)
+        assertEquals("checkpoint", slot.channelName)
+    }
+
     // --- helpers ---
 
     private fun setupMocks(
@@ -601,7 +686,8 @@ class GetUnifiedSavesUseCaseTest {
     private fun createServerSave(
         id: Long,
         fileName: String,
-        updatedAt: String = "2024-01-15T12:00:00Z"
+        updatedAt: String = "2024-01-15T12:00:00Z",
+        slot: String? = null
     ) = RomMSave(
         id = id,
         romId = rommId,
@@ -609,7 +695,8 @@ class GetUnifiedSavesUseCaseTest {
         emulator = "snes9x",
         fileName = fileName,
         fileSizeBytes = 8192,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        slot = slot
     )
 
     private fun createAccentLocalCache(

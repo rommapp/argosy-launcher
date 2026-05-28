@@ -81,8 +81,8 @@ class RestoreCachedSaveUseCase @Inject constructor(
             return Result.Error("Failed to restore save")
         }
 
-        // Switch to the target entry's channel context
         val targetChannel = entry.channelName
+            ?: com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         gameDao.updateActiveSaveChannel(gameId, targetChannel)
 
         if (game.rommId != null) {

@@ -1388,7 +1388,7 @@ class DualScreenManager(
             gameDao.updateActiveSaveTimestamp(gameId, null)
 
             if (emulatorId != null) {
-                val entries = getUnifiedSavesUseCase(gameId)
+                val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
                 val latestForChannel = entries
                     .filter { it.channelName == channelName }
                     .maxByOrNull { it.timestamp }
@@ -1431,7 +1431,7 @@ class DualScreenManager(
             gameDao.updateActiveSaveTimestamp(gameId, timestamp)
 
             if (emulatorId != null) {
-                val entries = getUnifiedSavesUseCase(gameId)
+                val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
                 val targetEntry = entries.find {
                     it.channelName == channelName &&
                         it.timestamp.toEpochMilli() == timestamp
@@ -1508,7 +1508,7 @@ class DualScreenManager(
         scope.launch(Dispatchers.IO) {
             try {
                 val game = gameDao.getById(gameId)
-                val fullEntries = getUnifiedSavesUseCase(gameId)
+                val fullEntries = getUnifiedSavesUseCase(gameId, expandHistory = true)
                 val fullData = fullEntries.map { it.toSaveEntryData() }
                 deliverSaves(gameId, fullData, game?.activeSaveChannel, game?.activeSaveTimestamp, syncing = false)
             } catch (e: Exception) {

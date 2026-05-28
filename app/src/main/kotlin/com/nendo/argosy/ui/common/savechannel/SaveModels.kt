@@ -9,7 +9,8 @@ data class SaveSlotItem(
     val saveCount: Int,
     val latestTimestamp: Long?,
     val isCreateAction: Boolean = false,
-    val isMigrationCandidate: Boolean = false
+    val isMigrationCandidate: Boolean = false,
+    val isArchivedBucket: Boolean = false
 )
 
 data class SaveHistoryItem(
@@ -22,5 +23,6 @@ data class SaveHistoryItem(
     val isActiveRestorePoint: Boolean,
     val isLatest: Boolean,
     val isHardcore: Boolean,
-    val isRollback: Boolean
+    val isRollback: Boolean,
+    val isArchival: Boolean = false
 )

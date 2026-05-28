@@ -66,6 +66,8 @@ class SaveCacheManager @Inject constructor(
         needsRemoteSync: Boolean = false,
         precomputedContentHash: String? = null
     ): CacheResult = withContext(Dispatchers.IO) {
+        @Suppress("NAME_SHADOWING")
+        val channelName = resolveDefaultChannel(channelName, isHardcore)
         if (!fal.exists(savePath)) {
             Log.w(TAG, "Save file does not exist: $savePath")
             return@withContext CacheResult.Failed
@@ -228,6 +230,8 @@ class SaveCacheManager @Inject constructor(
         needsRemoteSync: Boolean = false,
         rommSaveId: Long? = null
     ): CacheResult = withContext(Dispatchers.IO) {
+        @Suppress("NAME_SHADOWING")
+        val channelName = resolveDefaultChannel(channelName, isHardcore = false)
         if (!downloadedFile.exists() || downloadedFile.length() == 0L) {
             Log.w(TAG, "Downloaded file missing or empty: ${downloadedFile.absolutePath}")
             return@withContext CacheResult.Failed
@@ -774,5 +778,11 @@ class SaveCacheManager @Inject constructor(
             Log.e(TAG, "Failed to calculate hash for $savePath", e)
             null
         }
+    }
+
+    private fun resolveDefaultChannel(channelName: String?, isHardcore: Boolean): String? {
+        if (channelName != null) return channelName
+        if (isHardcore) return null
+        return SaveSyncApiClient.AUTOSAVE_SLOT_NAME
     }
 }

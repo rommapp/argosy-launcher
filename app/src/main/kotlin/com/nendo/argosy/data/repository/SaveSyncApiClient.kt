@@ -443,8 +443,8 @@ class SaveSyncApiClient @Inject constructor(
 
     companion object {
         private const val TAG = "SaveSyncApiClient"
-        internal const val DEFAULT_SAVE_NAME = "argosy-latest"
-        internal const val AUTOSAVE_SLOT_NAME = "autosave"
+        const val DEFAULT_SAVE_NAME = "argosy-latest"
+        const val AUTOSAVE_SLOT_NAME = "autosave"
         internal const val MIN_VALID_SAVE_SIZE_BYTES = 100L
         internal const val AUTOCLEANUP_LIMIT = 10
 

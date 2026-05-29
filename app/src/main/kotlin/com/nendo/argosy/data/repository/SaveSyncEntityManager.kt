@@ -77,7 +77,9 @@ class SaveSyncEntityManager @Inject constructor(
                 serverUpdatedAt = serverTimestamp ?: existing?.serverUpdatedAt,
                 lastSyncedAt = now,
                 lastUploadedHash = existing?.lastUploadedHash,
-                syncStatus = SaveSyncEntity.STATUS_SYNCED
+                syncStatus = SaveSyncEntity.STATUS_SYNCED,
+                userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,
+                userSelectedRestorePointAt = existing?.userSelectedRestorePointAt
             )
         )
     }
@@ -90,7 +92,7 @@ class SaveSyncEntityManager @Inject constructor(
             saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
         }
         if (row != null) {
-            saveSyncDao.setUserSelectedRestorePoint(row.id, true)
+            saveSyncDao.setUserSelectedRestorePoint(row.id, Instant.now().toEpochMilli())
         }
     }
 
@@ -125,7 +127,9 @@ class SaveSyncEntityManager @Inject constructor(
             lastUploadedHash = existing?.lastUploadedHash,
             syncStatus = existing?.syncStatus ?: SaveSyncEntity.STATUS_PENDING_UPLOAD,
             lastSyncDeviceId = existing?.lastSyncDeviceId,
-            lastSyncDeviceName = existing?.lastSyncDeviceName
+            lastSyncDeviceName = existing?.lastSyncDeviceName,
+            userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,
+            userSelectedRestorePointAt = existing?.userSelectedRestorePointAt
         )
         saveSyncDao.upsert(entity)
         return entity

@@ -79,13 +79,37 @@ class SaveSyncRepositoryPreLaunchTest {
             id = 5L, gameId = gameId, rommId = rommId, emulatorId = emulatorId,
             channelName = "autosave",
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
-            userSelectedRestorePoint = true
+            userSelectedRestorePoint = true,
+            userSelectedRestorePointAt = java.time.Instant.now()
         )
 
         val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
 
         assertTrue(result is PreLaunchSyncResult.LocalIsNewer)
-        io.mockk.verify(exactly = 0) { apiClient.checkSavesForGame(any(), any()) }
+        io.mockk.coVerify(exactly = 0) { apiClient.checkSavesForGame(any(), any()) }
+    }
+
+    @Test
+    fun `userSelectedRestorePoint expired beyond TTL is cleared and pre-launch evaluates server state`() = runTest {
+        val staleAt = java.time.Instant.now().minusMillis(SaveSyncEntity.USER_PIN_TTL_MS + 60_000L)
+        coEvery {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "autosave")
+        } returns SaveSyncEntity(
+            id = 5L, gameId = gameId, rommId = rommId, emulatorId = emulatorId,
+            channelName = "autosave",
+            syncStatus = SaveSyncEntity.STATUS_SYNCED,
+            userSelectedRestorePoint = true,
+            userSelectedRestorePointAt = staleAt
+        )
+        coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns listOf(
+            makeServerSave(deviceSyncs = listOf(RomMDeviceSync(deviceId = "device-1", isCurrent = false)))
+        )
+        coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns false
+
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+
+        assertTrue(result is PreLaunchSyncResult.ServerIsNewer)
+        io.mockk.coVerify { saveSyncDao.clearUserSelectedRestorePoint(5L) }
     }
 
     @Test

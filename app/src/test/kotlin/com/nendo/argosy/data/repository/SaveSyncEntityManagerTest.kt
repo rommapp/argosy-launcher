@@ -167,7 +167,7 @@ class SaveSyncEntityManagerTest {
 
         manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
 
-        coVerify { saveSyncDao.setUserSelectedRestorePoint(5L, true) }
+        coVerify { saveSyncDao.setUserSelectedRestorePoint(5L, any()) }
     }
 
     @Test
@@ -182,7 +182,7 @@ class SaveSyncEntityManagerTest {
 
         manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
 
-        coVerify { saveSyncDao.setUserSelectedRestorePoint(9L, true) }
+        coVerify { saveSyncDao.setUserSelectedRestorePoint(9L, any()) }
     }
 
     @Test
@@ -196,7 +196,7 @@ class SaveSyncEntityManagerTest {
 
         manager.markUserSelectedRestorePoint(1L, "eden", null)
 
-        coVerify { saveSyncDao.setUserSelectedRestorePoint(7L, true) }
+        coVerify { saveSyncDao.setUserSelectedRestorePoint(7L, any()) }
     }
 
     @Test

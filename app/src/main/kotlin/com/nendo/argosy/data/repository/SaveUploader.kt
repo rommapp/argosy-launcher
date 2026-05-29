@@ -542,7 +542,7 @@ class SaveUploader @Inject constructor(
             saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
         }
         if (row?.userSelectedRestorePoint == true) {
-            saveSyncDao.setUserSelectedRestorePoint(row.id, false)
+            saveSyncDao.clearUserSelectedRestorePoint(row.id)
         }
     }
 

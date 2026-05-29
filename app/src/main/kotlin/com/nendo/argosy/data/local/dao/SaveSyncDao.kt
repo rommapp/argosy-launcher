@@ -101,10 +101,13 @@ interface SaveSyncDao {
     @Query("UPDATE save_sync SET lastUploadedHash = :hash WHERE id = :id")
     suspend fun updateLastUploadedHash(id: Long, hash: String)
 
-    @Query("UPDATE save_sync SET userSelectedRestorePoint = :value WHERE id = :id")
-    suspend fun setUserSelectedRestorePoint(id: Long, value: Boolean)
+    @Query("UPDATE save_sync SET userSelectedRestorePoint = 1, userSelectedRestorePointAt = :nowMs WHERE id = :id")
+    suspend fun setUserSelectedRestorePoint(id: Long, nowMs: Long)
 
-    @Query("UPDATE save_sync SET userSelectedRestorePoint = 0 WHERE gameId = :gameId AND userSelectedRestorePoint = 1")
+    @Query("UPDATE save_sync SET userSelectedRestorePoint = 0, userSelectedRestorePointAt = NULL WHERE id = :id AND userSelectedRestorePoint = 1")
+    suspend fun clearUserSelectedRestorePoint(id: Long)
+
+    @Query("UPDATE save_sync SET userSelectedRestorePoint = 0, userSelectedRestorePointAt = NULL WHERE gameId = :gameId AND userSelectedRestorePoint = 1")
     suspend fun clearUserSelectedRestorePointForGame(gameId: Long)
 
     @Query("DELETE FROM save_sync WHERE id = :id")

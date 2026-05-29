@@ -698,7 +698,8 @@ class SyncCoordinator @Inject constructor(
                 emulatorId = cache.emulatorId,
                 channelName = cache.channelName!!,
                 cacheFile = cacheFile,
-                contentHash = cache.contentHash
+                contentHash = cache.contentHash,
+                uploadedCacheId = cache.id
             )
 
             when (result) {

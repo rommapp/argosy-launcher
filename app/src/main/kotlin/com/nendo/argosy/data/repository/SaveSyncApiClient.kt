@@ -257,8 +257,9 @@ class SaveSyncApiClient @Inject constructor(
         emulatorId: String,
         channelName: String? = null,
         forceOverwrite: Boolean = false,
-        isHardcore: Boolean = false
-    ): SaveSyncResult = saveUploader.get().uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore)
+        isHardcore: Boolean = false,
+        uploadedCacheId: Long? = null
+    ): SaveSyncResult = saveUploader.get().uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore, uploadedCacheId)
 
     suspend fun uploadCacheEntry(
         gameId: Long,
@@ -267,8 +268,9 @@ class SaveSyncApiClient @Inject constructor(
         channelName: String,
         cacheFile: File,
         contentHash: String?,
-        overwrite: Boolean = false
-    ): SaveSyncResult = saveUploader.get().uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite)
+        overwrite: Boolean = false,
+        uploadedCacheId: Long? = null
+    ): SaveSyncResult = saveUploader.get().uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite, uploadedCacheId)
 
     suspend fun downloadSave(
         gameId: Long,

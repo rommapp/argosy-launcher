@@ -26,6 +26,15 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND contentHash = :hash LIMIT 1")
     suspend fun getByGameAndHash(gameId: Long, hash: String): SaveCacheEntity?
 
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId
+          AND ((channelName IS NULL AND :channelName IS NULL) OR channelName = :channelName)
+          AND contentHash = :hash
+        ORDER BY cachedAt ASC
+    """)
+    suspend fun getAllByGameChannelAndHash(gameId: Long, channelName: String?, hash: String): List<SaveCacheEntity>
+
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND slotName = :slotName LIMIT 1")
     suspend fun getByGameAndSlot(gameId: Long, slotName: String): SaveCacheEntity?
 
@@ -159,6 +168,9 @@ interface SaveCacheDao {
 
     @Query("UPDATE save_cache SET rommSaveId = :rommSaveId WHERE id = :id")
     suspend fun updateRommSaveId(id: Long, rommSaveId: Long)
+
+    @Query("UPDATE save_cache SET contentHash = :contentHash WHERE id = :id")
+    suspend fun updateContentHash(id: Long, contentHash: String)
 
     @Query("UPDATE save_cache SET cachedAt = :cachedAt WHERE id = :id")
     suspend fun updateCachedAt(id: Long, cachedAt: Instant)

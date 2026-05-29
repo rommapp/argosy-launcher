@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
+import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
@@ -41,7 +42,8 @@ class SaveUploader @Inject constructor(
     private val fal: FileAccessLayer,
     private val switchSaveHandler: SwitchSaveHandler,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
-    private val conflictDetector: ConflictDetector
+    private val conflictDetector: ConflictDetector,
+    private val saveCacheManager: dagger.Lazy<SaveCacheManager>
 ) {
 
     suspend fun uploadSave(
@@ -49,7 +51,8 @@ class SaveUploader @Inject constructor(
         emulatorId: String,
         channelName: String? = null,
         forceOverwrite: Boolean = false,
-        isHardcore: Boolean = false
+        isHardcore: Boolean = false,
+        uploadedCacheId: Long? = null
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId emulator=$emulatorId channel=$channelName | Starting upload")
         val client = apiClient.get()
@@ -360,12 +363,13 @@ class SaveUploader @Inject constructor(
                     Logger.warn(TAG, "[SaveSync] HASH-MISMATCH gameId=$gameId | localHash=$contentHash serverHash=${serverSave.contentHash} file=${uploadFile.name} size=${uploadFile.length()} — client zip-hash algorithm has drifted from server _compute_zip_hash")
                 }
 
-                saveCacheDao.getByGameAndHash(gameId, contentHash)?.let { cache ->
-                    if (cache.rommSaveId != serverSave.id) {
-                        saveCacheDao.updateRommSaveId(cache.id, serverSave.id)
-                        Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Paired cache row | cacheId=${cache.id}, rommSaveId=${serverSave.id}")
-                    }
-                }
+                reconcileCacheRowsAfterUpload(
+                    gameId = gameId,
+                    channelName = channelName,
+                    uploadedCacheId = uploadedCacheId,
+                    serverSave = serverSave,
+                    localContentHash = contentHash
+                )
 
                 SaveDebugLogger.logSyncUploadCompleted(
                     gameId = gameId,
@@ -413,7 +417,8 @@ class SaveUploader @Inject constructor(
         channelName: String,
         cacheFile: File,
         contentHash: String?,
-        overwrite: Boolean = false
+        overwrite: Boolean = false,
+        uploadedCacheId: Long? = null
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId channel=$channelName | Starting cache upload | file=${cacheFile.name}, size=${cacheFile.length()}, overwrite=$overwrite")
         val client = apiClient.get()
@@ -511,6 +516,13 @@ class SaveUploader @Inject constructor(
                     ?: return@withContext SaveSyncResult.Error("Empty response from server")
                 val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
                 Logger.info(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Complete | serverSaveId=${serverSave.id}, channel=$channelName, serverTime=$serverTime")
+                reconcileCacheRowsAfterUpload(
+                    gameId = gameId,
+                    channelName = channelName,
+                    uploadedCacheId = uploadedCacheId,
+                    serverSave = serverSave,
+                    localContentHash = contentHash
+                )
                 SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTime)
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -520,6 +532,39 @@ class SaveUploader @Inject constructor(
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Exception during upload", e)
             SaveSyncResult.Error(e.message ?: "Upload failed")
+        }
+    }
+
+    private suspend fun reconcileCacheRowsAfterUpload(
+        gameId: Long,
+        channelName: String?,
+        uploadedCacheId: Long?,
+        serverSave: RomMSave,
+        localContentHash: String
+    ) {
+        val verifiedHash = serverSave.contentHash ?: localContentHash
+        val matches = saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, verifiedHash)
+        val older = matches.firstOrNull { uploadedCacheId == null || it.id != uploadedCacheId }
+        if (uploadedCacheId != null && older != null) {
+            saveCacheManager.get().deleteCachedSave(uploadedCacheId)
+            if (older.rommSaveId != serverSave.id) {
+                saveCacheDao.updateRommSaveId(older.id, serverSave.id)
+            }
+            saveCacheDao.markSynced(older.id, Instant.now())
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Discarded duplicate cache row | cacheId=$uploadedCacheId (existingCacheId=${older.id})")
+            return
+        }
+        val keeper = matches.firstOrNull { uploadedCacheId != null && it.id == uploadedCacheId }
+            ?: matches.firstOrNull()
+            ?: uploadedCacheId?.let { saveCacheDao.getById(it) }
+            ?: return
+        if (keeper.rommSaveId != serverSave.id) {
+            saveCacheDao.updateRommSaveId(keeper.id, serverSave.id)
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Self-healed orphan cache row | cacheId=${keeper.id}, rommSaveId=${serverSave.id}")
+        }
+        if (serverSave.contentHash != null && keeper.contentHash != serverSave.contentHash) {
+            saveCacheDao.updateContentHash(keeper.id, serverSave.contentHash)
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Adopted server hash on cache row | cacheId=${keeper.id}, serverHash=${serverSave.contentHash}")
         }
     }
 

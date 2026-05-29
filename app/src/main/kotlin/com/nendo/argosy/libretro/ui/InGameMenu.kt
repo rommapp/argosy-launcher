@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -176,20 +177,32 @@ fun InGameMenu(
         contentAlignment = Alignment.Center
     ) {
         val maxHeightDp = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
+        val menuListState = rememberLazyListState()
+
+        LaunchedEffect(focusedIndex, menuItems.size) {
+            if (menuItems.isEmpty()) return@LaunchedEffect
+            val target = focusedIndex.coerceIn(0, menuItems.lastIndex)
+            val visibleItems = menuListState.layoutInfo.visibleItemsInfo
+            val viewportHeight = menuListState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size } / visibleItems.size
+            } else 80
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            menuListState.animateScrollToItem(target, -targetOffset)
+        }
+
         Surface(
             modifier = Modifier
                 .widthIn(max = 300.dp)
                 .heightIn(max = maxHeightDp)
-                .padding(16.dp)
+                .padding(12.dp)
                 .focusProperties { canFocus = false },
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             tonalElevation = 8.dp
         ) {
             Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
+                modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -230,11 +243,12 @@ fun InGameMenu(
                     }
                 }
 
-                Column(
+                LazyColumn(
+                    state = menuListState,
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    menuItems.forEachIndexed { index, (label, action) ->
+                    itemsIndexed(menuItems) { index, (label, action) ->
                         MenuButton(
                             text = label,
                             isFocused = index == focusedIndex,

@@ -28,11 +28,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicReference
 
 class SyncCoordinatorUploadCacheIdTest {
 
@@ -79,6 +77,7 @@ class SyncCoordinatorUploadCacheIdTest {
         coEvery { pendingSyncQueueDao.distinctSessions() } returns emptyList()
         coEvery { saveSyncRepository.checkForConflict(any(), any(), any()) } returns null
         coEvery { saveSyncRepository.flushPendingDeviceSync(any()) } returns Unit
+        coEvery { saveSyncRepository.uploadSave(any(), any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         coordinator = SyncCoordinator(
             pendingSyncQueueDao = pendingSyncQueueDao,
@@ -100,7 +99,7 @@ class SyncCoordinatorUploadCacheIdTest {
     }
 
     @Test
-    fun `non-channel dirty cache forwards uploadedCacheId to uploadSave (audit Bug A2)`() = runTest {
+    fun `non-channel dirty cache forwards uploadedCacheId equal to cache id (audit Bug A2)`() = runTest {
         val nonChannelCache = SaveCacheEntity(
             id = 7777L,
             gameId = 1L,
@@ -114,21 +113,6 @@ class SyncCoordinatorUploadCacheIdTest {
         )
         coEvery { saveCacheDao.getNeedingRemoteSync() } returns listOf(nonChannelCache)
 
-        val capturedCacheId = AtomicReference<Long?>(MARKER)
-        coEvery {
-            saveSyncRepository.uploadSave(
-                gameId = any(),
-                emulatorId = any(),
-                channelName = any(),
-                forceOverwrite = any(),
-                isHardcore = any(),
-                uploadedCacheId = any(),
-            )
-        } coAnswers {
-            capturedCacheId.set(arg<Long?>(5))
-            SaveSyncResult.Success()
-        }
-
         coordinator.processQueue()
 
         coVerify(exactly = 1) {
@@ -138,17 +122,8 @@ class SyncCoordinatorUploadCacheIdTest {
                 channelName = null,
                 forceOverwrite = any(),
                 isHardcore = any(),
-                uploadedCacheId = any(),
+                uploadedCacheId = 7777L,
             )
         }
-        assertEquals(
-            "Non-channel cache upload must thread cache.id through uploadSave (audit Bug A2)",
-            7777L,
-            capturedCacheId.get(),
-        )
-    }
-
-    private companion object {
-        private val MARKER: Long? = -1L
     }
 }

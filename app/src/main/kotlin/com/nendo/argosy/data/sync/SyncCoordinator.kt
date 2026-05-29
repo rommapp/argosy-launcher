@@ -804,7 +804,8 @@ class SyncCoordinator @Inject constructor(
                 gameId = cache.gameId,
                 emulatorId = cache.emulatorId,
                 channelName = null,
-                forceOverwrite = forceOverwrite
+                forceOverwrite = forceOverwrite,
+                uploadedCacheId = cache.id
             )
 
             when (result) {

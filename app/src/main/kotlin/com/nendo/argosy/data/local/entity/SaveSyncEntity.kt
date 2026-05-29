@@ -27,6 +27,7 @@ data class SaveSyncEntity(
     val lastSyncedAt: Instant? = null,
     val syncStatus: String,
     val lastSyncError: String? = null,
+    /** Server-verified content hash from RomM's response to the last successful upload; null = no verified hash yet. Never store a locally-computed hash here. */
     val lastUploadedHash: String? = null,
     /** Server file timestamp at the moment we detected a corrupt download.
      * Subsequent sync attempts skip the download while the server's

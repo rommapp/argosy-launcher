@@ -367,8 +367,7 @@ class SaveUploader @Inject constructor(
                     gameId = gameId,
                     channelName = channelName,
                     uploadedCacheId = uploadedCacheId,
-                    serverSave = serverSave,
-                    localContentHash = contentHash
+                    serverSave = serverSave
                 )
 
                 SaveDebugLogger.logSyncUploadCompleted(
@@ -520,8 +519,7 @@ class SaveUploader @Inject constructor(
                     gameId = gameId,
                     channelName = channelName,
                     uploadedCacheId = uploadedCacheId,
-                    serverSave = serverSave,
-                    localContentHash = contentHash
+                    serverSave = serverSave
                 )
                 SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTime)
             } else {
@@ -539,10 +537,9 @@ class SaveUploader @Inject constructor(
         gameId: Long,
         channelName: String?,
         uploadedCacheId: Long?,
-        serverSave: RomMSave,
-        localContentHash: String?
+        serverSave: RomMSave
     ) {
-        val verifiedHash = serverSave.contentHash ?: localContentHash ?: return
+        val verifiedHash = serverSave.contentHash ?: return
         val matches = saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, verifiedHash)
         val older = matches.firstOrNull { uploadedCacheId == null || it.id != uploadedCacheId }
         if (uploadedCacheId != null && older != null) {

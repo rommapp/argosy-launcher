@@ -157,6 +157,66 @@ class SaveSyncEntityManagerTest {
     }
 
     @Test
+    fun `markUserSelectedRestorePoint sets flag on channel-keyed row`() = runTest {
+        val existing = SaveSyncEntity(
+            id = 5L, gameId = 1L, rommId = 100L, emulatorId = "eden",
+            channelName = "autosave",
+            syncStatus = SaveSyncEntity.STATUS_SYNCED,
+        )
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "autosave") } returns existing
+
+        manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
+
+        coVerify { saveSyncDao.setUserSelectedRestorePoint(5L, true) }
+    }
+
+    @Test
+    fun `markUserSelectedRestorePoint falls back to default-channel lookup`() = runTest {
+        val existing = SaveSyncEntity(
+            id = 9L, gameId = 1L, rommId = 100L, emulatorId = "eden",
+            channelName = null,
+            syncStatus = SaveSyncEntity.STATUS_SYNCED,
+        )
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "autosave") } returns null
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(1L, "eden", "autosave") } returns existing
+
+        manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
+
+        coVerify { saveSyncDao.setUserSelectedRestorePoint(9L, true) }
+    }
+
+    @Test
+    fun `markUserSelectedRestorePoint with null channel uses default-emulator lookup`() = runTest {
+        val existing = SaveSyncEntity(
+            id = 7L, gameId = 1L, rommId = 100L, emulatorId = "eden",
+            channelName = null,
+            syncStatus = SaveSyncEntity.STATUS_SYNCED,
+        )
+        coEvery { saveSyncDao.getByGameAndEmulator(1L, "eden") } returns existing
+
+        manager.markUserSelectedRestorePoint(1L, "eden", null)
+
+        coVerify { saveSyncDao.setUserSelectedRestorePoint(7L, true) }
+    }
+
+    @Test
+    fun `markUserSelectedRestorePoint is a no-op when no row exists`() = runTest {
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns null
+
+        manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
+
+        coVerify(exactly = 0) { saveSyncDao.setUserSelectedRestorePoint(any(), any()) }
+    }
+
+    @Test
+    fun `clearUserSelectedRestorePointForGame delegates to dao`() = runTest {
+        manager.clearUserSelectedRestorePointForGame(42L)
+
+        coVerify { saveSyncDao.clearUserSelectedRestorePointForGame(42L) }
+    }
+
+    @Test
     fun `markRestored preserves existing rommSaveId when caller passes null`() = runTest {
         val existing = SaveSyncEntity(
             id = 3L, gameId = 1L, rommId = 100L, emulatorId = "eden",

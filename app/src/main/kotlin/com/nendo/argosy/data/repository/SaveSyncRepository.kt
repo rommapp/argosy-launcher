@@ -290,6 +290,12 @@ class SaveSyncRepository @Inject constructor(
     suspend fun preLaunchSync(gameId: Long, rommId: Long, emulatorId: String): PreLaunchSyncResult =
         conflictResolver.preLaunchSync(gameId, rommId, emulatorId)
 
+    suspend fun markUserSelectedRestorePoint(gameId: Long, emulatorId: String, channelName: String?) =
+        entityManager.markUserSelectedRestorePoint(gameId, emulatorId, channelName)
+
+    suspend fun clearUserSelectedRestorePointForGame(gameId: Long) =
+        entityManager.clearUserSelectedRestorePointForGame(gameId)
+
     suspend fun checkForConflict(
         gameId: Long,
         emulatorId: String,

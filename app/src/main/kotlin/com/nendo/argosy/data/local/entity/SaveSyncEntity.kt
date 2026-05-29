@@ -34,7 +34,9 @@ data class SaveSyncEntity(
      * timestamp matches; cleared automatically when it changes. */
     val corruptZipTimestamp: String? = null,
     val lastSyncDeviceId: String? = null,
-    val lastSyncDeviceName: String? = null
+    val lastSyncDeviceName: String? = null,
+    /** True when the user explicitly picked this channel's current cache via the save manager (activate/restore/migrate). Pre-launch sync respects the pin and skips download. Cleared on the next session-end upload of this row. */
+    val userSelectedRestorePoint: Boolean = false
 ) {
     companion object {
         const val STATUS_SYNCED = "SYNCED"

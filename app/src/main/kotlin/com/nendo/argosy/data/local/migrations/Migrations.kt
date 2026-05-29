@@ -1675,3 +1675,9 @@ object Migration_115_116 : Migration(115, 116) {
         )
     }
 }
+
+object Migration_116_117 : Migration(116, 117) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN userSelectedRestorePoint INTEGER NOT NULL DEFAULT 0")
+    }
+}

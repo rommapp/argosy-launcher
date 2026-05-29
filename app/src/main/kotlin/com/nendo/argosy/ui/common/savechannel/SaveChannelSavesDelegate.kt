@@ -354,6 +354,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                     is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
                         gameRepository.updateActiveSaveApplied(currentGameId, true)
                         gameRepository.updateActiveSaveTimestamp(currentGameId, entryTimestamp)
+                        saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, channelName)
                         onSaveStatusChanged(
                             SaveStatusEvent(channelName = channelName, timestamp = entryTimestamp)
                         )
@@ -483,6 +484,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             )) {
                 is RestoreCachedSaveUseCase.Result.Restored -> {
                     gameRepository.updateActiveSaveApplied(currentGameId, true)
+                    saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel"
                     } else "Save restored"
@@ -491,6 +493,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 }
                 is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
                     gameRepository.updateActiveSaveApplied(currentGameId, true)
+                    saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel and synced"
                     } else "Save restored and synced"

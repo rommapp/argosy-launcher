@@ -82,6 +82,22 @@ class SaveSyncEntityManager @Inject constructor(
         )
     }
 
+    suspend fun markUserSelectedRestorePoint(gameId: Long, emulatorId: String, channelName: String?) {
+        val row = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+                ?: saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
+        if (row != null) {
+            saveSyncDao.setUserSelectedRestorePoint(row.id, true)
+        }
+    }
+
+    suspend fun clearUserSelectedRestorePointForGame(gameId: Long) {
+        saveSyncDao.clearUserSelectedRestorePointForGame(gameId)
+    }
+
     suspend fun createOrUpdateSyncEntity(
         gameId: Long,
         rommId: Long,

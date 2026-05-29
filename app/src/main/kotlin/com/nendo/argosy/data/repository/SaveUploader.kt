@@ -354,7 +354,8 @@ class SaveUploader @Inject constructor(
                         syncStatus = SaveSyncEntity.STATUS_SYNCED,
                         lastUploadedHash = serverSave.contentHash,
                         lastSyncDeviceId = currentDeviceSync?.deviceId ?: deviceId ?: syncEntity?.lastSyncDeviceId,
-                        lastSyncDeviceName = currentDeviceSync?.deviceName ?: syncEntity?.lastSyncDeviceName
+                        lastSyncDeviceName = currentDeviceSync?.deviceName ?: syncEntity?.lastSyncDeviceName,
+                        userSelectedRestorePoint = false
                     )
                 )
 
@@ -521,6 +522,7 @@ class SaveUploader @Inject constructor(
                     uploadedCacheId = uploadedCacheId,
                     serverSave = serverSave
                 )
+                clearUserSelectedRestorePointIfSet(gameId, resolvedEmulatorId, channelName)
                 SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTime)
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -530,6 +532,17 @@ class SaveUploader @Inject constructor(
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Exception during upload", e)
             SaveSyncResult.Error(e.message ?: "Upload failed")
+        }
+    }
+
+    private suspend fun clearUserSelectedRestorePointIfSet(gameId: Long, emulatorId: String, channelName: String?) {
+        val row = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
+        if (row?.userSelectedRestorePoint == true) {
+            saveSyncDao.setUserSelectedRestorePoint(row.id, false)
         }
     }
 

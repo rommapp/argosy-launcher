@@ -5,6 +5,7 @@ import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.GameCubeHeaderParser
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMDeviceIdRequest
@@ -30,6 +31,7 @@ import javax.inject.Singleton
 class SaveDownloader @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveSyncDao: SaveSyncDao,
+    private val saveCacheDao: SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val gameDao: GameDao,
     private val titleDbRepository: TitleDbRepository,
@@ -247,6 +249,9 @@ class SaveDownloader @Inject constructor(
                             lastSyncDeviceName = currentDeviceSync?.deviceName ?: syncEntity.lastSyncDeviceName
                         )
                     )
+                    if (serverTimestamp != null && cachedMatch.cachedAt != serverTimestamp) {
+                        saveCacheDao.updateCachedAt(cachedMatch.id, serverTimestamp)
+                    }
                     Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Complete (cache-hit) | path=$preDownloadTargetPath")
                     return@withContext SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTimestamp)
                 }
@@ -621,6 +626,9 @@ class SaveDownloader @Inject constructor(
                 if (cacheResult is SaveCacheManager.CacheResult.Created) {
                     gameDao.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
                     gameDao.updateActiveSaveApplied(gameId, false)
+                    if (serverTimestamp != null && cacheResult.cacheId > 0L) {
+                        saveCacheDao.updateCachedAt(cacheResult.cacheId, serverTimestamp)
+                    }
                 }
             } catch (e: Exception) {
                 Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cache creation failed", e)

@@ -553,6 +553,7 @@ class SaveUploader @Inject constructor(
         serverSave: RomMSave
     ) {
         val verifiedHash = serverSave.contentHash ?: return
+        val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
         val matches = saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, verifiedHash)
         val older = matches.firstOrNull { uploadedCacheId == null || it.id != uploadedCacheId }
         if (uploadedCacheId != null && older != null) {
@@ -561,6 +562,9 @@ class SaveUploader @Inject constructor(
                 saveCacheDao.updateRommSaveId(older.id, serverSave.id)
             }
             saveCacheDao.markSynced(older.id, Instant.now())
+            if (serverTimestamp != null && older.cachedAt != serverTimestamp) {
+                saveCacheDao.updateCachedAt(older.id, serverTimestamp)
+            }
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Discarded duplicate cache row | cacheId=$uploadedCacheId (existingCacheId=${older.id})")
             return
         }
@@ -575,6 +579,10 @@ class SaveUploader @Inject constructor(
         if (serverSave.contentHash != null && keeper.contentHash != serverSave.contentHash) {
             saveCacheDao.updateContentHash(keeper.id, serverSave.contentHash)
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Adopted server hash on cache row | cacheId=${keeper.id}, serverHash=${serverSave.contentHash}")
+        }
+        if (serverTimestamp != null && keeper.cachedAt != serverTimestamp) {
+            saveCacheDao.updateCachedAt(keeper.id, serverTimestamp)
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Aligned cache cachedAt to server updatedAt | cacheId=${keeper.id}, serverTimestamp=$serverTimestamp")
         }
     }
 

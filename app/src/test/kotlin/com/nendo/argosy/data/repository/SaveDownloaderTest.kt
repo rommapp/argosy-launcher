@@ -31,6 +31,7 @@ class SaveDownloaderTest {
     private val downloader = SaveDownloader(
         context = mockk(relaxed = true),
         saveSyncDao = mockk(relaxed = true),
+        saveCacheDao = mockk(relaxed = true),
         emulatorResolver = mockk(relaxed = true),
         gameDao = mockk(relaxed = true),
         titleDbRepository = mockk(relaxed = true),

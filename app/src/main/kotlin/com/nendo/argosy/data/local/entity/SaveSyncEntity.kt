@@ -35,9 +35,7 @@ data class SaveSyncEntity(
     val corruptZipTimestamp: String? = null,
     val lastSyncDeviceId: String? = null,
     val lastSyncDeviceName: String? = null,
-    /** True when the user explicitly picked this channel's current cache via the save manager (activate/restore/migrate). Pre-launch sync respects the pin and skips download. Cleared on the next session-end upload of this row, or auto-expires after [USER_PIN_TTL_MS]. */
     val userSelectedRestorePoint: Boolean = false,
-    /** Wall-clock instant at which [userSelectedRestorePoint] was set; used to age out stale pins when the user picks a save but never plays to completion. Cleared together with the flag. */
     val userSelectedRestorePointAt: Instant? = null
 ) {
     companion object {
@@ -47,6 +45,5 @@ data class SaveSyncEntity(
         const val STATUS_CONFLICT = "CONFLICT"
         const val STATUS_PENDING_UPLOAD = "PENDING_UPLOAD"
         const val STATUS_NEEDS_HARDCORE_RESOLUTION = "NEEDS_HARDCORE_RESOLUTION"
-        const val USER_PIN_TTL_MS: Long = 24L * 60 * 60 * 1000
     }
 }

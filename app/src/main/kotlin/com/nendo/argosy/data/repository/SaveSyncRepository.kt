@@ -306,19 +306,10 @@ class SaveSyncRepository @Inject constructor(
         }
         val effectiveChannel = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
 
-        val existingRow = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, effectiveChannel)
-        val existing = if (existingRow?.userSelectedRestorePoint == true) {
-            val pinAt = existingRow.userSelectedRestorePointAt
-            val ageMs = pinAt?.let { Instant.now().toEpochMilli() - it.toEpochMilli() }
-            if (pinAt == null || ageMs!! <= SaveSyncEntity.USER_PIN_TTL_MS) {
-                Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId channel=$effectiveChannel | userSelectedRestorePoint=true ageMs=$ageMs | decision=LocalIsNewer")
-                return@withContext PreLaunchSyncResult.LocalIsNewer
-            }
-            Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId channel=$effectiveChannel | userSelectedRestorePoint expired ageMs=$ageMs | clearing pin")
-            saveSyncDao.clearUserSelectedRestorePoint(existingRow.id)
-            existingRow.copy(userSelectedRestorePoint = false, userSelectedRestorePointAt = null)
-        } else {
-            existingRow
+        val existing = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, effectiveChannel)
+        if (existing?.userSelectedRestorePoint == true) {
+            Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId channel=$effectiveChannel | userSelectedRestorePoint=true | decision=LocalIsNewer")
+            return@withContext PreLaunchSyncResult.LocalIsNewer
         }
 
         apiClient.flushPendingDeviceSync(gameId)

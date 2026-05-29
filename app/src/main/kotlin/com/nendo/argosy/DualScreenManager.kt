@@ -1312,11 +1312,28 @@ class DualScreenManager(
         scope.launch(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@launch
             if (game.steamAppId != null) {
+                if (isSteamGameInstalled(game)) {
+                    handleDualPlay(gameId)
+                    return@launch
+                }
                 steamContentManager.queueDownloadOptimistic(game.steamAppId, game.title, game.coverPath)
             } else {
                 gameActionsDelegate.queueDownload(gameId)
             }
         }
+    }
+
+    private suspend fun isSteamGameInstalled(
+        game: com.nendo.argosy.data.local.entity.GameEntity
+    ): Boolean {
+        val launcher = game.steamLauncher
+            ?.let { com.nendo.argosy.data.launcher.SteamLaunchers.getByPackage(it) }
+            ?: com.nendo.argosy.data.launcher.SteamLaunchers.getPreferred(appContext)
+        if (launcher?.isInstalled(appContext) != true) return false
+        if (game.isExternallyManaged) return true
+        val localPath = game.localPath ?: return false
+        return downloadFileStatusRepository.pathExists(localPath) &&
+            downloadFileStatusRepository.isDownloadComplete(localPath)
     }
 
     private fun handleDualRefresh(gameId: Long) {

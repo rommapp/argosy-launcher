@@ -554,7 +554,10 @@ object PlatformDefinitions {
 
     fun getAll(): List<PlatformDef> = platforms
 
-    fun getBySlug(slug: String): PlatformDef? = platformMap[slug.lowercase()]
+    fun getBySlug(slug: String): PlatformDef? {
+        val lower = slug.lowercase()
+        return platformMap[slugAliases[lower] ?: lower]
+    }
 
     fun isAlias(slug: String): Boolean = slugAliases.containsKey(slug.lowercase())
 

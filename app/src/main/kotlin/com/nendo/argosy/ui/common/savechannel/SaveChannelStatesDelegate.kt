@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.common.savechannel
 
+import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.StateCacheManager
@@ -23,6 +24,7 @@ class SaveChannelStatesDelegate @Inject constructor(
     private val restoreStateUseCase: RestoreStateUseCase,
     private val stateCacheManager: StateCacheManager,
     private val gameRepository: GameRepository,
+    private val emulatorResolver: EmulatorResolver,
     private val notificationManager: NotificationManager,
     private val soundManager: SoundFeedbackManager
 ) {
@@ -116,7 +118,6 @@ class SaveChannelStatesDelegate @Inject constructor(
     ) {
         val state = _state.value
         val cacheId = stateEntry.localCacheId ?: return
-        val emulatorId = state.emulatorId ?: return
 
         scope.launch {
             val game = gameRepository.getById(currentGameId)
@@ -125,6 +126,9 @@ class SaveChannelStatesDelegate @Inject constructor(
                 notificationManager.showError("Game has no local path")
                 return@launch
             }
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
+                ?: state.emulatorId
+                ?: return@launch
 
             val result = restoreStateUseCase(
                 cacheId = cacheId,
@@ -351,9 +355,13 @@ class SaveChannelStatesDelegate @Inject constructor(
 
     private suspend fun refreshStates() {
         val state = _state.value
+        val game = gameRepository.getById(currentGameId)
+        val resolvedEmulatorId = game?.let {
+            emulatorResolver.getEmulatorIdForGame(currentGameId, it.platformId, it.platformSlug)
+        } ?: state.emulatorId
         val states = getUnifiedStatesUseCase(
             gameId = currentGameId,
-            emulatorId = state.emulatorId,
+            emulatorId = resolvedEmulatorId,
             channelName = state.activeChannel,
             currentCoreId = state.currentCoreId,
             currentCoreVersion = state.currentCoreVersion

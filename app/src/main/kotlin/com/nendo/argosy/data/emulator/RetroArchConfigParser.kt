@@ -114,7 +114,7 @@ class RetroArchConfigParser @Inject constructor(
             it != "default" && it.isNotBlank()
         }
         val savefilesInContentDir = this["savefiles_in_content_dir"] == "true"
-        val sortByCore = this["sort_savefiles_enable"]?.equals("true", ignoreCase = true) ?: true
+        val sortByCore = this["sort_savefiles_enable"]?.equals("true", ignoreCase = true) ?: false
         val sortByContentDir = this["sort_savefiles_by_content_enable"]?.equals("true", ignoreCase = true) ?: false
         val lastLoadedCore = this["libretro_path"]
             ?.takeIf { it.isNotBlank() && it != "default" }

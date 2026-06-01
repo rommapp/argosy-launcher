@@ -124,6 +124,7 @@ class SteamPathResolver @Inject constructor(
     }
 
     suspend fun isGameInstalled(game: com.nendo.argosy.data.local.entity.GameEntity): Boolean {
+        if (game.isExternallyManaged) return true
         val path = game.localPath
         if (path != null) {
             if (File(path, ".download_complete").exists() ||

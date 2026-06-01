@@ -26,12 +26,15 @@ class ImageCacheManagerTest {
     private lateinit var achievementDao: AchievementDao
     private lateinit var imageCacheManager: ImageCacheManager
     private lateinit var defaultCacheDir: File
+    private lateinit var legacyCacheDir: File
 
     @Before
     fun setup() {
-        defaultCacheDir = tempFolder.newFolder("cache")
+        legacyCacheDir = tempFolder.newFolder("cache")
+        defaultCacheDir = tempFolder.newFolder("files")
         context = mockk {
-            every { cacheDir } returns defaultCacheDir
+            every { cacheDir } returns legacyCacheDir
+            every { filesDir } returns defaultCacheDir
         }
         gameDao = mockk(relaxed = true)
         platformDao = mockk(relaxed = true)
@@ -64,7 +67,7 @@ class ImageCacheManagerTest {
     }
 
     @Test
-    fun `getDefaultCachePath returns path under context cacheDir`() {
+    fun `getDefaultCachePath returns path under context filesDir`() {
         val path = imageCacheManager.getDefaultCachePath()
 
         assertTrue(path.startsWith(defaultCacheDir.absolutePath))

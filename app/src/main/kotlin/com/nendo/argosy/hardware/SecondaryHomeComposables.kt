@@ -257,6 +257,7 @@ fun ShowcaseRoleContent(
                         onSaveNameTextChange = showcaseViewModel::onSaveNameTextChange,
                         onSaveNameConfirm = showcaseViewModel::onSaveNameConfirm,
                         onDiscSelect = showcaseViewModel::onDiscSelect,
+                        onModalSteamInstallSelect = showcaseViewModel::onModalSteamInstallSelect,
                         onModalDismiss = showcaseViewModel::onModalDismiss,
                         footerHints = {
                             FooterBar(

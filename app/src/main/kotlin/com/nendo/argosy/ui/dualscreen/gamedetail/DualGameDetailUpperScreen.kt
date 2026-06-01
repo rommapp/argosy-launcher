@@ -84,6 +84,7 @@ fun DualGameDetailUpperScreen(
     onSaveNameTextChange: (String) -> Unit = {},
     onSaveNameConfirm: () -> Unit = {},
     onDiscSelect: (Int) -> Unit = {},
+    onModalSteamInstallSelect: (Int) -> Unit = {},
     onModalDismiss: () -> Unit = {},
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
@@ -184,8 +185,72 @@ fun DualGameDetailUpperScreen(
                 onSelect = onDiscSelect,
                 onDismiss = onModalDismiss
             )
+            ActiveModal.STEAM_INSTALL -> DualSteamInstallPickerContent(
+                optionNames = state.steamInstallOptionNames,
+                focusIndex = state.steamInstallFocusIndex,
+                onSelect = onModalSteamInstallSelect,
+                onDismiss = onModalDismiss
+            )
             ActiveModal.VARIANT_PICKER -> {}
             ActiveModal.NONE -> {}
+        }
+    }
+}
+
+@Composable
+private fun DualSteamInstallPickerContent(
+    optionNames: List<String>,
+    focusIndex: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .touchOnly { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .touchOnly { }
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "INSTALL LOCATION",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                item {
+                    EmulatorPickerItem(
+                        name = "Download via Argosy",
+                        version = null,
+                        isSelected = focusIndex == 0,
+                        isCurrent = false,
+                        onClick = { onSelect(0) }
+                    )
+                }
+                itemsIndexed(optionNames, key = { _, n -> n }) { index, name ->
+                    val itemIndex = index + 1
+                    EmulatorPickerItem(
+                        name = "Mark as Installed",
+                        version = "Managed by $name",
+                        isSelected = focusIndex == itemIndex,
+                        isCurrent = false,
+                        onClick = { onSelect(itemIndex) }
+                    )
+                }
+            }
         }
     }
 }

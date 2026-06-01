@@ -153,6 +153,14 @@ class DualGameDetailViewModel(
     private val _discPickerFocusIndex = MutableStateFlow(0)
     val discPickerFocusIndex: StateFlow<Int> = _discPickerFocusIndex.asStateFlow()
 
+    private val _steamInstallOptions =
+        MutableStateFlow<List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption>>(emptyList())
+    val steamInstallOptions: StateFlow<List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption>> =
+        _steamInstallOptions.asStateFlow()
+
+    private val _steamInstallFocusIndex = MutableStateFlow(0)
+    val steamInstallFocusIndex: StateFlow<Int> = _steamInstallFocusIndex.asStateFlow()
+
     private var downloadObserverJob: Job? = null
     private var steamDownloadObserverJob: Job? = null
     private var ratingDebounceJob: Job? = null
@@ -269,7 +277,8 @@ class DualGameDetailViewModel(
             }
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
             ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC,
-            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER -> return
+            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
+            ActiveModal.STEAM_INSTALL -> return
             ActiveModal.NONE -> return
         }
         _activeModal.value = ActiveModal.NONE
@@ -301,6 +310,7 @@ class DualGameDetailViewModel(
 
             val isDownloaded = when {
                 game.source == GameSource.ANDROID_APP -> true
+                game.steamAppId != null && game.isExternallyManaged -> true
                 game.steamAppId != null && game.localPath != null ->
                     downloadFileStatusRepository.isDownloadComplete(game.localPath)
                 else -> game.localPath != null
@@ -1114,6 +1124,26 @@ class DualGameDetailViewModel(
         _activeModal.value = ActiveModal.NONE
         _discPickerOptions.value = emptyList()
         _discPickerFocusIndex.value = 0
+    }
+
+    fun steamMarkOptions(): List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption> =
+        com.nendo.argosy.data.launcher.SteamLaunchers.getMarkOptions(context)
+
+    fun openSteamInstallModal(options: List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption>) {
+        _steamInstallOptions.value = options
+        _steamInstallFocusIndex.value = 0
+        _activeModal.value = ActiveModal.STEAM_INSTALL
+    }
+
+    fun moveSteamInstallFocus(delta: Int) {
+        val max = _steamInstallOptions.value.size
+        _steamInstallFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun dismissSteamInstallModal() {
+        _activeModal.value = ActiveModal.NONE
+        _steamInstallOptions.value = emptyList()
+        _steamInstallFocusIndex.value = 0
     }
 
 }

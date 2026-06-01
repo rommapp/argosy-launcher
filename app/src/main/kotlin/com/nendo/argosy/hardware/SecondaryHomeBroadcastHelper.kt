@@ -74,6 +74,14 @@ class SecondaryHomeBroadcastHelper(
         )
     }
 
+    fun broadcastSteamInstallModalOpen(vm: DualGameDetailViewModel) {
+        val options = vm.steamInstallOptions.value
+        dsm.openSteamInstallModal(
+            options.map { it.displayName },
+            options.map { it.launcherPackage }
+        )
+    }
+
     fun broadcastUpdatesModalOpen(vm: DualGameDetailViewModel) {
         val updates = vm.updateFiles.value
         val dlc = vm.dlcFiles.value

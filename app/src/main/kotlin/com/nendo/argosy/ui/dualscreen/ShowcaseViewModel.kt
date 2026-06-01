@@ -71,6 +71,13 @@ class ShowcaseViewModel(
         }
     }
 
+    fun onModalSteamInstallSelect(index: Int) {
+        detailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        if (isControlActive()) {
+            broadcasts.broadcastInlineUpdate("steam_install_confirm", index)
+        }
+    }
+
     fun onModalCollectionToggle(collectionId: Long) {
         detailState.update { s ->
             s?.copy(
@@ -173,6 +180,15 @@ class ShowcaseViewModel(
         }
     }
 
+    fun moveSteamInstallFocus(delta: Int) {
+        detailState.update { state ->
+            val max = state?.steamInstallOptionNames?.size ?: 0
+            state?.copy(
+                steamInstallFocusIndex = (state.steamInstallFocusIndex + delta).coerceIn(0, max)
+            )
+        }
+    }
+
     fun isModalActive(): Boolean {
         val modal = detailState.value?.modalType
         return modal != null && modal != ActiveModal.NONE
@@ -199,6 +215,7 @@ class ShowcaseViewModel(
                     ActiveModal.CORE -> moveCoreFocus(-1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(-1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(-1)
+                    ActiveModal.STEAM_INSTALL -> moveSteamInstallFocus(-1)
                     else -> {}
                 }
             }
@@ -210,6 +227,7 @@ class ShowcaseViewModel(
                     ActiveModal.CORE -> moveCoreFocus(1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(1)
+                    ActiveModal.STEAM_INSTALL -> moveSteamInstallFocus(1)
                     else -> {}
                 }
             }
@@ -234,6 +252,8 @@ class ShowcaseViewModel(
                     }
                     ActiveModal.DISC_PICKER ->
                         onDiscSelect(state.discPickerFocusIndex)
+                    ActiveModal.STEAM_INSTALL ->
+                        onModalSteamInstallSelect(state.steamInstallFocusIndex)
                     ActiveModal.SAVE_NAME -> onSaveNameConfirm()
                     else -> {}
                 }

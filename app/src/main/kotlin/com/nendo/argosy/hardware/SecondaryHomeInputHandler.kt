@@ -320,6 +320,14 @@ class SecondaryHomeInputHandler(
             GameDetailOption.PLAY -> {
                 if (vm.uiState.value.isPlayable) {
                     broadcasts.broadcastDirectAction("PLAY", gameId, vm.uiState.value.activeChannel)
+                } else if (vm.uiState.value.isSteamGame) {
+                    val options = vm.steamMarkOptions()
+                    if (options.isEmpty()) {
+                        broadcasts.broadcastDirectAction("DOWNLOAD", gameId)
+                    } else {
+                        vm.openSteamInstallModal(options)
+                        broadcasts.broadcastSteamInstallModalOpen(vm)
+                    }
                 } else {
                     broadcasts.broadcastDirectAction("DOWNLOAD", gameId)
                 }
@@ -774,6 +782,37 @@ class SecondaryHomeInputHandler(
                     }
                     GamepadEvent.Back -> {
                         vm.dismissPicker()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.STEAM_INSTALL -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveSteamInstallFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "steam_install_focus",
+                            vm.steamInstallFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveSteamInstallFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "steam_install_focus",
+                            vm.steamInstallFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.steamInstallFocusIndex.value
+                        vm.dismissSteamInstallModal()
+                        broadcasts.broadcastModalConfirmResult(
+                            ActiveModal.STEAM_INSTALL, idx, null
+                        )
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissSteamInstallModal()
                         broadcasts.broadcastModalClose()
                     }
                     else -> {}

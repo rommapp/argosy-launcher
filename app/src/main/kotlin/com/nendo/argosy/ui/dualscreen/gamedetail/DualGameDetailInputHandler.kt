@@ -20,6 +20,7 @@ class DualGameDetailInputHandler(
     private val onBroadcastEmulatorModalOpen: (List<com.nendo.argosy.data.emulator.InstalledEmulator>, String?) -> Unit,
     private val onBroadcastCoreModalOpen: (List<com.nendo.argosy.data.emulator.RetroArchCore>, String?) -> Unit,
     private val onBroadcastCollectionModalOpen: (DualGameDetailViewModel) -> Unit,
+    private val onBroadcastSteamInstallModalOpen: (DualGameDetailViewModel) -> Unit,
     private val onBroadcastSaveNamePrompt: (String, Long?) -> Unit,
     private val onBroadcastSaveAction: (String, Long, String?, Long?) -> Unit,
     private val onReturnToHome: () -> Unit,
@@ -367,6 +368,35 @@ class DualGameDetailInputHandler(
                 }
                 return InputResult.HANDLED
             }
+            ActiveModal.STEAM_INSTALL -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveSteamInstallFocus(-1)
+                        onBroadcastInlineUpdate(
+                            "steam_install_focus",
+                            vm.steamInstallFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveSteamInstallFocus(1)
+                        onBroadcastInlineUpdate(
+                            "steam_install_focus",
+                            vm.steamInstallFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.steamInstallFocusIndex.value
+                        vm.dismissSteamInstallModal()
+                        onBroadcastModalConfirm(ActiveModal.STEAM_INSTALL, idx, null)
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissSteamInstallModal()
+                        onBroadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
             ActiveModal.SAVE_NAME, ActiveModal.NONE -> {}
         }
 
@@ -405,6 +435,14 @@ class DualGameDetailInputHandler(
             GameDetailOption.PLAY -> {
                 if (vm.uiState.value.isPlayable) {
                     onBroadcastDirectAction("PLAY", gameId, vm.uiState.value.activeChannel)
+                } else if (vm.uiState.value.isSteamGame) {
+                    val options = vm.steamMarkOptions()
+                    if (options.isEmpty()) {
+                        onBroadcastDirectAction("DOWNLOAD", gameId, null)
+                    } else {
+                        vm.openSteamInstallModal(options)
+                        onBroadcastSteamInstallModalOpen(vm)
+                    }
                 } else {
                     onBroadcastDirectAction("DOWNLOAD", gameId, null)
                 }

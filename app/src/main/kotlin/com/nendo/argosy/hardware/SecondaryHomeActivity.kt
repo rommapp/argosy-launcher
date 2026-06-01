@@ -477,6 +477,7 @@ class SecondaryHomeActivity :
             when (vm.activeModal.value) {
                 ActiveModal.COLLECTION -> vm.dismissCollectionModal()
                 ActiveModal.UPDATES_DLC -> vm.dismissUpdatesModal()
+                ActiveModal.STEAM_INSTALL -> vm.dismissSteamInstallModal()
                 ActiveModal.EMULATOR -> vm.dismissPicker()
                 else -> vm.dismissPicker()
             }
@@ -503,6 +504,11 @@ class SecondaryHomeActivity :
             ActiveModal.CORE.name -> {
                 if (selectedIndex >= 0) vm.confirmCoreByIndex(selectedIndex)
                 else vm.dismissPicker()
+                refocusSelf()
+            }
+            ActiveModal.STEAM_INSTALL.name -> {
+                vm.dismissSteamInstallModal()
+                vm.loadGame(vm.uiState.value.gameId)
                 refocusSelf()
             }
             ActiveModal.SAVE_NAME.name -> refocusSelf()

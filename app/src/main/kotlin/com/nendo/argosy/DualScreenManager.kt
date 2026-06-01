@@ -644,7 +644,8 @@ class DualScreenManager(
         when (type) {
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
             ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC,
-            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER -> return
+            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
+            ActiveModal.STEAM_INSTALL -> return
             else -> handleDualModalOpen(type, value, statusSelected, statusCurrent)
         }
         refocusMain()
@@ -727,6 +728,18 @@ class DualScreenManager(
         refocusMain()
     }
 
+    fun openSteamInstallModal(names: List<String>, packages: List<String>) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.STEAM_INSTALL,
+                steamInstallOptionNames = names,
+                steamInstallOptionPackages = packages,
+                steamInstallFocusIndex = 0
+            )
+        }
+        refocusMain()
+    }
+
     fun onModalClose() {
         companionHost?.onModalResult(
             dismissed = true,
@@ -749,6 +762,10 @@ class DualScreenManager(
             }
             ActiveModal.COLLECTION -> {
                 toggleDualCollectionAtFocus()
+                return
+            }
+            ActiveModal.STEAM_INSTALL -> {
+                confirmDualSteamInstallSelection()
                 return
             }
             else -> {}
@@ -864,6 +881,11 @@ class DualScreenManager(
             }
             "collection_create" -> _dualGameDetailState.update { s -> s?.copy(showCreateDialog = true) }
             "disc_focus" -> _dualGameDetailState.update { s -> s?.copy(discPickerFocusIndex = intValue) }
+            "steam_install_focus" -> _dualGameDetailState.update { s -> s?.copy(steamInstallFocusIndex = intValue) }
+            "steam_install_confirm" -> {
+                setDualSteamInstallFocus(intValue)
+                confirmDualSteamInstallSelection()
+            }
         }
     }
 
@@ -1227,6 +1249,47 @@ class DualScreenManager(
         val disc = state.discPickerOptions.getOrNull(index) ?: return
         _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
         handleDualPlayDisc(state.gameId, disc.filePath)
+    }
+
+    fun setDualSteamInstallFocus(index: Int) {
+        _dualGameDetailState.update { state ->
+            state?.copy(steamInstallFocusIndex = index)
+        }
+    }
+
+    fun moveDualSteamInstallFocus(delta: Int) {
+        _dualGameDetailState.update { state ->
+            val max = state?.steamInstallOptionNames?.size ?: 0
+            state?.copy(
+                steamInstallFocusIndex = (state.steamInstallFocusIndex + delta)
+                    .coerceIn(0, max)
+            )
+        }
+    }
+
+    fun confirmDualSteamInstallSelection() {
+        val state = _dualGameDetailState.value ?: return
+        val index = state.steamInstallFocusIndex
+        val gameId = state.gameId
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.STEAM_INSTALL.name,
+            value = 0, statusSelected = null, selectedIndex = index,
+            collectionToggleId = -1, collectionCreateName = null
+        )
+        _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        scope.launch(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val steamAppId = game.steamAppId ?: return@launch
+            if (index == 0) {
+                if (game.isExternallyManaged) gameDao.setSteamLauncher(gameId, null)
+                steamContentManager.queueDownloadOptimistic(steamAppId, game.title, game.coverPath)
+            } else {
+                val launcherPackage = state.steamInstallOptionPackages.getOrNull(index - 1)
+                    ?: return@launch
+                gameDao.setSteamLauncher(gameId, launcherPackage)
+            }
+            _swappedGameDetailViewModel?.loadGame(gameId)
+        }
     }
 
     // --- Game Actions ---

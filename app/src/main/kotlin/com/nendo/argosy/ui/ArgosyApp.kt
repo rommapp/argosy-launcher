@@ -562,6 +562,7 @@ fun ArgosyApp(
                     ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(-1)
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(-1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(-1)
+                    ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(-1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -574,6 +575,7 @@ fun ArgosyApp(
                     ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(1)
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(1)
+                    ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -587,6 +589,7 @@ fun ArgosyApp(
                     ActiveModal.EMULATOR -> activity?.confirmDualEmulatorSelection()
                     ActiveModal.CORE -> activity?.confirmDualCoreSelection()
                     ActiveModal.COLLECTION -> activity?.toggleDualCollectionAtFocus()
+                    ActiveModal.STEAM_INSTALL -> activity?.confirmDualSteamInstallSelection()
                     ActiveModal.SAVE_NAME -> activity?.confirmDualSaveName()
                     else -> {}
                 }
@@ -1015,6 +1018,12 @@ fun ArgosyApp(
                             onDiscSelect = { index ->
                                 activity?.selectDualDisc(index)
                             },
+                            onModalSteamInstallSelect = { index ->
+                                activity?.let { a ->
+                                    a.setDualSteamInstallFocus(index)
+                                    a.confirmDualSteamInstallSelection()
+                                }
+                            },
                             onModalDismiss = {
                                 activity?.dismissDualModal()
                             },
@@ -1239,6 +1248,13 @@ fun ArgosyApp(
                                         items.map { it.isInCollection }
                                     )
                                 },
+                                onBroadcastSteamInstallModalOpen = { vm ->
+                                    val options = vm.steamInstallOptions.value
+                                    dualScreenManager.openSteamInstallModal(
+                                        options.map { it.displayName },
+                                        options.map { it.launcherPackage }
+                                    )
+                                },
                                 onBroadcastSaveNamePrompt = { actionType, cacheId ->
                                     dualScreenManager.openSaveNameModal(actionType, cacheId)
                                 },
@@ -1439,8 +1455,20 @@ fun ArgosyApp(
                                 val gameId = vm.uiState.value.gameId
                                 when (option) {
                                     GameDetailOption.PLAY -> {
-                                        val type = if (vm.uiState.value.isPlayable) "PLAY" else "DOWNLOAD"
-                                        dualScreenManager.handleDirectAction(type, gameId, vm.uiState.value.activeChannel)
+                                        when {
+                                            vm.uiState.value.isPlayable ->
+                                                dualScreenManager.handleDirectAction("PLAY", gameId, vm.uiState.value.activeChannel)
+                                            vm.uiState.value.isSteamGame && vm.steamMarkOptions().isNotEmpty() -> {
+                                                vm.openSteamInstallModal(vm.steamMarkOptions())
+                                                val options = vm.steamInstallOptions.value
+                                                dualScreenManager.openSteamInstallModal(
+                                                    options.map { it.displayName },
+                                                    options.map { it.launcherPackage }
+                                                )
+                                            }
+                                            else ->
+                                                dualScreenManager.handleDirectAction("DOWNLOAD", gameId, vm.uiState.value.activeChannel)
+                                        }
                                     }
                                     GameDetailOption.RATING -> {
                                         vm.openRatingPicker()

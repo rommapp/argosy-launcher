@@ -168,6 +168,9 @@ class MainActivity : ComponentActivity() {
     fun updateDualSaveNameText(text: String) = dualScreenManager.updateDualSaveNameText(text)
     fun confirmDualSaveName() = dualScreenManager.confirmDualSaveName()
     fun selectDualDisc(index: Int) = dualScreenManager.selectDualDisc(index)
+    fun setDualSteamInstallFocus(index: Int) = dualScreenManager.setDualSteamInstallFocus(index)
+    fun moveDualSteamInstallFocus(delta: Int) = dualScreenManager.moveDualSteamInstallFocus(delta)
+    fun confirmDualSteamInstallSelection() = dualScreenManager.confirmDualSteamInstallSelection()
 
     // --- Screen Capture ---
 
@@ -571,6 +574,11 @@ class MainActivity : ComponentActivity() {
             sessionStateStore.setSaveSyncEnabled(prefs.saveSyncEnabled)
             dualScreenManager.setDualScreenDevice(displayAffinityHelper.hasSecondaryDisplay)
             imageCacheManager.setCustomCachePath(prefs.imageCachePath)
+
+            if (imageCacheManager.needsLegacyCacheDirsMigration()) {
+                Log.i(TAG, "Migrating cover cache out of purgeable cacheDir to persistent storage")
+                imageCacheManager.migrateLegacyCacheDirs()
+            }
 
             if (imageCacheManager.needsFlatToShardedMigration()) {
                 Log.i(TAG, "Migrating flat image cache to sharded directories")

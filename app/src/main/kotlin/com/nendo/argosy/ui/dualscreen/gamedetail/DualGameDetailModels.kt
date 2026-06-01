@@ -20,7 +20,7 @@ enum class DualGameDetailTab {
     OPTIONS
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, COLLECTION, SAVE_NAME, UPDATES_DLC, DISC_PICKER, VARIANT_PICKER }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, COLLECTION, SAVE_NAME, UPDATES_DLC, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL }
 
 enum class GameDetailOption {
     PLAY,
@@ -151,7 +151,10 @@ data class DualGameDetailUpperState(
     val focusedStateEntry: UnifiedStateEntry? = null,
     val statePreviewScreenshotPath: String? = null,
     val discPickerOptions: List<DiscOption> = emptyList(),
-    val discPickerFocusIndex: Int = 0
+    val discPickerFocusIndex: Int = 0,
+    val steamInstallOptionNames: List<String> = emptyList(),
+    val steamInstallOptionPackages: List<String> = emptyList(),
+    val steamInstallFocusIndex: Int = 0
 )
 
 data class SaveEntryData(

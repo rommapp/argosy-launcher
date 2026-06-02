@@ -561,7 +561,7 @@ class DualGameDetailViewModel(
                 )
             }
 
-        if (activeChannel != null && slotItems.none { it.channelName == activeChannel }) {
+        if (activeChannel != null && slotItems.none { it.channelName.equals(activeChannel, ignoreCase = true) }) {
             slotItems.add(
                 SaveSlotItem(
                     channelName = activeChannel,

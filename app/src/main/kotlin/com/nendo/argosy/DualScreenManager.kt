@@ -1223,10 +1223,21 @@ class DualScreenManager(
         _dualGameDetailState.update { it?.copy(saveNameText = text) }
     }
 
+    private fun isReservedSaveSlotName(name: String): Boolean =
+        com.nendo.argosy.data.repository.SaveSyncApiClient.equalsNormalized(
+            name, com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
+        ) || com.nendo.argosy.data.repository.SaveSyncApiClient.equalsNormalized(
+            name, com.nendo.argosy.data.repository.SaveSyncApiClient.DEFAULT_SAVE_NAME
+        )
+
     fun confirmDualSaveName() {
         val state = _dualGameDetailState.value ?: return
         val name = state.saveNameText.trim()
         if (name.isBlank()) return
+        if (isReservedSaveSlotName(name)) {
+            notificationManager.showError("'$name' is a reserved name")
+            return
+        }
         val gameId = state.gameId
 
         when (state.saveNamePromptAction) {

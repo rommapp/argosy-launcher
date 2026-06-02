@@ -99,7 +99,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             }
         }
 
-        if (activeChannel != null && slotItems.none { it.channelName == activeChannel }) {
+        if (activeChannel != null && slotItems.none { it.channelName.equals(activeChannel, ignoreCase = true) }) {
             slotItems.add(
                 SaveSlotItem(
                     channelName = activeChannel,
@@ -559,6 +559,10 @@ class SaveChannelSavesDelegate @Inject constructor(
         _state.update { it.copy(renameText = text) }
     }
 
+    private fun isReservedSlotName(name: String): Boolean =
+        SaveSyncApiClient.equalsNormalized(name, SaveSyncApiClient.AUTOSAVE_SLOT_NAME) ||
+            SaveSyncApiClient.equalsNormalized(name, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+
     fun confirmRename(scope: CoroutineScope) {
         val state = _state.value
         val entry = state.renameEntry
@@ -566,6 +570,11 @@ class SaveChannelSavesDelegate @Inject constructor(
 
         if (newName.isBlank()) {
             notificationManager.showError("Slot name cannot be empty")
+            return
+        }
+
+        if (isReservedSlotName(newName)) {
+            notificationManager.showError("'$newName' is a reserved name")
             return
         }
 

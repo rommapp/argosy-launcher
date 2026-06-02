@@ -358,7 +358,7 @@ private fun SaveSlotsColumn(
             ),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            itemsIndexed(slots) { index, slot ->
+            itemsIndexed(slots, key = { _, slot -> slot.slotKey }) { index, slot ->
                 val isSelected = index == selectedIndex && isFocused
                 if (slot.isCreateAction) {
                     NewSlotRow(

@@ -283,7 +283,7 @@ private fun SavesTabContent(
                 ),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                itemsIndexed(state.saveSlots, key = { _, slot -> slot.displayName }) { index, slot ->
+                itemsIndexed(state.saveSlots, key = { _, slot -> slot.slotKey }) { index, slot ->
                     val isSelected = index == state.selectedSlotIndex &&
                         state.saveFocusColumn == SaveFocusColumn.SLOTS
                     when {

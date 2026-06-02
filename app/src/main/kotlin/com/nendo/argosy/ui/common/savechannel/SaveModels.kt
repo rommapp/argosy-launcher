@@ -11,7 +11,13 @@ data class SaveSlotItem(
     val isCreateAction: Boolean = false,
     val isMigrationCandidate: Boolean = false,
     val isArchivedBucket: Boolean = false
-)
+) {
+    val slotKey: String get() = channelName ?: when {
+        isCreateAction -> "__new_slot__"
+        isArchivedBucket -> "__archived__"
+        else -> "__none__"
+    }
+}
 
 data class SaveHistoryItem(
     val cacheId: Long,

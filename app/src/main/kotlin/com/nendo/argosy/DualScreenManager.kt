@@ -1440,14 +1440,16 @@ class DualScreenManager(
         _swappedGameDetailViewModel?.onDeleteStarted()
         scope.launch(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@launch
-            if (game.source == GameSource.ANDROID_APP) {
-                val uninstall = Intent(Intent.ACTION_DELETE).apply {
-                    data = Uri.parse("package:${game.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            when {
+                game.source == GameSource.ANDROID_APP -> {
+                    val uninstall = Intent(Intent.ACTION_DELETE).apply {
+                        data = Uri.parse("package:${game.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    activityContext.startActivity(uninstall)
                 }
-                activityContext.startActivity(uninstall)
-            } else {
-                gameActionsDelegate.deleteLocalFile(gameId)
+                game.isExternallyManaged -> gameDao.setSteamLauncher(gameId, null)
+                else -> gameActionsDelegate.deleteLocalFile(gameId)
             }
             companionHost?.onDirectActionResult("DELETE_DONE", gameId)
             _swappedGameDetailViewModel?.loadGame(gameId)

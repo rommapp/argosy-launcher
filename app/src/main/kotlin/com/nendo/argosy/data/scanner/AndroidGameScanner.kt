@@ -272,6 +272,38 @@ class AndroidGameScanner @Inject constructor(
         }
     }
 
+    suspend fun relinkInstalledRommAndroidApps(): Int = withContext(Dispatchers.IO) {
+        val candidates = gameDao.getByPlatform(LocalPlatformIds.ANDROID)
+            .filter { it.packageName == null && it.source != GameSource.ANDROID_APP }
+        if (candidates.isEmpty()) return@withContext 0
+
+        val installedByName = appsRepository.getInstalledApps(includeSystemApps = false)
+            .filter { !isEmulatorPackage(it.packageName) }
+            .groupBy { matchKey(it.label) }
+
+        var relinked = 0
+        for (game in candidates) {
+            val key = matchKey(game.title)
+            if (key.isEmpty()) continue
+            val match = installedByName[key]?.singleOrNull() ?: continue
+            if (gameDao.getByPackageName(match.packageName) != null) continue
+            gameDao.update(
+                game.copy(
+                    packageName = match.packageName,
+                    source = GameSource.ANDROID_APP,
+                    localPath = null
+                )
+            )
+            relinked++
+            Log.d(TAG, "Relinked Android game '${game.title}' -> ${match.packageName}")
+        }
+        if (relinked > 0) updatePlatformGameCount()
+        relinked
+    }
+
+    private fun matchKey(title: String): String =
+        createSortTitle(title).replace(Regex("[^a-z0-9]"), "")
+
     suspend fun syncInstalledStatus() = withContext(Dispatchers.IO) {
         val androidGames = gameDao.getBySource(GameSource.ANDROID_APP)
         val installedPackages = appsRepository.getInstalledApps().map { it.packageName }.toSet()

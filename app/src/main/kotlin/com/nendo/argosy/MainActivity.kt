@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
     @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var imageCacheManager: ImageCacheManager
+    @Inject lateinit var androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner
     @Inject lateinit var romMRepository: RomMRepository
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
@@ -594,6 +595,11 @@ class MainActivity : ComponentActivity() {
             imageCacheManager.resumePendingCoverCache()
             imageCacheManager.resumePendingLogoCache()
             imageCacheManager.resumePendingBadgeCache()
+
+            val relinked = androidGameScanner.relinkInstalledRommAndroidApps()
+            if (relinked > 0) {
+                Log.i(TAG, "Relinked $relinked installed RomM Android games to their packages")
+            }
 
             if (shouldInitializeScreenCapture(prefs)) {
                 if (screenCaptureManager.hasPermission.value && !screenCaptureManager.isCapturing.value) {

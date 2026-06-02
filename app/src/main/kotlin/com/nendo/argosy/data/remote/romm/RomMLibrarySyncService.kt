@@ -20,6 +20,8 @@ import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.platform.InstalledAppResolver
+import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -59,6 +61,7 @@ class RomMLibrarySyncService @Inject constructor(
     private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
     private val biosRepository: BiosRepository,
+    private val installedAppResolver: InstalledAppResolver,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
     private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>,
     private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer
@@ -407,6 +410,9 @@ class RomMLibrarySyncService @Inject constructor(
 
         Logger.debug(TAG, "syncRom: ${rom.name} - rom.raId=${rom.raId}, existing.raId=${existing?.raId}")
 
+        val installedPackageName = existing?.packageName
+            ?.takeIf { platformId == LocalPlatformIds.ANDROID && installedAppResolver.isAppInstalled(it) }
+
         val game = GameEntity(
             id = existing?.id ?: 0,
             platformId = platformId,
@@ -414,11 +420,16 @@ class RomMLibrarySyncService @Inject constructor(
             title = rom.name,
             sortTitle = RomMUtils.createSortTitle(rom.name),
             localPath = localDataSource?.localPath,
+            packageName = installedPackageName,
             rommId = rom.id,
             rommFileName = rom.fileName,
             igdbId = rom.igdbId,
             raId = rom.raId,
-            source = if (localDataSource?.localPath != null) GameSource.ROMM_SYNCED else GameSource.ROMM_REMOTE,
+            source = when {
+                installedPackageName != null -> GameSource.ANDROID_APP
+                localDataSource?.localPath != null -> GameSource.ROMM_SYNCED
+                else -> GameSource.ROMM_REMOTE
+            },
             coverPath = cachedCover,
             backgroundPath = cachedBackground,
             screenshotPaths = screenshotUrls.joinToString(","),

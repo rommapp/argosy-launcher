@@ -1275,6 +1275,21 @@ object EmulatorRegistry {
     fun getRetroArchSaveDirName(coreId: String): String =
         coreSaveDirByCoreId[coreId] ?: coreId
 
+    private val libretroHostEmulators = setOf("builtin", "retroarch", "retroarch_64")
+
+    /**
+     * Server-side save emulator label: for libretro hosts (built-in + RetroArch) the libretro core
+     * slug, matching RomM's EmulatorJS naming. Other emulators keep their own id.
+     */
+    fun toServerEmulator(emulatorId: String, coreId: String?): String {
+        if (emulatorId !in libretroHostEmulators) return emulatorId
+        val core = coreId ?: return emulatorId
+        return when (core) {
+            "mupen64plus_next_gles2", "mupen64plus_next_gles3" -> "mupen64plus_next"
+            else -> core
+        }
+    }
+
     private val emulatorFamilies = listOf(
         EmulatorFamily(
             baseId = "dolphin",

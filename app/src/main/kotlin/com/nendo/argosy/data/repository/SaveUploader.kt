@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.repository
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
@@ -94,6 +95,7 @@ class SaveUploader @Inject constructor(
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
         val preferredCore = client.resolveCoreForGame(game)
+        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, preferredCore)
 
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
             val switchOk = if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
@@ -313,9 +315,9 @@ class SaveUploader @Inject constructor(
             val autocleanupEnabled = isAutosaveSlot
             val autocleanupLimit = if (isAutosaveSlot) SaveSyncApiClient.AUTOCLEANUP_LIMIT else null
             val response = if (deviceId != null) {
-                api.uploadSaveWithDevice(rommId, resolvedEmulatorId, deviceId, overwrite = forceOverwrite, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, saveFile = filePart)
+                api.uploadSaveWithDevice(rommId, serverEmulator, deviceId, overwrite = forceOverwrite, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, saveFile = filePart)
             } else {
-                api.uploadSave(rommId, resolvedEmulatorId, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, filePart)
+                api.uploadSave(rommId, serverEmulator, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, filePart)
             }
 
             if (response.code() == 409) {
@@ -439,6 +441,7 @@ class SaveUploader @Inject constructor(
         } else {
             emulatorId
         }
+        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, client.resolveCoreForGame(game))
 
         if (!overwrite && deviceId != null) {
             if (conflictDetector.isSessionOnOlderSave(gameId)) {
@@ -472,7 +475,7 @@ class SaveUploader @Inject constructor(
             val response = if (deviceId != null) {
                 api.uploadSaveWithDevice(
                     romId = rommId,
-                    emulator = resolvedEmulatorId,
+                    emulator = serverEmulator,
                     deviceId = deviceId,
                     overwrite = overwrite,
                     slot = channelName,
@@ -483,7 +486,7 @@ class SaveUploader @Inject constructor(
             } else {
                 api.uploadSave(
                     romId = rommId,
-                    emulator = resolvedEmulatorId,
+                    emulator = serverEmulator,
                     slot = channelName,
                     autocleanup = true,
                     autocleanupLimit = SaveSyncApiClient.AUTOCLEANUP_LIMIT,

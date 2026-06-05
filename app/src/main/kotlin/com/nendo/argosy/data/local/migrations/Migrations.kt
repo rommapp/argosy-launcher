@@ -1687,3 +1687,9 @@ object Migration_117_118 : Migration(117, 118) {
         db.execSQL("ALTER TABLE save_sync ADD COLUMN userSelectedRestorePointAt INTEGER")
     }
 }
+
+object Migration_118_119 : Migration(118, 119) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE emulator_launch_args ADD COLUMN customExtras TEXT")
+    }
+}

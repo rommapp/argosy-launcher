@@ -119,9 +119,25 @@ internal fun routeResetLaunchArgsFocused(vm: SettingsViewModel) {
         is LaunchArgsRow.ClipDataBinding -> override.copy(clipDataBinding = null)
         is LaunchArgsRow.Flag -> override.copy(intentFlagsMask = null)
         is LaunchArgsRow.MimeType -> override.copy(mimeType = null)
+        is LaunchArgsRow.CustomExtras -> override.copy(customExtras = null)
         is LaunchArgsRow.LockedBinding -> return
     }
     persistLaunchArgsField(vm, state) { cleared }
+}
+
+internal fun routeOpenLaunchArgsCustomExtras(vm: SettingsViewModel) {
+    vm.emulatorDelegate.setLaunchArgsCustomExtrasInput(true)
+}
+
+internal fun routeCloseLaunchArgsCustomExtras(vm: SettingsViewModel) {
+    vm.emulatorDelegate.setLaunchArgsCustomExtrasInput(false)
+}
+
+internal fun routeSaveLaunchArgsCustomExtras(vm: SettingsViewModel, raw: String) {
+    val state = vm._uiState.value.emulators.launchArgsModalState ?: return
+    val value = raw.trim().ifBlank { null }
+    persistLaunchArgsField(vm, state) { it.copy(customExtras = value) }
+    vm.emulatorDelegate.setLaunchArgsCustomExtrasInput(false)
 }
 
 internal fun routeResetAllLaunchArgs(vm: SettingsViewModel) {
@@ -204,6 +220,7 @@ internal sealed class LaunchArgsRow {
     }
     data class Flag(val label: String, val bit: Int) : LaunchArgsRow()
     data object MimeType : LaunchArgsRow()
+    data object CustomExtras : LaunchArgsRow()
 }
 
 internal fun launchArgsModalRows(state: LaunchArgsModalState): List<LaunchArgsRow> = buildList {
@@ -225,4 +242,5 @@ internal fun launchArgsModalRows(state: LaunchArgsModalState): List<LaunchArgsRo
     add(LaunchArgsRow.Flag("Grant read URI", Intent.FLAG_GRANT_READ_URI_PERMISSION))
     add(LaunchArgsRow.Flag("Clear top", Intent.FLAG_ACTIVITY_CLEAR_TOP))
     add(LaunchArgsRow.MimeType)
+    add(LaunchArgsRow.CustomExtras)
 }

@@ -378,6 +378,9 @@ class SettingsViewModel @Inject constructor(
     fun cycleLaunchArgsMimeType(direction: Int = 1) = routeCycleLaunchArgsMimeType(this, direction)
     fun resetLaunchArgsFocused() = routeResetLaunchArgsFocused(this)
     fun resetAllLaunchArgs() = routeResetAllLaunchArgs(this)
+    fun openLaunchArgsCustomExtras() = routeOpenLaunchArgsCustomExtras(this)
+    fun closeLaunchArgsCustomExtras() = routeCloseLaunchArgsCustomExtras(this)
+    fun saveLaunchArgsCustomExtras(raw: String) = routeSaveLaunchArgsCustomExtras(this, raw)
 
     fun openAppPickerModal(platformId: Long) = routeOpenAppPickerModal(this, platformId)
     fun closeAppPickerModal() = routeCloseAppPickerModal(this)

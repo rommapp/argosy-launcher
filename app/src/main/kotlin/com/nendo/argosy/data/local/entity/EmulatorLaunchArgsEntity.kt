@@ -28,7 +28,8 @@ data class EmulatorLaunchArgsEntity(
     val mimeType: String? = null,
     val dataBinding: String? = null,
     val extraBinding: String? = null,
-    val clipDataBinding: String? = null
+    val clipDataBinding: String? = null,
+    val customExtras: String? = null
 ) {
     fun hasAnyOverride(): Boolean =
         launchMethod != null ||
@@ -36,5 +37,6 @@ data class EmulatorLaunchArgsEntity(
             mimeType != null ||
             dataBinding != null ||
             extraBinding != null ||
-            clipDataBinding != null
+            clipDataBinding != null ||
+            !customExtras.isNullOrBlank()
 }

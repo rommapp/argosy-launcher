@@ -15,15 +15,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.emulator.LaunchMethod
 import com.nendo.argosy.data.emulator.RomBindingFormat
+import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.components.NestedModal
+import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.screens.settings.LaunchArgsModalState
 import com.nendo.argosy.ui.screens.settings.LaunchArgsRow
 import com.nendo.argosy.ui.screens.settings.launchArgsModalRows
@@ -38,6 +55,9 @@ fun LaunchArgsModal(
     onCycleClipDataBinding: () -> Unit,
     onToggleFlag: (Int) -> Unit,
     onCycleMimeType: () -> Unit,
+    onOpenCustomExtras: () -> Unit,
+    onSaveCustomExtras: (String) -> Unit,
+    onDismissCustomExtras: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val rows = launchArgsModalRows(state)
@@ -132,11 +152,106 @@ fun LaunchArgsModal(
                             isFocused = focused,
                             onClick = onCycleMimeType
                         )
+                        is LaunchArgsRow.CustomExtras -> LaunchArgsOptionRow(
+                            label = "Custom extras",
+                            value = state.override?.customExtras?.takeIf { it.isNotBlank() } ?: "None",
+                            subtitle = "Extra intent values appended on launch. Format: " +
+                                "`-e KEY VALUE` for strings, `--ez KEY true` for booleans. Space-separated.",
+                            isOverridden = !state.override?.customExtras.isNullOrBlank(),
+                            isFocused = focused,
+                            onClick = onOpenCustomExtras
+                        )
                     }
                 }
             }
         }
     }
+
+    if (state.showCustomExtrasInput) {
+        CustomExtrasModal(
+            initialValue = state.override?.customExtras.orEmpty(),
+            onSubmit = onSaveCustomExtras,
+            onDismiss = onDismissCustomExtras
+        )
+    }
+}
+
+@Composable
+private fun CustomExtrasModal(
+    initialValue: String,
+    onSubmit: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val inputDispatcher = LocalInputDispatcher.current
+    var text by remember { mutableStateOf(initialValue) }
+
+    val inputHandler = remember(onSubmit, onDismiss) {
+        object : InputHandler {
+            override fun onConfirm(): InputResult {
+                onSubmit(text)
+                return InputResult.HANDLED
+            }
+
+            override fun onBack(): InputResult {
+                onDismiss()
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, inputHandler) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                inputDispatcher.pushModal(inputHandler)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            inputDispatcher.popModal()
+        }
+    }
+
+    NestedModal(
+        title = "Custom Extras",
+        onDismiss = onDismiss,
+        footerHints = listOf(
+            InputButton.A to "Save",
+            InputButton.B to "Cancel"
+        ),
+        content = {
+            Column {
+                Text(
+                    text = "Extra intent values, space-separated. Use `-e KEY VALUE` for a string " +
+                        "or `--ez KEY true` for a boolean.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                TextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            text = "-e KEY value",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        )
+                    },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+            }
+        }
+    )
 }
 
 @Composable

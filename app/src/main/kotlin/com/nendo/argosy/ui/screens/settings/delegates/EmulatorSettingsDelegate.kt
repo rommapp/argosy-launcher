@@ -405,6 +405,13 @@ class EmulatorSettingsDelegate @Inject constructor(
         }
     }
 
+    fun setLaunchArgsCustomExtrasInput(show: Boolean) {
+        _state.update { state ->
+            val modal = state.launchArgsModalState ?: return@update state
+            state.copy(launchArgsModalState = modal.copy(showCustomExtrasInput = show))
+        }
+    }
+
     fun showAppPickerModal(modalState: com.nendo.argosy.ui.screens.settings.AppPickerModalState) {
         _state.update {
             it.copy(

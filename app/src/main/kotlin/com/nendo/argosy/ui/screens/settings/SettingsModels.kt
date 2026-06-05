@@ -331,7 +331,8 @@ data class LaunchArgsModalState(
     /** Opaque data binding (scheme URI, game ID) -- not user-cycleable. */
     val dataBindingLocked: Boolean = false,
     /** Non-path extras (title ID array) -- not user-cycleable. */
-    val extraBindingLocked: Boolean = false
+    val extraBindingLocked: Boolean = false,
+    val showCustomExtrasInput: Boolean = false
 )
 
 sealed class UpdateModalState {

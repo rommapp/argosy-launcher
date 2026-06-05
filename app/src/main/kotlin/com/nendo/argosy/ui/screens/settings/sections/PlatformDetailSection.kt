@@ -627,6 +627,9 @@ fun PlatformDetailSection(
                 onCycleClipDataBinding = { viewModel.cycleLaunchArgsClipDataBinding() },
                 onToggleFlag = { bit -> viewModel.toggleLaunchArgsFlag(bit) },
                 onCycleMimeType = { viewModel.cycleLaunchArgsMimeType() },
+                onOpenCustomExtras = { viewModel.openLaunchArgsCustomExtras() },
+                onSaveCustomExtras = { raw -> viewModel.saveLaunchArgsCustomExtras(raw) },
+                onDismissCustomExtras = { viewModel.closeLaunchArgsCustomExtras() },
                 onDismiss = { viewModel.closeLaunchArgsModal() }
             )
         }

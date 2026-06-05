@@ -100,6 +100,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
     private fun interceptLaunchArgsModal(state: SettingsUiState, method: InputMethod): InputResult? {
         if (!state.emulators.showLaunchArgsModal) return null
         val modal = state.emulators.launchArgsModalState ?: return null
+        if (modal.showCustomExtrasInput) return InputResult.HANDLED
         val rows = launchArgsModalRows(modal)
         val focusedRow = rows.getOrNull(modal.focusIndex)
         val isCycleable = focusedRow is LaunchArgsRow.DataBinding ||
@@ -123,6 +124,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
                     is LaunchArgsRow.ClipDataBinding -> viewModel.cycleLaunchArgsClipDataBinding()
                     is LaunchArgsRow.Flag -> viewModel.toggleLaunchArgsFlag(focusedRow.bit)
                     is LaunchArgsRow.MimeType -> viewModel.cycleLaunchArgsMimeType()
+                    is LaunchArgsRow.CustomExtras -> viewModel.openLaunchArgsCustomExtras()
                     is LaunchArgsRow.LockedBinding -> {}
                     null -> {}
                 }

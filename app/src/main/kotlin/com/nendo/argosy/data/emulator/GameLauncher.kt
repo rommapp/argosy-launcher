@@ -716,7 +716,33 @@ class GameLauncher @Inject constructor(
             result = rewriteBindings(result, romFile, dataBinding, extraBinding, clipDataBinding)
         }
 
+        val customExtras = parseCustomExtras(override.customExtras)
+        if (customExtras.isNotEmpty()) {
+            result = result.copy(extras = result.extras + customExtras)
+        }
+
         return result
+    }
+
+    private fun parseCustomExtras(raw: String?): List<ResolvedExtra> {
+        if (raw.isNullOrBlank()) return emptyList()
+        val tokens = raw.trim().split(Regex("\\s+"))
+        val extras = mutableListOf<ResolvedExtra>()
+        var i = 0
+        while (i < tokens.size) {
+            when (tokens[i]) {
+                "-e", "--es" -> if (i + 2 < tokens.size) {
+                    extras.add(ResolvedExtra.StringExtra(tokens[i + 1], tokens[i + 2]))
+                    i += 3
+                } else i = tokens.size
+                "--ez" -> if (i + 2 < tokens.size) {
+                    extras.add(ResolvedExtra.BoolExtra(tokens[i + 1], tokens[i + 2].toBoolean()))
+                    i += 3
+                } else i = tokens.size
+                else -> i++
+            }
+        }
+        return extras
     }
 
     private fun parseBindingFormat(name: String): RomBindingFormat? =

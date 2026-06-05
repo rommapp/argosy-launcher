@@ -35,8 +35,8 @@ data class VersionInfo(
         if (patch != other.patch) return patch.compareTo(other.patch)
         return when {
             prerelease == null && other.prerelease == null -> 0
-            prerelease == null -> 1
-            other.prerelease == null -> -1
+            prerelease == null -> if (isRealPrerelease(other.prerelease)) 1 else 0
+            other.prerelease == null -> if (isRealPrerelease(prerelease)) -1 else 0
             else -> comparePrereleases(prerelease, other.prerelease)
         }
     }
@@ -68,6 +68,16 @@ data class VersionInfo(
     }
 
     companion object {
+        private val PRERELEASE_QUALIFIERS = setOf(
+            "alpha", "beta", "rc", "pre", "preview", "dev", "nightly", "snapshot", "eap", "canary"
+        )
+
+        private fun isRealPrerelease(prerelease: String?): Boolean {
+            if (prerelease == null) return false
+            val token = prerelease.lowercase().takeWhile { it.isLetter() }
+            return token in PRERELEASE_QUALIFIERS
+        }
+
         fun parse(version: String): VersionInfo? {
             val cleaned = version.removePrefix("v").trim()
             val (versionPart, prereleasePart) = if (cleaned.contains("-")) {

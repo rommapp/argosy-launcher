@@ -5,7 +5,8 @@ import com.nendo.argosy.ui.input.InputResult
 
 class FileBrowserInputHandler(
     private val viewModel: FileBrowserViewModel,
-    private val onDismiss: () -> Unit
+    private val onDismiss: () -> Unit,
+    private val onRequestPermission: () -> Unit
 ) : InputHandler {
 
     override fun onUp(): InputResult {
@@ -29,12 +30,16 @@ class FileBrowserInputHandler(
     }
 
     override fun onConfirm(): InputResult {
-        viewModel.confirmFocusedItem()
+        if (!viewModel.hasPermission()) {
+            onRequestPermission()
+        } else {
+            viewModel.confirmFocusedItem()
+        }
         return InputResult.HANDLED
     }
 
     override fun onBack(): InputResult {
-        if (viewModel.isAtVolumeRoot()) {
+        if (!viewModel.hasPermission() || viewModel.isAtVolumeRoot()) {
             onDismiss()
         } else {
             viewModel.goUp()

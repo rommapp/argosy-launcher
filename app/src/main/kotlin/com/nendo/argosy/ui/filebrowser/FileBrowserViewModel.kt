@@ -34,10 +34,12 @@ class FileBrowserViewModel @Inject constructor(
     val resultPath: SharedFlow<String> = _resultPath.asSharedFlow()
 
     init {
-        checkPermissionAndLoadVolumes()
+        recheckPermission()
     }
 
-    private fun checkPermissionAndLoadVolumes() {
+    fun hasPermission(): Boolean = _state.value.hasPermission
+
+    fun recheckPermission() {
         viewModelScope.launch {
             val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 Environment.isExternalStorageManager()
@@ -47,7 +49,7 @@ class FileBrowserViewModel @Inject constructor(
 
             _state.update { it.copy(hasPermission = hasPermission) }
 
-            if (hasPermission) {
+            if (hasPermission && _state.value.volumes.isEmpty()) {
                 loadVolumes()
             }
         }

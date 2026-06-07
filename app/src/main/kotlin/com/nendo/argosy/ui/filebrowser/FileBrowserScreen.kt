@@ -1,5 +1,9 @@
 package com.nendo.argosy.ui.filebrowser
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.nendo.argosy.core.storage.StorageVolume
@@ -25,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.SdCard
@@ -49,11 +54,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import android.content.res.Configuration
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -70,19 +79,36 @@ fun FileBrowserScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val inputDispatcher = LocalInputDispatcher.current
+    val context = LocalContext.current
+
+    val requestStoragePermission = remember(context) {
+        {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
+            }
+        }
+    }
 
     LaunchedEffect(mode, fileFilter) {
         viewModel.setMode(mode)
         viewModel.setFileFilter(fileFilter)
     }
 
-    val inputHandler = remember(onDismiss) {
-        FileBrowserInputHandler(viewModel, onDismiss)
+    val inputHandler = remember(onDismiss, requestStoragePermission) {
+        FileBrowserInputHandler(viewModel, onDismiss, requestStoragePermission)
     }
 
     DisposableEffect(inputHandler) {
         inputDispatcher.pushModal(inputHandler)
         onDispose { inputDispatcher.popModal() }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.recheckPermission()
     }
 
     LaunchedEffect(Unit) {
@@ -106,59 +132,71 @@ fun FileBrowserScreen(
                 }
             )
 
-            val configuration = LocalConfiguration.current
-            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-            val volumePaneFraction = if (isLandscape) 0.20f else 0.35f
-
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(Dimens.spacingMd)
-            ) {
-                VolumePane(
-                    volumes = state.volumes,
-                    focusedIndex = state.volumeFocusIndex,
-                    isFocused = state.focusedPane == FocusedPane.VOLUMES,
-                    onVolumeClick = { viewModel.selectVolume(it) },
-                    modifier = Modifier.fillMaxWidth(volumePaneFraction)
+            if (!state.hasPermission) {
+                PermissionRequiredPane(
+                    onGrant = requestStoragePermission,
+                    modifier = Modifier.weight(1f)
                 )
 
-                Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                FileBrowserPermissionFooter(
+                    onGrant = requestStoragePermission,
+                    onCancel = onDismiss
+                )
+            } else {
+                val configuration = LocalConfiguration.current
+                val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                val volumePaneFraction = if (isLandscape) 0.20f else 0.35f
 
-                Column(modifier = Modifier.weight(1f)) {
-                    BreadcrumbBar(
-                        path = state.currentPath,
-                        volumes = state.volumes
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(Dimens.spacingMd)
+                ) {
+                    VolumePane(
+                        volumes = state.volumes,
+                        focusedIndex = state.volumeFocusIndex,
+                        isFocused = state.focusedPane == FocusedPane.VOLUMES,
+                        onVolumeClick = { viewModel.selectVolume(it) },
+                        modifier = Modifier.fillMaxWidth(volumePaneFraction)
                     )
 
-                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                    Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
-                    FilePane(
-                        entries = state.entries,
-                        focusedIndex = state.fileFocusIndex,
-                        isFocused = state.focusedPane == FocusedPane.FILES,
-                        isLoading = state.isLoading,
-                        error = state.error,
-                        onEntryClick = { entry ->
-                            if (entry.isDirectory) {
-                                viewModel.navigate(entry.path)
-                            } else if (mode == FileBrowserMode.FILE_SELECTION ||
-                                       mode == FileBrowserMode.FILE_OR_FOLDER_SELECTION) {
-                                onPathSelected(entry.path)
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        BreadcrumbBar(
+                            path = state.currentPath,
+                            volumes = state.volumes
+                        )
+
+                        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+                        FilePane(
+                            entries = state.entries,
+                            focusedIndex = state.fileFocusIndex,
+                            isFocused = state.focusedPane == FocusedPane.FILES,
+                            isLoading = state.isLoading,
+                            error = state.error,
+                            onEntryClick = { entry ->
+                                if (entry.isDirectory) {
+                                    viewModel.navigate(entry.path)
+                                } else if (mode == FileBrowserMode.FILE_SELECTION ||
+                                           mode == FileBrowserMode.FILE_OR_FOLDER_SELECTION) {
+                                    onPathSelected(entry.path)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
-            }
 
-            FileBrowserFooter(
-                mode = mode,
-                currentPath = state.currentPath,
-                onUseCurrentFolder = { viewModel.selectCurrentDirectory() },
-                onNewFolder = { viewModel.showCreateFolderDialog() },
-                onCancel = onDismiss
-            )
+                FileBrowserFooter(
+                    mode = mode,
+                    currentPath = state.currentPath,
+                    onUseCurrentFolder = { viewModel.selectCurrentDirectory() },
+                    onNewFolder = { viewModel.showCreateFolderDialog() },
+                    onCancel = onDismiss
+                )
+            }
         }
 
         if (state.showCreateFolderDialog) {
@@ -187,6 +225,75 @@ private fun FileBrowserHeader(title: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+private fun PermissionRequiredPane(
+    onGrant: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(Dimens.spacingXl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Lock,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(Dimens.iconXl)
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        Text(
+            text = "Storage access required",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+        Text(
+            text = "Argosy needs All files access to browse folders, download games, and sync saves. Grant it, then return here.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(0.8f)
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(Dimens.radiusMd))
+                .background(MaterialTheme.colorScheme.primary)
+                .clickableNoFocus(onClick = onGrant)
+                .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
+        ) {
+            Text(
+                text = "Grant Access",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
+
+@Composable
+private fun FileBrowserPermissionFooter(
+    onGrant: () -> Unit,
+    onCancel: () -> Unit
+) {
+    FooterBar(
+        hints = listOf(
+            InputButton.A to "Grant Access",
+            InputButton.B to "Back"
+        ),
+        onHintClick = { button ->
+            when (button) {
+                InputButton.A -> onGrant()
+                InputButton.B -> onCancel()
+                else -> {}
+            }
+        }
+    )
 }
 
 @Composable

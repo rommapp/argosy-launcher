@@ -554,7 +554,8 @@ class RomMLibrarySyncService @Inject constructor(
                 apiClient.buildRomsQueryParams(
                     platformId = platform.id,
                     limit = SYNC_PAGE_SIZE,
-                    offset = offset
+                    offset = offset,
+                    expandFilesAndSiblings = true
                 )
             )
 

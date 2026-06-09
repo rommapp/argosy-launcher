@@ -13,6 +13,7 @@ import coil.imageLoader
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.model.GameSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -1071,6 +1072,37 @@ class ImageCacheManager @Inject constructor(
                 } else {
                     queueCoverCacheByGameId(url, game.id)
                 }
+            }
+        }
+    }
+
+    /**
+     * Re-derive a source for games left with no cover (e.g. a cover file truncated by an
+     * ungraceful power-off and then nulled by validation). Steam covers rebuild from the app id,
+     * Android from the launcher icon; RomM games self-heal on the next library sync.
+     */
+    fun recoverMissingCovers() {
+        scope.launch {
+            val games = gameDao.getGamesWithMissingCovers()
+            if (games.isEmpty()) return@launch
+
+            var recovered = 0
+            games.forEach { game ->
+                when {
+                    game.steamAppId != null -> {
+                        val url = "https://steamcdn-a.akamaihd.net/steam/apps/${game.steamAppId}/library_600x900.jpg"
+                        gameDao.updateCoverPath(game.id, url)
+                        queueCoverCacheByGameId(url, game.id)
+                        recovered++
+                    }
+                    game.source == GameSource.ANDROID_APP && game.packageName != null -> {
+                        queueAppIconCache(game.id, game.packageName)
+                        recovered++
+                    }
+                }
+            }
+            if (recovered > 0) {
+                Log.i(TAG, "Cover recovery: re-derived source for $recovered games with missing covers")
             }
         }
     }

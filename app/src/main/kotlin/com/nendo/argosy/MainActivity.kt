@@ -593,6 +593,7 @@ class MainActivity : ComponentActivity() {
 
             imageCacheManager.resumePendingCache()
             imageCacheManager.resumePendingCoverCache()
+            imageCacheManager.recoverMissingCovers()
             imageCacheManager.resumePendingLogoCache()
             imageCacheManager.resumePendingBadgeCache()
 

@@ -395,6 +395,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE coverPath LIKE 'http%'")
     suspend fun getGamesWithUncachedCovers(): List<GameEntity>
 
+    @Query("SELECT * FROM games WHERE coverPath IS NULL OR coverPath = ''")
+    suspend fun getGamesWithMissingCovers(): List<GameEntity>
+
     @Query("SELECT COUNT(*) FROM games WHERE coverPath IS NOT NULL AND rommId IS NOT NULL")
     suspend fun countGamesWithCovers(): Int
 

@@ -232,11 +232,12 @@ class SaveSyncOrchestrator @Inject constructor(
             val rommId = game.rommId ?: continue
             val emulatorId = client.resolveEmulatorForGame(game) ?: continue
             val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+            val heldHashByRow = saveSyncDao.getByGame(game.id).associate { it.id to it.lastUploadedHash }
             val serverSaves = client.checkSavesForGame(game.id, rommId)
             if (serverSaves.isEmpty()) continue
             inspected++
 
-            val firstTimeForGame = saveSyncDao.getByGame(game.id).isEmpty()
+            val firstTimeForGame = heldHashByRow.isEmpty()
 
             val latestPerChannel = serverSaves
                 .filter { !SaveSyncApiClient.isStateShapedSave(it) }
@@ -257,7 +258,16 @@ class SaveSyncOrchestrator @Inject constructor(
                     saveSyncDao.getByGameEmulatorAndNullChannel(game.id, emulatorId)
                 }
                 val serverTime = SaveSyncApiClient.parseTimestamp(latest.updatedAt)
-                if (existing != null && existing.rommSaveId == latest.id && existing.serverUpdatedAt == serverTime) continue
+                val localPresent = existing?.localSavePath?.let { File(it).exists() } == true
+                if (existing != null && localPresent) {
+                    val heldHash = heldHashByRow[existing.id]
+                    val hashKnown = heldHash != null && latest.contentHash != null
+                    if (hashKnown) {
+                        if (heldHash == latest.contentHash) continue
+                    } else if (existing.rommSaveId == latest.id && existing.serverUpdatedAt == serverTime) {
+                        continue
+                    }
+                }
 
                 val isActiveChannel = channelName == null ||
                     channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true) ||

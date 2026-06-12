@@ -232,6 +232,16 @@ class LibretroActivity : ComponentActivity() {
         registerGamepadDetection()
         registerOrientationListener()
 
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isAnyMenuOpen) {
+                    activeMenuHandler?.onBack()
+                } else {
+                    showMenu()
+                }
+            }
+        })
+
         com.nendo.argosy.DualScreenManagerHolder.instance?.let { dsm ->
             dsm.emulatorKeyDispatcher = { event -> dispatchKeyEvent(event) }
             dsm.emulatorMotionDispatcher = { event -> dispatchGenericMotionEvent(event) }
@@ -1540,7 +1550,14 @@ class LibretroActivity : ComponentActivity() {
         if (shouldFilterShoulderButton(keyCode)) return true
 
         val handled = retroView.onKeyDown(keyCode, event)
-        return handled || super.onKeyDown(keyCode, event)
+        if (handled) return true
+
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            showMenu()
+            return true
+        }
+
+        return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
